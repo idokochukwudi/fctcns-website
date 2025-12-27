@@ -1,0 +1,38 @@
+# Environment files
+.env
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime data
+storage/
+*.sqlite
+*.sqlite-journal
+
+# Dependencies
+node_modules/
+vendor/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uploads (user-generated content)
+public/assets/uploads/
+!public/assets/uploads/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+
+# Cache
+.cache/
