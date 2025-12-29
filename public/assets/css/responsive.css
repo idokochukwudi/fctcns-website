@@ -1,0 +1,26 @@
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+/* Mobile: 320px - 767px */
+@media (max-width: 767px) {
+  .container { padding: 0 var(--space-4); }
+  .section { padding: var(--space-8) 0; }
+  .navbar-nav { display: none; }
+  .navbar-toggle { display: block; }
+  .mobile-menu-active .navbar-nav {
+    display: flex; flex-direction: column; position: absolute; 
+    top: 100%; left: 0; right: 0; background: white; padding: var(--space-4);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* Tablet: 768px - 1023px */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .container { padding: 0 var(--space-6); }
+}
+
+/* Desktop: 1024px+ */
+@media (min-width: 1024px) {
+  .container { padding: 0 var(--space-8); }
+}

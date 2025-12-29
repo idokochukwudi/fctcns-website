@@ -1,0 +1,168 @@
+/* ============================================================================
+   CSS CUSTOM PROPERTIES (DESIGN TOKENS)
+   ============================================================================
+   Based on UNCG-inspired design with soft purple and sage green
+   ============================================================================ */
+
+:root {
+  /* ==================================================
+     COLOR PALETTE (Professional & Muted)
+     ================================================== */
+  
+  /* Primary Colors */
+  --color-primary: #6B4E9B;      /* Soft Lila Purple - muted, not bright */
+  --color-primary-dark: #5A3F8A; /* Darker purple for hover states */
+  --color-primary-light: #7D65A9; /* Lighter purple */
+  --color-primary-faint: #F5F2FA; /* Very faint purple for backgrounds */
+  
+  /* Secondary Colors */
+  --color-secondary: #7FB285;    /* Sage Green - subtle, professional */
+  --color-secondary-dark: #6A9C70; /* Darker green for hover */
+  --color-secondary-light: #94C19A; /* Lighter green */
+  --color-secondary-faint: #F2F7F3; /* Very faint green for backgrounds */
+  
+  /* Neutral Colors */
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  
+  /* Gray Scale (from light to dark) */
+  --color-gray-50: #F8F9FA;      /* Soft Gray - for sections */
+  --color-gray-100: #E1E8ED;     /* Border/Divider */
+  --color-gray-200: #CBD5E1;
+  --color-gray-300: #A0AEC0;
+  --color-gray-400: #718096;
+  --color-gray-500: #5A6C7D;     /* Text Secondary */
+  --color-gray-600: #4A5568;
+  --color-gray-700: #2C3E50;     /* Text Primary - Dark Charcoal */
+  --color-gray-800: #1A202C;
+  --color-gray-900: #171923;
+  
+  /* Semantic Colors */
+  --color-success: #48BB78;      /* Green */
+  --color-warning: #ED8936;      /* Orange */
+  --color-error: #F56565;        /* Red */
+  --color-info: #4299E1;         /* Blue */
+  
+  /* Overlay Colors */
+  --color-overlay-dark: rgba(44, 62, 80, 0.7);  /* 70% dark overlay */
+  --color-overlay-light: rgba(255, 255, 255, 0.9); /* 90% white overlay */
+  
+  /* ==================================================
+     TYPOGRAPHY
+     ================================================== */
+  
+  /* Font Families */
+  --font-heading: 'Libre Franklin', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Source Sans Pro', 'Segoe UI', Tahoma, sans-serif;
+  --font-accent: 'Merriweather', Georgia, serif;
+  
+  /* Font Sizes (Modular scale: 1.250 - Major Third) */
+  --text-xs: 0.8rem;    /* 13px */
+  --text-sm: 0.9rem;    /* 14px */
+  --text-base: 1rem;    /* 16px - Body text */
+  --text-lg: 1.125rem;  /* 18px */
+  --text-xl: 1.25rem;   /* 20px - H4 */
+  --text-2xl: 1.563rem; /* 25px - H3 */
+  --text-3xl: 1.953rem; /* 31px - H2 */
+  --text-4xl: 2.441rem; /* 39px - H1 */
+  --text-5xl: 3.052rem; /* 49px */
+  --text-6xl: 3.815rem; /* 61px */
+  
+  /* Font Weights */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  
+  /* Line Heights */
+  --leading-tight: 1.2;     /* For headings */
+  --leading-normal: 1.5;    /* For body text */
+  --leading-relaxed: 1.6;   /* For long reads */
+  
+  /* Letter Spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+  
+  /* ==================================================
+     SPACING (8px base unit)
+     ================================================== */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  --space-20: 5rem;     /* 80px */
+  --space-24: 6rem;     /* 96px */
+  --space-32: 8rem;     /* 128px */
+  
+  /* ==================================================
+     BORDERS & RADIUS
+     ================================================== */
+  --border-thin: 1px;
+  --border-thick: 2px;
+  --border-radius-sm: 0.25rem;   /* 4px */
+  --border-radius: 0.5rem;       /* 8px */
+  --border-radius-lg: 0.75rem;   /* 12px */
+  --border-radius-xl: 1rem;      /* 16px */
+  --border-radius-full: 9999px;  /* For circles */
+  
+  /* ==================================================
+     SHADOWS
+     ================================================== */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* ==================================================
+     Z-INDEX LAYERS
+     ================================================== */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  
+  /* ==================================================
+     CAROUSEL SPECIFIC VARIABLES
+     ================================================== */
+  --carousel-height-desktop: 600px;
+  --carousel-height-tablet: 450px;
+  --carousel-height-mobile: 350px;
+  --carousel-transition-duration: 500ms;
+  --carousel-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* ==================================================
+     LAYOUT
+     ================================================== */
+  --container-max-width: 1200px;
+  --container-padding: var(--space-4);
+  
+  /* ==================================================
+     ANIMATIONS
+     ================================================== */
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 300ms ease-in-out;
+  --transition-slow: 500ms ease-in-out;
+}
+
+/* Dark mode variations (optional - for future) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-gray-50: #171923;
+    --color-gray-100: #1A202C;
+    --color-gray-700: #CBD5E1;
+    /* ... other dark mode adjustments */
+  }
+}

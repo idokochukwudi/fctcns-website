@@ -1,0 +1,14 @@
+/* ============================================================================
+   MAIN STYLESHEET - IMPORTS ALL CSS FILES
+   ============================================================================ */
+
+@import url('variables.css');
+@import url('reset.css');
+@import url('base.css');
+@import url('layout.css');
+@import url('components.css');
+@import url('carousel.css');
+@import url('responsive.css');
+
+/* Additional global styles */
+main { padding-top: 80px; } /* Space for fixed navbar */
