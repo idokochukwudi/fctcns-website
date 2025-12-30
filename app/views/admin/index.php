@@ -3,7 +3,12 @@
  * Admin Area - Main Entry Point
  * Routes all admin requests to appropriate controllers
  */
-
+// DEBUG: Log what's happening
+error_log("Admin SPA Loaded");
+error_log("REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
+error_log("REQUEST_URI: " . $_SERVER['REQUEST_URI']);
+error_log("POST data: " . print_r($_POST, true));
+error_log("Session: " . print_r($_SESSION, true));
 // Load constants file - FIXED PATH
 // Since this file is at: C:\xampp\htdocs\fctcns-website\app\views\admin\index.php
 // We need to go up 3 levels to reach the project root
@@ -67,19 +72,24 @@ $routes = [
     'db-inspect' => ['controller' => 'AdminController', 'method' => 'dbInspect'],
     'db/create-tables' => ['controller' => 'AdminController', 'method' => 'dbCreateTables'],
     
-    // Applications
+    // Applications - COMPLETE AND CORRECT
     'applications' => ['controller' => 'ApplicationController', 'method' => 'index'],
     'applications/create' => ['controller' => 'ApplicationController', 'method' => 'create'],
     'applications/view' => ['controller' => 'ApplicationController', 'method' => 'view'],
+    'applications/edit' => ['controller' => 'ApplicationController', 'method' => 'edit'],
     'applications/store' => ['controller' => 'ApplicationController', 'method' => 'store'],
     'applications/update-status' => ['controller' => 'ApplicationController', 'method' => 'updateStatus'],
     
-    // Research
+    // Research - COMPLETE WITH VIEW ROUTE
     'research' => ['controller' => 'ResearchController', 'method' => 'index'],
     'research/create' => ['controller' => 'ResearchController', 'method' => 'create'],
     'research/edit' => ['controller' => 'ResearchController', 'method' => 'edit'],
+    'research/view' => ['controller' => 'ResearchController', 'method' => 'show'],
     'research/store' => ['controller' => 'ResearchController', 'method' => 'store'],
     'research/update' => ['controller' => 'ResearchController', 'method' => 'update'],
+    'research/toggle-status' => ['controller' => 'ResearchController', 'method' => 'toggleStatus'],
+    'research/bulk-action' => ['controller' => 'ResearchController', 'method' => 'bulkAction'],
+    'research/export' => ['controller' => 'ResearchController', 'method' => 'export'],
     
     // News
     'news' => ['controller' => 'NewsController', 'method' => 'index'],
@@ -95,12 +105,32 @@ $routes = [
     '404' => ['controller' => 'AdminController', 'method' => 'notFound'],
 ];
 
-// Find matching route
+// SPECIAL HANDLING FOR applications/view/{id}, applications/edit/{id}, research/edit/{id}, research/view/{id}
 $route_key = $action;
-if ($param1) {
-    $route_key = $action . '/' . $param1;
-    if ($param2) {
-        $route_key = $action . '/' . $param1 . '/' . $param2;
+if ($action == 'applications' && $param1 == 'view' && $param2) {
+    // This is /admin/applications/view/{id}
+    $route_key = 'applications/view';
+    // Set the ID in GET parameters so ApplicationController can read it
+    $_GET['id'] = $param2;
+} elseif ($action == 'applications' && $param1 == 'edit' && $param2) {
+    // This is /admin/applications/edit/{id}
+    $route_key = 'applications/edit';
+    $_GET['id'] = $param2;
+} elseif ($action == 'research' && $param1 == 'edit' && $param2) {
+    // This is /admin/research/edit/{id}
+    $route_key = 'research/edit';
+    $_GET['id'] = $param2;
+} elseif ($action == 'research' && $param1 == 'view' && $param2) {
+    // This is /admin/research/view/{id}
+    $route_key = 'research/view';
+    $_GET['id'] = $param2;
+} else {
+    // Normal route matching
+    if ($param1) {
+        $route_key = $action . '/' . $param1;
+        if ($param2) {
+            $route_key = $action . '/' . $param1 . '/' . $param2;
+        }
     }
 }
 

@@ -2,64 +2,164 @@
 /**
  * Applications Controller
  * Handles application management in admin
+ * Extends the base Controller class for common functionality
  */
-class ApplicationsController {
+class ApplicationsController extends Controller {
+    
+    private $db;
+    
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        parent::__construct();
+        
+        // Set admin layout
+        $this->layout = 'admin';
+        
+        // Require authentication
+        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+        AuthMiddleware::authenticate();
+        
+        // Setup database
+        require_once __DIR__ . '/../config/database.php';
+        $database = Database::getInstance();
+        $this->db = $database->getConnection();
+        
+        // Initialize common data
+        $this->data = array_merge($this->data, [
+            'user' => $_SESSION ?? [],
+            'baseUrl' => defined('BASE_URL') ? BASE_URL : '',
+            'currentPage' => 'applications'
+        ]);
+    }
     
     /**
      * Show applications list
      */
     public function index() {
-        // Require authentication
-        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
-        AuthMiddleware::authenticate();
-
-        // Get applications from database
-        require_once __DIR__ . '/../config/database.php';
-        $db = Database::getInstance();
-        $conn = $db->getConnection();
-
         $applications = [];
         $error = null;
+        $stats = [];
 
         try {
-            $stmt = $conn->query("
-                SELECT a.*, u.full_name as applicant_name 
+            // Get all applications with applicant info
+            $stmt = $this->db->query("
+                SELECT a.*, u.full_name as applicant_name, u.email, u.phone,
+                       u.username as applicant_username
                 FROM applications a
                 LEFT JOIN users u ON a.user_id = u.id
                 ORDER BY a.created_at DESC
             ");
             $applications = $stmt->fetchAll();
+            
+            // Get statistics
+            $statsStmt = $this->db->query("
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN a.status = 'pending' THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN a.status = 'reviewed' THEN 1 ELSE 0 END) as reviewed,
+                    SUM(CASE WHEN a.status = 'approved' THEN 1 ELSE 0 END) as approved,
+                    SUM(CASE WHEN a.status = 'rejected' THEN 1 ELSE 0 END) as rejected
+                FROM applications a
+            ");
+            $stats = $statsStmt->fetch();
+            
         } catch (Exception $e) {
-            error_log("Applications error: " . $e->getMessage());
+            error_log("ApplicationsController index error: " . $e->getMessage());
             $error = "Unable to load applications. Please try again.";
         }
 
-        // Load view with data
-        $this->loadView('admin/applications', [
+        // Set data for view
+        $this->data = array_merge($this->data, [
             'applications' => $applications,
+            'stats' => $stats,
             'error' => $error,
-            'user' => $_SESSION
+            'pageTitle' => 'Applications Management - FCT College of Nursing Sciences',
+            'pageDescription' => 'Manage student applications'
         ]);
+
+        // Render view
+        $this->render('admin/applications/index');
     }
 
     /**
      * Show single application
      */
     public function show($id) {
-        // Require authentication
-        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
-        AuthMiddleware::authenticate();
-
-        // Get application from database
-        require_once __DIR__ . '/../config/database.php';
-        $db = Database::getInstance();
-        $conn = $db->getConnection();
-
         $application = null;
         $error = null;
 
         try {
-            $stmt = $conn->prepare("
+            // Get application details with applicant info
+            $stmt = $this->db->prepare("
+                SELECT a.*, u.full_name as applicant_name, u.email, u.phone,
+                       u.username as applicant_username, u.date_of_birth,
+                       u.gender, u.nationality, u.address, u.city, u.state,
+                       u.country, u.postal_code, u.profile_image,
+                       ru.full_name as reviewer_name
+                FROM applications a
+                LEFT JOIN users u ON a.user_id = u.id
+                LEFT JOIN users ru ON a.reviewed_by = ru.id
+                WHERE a.id = ?
+            ");
+            $stmt->execute([$id]);
+            $application = $stmt->fetch();
+
+            if (!$application) {
+                $this->flash('error', 'Application not found.');
+                $this->redirect('/admin/applications');
+                return;
+            }
+            
+            // Get application documents if any
+            $docsStmt = $this->db->prepare("
+                SELECT * FROM application_documents 
+                WHERE application_id = ? 
+                ORDER BY created_at DESC
+            ");
+            $docsStmt->execute([$id]);
+            $documents = $docsStmt->fetchAll();
+            
+            // Get application history
+            $historyStmt = $this->db->prepare("
+                SELECT ah.*, u.full_name as admin_name
+                FROM application_history ah
+                LEFT JOIN users u ON ah.admin_id = u.id
+                WHERE ah.application_id = ?
+                ORDER BY ah.created_at DESC
+            ");
+            $historyStmt->execute([$id]);
+            $history = $historyStmt->fetchAll();
+            
+        } catch (Exception $e) {
+            error_log("ApplicationsController show error: " . $e->getMessage());
+            $error = "Unable to load application. Please try again.";
+        }
+
+        // Set data for view
+        $this->data = array_merge($this->data, [
+            'application' => $application,
+            'documents' => $documents ?? [],
+            'history' => $history ?? [],
+            'error' => $error,
+            'pageTitle' => 'Application Details - ' . ($application['applicant_name'] ?? 'Unknown'),
+            'pageDescription' => 'View application details'
+        ]);
+
+        $this->render('admin/applications/show');
+    }
+
+    /**
+     * Show edit application form
+     */
+    public function edit($id) {
+        $application = null;
+        $error = null;
+
+        try {
+            // Get application details
+            $stmt = $this->db->prepare("
                 SELECT a.*, u.full_name as applicant_name, u.email, u.phone
                 FROM applications a
                 LEFT JOIN users u ON a.user_id = u.id
@@ -69,97 +169,108 @@ class ApplicationsController {
             $application = $stmt->fetch();
 
             if (!$application) {
-                $error = "Application not found.";
+                $this->flash('error', 'Application not found.');
+                $this->redirect('/admin/applications');
+                return;
             }
+            
+            // Get status options
+            $statusOptions = [
+                'pending' => 'Pending',
+                'reviewed' => 'Under Review',
+                'approved' => 'Approved',
+                'rejected' => 'Rejected',
+                'waitlisted' => 'Waitlisted',
+                'accepted' => 'Accepted',
+                'enrolled' => 'Enrolled',
+                'withdrawn' => 'Withdrawn'
+            ];
+            
         } catch (Exception $e) {
-            error_log("Application show error: " . $e->getMessage());
+            error_log("ApplicationsController edit error: " . $e->getMessage());
             $error = "Unable to load application. Please try again.";
         }
 
-        $this->loadView('admin/applications_show', [
+        // Set data for view
+        $this->data = array_merge($this->data, [
             'application' => $application,
             'error' => $error,
-            'user' => $_SESSION
+            'statusOptions' => $statusOptions ?? [],
+            'pageTitle' => 'Edit Application - ' . ($application['applicant_name'] ?? 'Unknown'),
+            'pageDescription' => 'Edit application details'
         ]);
-    }
 
-    /**
-     * Show edit application form
-     */
-    public function edit($id) {
-        // Require authentication
-        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
-        AuthMiddleware::authenticate();
-
-        // Get application from database
-        require_once __DIR__ . '/../config/database.php';
-        $db = Database::getInstance();
-        $conn = $db->getConnection();
-
-        $application = null;
-        $error = null;
-
-        try {
-            $stmt = $conn->prepare("
-                SELECT a.*, u.full_name as applicant_name
-                FROM applications a
-                LEFT JOIN users u ON a.user_id = u.id
-                WHERE a.id = ?
-            ");
-            $stmt->execute([$id]);
-            $application = $stmt->fetch();
-
-            if (!$application) {
-                $error = "Application not found.";
-            }
-        } catch (Exception $e) {
-            error_log("Application edit error: " . $e->getMessage());
-            $error = "Unable to load application. Please try again.";
-        }
-
-        $this->loadView('admin/applications_edit', [
-            'application' => $application,
-            'error' => $error,
-            'user' => $_SESSION
-        ]);
+        $this->render('admin/applications/edit');
     }
 
     /**
      * Update application
      */
     public function update($id) {
-        // Require authentication
-        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
-        AuthMiddleware::authenticate();
-
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . BASE_URL . '/admin/applications/' . $id . '/edit');
-            exit;
+            $this->flash('error', 'Invalid request method.');
+            $this->redirect('/admin/applications/' . $id . '/edit');
+            return;
         }
 
-        $status = trim($_POST['status'] ?? '');
-        $notes = trim($_POST['notes'] ?? '');
+        // Validate CSRF token
+        try {
+            $this->validateCsrf();
+        } catch (Exception $e) {
+            $this->flash('error', 'Security token expired. Please try again.');
+            $this->redirect('/admin/applications/' . $id . '/edit');
+            return;
+        }
+
+        $status = trim($this->input('status', ''));
+        $notes = trim($this->input('notes', ''));
+        $review_notes = trim($this->input('review_notes', ''));
         $reviewed_by = $_SESSION['user_id'] ?? null;
 
-        require_once __DIR__ . '/../config/database.php';
-        $db = Database::getInstance();
-        $conn = $db->getConnection();
-
         try {
-            $stmt = $conn->prepare("
+            // Get current application status
+            $currentStmt = $this->db->prepare("SELECT status FROM applications WHERE id = ?");
+            $currentStmt->execute([$id]);
+            $current = $currentStmt->fetch();
+            
+            if (!$current) {
+                $this->flash('error', 'Application not found.');
+                $this->redirect('/admin/applications');
+                return;
+            }
+
+            // Update application
+            $stmt = $this->db->prepare("
                 UPDATE applications 
-                SET status = ?, notes = ?, reviewed_by = ?, reviewed_at = NOW(), updated_at = NOW()
+                SET status = ?, notes = ?, review_notes = ?, 
+                    reviewed_by = ?, reviewed_at = NOW(), updated_at = NOW()
                 WHERE id = ?
             ");
-            $stmt->execute([$status, $notes, $reviewed_by, $id]);
-
-            header('Location: ' . BASE_URL . '/admin/applications/' . $id);
-            exit;
-        } catch (Exception $e) {
-            error_log("Application update error: " . $e->getMessage());
+            $stmt->execute([$status, $notes, $review_notes, $reviewed_by, $id]);
             
-            // Reload edit form with error
-            $this->edit($id);
+            // Log status change if it changed
+            if ($current['status'] !== $status) {
+                $logStmt = $this->db->prepare("
+                    INSERT INTO application_history 
+                    (application_id, admin_id, old_status, new_status, notes, created_at)
+                    VALUES (?, ?, ?, ?, ?, NOW())
+                ");
+                $logStmt->execute([$id, $reviewed_by, $current['status'], $status, $notes]);
+                
+                // Log activity
+                $this->logActivity('application_updated', "Application #{$id} status changed from {$current['status']} to {$status}");
+            } else {
+                // Log general update
+                $this->logActivity('application_updated', "Application #{$id} updated");
+            }
+
+            $this->flash('success', 'Application updated successfully!');
+            $this->redirect('/admin/applications/' . $id);
+            
+        } catch (Exception $e) {
+            error_log("ApplicationsController update error: " . $e->getMessage());
+            $this->flash('error', 'Failed to update application: ' . $e->getMessage());
+            $this->redirect('/admin/applications/' . $id . '/edit');
         }
     }
 
@@ -167,250 +278,271 @@ class ApplicationsController {
      * Delete application
      */
     public function destroy($id) {
-        // Require authentication
-        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
-        AuthMiddleware::authenticate();
-
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . BASE_URL . '/admin/applications');
-            exit;
+            $this->flash('error', 'Invalid request method.');
+            $this->redirect('/admin/applications');
+            return;
         }
 
-        require_once __DIR__ . '/../config/database.php';
-        $db = Database::getInstance();
-        $conn = $db->getConnection();
+        // Validate CSRF token
+        try {
+            $this->validateCsrf();
+        } catch (Exception $e) {
+            $this->flash('error', 'Security token expired. Please try again.');
+            $this->redirect('/admin/applications');
+            return;
+        }
 
         try {
-            $stmt = $conn->prepare("DELETE FROM applications WHERE id = ?");
-            $stmt->execute([$id]);
-
-            header('Location: ' . BASE_URL . '/admin/applications');
-            exit;
-        } catch (Exception $e) {
-            error_log("Application delete error: " . $e->getMessage());
-            header('Location: ' . BASE_URL . '/admin/applications');
-            exit;
-        }
-    }
-
-    /**
-     * Helper method to load views
-     */
-    private function loadView($view, $data = []) {
-        // Define APP_PATH if not defined
-        if (!defined('APP_PATH')) {
-            define('APP_PATH', dirname(__DIR__));
-        }
-        
-        // Define BASE_URL if not defined
-        if (!defined('BASE_URL')) {
-            // Try to get BASE_URL from constants file
-            $constantsPath = APP_PATH . '/config/constants.php';
-            if (file_exists($constantsPath)) {
-                require_once $constantsPath;
-            } else {
-                // Fallback definition
-                define('BASE_URL', 'http://localhost/fctcns-website');
-            }
-        }
-        
-        // Extract data for the view
-        extract($data);
-        
-        // Include the view file
-        $viewPath = APP_PATH . '/views/' . $view . '.php';
-        
-        if (file_exists($viewPath)) {
-            require_once $viewPath;
-        } else {
-            // Fallback to simple view
-            if ($view === 'admin/applications') {
-                $this->showSimpleApplications($data['applications'] ?? [], $data['error'] ?? null);
-            } else {
-                echo "<h1>View not found</h1>";
-                echo "<p>View file not found: " . htmlspecialchars($viewPath) . "</p>";
-                echo "<p>Looking for: " . htmlspecialchars($view) . ".php</p>";
-                echo "<p><a href='" . BASE_URL . "/admin/dashboard'>Return to Dashboard</a></p>";
-            }
-        }
-    }
-
-    /**
-     * Fallback simple applications view
-     */
-    private function showSimpleApplications($applications, $error) {
-        // Ensure BASE_URL is defined
-        if (!defined('BASE_URL')) {
-            define('BASE_URL', 'http://localhost/fctcns-website');
-        }
-        
-        ?>
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Applications - FCT College of Nursing Sciences</title>
-            <style>
-                body {
-                    font-family: 'Inter', sans-serif;
-                    margin: 0;
-                    background: #F7FAFC;
-                }
-                .navbar {
-                    background: white;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    padding: 1rem 2rem;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                .navbar-brand {
-                    font-size: 1.25rem;
-                    font-weight: bold;
-                    color: #6B4E9B;
-                }
-                .logout-btn {
-                    background: #6B4E9B;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    text-decoration: none;
-                    display: inline-block;
-                }
-                .container {
-                    max-width: 1200px;
-                    margin: 2rem auto;
-                    padding: 0 2rem;
-                }
-                .error-alert {
-                    background: #FED7D7;
-                    color: #9B2C2C;
-                    padding: 1rem;
-                    border-radius: 8px;
-                    margin-bottom: 2rem;
-                }
-                .applications-table {
-                    background: white;
-                    border-radius: 12px;
-                    overflow: hidden;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                }
-                th {
-                    background: #6B4E9B;
-                    color: white;
-                    padding: 1rem;
-                    text-align: left;
-                }
-                td {
-                    padding: 1rem;
-                    border-bottom: 1px solid #E2E8F0;
-                }
-                tr:hover {
-                    background: #F7FAFC;
-                }
-                .status-badge {
-                    padding: 4px 12px;
-                    border-radius: 20px;
-                    font-size: 0.875rem;
-                    font-weight: 500;
-                }
-                .status-pending {
-                    background: #FEF3C7;
-                    color: #92400E;
-                }
-                .status-reviewing {
-                    background: #DBEAFE;
-                    color: #1E40AF;
-                }
-                .status-approved {
-                    background: #D1FAE5;
-                    color: #065F46;
-                }
-                .status-rejected {
-                    background: #FEE2E2;
-                    color: #991B1B;
-                }
-                .action-buttons a {
-                    color: #6B4E9B;
-                    text-decoration: none;
-                    margin-right: 1rem;
-                }
-                .action-buttons a:hover {
-                    text-decoration: underline;
-                }
-            </style>
-        </head>
-        <body>
-            <nav class="navbar">
-                <div class="navbar-brand">FCT CNS Applications</div>
-                <div>
-                    <a href="<?php echo BASE_URL; ?>/admin/dashboard" style="margin-right: 1rem; color: #4A5568; text-decoration: none;">Dashboard</a>
-                    <a href="<?php echo BASE_URL; ?>/admin/logout" class="logout-btn">Logout</a>
-                </div>
-            </nav>
+            // Start transaction
+            $this->db->beginTransaction();
             
-            <div class="container">
-                <h1>Applications Management</h1>
-                
-                <?php if ($error): ?>
-                <div class="error-alert">
-                    <?php echo htmlspecialchars($error); ?>
-                </div>
-                <?php endif; ?>
-                
-                <div class="applications-table">
-                    <?php if (empty($applications)): ?>
-                        <p style="padding: 2rem; text-align: center; color: #718096;">
-                            No applications found.
-                        </p>
-                    <?php else: ?>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Applicant Name</th>
-                                    <th>Program</th>
-                                    <th>Status</th>
-                                    <th>Applied Date</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($applications as $app): ?>
-                                <tr>
-                                    <td>#<?php echo htmlspecialchars($app['id']); ?></td>
-                                    <td><?php echo htmlspecialchars($app['applicant_name'] ?? 'N/A'); ?></td>
-                                    <td><?php echo htmlspecialchars($app['program_applied'] ?? $app['program'] ?? 'Unknown'); ?></td>
-                                    <td>
-                                        <?php 
-                                        $status = $app['status'] ?? 'pending';
-                                        $statusClass = 'status-' . $status;
-                                        ?>
-                                        <span class="status-badge <?php echo $statusClass; ?>">
-                                            <?php echo ucfirst($status); ?>
-                                        </span>
-                                    </td>
-                                    <td><?php echo date('M d, Y', strtotime($app['created_at'])); ?></td>
-                                    <td class="action-buttons">
-                                        <a href="<?php echo BASE_URL; ?>/admin/applications/<?php echo $app['id']; ?>">View</a>
-                                        <a href="<?php echo BASE_URL; ?>/admin/applications/<?php echo $app['id']; ?>/edit">Edit</a>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </body>
-        </html>
-        <?php
+            // Delete related records first
+            $this->db->prepare("DELETE FROM application_history WHERE application_id = ?")->execute([$id]);
+            $this->db->prepare("DELETE FROM application_documents WHERE application_id = ?")->execute([$id]);
+            
+            // Delete application
+            $stmt = $this->db->prepare("DELETE FROM applications WHERE id = ?");
+            $stmt->execute([$id]);
+            
+            // Commit transaction
+            $this->db->commit();
+            
+            // Log activity
+            $this->logActivity('application_deleted', "Application #{$id} deleted");
+            
+            $this->flash('success', 'Application deleted successfully!');
+            
+        } catch (Exception $e) {
+            // Rollback on error
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            
+            error_log("ApplicationsController destroy error: " . $e->getMessage());
+            $this->flash('error', 'Failed to delete application: ' . $e->getMessage());
+        }
+
+        $this->redirect('/admin/applications');
+    }
+    
+    /**
+     * Search applications
+     */
+    public function search() {
+        $searchTerm = $this->query('q', '');
+        
+        if (empty($searchTerm)) {
+            $this->redirect('/admin/applications');
+            return;
+        }
+        
+        try {
+            $searchTerm = "%{$searchTerm}%";
+            
+            $stmt = $this->db->prepare("
+                SELECT a.*, u.full_name as applicant_name, u.email, u.phone
+                FROM applications a
+                LEFT JOIN users u ON a.user_id = u.id
+                WHERE a.id LIKE ? 
+                   OR u.full_name LIKE ? 
+                   OR u.email LIKE ? 
+                   OR u.phone LIKE ?
+                   OR a.program_applied LIKE ?
+                   OR a.status LIKE ?
+                ORDER BY a.created_at DESC
+            ");
+            
+            // Use same search term for all fields
+            $stmt->execute([
+                $searchTerm, $searchTerm, $searchTerm, 
+                $searchTerm, $searchTerm, $searchTerm
+            ]);
+            
+            $applications = $stmt->fetchAll();
+            
+            // Set data for view
+            $this->data = array_merge($this->data, [
+                'applications' => $applications,
+                'searchTerm' => $this->query('q', ''),
+                'pageTitle' => 'Search Results - Applications',
+                'pageDescription' => 'Search applications'
+            ]);
+            
+            $this->render('admin/applications/search');
+            
+        } catch (Exception $e) {
+            error_log("ApplicationsController search error: " . $e->getMessage());
+            $this->flash('error', 'Failed to search applications.');
+            $this->redirect('/admin/applications');
+        }
+    }
+    
+    /**
+     * Export applications to CSV
+     */
+    public function export() {
+        try {
+            // Get all applications
+            $stmt = $this->db->query("
+                SELECT a.*, u.full_name as applicant_name, u.email, u.phone,
+                       u.username as applicant_username
+                FROM applications a
+                LEFT JOIN users u ON a.user_id = u.id
+                ORDER BY a.created_at DESC
+            ");
+            $applications = $stmt->fetchAll();
+            
+            // Set headers for CSV download
+            $this->header('Content-Type', 'text/csv; charset=utf-8');
+            $this->header('Content-Disposition', 'attachment; filename=applications_' . date('Y-m-d') . '.csv');
+            
+            // Create output stream
+            $output = fopen('php://output', 'w');
+            
+            // Add CSV headers
+            fputcsv($output, [
+                'ID', 'Applicant Name', 'Email', 'Phone', 'Program',
+                'Status', 'Application Date', 'Reviewed Date', 'Notes'
+            ]);
+            
+            // Add data rows
+            foreach ($applications as $app) {
+                fputcsv($output, [
+                    $app['id'],
+                    $app['applicant_name'] ?? 'N/A',
+                    $app['email'] ?? 'N/A',
+                    $app['phone'] ?? 'N/A',
+                    $app['program_applied'] ?? $app['program'] ?? 'Unknown',
+                    ucfirst($app['status'] ?? 'pending'),
+                    date('Y-m-d', strtotime($app['created_at'])),
+                    $app['reviewed_at'] ? date('Y-m-d', strtotime($app['reviewed_at'])) : 'Not reviewed',
+                    $app['notes'] ?? ''
+                ]);
+            }
+            
+            fclose($output);
+            exit;
+            
+        } catch (Exception $e) {
+            error_log("ApplicationsController export error: " . $e->getMessage());
+            $this->flash('error', 'Failed to export applications.');
+            $this->redirect('/admin/applications');
+        }
+    }
+    
+    /**
+     * Bulk update applications
+     */
+    public function bulkUpdate() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/applications');
+            return;
+        }
+        
+        // Validate CSRF token
+        try {
+            $this->validateCsrf();
+        } catch (Exception $e) {
+            $this->flash('error', 'Security token expired. Please try again.');
+            $this->redirect('/admin/applications');
+            return;
+        }
+        
+        $action = $this->input('action', '');
+        $applicationIds = $this->input('application_ids', []);
+        $newStatus = $this->input('new_status', '');
+        
+        if (empty($applicationIds) || !is_array($applicationIds)) {
+            $this->flash('error', 'No applications selected.');
+            $this->redirect('/admin/applications');
+            return;
+        }
+        
+        try {
+            $updatedCount = 0;
+            $adminId = $_SESSION['user_id'] ?? null;
+            
+            foreach ($applicationIds as $appId) {
+                if ($action === 'delete') {
+                    // Delete application
+                    $this->db->prepare("DELETE FROM applications WHERE id = ?")->execute([$appId]);
+                    $this->logActivity('application_deleted', "Application #{$appId} deleted via bulk action");
+                    $updatedCount++;
+                } elseif ($action === 'status' && !empty($newStatus)) {
+                    // Update status
+                    $currentStmt = $this->db->prepare("SELECT status FROM applications WHERE id = ?");
+                    $currentStmt->execute([$appId]);
+                    $current = $currentStmt->fetch();
+                    
+                    if ($current) {
+                        $updateStmt = $this->db->prepare("
+                            UPDATE applications 
+                            SET status = ?, reviewed_by = ?, reviewed_at = NOW(), updated_at = NOW()
+                            WHERE id = ?
+                        ");
+                        $updateStmt->execute([$newStatus, $adminId, $appId]);
+                        
+                        // Log status change
+                        if ($current['status'] !== $newStatus) {
+                            $logStmt = $this->db->prepare("
+                                INSERT INTO application_history 
+                                (application_id, admin_id, old_status, new_status, created_at)
+                                VALUES (?, ?, ?, ?, NOW())
+                            ");
+                            $logStmt->execute([$appId, $adminId, $current['status'], $newStatus]);
+                        }
+                        
+                        $updatedCount++;
+                    }
+                }
+            }
+            
+            $this->flash('success', "Successfully updated {$updatedCount} application(s).");
+            
+        } catch (Exception $e) {
+            error_log("ApplicationsController bulkUpdate error: " . $e->getMessage());
+            $this->flash('error', 'Failed to update applications.');
+        }
+        
+        $this->redirect('/admin/applications');
+    }
+    
+    /**
+     * Log activity
+     */
+    private function logActivity($action, $description) {
+        try {
+            $user_id = $_SESSION['user_id'] ?? null;
+            $ip_address = $_SERVER['REMOTE_ADDR'] ?? '';
+            $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+            
+            $stmt = $this->db->prepare("
+                INSERT INTO activity_logs 
+                (user_id, action, description, ip_address, user_agent, created_at)
+                VALUES (?, ?, ?, ?, ?, NOW())
+            ");
+            $stmt->execute([$user_id, $action, $description, $ip_address, $user_agent]);
+        } catch (Exception $e) {
+            error_log("Failed to log activity: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Override render method for admin-specific views
+     */
+    protected function render($view = null, $data = []) {
+        // Add CSRF token to all forms
+        $data['csrf_token'] = $this->csrfToken();
+        
+        // Add flash messages
+        $data['flash_success'] = $this->getFlash('success');
+        $data['flash_error'] = $this->getFlash('error');
+        
+        // Merge with controller data
+        $this->data = array_merge($this->data, $data);
+        
+        // Call parent render method
+        parent::render($view);
     }
 }

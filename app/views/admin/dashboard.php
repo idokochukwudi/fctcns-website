@@ -23,6 +23,7 @@ $username = $_SESSION['username'];
 $stats = [];
 $recentActivities = [];
 $recentApplications = [];
+$recentContacts = [];
 
 try {
     // Update the queries in your dashboard.php to match your table structure
@@ -32,6 +33,8 @@ try {
         'pending_applications' => "SELECT COUNT(*) as total FROM applications WHERE status = 'pending'",
         'total_research' => "SELECT COUNT(*) as total FROM research_publications WHERE is_published = 1",
         'total_news' => "SELECT COUNT(*) as total FROM news WHERE is_published = 1",
+        'total_contacts' => "SELECT COUNT(*) as total FROM contact_submissions",
+        'pending_contacts' => "SELECT COUNT(*) as total FROM contact_submissions WHERE status = 'pending'",
         'recent_activities' => "SELECT al.*, u.username as user_name FROM activity_logs al LEFT JOIN users u ON al.user_id = u.id ORDER BY al.created_at DESC LIMIT 10",
         'recent_applications' => "SELECT a.* FROM applications a ORDER BY a.created_at DESC LIMIT 5"
     ];
@@ -51,6 +54,14 @@ try {
     // Recent applications
     $stmt = $conn->query($queries['recent_applications']);
     $recentApplications = $stmt->fetchAll();
+    
+    // Recent contact submissions
+    $stmt = $conn->query("
+        SELECT cs.* FROM contact_submissions cs 
+        ORDER BY cs.created_at DESC 
+        LIMIT 5
+    ");
+    $recentContacts = $stmt->fetchAll();
     
 } catch (Exception $e) {
     error_log("Dashboard error: " . $e->getMessage());
@@ -302,6 +313,7 @@ try {
             padding: 1.5rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid;
         }
         
         .stat-card:hover {
@@ -642,6 +654,30 @@ try {
                     </li>
                     <?php endif; ?>
                     
+                    <!-- Contact Management Link - Added -->
+                    <li class="nav-item">
+                        <a href="<?php echo BASE_URL; ?>/admin/contact" class="nav-link">
+                            <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Contact Messages</span>
+                            <?php 
+                            // Get pending contact count
+                            if (isset($stats['pending_contacts'])) {
+                                $pendingCount = $stats['pending_contacts'];
+                            } else {
+                                $pendingCount = 0;
+                            }
+                            
+                            if ($pendingCount > 0): 
+                            ?>
+                            <span style="margin-left: auto; background: var(--admin-warning); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75rem;">
+                                <?php echo $pendingCount; ?>
+                            </span>
+                            <?php endif; ?>
+                        </a>
+                    </li>
+                    
                     <?php if ($userRole === 'admin'): ?>
                     <li class="nav-item">
                         <a href="<?php echo BASE_URL; ?>/admin/users" class="nav-link">
@@ -729,7 +765,7 @@ try {
         <div class="admin-content">
             <!-- Stats Grid -->
             <div class="stats-grid">
-                <div class="stat-card stat-users">
+                <div class="stat-card stat-users" style="border-left-color: var(--admin-primary);">
                     <div class="stat-header">
                         <div>
                             <div class="stat-value"><?php echo $stats['total_users']; ?></div>
@@ -749,7 +785,7 @@ try {
                     </div>
                 </div>
                 
-                <div class="stat-card stat-applications">
+                <div class="stat-card stat-applications" style="border-left-color: var(--admin-success);">
                     <div class="stat-header">
                         <div>
                             <div class="stat-value"><?php echo $stats['total_applications']; ?></div>
@@ -769,7 +805,7 @@ try {
                     </div>
                 </div>
                 
-                <div class="stat-card stat-research">
+                <div class="stat-card stat-research" style="border-left-color: #9f7aea;">
                     <div class="stat-header">
                         <div>
                             <div class="stat-value"><?php echo $stats['total_research']; ?></div>
@@ -789,7 +825,7 @@ try {
                     </div>
                 </div>
                 
-                <div class="stat-card stat-news">
+                <div class="stat-card stat-news" style="border-left-color: var(--admin-warning);">
                     <div class="stat-header">
                         <div>
                             <div class="stat-value"><?php echo $stats['total_news']; ?></div>
@@ -807,6 +843,28 @@ try {
                             <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                         </svg>
                         -3%
+                    </div>
+                </div>
+                
+                <!-- Contact Messages Card - Added -->
+                <div class="stat-card" style="border-left-color: var(--admin-info);">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-value"><?php echo $stats['total_contacts'] ?? 0; ?></div>
+                            <div class="stat-label">Contact Messages</div>
+                        </div>
+                        <div class="stat-icon" style="background: rgba(49, 130, 206, 0.1); color: var(--admin-info);">
+                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-trend <?php echo ($stats['pending_contacts'] ?? 0) > 0 ? 'trend-up' : 'trend-down'; ?>" 
+                         style="background: rgba(214, 158, 46, 0.1); color: var(--admin-warning);">
+                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/>
+                        </svg>
+                        <?php echo $stats['pending_contacts'] ?? 0; ?> pending
                     </div>
                 </div>
             </div>
@@ -894,6 +952,60 @@ try {
                         </table>
                     </div>
                 </div>
+                
+                <!-- Recent Contact Submissions - Added -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>📧 Recent Contact Messages</h3>
+                        <a href="<?php echo BASE_URL; ?>/admin/contact">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <?php if (!empty($recentContacts)): ?>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: left; padding: 8px; font-size: 0.75rem; color: var(--admin-gray-600);">Name</th>
+                                    <th style="text-align: left; padding: 8px; font-size: 0.75rem; color: var(--admin-gray-600);">Subject</th>
+                                    <th style="text-align: left; padding: 8px; font-size: 0.75rem; color: var(--admin-gray-600);">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($recentContacts as $contact): ?>
+                                <tr style="border-bottom: 1px solid var(--admin-gray-200);">
+                                    <td style="padding: 8px;">
+                                        <a href="<?php echo BASE_URL; ?>/admin/contact/view/<?php echo $contact['id']; ?>" 
+                                           style="color: var(--admin-primary); text-decoration: none; font-weight: 500;">
+                                            <?php echo htmlspecialchars($contact['name']); ?>
+                                        </a>
+                                        <div style="font-size: 0.75rem; color: var(--admin-gray-600);">
+                                            <?php echo date('M d', strtotime($contact['created_at'])); ?>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 8px; font-size: 0.875rem;">
+                                        <?php echo htmlspecialchars(substr($contact['subject'], 0, 30)); ?>...
+                                    </td>
+                                    <td style="padding: 8px;">
+                                        <?php if ($contact['status'] === 'pending'): ?>
+                                        <span style="background: rgba(214, 158, 46, 0.1); color: var(--admin-warning); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">
+                                            Pending
+                                        </span>
+                                        <?php else: ?>
+                                        <span style="background: rgba(56, 161, 105, 0.1); color: var(--admin-success); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">
+                                            Responded
+                                        </span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <?php else: ?>
+                        <p style="color: var(--admin-gray-600); font-style: italic; text-align: center; padding: 20px;">
+                            No recent contact messages
+                        </p>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
             
             <!-- Quick Actions -->
@@ -959,6 +1071,19 @@ try {
                     <div>
                         <h4>Generate Report</h4>
                         <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Create system report</p>
+                    </div>
+                </a>
+                
+                <!-- Contact Management Action - Added -->
+                <a href="<?php echo BASE_URL; ?>/admin/contact" class="action-btn">
+                    <div class="action-icon" style="background: rgba(49, 130, 206, 0.1); color: var(--admin-info);">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>Manage Contacts</h4>
+                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">View and respond to messages</p>
                     </div>
                 </a>
             </div>

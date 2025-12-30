@@ -2,12 +2,21 @@
 /**
  * Application Controller
  * Handles student applications management
+ * Extends the base Controller class for common functionality
  */
-class ApplicationController {
+class ApplicationController extends Controller {
     
     private $db;
     
+    /**
+     * Constructor
+     */
     public function __construct() {
+        parent::__construct();
+        
+        // Set admin layout
+        $this->layout = 'admin';
+        
         // Require authentication first
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
@@ -16,6 +25,13 @@ class ApplicationController {
         require_once __DIR__ . '/../config/database.php';
         $database = Database::getInstance();
         $this->db = $database->getConnection();
+        
+        // Initialize common data
+        $this->data = array_merge($this->data, [
+            'user' => $_SESSION ?? [],
+            'baseUrl' => defined('BASE_URL') ? BASE_URL : '',
+            'currentPage' => 'applications'
+        ]);
     }
     
     /**
@@ -45,11 +61,16 @@ class ApplicationController {
             ");
             $stats = $statsStmt->fetch();
             
-            // Load view with data
-            $this->loadView('admin/applications', [
+            // Set data for view
+            $this->data = array_merge($this->data, [
                 'applications' => $applications,
-                'stats' => $stats
+                'stats' => $stats,
+                'pageTitle' => 'Applications Management - FCT College of Nursing Sciences',
+                'pageDescription' => 'Manage student applications'
             ]);
+            
+            // Render view
+            $this->render('admin/applications/index');
             
         } catch (Exception $e) {
             error_log("ApplicationController index error: " . $e->getMessage());
@@ -61,7 +82,12 @@ class ApplicationController {
      * Display create application form
      */
     public function create() {
-        $this->loadView('admin/applications_create', []);
+        $this->data = array_merge($this->data, [
+            'pageTitle' => 'Create New Application - FCT College of Nursing Sciences',
+            'pageDescription' => 'Create a new student application'
+        ]);
+        
+        $this->render('admin/applications/create');
     }
     
     /**
@@ -69,11 +95,12 @@ class ApplicationController {
      */
     public function view($id = null) {
         if (!$id) {
-            $id = $_GET['id'] ?? 0;
+            $id = $this->query('id', 0);
         }
         
         if (!$id) {
-            $this->showError("Application ID is required.");
+            $this->flash('error', 'Application ID is required.');
+            $this->redirect('/admin/applications');
             return;
         }
         
@@ -84,7 +111,8 @@ class ApplicationController {
             $application = $stmt->fetch();
             
             if (!$application) {
-                $this->showError("Application not found.");
+                $this->flash('error', 'Application not found.');
+                $this->redirect('/admin/applications');
                 return;
             }
             
@@ -104,12 +132,28 @@ class ApplicationController {
             $paymentStmt->execute([$id]);
             $payment = $paymentStmt->fetch();
             
-            // Load view with data
-            $this->loadView('admin/applications_view', [
+            // Get status history
+            $statusStmt = $this->db->prepare("
+                SELECT al.*, u.username as admin_name 
+                FROM application_logs al 
+                LEFT JOIN users u ON al.admin_id = u.id 
+                WHERE al.application_id = ? AND al.old_status IS NOT NULL AND al.new_status IS NOT NULL
+                ORDER BY al.created_at DESC
+            ");
+            $statusStmt->execute([$id]);
+            $statusHistory = $statusStmt->fetchAll();
+            
+            // Set data for view
+            $this->data = array_merge($this->data, [
                 'application' => $application,
                 'logs' => $logs,
-                'payment' => $payment
+                'payment' => $payment,
+                'statusHistory' => $statusHistory,
+                'pageTitle' => 'Application Details - ' . $application['first_name'] . ' ' . $application['last_name'],
+                'pageDescription' => 'View application details'
             ]);
+            
+            $this->render('admin/applications/view');
             
         } catch (Exception $e) {
             error_log("ApplicationController view error: " . $e->getMessage());
@@ -135,13 +179,19 @@ class ApplicationController {
             $application = $stmt->fetch();
             
             if (!$application) {
-                $this->showError("Application not found.");
+                $this->flash('error', 'Application not found.');
+                $this->redirect('/admin/applications');
                 return;
             }
             
-            $this->loadView('admin/applications_edit', [
-                'application' => $application
+            // Set data for view
+            $this->data = array_merge($this->data, [
+                'application' => $application,
+                'pageTitle' => 'Edit Application - ' . $application['first_name'] . ' ' . $application['last_name'],
+                'pageDescription' => 'Edit student application'
             ]);
+            
+            $this->render('admin/applications/edit');
             
         } catch (Exception $e) {
             error_log("ApplicationController edit error: " . $e->getMessage());
@@ -155,15 +205,18 @@ class ApplicationController {
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
-                $first_name = $_POST['first_name'] ?? '';
-                $last_name = $_POST['last_name'] ?? '';
-                $email = $_POST['email'] ?? '';
-                $phone = $_POST['phone'] ?? '';
-                $program = $_POST['program'] ?? '';
-                $entry_year = $_POST['entry_year'] ?? date('Y');
-                $highest_qualification = $_POST['highest_qualification'] ?? '';
-                $personal_statement = $_POST['personal_statement'] ?? '';
-                $status = $_POST['status'] ?? 'pending';
+                // Validate CSRF token
+                $this->validateCsrf();
+                
+                $first_name = $this->input('first_name', '');
+                $last_name = $this->input('last_name', '');
+                $email = $this->input('email', '');
+                $phone = $this->input('phone', '');
+                $program = $this->input('program', '');
+                $entry_year = $this->input('entry_year', date('Y'));
+                $highest_qualification = $this->input('highest_qualification', '');
+                $personal_statement = $this->input('personal_statement', '');
+                $status = $this->input('status', 'pending');
                 
                 // Validate
                 if (empty($first_name) || empty($last_name) || empty($email) || empty($program)) {
@@ -198,17 +251,37 @@ class ApplicationController {
                 // Log the creation
                 $this->logApplicationAction($newAppId, 'created', 'Application created manually');
                 
+                // Set success message
+                $this->flash('success', 'Application created successfully!');
+                
                 // Redirect to applications list
-                header("Location: " . BASE_URL . "/admin/applications");
-                exit;
+                $this->redirect('/admin/applications');
                 
             } catch (Exception $e) {
                 error_log("ApplicationController store error: " . $e->getMessage());
-                $this->loadView('admin/applications_create', ['error' => $e->getMessage()]);
+                
+                // Set data with error for create form
+                $this->data = array_merge($this->data, [
+                    'pageTitle' => 'Create New Application - FCT College of Nursing Sciences',
+                    'pageDescription' => 'Create a new student application',
+                    'error' => $e->getMessage(),
+                    'formData' => [
+                        'first_name' => $this->input('first_name', ''),
+                        'last_name' => $this->input('last_name', ''),
+                        'email' => $this->input('email', ''),
+                        'phone' => $this->input('phone', ''),
+                        'program' => $this->input('program', ''),
+                        'entry_year' => $this->input('entry_year', date('Y')),
+                        'highest_qualification' => $this->input('highest_qualification', ''),
+                        'personal_statement' => $this->input('personal_statement', ''),
+                        'status' => $this->input('status', 'pending')
+                    ]
+                ]);
+                
+                $this->render('admin/applications/create');
             }
         } else {
-            header("Location: " . BASE_URL . "/admin/applications/create");
-            exit;
+            $this->redirect('/admin/applications/create');
         }
     }
     
@@ -218,15 +291,18 @@ class ApplicationController {
     public function update($id) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
-                $first_name = $_POST['first_name'] ?? '';
-                $last_name = $_POST['last_name'] ?? '';
-                $email = $_POST['email'] ?? '';
-                $phone = $_POST['phone'] ?? '';
-                $program = $_POST['program'] ?? '';
-                $entry_year = $_POST['entry_year'] ?? date('Y');
-                $highest_qualification = $_POST['highest_qualification'] ?? '';
-                $personal_statement = $_POST['personal_statement'] ?? '';
-                $status = $_POST['status'] ?? 'pending';
+                // Validate CSRF token
+                $this->validateCsrf();
+                
+                $first_name = $this->input('first_name', '');
+                $last_name = $this->input('last_name', '');
+                $email = $this->input('email', '');
+                $phone = $this->input('phone', '');
+                $program = $this->input('program', '');
+                $entry_year = $this->input('entry_year', date('Y'));
+                $highest_qualification = $this->input('highest_qualification', '');
+                $personal_statement = $this->input('personal_statement', '');
+                $status = $this->input('status', 'pending');
                 
                 // Validate
                 if (empty($first_name) || empty($last_name) || empty($email) || empty($program)) {
@@ -258,9 +334,11 @@ class ApplicationController {
                 // Log the update
                 $this->logApplicationAction($id, 'updated', 'Application updated');
                 
+                // Set success message
+                $this->flash('success', 'Application updated successfully!');
+                
                 // Redirect to application view
-                header("Location: " . BASE_URL . "/admin/applications/" . $id);
-                exit;
+                $this->redirect('/admin/applications/' . $id);
                 
             } catch (Exception $e) {
                 error_log("ApplicationController update error: " . $e->getMessage());
@@ -271,17 +349,20 @@ class ApplicationController {
                     $stmt->execute([$id]);
                     $application = $stmt->fetch();
                     
-                    $this->loadView('admin/applications_edit', [
+                    $this->data = array_merge($this->data, [
                         'application' => $application,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
+                        'pageTitle' => 'Edit Application - ' . ($application['first_name'] ?? '') . ' ' . ($application['last_name'] ?? ''),
+                        'pageDescription' => 'Edit student application'
                     ]);
+                    
+                    $this->render('admin/applications/edit');
                 } catch (Exception $ex) {
                     $this->showError($e->getMessage());
                 }
             }
         } else {
-            header("Location: " . BASE_URL . "/admin/applications");
-            exit;
+            $this->redirect('/admin/applications');
         }
     }
     
@@ -291,6 +372,9 @@ class ApplicationController {
     public function destroy($id) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
+                // Validate CSRF token
+                $this->validateCsrf();
+                
                 // Check if application exists
                 $stmt = $this->db->prepare("SELECT id FROM applications WHERE id = ?");
                 $stmt->execute([$id]);
@@ -313,17 +397,18 @@ class ApplicationController {
                 // Log the deletion
                 $this->logApplicationAction($id, 'deleted', 'Application deleted');
                 
+                // Set success message
+                $this->flash('success', 'Application deleted successfully!');
+                
                 // Redirect to applications list
-                header("Location: " . BASE_URL . "/admin/applications");
-                exit;
+                $this->redirect('/admin/applications');
                 
             } catch (Exception $e) {
                 error_log("ApplicationController destroy error: " . $e->getMessage());
                 $this->showError("Failed to delete application: " . $e->getMessage());
             }
         } else {
-            header("Location: " . BASE_URL . "/admin/applications");
-            exit;
+            $this->redirect('/admin/applications');
         }
     }
     
@@ -333,9 +418,12 @@ class ApplicationController {
     public function updateStatus() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
-                $id = $_POST['id'] ?? 0;
-                $new_status = $_POST['status'] ?? '';
-                $notes = $_POST['notes'] ?? '';
+                // Validate CSRF token
+                $this->validateCsrf();
+                
+                $id = $this->input('id', 0);
+                $new_status = $this->input('status', '');
+                $notes = $this->input('notes', '');
                 $admin_id = $_SESSION['user_id'] ?? 1;
                 
                 if (!$id || !$new_status) {
@@ -371,17 +459,115 @@ class ApplicationController {
                 // Also log to activity_logs
                 $this->logApplicationAction($id, 'status_changed', "Status changed from {$old_status} to {$new_status}");
                 
+                // Set success message
+                $this->flash('success', 'Application status updated successfully!');
+                
                 // Redirect back to application view
-                header("Location: " . BASE_URL . "/admin/applications/" . $id);
-                exit;
+                $this->redirect('/admin/applications/' . $id);
                 
             } catch (Exception $e) {
                 error_log("ApplicationController updateStatus error: " . $e->getMessage());
                 $this->showError("Failed to update application status: " . $e->getMessage());
             }
         } else {
-            header("Location: " . BASE_URL . "/admin/applications");
+            $this->redirect('/admin/applications');
+        }
+    }
+    
+    /**
+     * Export applications to CSV
+     */
+    public function export() {
+        try {
+            // Get all applications
+            $stmt = $this->db->query("
+                SELECT a.*,
+                       (SELECT status FROM application_payments WHERE application_id = a.id ORDER BY created_at DESC LIMIT 1) as payment_status
+                FROM applications a 
+                ORDER BY a.created_at DESC
+            ");
+            $applications = $stmt->fetchAll();
+            
+            // Set headers for CSV download
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename=applications_' . date('Y-m-d') . '.csv');
+            
+            // Create output stream
+            $output = fopen('php://output', 'w');
+            
+            // Add CSV headers
+            fputcsv($output, [
+                'ID', 'First Name', 'Last Name', 'Email', 'Phone', 
+                'Program', 'Entry Year', 'Highest Qualification',
+                'Status', 'Payment Status', 'Created At', 'Updated At'
+            ]);
+            
+            // Add data rows
+            foreach ($applications as $app) {
+                fputcsv($output, [
+                    $app['id'],
+                    $app['first_name'],
+                    $app['last_name'],
+                    $app['email'],
+                    $app['phone'],
+                    $app['program'],
+                    $app['entry_year'],
+                    $app['highest_qualification'],
+                    $app['status'],
+                    $app['payment_status'] ?? 'N/A',
+                    $app['created_at'],
+                    $app['updated_at']
+                ]);
+            }
+            
+            fclose($output);
             exit;
+            
+        } catch (Exception $e) {
+            error_log("ApplicationController export error: " . $e->getMessage());
+            $this->flash('error', 'Failed to export applications: ' . $e->getMessage());
+            $this->redirect('/admin/applications');
+        }
+    }
+    
+    /**
+     * Search applications
+     */
+    public function search() {
+        $searchTerm = $this->query('q', '');
+        
+        if (empty($searchTerm)) {
+            $this->redirect('/admin/applications');
+            return;
+        }
+        
+        try {
+            $searchTerm = "%{$searchTerm}%";
+            
+            $stmt = $this->db->prepare("
+                SELECT a.*, 
+                       (SELECT COUNT(*) FROM application_logs WHERE application_id = a.id) as log_count,
+                       (SELECT status FROM application_payments WHERE application_id = a.id ORDER BY created_at DESC LIMIT 1) as payment_status
+                FROM applications a 
+                WHERE a.first_name LIKE ? OR a.last_name LIKE ? OR a.email LIKE ? OR a.program LIKE ?
+                ORDER BY a.created_at DESC
+            ");
+            $stmt->execute([$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+            $applications = $stmt->fetchAll();
+            
+            // Set data for view
+            $this->data = array_merge($this->data, [
+                'applications' => $applications,
+                'searchTerm' => $this->query('q', ''),
+                'pageTitle' => 'Search Results - Applications',
+                'pageDescription' => 'Search student applications'
+            ]);
+            
+            $this->render('admin/applications/search');
+            
+        } catch (Exception $e) {
+            error_log("ApplicationController search error: " . $e->getMessage());
+            $this->showError("Failed to search applications.");
         }
     }
     
@@ -405,56 +591,44 @@ class ApplicationController {
     }
     
     /**
-     * Helper method to load views
+     * Override render method for admin-specific views
      */
-    private function loadView($view, $data = []) {
-        // Define APP_PATH if not defined
-        if (!defined('APP_PATH')) {
-            define('APP_PATH', dirname(__DIR__));
-        }
+    protected function render($view = null, $data = []) {
+        // Add CSRF token to all forms
+        $data['csrf_token'] = $this->csrfToken();
         
-        // Define BASE_URL if not defined
-        if (!defined('BASE_URL')) {
-            // Try to get BASE_URL from constants file
-            $constantsPath = APP_PATH . '/config/constants.php';
-            if (file_exists($constantsPath)) {
-                require_once $constantsPath;
-            } else {
-                // Fallback definition
-                define('BASE_URL', 'http://localhost/fctcns-website');
-            }
-        }
+        // Merge with controller data
+        $this->data = array_merge($this->data, $data);
         
-        // Extract data for the view
-        extract($data);
+        // Add flash messages
+        $data['flash_success'] = $this->getFlash('success');
+        $data['flash_error'] = $this->getFlash('error');
         
-        // Include the view file
-        $viewPath = APP_PATH . '/views/' . $view . '.php';
-        
-        if (file_exists($viewPath)) {
-            require_once $viewPath;
-        } else {
-            // Fallback error
-            echo "<h1>View not found</h1>";
-            echo "<p>View file not found: " . htmlspecialchars($viewPath) . "</p>";
-            echo "<p>Looking for: " . htmlspecialchars($view) . ".php</p>";
-            echo "<p><a href='" . BASE_URL . "/admin/dashboard'>Return to Dashboard</a></p>";
-        }
+        // Call parent render method
+        parent::render($view);
     }
     
     /**
      * Show error message
      */
     private function showError($message) {
-        // Ensure BASE_URL is defined
-        if (!defined('BASE_URL')) {
-            define('BASE_URL', 'http://localhost/fctcns-website');
-        }
+        $this->data = array_merge($this->data, [
+            'error' => $message,
+            'pageTitle' => 'Error - FCT College of Nursing Sciences',
+            'pageDescription' => 'An error occurred'
+        ]);
         
-        echo '<div style="padding: 20px; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 5px; margin: 20px;">';
-        echo '<h3>Error</h3>';
-        echo '<p>' . htmlspecialchars($message) . '</p>';
-        echo '<p><a href="' . BASE_URL . '/admin/dashboard">Back to Dashboard</a></p>';
-        echo '</div>';
+        // Try to render error view
+        $errorViewPath = APP_PATH . '/views/admin/error.php';
+        if (file_exists($errorViewPath)) {
+            $this->render('admin/error');
+        } else {
+            // Fallback error display
+            echo '<div style="padding: 20px; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 5px; margin: 20px;">';
+            echo '<h3>Error</h3>';
+            echo '<p>' . htmlspecialchars($message) . '</p>';
+            echo '<p><a href="' . ($this->data['baseUrl'] ?? '') . '/admin/dashboard">Back to Dashboard</a></p>';
+            echo '</div>';
+        }
     }
 }

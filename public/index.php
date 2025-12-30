@@ -18,92 +18,68 @@ ob_start();
 // Set timezone
 date_default_timezone_set('Africa/Lagos');
 
-// Load environment configuration FIRST
-$envFile = dirname(__DIR__) . '/.env';
-if (file_exists($envFile)) {
-    $env_lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($env_lines as $line) {
-        if (strpos(trim($line), '#') === 0 || empty(trim($line))) {
-            continue;
-        }
-        list($key, $value) = explode('=', $line, 2);
-        $_ENV[trim($key)] = trim($value);
-    }
-} else {
-    // If .env doesn't exist and not on setup page, redirect to setup
-    $currentUri = $_SERVER['REQUEST_URI'];
-    if (strpos($currentUri, '/setup') === false && strpos($currentUri, '/database/install') === false) {
-        header('Location: /setup');
-        exit;
-    }
-}
+// Get the root directory
+$rootDir = dirname(__DIR__);
 
 // Load application constants FIRST (this defines all constants)
-require_once dirname(__DIR__) . '/app/config/constants.php';
-
-// Load helper functions - ADD THIS LINE
-require_once APP_PATH . '/helpers/url_helper.php';
-
-// Load autoloader to automatically load classes
-require_once APP_PATH . '/autoload.php';
-
-// Load session configuration
-require_once APP_PATH . '/config/session.php';
+require_once $rootDir . '/app/config/constants.php';
 
 // ============================================================================
-// ERROR HANDLING (constants.php already sets error handling, but we add exception handler)
+// SESSION CONFIGURATION
 // ============================================================================
 
-// Exception handler (separate from error handler in constants.php)
-set_exception_handler(function($exception) {
-    error_log("Uncaught Exception: " . $exception->getMessage() . " in " . $exception->getFile() . ":" . $exception->getLine());
+if (session_status() === PHP_SESSION_NONE) {
+    // Set cookie parameters BEFORE starting session
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => isset($_SERVER['HTTPS']),
+        'httponly' => true,
+        'samesite' => 'Strict'
+    ]);
     
-    // Clear any previous output
-    if (ob_get_level() > 0) {
-        ob_end_clean();
+    // Start the session AFTER setting parameters
+    session_start();
+}
+
+// ============================================================================
+// AUTOLOAD CLASSES
+// ============================================================================
+
+// Simple autoloader
+spl_autoload_register(function ($className) {
+    // Convert namespace separators to directory separators
+    $className = str_replace('\\', DIRECTORY_SEPARATOR, $className);
+    
+    // Possible locations
+    $paths = [
+        APP_PATH . '/controllers/' . $className . '.php',
+        APP_PATH . '/models/' . $className . '.php',
+        APP_PATH . '/core/' . $className . '.php',
+        APP_PATH . '/lib/' . $className . '.php',
+        $className . '.php' // For absolute paths
+    ];
+    
+    foreach ($paths as $path) {
+        if (file_exists($path)) {
+            require_once $path;
+            return;
+        }
     }
     
-    if (APP_DEBUG) {
-        echo "<!DOCTYPE html>
-        <html>
-        <head>
-            <title>500 - Internal Server Error</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 40px; background: #f8f9fa; }
-                .error-container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-                h1 { color: #dc3545; margin-top: 0; }
-                pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow: auto; }
-            </style>
-        </head>
-        <body>
-            <div class='error-container'>
-                <h1>Uncaught Exception</h1>
-                <p><strong>Message:</strong> " . htmlspecialchars($exception->getMessage()) . "</p>
-                <p><strong>File:</strong> " . htmlspecialchars($exception->getFile()) . ":" . $exception->getLine() . "</p>
-                <pre>" . htmlspecialchars($exception->getTraceAsString()) . "</pre>
-            </div>
-        </body>
-        </html>";
-    } else {
-        http_response_code(500);
-        echo "<!DOCTYPE html>
-        <html>
-        <head>
-            <title>500 - Internal Server Error</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
-                h1 { color: #dc3545; }
-            </style>
-        </head>
-        <body>
-            <h1>500 - Internal Server Error</h1>
-            <p>An unexpected error occurred. Please try again later.</p>
-            <p><a href='" . BASE_URL . "'>Return to Homepage</a></p>
-        </body>
-        </html>";
+    // For controller classes
+    if (strpos($className, 'Controller') !== false) {
+        $controllerFile = APP_PATH . '/controllers/' . $className . '.php';
+        if (file_exists($controllerFile)) {
+            require_once $controllerFile;
+            return;
+        }
     }
-    exit;
 });
+
+// Load Router
+require_once APP_PATH . '/core/Router.php';
 
 // ============================================================================
 // CREATE ROUTER AND DEFINE ROUTES
@@ -114,90 +90,49 @@ try {
     $router = new Router();
     
     // ============================================================================
-    // PUBLIC ROUTES - Using closures to ensure they work
+    // PUBLIC ROUTES - Using Controller Methods
     // ============================================================================
     
-    // Homepage
-    $router->get('/', function() {
-        $homePath = PUBLIC_PATH . '/pages/home.php';
-        if (file_exists($homePath)) {
-            include $homePath;
-        } else {
-            echo "<h1>Welcome to FCT College of Nursing Sciences</h1>";
-            echo "<p>Home page content will appear here.</p>";
-        }
-    });
+    // Homepage - Use PageController
+    $router->get('/', 'PageController@home');
     
-    // Static pages - using closures for now
-    $router->get('/about', function() {
-        $path = PUBLIC_PATH . '/pages/about.php';
-        if (file_exists($path)) {
-            include $path;
-        } else {
-            echo "<h1>About Us</h1>";
-        }
-    });
-    
-    $router->get('/programs', function() {
-        $path = PUBLIC_PATH . '/pages/programs.php';
-        if (file_exists($path)) {
-            include $path;
-        } else {
-            echo "<h1>Programs</h1>";
-        }
-    });
-    
-    $router->get('/admissions', function() {
-        $path = PUBLIC_PATH . '/pages/admissions.php';
-        if (file_exists($path)) {
-            include $path;
-        } else {
-            echo "<h1>Admissions</h1>";
-        }
-    });
-    
-    $router->get('/research', function() {
-        $path = PUBLIC_PATH . '/pages/research.php';
-        if (file_exists($path)) {
-            include $path;
-        } else {
-            echo "<h1>Research</h1>";
-        }
-    });
-    
-    $router->get('/contact', function() {
-        $path = PUBLIC_PATH . '/pages/contact.php';
-        if (file_exists($path)) {
-            include $path;
-        } else {
-            echo "<h1>Contact Us</h1>";
-        }
-    });
-    
-    $router->post('/contact', 'ContactController@submit');
+    // Static pages
+    $router->get('/about', 'PageController@about');
+    $router->get('/programs', 'PageController@programs');
+    $router->get('/admissions', 'PageController@admissions');
+    $router->get('/research', 'PageController@research');
+    $router->get('/contact', 'PageController@contact');
     
     // Additional pages
-    $router->get('/news', function() {
-        echo "<h1>News & Events</h1><p>Under construction</p>";
-    });
+    $router->get('/news', 'PageController@news');
+    $router->get('/faculty', 'PageController@faculty');
+    $router->get('/alumni', 'PageController@alumni');
+    $router->get('/student-life', 'PageController@studentLife');
+    $router->get('/library', 'PageController@library');
     
-    $router->get('/faculty', function() {
-        echo "<h1>Faculty</h1><p>Under construction</p>";
-    });
+    // Contact form submission
+    $router->post('/contact/submit', 'PageController@submitContact');
     
-    $router->get('/alumni', function() {
-        echo "<h1>Alumni</h1><p>Under construction</p>";
-    });
+    // ============================================================================
+    // ADMIN CONTACT MANAGEMENT ROUTES
+    // ============================================================================
     
-    $router->get('/student-life', function() {
-        echo "<h1>Student Life</h1><p>Under construction</p>";
-    });
+    // Admin contact management routes
+    $router->get('/admin/contact', 'ContactController@index');
+    $router->get('/admin/contact/view/{id}', 'ContactController@view');
+    $router->post('/admin/contact/update/{id}', 'ContactController@update');
+    $router->post('/admin/contact/delete/{id}', 'ContactController@delete');
+    $router->get('/admin/contact/export', 'ContactController@export');
+    $router->get('/admin/contact/settings', 'ContactController@settings');
+    $router->post('/admin/contact/save-settings', 'ContactController@saveSettings');
     
-    $router->get('/library', function() {
-        echo "<h1>Library</h1><p>Under construction</p>";
-    });
+    // Optional: Quick update routes
+    $router->post('/admin/contact/quick-update/{id}', 'ContactController@quickUpdate');
     
-    // Setup and installation
+    // ============================================================================
+    // SETUP AND INSTALLATION ROUTES
+    // ============================================================================
+    
     $router->get('/setup', function() {
         $path = PUBLIC_PATH . '/pages/setup.php';
         if (file_exists($path)) {
@@ -208,7 +143,7 @@ try {
     });
     
     $router->get('/database/install', function() {
-        $path = dirname(__DIR__) . '/database/install.php';
+        $path = ROOT_PATH . '/database/install.php';
         if (file_exists($path)) {
             include $path;
         } else {
@@ -217,7 +152,7 @@ try {
     });
     
     $router->get('/database/test', function() {
-        $path = dirname(__DIR__) . '/database/test.php';
+        $path = ROOT_PATH . '/database/test.php';
         if (file_exists($path)) {
             include $path;
         } else {
@@ -231,16 +166,32 @@ try {
 
     // Admin area - ALL admin routes go to the admin SPA index
     $router->get('/admin', function() {
-        include APP_PATH . '/views/admin/index.php';
+        $path = APP_PATH . '/views/admin/index.php';
+        if (file_exists($path)) {
+            include $path;
+        } else {
+            echo "<h1>Admin Area</h1>";
+        }
     });
 
-    // Catch-all for admin routes
+    // IMPORTANT: Catch-all for admin SPA routes must come AFTER specific admin routes
+    // This allows the specific contact routes above to work before falling back to SPA
     $router->get('/admin/(.*)', function($any) {
-        include APP_PATH . '/views/admin/index.php';
+        $path = APP_PATH . '/views/admin/index.php';
+        if (file_exists($path)) {
+            include $path;
+        } else {
+            echo "<h1>Admin Area</h1>";
+        }
     });
 
     $router->post('/admin/(.*)', function($any) {
-        include APP_PATH . '/views/admin/index.php';
+        $path = APP_PATH . '/views/admin/index.php';
+        if (file_exists($path)) {
+            include $path;
+        } else {
+            echo "<h1>Admin Area</h1>";
+        }
     });
     
     // ============================================================================
@@ -248,29 +199,13 @@ try {
     // ============================================================================
     
     $router->get('/api/carousel', function() {
-        require_once APP_PATH . '/controllers/CarouselController.php';
-        $controller = new CarouselController();
-        $controller->getActive();
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'success', 'message' => 'API endpoint']);
     });
     
     $router->get('/api/news/latest', function() {
-        require_once APP_PATH . '/controllers/NewsController.php';
-        $controller = new NewsController();
-        $controller->latest();
-    });
-    
-    // ============================================================================
-    // ERROR PAGES
-    // ============================================================================
-    
-    $router->get('/404', function() {
-        $path = PUBLIC_PATH . '/pages/404.php';
-        if (file_exists($path)) {
-            include $path;
-        } else {
-            http_response_code(404);
-            echo "<h1>404 - Page Not Found</h1>";
-        }
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'success', 'data' => []]);
     });
     
     // ============================================================================
@@ -282,27 +217,35 @@ try {
     
     if ($match === null) {
         // No route matched - show 404
-        $errorPage = PUBLIC_PATH . '/pages/404.php';
+        http_response_code(404);
+        
+        // Try MVC 404 page first
+        $errorPage = APP_PATH . '/views/pages/404.php';
         if (file_exists($errorPage)) {
-            http_response_code(404);
             include $errorPage;
         } else {
-            http_response_code(404);
-            echo "<!DOCTYPE html>
-            <html>
-            <head>
-                <title>404 - Page Not Found</title>
-                <style>
-                    body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
-                    h1 { color: #6B4E9B; }
-                </style>
-            </head>
-            <body>
-                <h1>404 - Page Not Found</h1>
-                <p>The page you requested could not be found.</p>
-                <p><a href='" . BASE_URL . "'>Return to Homepage</a></p>
-            </body>
-            </html>";
+            // Fall back to legacy 404 page
+            $legacyErrorPage = PUBLIC_PATH . '/pages/404.php';
+            if (file_exists($legacyErrorPage)) {
+                include $legacyErrorPage;
+            } else {
+                // Default 404 page
+                echo "<!DOCTYPE html>
+                <html>
+                <head>
+                    <title>404 - Page Not Found</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
+                        h1 { color: #6B4E9B; }
+                    </style>
+                </head>
+                <body>
+                    <h1>404 - Page Not Found</h1>
+                    <p>The page you requested could not be found.</p>
+                    <p><a href='" . BASE_URL . "'>Return to Homepage</a></p>
+                </body>
+                </html>";
+            }
         }
         exit;
     } else {
@@ -314,7 +257,7 @@ try {
     // Handle routing errors
     error_log("Routing Error: " . $e->getMessage());
     
-    if (APP_DEBUG) {
+    if (defined('APP_DEBUG') && APP_DEBUG) {
         echo "<h1>Routing Error</h1>";
         echo "<p>" . htmlspecialchars($e->getMessage()) . "</p>";
         echo "<pre>" . htmlspecialchars($e->getTraceAsString()) . "</pre>";
@@ -329,117 +272,4 @@ try {
 if (ob_get_level() > 0) {
     ob_end_flush();
 }
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Simple login form fallback
- */
-function showSimpleLogin() {
-    ?>
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Admin Login - FCT College of Nursing Sciences</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                background: linear-gradient(135deg, #6B4E9B, #7FB285);
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 0;
-                padding: 20px;
-            }
-            .login-box {
-                background: white;
-                padding: 40px;
-                border-radius: 10px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                width: 100%;
-                max-width: 400px;
-            }
-            h1 {
-                color: #6B4E9B;
-                margin-top: 0;
-                text-align: center;
-            }
-            .form-group {
-                margin-bottom: 20px;
-            }
-            label {
-                display: block;
-                margin-bottom: 5px;
-                color: #555;
-            }
-            input {
-                width: 100%;
-                padding: 10px;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                font-size: 16px;
-                box-sizing: border-box;
-            }
-            input:focus {
-                outline: none;
-                border-color: #6B4E9B;
-                box-shadow: 0 0 5px rgba(107, 78, 155, 0.3);
-            }
-            button {
-                width: 100%;
-                padding: 12px;
-                background: #6B4E9B;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                font-size: 16px;
-                cursor: pointer;
-                transition: background 0.3s;
-            }
-            button:hover {
-                background: #5a4185;
-            }
-            .error {
-                background: #f8d7da;
-                color: #721c24;
-                padding: 10px;
-                border-radius: 5px;
-                margin-bottom: 20px;
-                text-align: center;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="login-box">
-            <h1>Admin Login</h1>
-            
-            <?php if (isset($_SESSION['flash_error'])): ?>
-                <div class="error">
-                    <?php echo htmlspecialchars($_SESSION['flash_error']); ?>
-                    <?php unset($_SESSION['flash_error']); ?>
-                </div>
-            <?php endif; ?>
-            
-            <form method="POST" action="<?php echo BASE_URL; ?>/admin/login">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                
-                <button type="submit">Login</button>
-            </form>
-        </div>
-    </body>
-    </html>
-    <?php
-}
+?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Router Class - Simplified Working Version
+ * Router Class - Enhanced Version with Fixed Route Matching
  * 
  * Handles URL routing - maps URLs to controller methods
  * 
@@ -37,7 +37,7 @@ class Router {
      * Add any route
      */
     private function addRoute($method, $path, $handler) {
-        // Convert route to regex pattern
+        // Convert route to regex pattern using the FIXED version
         $pattern = $this->pathToRegex($path);
         
         $this->routes[] = [
@@ -46,10 +46,15 @@ class Router {
             'pattern' => $pattern,
             'handler' => $handler
         ];
+        
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log("Route registered: $method $path -> " . (is_string($handler) ? $handler : 'Closure'));
+        }
     }
 
     /**
-     * Convert route path to regex pattern
+     * Convert route path to regex pattern - FIXED VERSION
+     * Enhanced to handle both normal paths and regex patterns correctly
      */
     private function pathToRegex($path) {
         // Special handling for root
@@ -57,21 +62,72 @@ class Router {
             return '#^/$#';
         }
         
-        // If path contains regex patterns like (.*), we need to handle it differently
-        // Check if it's a regex pattern by looking for parentheses
-        if (strpos($path, '(') !== false || strpos($path, '[') !== false || strpos($path, '{') !== false) {
-            // It's already a regex-like pattern
-            // Use # as delimiter instead of / to avoid conflict with path slashes
-            return '#^' . $path . '$#';
+        // DEBUG: Log what we're converting
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log("Router: Converting path to regex: '$path'");
         }
         
-        // For normal paths, escape special regex characters
+        // Check if this is already a regex pattern (contains regex special chars)
+        $isRegexPattern = false;
+        if (strpos($path, '(') !== false && strpos($path, ')') !== false) {
+            // Contains parentheses - likely a regex pattern
+            $isRegexPattern = true;
+        }
+        if (strpos($path, '.*') !== false) {
+            // Contains wildcard - definitely a regex pattern
+            $isRegexPattern = true;
+        }
+        
+        if ($isRegexPattern) {
+            // This is already a regex pattern (like /admin/(.*))
+            // Don't escape it with preg_quote!
+            
+            // Ensure it has proper delimiters
+            $pattern = $path;
+            
+            // If it doesn't start with #^, add it
+            if (strpos($pattern, '#^') !== 0) {
+                // Check if it already starts with ^
+                if (strpos($pattern, '^') === 0) {
+                    $pattern = '#' . $pattern;
+                } else {
+                    $pattern = '#^' . $pattern;
+                }
+            }
+            
+            // If it doesn't end with $#, add it
+            if (substr($pattern, -2) !== '$#') {
+                // Check if it already ends with $
+                if (substr($pattern, -1) === '$') {
+                    $pattern .= '#';
+                } else {
+                    $pattern .= '$#';
+                }
+            }
+            
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log("Router: Treating as regex pattern: '$path' -> '$pattern'");
+            }
+            
+            return $pattern;
+        }
+        
+        // Normal path (like /about, /contact, /login, /dashboard etc.)
+        // Escape regex special characters
         $pattern = preg_quote($path, '#');
         
-        // Convert {param} to regex capture (if using that syntax)
-        $pattern = preg_replace('#\\{([^}]+)\\}#', '([^/]+)', $pattern);
+        // Replace parameter placeholders with regex patterns
+        // After preg_quote, curly braces are escaped, so we need to match \{ and \}
+        $pattern = preg_replace('#\\\\\{([^}]+)\\\\}#', '([^/]+)', $pattern);
         
-        return '#^' . $pattern . '$#';
+        // Allow for optional trailing slash
+        $pattern = '#^' . $pattern . '/?$#';
+        
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log("Router: Converted normal path: '$path' -> '$pattern'");
+        }
+        
+        return $pattern;
     }
 
     /**
@@ -79,15 +135,24 @@ class Router {
      */
     public function match() {
         $requestMethod = $_SERVER['REQUEST_METHOD'];
-        $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         
-        // Remove /fctcns-website from the beginning if present
+        // Get request URI
+        $requestUri = $_SERVER['REQUEST_URI'];
+        
+        // Remove query string
+        $requestUri = parse_url($requestUri, PHP_URL_PATH);
+        
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log("Router: Original URI: $requestUri");
+        }
+        
+        // Remove base path if running in subdirectory
         $basePath = '/fctcns-website';
         if (strpos($requestUri, $basePath) === 0) {
             $requestUri = substr($requestUri, strlen($basePath));
         }
         
-        // If empty path, set to home
+        // Ensure request URI is not empty
         if ($requestUri === '' || $requestUri === '/') {
             $requestUri = '/';
         } else {
@@ -95,9 +160,13 @@ class Router {
             $requestUri = rtrim($requestUri, '/');
         }
         
-        // Debug logging
         if (defined('APP_DEBUG') && APP_DEBUG) {
             error_log("Router: Processing URI: '$requestUri', Method: '$requestMethod'");
+            error_log("Router: Available routes:");
+            foreach ($this->routes as $i => $route) {
+                error_log("  [$i] {$route['method']} {$route['path']} -> " . 
+                         (is_string($route['handler']) ? $route['handler'] : 'Closure'));
+            }
         }
         
         foreach ($this->routes as $route) {
@@ -106,9 +175,8 @@ class Router {
                 continue;
             }
             
-            // Debug: Show what pattern is being tested
             if (defined('APP_DEBUG') && APP_DEBUG) {
-                error_log("Router: Testing pattern: '{$route['pattern']}' against URI: '$requestUri'");
+                error_log("Router: Testing route '{$route['path']}' with pattern '{$route['pattern']}' against URI '$requestUri'");
             }
             
             // Check if path matches pattern
@@ -120,12 +188,15 @@ class Router {
                 $this->params = $matches;
                 
                 if (defined('APP_DEBUG') && APP_DEBUG) {
-                    error_log("Router: Matched route '{$route['path']}' with params: " . print_r($matches, true));
+                    error_log("Router: Matched route '{$route['path']}' -> " . 
+                             (is_string($route['handler']) ? $route['handler'] : 'Closure'));
+                    error_log("Router: Captured params: " . print_r($matches, true));
                 }
                 
                 return [
                     'handler' => $route['handler'],
-                    'params' => $matches
+                    'params' => $matches,
+                    'route' => $route
                 ];
             }
         }
@@ -135,6 +206,13 @@ class Router {
         }
         
         return null;
+    }
+
+    /**
+     * Get all registered routes (for debugging)
+     */
+    public function getRoutes() {
+        return $this->routes;
     }
 
     /**
@@ -154,19 +232,24 @@ class Router {
         }
 
         $handler = $match['handler'];
-        $params = $match['params'];
+        $params = $match['params'] ?? [];
 
-        if (is_callable($handler)) {
-            call_user_func_array($handler, $params);
-        } elseif (is_string($handler)) {
-            // Check if it's a controller method
-            if (strpos($handler, '@') !== false) {
-                list($controller, $method) = explode('@', $handler);
-                $this->callController($controller, $method, $params);
-            } else {
-                // Assume it's a file path - render view
-                $this->renderView($handler, $params);
+        try {
+            if (is_callable($handler)) {
+                // Call the closure directly
+                call_user_func_array($handler, $params);
+            } elseif (is_string($handler)) {
+                // Check if it's a controller method
+                if (strpos($handler, '@') !== false) {
+                    list($controller, $method) = explode('@', $handler);
+                    $this->callController($controller, $method, $params);
+                } else {
+                    // Assume it's a file path - render view
+                    $this->renderView($handler, $params);
+                }
             }
+        } catch (Exception $e) {
+            $this->handleError($e);
         }
     }
 
@@ -174,23 +257,45 @@ class Router {
      * Call a controller method
      */
     private function callController($controller, $method, $params) {
-        $controllerClass = ucfirst($controller) . 'Controller';
+        // Construct controller class name
+        $controllerClass = ucfirst($controller);
+        
+        // Add Controller suffix if not present
+        if (substr($controllerClass, -10) !== 'Controller') {
+            $controllerClass .= 'Controller';
+        }
+        
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log("Router: Loading controller: $controllerClass::$method()");
+            error_log("Router: With params: " . print_r($params, true));
+        }
+        
+        // Find controller file
         $controllerFile = APP_PATH . "/controllers/{$controllerClass}.php";
-
+        
+        if (!file_exists($controllerFile)) {
+            // Try alternative naming
+            $controllerFile = APP_PATH . "/controllers/{$controller}.php";
+        }
+        
         if (file_exists($controllerFile)) {
             require_once $controllerFile;
-
-            if (class_exists($controllerClass)) {
-                $instance = new $controllerClass();
-                if (method_exists($instance, $method)) {
-                    call_user_func_array([$instance, $method], $params);
-                    return;
-                }
+            
+            // Check if class exists
+            if (!class_exists($controllerClass)) {
+                throw new Exception("Controller class not found: $controllerClass");
+            }
+            
+            $instance = new $controllerClass();
+            if (method_exists($instance, $method)) {
+                call_user_func_array([$instance, $method], $params);
+                return;
+            } else {
+                throw new Exception("Controller method not found: $controllerClass::$method()");
             }
         }
 
-        error_log("Controller not found: {$controllerClass}@{$method}");
-        $this->notFound();
+        throw new Exception("Controller file not found: $controllerFile");
     }
 
     /**
@@ -199,10 +304,10 @@ class Router {
     private function renderView($viewPath, $data = []) {
         // Try multiple possible locations
         $possiblePaths = [
-            PUBLIC_PATH . '/' . $viewPath,  // public/pages/home.php
-            PUBLIC_PATH . '/pages/' . basename($viewPath), // public/pages/home.php (if viewPath is just 'home.php')
-            APP_PATH . '/views/' . $viewPath, // app/views/pages/home.php
-            APP_PATH . '/views/' . str_replace('pages/', 'admin/', $viewPath), // For admin views
+            PUBLIC_PATH . '/' . $viewPath,
+            APP_PATH . '/views/' . $viewPath,
+            APP_PATH . '/views/pages/' . basename($viewPath),
+            $viewPath,
         ];
         
         foreach ($possiblePaths as $fullPath) {
@@ -213,17 +318,7 @@ class Router {
             }
         }
         
-        // View not found
-        if (defined('APP_DEBUG') && APP_DEBUG) {
-            echo "<h3>View Not Found: $viewPath</h3>";
-            echo "<p>Tried locations:</p><ul>";
-            foreach ($possiblePaths as $path) {
-                echo "<li>$path - " . (file_exists($path) ? "Exists" : "Not found") . "</li>";
-            }
-            echo "</ul>";
-        } else {
-            $this->notFound();
-        }
+        throw new Exception("View not found: $viewPath");
     }
 
     /**
@@ -231,63 +326,78 @@ class Router {
      */
     private function notFound() {
         http_response_code(404);
-
-        $errorPage = PUBLIC_PATH . '/pages/404.php';
-        if (file_exists($errorPage)) {
-            include $errorPage;
-        } else {
-            echo "<h1>404 - Page Not Found</h1>";
-            echo "<p>The page you requested could not be found.</p>";
-            echo "<p><a href='" . BASE_URL . "'>Return to Homepage</a></p>";
+        
+        // Try to use MVC 404 page
+        if (class_exists('PageController')) {
+            try {
+                $controller = new PageController();
+                $controller->notFound();
+                return;
+            } catch (Exception $e) {
+                // Fall through to default
+            }
         }
+        
+        // Try to find 404 view
+        $possiblePaths = [
+            APP_PATH . '/views/pages/404.php',
+            PUBLIC_PATH . '/pages/404.php',
+        ];
+        
+        foreach ($possiblePaths as $errorPage) {
+            if (file_exists($errorPage)) {
+                include $errorPage;
+                return;
+            }
+        }
+        
+        // Default 404 page
+        echo "<!DOCTYPE html>
+        <html>
+        <head>
+            <title>404 - Page Not Found</title>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
+                h1 { color: #6B4E9B; }
+            </style>
+        </head>
+        <body>
+            <h1>404 - Page Not Found</h1>
+            <p>The page you requested could not be found.</p>
+            <p><a href='" . (defined('BASE_URL') ? BASE_URL : '/') . "'>Return to Homepage</a></p>
+        </body>
+        </html>";
 
         exit;
     }
 
     /**
-     * Handle 500 Internal Server Error
+     * Handle errors
      */
-    public static function serverError($error) {
-        http_response_code(500);
-
-        if (APP_DEBUG) {
-            echo "<h1>500 - Internal Server Error</h1>";
-            echo "<pre>" . htmlspecialchars($error) . "</pre>";
+    private function handleError($exception) {
+        error_log("Router Error: " . $exception->getMessage());
+        
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            echo "<h1>Router Error</h1>";
+            echo "<p>" . htmlspecialchars($exception->getMessage()) . "</p>";
+            echo "<pre>" . htmlspecialchars($exception->getTraceAsString()) . "</pre>";
         } else {
-            echo "<h1>500 - Internal Server Error</h1>";
-            echo "<p>Something went wrong. Please try again later.</p>";
+            http_response_code(500);
+            echo "<h1>Internal Server Error</h1>";
+            echo "<p>Please try again later.</p>";
         }
-
         exit;
     }
     
     /**
-     * Debug method to see current path processing
+     * Redirect helper method
      */
-    public function debugCurrentPath() {
-        $requestPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $scriptDir = dirname($_SERVER['SCRIPT_NAME']);
-        
-        echo "<pre style='background: #ffeb3b; padding: 10px;'>";
-        echo "=== ROUTER PATH DEBUG ===\n";
-        echo "REQUEST_URI: " . $_SERVER['REQUEST_URI'] . "\n";
-        echo "Parsed Path: " . $requestPath . "\n";
-        echo "SCRIPT_NAME: " . $_SERVER['SCRIPT_NAME'] . "\n";
-        echo "Script Dir: " . $scriptDir . "\n";
-        
-        // What the router is doing
-        if ($scriptDir !== '/' && strpos($requestPath, $scriptDir) === 0) {
-            $processedPath = substr($requestPath, strlen($scriptDir));
-            echo "After removing script dir: " . $processedPath . "\n";
-        } else {
-            echo "Script dir not removed (condition not met)\n";
+    public function redirect($url, $permanent = false) {
+        if ($permanent) {
+            header("HTTP/1.1 301 Moved Permanently");
         }
-        
-        echo "\nRegistered Routes:\n";
-        foreach ($this->routes as $route) {
-            echo "  " . $route['method'] . " " . $route['path'] . "\n";
-        }
-        echo "=== END DEBUG ===</pre>";
+        header("Location: " . $url);
+        exit;
     }
 }
 ?>

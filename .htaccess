@@ -1,39 +1,23 @@
 # ============================================================================
-# FCT College of Nursing Sciences - Main .htaccess
-# Redirects ALL traffic to public/ folder for security
+# FCT College of Nursing Sciences - Root .htaccess
+# Redirects all traffic to the public folder
 # ============================================================================
 
-# Enable rewrite engine
 RewriteEngine On
 
-# Don't apply rules to the public folder itself
+# If not already in public directory, redirect to public folder
 RewriteCond %{REQUEST_URI} !^/fctcns-website/public/
-
-# Don't rewrite requests for existing files or directories in root
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-
-# Redirect everything to the public folder
-RewriteRule ^(.*)$ public/$1 [L]
-
-# If accessing root, redirect to public
-RewriteRule ^$ public/ [L]
-
-# Security headers for root level
-Header always set X-Content-Type-Options "nosniff"
-Header always set X-Frame-Options "SAMEORIGIN"
-Header always set X-XSS-Protection "1; mode=block"
-
-# Prevent access to sensitive files
-<FilesMatch "^\.">
-    Order allow,deny
-    Deny from all
-</FilesMatch>
-
-<FilesMatch "\.(env|log|sql|bak|inc|config|htaccess)$">
-    Order allow,deny
-    Deny from all
-</FilesMatch>
+RewriteRule ^(.*)$ public/$1 [L,QSA]
 
 # Prevent directory listing
 Options -Indexes
+
+# Block access to sensitive directories
+RedirectMatch 403 ^/(app|database|backups|logs|scripts)(/|$)
+RedirectMatch 403 /\.(git|env|htaccess|htpasswd|gitignore)
+
+# Block access to specific file types
+<FilesMatch "\.(env|log|sql|bak|inc|config|md|lock|xml|json|yml|yaml|sh)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

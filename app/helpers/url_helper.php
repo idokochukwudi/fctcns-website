@@ -108,4 +108,53 @@ function is_active($url) {
     
     return ($currentUrl === $url || $currentUrl === $url . '/');
 }
-?>
+
+/**
+ * Generate route URL (MVC-friendly)
+ * 
+ * @param string $controller Controller name
+ * @param string $action Action method
+ * @param array $params Route parameters
+ * @return string Generated URL
+ */
+function route($controller, $action = null, $params = []) {
+    if ($action === null) {
+        return url('/' . $controller);
+    }
+    
+    // For now, return simple URL based on common patterns
+    // In a more advanced router, this would map to actual routes
+    return url('/' . $controller . '/' . $action);
+}
+
+/**
+ * Escape HTML output
+ * 
+ * @param string $text Text to escape
+ * @return string Escaped text
+ */
+function e($text) {
+    return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+}
+
+/**
+ * Get query parameter
+ * 
+ * @param string $key Parameter key
+ * @param mixed $default Default value
+ * @return mixed Parameter value
+ */
+function get_param($key, $default = null) {
+    return $_GET[$key] ?? $default;
+}
+
+/**
+ * Get POST parameter
+ * 
+ * @param string $key Parameter key
+ * @param mixed $default Default value
+ * @return mixed Parameter value
+ */
+function post_param($key, $default = null) {
+    return $_POST[$key] ?? $default;
+}

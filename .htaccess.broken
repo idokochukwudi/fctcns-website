@@ -1,0 +1,27 @@
+# ============================================================================
+# FCT College of Nursing Sciences - Main .htaccess
+# ============================================================================
+
+RewriteEngine On
+RewriteBase /fctcns-website/
+
+# If request is NOT for the public folder directly
+RewriteCond %{REQUEST_URI} !^/fctcns-website/public/
+# And if it's not an existing file or directory
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+# Then redirect to public folder
+RewriteRule ^(.*)$ /fctcns-website/public/$1 [L]
+
+# If accessing the project root
+RewriteRule ^$ /fctcns-website/public/ [L]
+
+# Security headers
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-Frame-Options "SAMEORIGIN"
+Header always set X-XSS-Protection "1; mode=block"
+
+# File protections
+<FilesMatch "^\.">Order allow,deny; Deny from all</FilesMatch>
+<FilesMatch "\.(env|log|sql|bak|inc|config|htaccess)$">Order allow,deny; Deny from all</FilesMatch>
+Options -Indexes
