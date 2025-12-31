@@ -96,12 +96,103 @@ class PageController extends Controller {
      * Display research page
      */
     public function research() {
-        $this->data = array_merge($this->data, [
-            'page_title' => 'Research - FCT College of Nursing Sciences',
-            'page_description' => 'Our research initiatives and publications',
-            'currentPage' => 'research'
-        ]);
-        $this->render('research');
+        // Get database connection
+        require_once __DIR__ . '/../config/database.php';
+        $database = Database::getInstance();
+        $db = $database->getConnection();
+        
+        try {
+            // SIMPLIFIED QUERY: Get published research
+            $stmt = $db->query("
+                SELECT 
+                    rp.*,
+                    rc.name as category_name,
+                    rc.slug as category_slug
+                FROM research_publications rp
+                LEFT JOIN research_categories rc ON rp.research_area = rc.slug
+                WHERE rp.is_published = 1
+                ORDER BY rp.publication_date DESC
+                LIMIT 20
+            ");
+            
+            $research = $stmt->fetchAll();
+            
+            // Get research categories
+            $categoriesStmt = $db->query("
+                SELECT * FROM research_categories 
+                WHERE is_active = 1 
+                ORDER BY sort_order, name
+            ");
+            $categories = $categoriesStmt->fetchAll();
+            
+            // Prepare data for view
+            $data = [
+                'research' => $research, // This will be available as $research in view
+                'publications' => $research, // Also available as $publications
+                'categories' => $categories, // Available as $categories
+                'page_title' => 'Research - Federal College of Tropical Nursing Sciences',
+                'page_description' => 'Research initiatives, publications, and innovation in nursing and healthcare sciences',
+                'currentPage' => 'research',
+                'baseUrl' => BASE_URL
+            ];
+            
+            // DEBUG: Show count in error log
+            error_log("Found " . count($research) . " publications");
+            
+        } catch (Exception $e) {
+            error_log("PageController research error: " . $e->getMessage());
+            
+            // Fallback data if error
+            $data = [
+                'research' => [],
+                'publications' => [],
+                'categories' => [],
+                'page_title' => 'Research - Federal College of Tropical Nursing Sciences',
+                'page_description' => 'Research initiatives, publications, and innovation in nursing and healthcare sciences',
+                'currentPage' => 'research',
+                'baseUrl' => defined('BASE_URL') ? BASE_URL : '/fctcns-website'
+            ];
+        }
+        
+        // Add hardcoded data for other sections (can be moved to database later)
+        $data['ongoingProjects'] = [
+            [
+                'title' => 'Telehealth Interventions for Chronic Disease Management in Rural Communities',
+                'investigators' => ['Dr. Amina Mohammed', 'Dr. Fatima Bello'],
+                'funder' => 'National Institutes of Health (NIH)',
+                'duration' => '2022-2025',
+                'budget' => '₦25,000,000',
+                'status' => 'active'
+            ],
+            [
+                'title' => 'Development of Culturally-Sensitive Mental Health Screening Tools for Nigerian Adolescents',
+                'investigators' => ['Dr. Sarah Adeyemi', 'Prof. Tunde Okafor'],
+                'funder' => 'African Mental Health Foundation',
+                'duration' => '2023-2024',
+                'budget' => '₦12,000,000',
+                'status' => 'active'
+            ]
+        ];
+        
+        $data['researchFacilities'] = [
+            [
+                'name' => 'Simulation Laboratory',
+                'description' => 'High-fidelity simulation manikins and equipment for clinical skills training and research.',
+                'features' => ['Adult and pediatric manikins', 'Vital signs monitors', 'Emergency response equipment', 'Video recording system'],
+                'contact' => 'Dr. Grace Johnson'
+            ]
+        ];
+        
+        $data['collaborations'] = [
+            ['name' => 'University of Ibadan', 'country' => 'Nigeria', 'type' => 'Academic'],
+            ['name' => 'Johns Hopkins University', 'country' => 'USA', 'type' => 'International'],
+            ['name' => 'University of Ghana', 'country' => 'Ghana', 'type' => 'Academic'],
+            ['name' => 'University of Nairobi', 'country' => 'Kenya', 'type' => 'Academic']
+        ];
+        
+        // Merge with base data and render
+        $this->data = array_merge($this->data, $data);
+        $this->render('pages/research');
     }
     
     /**

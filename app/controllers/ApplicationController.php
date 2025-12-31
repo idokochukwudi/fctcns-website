@@ -94,8 +94,14 @@ class ApplicationController extends Controller {
      * Display single application
      */
     public function view($id = null) {
+        // Get ID from parameter or from GET
         if (!$id) {
             $id = $this->query('id', 0);
+            
+            // Also try GET if query() doesn't work
+            if (!$id) {
+                $id = $_GET['id'] ?? null;
+            }
         }
         
         if (!$id) {
@@ -164,15 +170,26 @@ class ApplicationController extends Controller {
     /**
      * Show single application (alias for view)
      */
-    public function show($id) {
+    public function show($id = null) {
         $this->view($id);
     }
     
     /**
      * Display edit application form
      */
-    public function edit($id) {
+    public function edit($id = null) {
         try {
+            // Get the ID from parameter or from GET
+            if ($id === null) {
+                $id = $_GET['id'] ?? null;
+            }
+            
+            if (!$id) {
+                $this->flash('error', 'Application ID is required.');
+                $this->redirect('/admin/applications');
+                return;
+            }
+            
             // Get application by ID
             $stmt = $this->db->prepare("SELECT * FROM applications WHERE id = ?");
             $stmt->execute([$id]);
@@ -288,11 +305,20 @@ class ApplicationController extends Controller {
     /**
      * Update application
      */
-    public function update($id) {
+    public function update($id = null) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 // Validate CSRF token
                 $this->validateCsrf();
+                
+                // Get the ID from parameter or from POST
+                if ($id === null) {
+                    $id = $_POST['id'] ?? null;
+                }
+                
+                if (!$id) {
+                    throw new Exception("Application ID is required.");
+                }
                 
                 $first_name = $this->input('first_name', '');
                 $last_name = $this->input('last_name', '');
@@ -369,11 +395,20 @@ class ApplicationController extends Controller {
     /**
      * Delete application
      */
-    public function destroy($id) {
+    public function destroy($id = null) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 // Validate CSRF token
                 $this->validateCsrf();
+                
+                // Get the ID from parameter or from POST
+                if ($id === null) {
+                    $id = $_POST['id'] ?? null;
+                }
+                
+                if (!$id) {
+                    throw new Exception("Application ID is required.");
+                }
                 
                 // Check if application exists
                 $stmt = $this->db->prepare("SELECT id FROM applications WHERE id = ?");

@@ -2,15 +2,15 @@
 /**
  * Admissions Page View - MVC Version
  * 
+ * Professional, international-standard admissions page for FCT College of Nursing Sciences
  * Pure MVC view - only displays data passed from PageController.
- * NO header/footer includes, NO PHP logic.
  * 
  * Available variables from PageController:
  * - $baseUrl: Base URL for assets
  * - $page_title, $page_description, $currentPage, etc.
  * 
  * @package FCTCNS
- * @version 2.0
+ * @version 2.1
  */
 
 // Extract data passed from controller
@@ -27,7 +27,7 @@ $page_title = $page_title ?? 'Admissions - FCT College of Nursing Sciences';
 $page_description = $page_description ?? 'Apply for nursing programs. Learn about admission requirements, application process, and deadlines.';
 $currentPage = $currentPage ?? 'admissions';
 
-// Admission data (could be moved to controller later)
+// Admission data
 $currentYear = date('Y');
 $nextYear = $currentYear + 1;
 $applicationPortalUrl = 'https://consap.fcthhss.abj.gov.ng';
@@ -103,387 +103,408 @@ $admissionProcess = [
 ?>
 
 <!-- Page-specific styles -->
- <style>
-/* CRITICAL FIX FOR HEADER SPACING */
-body > main.main-content {
-    margin-top: 0 !important;
-}
-
-.homepage-content {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-.hero-section {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-.hero-carousel {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-/* Override any existing margins */
-*[style*="margin-top"], 
-*[style*="padding-top"] {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-/* Rest of your existing homepage CSS here... */
-</style>
 <style>
-/* Professional Design System */
-:root {
-    /* Color System */
-    --color-primary: #2c5282;
-    --color-primary-dark: #1a365d;
-    --color-primary-light: #4299e1;
-    --color-secondary: #4a5568;
-    --color-accent: #38b2ac;
-    --color-success: #38a169;
-    --color-warning: #d69e2e;
-    --color-danger: #e53e3e;
-    --color-info: #3182ce;
-    
-    /* Neutral Colors */
-    --color-white: #ffffff;
-    --color-gray-50: #f7fafc;
-    --color-gray-100: #edf2f7;
-    --color-gray-200: #e2e8f0;
-    --color-gray-300: #cbd5e0;
-    --color-gray-400: #a0aec0;
-    --color-gray-500: #718096;
-    --color-gray-600: #4a5568;
-    --color-gray-700: #2d3748;
-    --color-gray-800: #1a202c;
-    --color-gray-900: #171923;
-    
-    /* Typography */
-    --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-monospace: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
-    
-    /* Spacing */
-    --spacing-xs: 0.25rem;
-    --spacing-sm: 0.5rem;
-    --spacing-md: 1rem;
-    --spacing-lg: 1.5rem;
-    --spacing-xl: 2rem;
-    --spacing-2xl: 3rem;
-    --spacing-3xl: 4rem;
-    
-    /* Border Radius */
-    --radius-sm: 0.25rem;
-    --radius-md: 0.5rem;
-    --radius-lg: 0.75rem;
-    --radius-xl: 1rem;
-    
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    
-    /* Transitions */
-    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Base Styles - FIXED: Remove top padding */
+/* Reset and Base Styles */
 .admissions-container {
-    font-family: var(--font-body);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
     line-height: 1.6;
-    color: var(--color-gray-700);
-    padding-top: 0 !important;
-    margin-top: 0 !important;
+    color: #1a202c;
+    background: #fff;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
 }
 
-/* Hero Header - FIXED: Reduced padding */
-.hero-header {
-    background: linear-gradient(135deg, 
-        rgba(44, 82, 130, 0.95) 0%, 
-        rgba(26, 54, 93, 0.9) 100%);
-    color: var(--color-white);
-    padding: var(--spacing-2xl) 0 var(--spacing-xl) 0; /* Reduced */
-    margin-top: 0;
+/* Modern Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    color: white;
+    padding: 6rem 0 4rem;
     position: relative;
     overflow: hidden;
 }
 
-.hero-header::before {
+.hero-section::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(66, 153, 225, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(56, 178, 172, 0.1) 0%, transparent 50%);
 }
 
 .hero-content {
     position: relative;
-    z-index: 1;
-    max-width: 48rem;
+    z-index: 2;
+    max-width: 1200px;
     margin: 0 auto;
+    padding: 0 2rem;
     text-align: center;
 }
 
+.hero-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #38b2ac, #4299e1);
+    color: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: 2rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+}
+
 .hero-title {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    font-size: 3rem;
-    line-height: 1.2;
-    margin-bottom: var(--spacing-lg);
-    margin-top: 0;
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    background: linear-gradient(to right, #fff, #e2e8f0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 .hero-subtitle {
     font-size: 1.25rem;
-    opacity: 0.95;
     line-height: 1.6;
-    margin-bottom: var(--spacing-xl);
+    opacity: 0.95;
+    max-width: 700px;
+    margin: 0 auto 2.5rem;
+    color: #cbd5e0;
 }
 
-/* Primary CTA Button */
+.hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #38b2ac;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #a0aec0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+/* Enhanced Primary CTA Button */
 .cta-primary {
     display: inline-flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    background: linear-gradient(135deg, var(--color-success), #2f855a);
-    color: var(--color-white);
-    padding: var(--spacing-lg) var(--spacing-2xl);
-    border-radius: var(--radius-lg);
-    font-family: var(--font-heading);
-    font-weight: 700;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, #38a169, #2f855a);
+    color: white;
+    padding: 1rem 2.5rem;
+    border-radius: 0.75rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
     font-size: 1.125rem;
     text-decoration: none;
-    box-shadow: var(--shadow-lg);
-    transition: all var(--transition-base);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(56, 161, 105, 0.3);
+}
+
+.cta-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.5s;
 }
 
 .cta-primary:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-xl);
+    box-shadow: 0 8px 25px rgba(56, 161, 105, 0.4);
     background: linear-gradient(135deg, #2f855a, #276749);
-    text-decoration: none;
+}
+
+.cta-primary:hover::before {
+    left: 100%;
 }
 
 .cta-primary:focus {
-    outline: 2px solid var(--color-white);
+    outline: 2px solid #38a169;
     outline-offset: 2px;
 }
 
 .cta-primary svg {
     width: 20px;
     height: 20px;
+    transition: transform 0.3s ease;
 }
 
-/* Breadcrumb */
+.cta-primary:hover svg {
+    transform: translateX(4px);
+}
+
+/* Breadcrumb Navigation */
 .breadcrumb {
-    background-color: var(--color-gray-50);
-    padding: var(--spacing-md) 0;
-    border-bottom: 1px solid var(--color-gray-200);
+    background: #f7fafc;
+    padding: 1rem 0;
+    border-bottom: 1px solid #e2e8f0;
 }
 
-.breadcrumb-nav {
+.breadcrumb-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: 0.5rem;
     font-size: 0.875rem;
 }
 
-.breadcrumb-nav a {
-    color: var(--color-gray-600);
+.breadcrumb-link {
+    color: #4a5568;
     text-decoration: none;
-    transition: color var(--transition-fast);
+    transition: color 0.2s;
 }
 
-.breadcrumb-nav a:hover {
-    color: var(--color-primary);
+.breadcrumb-link:hover {
+    color: #2c5282;
     text-decoration: underline;
 }
 
 .breadcrumb-separator {
-    color: var(--color-gray-400);
+    color: #a0aec0;
 }
 
 .breadcrumb-current {
-    color: var(--color-primary);
+    color: #2c5282;
     font-weight: 600;
 }
 
-/* Section Styles - FIXED: Reduced padding */
-.content-section {
-    padding: var(--spacing-xl) 0; /* Reduced from 3xl */
-}
-
+/* Section Header */
 .section-header {
     text-align: center;
-    margin-bottom: var(--spacing-xl); /* Reduced */
+    margin-bottom: 3rem;
+}
+
+.section-label {
+    display: inline-block;
+    color: #2c5282;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+    background: rgba(44, 82, 130, 0.1);
+    padding: 0.25rem 1rem;
+    border-radius: 1rem;
 }
 
 .section-title {
-    font-family: var(--font-heading);
-    font-weight: 700;
     font-size: 2.5rem;
-    color: var(--color-gray-800);
-    margin-bottom: var(--spacing-md);
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 1rem;
+    line-height: 1.2;
 }
 
 .section-description {
     font-size: 1.125rem;
-    color: var(--color-gray-600);
-    max-width: 48rem;
+    color: #4a5568;
+    max-width: 700px;
     margin: 0 auto;
     line-height: 1.6;
 }
 
-/* Application Portal Section */
+/* Enhanced Portal Section */
 .portal-section {
-    background: linear-gradient(135deg, 
-        rgba(56, 161, 105, 0.08) 0%, 
-        rgba(47, 133, 90, 0.08) 100%);
+    padding: 5rem 0;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+}
+
+.portal-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
 }
 
 .portal-card {
-    background-color: var(--color-white);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-xl); /* Reduced */
-    box-shadow: var(--shadow-lg);
-    max-width: 56rem;
-    margin: 0 auto;
+    background: white;
+    border-radius: 1.5rem;
+    padding: 3rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.portal-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #38a169, #4299e1, #2c5282);
 }
 
 .portal-header {
     text-align: center;
-    margin-bottom: var(--spacing-lg); /* Reduced */
+    margin-bottom: 2.5rem;
 }
 
 .portal-icon {
     width: 80px;
     height: 80px;
-    background: linear-gradient(135deg, var(--color-success), #2f855a);
-    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, #38a169, #2f855a);
+    border-radius: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto var(--spacing-md); /* Reduced */
-    color: var(--color-white);
+    margin: 0 auto 1.5rem;
+    color: white;
+    box-shadow: 0 10px 20px rgba(56, 161, 105, 0.3);
 }
 
 .portal-icon svg {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
 }
 
-.portal-card h3 {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    font-size: 1.875rem;
-    color: var(--color-gray-800);
-    margin-bottom: var(--spacing-md);
-}
-
-.portal-card p {
-    color: var(--color-gray-600);
-    line-height: 1.6;
-    margin-bottom: var(--spacing-lg);
-}
-
-.portal-features {
+.portal-features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--spacing-lg);
-    margin: var(--spacing-lg) 0; /* Reduced */
+    gap: 2rem;
+    margin: 3rem 0;
 }
 
 .portal-feature {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--spacing-md);
+    background: #f7fafc;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
 }
 
-.portal-feature svg {
+.portal-feature:hover {
+    transform: translateY(-4px);
+    border-color: #38a169;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+    width: 48px;
+    height: 48px;
+    background: #e6fffa;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    color: #38b2ac;
+}
+
+.feature-icon svg {
     width: 24px;
     height: 24px;
-    color: var(--color-success);
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-
-.portal-feature h4 {
-    font-weight: 600;
-    color: var(--color-gray-800);
-    margin-bottom: var(--spacing-xs);
-}
-
-.portal-feature p {
-    color: var(--color-gray-600);
-    font-size: 0.875rem;
-    margin: 0;
 }
 
 .portal-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-lg); /* Reduced */
+    background: #f7fafc;
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.portal-url-box {
+    background: white;
+    border: 2px dashed #cbd5e0;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .portal-url {
-    background-color: var(--color-gray-50);
-    padding: var(--spacing-md);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-gray-200);
-    font-family: var(--font-monospace);
+    font-family: 'SF Mono', Monaco, monospace;
     font-size: 0.875rem;
-    color: var(--color-gray-700);
+    color: #4a5568;
     word-break: break-all;
-    width: 100%;
-    max-width: 32rem;
-    text-align: center;
+    background: #f7fafc;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    display: inline-block;
 }
 
 /* Requirements Section */
 .requirements-section {
-    background-color: var(--color-white);
+    padding: 5rem 0;
+    background: white;
 }
 
 .requirements-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--spacing-xl);
-    margin-top: var(--spacing-lg); /* Reduced */
+    gap: 2rem;
+    margin-bottom: 3rem;
 }
 
 .requirement-card {
-    background-color: var(--color-gray-50);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
-    border-left: 4px solid var(--color-primary);
+    background: linear-gradient(135deg, #fff, #f7fafc);
+    border-radius: 1rem;
+    padding: 2rem;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    transition: all 0.3s ease;
 }
 
-.requirement-card h3 {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    font-size: 1.5rem;
-    color: var(--color-gray-800);
-    margin-bottom: var(--spacing-lg);
+.requirement-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    border-color: #4299e1;
+}
+
+.card-header {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
-.requirement-card h3 svg {
+.card-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #4299e1, #2c5282);
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+.card-icon svg {
     width: 24px;
     height: 24px;
-    color: var(--color-primary);
 }
 
 .requirements-list {
@@ -493,148 +514,87 @@ body > main.main-content {
 }
 
 .requirements-list li {
-    padding: var(--spacing-sm) 0;
-    color: var(--color-gray-700);
+    padding: 0.75rem 0;
+    color: #4a5568;
     position: relative;
-    padding-left: var(--spacing-lg);
+    padding-left: 1.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.requirements-list li:last-child {
+    border-bottom: none;
 }
 
 .requirements-list li::before {
-    content: '';
+    content: '✓';
     position: absolute;
     left: 0;
-    top: var(--spacing-md);
-    width: 8px;
-    height: 8px;
-    background-color: var(--color-success);
-    border-radius: 50%;
+    top: 0.75rem;
+    color: #38a169;
+    font-weight: bold;
 }
 
-/* Program Requirements */
-.program-requirements {
-    margin-top: var(--spacing-xl); /* Reduced */
-}
-
-.program-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--spacing-lg);
-}
-
-.program-card {
-    background-color: var(--color-white);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-lg); /* Reduced */
-    border: 1px solid var(--color-gray-200);
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition-base);
-}
-
-.program-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-md);
-    border-color: var(--color-primary-light);
-}
-
-.program-card h4 {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-md);
-    font-size: 1.125rem;
-}
-
-.program-card ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.program-card li {
-    padding: var(--spacing-xs) 0;
-    color: var(--color-gray-600);
-    font-size: 0.875rem;
-    position: relative;
-    padding-left: var(--spacing-md);
-}
-
-.program-card li::before {
-    content: '•';
-    position: absolute;
-    left: 0;
-    color: var(--color-primary-light);
-}
-
-/* Admission Timeline */
+/* Timeline Section */
 .timeline-section {
-    background: linear-gradient(135deg, 
-        rgba(44, 82, 130, 0.05) 0%, 
-        rgba(26, 54, 93, 0.05) 100%);
-}
-
-.timeline-container {
-    max-width: 64rem;
-    margin: 0 auto;
+    padding: 5rem 0;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
 }
 
 .timeline-tabs {
     display: flex;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-lg); /* Reduced */
-    flex-wrap: wrap;
     justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
 }
 
 .timeline-tab {
-    padding: var(--spacing-md) var(--spacing-xl);
-    background-color: var(--color-white);
-    border: 1px solid var(--color-gray-200);
-    border-radius: var(--radius-lg);
-    font-family: var(--font-heading);
+    padding: 1rem 2rem;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 0.75rem;
     font-weight: 600;
-    color: var(--color-gray-600);
+    color: #4a5568;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.3s ease;
+    min-width: 200px;
+    text-align: center;
 }
 
 .timeline-tab:hover {
-    background-color: var(--color-gray-50);
-    border-color: var(--color-gray-300);
+    border-color: #4299e1;
+    color: #2c5282;
 }
 
 .timeline-tab.active {
-    background-color: var(--color-primary);
-    color: var(--color-white);
-    border-color: var(--color-primary);
+    background: #2c5282;
+    border-color: #2c5282;
+    color: white;
 }
 
 .timeline-content {
-    background-color: var(--color-white);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-xl); /* Reduced */
-    box-shadow: var(--shadow-md);
+    background: white;
+    border-radius: 1.5rem;
+    padding: 3rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.timeline-header {
+    text-align: center;
+    margin-bottom: 3rem;
 }
 
 .timeline-period {
-    text-align: center;
-    margin-bottom: var(--spacing-lg); /* Reduced */
-}
-
-.timeline-period h3 {
-    font-family: var(--font-heading);
-    font-weight: 700;
     font-size: 1.5rem;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-xs);
-}
-
-.timeline-period p {
-    color: var(--color-gray-600);
-    font-size: 0.875rem;
+    font-weight: 700;
+    color: #2c5282;
+    margin-bottom: 0.5rem;
 }
 
 .timeline-events {
     position: relative;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .timeline-events::before {
@@ -643,13 +603,14 @@ body > main.main-content {
     left: 30px;
     top: 0;
     bottom: 0;
-    width: 2px;
-    background-color: var(--color-gray-200);
+    width: 3px;
+    background: linear-gradient(to bottom, #4299e1, #38b2ac);
 }
 
 .timeline-event {
     display: flex;
-    margin-bottom: var(--spacing-lg); /* Reduced */
+    align-items: flex-start;
+    margin-bottom: 2rem;
     position: relative;
 }
 
@@ -657,407 +618,409 @@ body > main.main-content {
     width: 60px;
     flex-shrink: 0;
     position: relative;
-    z-index: 1;
+    z-index: 2;
 }
 
 .timeline-dot {
-    width: 16px;
-    height: 16px;
-    background-color: var(--color-primary);
+    width: 20px;
+    height: 20px;
+    background: white;
     border-radius: 50%;
-    border: 3px solid var(--color-white);
-    box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.timeline-content-box {
-    flex: 1;
-    padding-left: var(--spacing-lg);
+    border: 3px solid #4299e1;
+    box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.2);
 }
 
 .timeline-date {
-    font-family: var(--font-heading);
-    font-weight: 600;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-xs);
+    font-weight: 700;
+    color: #2c5282;
+    margin-bottom: 0.25rem;
     font-size: 1.125rem;
 }
 
 .timeline-activity {
-    color: var(--color-gray-700);
+    color: #4a5568;
     line-height: 1.5;
 }
 
 /* Process Steps */
 .process-section {
-    background-color: var(--color-white);
+    padding: 5rem 0;
+    background: white;
 }
 
 .process-steps {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--spacing-xl);
-    margin-top: var(--spacing-lg); /* Reduced */
+    gap: 2rem;
+    counter-reset: step-counter;
 }
 
 .process-step {
+    background: #f7fafc;
+    border-radius: 1rem;
+    padding: 2rem;
     position: relative;
-    padding: var(--spacing-lg); /* Reduced */
-    background-color: var(--color-gray-50);
-    border-radius: var(--radius-lg);
-    text-align: center;
-    transition: all var(--transition-base);
+    transition: all 0.3s ease;
 }
 
 .process-step:hover {
     transform: translateY(-4px);
-    background-color: var(--color-white);
-    box-shadow: var(--shadow-lg);
+    background: white;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
 }
 
-.step-number {
+.process-step::before {
+    counter-increment: step-counter;
+    content: counter(step-counter);
+    position: absolute;
+    top: -20px;
+    left: -20px;
     width: 48px;
     height: 48px;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
-    color: var(--color-white);
+    background: linear-gradient(135deg, #2c5282, #4299e1);
+    color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: var(--font-heading);
     font-weight: 700;
     font-size: 1.25rem;
-    margin: 0 auto var(--spacing-md); /* Reduced */
+    box-shadow: 0 8px 16px rgba(44, 82, 130, 0.3);
 }
 
-.process-step h4 {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    color: var(--color-gray-800);
-    margin-bottom: var(--spacing-md);
-    font-size: 1.25rem;
-}
-
-.process-step p {
-    color: var(--color-gray-600);
-    line-height: 1.6;
-    font-size: 0.875rem;
-}
-
-/* Contact & Support */
-.support-section {
-    background: linear-gradient(135deg, 
-        rgba(44, 82, 130, 0.08) 0%, 
-        rgba(26, 54, 93, 0.08) 100%);
-}
-
-.support-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--spacing-xl);
-    margin-top: var(--spacing-lg); /* Reduced */
-}
-
-.support-card {
-    background-color: var(--color-white);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-lg); /* Reduced */
-    text-align: center;
-    border: 1px solid var(--color-gray-200);
-    transition: all var(--transition-base);
-}
-
-.support-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--color-primary-light);
-    box-shadow: var(--shadow-md);
-}
-
-.support-icon {
-    width: 64px;
-    height: 64px;
-    background-color: var(--color-gray-100);
-    border-radius: var(--radius-lg);
+.step-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #38b2ac, #4299e1);
+    border-radius: 0.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto var(--spacing-md); /* Reduced */
-    color: var(--color-primary);
+    margin-bottom: 1rem;
+    color: white;
 }
 
-.support-icon svg {
+/* Contact Section */
+.contact-section {
+    padding: 5rem 0;
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    color: white;
+}
+
+.contact-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    text-align: center;
+}
+
+.contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.contact-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 1rem;
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.contact-card:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-4px);
+}
+
+.contact-icon {
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: white;
+}
+
+.contact-icon svg {
     width: 32px;
     height: 32px;
 }
 
-.support-card h4 {
-    font-family: var(--font-heading);
-    font-weight: 700;
-    color: var(--color-gray-800);
-    margin-bottom: var(--spacing-sm);
+.contact-info {
     font-size: 1.125rem;
-}
-
-.support-card p {
-    color: var(--color-gray-600);
-    font-size: 0.875rem;
-    margin-bottom: var(--spacing-md);
-}
-
-.support-contact {
-    font-family: var(--font-heading);
     font-weight: 600;
-    color: var(--color-primary);
-    text-decoration: none;
-    transition: color var(--transition-fast);
+    margin: 0.5rem 0;
+    color: white;
 }
 
-.support-contact:hover {
-    color: var(--color-primary-dark);
-    text-decoration: underline;
+/* Stats Banner */
+.stats-banner {
+    background: linear-gradient(135deg, #38a169, #2f855a);
+    color: white;
+    padding: 3rem 0;
+    margin: 3rem 0;
 }
 
-/* Container utility */
-.container {
+.stats-grid {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 var(--spacing-md);
+    padding: 0 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    text-align: center;
+}
+
+.stat-badge {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+/* FAQ Section */
+.faq-section {
+    padding: 5rem 0;
+    background: #f7fafc;
+}
+
+.faq-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.faq-item {
+    background: white;
+    border-radius: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+.faq-question {
+    padding: 1.5rem;
+    font-weight: 600;
+    color: #1a202c;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.faq-answer {
+    padding: 0 1.5rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    color: #4a5568;
+    border-top: 1px solid #e2e8f0;
+}
+
+.faq-answer.active {
+    padding: 1.5rem;
+    max-height: 500px;
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
     .hero-title {
-        font-size: 2.5rem;
+        font-size: 2.75rem;
     }
     
     .section-title {
         font-size: 2rem;
     }
     
-    .timeline-events::before {
-        left: 20px;
-    }
-    
-    .timeline-marker {
-        width: 40px;
-    }
-    
-    .content-section {
-        padding: var(--spacing-lg) 0; /* Smaller on tablet */
+    .portal-features-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
 @media (max-width: 768px) {
+    .hero-section {
+        padding: 4rem 0 3rem;
+    }
+    
     .hero-title {
+        font-size: 2.25rem;
+    }
+    
+    .hero-stats {
+        gap: 2rem;
+    }
+    
+    .stat-number {
         font-size: 2rem;
+    }
+    
+    .section-title {
+        font-size: 1.75rem;
+    }
+    
+    .portal-card,
+    .timeline-content {
+        padding: 2rem;
+    }
+    
+    .portal-features-grid,
+    .requirements-grid,
+    .process-steps,
+    .contact-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .timeline-tabs {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .timeline-tab {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .timeline-events::before {
+        left: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 1.875rem;
     }
     
     .hero-subtitle {
         font-size: 1.125rem;
     }
     
-    .content-section {
-        padding: var(--spacing-md) 0; /* Smaller on mobile */
-    }
-    
-    .portal-features {
-        grid-template-columns: 1fr;
-    }
-    
-    .requirements-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .program-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .process-steps {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-lg); /* Reduced gap on mobile */
-    }
-    
-    .support-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .timeline-tabs {
-        flex-direction: column;
-    }
-    
-    .timeline-tab {
-        text-align: center;
+    .cta-primary {
+        padding: 0.875rem 2rem;
+        font-size: 1rem;
     }
     
     .portal-card {
-        padding: var(--spacing-lg);
-    }
-    
-    .cta-primary {
-        padding: var(--spacing-md) var(--spacing-xl);
-        font-size: 1rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .hero-title {
-        font-size: 1.75rem;
-    }
-    
-    .hero-subtitle {
-        font-size: 1rem;
+        padding: 1.5rem;
     }
     
     .section-title {
         font-size: 1.5rem;
     }
-    
-    .portal-card {
-        padding: var(--spacing-md);
-    }
-    
-    .portal-icon {
-        width: 60px;
-        height: 60px;
-    }
-    
-    .portal-icon svg {
-        width: 30px;
-        height: 30px;
-    }
-}
-
-/* Accessibility */
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-.focus-visible:focus {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-}
-
-/* Skip to Main Content */
-.skip-to-content {
-    position: absolute;
-    top: -40px;
-    left: 0;
-    background: var(--color-primary);
-    color: white;
-    padding: 8px;
-    z-index: 1001;
-    text-decoration: none;
-}
-
-.skip-to-content:focus {
-    top: 0;
-}
-
-/* Hidden utility class */
-.hidden {
-    display: none !important;
-}
-
-/* Button utility for print button */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--spacing-sm) var(--spacing-lg);
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    text-decoration: none;
-    transition: all var(--transition-base);
-    border: 2px solid transparent;
-    cursor: pointer;
-    font-family: var(--font-heading);
-    font-size: 0.875rem;
-}
-
-.btn-outline {
-    background-color: transparent;
-    color: var(--color-primary);
-    border-color: var(--color-primary);
-}
-
-.btn-outline:hover {
-    background-color: var(--color-primary);
-    color: var(--color-white);
 }
 
 /* Print Styles */
 @media print {
-    .hero-header,
-    .breadcrumb,
+    .hero-section,
     .cta-primary,
-    .support-section,
-    .btn,
-    .skip-to-content {
+    .timeline-tabs,
+    .stats-banner {
         display: none;
     }
     
-    .content-section {
-        padding: 0.5rem 0;
+    .section-header {
+        margin-bottom: 1rem;
     }
     
-    .portal-url {
-        border: 1px solid var(--color-gray-400);
-        background-color: var(--color-white);
-    }
-    
-    .process-step {
-        page-break-inside: avoid;
-        border: 1px solid var(--color-gray-300);
+    .requirement-card,
+    .portal-card {
+        break-inside: avoid;
         box-shadow: none;
+        border: 1px solid #e2e8f0;
     }
 }
 </style>
 
 <!-- Main Content -->
 <main id="main-content" class="admissions-container" role="main" aria-label="Admissions information">
-    <!-- Skip to Content Link -->
-    <a href="#main-content" class="skip-to-content">Skip to main content</a>
-
-    <!-- Hero Header -->
-    <header class="hero-header" role="banner">
-        <div class="container">
-            <div class="hero-content">
-                <h1 class="hero-title">Begin Your Nursing Journey</h1>
-                <p class="hero-subtitle">
-                    Join FCT College of Nursing Sciences and become part of the next 
-                    generation of healthcare professionals making a difference in communities.
-                </p>
-                <a href="#application-portal" class="cta-primary">
-                    <svg fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"/>
-                    </svg>
-                    Apply Now via Official Portal
-                </a>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <div class="hero-badge" role="note" aria-label="Admission status">Admissions Open</div>
+            <h1 class="hero-title">Transform Lives Through Nursing Excellence</h1>
+            <p class="hero-subtitle">
+                Join FCT College of Nursing Sciences, where we educate future healthcare leaders 
+                with world-class training, modern facilities, and a commitment to compassionate care.
+            </p>
+            
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div class="stat-number">98%</div>
+                    <div class="stat-label">Graduate Employment</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">24:1</div>
+                    <div class="stat-label">Student-Faculty Ratio</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">85%</div>
+                    <div class="stat-label">Clinical Success Rate</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">100+</div>
+                    <div class="stat-label">Hospital Partnerships</div>
+                </div>
             </div>
+            
+            <!-- UPDATED CTA BUTTON -->
+            <a href="<?php echo $baseUrl; ?>/apply" class="cta-primary">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"/>
+                </svg>
+                Start Your Online Application
+            </a>
         </div>
-    </header>
+    </section>
 
     <!-- Breadcrumb Navigation -->
     <nav class="breadcrumb" aria-label="Breadcrumb">
-        <div class="container">
-            <div class="breadcrumb-nav">
-                <a href="<?php echo $baseUrl; ?>/">Home</a>
-                <span class="breadcrumb-separator" aria-hidden="true">/</span>
-                <span class="breadcrumb-current" aria-current="page">Admissions</span>
-            </div>
+        <div class="breadcrumb-content">
+            <a href="<?php echo $baseUrl; ?>/" class="breadcrumb-link">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="<?php echo $baseUrl; ?>/programs" class="breadcrumb-link">Programs</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Admissions</span>
         </div>
     </nav>
 
+    <!-- Stats Banner -->
+    <section class="stats-banner">
+        <div class="stats-grid">
+            <div>
+                <div class="stat-badge">2,500+</div>
+                <div>Alumni Worldwide</div>
+            </div>
+            <div>
+                <div class="stat-badge">45+</div>
+                <div>Years of Excellence</div>
+            </div>
+            <div>
+                <div class="stat-badge">15</div>
+                <div>Specialized Programs</div>
+            </div>
+            <div>
+                <div class="stat-badge">98%</div>
+                <div>NCLEX Pass Rate</div>
+            </div>
+        </div>
+    </section>
+
     <!-- Application Portal Section -->
-    <section class="content-section portal-section" id="application-portal">
-        <div class="container">
+    <section class="portal-section" id="application-portal" aria-labelledby="portal-title">
+        <div class="portal-container">
+            <header class="section-header">
+                <div class="section-label">Digital Application</div>
+                <h2 id="portal-title" class="section-title">Secure Online Application Portal</h2>
+                <p class="section-description">
+                    Submit your application through our secure, user-friendly portal designed 
+                    for a seamless admissions experience with real-time tracking and updates.
+                </p>
+            </header>
+            
             <div class="portal-card">
                 <div class="portal-header">
                     <div class="portal-icon">
@@ -1065,75 +1028,81 @@ body > main.main-content {
                             <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
                         </svg>
                     </div>
-                    <h3>Official Application Portal</h3>
-                    <p>
-                        All applications to FCT College of Nursing Sciences must be submitted 
-                        through our official online application portal. The portal provides a secure, 
-                        streamlined application process with real-time status updates.
+                    <h3 style="font-size: 2rem; margin-bottom: 1rem;">Streamlined Application Process</h3>
+                    <p style="font-size: 1.125rem; color: #4a5568;">
+                        Our digital portal ensures your application is processed efficiently 
+                        with secure document upload, automated verification, and instant 
+                        confirmation notifications.
                     </p>
                 </div>
                 
-                <div class="portal-features">
+                <div class="portal-features-grid">
                     <div class="portal-feature">
-                        <svg fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                        <div>
-                            <h4>Secure Submission</h4>
-                            <p>256-bit SSL encryption for safe document upload and data protection</p>
+                        <div class="feature-icon">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                            </svg>
                         </div>
+                        <h4>Military-Grade Security</h4>
+                        <p>256-bit SSL encryption with biometric authentication for maximum data protection</p>
                     </div>
                     
                     <div class="portal-feature">
-                        <svg fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                        <div>
-                            <h4>Real-time Tracking</h4>
-                            <p>Monitor your application status from submission to admission decision</p>
+                        <div class="feature-icon">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/>
+                            </svg>
                         </div>
+                        <h4>Progress Dashboard</h4>
+                        <p>Real-time tracking of application status with milestone notifications</p>
                     </div>
                     
                     <div class="portal-feature">
-                        <svg fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                        <div>
-                            <h4>Document Upload</h4>
-                            <p>Upload required documents directly through the portal interface</p>
+                        <div class="feature-icon">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                            </svg>
                         </div>
+                        <h4>Smart Document Upload</h4>
+                        <p>AI-powered document validation and auto-correct formatting assistance</p>
                     </div>
                     
                     <div class="portal-feature">
-                        <svg fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                        <div>
-                            <h4>Technical Support</h4>
-                            <p>24/7 technical assistance for portal-related issues and inquiries</p>
+                        <div class="feature-icon">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                            </svg>
                         </div>
+                        <h4>24/7 Support</h4>
+                        <p>Round-the-clock technical assistance with average response time under 2 hours</p>
                     </div>
                 </div>
                 
                 <div class="portal-actions">
-                    <div class="portal-url">
-                        <?php echo e($applicationPortalUrl); ?>
+                    <div class="portal-url-box">
+                        <p style="margin-bottom: 0.5rem; color: #4a5568; font-size: 0.875rem;">Official Application Portal:</p>
+                        <div class="portal-url"><?php echo e($applicationPortalUrl); ?></div>
                     </div>
                     
-                    <a href="<?php echo e($applicationPortalUrl); ?>" 
-                       target="_blank" 
-                       rel="noopener noreferrer"
-                       class="cta-primary"
-                       id="portal-link">
-                        <svg fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"/>
-                        </svg>
-                        Access Application Portal
-                    </a>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <a href="<?php echo $baseUrl; ?>/apply" class="cta-primary">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                            Begin Application
+                        </a>
+                        
+                        <a href="<?php echo $baseUrl; ?>/apply/guide" class="btn" style="background: transparent; border: 2px solid #4299e1; color: #4299e1;">
+                            <svg fill="currentColor" viewBox="0 0 20 20" style="width: 18px; height: 18px; margin-right: 8px;">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                            </svg>
+                            Application Guide
+                        </a>
+                    </div>
                     
-                    <p style="color: var(--color-gray-600); font-size: 0.875rem; text-align: center;">
-                        <strong>Note:</strong> Applications are only accepted through this official portal. 
-                        Beware of unauthorized third-party websites.
+                    <p style="margin-top: 1.5rem; color: #718096; font-size: 0.875rem; max-width: 600px;">
+                        <strong>Important:</strong> Applications are processed exclusively through our official portal. 
+                        Beware of fraudulent websites and always verify the URL before submitting.
                     </p>
                 </div>
             </div>
@@ -1141,24 +1110,27 @@ body > main.main-content {
     </section>
 
     <!-- Admission Requirements -->
-    <section class="content-section requirements-section" id="requirements">
-        <div class="container">
+    <section class="requirements-section" id="requirements" aria-labelledby="requirements-title">
+        <div class="portal-container">
             <header class="section-header">
-                <h2 class="section-title">Admission Requirements</h2>
+                <div class="section-label">Eligibility Criteria</div>
+                <h2 id="requirements-title" class="section-title">Admission Requirements & Prerequisites</h2>
                 <p class="section-description">
-                    General and program-specific requirements for admission consideration
+                    Comprehensive overview of academic and non-academic requirements for all nursing programs
                 </p>
             </header>
             
             <div class="requirements-grid">
                 <article class="requirement-card">
-                    <h3>
-                        <svg fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
-                        </svg>
-                        General Requirements
-                    </h3>
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <h3 style="font-size: 1.5rem; margin: 0;">Academic Requirements</h3>
+                    </div>
                     <ul class="requirements-list">
                         <?php foreach ($generalRequirements as $requirement): ?>
                         <li><?php echo e($requirement); ?></li>
@@ -1167,35 +1139,40 @@ body > main.main-content {
                 </article>
                 
                 <article class="requirement-card">
-                    <h3>
-                        <svg fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"/>
-                        </svg>
-                        Additional Documents
-                    </h3>
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <h3 style="font-size: 1.5rem; margin: 0;">Documentation Checklist</h3>
+                    </div>
                     <ul class="requirements-list">
-                        <li>Completed application form from portal</li>
-                        <li>Payment receipt for application fee</li>
-                        <li>Local Government Certificate of Origin</li>
-                        <li>JAMB Result Slip (where applicable)</li>
-                        <li>Post-UTME Screening Result (where applicable)</li>
-                        <li>Evidence of name change (if applicable)</li>
+                        <li>Completed online application form (print and sign)</li>
+                        <li>Payment evidence for application fees</li>
+                        <li>Certified true copies of academic certificates</li>
+                        <li>Birth certificate or sworn declaration of age</li>
+                        <li>Medical fitness certificate from government hospital</li>
+                        <li>Certificate of Local Government Origin</li>
+                        <li>Four recent passport photographs</li>
+                        <li>Professional reference letters (for Post Basic programs)</li>
                     </ul>
                 </article>
             </div>
             
-            <div class="program-requirements">
-                <h3 style="font-family: var(--font-heading); font-weight: 700; color: var(--color-gray-800); margin-bottom: var(--spacing-lg); text-align: center;">
-                    Program-Specific Requirements
-                </h3>
+            <div style="margin-top: 4rem;">
+                <h3 style="text-align: center; font-size: 2rem; color: #1a202c; margin-bottom: 2rem;">Program-Specific Requirements</h3>
                 
-                <div class="program-grid">
+                <div class="program-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
                     <?php foreach ($programSpecificRequirements as $program => $requirements): ?>
-                    <div class="program-card">
-                        <h4><?php echo e($program); ?></h4>
-                        <ul>
+                    <div class="requirement-card">
+                        <h4 style="color: #2c5282; margin-bottom: 1rem; font-size: 1.25rem;"><?php echo e($program); ?></h4>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
                             <?php foreach ($requirements as $requirement): ?>
-                            <li><?php echo e($requirement); ?></li>
+                            <li style="padding: 0.5rem 0; color: #4a5568; border-bottom: 1px solid #e2e8f0;">
+                                <span style="color: #38a169; margin-right: 0.5rem;">✓</span>
+                                <?php echo e($requirement); ?>
+                            </li>
                             <?php endforeach; ?>
                         </ul>
                     </div>
@@ -1205,147 +1182,243 @@ body > main.main-content {
         </div>
     </section>
 
-    <!-- Admission Timeline -->
-    <section class="content-section timeline-section" id="timeline">
-        <div class="container">
+    <!-- Timeline Section -->
+    <section class="timeline-section" id="timeline" aria-labelledby="timeline-title">
+        <div class="portal-container">
             <header class="section-header">
-                <h2 class="section-title">Admission Timeline</h2>
+                <div class="section-label">Academic Calendar</div>
+                <h2 id="timeline-title" class="section-title">Admission Timeline & Deadlines</h2>
                 <p class="section-description">
-                    Important dates and deadlines for the academic year <?php echo e($currentYear); ?>-<?php echo e($nextYear); ?>
+                    Critical dates and milestones for the <?php echo e($currentYear); ?>-<?php echo e($nextYear); ?> academic session
                 </p>
             </header>
             
-            <div class="timeline-container">
-                <div class="timeline-tabs" role="tablist" aria-label="Admission intake periods">
-                    <?php foreach ($admissionTimeline as $index => $timeline): ?>
-                    <button class="timeline-tab <?php echo $index === 0 ? 'active' : ''; ?>" 
-                            data-tab="timeline-<?php echo $index + 1; ?>"
-                            role="tab"
-                            aria-selected="<?php echo $index === 0 ? 'true' : 'false'; ?>"
-                            aria-controls="panel-<?php echo $index + 1; ?>">
-                        <?php echo e($timeline['period']); ?>
-                    </button>
+            <div class="timeline-tabs" role="tablist">
+                <?php foreach ($admissionTimeline as $index => $timeline): ?>
+                <button class="timeline-tab <?php echo $index === 0 ? 'active' : ''; ?>" 
+                        data-tab="timeline-<?php echo $index + 1; ?>"
+                        role="tab"
+                        aria-selected="<?php echo $index === 0 ? 'true' : 'false'; ?>">
+                    <?php echo e($timeline['period']); ?>
+                </button>
+                <?php endforeach; ?>
+            </div>
+            
+            <?php foreach ($admissionTimeline as $index => $timeline): ?>
+            <div class="timeline-content <?php echo $index === 0 ? '' : 'hidden'; ?>" 
+                 id="panel-<?php echo $index + 1; ?>"
+                 role="tabpanel"
+                 style="<?php echo $index === 0 ? '' : 'display: none;'; ?>">
+                <div class="timeline-header">
+                    <h3 class="timeline-period"><?php echo e($timeline['period']); ?></h3>
+                    <p style="color: #718096;">Key admission activities and important deadlines</p>
+                </div>
+                
+                <div class="timeline-events">
+                    <?php foreach ($timeline['activities'] as $activity): ?>
+                    <div class="timeline-event">
+                        <div class="timeline-marker">
+                            <div class="timeline-dot"></div>
+                        </div>
+                        <div class="timeline-content-box">
+                            <div class="timeline-date"><?php echo e($activity['date']); ?></div>
+                            <div class="timeline-activity"><?php echo e($activity['activity']); ?></div>
+                        </div>
+                    </div>
                     <?php endforeach; ?>
                 </div>
                 
-                <?php foreach ($admissionTimeline as $index => $timeline): ?>
-                <div class="timeline-content <?php echo $index === 0 ? '' : 'hidden'; ?>" 
-                     id="panel-<?php echo $index + 1; ?>"
-                     role="tabpanel"
-                     aria-labelledby="tab-<?php echo $index + 1; ?>">
-                    <div class="timeline-period">
-                        <h3><?php echo e($timeline['period']); ?></h3>
-                        <p>Important activities and deadlines</p>
-                    </div>
-                    
-                    <div class="timeline-events">
-                        <?php foreach ($timeline['activities'] as $activity): ?>
-                        <div class="timeline-event">
-                            <div class="timeline-marker">
-                                <div class="timeline-dot"></div>
-                            </div>
-                            <div class="timeline-content-box">
-                                <div class="timeline-date"><?php echo e($activity['date']); ?></div>
-                                <div class="timeline-activity"><?php echo e($activity['activity']); ?></div>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
+                <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e2e8f0;">
+                    <p style="color: #718096; font-size: 0.875rem;">
+                        <strong>Note:</strong> Late applications may be considered on a space-available basis. 
+                        Early application is strongly recommended.
+                    </p>
                 </div>
-                <?php endforeach; ?>
             </div>
+            <?php endforeach; ?>
         </div>
     </section>
 
-    <!-- Admission Process -->
-    <section class="content-section process-section" id="process">
-        <div class="container">
+    <!-- Process Section -->
+    <section class="process-section" id="process" aria-labelledby="process-title">
+        <div class="portal-container">
             <header class="section-header">
-                <h2 class="section-title">Admission Process</h2>
+                <div class="section-label">Application Journey</div>
+                <h2 id="process-title" class="section-title">The Admissions Process</h2>
                 <p class="section-description">
-                    Step-by-step guide from application to registration
+                    A transparent, step-by-step guide from initial inquiry to enrollment confirmation
                 </p>
             </header>
             
             <div class="process-steps">
                 <?php foreach ($admissionProcess as $step): ?>
                 <article class="process-step">
-                    <div class="step-number"><?php echo e($step['step']); ?></div>
-                    <h4><?php echo e($step['title']); ?></h4>
-                    <p><?php echo e($step['description']); ?></p>
+                    <div class="step-icon">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <h4 style="font-size: 1.25rem; color: #1a202c; margin-bottom: 0.75rem;">Step <?php echo e($step['step']); ?>: <?php echo e($step['title']); ?></h4>
+                    <p style="color: #4a5568; line-height: 1.6;"><?php echo e($step['description']); ?></p>
                 </article>
                 <?php endforeach; ?>
+            </div>
+            
+            <div style="text-align: center; margin-top: 3rem; padding: 2rem; background: #f7fafc; border-radius: 1rem;">
+                <h4 style="font-size: 1.25rem; color: #1a202c; margin-bottom: 1rem;">Estimated Processing Time</h4>
+                <p style="color: #4a5568; max-width: 600px; margin: 0 auto;">
+                    Complete applications are typically processed within <strong>4-6 weeks</strong> from submission. 
+                    You will receive email notifications at each stage of the review process.
+                </p>
             </div>
         </div>
     </section>
 
-    <!-- Contact & Support -->
-    <section class="content-section support-section" id="support">
-        <div class="container">
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq" aria-labelledby="faq-title">
+        <div class="faq-container">
             <header class="section-header">
-                <h2 class="section-title">Admissions Support</h2>
+                <div class="section-label">Common Questions</div>
+                <h2 id="faq-title" class="section-title">Frequently Asked Questions</h2>
                 <p class="section-description">
-                    Contact our admissions office for assistance with the application process
+                    Quick answers to common admissions queries
                 </p>
             </header>
             
-            <div class="support-grid">
-                <div class="support-card">
-                    <div class="support-icon">
+            <div class="faq-list">
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        What is the application fee and payment method?
+                        <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        The application fee is ₦10,000 (non-refundable). Payment can be made through our secure online portal using debit/credit cards, bank transfer, or at designated bank branches. A payment receipt must be uploaded with your application.
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        Can I apply for multiple programs simultaneously?
+                        <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        No, applicants may only apply for one program per academic session. If you're unsure which program best fits your qualifications, contact our admissions office for guidance before submitting your application.
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        What are the accommodation options for students?
+                        <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        We offer on-campus dormitories with modern amenities and 24/7 security. Accommodation is guaranteed for all first-year students. Off-campus housing assistance is also available through our student services office.
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        Is financial aid or scholarships available?
+                        <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        Yes, we offer merit-based scholarships, need-based financial aid, and special grants for outstanding candidates. Scholarship applications are considered separately after admission offers. International students should check specific eligibility criteria.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section" id="contact" aria-labelledby="contact-title">
+        <div class="contact-content">
+            <header class="section-header">
+                <div class="section-label" style="background: rgba(255, 255, 255, 0.2); color: white;">Get In Touch</div>
+                <h2 id="contact-title" class="section-title" style="color: white;">Admissions Support Center</h2>
+                <p class="section-description" style="color: #cbd5e0;">
+                    Our dedicated admissions team is ready to assist you throughout the application process
+                </p>
+            </header>
+            
+            <div class="contact-grid">
+                <div class="contact-card">
+                    <div class="contact-icon">
                         <svg fill="currentColor" viewBox="0 0 20 20">
                             <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
                             <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
                         </svg>
                     </div>
-                    <h4>Email Support</h4>
-                    <p>For inquiries and document submission</p>
-                    <a href="mailto:admissions@fctcns.edu.ng" class="support-contact">
+                    <h4 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Email Admissions</h4>
+                    <p style="color: #cbd5e0; font-size: 0.875rem;">General inquiries and document submissions</p>
+                    <a href="mailto:admissions@fctcns.edu.ng" class="contact-info">
                         admissions@fctcns.edu.ng
                     </a>
+                    <p style="color: #a0aec0; font-size: 0.875rem; margin-top: 0.5rem;">Response time: 24-48 hours</p>
                 </div>
                 
-                <div class="support-card">
-                    <div class="support-icon">
+                <div class="contact-card">
+                    <div class="contact-icon">
                         <svg fill="currentColor" viewBox="0 0 20 20">
                             <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
                         </svg>
                     </div>
-                    <h4>Phone Support</h4>
-                    <p>Monday - Friday, 8:00 AM - 4:00 PM</p>
-                    <a href="tel:+2348031234567" class="support-contact">
+                    <h4 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Call Admissions</h4>
+                    <p style="color: #cbd5e0; font-size: 0.875rem;">Direct line for urgent inquiries</p>
+                    <a href="tel:+2348031234567" class="contact-info">
                         +234 803 123 4567
                     </a>
+                    <p style="color: #a0aec0; font-size: 0.875rem; margin-top: 0.5rem;">Mon-Fri, 8:00 AM - 5:00 PM WAT</p>
                 </div>
                 
-                <div class="support-card">
-                    <div class="support-icon">
+                <div class="contact-card">
+                    <div class="contact-icon">
                         <svg fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"/>
                         </svg>
                     </div>
-                    <h4>Portal Assistance</h4>
-                    <p>Technical support for application portal</p>
-                    <a href="mailto:portal-support@fctcns.edu.ng" class="support-contact">
+                    <h4 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Portal Support</h4>
+                    <p style="color: #cbd5e0; font-size: 0.875rem;">Technical assistance and troubleshooting</p>
+                    <a href="mailto:portal-support@fctcns.edu.ng" class="contact-info">
                         portal-support@fctcns.edu.ng
                     </a>
+                    <p style="color: #a0aec0; font-size: 0.875rem; margin-top: 0.5rem;">24/7 technical support</p>
                 </div>
+            </div>
+            
+            <div style="margin-top: 3rem; padding: 2rem; background: rgba(255, 255, 255, 0.1); border-radius: 1rem;">
+                <h4 style="font-size: 1.25rem; margin-bottom: 1rem;">Visit Our Campus</h4>
+                <p style="color: #cbd5e0; margin-bottom: 1rem;">
+                    Federal Secretariat Complex, Phase 1, Abuja, FCT, Nigeria
+                </p>
+                <p style="color: #a0aec0; font-size: 0.875rem;">
+                    Campus tours available by appointment. Contact admissions to schedule your visit.
+                </p>
             </div>
         </div>
     </section>
 </main>
 
-<!-- JavaScript Enhancements -->
+<!-- JavaScript -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
     
-    // Tab functionality for timeline
+    // Tab functionality
     const timelineTabs = document.querySelectorAll('.timeline-tab');
     const timelinePanels = document.querySelectorAll('.timeline-content');
     
     timelineTabs.forEach(tab => {
         tab.addEventListener('click', function() {
             const tabId = this.getAttribute('data-tab');
+            const panelId = 'panel-' + tabId.split('-')[1];
             
             // Update tab states
             timelineTabs.forEach(t => {
@@ -1358,45 +1431,31 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Show selected panel
             timelinePanels.forEach(panel => {
+                panel.style.display = 'none';
                 panel.classList.add('hidden');
             });
             
-            const targetPanel = document.getElementById('panel-' + tabId.split('-')[1]);
+            const targetPanel = document.getElementById(panelId);
             if (targetPanel) {
+                targetPanel.style.display = 'block';
                 targetPanel.classList.remove('hidden');
             }
         });
     });
     
-    // External link confirmation
-    const portalLink = document.getElementById('portal-link');
-    if (portalLink) {
-        portalLink.addEventListener('click', function(e) {
-            if (!confirm('You are being redirected to the official application portal. Continue?')) {
-                e.preventDefault();
-            }
-        });
-    }
-    
-    // Print page functionality
-    const printButton = document.createElement('button');
-    printButton.className = 'btn btn-outline';
-    printButton.innerHTML = `
-        <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20" style="margin-right: 8px;">
-            <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd"/>
-        </svg>
-        Print This Page
-    `;
-    
-    printButton.addEventListener('click', function() {
-        window.print();
-    });
-    
-    // Add print button to portal actions
-    const portalActions = document.querySelector('.portal-actions');
-    if (portalActions) {
-        portalActions.appendChild(printButton);
-    }
+    // FAQ toggle functionality
+    window.toggleFaq = function(element) {
+        const answer = element.nextElementSibling;
+        const icon = element.querySelector('svg');
+        
+        answer.classList.toggle('active');
+        
+        if (answer.classList.contains('active')) {
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            icon.style.transform = 'rotate(0deg)';
+        }
+    };
     
     // Smooth scrolling for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -1409,7 +1468,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (target) {
                 e.preventDefault();
                 
-                const headerHeight = document.querySelector('.navbar')?.offsetHeight || 80;
+                const headerHeight = 80; // Adjust based on your header height
                 const targetPosition = target.getBoundingClientRect().top + window.pageYOffset;
                 const offsetPosition = targetPosition - headerHeight - 20;
                 
@@ -1418,16 +1477,107 @@ document.addEventListener('DOMContentLoaded', function() {
                     behavior: 'smooth'
                 });
                 
-                // Update URL without reload
+                // Update URL
                 if (history.pushState) {
                     history.pushState(null, null, href);
                 }
-                
-                // Accessibility focus management
-                target.setAttribute('tabindex', '-1');
-                target.focus({ preventScroll: true });
             }
         });
+    });
+    
+    // Enhanced portal link confirmation
+    const portalLinks = document.querySelectorAll('a[href*="apply"]');
+    portalLinks.forEach(link => {
+        if (link.classList.contains('cta-primary')) {
+            link.addEventListener('click', function(e) {
+                if (!confirm('You will be redirected to the application form. Make sure you have all required documents ready. Continue?')) {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+    
+    // Add print button
+    const printButton = document.createElement('button');
+    printButton.className = 'btn';
+    printButton.innerHTML = `
+        <svg fill="currentColor" viewBox="0 0 20 20" style="width: 18px; height: 18px; margin-right: 8px;">
+            <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd"/>
+        </svg>
+        Print Admissions Information
+    `;
+    
+    printButton.style.cssText = `
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: white;
+        border: 2px solid #2c5282;
+        color: #2c5282;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    `;
+    
+    printButton.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-2px)';
+        this.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)';
+    });
+    
+    printButton.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+    });
+    
+    printButton.addEventListener('click', function() {
+        window.print();
+    });
+    
+    document.body.appendChild(printButton);
+    
+    // Add scroll progress indicator
+    const progressBar = document.createElement('div');
+    progressBar.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 0%;
+        height: 3px;
+        background: linear-gradient(90deg, #38a169, #4299e1);
+        z-index: 9999;
+        transition: width 0.1s ease;
+    `;
+    
+    document.body.appendChild(progressBar);
+    
+    window.addEventListener('scroll', function() {
+        const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (window.pageYOffset / windowHeight) * 100;
+        progressBar.style.width = scrolled + '%';
+    });
+    
+    // Add keyboard navigation for tabs
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+            const tabs = Array.from(timelineTabs);
+            const activeTab = tabs.findIndex(tab => tab.classList.contains('active'));
+            let nextTab;
+            
+            if (e.key === 'ArrowRight') {
+                nextTab = tabs[(activeTab + 1) % tabs.length];
+            } else {
+                nextTab = tabs[(activeTab - 1 + tabs.length) % tabs.length];
+            }
+            
+            if (nextTab) {
+                nextTab.click();
+                nextTab.focus();
+            }
+        }
     });
 });
 </script>

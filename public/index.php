@@ -114,6 +114,18 @@ try {
     $router->post('/contact/submit', 'PageController@submitContact');
     
     // ============================================================================
+    // APPLICATION ROUTES - Scalable Multi-step Application
+    // ============================================================================
+
+    // Online application form (multi-step)
+    $router->get('/apply', 'PublicApplicationController@showApplicationForm');
+    $router->post('/apply/step/{step}', 'PublicApplicationController@processStep');
+    $router->get('/apply/step/{step}', 'PublicApplicationController@showStep');
+    $router->post('/apply/submit', 'PublicApplicationController@submitApplication');
+    $router->get('/apply/success', 'PublicApplicationController@applicationSuccess');
+    $router->get('/apply/reset', 'PublicApplicationController@resetApplication');
+    
+    // ============================================================================
     // ADMIN CONTACT MANAGEMENT ROUTES
     // ============================================================================
     

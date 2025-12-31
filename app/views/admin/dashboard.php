@@ -932,7 +932,7 @@ try {
                                             <?php echo htmlspecialchars($app['email']); ?>
                                         </div>
                                     </td>
-                                    <td><?php echo htmlspecialchars($app['program_applied']); ?></td>
+                                    <td><?php echo htmlspecialchars($app['program'] ?? 'N/A'); ?></td>
                                     <td><?php echo date('M d, Y', strtotime($app['created_at'])); ?></td>
                                     <td>
                                         <span class="status-badge status-<?php echo $app['status']; ?>">

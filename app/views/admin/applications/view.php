@@ -1,6 +1,6 @@
 <?php
 // Get the absolute path to the root
-$rootPath = dirname(__DIR__, 3);
+$rootPath = dirname(__DIR__, 4);
 require_once $rootPath . '/app/config/constants.php';
 require_once APP_PATH . '/config/session.php';
 require_once APP_PATH . '/middleware/AuthMiddleware.php';
