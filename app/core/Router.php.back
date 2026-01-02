@@ -146,25 +146,10 @@ class Router {
             error_log("Router: Original URI: $requestUri");
         }
         
-        // Remove base path if running in subdirectory - FIXED for production
-        if (defined('BASE_URL')) {
-            $baseUrl = BASE_URL;
-            
-            // Extract base path from BASE_URL
-            $parsedUrl = parse_url($baseUrl);
-            if (isset($parsedUrl['path']) && $parsedUrl['path'] !== '/') {
-                $basePath = $parsedUrl['path'];
-                if (strpos($requestUri, $basePath) === 0) {
-                    $requestUri = substr($requestUri, strlen($basePath));
-                }
-            } elseif (strpos($baseUrl, 'localhost/fctcns-website') !== false) {
-                // Local development with XAMPP
-                $basePath = '/fctcns-website';
-                if (strpos($requestUri, $basePath) === 0) {
-                    $requestUri = substr($requestUri, strlen($basePath));
-                }
-            }
-            // In production (https://fctcns.edu.ng), no base path to remove
+        // Remove base path if running in subdirectory
+        $basePath = '/fctcns-website';
+        if (strpos($requestUri, $basePath) === 0) {
+            $requestUri = substr($requestUri, strlen($basePath));
         }
         
         // Ensure request URI is not empty
@@ -415,3 +400,4 @@ class Router {
         exit;
     }
 }
+?>
