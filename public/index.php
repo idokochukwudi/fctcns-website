@@ -22,27 +22,28 @@ date_default_timezone_set('Africa/Lagos');
 // LOAD CONSTANTS - FIXED FOR BOTH LOCAL AND PRODUCTION
 // ============================================================================
 
-// Try multiple paths for constants.php in different environments
-$possiblePaths = [
+// Get the root directory - SMART VERSION for both local and production
+$possibleRootPaths = [
     // Production path (Go54 hosting)
-    '/home2/fctcnsed/fctcns-app/app/config/constants.php',
+    '/home2/fctcnsed/fctcns-app',
     // Local development path (XAMPP)
-    dirname(__DIR__) . '/app/config/constants.php',
-    // Alternative local path
-    dirname(__DIR__, 2) . '/app/config/constants.php',
+    dirname(__DIR__, 2), // Goes up 2 levels from public/ to project root
+    // Fallback
+    dirname(__DIR__),
 ];
 
 $constantsLoaded = false;
-foreach ($possiblePaths as $path) {
-    if (file_exists($path)) {
-        require_once $path;
+foreach ($possibleRootPaths as $rootDir) {
+    $constantsPath = $rootDir . '/app/config/constants.php';
+    if (file_exists($constantsPath)) {
+        require_once $constantsPath;
         $constantsLoaded = true;
         break;
     }
 }
 
 if (!$constantsLoaded) {
-    die('Error: Could not load constants.php. Check the file paths.');
+    die('ERROR: Could not load constants.php. Check file paths.');
 }
 
 // ============================================================================
