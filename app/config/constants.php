@@ -26,6 +26,37 @@ if (!defined('ROOT_PATH') && basename($_SERVER['SCRIPT_FILENAME']) == basename(_
 }
 
 // ============================================================================
+// ENVIRONMENT CONFIGURATION - MUST BE LOADED BEFORE PATHS
+// ============================================================================
+
+// Determine root path for .env file - different approach for local vs production
+$possibleRootPaths = [
+    '/home2/fctcnsed/fctcns-app',  // Production path
+    dirname(__DIR__, 2),           // Local development (C:/xampp/htdocs/fctcns-website)
+];
+
+$envLoaded = false;
+foreach ($possibleRootPaths as $envRootPath) {
+    $envFile = $envRootPath . '/.env';
+    if (file_exists($envFile)) {
+        // Load .env file
+        $env_lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($env_lines as $line) {
+            $line = trim($line);
+            if (strpos($line, '#') === 0 || empty($line)) {
+                continue;
+            }
+            if (strpos($line, '=') !== false) {
+                list($key, $value) = explode('=', $line, 2);
+                $_ENV[trim($key)] = trim($value);
+            }
+        }
+        $envLoaded = true;
+        break;
+    }
+}
+
+// ============================================================================
 // PATH CONSTANTS - CRITICAL: Correct paths for your structure
 // ============================================================================
 
@@ -108,25 +139,6 @@ if (!defined('ADMIN_LAYOUTS_PATH')) {
 // Includes directory (shared header/footer)
 if (!defined('INCLUDES_PATH')) {
     define('INCLUDES_PATH', PUBLIC_PATH . '/includes');
-}
-
-// ============================================================================
-// ENVIRONMENT CONFIGURATION
-// ============================================================================
-
-// Load .env file if exists
-if (file_exists(ROOT_PATH . '/.env')) {
-    $env_lines = file(ROOT_PATH . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($env_lines as $line) {
-        $line = trim($line);
-        if (strpos($line, '#') === 0 || empty($line)) {
-            continue;
-        }
-        if (strpos($line, '=') !== false) {
-            list($key, $value) = explode('=', $line, 2);
-            $_ENV[trim($key)] = trim($value);
-        }
-    }
 }
 
 // ============================================================================
