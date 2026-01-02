@@ -53,6 +53,9 @@ class Controller {
         // Use provided view or determine from called method
         $this->view = $view ?? $this->getDefaultViewName();
         
+        // DEBUG
+        error_log("Controller render: Trying to render view: '{$this->view}'");
+        
         // Merge provided data with controller data
         $this->data = array_merge($this->data, $data);
         
@@ -83,11 +86,17 @@ class Controller {
             }
         }
         
+        // DEBUG: Log found view path
+        error_log("Controller render: Found view at: $viewPath");
+        
         // Include the view - variables from extract() are available
         include $viewPath;
         
         // Get the captured view content
         $content = ob_get_clean();
+        
+        // DEBUG: Log content length
+        error_log("Controller render: View content captured (" . strlen($content) . " bytes)");
         
         // Store content in data for layout
         $this->data['content'] = $content;
@@ -96,14 +105,23 @@ class Controller {
         if ($this->layout) {
             $layoutPath = $this->findLayoutFile($this->layout);
             if ($layoutPath) {
+                // DEBUG: Log layout path
+                error_log("Controller render: Using layout: {$this->layout} at $layoutPath");
+                
                 // Pass data to layout via extract()
                 extract($this->data);
                 include $layoutPath;
             } else {
+                // DEBUG: Log no layout found
+                error_log("Controller render: Layout not found: {$this->layout}");
+                
                 // No layout found, output content directly
                 echo $content;
             }
         } else {
+            // DEBUG: Log no layout specified
+            error_log("Controller render: No layout specified");
+            
             // No layout specified, output content directly
             echo $content;
         }
@@ -120,10 +138,14 @@ class Controller {
         
         foreach ($possiblePaths as $path) {
             if (file_exists($path)) {
+                // DEBUG: Log found path
+                error_log("Controller findViewFile: Found '{$view}' at: $path");
                 return $path;
             }
         }
         
+        // DEBUG: Log not found
+        error_log("Controller findViewFile: View '{$view}' not found in any path");
         return false;
     }
     
@@ -159,10 +181,14 @@ class Controller {
         
         foreach ($paths as $path) {
             if (file_exists($path)) {
+                // DEBUG: Log found layout path
+                error_log("Controller findLayoutFile: Found layout '{$layout}' at: $path");
                 return $path;
             }
         }
         
+        // DEBUG: Log not found
+        error_log("Controller findLayoutFile: Layout '{$layout}' not found in any path");
         return false;
     }
     
@@ -179,6 +205,9 @@ class Controller {
         // Convert camelCase to lowercase: homeAction -> home
         $method = preg_replace('/Action$/', '', $method);
         $viewName = strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', $method));
+        
+        // DEBUG: Log default view name determination
+        error_log("Controller getDefaultViewName: Method '{$method}' -> view '{$viewName}'");
         
         return $viewName;
     }
@@ -203,6 +232,9 @@ class Controller {
      * @param int $statusCode HTTP status code
      */
     protected function redirect($url, $statusCode = 302) {
+        // DEBUG: Log redirect
+        error_log("Controller redirect: Redirecting to: $url");
+        
         // Convert relative URLs to absolute
         if (strpos($url, 'http') !== 0) {
             $url = rtrim($this->data['baseUrl'], '/') . '/' . ltrim($url, '/');
