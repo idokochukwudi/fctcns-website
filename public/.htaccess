@@ -6,7 +6,8 @@
 RewriteEngine On
 
 # Handle subdirectory base
-RewriteBase /fctcns-website/public/
+RewriteBase /
+# RewriteBase /fctcns-website/public/
 
 # Allow direct access to files and directories that exist
 RewriteCond %{REQUEST_FILENAME} -f [OR]

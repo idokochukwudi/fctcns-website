@@ -29,15 +29,9 @@ if (!defined('ROOT_PATH') && basename($_SERVER['SCRIPT_FILENAME']) == basename(_
 // PATH CONSTANTS - CRITICAL: Correct paths for your structure
 // ============================================================================
 
-// Root directory: Can be local or production
+// Root directory: C:/xampp/htdocs/fctcns-website
 if (!defined('ROOT_PATH')) {
-    // Check for environment variable first (production)
-    if (isset($_ENV['ROOT_PATH'])) {
-        define('ROOT_PATH', $_ENV['ROOT_PATH']);
-    } else {
-        // Default local path
-        define('ROOT_PATH', dirname(__DIR__, 2));
-    }
+    define('ROOT_PATH', dirname(__DIR__, 2));
 }
 
 // App directory: C:/xampp/htdocs/fctcns-website/app
@@ -45,20 +39,14 @@ if (!defined('APP_PATH')) {
     define('APP_PATH', ROOT_PATH . '/app');
 }
 
-// Public directory: Can be local or production
+// Public directory: C:/xampp/htdocs/fctcns-website/public
 if (!defined('PUBLIC_PATH')) {
-    // Check for environment variable first (production)
-    if (isset($_ENV['PUBLIC_PATH'])) {
-        define('PUBLIC_PATH', $_ENV['PUBLIC_PATH']);
-    } else {
-        // Default local path
-        define('PUBLIC_PATH', ROOT_PATH . '/public');
-    }
+    define('PUBLIC_PATH', ROOT_PATH . '/public');
 }
 
-// Uploads directory: Can be local or production
+// Uploads directory: C:/xampp/htdocs/fctcns-website/public/uploads
 if (!defined('UPLOADS_PATH')) {
-    define('UPLOADS_PATH', PUBLIC_PATH . '/assets/uploads');
+    define('UPLOADS_PATH', PUBLIC_PATH . '/uploads');
 }
 
 // ============================================================================
@@ -133,23 +121,22 @@ if (file_exists(ROOT_PATH . '/.env')) {
 // URL CONSTANTS - CRITICAL FOR SUBDIRECTORY
 // ============================================================================
 
-// Base URL for the application
+// Base URL for the application (MUST MATCH YOUR SUBDIRECTORY)
 if (!defined('BASE_URL')) {
-    // Check for environment variable first (production)
-    if (isset($_ENV['BASE_URL'])) {
-        define('BASE_URL', rtrim($_ENV['BASE_URL'], '/'));
+    if (isset($_SERVER['HTTP_HOST'])) {
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'];
+        
+        // Your project is in subdirectory: /fctcns-website
+        $project_folder = 'fctcns-website';
+        
+        // Build the base URL
+        $base_url = $protocol . $host . '/' . $project_folder;
+        
+        define('BASE_URL', rtrim($base_url, '/'));
     } else {
-        // Local development
-        if (isset($_SERVER['HTTP_HOST'])) {
-            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-            $host = $_SERVER['HTTP_HOST'];
-            $project_folder = 'fctcns-website';
-            $base_url = $protocol . $host . '/' . $project_folder;
-            define('BASE_URL', rtrim($base_url, '/'));
-        } else {
-            // Fallback for CLI
-            define('BASE_URL', 'http://localhost/fctcns-website');
-        }
+        // Fallback for CLI
+        define('BASE_URL', 'http://localhost/fctcns-website');
     }
 }
 
@@ -454,7 +441,7 @@ function public_url($path = '') {
  * @return string Complete upload URL
  */
 function upload_url($path = '') {
-    return public_url('assets/uploads/' . ltrim($path, '/'));
+    return public_url('uploads/' . ltrim($path, '/'));
 }
 
 /**

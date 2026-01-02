@@ -20,7 +20,7 @@ $currentYear = date('Y'); // Shows 2026
                 <!-- Brand & Social -->
                 <div class="footer-brand">
                     <div class="footer-logo">
-                        <img src="<?= htmlspecialchars($baseUrl) ?>/assets/images/logo/logo.png"
+                        <img src="<?= htmlspecialchars($baseUrl) ?>/assets/images/logo/logo-footer.png"
                              alt="FCT College of Nursing Sciences Logo"
                              height="48"
                              loading="lazy"
