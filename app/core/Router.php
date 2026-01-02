@@ -139,8 +139,14 @@ class Router {
         // Get request URI
         $requestUri = $_SERVER['REQUEST_URI'];
         
+        // DEBUG: Log everything
+        error_log("===== ROUTER DEBUG START =====");
+        error_log("Full REQUEST_URI: " . $requestUri);
+        error_log("REQUEST_METHOD: " . $requestMethod);
+        
         // Remove query string
         $requestUri = parse_url($requestUri, PHP_URL_PATH);
+        error_log("After parse_url: " . $requestUri);
         
         if (defined('APP_DEBUG') && APP_DEBUG) {
             error_log("Router: Original URI: $requestUri");
@@ -149,22 +155,35 @@ class Router {
         // Remove base path if running in subdirectory - FIXED for production
         if (defined('BASE_URL')) {
             $baseUrl = BASE_URL;
+            error_log("BASE_URL from constants: " . $baseUrl);
             
             // Extract base path from BASE_URL
             $parsedUrl = parse_url($baseUrl);
+            error_log("Parsed BASE_URL: " . print_r($parsedUrl, true));
+            
             if (isset($parsedUrl['path']) && $parsedUrl['path'] !== '/') {
                 $basePath = $parsedUrl['path'];
+                error_log("Base path from BASE_URL: " . $basePath);
                 if (strpos($requestUri, $basePath) === 0) {
+                    error_log("Removing base path: " . $basePath);
                     $requestUri = substr($requestUri, strlen($basePath));
+                    error_log("URI after removing base path: " . $requestUri);
                 }
             } elseif (strpos($baseUrl, 'localhost/fctcns-website') !== false) {
                 // Local development with XAMPP
                 $basePath = '/fctcns-website';
+                error_log("Local development detected, base path: " . $basePath);
                 if (strpos($requestUri, $basePath) === 0) {
+                    error_log("Removing base path: " . $basePath);
                     $requestUri = substr($requestUri, strlen($basePath));
+                    error_log("URI after removing base path: " . $requestUri);
                 }
+            } else {
+                error_log("No base path to remove for: " . $baseUrl);
             }
             // In production (https://fctcns.edu.ng), no base path to remove
+        } else {
+            error_log("BASE_URL is NOT defined!");
         }
         
         // Ensure request URI is not empty
@@ -174,6 +193,8 @@ class Router {
             // Remove trailing slash (except for homepage)
             $requestUri = rtrim($requestUri, '/');
         }
+        
+        error_log("Final URI for routing: " . $requestUri);
         
         if (defined('APP_DEBUG') && APP_DEBUG) {
             error_log("Router: Processing URI: '$requestUri', Method: '$requestMethod'");
@@ -208,6 +229,7 @@ class Router {
                     error_log("Router: Captured params: " . print_r($matches, true));
                 }
                 
+                error_log("===== ROUTER DEBUG END (Route Matched) =====");
                 return [
                     'handler' => $route['handler'],
                     'params' => $matches,
@@ -220,6 +242,7 @@ class Router {
             error_log("Router: No route matched for URI: '$requestUri'");
         }
         
+        error_log("===== ROUTER DEBUG END (No Route Matched) =====");
         return null;
     }
 

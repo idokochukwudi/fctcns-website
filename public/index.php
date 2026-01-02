@@ -111,6 +111,21 @@ try {
     $router = new Router();
     
     // ============================================================================
+    // DEBUG ROUTE - ADDED FOR TROUBLESHOOTING
+    // ============================================================================
+    
+    // Debug route
+    $router->get('/debug-test', function() {
+        echo "<h1>Debug Test Route</h1>";
+        echo "<p>This route works!</p>";
+        echo "<pre>";
+        echo "REQUEST_URI: " . $_SERVER['REQUEST_URI'] . "\n";
+        echo "SCRIPT_NAME: " . $_SERVER['SCRIPT_NAME'] . "\n";
+        echo "PHP_SELF: " . $_SERVER['PHP_SELF'] . "\n";
+        echo "</pre>";
+    });
+    
+    // ============================================================================
     // PUBLIC ROUTES - Using Controller Methods
     // ============================================================================
     
