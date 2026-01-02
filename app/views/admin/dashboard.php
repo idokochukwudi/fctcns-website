@@ -654,6 +654,18 @@ try {
                     </li>
                     <?php endif; ?>
                     
+                    <!-- Carousel Slides Link - ADDED HERE -->
+                    <?php if (in_array($userRole, ['admin', 'editor'])): ?>
+                    <li class="nav-item">
+                        <a href="<?php echo BASE_URL; ?>/admin/carousel" class="nav-link">
+                            <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Carousel Slides</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    
                     <!-- Contact Management Link - Added -->
                     <li class="nav-item">
                         <a href="<?php echo BASE_URL; ?>/admin/contact" class="nav-link">
@@ -716,6 +728,23 @@ try {
                                 <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
                             </svg>
                             <span>Backup</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Logout Section - ADDED HERE -->
+            <div class="nav-section">
+                <h3 class="nav-section-title">Account</h3>
+                <ul class="nav-links">
+                    <li class="nav-item">
+                        <a href="<?php echo BASE_URL; ?>/admin/logout" class="nav-link" 
+                           style="color: var(--admin-danger);" 
+                           onclick="return confirm('Are you sure you want to logout?');">
+                            <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Logout</span>
                         </a>
                     </li>
                 </ul>
@@ -1044,6 +1073,19 @@ try {
                     <div>
                         <h4>Create News</h4>
                         <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Publish news article</p>
+                    </div>
+                </a>
+                
+                <!-- Carousel Quick Action - ADDED HERE -->
+                <a href="<?php echo BASE_URL; ?>/admin/carousel/create" class="action-btn">
+                    <div class="action-icon">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>Add Carousel Slide</h4>
+                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Create new homepage slide</p>
                     </div>
                 </a>
                 <?php endif; ?>

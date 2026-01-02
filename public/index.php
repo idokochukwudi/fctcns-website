@@ -142,6 +142,26 @@ try {
     $router->post('/admin/contact/quick-update/{id}', 'ContactController@quickUpdate');
     
     // ============================================================================
+    // ADMIN CAROUSEL MANAGEMENT ROUTES
+    // ============================================================================
+    
+    // Carousel management routes
+    $router->get('/admin/carousel', 'AdminCarouselController@index');
+    $router->get('/admin/carousel/create', 'AdminCarouselController@create');
+    $router->post('/admin/carousel/store', 'AdminCarouselController@store');
+    $router->get('/admin/carousel/edit/{id}', 'AdminCarouselController@edit');
+    $router->post('/admin/carousel/update/{id}', 'AdminCarouselController@update');
+    $router->post('/admin/carousel/delete/{id}', 'AdminCarouselController@delete');
+    $router->post('/admin/carousel/toggle/{id}', 'AdminCarouselController@toggle');
+    
+    // ============================================================================
+    // CAROUSEL IMAGE UPLOAD ROUTE - ADD THIS BEFORE ADMIN CATCH-ALL
+    // ============================================================================
+    
+    // Image upload route for AJAX uploads
+    $router->post('/admin/carousel/upload-image', 'AdminCarouselController@uploadImage');
+    
+    // ============================================================================
     // SETUP AND INSTALLATION ROUTES
     // ============================================================================
     

@@ -10,10 +10,19 @@
  */
 
 // ============================================================================
-// SECURITY: Prevent direct access
+// PREVENT MULTIPLE INCLUDES - FIXED
 // ============================================================================
-if (!defined('ROOT_PATH')) {
-    define('CONSTANTS_LOADED', true);
+if (defined('CONSTANTS_LOADED')) {
+    return; // Stop processing if already loaded
+}
+
+// ============================================================================
+// SECURITY: Prevent direct access - FIXED LOGIC
+// ============================================================================
+// Only prevent direct access if ROOT_PATH is not defined AND we're accessing directly
+if (!defined('ROOT_PATH') && basename($_SERVER['SCRIPT_FILENAME']) == basename(__FILE__)) {
+    header('HTTP/1.0 403 Forbidden');
+    die('Direct access not permitted');
 }
 
 // ============================================================================
@@ -151,94 +160,160 @@ if (!defined('PUBLIC_URL')) {
 // ============================================================================
 
 // Application name
-define('APP_NAME', 'FCT College of Nursing Sciences');
+if (!defined('APP_NAME')) {
+    define('APP_NAME', 'FCT College of Nursing Sciences');
+}
 
 // Application environment (development, staging, production)
-define('APP_ENV', isset($_ENV['APP_ENV']) ? $_ENV['APP_ENV'] : 'development');
+if (!defined('APP_ENV')) {
+    $app_env = isset($_ENV['APP_ENV']) ? $_ENV['APP_ENV'] : 'development';
+    define('APP_ENV', $app_env);
+}
 
 // Debug mode - enabled in development
-$debug_env = isset($_ENV['APP_DEBUG']) ? strtolower($_ENV['APP_DEBUG']) : '';
-define('APP_DEBUG', (APP_ENV === 'development') || ($debug_env === 'true' || $debug_env === '1'));
+if (!defined('APP_DEBUG')) {
+    $debug_env = isset($_ENV['APP_DEBUG']) ? strtolower($_ENV['APP_DEBUG']) : '';
+    $is_debug = (APP_ENV === 'development') || ($debug_env === 'true' || $debug_env === '1');
+    define('APP_DEBUG', $is_debug);
+}
 
 // Current year for copyright
-define('CURRENT_YEAR', date('Y'));
+if (!defined('CURRENT_YEAR')) {
+    define('CURRENT_YEAR', date('Y'));
+}
 
 // Application version
-define('APP_VERSION', '2.0.0');
+if (!defined('APP_VERSION')) {
+    define('APP_VERSION', '2.0.0');
+}
 
 // Default timezone
-date_default_timezone_set('Africa/Lagos');
+if (!defined('DEFAULT_TIMEZONE')) {
+    define('DEFAULT_TIMEZONE', 'Africa/Lagos');
+    date_default_timezone_set(DEFAULT_TIMEZONE);
+}
 
 // ============================================================================
 // DATABASE CONFIGURATION
 // ============================================================================
 
 // Database configuration from environment
-define('DB_HOST', isset($_ENV['DB_HOST']) ? $_ENV['DB_HOST'] : 'localhost');
-define('DB_PORT', isset($_ENV['DB_PORT']) ? $_ENV['DB_PORT'] : 3306);
-define('DB_NAME', isset($_ENV['DB_DATABASE']) ? $_ENV['DB_DATABASE'] : (isset($_ENV['DB_NAME']) ? $_ENV['DB_NAME'] : 'fctcns_main'));
-define('DB_USER', isset($_ENV['DB_USERNAME']) ? $_ENV['DB_USERNAME'] : (isset($_ENV['DB_USER']) ? $_ENV['DB_USER'] : 'root'));
-define('DB_PASS', isset($_ENV['DB_PASSWORD']) ? $_ENV['DB_PASSWORD'] : (isset($_ENV['DB_PASS']) ? $_ENV['DB_PASS'] : ''));
+if (!defined('DB_HOST')) {
+    $db_host = isset($_ENV['DB_HOST']) ? $_ENV['DB_HOST'] : 'localhost';
+    define('DB_HOST', $db_host);
+}
+
+if (!defined('DB_PORT')) {
+    $db_port = isset($_ENV['DB_PORT']) ? $_ENV['DB_PORT'] : 3306;
+    define('DB_PORT', $db_port);
+}
+
+if (!defined('DB_NAME')) {
+    $db_name = isset($_ENV['DB_DATABASE']) ? $_ENV['DB_DATABASE'] : (isset($_ENV['DB_NAME']) ? $_ENV['DB_NAME'] : 'fctcns_main');
+    define('DB_NAME', $db_name);
+}
+
+if (!defined('DB_USER')) {
+    $db_user = isset($_ENV['DB_USERNAME']) ? $_ENV['DB_USERNAME'] : (isset($_ENV['DB_USER']) ? $_ENV['DB_USER'] : 'root');
+    define('DB_USER', $db_user);
+}
+
+if (!defined('DB_PASS')) {
+    $db_pass = isset($_ENV['DB_PASSWORD']) ? $_ENV['DB_PASSWORD'] : (isset($_ENV['DB_PASS']) ? $_ENV['DB_PASS'] : '');
+    define('DB_PASS', $db_pass);
+}
 
 // Database charset
-define('DB_CHARSET', 'utf8mb4');
+if (!defined('DB_CHARSET')) {
+    define('DB_CHARSET', 'utf8mb4');
+}
 
 // Database collation
-define('DB_COLLATION', 'utf8mb4_unicode_ci');
+if (!defined('DB_COLLATION')) {
+    define('DB_COLLATION', 'utf8mb4_unicode_ci');
+}
 
 // ============================================================================
 // MVC DEFAULT SETTINGS
 // ============================================================================
 
 // Default controller
-define('DEFAULT_CONTROLLER', 'PageController');
+if (!defined('DEFAULT_CONTROLLER')) {
+    define('DEFAULT_CONTROLLER', 'PageController');
+}
 
 // Default controller method
-define('DEFAULT_METHOD', 'home');
+if (!defined('DEFAULT_METHOD')) {
+    define('DEFAULT_METHOD', 'home');
+}
 
 // Default layout template
-define('DEFAULT_LAYOUT', 'main');
+if (!defined('DEFAULT_LAYOUT')) {
+    define('DEFAULT_LAYOUT', 'main');
+}
 
 // View file extension
-define('VIEW_EXTENSION', '.php');
+if (!defined('VIEW_EXTENSION')) {
+    define('VIEW_EXTENSION', '.php');
+}
 
 // Model file extension
-define('MODEL_EXTENSION', '.php');
+if (!defined('MODEL_EXTENSION')) {
+    define('MODEL_EXTENSION', '.php');
+}
 
 // Controller file extension
-define('CONTROLLER_EXTENSION', '.php');
+if (!defined('CONTROLLER_EXTENSION')) {
+    define('CONTROLLER_EXTENSION', '.php');
+}
 
 // ============================================================================
 // SECURITY SETTINGS
 // ============================================================================
 
 // Session lifetime (2 hours)
-define('SESSION_LIFETIME', 7200);
+if (!defined('SESSION_LIFETIME')) {
+    define('SESSION_LIFETIME', 7200);
+}
 
 // CSRF token lifetime (1 hour)
-define('CSRF_TOKEN_LIFETIME', 3600);
+if (!defined('CSRF_TOKEN_LIFETIME')) {
+    define('CSRF_TOKEN_LIFETIME', 3600);
+}
 
 // Password hash algorithm
-define('PASSWORD_ALGO', PASSWORD_BCRYPT);
+if (!defined('PASSWORD_ALGO')) {
+    define('PASSWORD_ALGO', PASSWORD_BCRYPT);
+}
 
 // Password hash options
-define('PASSWORD_OPTIONS', ['cost' => 12]);
+if (!defined('PASSWORD_OPTIONS')) {
+    define('PASSWORD_OPTIONS', ['cost' => 12]);
+}
 
 // Minimum password length
-define('MIN_PASSWORD_LENGTH', 8);
+if (!defined('MIN_PASSWORD_LENGTH')) {
+    define('MIN_PASSWORD_LENGTH', 8);
+}
 
 // ============================================================================
 // FILE UPLOAD SETTINGS
 // ============================================================================
 
 // Maximum upload size (5MB)
-define('MAX_UPLOAD_SIZE', 5242880);
+if (!defined('MAX_UPLOAD_SIZE')) {
+    define('MAX_UPLOAD_SIZE', 5242880);
+}
 
 // Allowed image types
-define('ALLOWED_IMAGE_TYPES', ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+if (!defined('ALLOWED_IMAGE_TYPES')) {
+    define('ALLOWED_IMAGE_TYPES', ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+}
 
 // Allowed document types
-define('ALLOWED_DOC_TYPES', ['pdf', 'doc', 'docx']);
+if (!defined('ALLOWED_DOC_TYPES')) {
+    define('ALLOWED_DOC_TYPES', ['pdf', 'doc', 'docx']);
+}
 
 // ============================================================================
 // ERROR HANDLING CONFIGURATION
@@ -292,20 +367,33 @@ set_error_handler(function($errno, $errstr, $errfile, $errline) {
 // ============================================================================
 
 // Maintenance mode flag
-define('MAINTENANCE_MODE', false);
+if (!defined('MAINTENANCE_MODE')) {
+    define('MAINTENANCE_MODE', false);
+}
 
 // Cache lifetime (1 hour)
-define('CACHE_LIFETIME', 3600);
+if (!defined('CACHE_LIFETIME')) {
+    define('CACHE_LIFETIME', 3600);
+}
 
 // API rate limit
-define('API_RATE_LIMIT', 60);
+if (!defined('API_RATE_LIMIT')) {
+    define('API_RATE_LIMIT', 60);
+}
 
 // Email configuration
-define('EMAIL_FROM', isset($_ENV['EMAIL_FROM']) ? $_ENV['EMAIL_FROM'] : 'noreply@fctcns.edu.ng');
-define('EMAIL_FROM_NAME', isset($_ENV['EMAIL_FROM_NAME']) ? $_ENV['EMAIL_FROM_NAME'] : 'FCT College of Nursing Sciences');
+if (!defined('EMAIL_FROM')) {
+    $email_from = isset($_ENV['EMAIL_FROM']) ? $_ENV['EMAIL_FROM'] : 'noreply@fctcns.edu.ng';
+    define('EMAIL_FROM', $email_from);
+}
+
+if (!defined('EMAIL_FROM_NAME')) {
+    $email_from_name = isset($_ENV['EMAIL_FROM_NAME']) ? $_ENV['EMAIL_FROM_NAME'] : 'FCT College of Nursing Sciences';
+    define('EMAIL_FROM_NAME', $email_from_name);
+}
 
 // ============================================================================
-// HELPER FUNCTIONS - REMOVED e() FUNCTION FROM HERE
+// HELPER FUNCTIONS
 // ============================================================================
 
 /**
@@ -390,6 +478,19 @@ function current_url() {
 }
 
 // ============================================================================
+// LOAD HELPER FUNCTIONS
+// ============================================================================
+
+// Load additional helper functions
+$helperFile = APP_PATH . '/helpers/functions.php';
+if (file_exists($helperFile)) {
+    require_once $helperFile;
+}
+
+// ============================================================================
 // INITIALIZATION COMPLETE
 // ============================================================================
+
+// Mark that constants have been loaded - ONCE AT THE END
+define('CONSTANTS_LOADED', true);
 ?>

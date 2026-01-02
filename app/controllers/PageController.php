@@ -481,7 +481,7 @@ HTML;
     private function getCarouselSlides() {
         try {
             $slides = $this->getCarouselModel()->getActiveSlides(5);
-            return !empty($slides) ? $slides : $this->getFallbackCarouselSlides();
+            return !empty($slides) ? $this->formatSlideUrls($slides) : $this->getFallbackCarouselSlides();
             
         } catch (Exception $e) {
             error_log("Carousel data fetch error: " . $e->getMessage());
@@ -490,9 +490,38 @@ HTML;
     }
     
     /**
+     * Format slide URLs by adding base URL to image paths
+     */
+    private function formatSlideUrls($slides) {
+        $baseUrl = $this->data['baseUrl']; // Should be '/fctcns-website'
+        
+        foreach ($slides as &$slide) {
+            if (!empty($slide['image_path'])) {
+                // If image path starts with /, combine with baseUrl
+                if (strpos($slide['image_path'], '/') === 0) {
+                    $slide['image_path'] = rtrim($baseUrl, '/') . $slide['image_path'];
+                }
+                // If image path doesn't start with / or http, add both
+                elseif (strpos($slide['image_path'], 'http') !== 0 && strpos($slide['image_path'], '//') !== 0) {
+                    $slide['image_path'] = rtrim($baseUrl, '/') . '/' . ltrim($slide['image_path'], '/');
+                }
+            }
+            
+            // Also format button links if they're relative
+            if (!empty($slide['button_link']) && strpos($slide['button_link'], 'http') !== 0) {
+                if (strpos($slide['button_link'], '/') === 0) {
+                    $slide['button_link'] = rtrim($baseUrl, '/') . $slide['button_link'];
+                } else {
+                    $slide['button_link'] = rtrim($baseUrl, '/') . '/' . ltrim($slide['button_link'], '/');
+                }
+            }
+        }
+        
+        return $slides;
+    }
+    
+    /**
      * Get fallback carousel slides
-     * 
-     * @return array Default carousel slides with FULL URLs
      */
     private function getFallbackCarouselSlides() {
         $baseUrl = $this->data['baseUrl'];
