@@ -1,8 +1,15 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
-    # If the request is for a valid file or directory, serve it directly
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    
+    # If the request is for a valid FILE, serve it directly
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+    
+    # If the request is for a valid DIRECTORY, serve it directly
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
     
@@ -10,11 +17,10 @@
     RewriteRule ^ index.php [L]
 </IfModule>
 
-# Security headers
+# Security Headers (Optional but good)
 <IfModule mod_headers.c>
-    Header always set X-Content-Type-Options "nosniff"
-    Header always set X-Frame-Options "SAMEORIGIN"
-    Header always set X-XSS-Protection "1; mode=block"
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
 </IfModule>
 
 # Disable directory browsing
