@@ -147,16 +147,21 @@ class Router {
         $requestUri = parse_url($requestUri, PHP_URL_PATH);
         error_log("After parse_url: $requestUri");
 
-        // Handle index.php in URL
+        // FIX: Remove /index.php if present
         if (strpos($requestUri, '/index.php') === 0) {
             $requestUri = substr($requestUri, 10); // Remove '/index.php'
             error_log("After removing /index.php: $requestUri");
         }
 
+        // If requestUri is empty after removing index.php, make it '/'
+        if ($requestUri === '') {
+            $requestUri = '/';
+        }
+        
         // In production (https://fctcns.edu.ng), no base path to remove
         // The old code removed '/fctcns-website' but we don't have that in production
         
-        // Ensure request URI is not empty
+        // Ensure request URI is not empty (check again in case it wasn't set above)
         if ($requestUri === '' || $requestUri === '/') {
             $requestUri = '/';
         } else {
