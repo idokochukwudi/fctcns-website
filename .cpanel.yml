@@ -1,28 +1,31 @@
 ---
 deployment:
   tasks:
-    # Set deployment paths
-    - export DEPLOYPATH=/home/fctcnsed/public_html/
-    - export APPPATH=/home/fctcnsed/fctcns-app/
+    # Set deployment paths - FIXED: Changed from /home/ to /home2/
+    - export DEPLOYPATH=/home2/fctcnsed/public_html/
+    - export APPPATH=/home2/fctcnsed/fctcns-app/
 
     # Copy public folder contents to public_html (web root)
-    - /bin/cp -R public/* $DEPLOYPATH
+    - /bin/cp -Rf public/* $DEPLOYPATH
 
     # Create application directory
     - /bin/mkdir -p $APPPATH
 
     # Copy app directory (controllers, models, views, etc.)
-    - /bin/cp -R app $APPPATH/
+    - /bin/cp -Rf app $APPPATH/
 
     # Copy database directory
-    - /bin/cp -R database $APPPATH/
+    - /bin/cp -Rf database $APPPATH/
 
     # Copy config directory
-    - /bin/cp -R app/config $APPPATH/app/
+    - /bin/cp -Rf app/config $APPPATH/app/
 
     # Create logs directory
     - /bin/mkdir -p $APPPATH/app/logs
     - /bin/chmod 755 $APPPATH/app/logs
+
+    # Copy production env file
+    - /bin/cp -f .env.production $APPPATH/.env
 
     # Clean up git files from public deployment
     - /bin/rm -rf $DEPLOYPATH/.git 2>/dev/null ||:
