@@ -18,11 +18,32 @@ ob_start();
 // Set timezone
 date_default_timezone_set('Africa/Lagos');
 
-// Get the root directory
-$rootDir = dirname(__DIR__);
+// ============================================================================
+// LOAD CONSTANTS - FIXED FOR BOTH LOCAL AND PRODUCTION
+// ============================================================================
 
-// Load application constants FIRST (this defines all constants)
-require_once $rootDir . '/app/config/constants.php';
+// Try multiple paths for constants.php in different environments
+$possiblePaths = [
+    // Production path (Go54 hosting)
+    '/home2/fctcnsed/fctcns-app/app/config/constants.php',
+    // Local development path (XAMPP)
+    dirname(__DIR__) . '/app/config/constants.php',
+    // Alternative local path
+    dirname(__DIR__, 2) . '/app/config/constants.php',
+];
+
+$constantsLoaded = false;
+foreach ($possiblePaths as $path) {
+    if (file_exists($path)) {
+        require_once $path;
+        $constantsLoaded = true;
+        break;
+    }
+}
+
+if (!$constantsLoaded) {
+    die('Error: Could not load constants.php. Check the file paths.');
+}
 
 // ============================================================================
 // SESSION CONFIGURATION
