@@ -1,9 +1,10 @@
 <?php
 /**
  * Homepage View Template - Professional Redesign (Mature Light Purple Theme)
+ * Mobile-Optimized Version
  * 
  * @package FCTCNS
- * @version 3.2
+ * @version 3.4
  */
 
 extract($data ?? []);
@@ -21,144 +22,134 @@ $carouselSlides = $carouselSlides ?? [];
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <meta name="description" content="<?php echo e($page_description ?? 'FCT College of Nursing Sciences - NMCN & NBTE Accredited Nursing Education'); ?>">
     <title><?php echo e($page_title ?? 'FCT College of Nursing Sciences'); ?></title>
     
     <!-- Professional Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Open+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-/* CRITICAL FIX FOR HEADER SPACING */
-body > main.main-content {
-    margin-top: 0 !important;
-}
-
-.homepage-content {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-.hero-section {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-.hero-carousel {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-/* Override any existing margins */
-*[style*="margin-top"], 
-*[style*="padding-top"] {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-/* Rest of your existing homepage CSS here... */
-</style>
-<style>
 /* ==========================================================================
-   CSS RESET & GLOBAL VARIABLES - MATURE TRANSPARENT PURPLE
+   CRITICAL MOBILE ENHANCEMENTS & FIXES
    ========================================================================== */
-:root {
-    /* Mature Transparent Purple Color Palette */
-    --color-primary: rgba(107, 78, 155, 0.9);           /* Semi-transparent purple */
-    --color-primary-dark: rgba(90, 65, 133, 0.9);
-    --color-primary-light: rgba(123, 92, 174, 0.8);
-    --color-primary-very-light: rgba(240, 235, 247, 0.6);
-    --color-primary-transparent: rgba(107, 78, 155, 0.1);
-    
-    --color-secondary: rgba(74, 144, 226, 0.9);         /* Transparent blue */
-    --color-secondary-dark: rgba(58, 123, 200, 0.9);
-    
-    --color-accent: rgba(255, 126, 95, 0.9);            /* Transparent coral */
-    --color-accent-dark: rgba(229, 106, 74, 0.9);
-    
-    /* Neutral Colors */
-    --color-white: rgba(255, 255, 255, 0.95);
-    --color-white-solid: #ffffff;
-    --color-gray-50: rgba(248, 249, 250, 0.8);
-    --color-gray-100: rgba(241, 243, 244, 0.8);
-    --color-gray-200: rgba(233, 236, 239, 0.6);
-    --color-gray-800: rgba(52, 58, 64, 0.9);
-    --color-gray-900: rgba(33, 37, 41, 0.9);
-    
-    /* Typography - Refined */
-    --font-heading: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-body: 'Open Sans', 'Segoe UI', Roboto, sans-serif;
-    
-    /* Spacing */
-    --spacing-xs: 0.5rem;
-    --spacing-sm: 1rem;
-    --spacing-md: 1.5rem;
-    --spacing-lg: 2rem;
-    --spacing-xl: 2.5rem;
-    --spacing-xxl: 3.5rem;
-    
-    /* Shadows - Subtle */
-    --shadow-sm: 0 1px 3px rgba(107, 78, 155, 0.08);
-    --shadow-md: 0 3px 10px rgba(107, 78, 155, 0.12);
-    --shadow-lg: 0 8px 25px rgba(107, 78, 155, 0.15);
-    
-    /* Border Radius */
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    
-    /* Transitions */
-    --transition-fast: all 0.2s ease;
-    --transition-base: all 0.3s ease;
-}
-
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-html {
-    scroll-behavior: smooth;
+html, body {
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
 }
 
 body {
-    font-family: var(--font-body);
-    font-size: 15px;
-    line-height: 1.6;
-    color: var(--color-gray-800);
-    background-color: var(--color-white-solid);
-    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #FFFFFF;
 }
 
-.container {
-    width: 100%;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-sm);
+/* ELIMINATE ALL UNNECESSARY SPACING BETWEEN HEADER AND CONTENT */
+.main-content,
+.homepage-content,
+.hero-section,
+.hero-carousel,
+.carousel-inner,
+.carousel-slide {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: none !important;
+}
+
+/* Force remove any potential gaps */
+body > *:first-child:not(header) {
+    margin-top: 0 !important;
 }
 
 /* ==========================================================================
-   HERO CAROUSEL - FIXED DISPLAY
+   CSS RESET & GLOBAL VARIABLES - PROFESSIONAL MATURE DESIGN
+   ========================================================================== */
+:root {
+    /* Professional Color Palette - Muted Elegance */
+    --color-primary: #5D4A8A;           /* Deep sophisticated purple */
+    --color-primary-dark: #4A3A6F;
+    --color-primary-light: #6F5B9E;
+    --color-primary-very-light: #F8F6FC;
+    --color-primary-transparent: rgba(93, 74, 138, 0.08);
+    
+    --color-secondary: #3A6B8F;         /* Professional blue */
+    --color-secondary-dark: #2D5570;
+    
+    --color-accent: #D4A574;            /* Muted gold accent */
+    --color-accent-dark: #BF8F5E;
+    --color-accent-light: #E6C9A5;
+    
+    /* Enhanced Neutral Colors - Professional */
+    --color-white: #FFFFFF;
+    --color-off-white: #FAFAFA;
+    --color-gray-50: #F5F7FA;
+    --color-gray-100: #E8ECF1;
+    --color-gray-200: #D1D9E3;
+    --color-gray-300: #B8C2CC;
+    --color-gray-800: #2D3748;
+    --color-gray-900: #1A202C;
+    --color-black: #000000;
+    
+    /* Typography - Professional Scale */
+    --font-heading: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-body: 'Open Sans', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    
+    /* Professional Spacing */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 0.875rem;
+    --spacing-md: 1.25rem;
+    --spacing-lg: 1.75rem;
+    --spacing-xl: 2.25rem;
+    --spacing-xxl: 3rem;
+    
+    /* Touch Targets */
+    --touch-target: 44px;
+    
+    /* Subtle Professional Shadows */
+    --shadow-subtle: 0 2px 6px rgba(0, 0, 0, 0.05);
+    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.12);
+    
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-full: 999px;
+    
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================================================
+   HERO CAROUSEL - PROFESSIONAL MATURE DESIGN
    ========================================================================== */
 .hero-section {
     position: relative;
     width: 100%;
-    margin-top: 0;
-    padding-top: 0;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #4A3A6F, #5D4A8A);
 }
 
 .hero-carousel {
     position: relative;
     width: 100%;
     height: 75vh;
-    max-height: 600px;
-    min-height: 450px;
+    max-height: 650px;
+    min-height: 500px;
     overflow: hidden;
-    background: linear-gradient(135deg, rgba(107, 78, 155, 0.3), rgba(123, 92, 174, 0.2));
+    background: linear-gradient(135deg, rgba(74, 58, 111, 0.95), rgba(93, 74, 138, 0.97));
 }
 
 .carousel-inner {
@@ -198,7 +189,7 @@ body {
     z-index: 1;
 }
 
-/* Transparent overlay for text readability */
+/* Professional overlay for text readability */
 .carousel-slide-bg::after {
     content: '';
     position: absolute;
@@ -207,56 +198,59 @@ body {
     width: 100%;
     height: 100%;
     background: linear-gradient(
-        90deg, 
-        rgba(0, 0, 0, 0.5) 0%, 
-        rgba(0, 0, 0, 0.3) 40%, 
+        to bottom,
+        rgba(0, 0, 0, 0.6) 0%,
+        rgba(0, 0, 0, 0.4) 50%,
         rgba(0, 0, 0, 0.2) 100%
     );
 }
 
-/* Carousel content with transparent background */
+/* Carousel content - Professional minimal */
 .carousel-slide-content {
     position: relative;
     z-index: 3;
-    color: var(--color-white-solid);
-    max-width: 680px;
-    padding: var(--spacing-lg);
-    margin-left: 8%;
-    background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(8px);
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--color-white);
+    max-width: 700px;
+    padding: var(--spacing-xl);
+    margin: 0 auto;
+    text-align: center;
 }
 
 .carousel-slide-badge {
     display: inline-block;
-    background: rgba(255, 126, 95, 0.9);
-    color: var(--color-white-solid);
-    padding: 0.4rem 1rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.8rem;
+    background: var(--color-accent);
+    color: var(--color-gray-900);
+    padding: 0.4rem 1.2rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.5px;
     margin-bottom: var(--spacing-md);
+    text-transform: uppercase;
+    font-family: var(--font-heading);
 }
 
+/* REDUCED CAROUSEL FONT SIZES - More professional */
 .carousel-slide-title {
     font-family: var(--font-heading);
-    font-size: 2.5rem;
+    font-size: clamp(1.5rem, 4vw, 2rem); /* Reduced from 1.75-2.5rem */
     font-weight: 600;
-    line-height: 1.2;
+    line-height: 1.3;
     margin-bottom: var(--spacing-sm);
-    color: var(--color-white-solid);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    color: var(--color-white);
+    letter-spacing: -0.2px;
 }
 
 .carousel-slide-subtitle {
-    font-size: 1.2rem;
+    font-size: clamp(0.95rem, 2.5vw, 1.15rem); /* Reduced from 1-1.2rem */
     font-weight: 400;
     margin-bottom: var(--spacing-lg);
-    line-height: 1.5;
+    line-height: 1.6;
     color: rgba(255, 255, 255, 0.9);
     font-family: var(--font-body);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .carousel-slide-cta {
@@ -264,196 +258,238 @@ body {
     flex-wrap: wrap;
     gap: var(--spacing-sm);
     margin-top: var(--spacing-lg);
+    justify-content: center;
 }
 
 /* ==========================================================================
-   BUTTONS - REFINED DESIGN
+   BUTTONS - PROFESSIONAL STYLING
    ========================================================================== */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.7rem 1.5rem;
+    padding: 0.75rem 1.5rem;
     font-family: var(--font-heading);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 500;
     text-decoration: none;
     border-radius: var(--radius-md);
-    transition: var(--transition-base);
+    transition: var(--transition-smooth);
     border: 1px solid transparent;
     cursor: pointer;
-    min-height: 44px;
+    min-height: 42px;
+    letter-spacing: 0.3px;
 }
 
 .btn-primary {
-    background: rgba(255, 126, 95, 0.9);
-    color: var(--color-white-solid);
-    border-color: rgba(255, 126, 95, 0.9);
+    background: var(--color-accent);
+    color: var(--color-gray-900);
+    border-color: var(--color-accent);
 }
 
-.btn-primary:hover, .btn-primary:focus {
-    background: rgba(229, 106, 74, 0.95);
-    color: var(--color-white-solid);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+.btn-primary:hover,
+.btn-primary:focus {
+    background: var(--color-accent-dark);
+    color: var(--color-gray-900);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-soft);
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--color-white-solid);
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-white);
+    border-color: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--color-white);
     border-color: rgba(255, 255, 255, 0.3);
 }
 
-.btn-secondary:hover, .btn-secondary:focus {
-    background: rgba(255, 255, 255, 0.25);
-    color: var(--color-white-solid);
-    transform: translateY(-2px);
-}
-
 /* ==========================================================================
-   STATISTICS SECTION - TRANSPARENT DESIGN
+   STATISTICS SECTION - MATURE PROFESSIONAL DESIGN
    ========================================================================== */
 .stats-section {
-    background: linear-gradient(135deg, rgba(107, 78, 155, 0.05), rgba(123, 92, 174, 0.03));
+    background: var(--color-off-white);
     padding: var(--spacing-xl) 0;
-    position: relative;
+    border-bottom: 1px solid var(--color-gray-100);
 }
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-lg);
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
     text-align: center;
 }
 
 .stat-item {
     padding: var(--spacing-lg);
-    background: rgba(255, 255, 255, 0.7);
+    background: var(--color-white);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition-base);
-    border: 1px solid rgba(107, 78, 155, 0.1);
-    backdrop-filter: blur(5px);
+    box-shadow: var(--shadow-subtle);
+    transition: var(--transition-smooth);
+    border: 1px solid var(--color-gray-100);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .stat-item:hover {
-    transform: translateY(-5px);
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: var(--shadow-md);
-    border-color: rgba(107, 78, 155, 0.2);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+    border-color: var(--color-primary-transparent);
 }
 
 .stat-icon {
-    font-size: 2.2rem;
-    color: rgba(107, 78, 155, 0.9);
+    font-size: 1.75rem; /* Reduced size */
+    color: var(--color-primary);
     margin-bottom: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background: var(--color-primary-very-light);
+    border-radius: 50%;
 }
 
+/* REDUCED STATS FONT SIZES - More mature */
 .stat-number {
     font-family: var(--font-heading);
-    font-size: 2.2rem;
+    font-size: 1.75rem; /* Reduced from 2.5rem */
     font-weight: 600;
-    margin-bottom: 0.3rem;
-    color: rgba(107, 78, 155, 0.9);
+    margin-bottom: 0.25rem;
+    color: var(--color-primary);
+    line-height: 1;
 }
 
 .stat-label {
-    font-size: 0.95rem;
-    color: rgba(52, 58, 64, 0.8);
+    font-size: 0.85rem; /* Reduced from 0.95rem */
+    color: var(--color-gray-800);
     font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.3px;
 }
 
 /* ==========================================================================
-   ACCREDITATION SECTION - REFINED
+   ACCREDITATION SECTION - PROFESSIONAL ARRANGEMENT
    ========================================================================== */
 .accreditation-section {
-    background: rgba(240, 235, 247, 0.4);
+    background: var(--color-white);
     padding: var(--spacing-xl) 0;
-    position: relative;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.accreditation-container {
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .accreditation-content {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
     gap: var(--spacing-lg);
+    text-align: center;
+    align-items: center;
 }
 
 .accreditation-text {
-    flex: 1;
-    min-width: 280px;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 .accreditation-text h3 {
     font-family: var(--font-heading);
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: var(--spacing-sm);
-    color: rgba(107, 78, 155, 0.9);
+    color: var(--color-primary);
+    line-height: 1.3;
 }
 
 .accreditation-text p {
     font-size: 1rem;
-    color: rgba(52, 58, 64, 0.8);
+    color: var(--color-gray-800);
     line-height: 1.6;
+    font-weight: 400;
+    margin-bottom: var(--spacing-lg);
 }
 
 .accreditation-badges {
     display: flex;
+    flex-direction: column;
     gap: var(--spacing-md);
-    flex-wrap: wrap;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
 }
 
 .accreditation-badge {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-md);
-    background: rgba(255, 255, 255, 0.8);
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--color-primary-very-light);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition-base);
-    border: 1px solid rgba(107, 78, 155, 0.15);
-    backdrop-filter: blur(5px);
+    transition: var(--transition-smooth);
+    border: 1px solid var(--color-primary-transparent);
+    text-align: left;
 }
 
 .accreditation-badge:hover {
-    transform: translateY(-3px);
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: var(--shadow-md);
-    border-color: rgba(107, 78, 155, 0.3);
+    background: var(--color-white);
+    box-shadow: var(--shadow-subtle);
+    transform: translateY(-1px);
 }
 
 .badge-icon {
-    font-size: 1.8rem;
-    color: rgba(107, 78, 155, 0.9);
+    font-size: 2rem;
+    color: var(--color-primary);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    background: var(--color-white);
+    border-radius: 50%;
+    box-shadow: var(--shadow-subtle);
 }
 
 .badge-text {
     display: flex;
     flex-direction: column;
+    flex: 1;
 }
 
 .badge-text strong {
     font-family: var(--font-heading);
     font-size: 1.1rem;
     font-weight: 600;
-    color: rgba(107, 78, 155, 0.9);
+    color: var(--color-primary);
+    line-height: 1.3;
+    margin-bottom: 0.25rem;
 }
 
 .badge-text span {
     font-size: 0.85rem;
-    color: rgba(108, 117, 125, 0.8);
+    color: var(--color-gray-800);
     font-weight: 400;
+    line-height: 1.4;
 }
 
 /* ==========================================================================
-   PROGRAMS SECTION - REFINED CARDS
+   PROGRAMS SECTION - PROFESSIONAL LAYOUT
    ========================================================================== */
 .programs-section {
     padding: var(--spacing-xl) 0;
-    background: var(--color-white-solid);
+    background: var(--color-off-white);
+    border-bottom: 1px solid var(--color-gray-100);
 }
 
 .section-header {
@@ -466,9 +502,9 @@ body {
 
 .section-title {
     font-family: var(--font-heading);
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 600;
-    color: rgba(107, 78, 155, 0.9);
+    color: var(--color-primary);
     margin-bottom: var(--spacing-sm);
     position: relative;
     display: inline-block;
@@ -480,50 +516,50 @@ body {
     bottom: -8px;
     left: 50%;
     transform: translateX(-50%);
-    width: 60px;
-    height: 3px;
-    background: rgba(255, 126, 95, 0.9);
-    border-radius: 2px;
+    width: 50px;
+    height: 2px;
+    background: var(--color-accent);
+    border-radius: 1px;
 }
 
 .section-subtitle {
-    font-size: 1.1rem;
-    color: rgba(52, 58, 64, 0.8);
+    font-size: 1rem;
+    color: var(--color-gray-800);
     line-height: 1.6;
     margin-top: var(--spacing-lg);
     font-weight: 400;
+    padding: 0 var(--spacing-sm);
 }
 
-/* Program Cards - Refined, less bold */
 .program-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: 1fr;
     gap: var(--spacing-lg);
     margin-top: var(--spacing-lg);
 }
 
 .program-card {
-    background: var(--color-white-solid);
+    background: var(--color-white);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition-base);
-    border: 1px solid rgba(233, 236, 239, 0.8);
+    box-shadow: var(--shadow-subtle);
+    transition: var(--transition-smooth);
+    border: 1px solid var(--color-gray-100);
     height: 100%;
     display: flex;
     flex-direction: column;
 }
 
 .program-card:hover {
-    transform: translateY(-8px);
-    box-shadow: var(--shadow-md);
-    border-color: rgba(107, 78, 155, 0.3);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-soft);
+    border-color: var(--color-primary-transparent);
 }
 
 .program-card-header {
     padding: var(--spacing-lg);
-    background: linear-gradient(135deg, rgba(107, 78, 155, 0.9), rgba(90, 65, 133, 0.9));
-    color: var(--color-white-solid);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: var(--color-white);
     position: relative;
 }
 
@@ -531,23 +567,24 @@ body {
     position: absolute;
     top: var(--spacing-md);
     right: var(--spacing-md);
-    background: rgba(255, 255, 255, 0.95);
-    color: rgba(107, 78, 155, 0.9);
+    background: var(--color-white);
+    color: var(--color-primary);
     padding: 0.3rem 0.8rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
     font-weight: 600;
     letter-spacing: 0.5px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    text-transform: uppercase;
 }
 
 .program-card-title {
     font-family: var(--font-heading);
-    font-size: 1.4rem;
+    font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: var(--spacing-xs);
-    color: var(--color-white-solid);
+    color: var(--color-white);
     line-height: 1.3;
+    padding-right: 70px;
 }
 
 .program-card-duration {
@@ -567,26 +604,27 @@ body {
 }
 
 .program-card-description {
-    color: rgba(52, 58, 64, 0.8);
+    color: var(--color-gray-800);
     line-height: 1.6;
     margin-bottom: var(--spacing-md);
     font-size: 0.95rem;
     flex-grow: 1;
+    font-weight: 400;
 }
 
 .program-card-highlights {
     margin-bottom: var(--spacing-md);
-    background: rgba(240, 235, 247, 0.4);
+    background: var(--color-primary-very-light);
     padding: var(--spacing-md);
     border-radius: var(--radius-sm);
-    border-left: 3px solid rgba(107, 78, 155, 0.6);
+    border-left: 3px solid var(--color-primary);
 }
 
 .highlight-title {
     font-family: var(--font-heading);
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: rgba(107, 78, 155, 0.9);
+    color: var(--color-primary);
     margin-bottom: var(--spacing-sm);
     display: flex;
     align-items: center;
@@ -599,86 +637,88 @@ body {
 }
 
 .highlight-list li {
-    padding: 0.3rem 0;
-    color: rgba(52, 58, 64, 0.8);
+    padding: 0.25rem 0;
+    color: var(--color-gray-800);
     position: relative;
-    padding-left: 1.3rem;
+    padding-left: 1.25rem;
     font-size: 0.9rem;
     font-weight: 400;
+    line-height: 1.5;
 }
 
 .highlight-list li::before {
-    content: '✓';
+    content: '•';
     position: absolute;
     left: 0;
-    color: rgba(255, 126, 95, 0.9);
+    color: var(--color-accent);
     font-weight: bold;
-    font-size: 0.95rem;
+    font-size: 1rem;
+    top: 0.25rem;
 }
 
 .program-card-footer {
-    padding: var(--spacing-md);
-    border-top: 1px solid rgba(233, 236, 239, 0.8);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-top: 1px solid var(--color-gray-100);
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    align-items: stretch;
 }
 
 .program-card-link {
     font-family: var(--font-heading);
-    color: rgba(107, 78, 155, 0.9);
-    font-weight: 600;
+    color: var(--color-primary);
+    font-weight: 500;
     text-decoration: none;
-    transition: var(--transition-fast);
+    transition: var(--transition-smooth);
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border: 1px solid var(--color-primary-transparent);
+    border-radius: var(--radius-sm);
 }
 
-.program-card-link:hover {
-    color: rgba(90, 65, 133, 0.9);
-    gap: 0.7rem;
+.program-card-link:hover,
+.program-card-link:focus {
+    background: var(--color-primary-very-light);
+    color: var(--color-primary-dark);
 }
 
 .program-card-apply {
-    background: rgba(255, 126, 95, 0.9);
-    color: var(--color-white-solid);
-    padding: 0.5rem 1.2rem;
+    background: var(--color-primary);
+    color: var(--color-white);
+    padding: 0.5rem 1rem;
     border-radius: var(--radius-sm);
     font-family: var(--font-heading);
-    font-weight: 600;
+    font-weight: 500;
     text-decoration: none;
-    transition: var(--transition-base);
-    border: 1px solid rgba(255, 126, 95, 0.9);
+    transition: var(--transition-smooth);
+    border: 1px solid var(--color-primary);
     font-size: 0.9rem;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
 }
 
-.program-card-apply:hover {
-    background: rgba(229, 106, 74, 0.95);
-    color: var(--color-white-solid);
-    transform: translateY(-2px);
+.program-card-apply:hover,
+.program-card-apply:focus {
+    background: var(--color-primary-dark);
+    color: var(--color-white);
 }
 
 /* ==========================================================================
-   CALL TO ACTION - TRANSPARENT
+   CALL TO ACTION - PROFESSIONAL WITH VISIBLE BUTTONS
    ========================================================================== */
 .cta-section {
-    background: linear-gradient(135deg, rgba(107, 78, 155, 0.08), rgba(123, 92, 174, 0.05));
+    background: var(--color-white);
     padding: var(--spacing-xl) 0;
     text-align: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.cta-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, rgba(255, 126, 95, 0.9), rgba(107, 78, 155, 0.9));
+    border-top: 1px solid var(--color-gray-100);
 }
 
 .cta-content {
@@ -686,107 +726,146 @@ body {
     margin: 0 auto;
     position: relative;
     z-index: 2;
+    padding: 0 var(--spacing-sm);
 }
 
 .cta-title {
     font-family: var(--font-heading);
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 600;
-    color: rgba(107, 78, 155, 0.9);
+    color: var(--color-primary);
     margin-bottom: var(--spacing-md);
+    line-height: 1.3;
 }
 
 .cta-description {
-    font-size: 1.1rem;
-    color: rgba(52, 58, 64, 0.8);
+    font-size: 1.05rem;
+    color: var(--color-gray-800);
     margin-bottom: var(--spacing-lg);
     line-height: 1.6;
     font-weight: 400;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .cta-buttons {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--spacing-md);
+    flex-direction: column;
+    gap: var(--spacing-sm);
     margin-top: var(--spacing-lg);
+    align-items: center;
+    width: 100%;
+}
+
+/* FIX FOR CTA BUTTONS - VISIBLE ON WHITE BACKGROUND */
+.cta-section .btn-secondary {
+    background: var(--color-primary);
+    color: var(--color-white);
+    border-color: var(--color-primary);
+}
+
+.cta-section .btn-secondary:hover,
+.cta-section .btn-secondary:focus {
+    background: var(--color-primary-dark);
+    color: var(--color-white);
+    border-color: var(--color-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-soft);
+}
+
+.cta-buttons .btn {
+    width: 100%;
+    max-width: 250px;
+    margin: 0 auto;
+    justify-content: center;
 }
 
 /* ==========================================================================
-   CAROUSEL CONTROLS - FIXED (NO PAUSE BUTTON)
+   CAROUSEL CONTROLS - VERY FAINT NAVIGATION
    ========================================================================== */
 .carousel-controls {
     position: absolute;
-    bottom: var(--spacing-lg);
+    bottom: var(--spacing-md);
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
     display: flex;
-    gap: var(--spacing-xs);
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .carousel-indicator {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.4);
-    border: none;
+    background: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
-    transition: var(--transition-fast);
+    transition: var(--transition-smooth);
     padding: 0;
+    min-height: 8px;
+    min-width: 8px;
 }
 
 .carousel-indicator.active {
-    background: var(--color-white-solid);
-    transform: scale(1.2);
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.6);
 }
 
 .carousel-indicator:hover {
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
+/* VERY FAINT NAVIGATION ICONS */
 .carousel-nav {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    width: 44px;
-    height: 44px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     cursor: pointer;
-    transition: var(--transition-base);
+    transition: var(--transition-smooth);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-white-solid);
-    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
     z-index: 10;
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    min-height: 36px;
+    min-width: 36px;
+    opacity: 0.7;
 }
 
-.carousel-nav:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-50%) scale(1.1);
+.carousel-nav:hover,
+.carousel-nav:focus {
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+    opacity: 0.9;
 }
 
 .carousel-nav-prev {
-    left: var(--spacing-md);
+    left: 1rem;
 }
 
 .carousel-nav-next {
-    right: var(--spacing-md);
+    right: 1rem;
 }
-
-/* REMOVED: .carousel-pause-btn - Play/Pause button removed */
 
 /* Fallback carousel */
 .carousel-fallback {
-    background: linear-gradient(135deg, rgba(107, 78, 155, 0.3), rgba(123, 92, 174, 0.2));
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     height: 75vh;
-    max-height: 600px;
-    min-height: 450px;
+    max-height: 650px;
+    min-height: 500px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -796,159 +875,223 @@ body {
 
 .carousel-fallback-content {
     max-width: 600px;
-    color: rgba(52, 58, 64, 0.9);
-    background: rgba(255, 255, 255, 0.9);
+    color: var(--color-white);
     padding: var(--spacing-xl);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
-    backdrop-filter: blur(10px);
 }
 
 .carousel-fallback h1 {
     font-family: var(--font-heading);
-    font-size: 2.2rem;
+    font-size: clamp(1.5rem, 4vw, 2rem);
     margin-bottom: var(--spacing-md);
-    color: rgba(107, 78, 155, 0.9);
-    line-height: 1.2;
+    color: var(--color-white);
+    line-height: 1.3;
+    font-weight: 600;
 }
 
 .carousel-fallback p {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     margin-bottom: var(--spacing-lg);
-    color: rgba(52, 58, 64, 0.8);
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
 }
 
 /* ==========================================================================
-   RESPONSIVE DESIGN
+   ENHANCED RESPONSIVENESS - BOTH MOBILE & DESKTOP
    ========================================================================== */
-@media (max-width: 1024px) {
-    .carousel-slide-title {
-        font-size: 2.2rem;
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+    :root {
+        --spacing-xs: 0.5rem;
+        --spacing-sm: 1rem;
+        --spacing-md: 1.5rem;
+        --spacing-lg: 2rem;
+        --spacing-xl: 2.5rem;
+        --spacing-xxl: 3.5rem;
     }
     
-    .carousel-slide-content {
-        margin-left: 5%;
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--spacing-md);
+    }
+    
+    .stat-item {
+        padding: var(--spacing-xl);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+    }
+    
+    .stat-icon {
+        font-size: 2rem;
+        width: 60px;
+        height: 60px;
+    }
+    
+    .accreditation-badges {
+        flex-direction: row;
+        justify-content: center;
+        max-width: 800px;
+    }
+    
+    .accreditation-badge {
+        flex: 1;
+        min-width: 250px;
+        max-width: 300px;
     }
     
     .program-cards-grid {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    }
-}
-
-@media (max-width: 768px) {
-    .hero-carousel {
-        height: 65vh;
-        min-height: 400px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--spacing-lg);
     }
     
-    .carousel-slide-content {
-        margin: 0 auto;
-        padding: var(--spacing-md);
-        text-align: center;
-        max-width: 90%;
-        background: rgba(0, 0, 0, 0.4);
+    .program-card-footer {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
     }
     
-    .carousel-slide-title {
-        font-size: 1.8rem;
+    .program-card-link {
+        justify-content: flex-start;
+        width: auto;
     }
     
-    .carousel-slide-subtitle {
-        font-size: 1.1rem;
+    .program-card-apply {
+        width: auto;
+    }
+    
+    .cta-buttons {
+        flex-direction: row;
+        justify-content: center;
+        gap: var(--spacing-md);
+    }
+    
+    .cta-buttons .btn {
+        width: auto;
+        min-width: 160px;
     }
     
     .carousel-nav {
         width: 40px;
         height: 40px;
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
     
     .carousel-nav-prev {
-        left: var(--spacing-sm);
+        left: 2rem;
     }
     
     .carousel-nav-next {
-        right: var(--spacing-sm);
-    }
-    
-    .section-title {
-        font-size: 1.8rem;
-    }
-    
-    .program-cards-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .accreditation-content {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-md);
-    }
-    
-    .cta-title {
-        font-size: 1.8rem;
-    }
-    
-    .cta-buttons {
-        gap: var(--spacing-sm);
-    }
-    
-    .btn {
-        font-size: 0.9rem;
-        padding: 0.6rem 1.2rem;
+        right: 2rem;
     }
 }
 
-@media (max-width: 576px) {
+@media (min-width: 1024px) {
+    .carousel-slide-content {
+        text-align: left;
+        margin-left: 10%;
+        margin-right: auto;
+    }
+    
+    .carousel-slide-cta {
+        justify-content: flex-start;
+    }
+    
+    .accreditation-content {
+        flex-direction: row;
+        text-align: left;
+        align-items: flex-start;
+        gap: var(--spacing-xl);
+    }
+    
+    .accreditation-text {
+        flex: 1;
+        text-align: left;
+        margin: 0;
+    }
+    
+    .accreditation-badges {
+        flex: 1;
+        max-width: none;
+    }
+    
+    .program-card-title {
+        font-size: 1.35rem;
+    }
+    
+    .carousel-nav-prev {
+        left: 3rem;
+    }
+    
+    .carousel-nav-next {
+        right: 3rem;
+    }
+}
+
+@media (max-width: 480px) {
     .hero-carousel {
-        height: 55vh;
-        min-height: 350px;
+        height: 70vh;
+        min-height: 450px;
+    }
+    
+    .carousel-slide-content {
+        padding: var(--spacing-lg);
     }
     
     .carousel-slide-title {
-        font-size: 1.6rem;
+        font-size: 1.4rem;
     }
     
     .carousel-slide-subtitle {
-        font-size: 1rem;
+        font-size: 0.9rem;
     }
     
     .carousel-slide-cta {
         flex-direction: column;
         align-items: center;
+    }
+    
+    .carousel-slide-cta .btn {
         width: 100%;
+        max-width: 280px;
     }
     
-    .btn {
-        width: 100%;
-        max-width: 250px;
-        justify-content: center;
+    .carousel-nav {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
     }
     
-    .section-title {
-        font-size: 1.6rem;
+    .carousel-nav-prev {
+        left: 0.75rem;
     }
     
-    .stats-grid {
-        grid-template-columns: 1fr;
+    .carousel-nav-next {
+        right: 0.75rem;
     }
     
-    .accreditation-badges {
-        flex-direction: column;
-        width: 100%;
+    .stat-item {
+        padding: var(--spacing-md);
     }
     
-    .accreditation-badge {
-        width: 100%;
-        justify-content: center;
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .stat-icon {
+        font-size: 1.5rem;
+        width: 45px;
+        height: 45px;
     }
     
     .program-card-title {
-        font-size: 1.3rem;
+        padding-right: 0;
     }
     
     .program-card-accreditation {
@@ -956,32 +1099,13 @@ body {
         margin-bottom: var(--spacing-sm);
         display: inline-block;
     }
-    
-    .program-card-footer {
-        flex-direction: column;
-        gap: var(--spacing-sm);
-        align-items: stretch;
-    }
-    
-    .program-card-link, .program-card-apply {
-        width: 100%;
-        text-align: center;
-        justify-content: center;
-    }
-    
-    .cta-buttons {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .cta-title {
-        font-size: 1.6rem;
-    }
 }
 
 /* Accessibility */
 @media (prefers-reduced-motion: reduce) {
-    * {
+    *,
+    *::before,
+    *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
@@ -989,16 +1113,60 @@ body {
     }
 }
 
-:focus {
-    outline: 2px solid rgba(255, 126, 95, 0.9);
+:focus-visible {
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* Print Styles */
+@media print {
+    .hero-carousel,
+    .carousel-nav,
+    .carousel-controls {
+        display: none !important;
+    }
+    
+    .carousel-fallback {
+        height: auto;
+        min-height: auto;
+    }
+    
+    .btn {
+        display: none;
+    }
+    
+    .program-card-apply,
+    .program-card-link {
+        display: none;
+    }
+    
+    .stats-section,
+    .accreditation-section {
+        page-break-inside: avoid;
+    }
+    
+    .program-card {
+        page-break-inside: avoid;
+        border: 1px solid #000;
+        box-shadow: none;
+    }
+}
+
+/* Safe Area Insets */
+@supports (padding: max(0px)) {
+    body,
+    .container {
+        padding-left: max(var(--spacing-md), env(safe-area-inset-left));
+        padding-right: max(var(--spacing-md), env(safe-area-inset-right));
+    }
 }
 </style>
 </head>
 <body>
 
 <!-- Homepage Content -->
-<main id="main-content" class="homepage-content">
+<main id="main-content" class="homepage-content" role="main">
     
     <!-- ========== HERO CAROUSEL ========== -->
     <section class="hero-section" aria-label="Featured content carousel">
@@ -1010,16 +1178,16 @@ body {
                     <p>NMCN & NBTE Accredited Nursing Education Since 1989</p>
                     <div class="cta-buttons" style="margin-top: 1.5rem;">
                         <a href="<?php echo $baseUrl; ?>/programs" class="btn btn-primary">
-                            <i class="fas fa-book-open"></i> Explore Programs
+                            <i class="fas fa-book-open" aria-hidden="true"></i> Explore Programs
                         </a>
                         <a href="<?php echo $baseUrl; ?>/admissions" class="btn btn-secondary">
-                            <i class="fas fa-file-alt"></i> Apply Now
+                            <i class="fas fa-file-alt" aria-hidden="true"></i> Apply Now
                         </a>
                     </div>
                 </div>
             </div>
         <?php else: ?>
-            <!-- Dynamic Carousel - FIXED DISPLAY -->
+            <!-- Dynamic Carousel -->
             <div id="heroCarousel" class="hero-carousel" role="region" aria-label="Featured slides" tabindex="0">
                 <div class="carousel-inner">
                     <?php foreach ($carouselSlides as $index => $slide): ?>
@@ -1046,11 +1214,11 @@ body {
                                 <a href="<?php echo e($slide['button_link']); ?>" 
                                    class="btn btn-primary"
                                    aria-label="<?php echo e($slide['button_text']); ?> - <?php echo e($slide['title']); ?>">
-                                    <i class="fas fa-arrow-right"></i> <?php echo e($slide['button_text']); ?>
+                                    <i class="fas fa-arrow-right" aria-hidden="true"></i> <?php echo e($slide['button_text']); ?>
                                 </a>
                                 <?php endif; ?>
                                 <a href="<?php echo $baseUrl; ?>/programs" class="btn btn-secondary">
-                                    <i class="fas fa-book"></i> All Programs
+                                    <i class="fas fa-book" aria-hidden="true"></i> All Programs
                                 </a>
                             </div>
                         </div>
@@ -1058,19 +1226,21 @@ body {
                     <?php endforeach; ?>
                 </div>
                 
-                <!-- Navigation Arrows -->
+                <!-- Faint Navigation Arrows -->
                 <button class="carousel-nav carousel-nav-prev" 
                         aria-label="Previous slide"
                         onclick="carouselController.prev()">
-                    <i class="fas fa-chevron-left"></i>
+                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                    <span class="sr-only">Previous Slide</span>
                 </button>
                 <button class="carousel-nav carousel-nav-next" 
                         aria-label="Next slide"
                         onclick="carouselController.next()">
-                    <i class="fas fa-chevron-right"></i>
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                    <span class="sr-only">Next Slide</span>
                 </button>
                 
-                <!-- Indicators Only (No pause button) -->
+                <!-- Indicators -->
                 <div class="carousel-controls">
                     <?php foreach ($carouselSlides as $index => $slide): ?>
                     <button class="carousel-indicator <?php echo $index === 0 ? 'active' : ''; ?>"
@@ -1078,6 +1248,7 @@ body {
                             aria-label="Go to slide <?php echo $index + 1; ?>"
                             onclick="carouselController.goToSlide(<?php echo $index; ?>)"
                             aria-current="<?php echo $index === 0 ? 'true' : 'false'; ?>">
+                        <span class="sr-only">Slide <?php echo $index + 1; ?></span>
                     </button>
                     <?php endforeach; ?>
                 </div>
@@ -1091,28 +1262,28 @@ body {
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="stat-icon">
-                        <i class="fas fa-calendar-alt"></i>
+                        <i class="fas fa-calendar-alt" aria-hidden="true"></i>
                     </div>
                     <div class="stat-number">35+</div>
                     <div class="stat-label">Years of Excellence</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-icon">
-                        <i class="fas fa-user-graduate"></i>
+                        <i class="fas fa-user-graduate" aria-hidden="true"></i>
                     </div>
                     <div class="stat-number">5,000+</div>
                     <div class="stat-label">Graduates</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-icon">
-                        <i class="fas fa-award"></i>
+                        <i class="fas fa-award" aria-hidden="true"></i>
                     </div>
                     <div class="stat-number">100%</div>
                     <div class="stat-label">NMCN Accredited</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-icon">
-                        <i class="fas fa-chalkboard-teacher"></i>
+                        <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
                     </div>
                     <div class="stat-number">50+</div>
                     <div class="stat-label">Expert Faculty</div>
@@ -1121,9 +1292,9 @@ body {
         </div>
     </section>
 
-    <!-- ========== ACCREDITATION ========== -->
+    <!-- ========== ACCREDITATION - PROPERLY ARRANGED ========== -->
     <section class="accreditation-section" aria-label="Accreditation badges">
-        <div class="container">
+        <div class="container accreditation-container">
             <div class="accreditation-content">
                 <div class="accreditation-text">
                     <h3>Nationally Recognized Accreditation</h3>
@@ -1132,7 +1303,7 @@ body {
                 <div class="accreditation-badges">
                     <div class="accreditation-badge">
                         <div class="badge-icon">
-                            <i class="fas fa-stethoscope"></i>
+                            <i class="fas fa-stethoscope" aria-hidden="true"></i>
                         </div>
                         <div class="badge-text">
                             <strong>NMCN</strong>
@@ -1141,7 +1312,7 @@ body {
                     </div>
                     <div class="accreditation-badge">
                         <div class="badge-icon">
-                            <i class="fas fa-university"></i>
+                            <i class="fas fa-university" aria-hidden="true"></i>
                         </div>
                         <div class="badge-text">
                             <strong>NBTE</strong>
@@ -1171,7 +1342,7 @@ body {
                         <span class="program-card-accreditation">NMCN</span>
                         <h3 class="program-card-title">Basic Nursing</h3>
                         <div class="program-card-duration">
-                            <i class="far fa-clock"></i> Duration: 3 Years
+                            <i class="far fa-clock" aria-hidden="true"></i> Duration: 3 Years
                         </div>
                     </div>
                     <div class="program-card-body">
@@ -1181,7 +1352,7 @@ body {
                         </p>
                         <div class="program-card-highlights">
                             <div class="highlight-title">
-                                <i class="fas fa-star"></i> Key Features
+                                <i class="fas fa-star" aria-hidden="true"></i> Key Features
                             </div>
                             <ul class="highlight-list">
                                 <li>Full NMCN accreditation</li>
@@ -1195,10 +1366,10 @@ body {
                         <a href="<?php echo $baseUrl; ?>/programs/basic-nursing" 
                            class="program-card-link"
                            aria-label="Learn more about Basic Nursing">
-                            Learn More <i class="fas fa-arrow-right"></i>
+                            Learn More <i class="fas fa-arrow-right" aria-hidden="true"></i>
                         </a>
                         <a href="<?php echo $baseUrl; ?>/admissions" class="program-card-apply">
-                            Apply Now
+                            <i class="fas fa-file-alt" aria-hidden="true"></i> Apply Now
                         </a>
                     </div>
                 </article>
@@ -1209,7 +1380,7 @@ body {
                         <span class="program-card-accreditation">NBTE</span>
                         <h3 class="program-card-title">National Diploma in Nursing</h3>
                         <div class="program-card-duration">
-                            <i class="far fa-clock"></i> Duration: 2 Years
+                            <i class="far fa-clock" aria-hidden="true"></i> Duration: 2 Years
                         </div>
                     </div>
                     <div class="program-card-body">
@@ -1219,7 +1390,7 @@ body {
                         </p>
                         <div class="program-card-highlights">
                             <div class="highlight-title">
-                                <i class="fas fa-star"></i> Key Features
+                                <i class="fas fa-star" aria-hidden="true"></i> Key Features
                             </div>
                             <ul class="highlight-list">
                                 <li>NBTE accredited</li>
@@ -1233,10 +1404,10 @@ body {
                         <a href="<?php echo $baseUrl; ?>/programs/nd-nursing" 
                            class="program-card-link"
                            aria-label="Learn more about National Diploma in Nursing">
-                            Learn More <i class="fas fa-arrow-right"></i>
+                            Learn More <i class="fas fa-arrow-right" aria-hidden="true"></i>
                         </a>
                         <a href="<?php echo $baseUrl; ?>/admissions" class="program-card-apply">
-                            Apply Now
+                            <i class="fas fa-file-alt" aria-hidden="true"></i> Apply Now
                         </a>
                     </div>
                 </article>
@@ -1247,7 +1418,7 @@ body {
                         <span class="program-card-accreditation">NBTE</span>
                         <h3 class="program-card-title">Higher National Diploma in Nursing</h3>
                         <div class="program-card-duration">
-                            <i class="far fa-clock"></i> Duration: 2 Years
+                            <i class="far fa-clock" aria-hidden="true"></i> Duration: 2 Years
                         </div>
                     </div>
                     <div class="program-card-body">
@@ -1257,7 +1428,7 @@ body {
                         </p>
                         <div class="program-card-highlights">
                             <div class="highlight-title">
-                                <i class="fas fa-star"></i> Key Features
+                                <i class="fas fa-star" aria-hidden="true"></i> Key Features
                             </div>
                             <ul class="highlight-list">
                                 <li>Advanced specialization</li>
@@ -1271,10 +1442,10 @@ body {
                         <a href="<?php echo $baseUrl; ?>/programs/hnd-nursing" 
                            class="program-card-link"
                            aria-label="Learn more about Higher National Diploma in Nursing">
-                            Learn More <i class="fas fa-arrow-right"></i>
+                            Learn More <i class="fas fa-arrow-right" aria-hidden="true"></i>
                         </a>
                         <a href="<?php echo $baseUrl; ?>/admissions" class="program-card-apply">
-                            Apply Now
+                            <i class="fas fa-file-alt" aria-hidden="true"></i> Apply Now
                         </a>
                     </div>
                 </article>
@@ -1294,15 +1465,15 @@ body {
                 <div class="cta-buttons">
                     <a href="<?php echo $baseUrl; ?>/admissions" 
                        class="btn btn-primary">
-                        <i class="fas fa-file-alt"></i> Apply Now
+                        <i class="fas fa-file-alt" aria-hidden="true"></i> Apply Now
                     </a>
                     <a href="<?php echo $baseUrl; ?>/programs" 
                        class="btn btn-secondary">
-                        <i class="fas fa-book-open"></i> View Programs
+                        <i class="fas fa-book-open" aria-hidden="true"></i> View Programs
                     </a>
                     <a href="<?php echo $baseUrl; ?>/contact" 
                        class="btn btn-secondary">
-                        <i class="fas fa-phone-alt"></i> Contact
+                        <i class="fas fa-phone-alt" aria-hidden="true"></i> Contact Admissions
                     </a>
                 </div>
             </div>
@@ -1319,25 +1490,17 @@ body {
         currentSlide: 0,
         totalSlides: 0,
         autoPlayInterval: null,
-        autoPlayDelay: 5000, // 5 seconds between slides
+        autoPlayDelay: 6000,
         isTransitioning: false,
         
         init() {
             const carousel = document.getElementById('heroCarousel');
-            if (!carousel) {
-                console.log('Carousel element not found');
-                return;
-            }
+            if (!carousel) return;
             
             const slides = carousel.querySelectorAll('.carousel-slide');
             this.totalSlides = slides.length;
             
-            console.log(`Found ${this.totalSlides} carousel slides`);
-            
-            if (this.totalSlides === 0) {
-                console.log('No carousel slides found, using fallback');
-                return;
-            }
+            if (this.totalSlides === 0) return;
             
             // Initialize first slide
             slides[0].classList.add('active');
@@ -1350,20 +1513,15 @@ body {
                 indicators[0].setAttribute('aria-current', 'true');
             }
             
-            // Start auto-play immediately
+            // Start auto-play
             this.startAutoPlay();
             
-            // Pause on hover (optional - you can remove this if you want continuous autoplay)
+            // Pause on interaction
             carousel.addEventListener('mouseenter', () => this.stopAutoPlay());
             carousel.addEventListener('mouseleave', () => this.startAutoPlay());
             
-            // Keyboard navigation
-            carousel.addEventListener('keydown', (e) => this.handleKeyboard(e));
-            
             // Touch support
             this.addTouchSupport(carousel);
-            
-            console.log('Carousel initialized with auto-play');
         },
         
         goToSlide(index) {
@@ -1410,50 +1568,21 @@ body {
         },
         
         startAutoPlay() {
-            // Clear any existing interval
             if (this.autoPlayInterval) {
                 clearInterval(this.autoPlayInterval);
             }
             
-            // Start new interval
             this.autoPlayInterval = setInterval(() => {
                 if (!this.isTransitioning) {
                     this.next();
                 }
             }, this.autoPlayDelay);
-            
-            console.log('Auto-play started');
         },
         
         stopAutoPlay() {
             if (this.autoPlayInterval) {
                 clearInterval(this.autoPlayInterval);
                 this.autoPlayInterval = null;
-                console.log('Auto-play stopped');
-            }
-        },
-        
-        handleKeyboard(e) {
-            const carousel = document.getElementById('heroCarousel');
-            if (!carousel || !document.activeElement.closest('#heroCarousel')) return;
-            
-            switch(e.key) {
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    this.prev();
-                    break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    this.next();
-                    break;
-                case 'Home':
-                    e.preventDefault();
-                    this.goToSlide(0);
-                    break;
-                case 'End':
-                    e.preventDefault();
-                    this.goToSlide(this.totalSlides - 1);
-                    break;
             }
         },
         
@@ -1464,6 +1593,7 @@ body {
             
             carousel.addEventListener('touchstart', (e) => {
                 touchStartX = e.changedTouches[0].screenX;
+                this.stopAutoPlay();
             }, { passive: true });
             
             carousel.addEventListener('touchend', (e) => {
@@ -1477,6 +1607,8 @@ body {
                 } else {
                     this.prev();
                 }
+                
+                setTimeout(() => this.startAutoPlay(), 3000);
             }, { passive: true });
         }
     };
@@ -1485,19 +1617,32 @@ body {
     
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, initializing carousel...');
-            carouselController.init();
-        });
+        document.addEventListener('DOMContentLoaded', () => carouselController.init());
     } else {
-        console.log('DOM already loaded, initializing carousel...');
         carouselController.init();
     }
+})();
+
+// Accessibility and mobile enhancements
+(function() {
+    'use strict';
     
-    // Clean up
-    window.addEventListener('beforeunload', () => {
-        carouselController.stopAutoPlay();
-    });
+    // Add screen reader only class
+    const style = document.createElement('style');
+    style.textContent = `
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+    `;
+    document.head.appendChild(style);
 })();
 </script>
 
