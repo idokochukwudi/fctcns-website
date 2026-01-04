@@ -1,7 +1,7 @@
 <?php
 /**
  * Homepage View Template - Professional Redesign (Mature Light Purple Theme)
- * Mobile-Optimized Version
+ * Mobile-Optimized Version - FULL WIDTH
  * 
  * @package FCTCNS
  * @version 3.4
@@ -34,7 +34,7 @@ $carouselSlides = $carouselSlides ?? [];
 
 <style>
 /* ==========================================================================
-   CRITICAL MOBILE ENHANCEMENTS & FIXES
+   CRITICAL MOBILE ENHANCEMENTS & FIXES - FULL WIDTH
    ========================================================================== */
 * {
     -webkit-tap-highlight-color: transparent;
@@ -132,7 +132,23 @@ body > *:first-child:not(header) {
 }
 
 /* ==========================================================================
-   HERO CAROUSEL - PROFESSIONAL MATURE DESIGN
+   FULL WIDTH CONTAINERS
+   ========================================================================== */
+.full-width-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* Remove container padding for full width sections */
+.hero-section,
+.cta-section {
+    padding: 0 !important;
+}
+
+/* ==========================================================================
+   HERO CAROUSEL - PROFESSIONAL MATURE DESIGN - FULL WIDTH
    ========================================================================== */
 .hero-section {
     position: relative;
@@ -311,12 +327,20 @@ body > *:first-child:not(header) {
 }
 
 /* ==========================================================================
-   STATISTICS SECTION - MATURE PROFESSIONAL DESIGN
+   STATISTICS SECTION - MATURE PROFESSIONAL DESIGN - FULL WIDTH CONTENT
    ========================================================================== */
 .stats-section {
     background: var(--color-off-white);
     padding: var(--spacing-xl) 0;
     border-bottom: 1px solid var(--color-gray-100);
+    width: 100%;
+}
+
+.stats-section .container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
 }
 
 .stats-grid {
@@ -377,17 +401,26 @@ body > *:first-child:not(header) {
 }
 
 /* ==========================================================================
-   ACCREDITATION SECTION - PROFESSIONAL ARRANGEMENT
+   ACCREDITATION SECTION - PROFESSIONAL ARRANGEMENT - FULL WIDTH CONTENT
    ========================================================================== */
 .accreditation-section {
     background: var(--color-white);
     padding: var(--spacing-xl) 0;
     border-bottom: 1px solid var(--color-gray-100);
+    width: 100%;
+}
+
+.accreditation-section .container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
 }
 
 .accreditation-container {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
+    padding: 0 var(--spacing-md);
 }
 
 .accreditation-content {
@@ -399,7 +432,7 @@ body > *:first-child:not(header) {
 }
 
 .accreditation-text {
-    max-width: 600px;
+    max-width: 800px;
     margin: 0 auto;
 }
 
@@ -425,7 +458,7 @@ body > *:first-child:not(header) {
     flex-direction: column;
     gap: var(--spacing-md);
     width: 100%;
-    max-width: 500px;
+    max-width: 800px;
     margin: 0 auto;
 }
 
@@ -484,20 +517,29 @@ body > *:first-child:not(header) {
 }
 
 /* ==========================================================================
-   PROGRAMS SECTION - PROFESSIONAL LAYOUT
+   PROGRAMS SECTION - PROFESSIONAL LAYOUT - FULL WIDTH CONTENT
    ========================================================================== */
 .programs-section {
     padding: var(--spacing-xl) 0;
     background: var(--color-off-white);
     border-bottom: 1px solid var(--color-gray-100);
+    width: 100%;
+}
+
+.programs-section .container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
 }
 
 .section-header {
     text-align: center;
     margin-bottom: var(--spacing-xl);
-    max-width: 700px;
+    max-width: 1000px;
     margin-left: auto;
     margin-right: auto;
+    padding: 0 var(--spacing-md);
 }
 
 .section-title {
@@ -536,6 +578,7 @@ body > *:first-child:not(header) {
     grid-template-columns: 1fr;
     gap: var(--spacing-lg);
     margin-top: var(--spacing-lg);
+    width: 100%;
 }
 
 .program-card {
@@ -548,6 +591,7 @@ body > *:first-child:not(header) {
     height: 100%;
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
 
 .program-card:hover {
@@ -712,21 +756,29 @@ body > *:first-child:not(header) {
 }
 
 /* ==========================================================================
-   CALL TO ACTION - PROFESSIONAL WITH VISIBLE BUTTONS
+   CALL TO ACTION - PROFESSIONAL WITH VISIBLE BUTTONS - FULL WIDTH
    ========================================================================== */
 .cta-section {
     background: var(--color-white);
-    padding: var(--spacing-xl) 0;
+    padding: var(--spacing-xl) 0 !important;
     text-align: center;
     border-top: 1px solid var(--color-gray-100);
+    width: 100%;
+}
+
+.cta-section .container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
 }
 
 .cta-content {
-    max-width: 700px;
+    max-width: 1000px;
     margin: 0 auto;
     position: relative;
     z-index: 2;
-    padding: 0 var(--spacing-sm);
+    padding: 0 var(--spacing-md);
 }
 
 .cta-title {
@@ -744,7 +796,7 @@ body > *:first-child:not(header) {
     margin-bottom: var(--spacing-lg);
     line-height: 1.6;
     font-weight: 400;
-    max-width: 600px;
+    max-width: 800px;
     margin-left: auto;
     margin-right: auto;
 }
@@ -871,10 +923,11 @@ body > *:first-child:not(header) {
     justify-content: center;
     text-align: center;
     padding: var(--spacing-lg);
+    width: 100%;
 }
 
 .carousel-fallback-content {
-    max-width: 600px;
+    max-width: 800px;
     color: var(--color-white);
     padding: var(--spacing-xl);
 }
@@ -898,13 +951,6 @@ body > *:first-child:not(header) {
 /* ==========================================================================
    ENHANCED RESPONSIVENESS - BOTH MOBILE & DESKTOP
    ========================================================================== */
-.container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
-}
-
 @media (min-width: 768px) {
     :root {
         --spacing-xs: 0.5rem;
@@ -937,13 +983,13 @@ body > *:first-child:not(header) {
     .accreditation-badges {
         flex-direction: row;
         justify-content: center;
-        max-width: 800px;
+        max-width: 1200px;
     }
     
     .accreditation-badge {
         flex: 1;
-        min-width: 250px;
-        max-width: 300px;
+        min-width: 300px;
+        max-width: 350px;
     }
     
     .program-cards-grid {
@@ -1031,6 +1077,23 @@ body > *:first-child:not(header) {
     
     .carousel-nav-next {
         right: 3rem;
+    }
+    
+    /* Full width containers for large screens */
+    .stats-section .container,
+    .accreditation-section .container,
+    .programs-section .container,
+    .cta-section .container {
+        padding: 0 var(--spacing-lg);
+    }
+}
+
+@media (min-width: 1400px) {
+    .stats-section .container,
+    .accreditation-section .container,
+    .programs-section .container,
+    .cta-section .container {
+        max-width: 1600px;
     }
 }
 
@@ -1155,11 +1218,25 @@ body > *:first-child:not(header) {
 
 /* Safe Area Insets */
 @supports (padding: max(0px)) {
-    body,
-    .container {
+    .stats-section .container,
+    .accreditation-section .container,
+    .programs-section .container,
+    .cta-section .container {
         padding-left: max(var(--spacing-md), env(safe-area-inset-left));
         padding-right: max(var(--spacing-md), env(safe-area-inset-right));
     }
+}
+
+/* Full width override for all sections */
+.hero-section,
+.stats-section,
+.accreditation-section,
+.programs-section,
+.cta-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
 }
 </style>
 </head>
@@ -1168,7 +1245,7 @@ body > *:first-child:not(header) {
 <!-- Homepage Content -->
 <main id="main-content" class="homepage-content" role="main">
     
-    <!-- ========== HERO CAROUSEL ========== -->
+    <!-- ========== HERO CAROUSEL - FULL WIDTH ========== -->
     <section class="hero-section" aria-label="Featured content carousel">
         <?php if (empty($carouselSlides)): ?>
             <!-- Fallback carousel -->
@@ -1187,7 +1264,7 @@ body > *:first-child:not(header) {
                 </div>
             </div>
         <?php else: ?>
-            <!-- Dynamic Carousel -->
+            <!-- Dynamic Carousel - FULL WIDTH -->
             <div id="heroCarousel" class="hero-carousel" role="region" aria-label="Featured slides" tabindex="0">
                 <div class="carousel-inner">
                     <?php foreach ($carouselSlides as $index => $slide): ?>
@@ -1256,7 +1333,7 @@ body > *:first-child:not(header) {
         <?php endif; ?>
     </section>
 
-    <!-- ========== STATISTICS ========== -->
+    <!-- ========== STATISTICS - FULL WIDTH CONTENT ========== -->
     <section class="stats-section" aria-label="College statistics">
         <div class="container">
             <div class="stats-grid">
@@ -1292,31 +1369,33 @@ body > *:first-child:not(header) {
         </div>
     </section>
 
-    <!-- ========== ACCREDITATION - PROPERLY ARRANGED ========== -->
+    <!-- ========== ACCREDITATION - FULL WIDTH CONTENT ========== -->
     <section class="accreditation-section" aria-label="Accreditation badges">
-        <div class="container accreditation-container">
-            <div class="accreditation-content">
-                <div class="accreditation-text">
-                    <h3>Nationally Recognized Accreditation</h3>
-                    <p>Our programs meet the highest standards set by Nigeria's regulatory bodies for nursing education.</p>
-                </div>
-                <div class="accreditation-badges">
-                    <div class="accreditation-badge">
-                        <div class="badge-icon">
-                            <i class="fas fa-stethoscope" aria-hidden="true"></i>
-                        </div>
-                        <div class="badge-text">
-                            <strong>NMCN</strong>
-                            <span>Nursing & Midwifery Council of Nigeria</span>
-                        </div>
+        <div class="container">
+            <div class="accreditation-container">
+                <div class="accreditation-content">
+                    <div class="accreditation-text">
+                        <h3>Nationally Recognized Accreditation</h3>
+                        <p>Our programs meet the highest standards set by Nigeria's regulatory bodies for nursing education.</p>
                     </div>
-                    <div class="accreditation-badge">
-                        <div class="badge-icon">
-                            <i class="fas fa-university" aria-hidden="true"></i>
+                    <div class="accreditation-badges">
+                        <div class="accreditation-badge">
+                            <div class="badge-icon">
+                                <i class="fas fa-stethoscope" aria-hidden="true"></i>
+                            </div>
+                            <div class="badge-text">
+                                <strong>NMCN</strong>
+                                <span>Nursing & Midwifery Council of Nigeria</span>
+                            </div>
                         </div>
-                        <div class="badge-text">
-                            <strong>NBTE</strong>
-                            <span>National Board for Technical Education</span>
+                        <div class="accreditation-badge">
+                            <div class="badge-icon">
+                                <i class="fas fa-university" aria-hidden="true"></i>
+                            </div>
+                            <div class="badge-text">
+                                <strong>NBTE</strong>
+                                <span>National Board for Technical Education</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1324,7 +1403,7 @@ body > *:first-child:not(header) {
         </div>
     </section>
 
-    <!-- ========== PROGRAMS ========== -->
+    <!-- ========== PROGRAMS - FULL WIDTH CONTENT ========== -->
     <section class="programs-section" aria-label="Academic programs">
         <div class="container">
             <div class="section-header">
@@ -1453,7 +1532,7 @@ body > *:first-child:not(header) {
         </div>
     </section>
 
-    <!-- ========== CALL TO ACTION ========== -->
+    <!-- ========== CALL TO ACTION - FULL WIDTH ========== -->
     <section class="cta-section" aria-label="Call to action">
         <div class="container">
             <div class="cta-content">
