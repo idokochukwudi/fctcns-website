@@ -12,8 +12,8 @@ if (!defined('BASE_URL')) {
     if (file_exists($constantsFile)) {
         require_once $constantsFile;
     } else {
-        // Fallback
-        define('BASE_URL', 'http://localhost/fctcns-website');
+        // Fallback - UPDATED to match the new structure
+        define('BASE_URL', 'http://localhost');
     }
 }
 
@@ -34,6 +34,7 @@ function url($path = '') {
  * @return string Full asset URL
  */
 function asset($asset) {
+    // FIXED: Now correctly points to /assets/ from root
     return BASE_URL . '/assets/' . ltrim($asset, '/');
 }
 
@@ -44,7 +45,8 @@ function asset($asset) {
  * @return string Full upload URL
  */
 function upload($file) {
-    return BASE_URL . '/uploads/' . ltrim($file, '/');
+    // FIXED: Updated path to match the structure (uploads are in assets/uploads)
+    return BASE_URL . '/assets/uploads/' . ltrim($file, '/');
 }
 
 /**
@@ -57,13 +59,9 @@ function upload($file) {
  */
 function nav_link($url, $text, $activeClass = 'active') {
     $currentUrl = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    $basePath = '/fctcns-website';
     
-    // Remove base path from current URL for comparison
-    if (strpos($currentUrl, $basePath) === 0) {
-        $currentUrl = substr($currentUrl, strlen($basePath));
-    }
-    
+    // FIXED: Remove the base path logic since Apache serves from root
+    // No need to strip '/fctcns-website' anymore
     $isActive = ($currentUrl === $url || $currentUrl === $url . '/');
     
     $class = $isActive ? 'class="' . $activeClass . '"' : '';
@@ -99,13 +97,9 @@ function current_url() {
  */
 function is_active($url) {
     $currentUrl = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    $basePath = '/fctcns-website';
     
-    // Remove base path from current URL for comparison
-    if (strpos($currentUrl, $basePath) === 0) {
-        $currentUrl = substr($currentUrl, strlen($basePath));
-    }
-    
+    // FIXED: No need to strip '/fctcns-website' anymore
+    // Direct comparison works since Apache serves from root
     return ($currentUrl === $url || $currentUrl === $url . '/');
 }
 

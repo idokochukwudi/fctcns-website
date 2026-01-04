@@ -142,7 +142,7 @@ if (!defined('INCLUDES_PATH')) {
 }
 
 // ============================================================================
-// URL CONSTANTS - CRITICAL FOR SUBDIRECTORY
+// URL CONSTANTS - CRITICAL FOR SUBDIRECTORY - FIXED
 // ============================================================================
 
 // Base URL for the application
@@ -151,16 +151,15 @@ if (!defined('BASE_URL')) {
     if (isset($_ENV['BASE_URL'])) {
         define('BASE_URL', rtrim($_ENV['BASE_URL'], '/'));
     } else {
-        // Local development
+        // Local development - SIMPLIFIED: Use localhost only (NO PROJECT FOLDER)
         if (isset($_SERVER['HTTP_HOST'])) {
             $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
             $host = $_SERVER['HTTP_HOST'];
-            $project_folder = 'fctcns-website';
-            $base_url = $protocol . $host . '/' . $project_folder;
-            define('BASE_URL', rtrim($base_url, '/'));
+            // REMOVE THE PROJECT FOLDER - Apache serves from root
+            define('BASE_URL', rtrim($protocol . $host, '/'));
         } else {
             // Fallback for CLI
-            define('BASE_URL', 'http://localhost/fctcns-website');
+            define('BASE_URL', 'http://localhost'); // REMOVED /fctcns-website
         }
     }
 }
@@ -418,98 +417,19 @@ if (!defined('EMAIL_FROM_NAME')) {
 }
 
 // ============================================================================
-// HELPER FUNCTIONS
+// LOAD HELPER FUNCTIONS - NO DUPLICATE FUNCTIONS HERE
 // ============================================================================
 
-/**
- * Get base URL with optional path
- * 
- * @param string $path Optional path to append
- * @return string Complete URL
- */
-function base_url($path = '') {
-    $url = BASE_URL;
-    if ($path) {
-        $url .= '/' . ltrim($path, '/');
-    }
-    return $url;
+// Load URL helper functions (url_helper.php contains all the helper functions)
+$urlHelperFile = APP_PATH . '/helpers/url_helper.php';
+if (file_exists($urlHelperFile)) {
+    require_once $urlHelperFile;
 }
 
-/**
- * Get asset URL for CSS/JS/images
- * 
- * @param string $path Asset path relative to assets folder
- * @return string Complete asset URL
- */
-function asset_url($path) {
-    return ASSETS_URL . '/' . ltrim($path, '/');
-}
-
-/**
- * Get public URL for files
- * 
- * @param string $path Path relative to public folder
- * @return string Complete public URL
- */
-function public_url($path = '') {
-    $url = PUBLIC_URL;
-    if ($path) {
-        $url .= '/' . ltrim($path, '/');
-    }
-    return $url;
-}
-
-/**
- * Get upload URL for uploaded files
- * 
- * @param string $path Path relative to uploads folder
- * @return string Complete upload URL
- */
-function upload_url($path = '') {
-    return public_url('assets/uploads/' . ltrim($path, '/'));
-}
-
-/**
- * Check if application is in development mode
- * 
- * @return bool True if in development mode
- */
-function is_dev() {
-    return APP_ENV === 'development';
-}
-
-/**
- * Redirect to a URL
- * 
- * @param string $url URL to redirect to
- * @param int $statusCode HTTP status code
- */
-function redirect($url, $statusCode = 302) {
-    if (strpos($url, 'http') !== 0) {
-        $url = base_url($url);
-    }
-    header('Location: ' . $url, true, $statusCode);
-    exit();
-}
-
-/**
- * Get current URL path
- * 
- * @return string Current URL path
- */
-function current_url() {
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-    return $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-}
-
-// ============================================================================
-// LOAD HELPER FUNCTIONS
-// ============================================================================
-
-// Load additional helper functions
-$helperFile = APP_PATH . '/helpers/functions.php';
-if (file_exists($helperFile)) {
-    require_once $helperFile;
+// Load additional helper functions if they exist
+$functionsFile = APP_PATH . '/helpers/functions.php';
+if (file_exists($functionsFile)) {
+    require_once $functionsFile;
 }
 
 // ============================================================================
@@ -518,4 +438,3 @@ if (file_exists($helperFile)) {
 
 // Mark that constants have been loaded - ONCE AT THE END
 define('CONSTANTS_LOADED', true);
-?>

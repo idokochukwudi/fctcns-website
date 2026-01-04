@@ -136,78 +136,36 @@ class Router {
     public function match() {
         $requestMethod = $_SERVER['REQUEST_METHOD'];
 
-        // Get request URI
-        $requestUri = $_SERVER['REQUEST_URI'];
+        // Get clean request URI - SIMPLIFIED
+        $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         
-        // DEBUG
-        error_log("=== ROUTER DEBUG ===");
-        error_log("Original REQUEST_URI: $requestUri");
-
-        // Remove query string
-        $requestUri = parse_url($requestUri, PHP_URL_PATH);
-        error_log("After parse_url: $requestUri");
-
-        // FIX: Remove /index.php if present
-        if (strpos($requestUri, '/index.php') === 0) {
-            $requestUri = substr($requestUri, 10); // Remove '/index.php'
-            error_log("After removing /index.php: $requestUri");
-        }
-
-        // If requestUri is empty after removing index.php, make it '/'
-        if ($requestUri === '') {
-            $requestUri = '/';
-        }
-        
-        // In production (https://fctcns.edu.ng), no base path to remove
-        // The old code removed '/fctcns-website' but we don't have that in production
-        
-        // Ensure request URI is not empty (check again in case it wasn't set above)
-        if ($requestUri === '' || $requestUri === '/') {
-            $requestUri = '/';
-        } else {
-            // Remove trailing slash
+        // Remove trailing slash (except for root)
+        if ($requestUri !== '/') {
             $requestUri = rtrim($requestUri, '/');
         }
         
-        error_log("Final URI for matching: $requestUri");
-        error_log("Method: $requestMethod");
-
-        // Log all registered routes
-        error_log("Registered routes:");
-        foreach ($this->routes as $i => $route) {
-            error_log("  [$i] {$route['method']} {$route['path']}");
-        }
-
+        error_log("Router matching: $requestMethod $requestUri");
+        
         foreach ($this->routes as $route) {
-            // Check if method matches
             if ($route['method'] !== $requestMethod) {
                 continue;
             }
-
-            // Check if path matches pattern
+            
             if (preg_match($route['pattern'], $requestUri, $matches)) {
-                error_log("MATCH FOUND! Route: {$route['path']}, Pattern: {$route['pattern']}");
+                error_log("Route matched: {$route['path']}");
                 
-                // Remove full match from matches array
                 array_shift($matches);
-
-                // Store parameters
                 $this->params = $matches;
-
-                error_log("=== END ROUTER DEBUG (Match Found) ===");
+                
                 return [
                     'handler' => $route['handler'],
                     'params' => $matches,
                     'route' => $route
                 ];
-            } else {
-                error_log("No match for pattern: {$route['pattern']} against URI: $requestUri");
             }
         }
-
-        error_log("NO ROUTE MATCHED");
-        error_log("=== END ROUTER DEBUG ===");
         
+        error_log("No route matched for: $requestUri");
         return null;
     }
 

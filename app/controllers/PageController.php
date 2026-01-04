@@ -24,8 +24,9 @@ class PageController extends Controller {
         $this->layout = 'main';
         
         // Initialize common data for ALL pages
+        // FIXED: Always use BASE_URL (no fallback with /fctcns-website)
         $this->data = [
-            'baseUrl' => defined('BASE_URL') ? BASE_URL : '/fctcns-website',
+            'baseUrl' => BASE_URL,
             'currentPage' => 'home',
             'page_title' => 'Home - FCT College of Nursing Sciences',
             'page_description' => 'Empowering Future Healthcare Professionals Since 1989',
@@ -133,7 +134,7 @@ class PageController extends Controller {
                 'page_title' => 'Research - Federal College of Tropical Nursing Sciences',
                 'page_description' => 'Research initiatives, publications, and innovation in nursing and healthcare sciences',
                 'currentPage' => 'research',
-                'baseUrl' => BASE_URL
+                'baseUrl' => BASE_URL // FIXED: Use BASE_URL directly
             ];
             
             // DEBUG: Show count in error log
@@ -150,7 +151,7 @@ class PageController extends Controller {
                 'page_title' => 'Research - Federal College of Tropical Nursing Sciences',
                 'page_description' => 'Research initiatives, publications, and innovation in nursing and healthcare sciences',
                 'currentPage' => 'research',
-                'baseUrl' => defined('BASE_URL') ? BASE_URL : '/fctcns-website'
+                'baseUrl' => BASE_URL // FIXED: Use BASE_URL directly (no fallback)
             ];
         }
         
@@ -493,7 +494,8 @@ HTML;
      * Format slide URLs by adding base URL to image paths
      */
     private function formatSlideUrls($slides) {
-        $baseUrl = $this->data['baseUrl']; // Should be '/fctcns-website'
+        // FIXED: Use BASE_URL directly
+        $baseUrl = BASE_URL;
         
         foreach ($slides as &$slide) {
             if (!empty($slide['image_path'])) {
@@ -524,7 +526,8 @@ HTML;
      * Get fallback carousel slides
      */
     private function getFallbackCarouselSlides() {
-        $baseUrl = $this->data['baseUrl'];
+        // FIXED: Use BASE_URL directly
+        $baseUrl = BASE_URL;
         
         return [
             [

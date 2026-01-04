@@ -301,7 +301,8 @@ body { font-family: var(--font-body); font-size: 15px; line-height: 1.6; color: 
 <main class="about-page">
     <!-- Hero Section -->
     <section class="about-hero">
-        <div class="about-hero-bg" style="background-image: url('<?php echo $baseUrl; ?>/public/assets/images/about/campus-building.jpg');"></div>
+        <!-- FIXED: Removed /public from image path -->
+        <div class="about-hero-bg" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/about/campus-building.jpg');"></div>
         <div class="container">
             <div class="about-hero-content">
                 <span class="about-hero-badge">Excellence Since 1989</span>
@@ -386,35 +387,40 @@ body { font-family: var(--font-body); font-size: 15px; line-height: 1.6; color: 
             </div>
             <div class="grid">
                 <div class="card">
-                    <img src="<?php echo $baseUrl; ?>/public/assets/images/leadership/fct-minister.jpg" alt="Ezenwo Nyesom Wike CON, FCT Minister" class="card-img" onerror="this.src='<?php echo $baseUrl; ?>/public/assets/images/placeholder/person-placeholder.jpg';">
+                    <!-- FIXED: Removed /public from image path -->
+                    <img src="<?php echo $baseUrl; ?>/assets/images/leadership/fct-minister.jpg" alt="Ezenwo Nyesom Wike CON, FCT Minister" class="card-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/person-placeholder.jpg';">
                     <div class="card-body">
                         <h3 class="card-title">Ezenwo Nyesom Wike CON</h3>
                         <p class="card-text">FCT Minister<br>Federal Capital Territory Administration</p>
                     </div>
                 </div>
                 <div class="card">
-                    <img src="<?php echo $baseUrl; ?>/public/assets/images/leadership/mandate-secretary.jpg" alt="Dr. Adedolapo Fasawe" class="card-img" onerror="this.src='<?php echo $baseUrl; ?>/public/assets/images/placeholder/person-placeholder.jpg';">
+                    <!-- FIXED: Removed /public from image path -->
+                    <img src="<?php echo $baseUrl; ?>/assets/images/leadership/mandate-secretary.jpg" alt="Dr. Adedolapo Fasawe" class="card-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/person-placeholder.jpg';">
                     <div class="card-body">
                         <h3 class="card-title">Dr. Adedolapo Fasawe</h3>
                         <p class="card-text">Mandate Secretary<br>Health Services & Environment Secretariat</p>
                     </div>
                 </div>
                 <div class="card">
-                    <img src="<?php echo $baseUrl; ?>/public/assets/images/leadership/permanent-secretary.jpg" alt="Dr. Babagana Adam" class="card-img" onerror="this.src='<?php echo $baseUrl; ?>/public/assets/images/placeholder/person-placeholder.jpg';">
+                    <!-- FIXED: Removed /public from image path -->
+                    <img src="<?php echo $baseUrl; ?>/assets/images/leadership/permanent-secretary.jpg" alt="Dr. Babagana Adam" class="card-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/person-placeholder.jpg';">
                     <div class="card-body">
                         <h3 class="card-title">Dr. Babagana Adam</h3>
                         <p class="card-text">Permanent Secretary<br>Health Services & Environment Secretariat</p>
                     </div>
                 </div>
                 <div class="card">
-                    <img src="<?php echo $baseUrl; ?>/public/assets/images/leadership/director-nursing.jpg" alt="Mrs Ijoema Jimi Bada" class="card-img" onerror="this.src='<?php echo $baseUrl; ?>/public/assets/images/placeholder/person-placeholder.jpg';">
+                    <!-- FIXED: Removed /public from image path -->
+                    <img src="<?php echo $baseUrl; ?>/assets/images/leadership/director-nursing.jpg" alt="Mrs Ijoema Jimi Bada" class="card-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/person-placeholder.jpg';">
                     <div class="card-body">
                         <h3 class="card-title">Mrs Ijoema Jimi Bada</h3>
                         <p class="card-text">Director, Nursing Services<br>Health Services & Environment Secretariat</p>
                     </div>
                 </div>
                 <div class="card">
-                    <img src="<?php echo $baseUrl; ?>/public/assets/images/leadership/college-provost.jpg" alt="Comr. Deborah Yusuf" class="card-img" onerror="this.src='<?php echo $baseUrl; ?>/public/assets/images/placeholder/person-placeholder.jpg';">
+                    <!-- FIXED: Removed /public from image path -->
+                    <img src="<?php echo $baseUrl; ?>/assets/images/leadership/college-provost.jpg" alt="Comr. Deborah Yusuf" class="card-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/person-placeholder.jpg';">
                     <div class="card-body">
                         <h3 class="card-title">Comr. Deborah Yusuf</h3>
                         <p class="card-text">Provost, FCTCNS<br>FCT College of Nursing Sciences</p>
@@ -453,25 +459,26 @@ body { font-family: var(--font-body); font-size: 15px; line-height: 1.6; color: 
                 <p class="section-subtitle">Modern facilities supporting excellence in nursing education.</p>
             </div>
             <div class="gallery-carousel">
-                <div class="gallery-slide active" style="background-image: url('<?php echo $baseUrl; ?>/public/assets/images/about/simulation-lab.jpg');">
+                <!-- FIXED: Removed /public from all image paths -->
+                <div class="gallery-slide active" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/about/simulation-lab.jpg');">
                     <div class="gallery-caption">
                         <h3>Simulation Laboratory</h3>
                         <p>State-of-the-art simulation lab where students practice clinical skills in a controlled, realistic environment.</p>
                     </div>
                 </div>
-                <div class="gallery-slide" style="background-image: url('<?php echo $baseUrl; ?>/public/assets/images/about/library.jpg');">
+                <div class="gallery-slide" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/about/library.jpg');">
                     <div class="gallery-caption">
                         <h3>Medical Library</h3>
                         <p>Comprehensive collection of nursing journals, textbooks, and digital resources for research and study.</p>
                     </div>
                 </div>
-                <div class="gallery-slide" style="background-image: url('<?php echo $baseUrl; ?>/public/assets/images/about/classroom.jpg');">
+                <div class="gallery-slide" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/about/classroom.jpg');">
                     <div class="gallery-caption">
                         <h3>Interactive Classrooms</h3>
                         <p>Technology-enhanced learning spaces designed for collaborative nursing education and discussion.</p>
                     </div>
                 </div>
-                <div class="gallery-slide" style="background-image: url('<?php echo $baseUrl; ?>/public/assets/images/about/campus-building.jpg');">
+                <div class="gallery-slide" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/about/campus-building.jpg');">
                     <div class="gallery-caption">
                         <h3>Main Campus</h3>
                         <p>The heart of our institution where future nursing professionals begin their transformative journey.</p>
