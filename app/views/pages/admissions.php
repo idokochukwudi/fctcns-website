@@ -34,61 +34,53 @@ $applicationPortal = 'https://consap.fcthhss.abj.gov.ng';
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-/* CRITICAL FIX FOR HEADER SPACING */
-body > main.main-content {
-    margin-top: 0 !important;
-}
-
-.homepage-content {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-.hero-section {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-.hero-carousel {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-/* Override any existing margins */
-*[style*="margin-top"], 
-*[style*="padding-top"] {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-/* Rest of your existing homepage CSS here... */
-</style>
-<style>
 /* ==========================================================================
    CRITICAL FIX: No gap between header and content
    ========================================================================== */
-body { margin: 0 !important; padding: 0 !important; }
-main.admissions-page { margin-top: 0 !important; padding-top: 0 !important; }
-.admissions-hero { margin-top: 0 !important; padding-top: 0 !important; }
+body { 
+    margin: 0 !important; 
+    padding: 0 !important; 
+}
+main.admissions-page { 
+    margin-top: 0 !important; 
+    padding-top: 0 !important; 
+}
+.admissions-hero { 
+    margin-top: 0 !important; 
+    padding-top: 0 !important; 
+}
 
 /* ==========================================================================
-   GLOBAL VARIABLES - Mature Transparent Purple Theme
+   GLOBAL VARIABLES - Consistent with Homepage Color Scheme
    ========================================================================== */
 :root {
-    --color-primary: rgba(107, 78, 155, 0.9);
-    --color-primary-dark: rgba(90, 65, 133, 0.9);
-    --color-primary-light: rgba(123, 92, 174, 0.8);
-    --color-primary-very-light: rgba(240, 235, 247, 0.6);
+    /* Professional Color Palette - Matching Homepage */
+    --color-primary: #5D4A8A;           /* Deep sophisticated purple */
+    --color-primary-dark: #4A3A6F;
+    --color-primary-light: #6F5B9E;
+    --color-primary-very-light: #F8F6FC;
+    --color-primary-transparent: rgba(93, 74, 138, 0.08);
     
-    --color-accent: rgba(255, 126, 95, 0.9);
-    --color-accent-dark: rgba(229, 106, 74, 0.9);
+    --color-accent: #D4A574;            /* Muted gold accent */
+    --color-accent-dark: #BF8F5E;
+    --color-accent-light: #E6C9A5;
     
-    --color-white-solid: #ffffff;
-    --color-gray-800: rgba(52, 58, 64, 0.9);
+    /* Neutral Colors - Professional */
+    --color-white: #FFFFFF;
+    --color-off-white: #FAFAFA;
+    --color-gray-50: #F5F7FA;
+    --color-gray-100: #E8ECF1;
+    --color-gray-200: #D1D9E3;
+    --color-gray-300: #B8C2CC;
+    --color-gray-800: #2D3748;
+    --color-gray-900: #1A202C;
+    --color-black: #000000;
     
+    /* Typography - Consistent with Homepage */
     --font-heading: 'Montserrat', sans-serif;
     --font-body: 'Open Sans', sans-serif;
     
+    /* Spacing */
     --spacing-xs: 0.5rem;
     --spacing-sm: 1rem;
     --spacing-md: 1.5rem;
@@ -96,137 +88,639 @@ main.admissions-page { margin-top: 0 !important; padding-top: 0 !important; }
     --spacing-xl: 2.5rem;
     --spacing-xxl: 3.5rem;
     
-    --shadow-sm: 0 1px 3px rgba(107, 78, 155, 0.08);
-    --shadow-md: 0 3px 10px rgba(107, 78, 155, 0.12);
-    --shadow-lg: 0 8px 25px rgba(107, 78, 155, 0.15);
+    /* Shadows */
+    --shadow-subtle: 0 2px 6px rgba(0, 0, 0, 0.05);
+    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.12);
     
-    --radius-md: 8px;
-    --radius-lg: 12px;
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-full: 999px;
     
-    --transition-base: all 0.3s ease;
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-* { box-sizing: border-box; }
-body { font-family: var(--font-body); font-size: 15px; line-height: 1.6; color: var(--color-gray-800); background: var(--color-white-solid); }
-.container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 var(--spacing-sm); }
+* { 
+    box-sizing: border-box; 
+    margin: 0;
+    padding: 0;
+}
+
+body { 
+    font-family: var(--font-body); 
+    font-size: 15px; 
+    line-height: 1.6; 
+    color: var(--color-gray-800); 
+    background: var(--color-white); 
+}
+
+.container { 
+    width: 100%; 
+    max-width: 1200px; 
+    margin: 0 auto; 
+    padding: 0 var(--spacing-md); 
+}
 
 /* ==========================================================================
-   HERO SECTION
+   HERO SECTION - Consistent with Homepage
    ========================================================================== */
 .admissions-hero {
     position: relative;
     height: 75vh;
-    max-height: 600px;
-    min-height: 450px;
+    max-height: 650px;
+    min-height: 500px;
     overflow: hidden;
-    background: linear-gradient(135deg, rgba(107, 78, 155, 0.3), rgba(123, 92, 174, 0.2));
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
 }
 
 .admissions-hero-bg {
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-size: cover; background-position: center;
-    /* PLACEHOLDER: Admissions hero image */
-    background-image: url('<?php echo $baseUrl; ?>/public/assets/images/admissions/hero-2025.jpg');
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    background-size: cover; 
+    background-position: center;
+    background-image: url('<?php echo $baseUrl; ?>/assets/images/admissions/hero-2025.jpg');
+    opacity: 0.6; /* Reduced opacity for less intense background */
 }
 
 .admissions-hero-bg::after {
-    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.2) 100%);
+    content: ''; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.4) 0%, /* Lighter gradient for less intense background */
+        rgba(0, 0, 0, 0.25) 50%,
+        rgba(0, 0, 0, 0.15) 100%
+    );
 }
 
 .admissions-hero-content {
     position: relative;
     z-index: 3;
-    color: var(--color-white-solid);
-    max-width: 680px;
-    padding: var(--spacing-lg);
-    margin-left: 8%;
-    background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(8px);
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--color-white);
+    max-width: 700px;
+    padding: var(--spacing-xl);
+    margin: 0 auto;
+    text-align: center;
     margin-top: 15vh;
 }
 
 .admissions-hero-badge { 
     display: inline-block;
     background: var(--color-accent); 
-    color: var(--color-white-solid); 
-    padding: 0.4rem 1rem; 
-    border-radius: 4px; 
-    font-size: 0.8rem; 
+    color: var(--color-gray-900); 
+    padding: 0.5rem 1.5rem; 
+    border-radius: var(--radius-full); 
+    font-size: 0.85rem; 
     font-weight: 600; 
-    margin-bottom: var(--spacing-md); 
+    margin-bottom: var(--spacing-md);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-family: var(--font-heading);
 }
-.admissions-hero-title { font-family: var(--font-heading); font-size: 2.8rem; font-weight: 700; color: var(--color-white-solid); text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
-.admissions-hero-subtitle { font-size: 1.2rem; color: rgba(255,255,255,0.95); }
+
+.admissions-hero-title { 
+    font-family: var(--font-heading); 
+    font-size: clamp(1.8rem, 4vw, 2.8rem); 
+    font-weight: 700; 
+    color: var(--color-white); 
+    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    line-height: 1.2;
+    margin-bottom: var(--spacing-sm);
+}
+
+.admissions-hero-subtitle { 
+    font-size: clamp(1rem, 2.5vw, 1.3rem); 
+    color: rgba(255,255,255,0.95);
+    line-height: 1.6;
+    max-width: 600px;
+    margin: 0 auto;
+}
 
 /* ==========================================================================
-   SECTIONS & CARDS
+   SECTIONS & CARDS - Consistent Styling
    ========================================================================== */
-.section { padding: var(--spacing-xl) 0; }
-.section-alt { background: var(--color-primary-very-light); }
+.section { 
+    padding: var(--spacing-xl) 0; 
+}
 
-.section-header { text-align: center; margin-bottom: var(--spacing-xl); max-width: 700px; margin-left: auto; margin-right: auto; }
-.section-title { font-family: var(--font-heading); font-size: 2rem; font-weight: 600; color: var(--color-primary); position: relative; display: inline-block; }
-.section-title::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 60px; height: 3px; background: var(--color-accent); border-radius: 2px; }
-.section-subtitle { font-size: 1.1rem; color: var(--color-gray-800); margin-top: var(--spacing-lg); line-height: 1.6; }
+.section-alt { 
+    background: var(--color-gray-50); /* Lighter background */
+    border-top: 1px solid var(--color-gray-100);
+    border-bottom: 1px solid var(--color-gray-100);
+}
 
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--spacing-lg); }
+.section-header { 
+    text-align: center; 
+    margin-bottom: var(--spacing-xl); 
+    max-width: 800px; 
+    margin-left: auto; 
+    margin-right: auto; 
+}
+
+.section-title { 
+    font-family: var(--font-heading); 
+    font-size: clamp(1.5rem, 3vw, 2rem); 
+    font-weight: 600; 
+    color: var(--color-primary); 
+    position: relative; 
+    display: inline-block;
+    margin-bottom: var(--spacing-sm);
+}
+
+.section-title::after { 
+    content: ''; 
+    position: absolute; 
+    bottom: -8px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    width: 60px; 
+    height: 3px; 
+    background: var(--color-accent); 
+    border-radius: 2px; 
+}
+
+.section-subtitle { 
+    font-size: 1.1rem; 
+    color: var(--color-gray-800); 
+    line-height: 1.6; 
+    font-weight: 400;
+}
+
+.grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+    gap: var(--spacing-lg); 
+    margin-top: var(--spacing-lg);
+}
 
 .card {
-    background: var(--color-white-solid);
+    background: var(--color-white);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition-base);
-    border: 1px solid rgba(107, 78, 155, 0.1);
+    box-shadow: var(--shadow-subtle);
+    transition: var(--transition-smooth);
+    border: 1px solid var(--color-gray-100);
+    overflow: hidden;
+    height: 100%;
 }
-.card:hover { transform: translateY(-8px); box-shadow: var(--shadow-md); }
 
-.card-body { padding: var(--spacing-lg); }
-.card-title { font-family: var(--font-heading); font-size: 1.6rem; font-weight: 600; color: var(--color-primary); margin-bottom: var(--spacing-md); }
+.card:hover { 
+    transform: translateY(-8px); 
+    box-shadow: var(--shadow-elevated); 
+    border-color: var(--color-primary-light);
+}
 
-.requirement-list { list-style: none; padding: 0; margin: 0; }
-.requirement-list li { padding: 0.6rem 0; position: relative; padding-left: 1.8rem; color: var(--color-gray-800); }
-.requirement-list li::before { content: '✓'; position: absolute; left: 0; color: var(--color-accent); font-weight: bold; font-size: 1.2rem; }
+.card-body { 
+    padding: var(--spacing-lg); 
+}
 
-.step-list { counter-reset: step; list-style: none; padding: 0; }
-.step-list li { counter-increment: step; position: relative; padding: 1rem 0 1rem 3rem; border-left: 3px solid var(--color-primary-light); margin-bottom: var(--spacing-md); background: rgba(240, 235, 247, 0.3); border-radius: var(--radius-md); }
-.step-list li::before { content: counter(step); position: absolute; left: -12px; top: 1rem; background: var(--color-primary); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+.card-title { 
+    font-family: var(--font-heading); 
+    font-size: 1.4rem; 
+    font-weight: 600; 
+    color: var(--color-primary); 
+    margin-bottom: var(--spacing-md); 
+    line-height: 1.3;
+}
 
-/* Alert Box */
+/* ==========================================================================
+   LISTS & CONTENT STYLES
+   ========================================================================== */
+.requirement-list { 
+    list-style: none; 
+    padding: 0; 
+    margin: 0; 
+}
+
+.requirement-list li { 
+    padding: 0.6rem 0; 
+    position: relative; 
+    padding-left: 1.8rem; 
+    color: var(--color-gray-800);
+    line-height: 1.5;
+}
+
+.requirement-list li::before { 
+    content: '✓'; 
+    position: absolute; 
+    left: 0; 
+    color: var(--color-accent); 
+    font-weight: bold; 
+    font-size: 1.1rem; 
+}
+
+.step-list { 
+    counter-reset: step; 
+    list-style: none; 
+    padding: 0; 
+    margin: var(--spacing-lg) 0;
+}
+
+.step-list li { 
+    counter-increment: step; 
+    position: relative; 
+    padding: 1.5rem 1.5rem 1.5rem 4rem; 
+    border-left: 3px solid var(--color-primary-light); 
+    margin-bottom: var(--spacing-lg); 
+    background: var(--color-gray-50); /* Lighter background */
+    border-radius: var(--radius-lg);
+    transition: var(--transition-smooth);
+}
+
+.step-list li:hover {
+    background: var(--color-white);
+    box-shadow: var(--shadow-soft);
+}
+
+.step-list li::before { 
+    content: counter(step); 
+    position: absolute; 
+    left: -20px; 
+    top: 1.5rem; 
+    background: var(--color-primary); 
+    color: var(--color-white); 
+    width: 40px; 
+    height: 40px; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-weight: 700;
+    font-size: 1.1rem;
+    border: 3px solid var(--color-white);
+    box-shadow: var(--shadow-subtle);
+}
+
+.step-list li strong {
+    display: block;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+    font-size: 1.2rem;
+}
+
+/* ==========================================================================
+   ALERT BOX - Enhanced
+   ========================================================================== */
 .alert-important {
-    background: rgba(255, 126, 95, 0.1);
+    background: var(--color-gray-50); /* Lighter background */
     border-left: 4px solid var(--color-accent);
     padding: var(--spacing-lg);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     margin: var(--spacing-xl) 0;
+    box-shadow: var(--shadow-subtle);
 }
 
-/* Buttons */
+.alert-important h3 {
+    color: var(--color-primary); 
+    margin-bottom: var(--spacing-sm);
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.alert-important p {
+    color: var(--color-gray-800);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-sm);
+}
+
+.alert-important p:last-child {
+    margin-bottom: 0;
+}
+
+/* ==========================================================================
+   BUTTONS - Consistent with Homepage
+   ========================================================================== */
 .btn-primary {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
+    gap: 0.75rem;
     background: var(--color-accent);
-    color: var(--color-white-solid);
-    padding: 0.8rem 1.8rem;
+    color: var(--color-gray-900);
+    padding: 0.9rem 2rem;
     border-radius: var(--radius-md);
     text-decoration: none;
     font-weight: 600;
-    transition: var(--transition-base);
+    transition: var(--transition-smooth);
+    border: 2px solid var(--color-accent);
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    min-height: 50px;
 }
-.btn-primary:hover { background: var(--color-accent-dark); transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
-/* CTA */
-.cta-section { background: linear-gradient(135deg, rgba(107, 78, 155, 0.08), rgba(123, 92, 174, 0.05)); text-align: center; padding: var(--spacing-xxl) 0; }
+.btn-primary:hover { 
+    background: var(--color-accent-dark); 
+    color: var(--color-gray-900);
+    transform: translateY(-3px); 
+    box-shadow: var(--shadow-soft); 
+    border-color: var(--color-accent-dark);
+}
 
-/* Responsive */
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: var(--color-primary);
+    color: var(--color-white);
+    padding: 0.9rem 2rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition-smooth);
+    border: 2px solid var(--color-primary);
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    min-height: 50px;
+}
+
+.btn-secondary:hover { 
+    background: var(--color-primary-dark); 
+    color: var(--color-white);
+    transform: translateY(-3px); 
+    box-shadow: var(--shadow-soft); 
+    border-color: var(--color-primary-dark);
+}
+
+.btn-disabled {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: var(--color-gray-300);
+    color: var(--color-gray-600);
+    padding: 0.9rem 2rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    border: 2px solid var(--color-gray-300);
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    min-height: 50px;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+/* ==========================================================================
+   PROCESS FLOWCHART - Enhanced Display
+   ========================================================================== */
+.process-flowchart {
+    background: var(--color-white);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--color-gray-100);
+}
+
+.process-flowchart-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    max-height: 500px;
+}
+
+.process-flowchart-caption {
+    padding: var(--spacing-md);
+    background: var(--color-gray-50); /* Lighter background */
+    text-align: center;
+    color: var(--color-gray-800);
+    font-size: 0.9rem;
+    border-top: 1px solid var(--color-gray-100);
+}
+
+.process-flowchart-placeholder {
+    background: var(--color-gray-50);
+    height: 400px;
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-gray-600);
+    font-size: 1.1rem;
+    text-align: center;
+    border: 2px dashed var(--color-gray-300);
+    padding: var(--spacing-lg);
+}
+
+/* ==========================================================================
+   STATUS BANNER - Application Closed
+   ========================================================================== */
+.status-banner {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-left: 5px solid #dc3545;
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    margin: var(--spacing-xl) 0;
+    text-align: center;
+    box-shadow: var(--shadow-subtle);
+}
+
+.status-banner h3 {
+    color: #dc3545;
+    margin-bottom: var(--spacing-sm);
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+}
+
+.status-banner p {
+    color: var(--color-gray-800);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-sm);
+}
+
+.status-banner p:last-child {
+    margin-bottom: 0;
+}
+
+/* ==========================================================================
+   CTA SECTION - Consistent with Homepage
+   ========================================================================== */
+.cta-section { 
+    background: linear-gradient(135deg, var(--color-gray-50), var(--color-white)); /* Lighter gradient */
+    text-align: center; 
+    padding: var(--spacing-xxl) 0; 
+    border-top: 1px solid var(--color-gray-100);
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.cta-section .section-title {
+    margin-bottom: var(--spacing-md);
+}
+
+/* ==========================================================================
+   UTILITY CLASSES
+   ========================================================================== */
+.text-center { text-align: center; }
+.text-primary { color: var(--color-primary); }
+.text-accent { color: var(--color-accent); }
+.font-bold { font-weight: 600; }
+.text-muted { color: var(--color-gray-600); }
+
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
 @media (max-width: 768px) {
-    .admissions-hero-content { margin-left: 5%; max-width: 90%; text-align: center; margin-top: 10vh; }
-    .admissions-hero-title { font-size: 2.2rem; }
-    .grid { grid-template-columns: 1fr; }
+    :root {
+        --spacing-xs: 0.5rem;
+        --spacing-sm: 0.875rem;
+        --spacing-md: 1.25rem;
+        --spacing-lg: 1.75rem;
+        --spacing-xl: 2rem;
+        --spacing-xxl: 2.5rem;
+    }
+    
+    .admissions-hero {
+        height: 60vh;
+        min-height: 400px;
+    }
+    
+    .admissions-hero-content {
+        margin-top: 10vh;
+        padding: var(--spacing-lg);
+    }
+    
+    .grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+    
+    .step-list li {
+        padding: 1.25rem 1.25rem 1.25rem 3.5rem;
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .step-list li::before {
+        left: -18px;
+        top: 1.25rem;
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+    
+    .btn-primary,
+    .btn-secondary,
+    .btn-disabled {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.95rem;
+        min-height: 44px;
+    }
+    
+    .process-flowchart-placeholder {
+        height: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .admissions-hero {
+        height: 55vh;
+        min-height: 350px;
+    }
+    
+    .admissions-hero-badge {
+        padding: 0.4rem 1rem;
+        font-size: 0.75rem;
+    }
+    
+    .admissions-hero-title {
+        font-size: 1.6rem;
+    }
+    
+    .admissions-hero-subtitle {
+        font-size: 1rem;
+    }
+    
+    .section-title {
+        font-size: 1.4rem;
+    }
+    
+    .card-title {
+        font-size: 1.2rem;
+    }
+    
+    .process-flowchart-placeholder {
+        height: 250px;
+        font-size: 1rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .admissions-hero {
+        height: auto;
+        min-height: auto;
+        background: var(--color-white);
+        color: var(--color-black);
+    }
+    
+    .admissions-hero-bg {
+        display: none;
+    }
+    
+    .admissions-hero-content {
+        color: var(--color-black);
+        background: transparent;
+        backdrop-filter: none;
+        border: none;
+    }
+    
+    .btn-primary,
+    .btn-secondary,
+    .btn-disabled {
+        display: none;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid var(--color-gray-300);
+    }
+    
+    .alert-important {
+        border: 1px solid var(--color-gray-300);
+    }
+    
+    .status-banner {
+        border: 1px solid var(--color-gray-300);
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        animation: none !important;
+    }
+    
+    .card:hover,
+    .btn-primary:hover,
+    .btn-secondary:hover {
+        transform: none !important;
+    }
+}
+
+:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
 }
 </style>
 </head>
@@ -241,8 +735,21 @@ body { font-family: var(--font-body); font-size: 15px; line-height: 1.6; color: 
                 <span class="admissions-hero-badge">2025/2026 Admissions</span>
                 <h1 class="admissions-hero-title">ND/HND Nursing Programme</h1>
                 <p class="admissions-hero-subtitle">
-                    Post UTME Screening Exercise Now Open • Sales of Forms: 15th – 28th September 2025
+                    <!-- UPDATED: Application is now closed -->
+                    Application for 2025/2026 Session is Closed • Sales of Forms: 15th – 28th September 2025
                 </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Application Closed Banner -->
+    <section class="section">
+        <div class="container">
+            <div class="status-banner">
+                <h3><i class="fas fa-times-circle"></i> Application Closed</h3>
+                <p><strong>The application portal for the 2025/2026 academic session is now closed.</strong></p>
+                <p>The sales of forms period ended on 28th September 2025. No further applications are being accepted for this session.</p>
+                <p class="text-muted" style="margin-top: var(--spacing-sm);">Please check back for updates on the 2026/2027 admissions cycle.</p>
             </div>
         </div>
     </section>
@@ -251,7 +758,7 @@ body { font-family: var(--font-body); font-size: 15px; line-height: 1.6; color: 
     <section class="section section-alt">
         <div class="container">
             <div class="alert-important">
-                <h3 style="color: var(--color-primary); margin-bottom: var(--spacing-sm);">⚠️ Important Notice</h3>
+                <h3>⚠️ Important Notice</h3>
                 <p><strong>No extension</strong> of the application deadline. The College has <strong>NO AGENTS</strong>. Beware of fraudulent websites and deal only through official channels.</p>
             </div>
         </div>
@@ -270,6 +777,7 @@ body { font-family: var(--font-body); font-size: 15px; line-height: 1.6; color: 
                         <h3 class="card-title">Application Period</h3>
                         <p><strong>Sales of Forms:</strong> Monday, 15th September – Wednesday, 28th September 2025</p>
                         <p><strong>Application Fee:</strong> ₦2,200 (Non-refundable)</p>
+                        <p class="text-muted" style="margin-top: var(--spacing-sm);"><em>Application period has ended</em></p>
                     </div>
                 </div>
                 
@@ -308,13 +816,38 @@ body { font-family: var(--font-body); font-size: 15px; line-height: 1.6; color: 
     <section class="section">
         <div class="container">
             <div class="section-header">
-                <h2 class="section-title">How to Apply</h2>
+                <h2 class="section-title">Application Process (2025/2026)</h2>
             </div>
             
-            <!-- IMAGE PLACEHOLDER: Application process flowchart -->
-            <div style="background:#f0f0f0; height:300px; border-radius:var(--radius-lg); margin-bottom:var(--spacing-xl); display:flex; align-items:center; justify-content:center; color:#999; font-size:1.2rem; text-align:center;">
-                Application Process Flowchart Placeholder<br>(Add: /public/assets/images/admissions/process-flowchart.jpg)
+            <!-- Process Flowchart Image Display -->
+            <?php
+            $flowchartPath = $baseUrl . '/assets/images/admissions/process-flowchart.jpg';
+            $flowchartExists = file_exists($_SERVER['DOCUMENT_ROOT'] . parse_url($flowchartPath, PHP_URL_PATH));
+            ?>
+            
+            <?php if ($flowchartExists): ?>
+            <div class="process-flowchart">
+                <img 
+                    src="<?php echo $flowchartPath; ?>" 
+                    alt="Application Process Flowchart for FCT College of Nursing Sciences Admissions 2025/2026"
+                    class="process-flowchart-image"
+                >
+                <div class="process-flowchart-caption">
+                    Application Process Flowchart for 2025/2026 Admissions (Process has ended)
+                </div>
             </div>
+            <?php else: ?>
+            <div class="process-flowchart-placeholder">
+                <div>
+                    <i class="fas fa-diagram-project" style="font-size: 3rem; margin-bottom: var(--spacing-md); color: var(--color-gray-400);"></i>
+                    <p>Application Process Flowchart (2025/2026)</p>
+                    <p style="font-size: 0.9rem; margin-top: var(--spacing-xs);">
+                        Add your flowchart image at:<br>
+                        <code>/assets/images/admissions/process-flowchart.jpg</code>
+                    </p>
+                </div>
+            </div>
+            <?php endif; ?>
             
             <ol class="step-list">
                 <li>
@@ -351,6 +884,9 @@ body { font-family: var(--font-body); font-size: 15px; line-height: 1.6; color: 
                     </ul>
                 </li>
             </ol>
+            <p class="text-muted text-center" style="margin-top: var(--spacing-lg);">
+                <em>This application process was for the 2025/2026 session. The portal is now closed.</em>
+            </p>
         </div>
     </section>
 
@@ -375,7 +911,7 @@ body { font-family: var(--font-body); font-size: 15px; line-height: 1.6; color: 
                         <h3 class="card-title">Email & Online</h3>
                         <p><strong>Email:</strong> support.consap@fcthhss.abj.gov.ng</p>
                         <p><strong>Live Chat:</strong> Available on the portal</p>
-                        <p><strong>Telegram:</strong> <a href="https://t.me/+SWH5opeTcTXs34Ko" target="_blank">Official Channel</a></p>
+                        <p><strong>Telegram:</strong> <a href="https://t.me/+SWH5opeTcTXs34Ko" target="_blank" class="text-primary">Official Channel</a></p>
                     </div>
                 </div>
             </div>
@@ -385,13 +921,21 @@ body { font-family: var(--font-body); font-size: 15px; line-height: 1.6; color: 
     <!-- CTA -->
     <section class="cta-section">
         <div class="container">
-            <h2 class="section-title">Apply Now for 2025/2026 Session</h2>
+            <h2 class="section-title">2025/2026 Admissions</h2>
             <p class="section-subtitle" style="max-width:700px; margin:0 auto var(--spacing-xl);">
-                Don't miss the deadline – 28th September 2025
+                The application period for the 2025/2026 academic session has ended.
             </p>
-            <a href="<?php echo $applicationPortal; ?>" target="_blank" class="btn-primary">
-                <i class="fas fa-external-link-alt"></i> Go to Application Portal
-            </a>
+            <div>
+                <span class="btn-disabled">
+                    <i class="fas fa-lock"></i> Application Portal (Closed)
+                </span>
+                <a href="<?php echo $baseUrl; ?>/programs" class="btn-secondary" style="margin-left: var(--spacing-md);">
+                    <i class="fas fa-book-open"></i> View Programs
+                </a>
+            </div>
+            <p class="text-muted" style="margin-top: var(--spacing-lg);">
+                Check back later for information about the 2026/2027 admissions cycle.
+            </p>
         </div>
     </section>
 </main>
