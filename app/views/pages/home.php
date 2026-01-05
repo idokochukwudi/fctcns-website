@@ -2,9 +2,10 @@
 /**
  * Homepage View Template - Professional Redesign (Mature Light Purple Theme)
  * Mobile-Optimized Version - FULL WIDTH
+ * Complete Redesign with Professional Sections & Image Support
  * 
  * @package FCTCNS
- * @version 3.4
+ * @version 4.0
  */
 
 extract($data ?? []);
@@ -16,6 +17,34 @@ if (!function_exists('e')) {
 }
 
 $carouselSlides = $carouselSlides ?? [];
+$baseUrl = $baseUrl ?? '/';
+
+// Define default carousel slides if none provided
+if (empty($carouselSlides)) {
+    $carouselSlides = [
+        [
+            'image_path' => $baseUrl . '/assets/images/homepage/hero-campus-life.jpg',
+            'title' => 'Welcome to FCT College of Nursing Sciences',
+            'subtitle' => 'NMCN & NBTE Accredited Nursing Education Since 1989 - Join a legacy of 5,000+ nurses trained in a 35-year tradition of academic rigor and community care.',
+            'button_text' => 'Discover Our Community',
+            'button_link' => $baseUrl . '/student-life'
+        ],
+        [
+            'image_path' => $baseUrl . '/assets/images/homepage/hero-simulation-lab.jpg',
+            'title' => 'Train in Advanced Simulation Environments',
+            'subtitle' => 'Practice with high-fidelity manikins and virtual reality in labs designed for real-world preparedness.',
+            'button_text' => 'Explore Our Facilities',
+            'button_link' => $baseUrl . '/facilities'
+        ],
+        [
+            'image_path' => $baseUrl . '/assets/images/homepage/hero-graduation-celebration.jpg',
+            'title' => 'Begin Your Journey to a Fulfilling Career',
+            'subtitle' => 'Our graduates are highly sought-after for their skill, integrity, and readiness to lead in diverse healthcare settings.',
+            'button_text' => 'View Program Outcomes',
+            'button_link' => $baseUrl . '/alumni'
+        ]
+    ];
+}
 ?>
 
 <!DOCTYPE html>
@@ -27,12 +56,77 @@ $carouselSlides = $carouselSlides ?? [];
     <title><?php echo e($page_title ?? 'FCT College of Nursing Sciences'); ?></title>
     
     <!-- Professional Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
+/* ==========================================================================
+   TARGETED FIX FOR SPACE ABOVE CAROUSEL ONLY
+   ========================================================================== */
+/* Remove default browser spacing */
+html {
+    margin: 0;
+    padding: 0;
+}
+
+/* Only target the body and elements before carousel */
+body {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Target the hero section specifically */
+.hero-section {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* Target the carousel container */
+.hero-carousel {
+    margin: 0 !important;
+    padding: 0 !important;
+    position: relative;
+    top: 0;
+}
+
+/* Remove any space from the main content wrapper */
+main#main-content,
+.homepage-content {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Only remove top margins/paddings, keep others intact */
+.hero-section,
+.hero-carousel,
+.carousel-inner,
+.carousel-slide {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: none !important;
+}
+
+/* If there's still space, try this specific selector */
+body > .homepage-content > .hero-section:first-child {
+    margin-top: -1px !important;
+    padding-top: 0 !important;
+}
+
+/* Ensure carousel starts at the very top */
+.carousel-slide {
+    top: 0 !important;
+}
+
+/* Remove any line-height or font spacing */
+.carousel-slide-content {
+    margin-top: 0 !important;
+    padding-top: var(--spacing-xl) !important; /* Keep original padding but no extra top space */
+}
 /* ==========================================================================
    CRITICAL MOBILE ENHANCEMENTS & FIXES - FULL WIDTH
    ========================================================================== */
@@ -40,6 +134,9 @@ $carouselSlides = $carouselSlides ?? [];
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 html, body {
@@ -50,26 +147,29 @@ html, body {
 
 body {
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
     background-color: #FFFFFF;
+    font-family: 'Open Sans', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    color: #2D3748;
+    width: 100%;
+    max-width: 100%;
 }
 
-/* ELIMINATE ALL UNNECESSARY SPACING BETWEEN HEADER AND CONTENT */
-.main-content,
-.homepage-content,
-.hero-section,
-.hero-carousel,
-.carousel-inner,
-.carousel-slide {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-    border-top: none !important;
-}
-
-/* Force remove any potential gaps */
-body > *:first-child:not(header) {
-    margin-top: 0 !important;
+/* Font family inheritance for all elements */
+h1, h2, h3, h4, h5, h6,
+button, .btn,
+.section-title,
+.carousel-slide-title,
+.accreditation-text h3,
+.environment-content h3,
+.community-content h3,
+.attribute-card h3,
+.hub-card h3,
+.cta-title,
+.stat-label,
+.badge-text strong {
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* ==========================================================================
@@ -90,6 +190,14 @@ body > *:first-child:not(header) {
     --color-accent-dark: #BF8F5E;
     --color-accent-light: #E6C9A5;
     
+    /* Status Colors */
+    --color-closed: #dc3545;
+    --color-closed-light: rgba(220, 53, 69, 0.1);
+    --color-active: #28a745;
+    --color-active-light: rgba(40, 167, 69, 0.1);
+    --color-warning: #ffc107;
+    --color-warning-light: rgba(255, 193, 7, 0.1);
+    
     /* Enhanced Neutral Colors - Professional */
     --color-white: #FFFFFF;
     --color-off-white: #FAFAFA;
@@ -97,6 +205,7 @@ body > *:first-child:not(header) {
     --color-gray-100: #E8ECF1;
     --color-gray-200: #D1D9E3;
     --color-gray-300: #B8C2CC;
+    --color-gray-600: #718096;
     --color-gray-800: #2D3748;
     --color-gray-900: #1A202C;
     --color-black: #000000;
@@ -132,23 +241,85 @@ body > *:first-child:not(header) {
 }
 
 /* ==========================================================================
-   FULL WIDTH CONTAINERS
+   FULL WIDTH CONTAINERS & CENTRALIZED CONTENT
    ========================================================================== */
-.full-width-container {
+.container {
     width: 100%;
     max-width: 100%;
-    margin: 0 auto;
+    margin: 0;
     padding: 0;
 }
 
-/* Remove container padding for full width sections */
+/* FULL WIDTH SECTIONS - NO TOP MARGIN/PADDING */
 .hero-section,
-.cta-section {
+.cta-section,
+.stats-section,
+.accreditation-section,
+.learning-environment-section,
+.graduate-attributes-section,
+.campus-community-section,
+.navigation-hub-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
     padding: 0 !important;
 }
 
+/* Centralized content containers */
+.container > *,
+.stats-grid,
+.accreditation-container,
+.environment-grid,
+.attributes-grid,
+.community-grid,
+.hub-grid,
+.cta-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+}
+
 /* ==========================================================================
-   HERO CAROUSEL - PROFESSIONAL MATURE DESIGN - FULL WIDTH
+   APPLICATION STATUS BANNER - CENTRALIZED
+   ========================================================================== */
+.application-status-banner {
+    background: linear-gradient(135deg, var(--color-closed-light), var(--color-white));
+    border-left: 5px solid var(--color-closed);
+    padding: var(--spacing-md);
+    margin: var(--spacing-md) auto var(--spacing-lg) auto;
+    border-radius: var(--radius-md);
+    max-width: 1200px;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+    width: 95%;
+}
+
+.application-status-banner h3 {
+    color: var(--color-closed);
+    margin-bottom: var(--spacing-xs);
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    font-family: var(--font-heading);
+    text-align: center;
+}
+
+.application-status-banner p {
+    color: var(--color-gray-800);
+    line-height: 1.5;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.application-status-banner strong {
+    color: var(--color-primary);
+}
+
+/* ==========================================================================
+   HERO CAROUSEL - FULL WIDTH (NO WHITE GAPS, NO TOP SPACE)
    ========================================================================== */
 .hero-section {
     position: relative;
@@ -156,6 +327,7 @@ body > *:first-child:not(header) {
     margin: 0;
     padding: 0;
     background: linear-gradient(135deg, #4A3A6F, #5D4A8A);
+    overflow: hidden;
 }
 
 .hero-carousel {
@@ -165,7 +337,6 @@ body > *:first-child:not(header) {
     max-height: 650px;
     min-height: 500px;
     overflow: hidden;
-    background: linear-gradient(135deg, rgba(74, 58, 111, 0.95), rgba(93, 74, 138, 0.97));
 }
 
 .carousel-inner {
@@ -185,6 +356,7 @@ body > *:first-child:not(header) {
     transition: opacity 0.8s ease, visibility 0.8s;
     display: flex;
     align-items: center;
+    justify-content: center;
 }
 
 .carousel-slide.active {
@@ -193,6 +365,7 @@ body > *:first-child:not(header) {
     z-index: 2;
 }
 
+/* Carousel background with full width */
 .carousel-slide-bg {
     position: absolute;
     top: 0;
@@ -221,15 +394,20 @@ body > *:first-child:not(header) {
     );
 }
 
-/* Carousel content - Professional minimal */
+/* Carousel content - PROPERLY CENTERED */
 .carousel-slide-content {
     position: relative;
     z-index: 3;
     color: var(--color-white);
-    max-width: 700px;
+    max-width: 900px;
     padding: var(--spacing-xl);
     margin: 0 auto;
     text-align: center;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .carousel-slide-badge {
@@ -244,29 +422,44 @@ body > *:first-child:not(header) {
     margin-bottom: var(--spacing-md);
     text-transform: uppercase;
     font-family: var(--font-heading);
+    text-align: center;
 }
 
-/* REDUCED CAROUSEL FONT SIZES - More professional */
+/* Carousel title - NO CUTOFF */
 .carousel-slide-title {
     font-family: var(--font-heading);
-    font-size: clamp(1.5rem, 4vw, 2rem); /* Reduced from 1.75-2.5rem */
+    font-size: clamp(1.5rem, 4.5vw, 2.8rem);
     font-weight: 600;
     line-height: 1.3;
     margin-bottom: var(--spacing-sm);
     color: var(--color-white);
     letter-spacing: -0.2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    text-align: center;
+    padding: 0 10px;
 }
 
+/* Carousel subtitle - NO CUTOFF */
 .carousel-slide-subtitle {
-    font-size: clamp(0.95rem, 2.5vw, 1.15rem); /* Reduced from 1-1.2rem */
+    font-size: clamp(0.95rem, 2.8vw, 1.35rem);
     font-weight: 400;
     margin-bottom: var(--spacing-lg);
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.95);
     font-family: var(--font-body);
-    max-width: 600px;
+    max-width: 700px;
     margin-left: auto;
     margin-right: auto;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    padding: 0 10px;
 }
 
 .carousel-slide-cta {
@@ -275,6 +468,7 @@ body > *:first-child:not(header) {
     gap: var(--spacing-sm);
     margin-top: var(--spacing-lg);
     justify-content: center;
+    width: 100%;
 }
 
 /* ==========================================================================
@@ -295,6 +489,8 @@ body > *:first-child:not(header) {
     cursor: pointer;
     min-height: 42px;
     letter-spacing: 0.3px;
+    white-space: nowrap;
+    text-align: center;
 }
 
 .btn-primary {
@@ -326,21 +522,29 @@ body > *:first-child:not(header) {
     border-color: rgba(255, 255, 255, 0.3);
 }
 
+.btn-disabled {
+    background: var(--color-gray-300);
+    color: var(--color-gray-600);
+    border-color: var(--color-gray-300);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.btn-disabled:hover,
+.btn-disabled:focus {
+    background: var(--color-gray-300);
+    color: var(--color-gray-600);
+    transform: none;
+    box-shadow: none;
+}
+
 /* ==========================================================================
    STATISTICS SECTION - MATURE PROFESSIONAL DESIGN - FULL WIDTH CONTENT
    ========================================================================== */
 .stats-section {
     background: var(--color-off-white);
-    padding: var(--spacing-xl) 0;
+    padding: var(--spacing-xl) 0 !important;
     border-bottom: 1px solid var(--color-gray-100);
-    width: 100%;
-}
-
-.stats-section .container {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
 }
 
 .stats-grid {
@@ -348,6 +552,9 @@ body > *:first-child:not(header) {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-md);
     text-align: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
 }
 
 .stat-item {
@@ -370,7 +577,7 @@ body > *:first-child:not(header) {
 }
 
 .stat-icon {
-    font-size: 1.75rem; /* Reduced size */
+    font-size: 1.75rem;
     color: var(--color-primary);
     margin-bottom: var(--spacing-sm);
     display: flex;
@@ -382,10 +589,9 @@ body > *:first-child:not(header) {
     border-radius: 50%;
 }
 
-/* REDUCED STATS FONT SIZES - More mature */
 .stat-number {
     font-family: var(--font-heading);
-    font-size: 1.75rem; /* Reduced from 2.5rem */
+    font-size: 1.75rem;
     font-weight: 600;
     margin-bottom: 0.25rem;
     color: var(--color-primary);
@@ -393,11 +599,12 @@ body > *:first-child:not(header) {
 }
 
 .stat-label {
-    font-size: 0.85rem; /* Reduced from 0.95rem */
+    font-size: 0.85rem;
     color: var(--color-gray-800);
     font-weight: 500;
     line-height: 1.4;
     letter-spacing: 0.3px;
+    font-family: var(--font-heading);
 }
 
 /* ==========================================================================
@@ -405,16 +612,8 @@ body > *:first-child:not(header) {
    ========================================================================== */
 .accreditation-section {
     background: var(--color-white);
-    padding: var(--spacing-xl) 0;
+    padding: var(--spacing-xl) 0 !important;
     border-bottom: 1px solid var(--color-gray-100);
-    width: 100%;
-}
-
-.accreditation-section .container {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
 }
 
 .accreditation-container {
@@ -434,23 +633,28 @@ body > *:first-child:not(header) {
 .accreditation-text {
     max-width: 800px;
     margin: 0 auto;
+    text-align: center;
+    padding: 0 var(--spacing-md);
 }
 
 .accreditation-text h3 {
     font-family: var(--font-heading);
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 600;
     margin-bottom: var(--spacing-sm);
     color: var(--color-primary);
     line-height: 1.3;
+    text-align: center;
 }
 
 .accreditation-text p {
-    font-size: 1rem;
+    font-size: 1.05rem;
     color: var(--color-gray-800);
     line-height: 1.6;
     font-weight: 400;
     margin-bottom: var(--spacing-lg);
+    text-align: center;
+    font-family: var(--font-body);
 }
 
 .accreditation-badges {
@@ -460,6 +664,7 @@ body > *:first-child:not(header) {
     width: 100%;
     max-width: 800px;
     margin: 0 auto;
+    padding: 0 var(--spacing-md);
 }
 
 .accreditation-badge {
@@ -471,7 +676,8 @@ body > *:first-child:not(header) {
     border-radius: var(--radius-md);
     transition: var(--transition-smooth);
     border: 1px solid var(--color-primary-transparent);
-    text-align: left;
+    text-align: center;
+    flex-direction: column;
 }
 
 .accreditation-badge:hover {
@@ -498,6 +704,9 @@ body > *:first-child:not(header) {
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-width: 0;
+    text-align: center;
+    align-items: center;
 }
 
 .badge-text strong {
@@ -507,6 +716,8 @@ body > *:first-child:not(header) {
     color: var(--color-primary);
     line-height: 1.3;
     margin-bottom: 0.25rem;
+    word-wrap: break-word;
+    text-align: center;
 }
 
 .badge-text span {
@@ -514,25 +725,13 @@ body > *:first-child:not(header) {
     color: var(--color-gray-800);
     font-weight: 400;
     line-height: 1.4;
+    font-family: var(--font-body);
+    text-align: center;
 }
 
 /* ==========================================================================
-   PROGRAMS SECTION - PROFESSIONAL LAYOUT - FULL WIDTH CONTENT
+   SECTION STYLES - REUSABLE
    ========================================================================== */
-.programs-section {
-    padding: var(--spacing-xl) 0;
-    background: var(--color-off-white);
-    border-bottom: 1px solid var(--color-gray-100);
-    width: 100%;
-}
-
-.programs-section .container {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
-}
-
 .section-header {
     text-align: center;
     margin-bottom: var(--spacing-xl);
@@ -550,6 +749,7 @@ body > *:first-child:not(header) {
     margin-bottom: var(--spacing-sm);
     position: relative;
     display: inline-block;
+    text-align: center;
 }
 
 .section-title::after {
@@ -565,23 +765,36 @@ body > *:first-child:not(header) {
 }
 
 .section-subtitle {
-    font-size: 1rem;
+    font-size: 1.05rem;
     color: var(--color-gray-800);
     line-height: 1.6;
     margin-top: var(--spacing-lg);
     font-weight: 400;
     padding: 0 var(--spacing-sm);
+    text-align: center;
+    font-family: var(--font-body);
 }
 
-.program-cards-grid {
+/* ==========================================================================
+   LEARNING ENVIRONMENT SECTION WITH IMAGE CAPTIONS
+   ========================================================================== */
+.learning-environment-section {
+    background: var(--color-off-white);
+    padding: var(--spacing-xl) 0 !important;
+}
+
+.environment-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-xl);
     margin-top: var(--spacing-lg);
-    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 var(--spacing-md);
 }
 
-.program-card {
+.environment-card {
     background: var(--color-white);
     border-radius: var(--radius-lg);
     overflow: hidden;
@@ -589,170 +802,372 @@ body > *:first-child:not(header) {
     transition: var(--transition-smooth);
     border: 1px solid var(--color-gray-100);
     height: 100%;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
 }
 
-.program-card:hover {
+.environment-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-soft);
     border-color: var(--color-primary-transparent);
 }
 
-.program-card-header {
-    padding: var(--spacing-lg);
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-    color: var(--color-white);
+.environment-image-container {
     position: relative;
+    height: 250px;
+    width: 100%;
 }
 
-.program-card-accreditation {
+.environment-image {
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Image caption styling */
+.image-caption {
     position: absolute;
-    top: var(--spacing-md);
-    right: var(--spacing-md);
-    background: var(--color-white);
-    color: var(--color-primary);
-    padding: 0.3rem 0.8rem;
-    border-radius: var(--radius-full);
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    text-align: center;
+    font-family: var(--font-body);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
-.program-card-title {
-    font-family: var(--font-heading);
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: var(--spacing-xs);
-    color: var(--color-white);
-    line-height: 1.3;
-    padding-right: 70px;
-}
-
-.program-card-duration {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 400;
-}
-
-.program-card-body {
+.environment-content {
     padding: var(--spacing-lg);
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
+    text-align: center;
 }
 
-.program-card-description {
+.environment-content h3 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-primary);
+    line-height: 1.3;
+    text-align: center;
+}
+
+.environment-content p {
     color: var(--color-gray-800);
     line-height: 1.6;
     margin-bottom: var(--spacing-md);
-    font-size: 0.95rem;
-    flex-grow: 1;
+    font-size: 1rem;
     font-weight: 400;
+    text-align: center;
+    font-family: var(--font-body);
 }
 
-.program-card-highlights {
-    margin-bottom: var(--spacing-md);
-    background: var(--color-primary-very-light);
-    padding: var(--spacing-md);
-    border-radius: var(--radius-sm);
-    border-left: 3px solid var(--color-primary);
-}
-
-.highlight-title {
-    font-family: var(--font-heading);
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-sm);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.highlight-list {
+.environment-features {
     list-style: none;
     padding-left: 0;
+    margin-top: var(--spacing-md);
+    text-align: left;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-.highlight-list li {
-    padding: 0.25rem 0;
+.environment-features li {
+    padding: 0.35rem 0;
     color: var(--color-gray-800);
     position: relative;
-    padding-left: 1.25rem;
-    font-size: 0.9rem;
+    padding-left: 1.75rem;
+    font-size: 0.95rem;
     font-weight: 400;
     line-height: 1.5;
+    font-family: var(--font-body);
 }
 
-.highlight-list li::before {
-    content: '•';
+.environment-features li::before {
+    content: '✓';
     position: absolute;
     left: 0;
     color: var(--color-accent);
     font-weight: bold;
-    font-size: 1rem;
-    top: 0.25rem;
+    font-size: 1.1rem;
+    top: 0.35rem;
 }
 
-.program-card-footer {
-    padding: var(--spacing-md) var(--spacing-lg);
+/* ==========================================================================
+   GRADUATE ATTRIBUTES SECTION
+   ========================================================================== */
+.graduate-attributes-section {
+    background: var(--color-white);
+    padding: var(--spacing-xl) 0 !important;
     border-top: 1px solid var(--color-gray-100);
+}
+
+.attributes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 var(--spacing-md);
+}
+
+.attribute-card {
+    background: var(--color-primary-very-light);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid var(--color-primary);
+    transition: var(--transition-smooth);
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
-    align-items: stretch;
+    height: 100%;
+    text-align: center;
 }
 
-.program-card-link {
+.attribute-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+}
+
+.attribute-icon {
+    font-size: 1.75rem;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    background: var(--color-white);
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin: 0 auto;
+}
+
+.attribute-card h3 {
     font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-primary);
+    line-height: 1.3;
+    min-height: 3em;
+    text-align: center;
+}
+
+.attribute-card p {
+    color: var(--color-gray-800);
+    line-height: 1.6;
+    font-size: 0.95rem;
+    font-weight: 400;
+    flex-grow: 1;
+    text-align: center;
+    font-family: var(--font-body);
+}
+
+/* ==========================================================================
+   CAMPUS & COMMUNITY SECTION WITH IMAGE CAPTIONS
+   ========================================================================== */
+.campus-community-section {
+    background: var(--color-off-white);
+    padding: var(--spacing-xl) 0 !important;
+    border-top: 1px solid var(--color-gray-100);
+}
+
+.community-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-lg);
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 var(--spacing-md);
+}
+
+.community-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-subtle);
+    transition: var(--transition-smooth);
+    border: 1px solid var(--color-gray-100);
+    height: 100%;
+}
+
+.community-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-soft);
+    border-color: var(--color-primary-transparent);
+}
+
+.community-image-container {
+    position: relative;
+    height: 250px;
+    width: 100%;
+}
+
+.community-image {
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.community-content {
+    padding: var(--spacing-lg);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+.community-content h3 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-primary);
+    line-height: 1.3;
+    text-align: center;
+}
+
+.community-content p {
+    color: var(--color-gray-800);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-md);
+    font-size: 1rem;
+    font-weight: 400;
+    flex-grow: 1;
+    text-align: center;
+    font-family: var(--font-body);
+}
+
+.community-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     color: var(--color-primary);
     font-weight: 500;
     text-decoration: none;
+    font-family: var(--font-heading);
     transition: var(--transition-smooth);
+    font-size: 0.95rem;
+    margin-top: auto;
+    text-align: center;
+    justify-content: center;
+}
+
+.community-link:hover {
+    color: var(--color-primary-dark);
+    gap: 0.75rem;
+}
+
+/* ==========================================================================
+   NAVIGATION HUB SECTION
+   ========================================================================== */
+.navigation-hub-section {
+    background: var(--color-white);
+    padding: var(--spacing-xl) 0 !important;
+    border-top: 1px solid var(--color-gray-100);
+}
+
+.hub-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 var(--spacing-md);
+}
+
+.hub-card {
+    background: var(--color-primary-very-light);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    border: 1px solid var(--color-primary-transparent);
+    transition: var(--transition-smooth);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.hub-card:hover {
+    background: var(--color-white);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-soft);
+    border-color: var(--color-primary);
+}
+
+.hub-icon {
+    font-size: 2.5rem;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    background: var(--color-white);
+    border-radius: 50%;
+    margin: 0 auto var(--spacing-md);
+    box-shadow: var(--shadow-subtle);
+    flex-shrink: 0;
+}
+
+.hub-card h3 {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-primary);
+    line-height: 1.3;
+    min-height: 3.5em;
+    text-align: center;
+}
+
+.hub-card p {
+    color: var(--color-gray-800);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-lg);
+    font-size: 1rem;
+    font-weight: 400;
+    flex-grow: 1;
+    text-align: center;
+    font-family: var(--font-body);
+}
+
+.hub-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    font-size: 0.9rem;
-    padding: 0.5rem;
-    border: 1px solid var(--color-primary-transparent);
-    border-radius: var(--radius-sm);
-}
-
-.program-card-link:hover,
-.program-card-link:focus {
-    background: var(--color-primary-very-light);
-    color: var(--color-primary-dark);
-}
-
-.program-card-apply {
-    background: var(--color-primary);
-    color: var(--color-white);
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius-sm);
-    font-family: var(--font-heading);
+    color: var(--color-primary);
     font-weight: 500;
     text-decoration: none;
+    font-family: var(--font-heading);
     transition: var(--transition-smooth);
-    border: 1px solid var(--color-primary);
-    font-size: 0.9rem;
+    font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+    border: 2px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    margin-top: auto;
     text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
 }
 
-.program-card-apply:hover,
-.program-card-apply:focus {
-    background: var(--color-primary-dark);
+.hub-link:hover {
+    background: var(--color-primary);
     color: var(--color-white);
+    gap: 0.75rem;
 }
 
 /* ==========================================================================
@@ -763,14 +1178,6 @@ body > *:first-child:not(header) {
     padding: var(--spacing-xl) 0 !important;
     text-align: center;
     border-top: 1px solid var(--color-gray-100);
-    width: 100%;
-}
-
-.cta-section .container {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
 }
 
 .cta-content {
@@ -779,6 +1186,7 @@ body > *:first-child:not(header) {
     position: relative;
     z-index: 2;
     padding: 0 var(--spacing-md);
+    text-align: center;
 }
 
 .cta-title {
@@ -788,6 +1196,7 @@ body > *:first-child:not(header) {
     color: var(--color-primary);
     margin-bottom: var(--spacing-md);
     line-height: 1.3;
+    text-align: center;
 }
 
 .cta-description {
@@ -799,6 +1208,8 @@ body > *:first-child:not(header) {
     max-width: 800px;
     margin-left: auto;
     margin-right: auto;
+    text-align: center;
+    font-family: var(--font-body);
 }
 
 .cta-buttons {
@@ -808,6 +1219,7 @@ body > *:first-child:not(header) {
     margin-top: var(--spacing-lg);
     align-items: center;
     width: 100%;
+    justify-content: center;
 }
 
 /* FIX FOR CTA BUTTONS - VISIBLE ON WHITE BACKGROUND */
@@ -831,6 +1243,7 @@ body > *:first-child:not(header) {
     max-width: 250px;
     margin: 0 auto;
     justify-content: center;
+    text-align: center;
 }
 
 /* ==========================================================================
@@ -930,6 +1343,7 @@ body > *:first-child:not(header) {
     max-width: 800px;
     color: var(--color-white);
     padding: var(--spacing-xl);
+    text-align: center;
 }
 
 .carousel-fallback h1 {
@@ -939,6 +1353,7 @@ body > *:first-child:not(header) {
     color: var(--color-white);
     line-height: 1.3;
     font-weight: 600;
+    text-align: center;
 }
 
 .carousel-fallback p {
@@ -946,6 +1361,8 @@ body > *:first-child:not(header) {
     margin-bottom: var(--spacing-lg);
     color: rgba(255, 255, 255, 0.9);
     line-height: 1.6;
+    text-align: center;
+    font-family: var(--font-body);
 }
 
 /* ==========================================================================
@@ -990,26 +1407,36 @@ body > *:first-child:not(header) {
         flex: 1;
         min-width: 300px;
         max-width: 350px;
-    }
-    
-    .program-cards-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: var(--spacing-lg);
-    }
-    
-    .program-card-footer {
         flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
+        text-align: left;
     }
     
-    .program-card-link {
-        justify-content: flex-start;
-        width: auto;
+    .badge-text {
+        align-items: flex-start;
+        text-align: left;
     }
     
-    .program-card-apply {
-        width: auto;
+    .badge-text strong,
+    .badge-text span {
+        text-align: left;
+    }
+    
+    .environment-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-xl);
+    }
+    
+    .attributes-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .community-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-xl);
+    }
+    
+    .hub-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
     
     .cta-buttons {
@@ -1036,22 +1463,39 @@ body > *:first-child:not(header) {
     .carousel-nav-next {
         right: 2rem;
     }
+    
+    .environment-content h3,
+    .community-content h3 {
+        font-size: 1.75rem;
+    }
+    
+    .environment-content p,
+    .community-content p {
+        font-size: 1.05rem;
+    }
+    
+    .carousel-slide-title {
+        font-size: clamp(1.8rem, 4.5vw, 3rem);
+    }
+    
+    .carousel-slide-subtitle {
+        font-size: clamp(1.1rem, 2.8vw, 1.4rem);
+    }
 }
 
 @media (min-width: 1024px) {
     .carousel-slide-content {
-        text-align: left;
-        margin-left: 10%;
-        margin-right: auto;
+        text-align: center;
+        margin: 0 auto;
+        padding: var(--spacing-xxl);
     }
     
     .carousel-slide-cta {
-        justify-content: flex-start;
+        justify-content: center;
     }
     
     .accreditation-content {
         flex-direction: row;
-        text-align: left;
         align-items: flex-start;
         gap: var(--spacing-xl);
     }
@@ -1060,15 +1504,17 @@ body > *:first-child:not(header) {
         flex: 1;
         text-align: left;
         margin: 0;
+        padding: 0;
+    }
+    
+    .accreditation-text h3,
+    .accreditation-text p {
+        text-align: left;
     }
     
     .accreditation-badges {
         flex: 1;
         max-width: none;
-    }
-    
-    .program-card-title {
-        font-size: 1.35rem;
     }
     
     .carousel-nav-prev {
@@ -1080,20 +1526,39 @@ body > *:first-child:not(header) {
     }
     
     /* Full width containers for large screens */
-    .stats-section .container,
-    .accreditation-section .container,
-    .programs-section .container,
-    .cta-section .container {
+    .stats-grid,
+    .environment-grid,
+    .attributes-grid,
+    .community-grid,
+    .hub-grid {
         padding: 0 var(--spacing-lg);
+    }
+    
+    .environment-content,
+    .community-content {
+        padding: var(--spacing-xl);
+    }
+    
+    .hero-carousel {
+        max-height: 700px;
     }
 }
 
 @media (min-width: 1400px) {
-    .stats-section .container,
-    .accreditation-section .container,
-    .programs-section .container,
-    .cta-section .container {
-        max-width: 1600px;
+    .container {
+        max-width: 100%;
+    }
+    
+    .stats-grid,
+    .environment-grid,
+    .attributes-grid,
+    .community-grid,
+    .hub-grid {
+        max-width: 1400px;
+    }
+    
+    .carousel-slide-content {
+        max-width: 1000px;
     }
 }
 
@@ -1105,24 +1570,31 @@ body > *:first-child:not(header) {
     
     .carousel-slide-content {
         padding: var(--spacing-lg);
+        width: 95%;
     }
     
     .carousel-slide-title {
         font-size: 1.4rem;
+        line-height: 1.2;
+        padding: 0 5px;
     }
     
     .carousel-slide-subtitle {
         font-size: 0.9rem;
+        line-height: 1.5;
+        padding: 0 5px;
     }
     
     .carousel-slide-cta {
         flex-direction: column;
         align-items: center;
+        gap: var(--spacing-xs);
     }
     
     .carousel-slide-cta .btn {
         width: 100%;
         max-width: 280px;
+        margin: 5px 0;
     }
     
     .carousel-nav {
@@ -1153,14 +1625,31 @@ body > *:first-child:not(header) {
         height: 45px;
     }
     
-    .program-card-title {
-        padding-right: 0;
+    .attribute-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
     }
     
-    .program-card-accreditation {
-        position: static;
-        margin-bottom: var(--spacing-sm);
-        display: inline-block;
+    .hub-icon {
+        width: 70px;
+        height: 70px;
+        font-size: 2rem;
+    }
+    
+    .attribute-card h3 {
+        min-height: auto;
+        font-size: 1.1rem;
+    }
+    
+    .hub-card h3 {
+        min-height: auto;
+        font-size: 1.3rem;
+    }
+    
+    .application-status-banner {
+        width: 95%;
+        padding: var(--spacing-sm);
     }
 }
 
@@ -1199,44 +1688,91 @@ body > *:first-child:not(header) {
         display: none;
     }
     
-    .program-card-apply,
-    .program-card-link {
-        display: none;
-    }
-    
     .stats-section,
     .accreditation-section {
         page-break-inside: avoid;
     }
     
-    .program-card {
-        page-break-inside: avoid;
-        border: 1px solid #000;
-        box-shadow: none;
+    .environment-image-container,
+    .community-image-container {
+        display: none;
     }
 }
 
 /* Safe Area Insets */
 @supports (padding: max(0px)) {
-    .stats-section .container,
-    .accreditation-section .container,
-    .programs-section .container,
-    .cta-section .container {
+    .carousel-slide-content,
+    .stats-grid,
+    .environment-grid,
+    .attributes-grid,
+    .community-grid,
+    .hub-grid {
         padding-left: max(var(--spacing-md), env(safe-area-inset-left));
         padding-right: max(var(--spacing-md), env(safe-area-inset-right));
     }
 }
 
-/* Full width override for all sections */
-.hero-section,
-.stats-section,
-.accreditation-section,
-.programs-section,
-.cta-section {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+/* Fix for text overflow */
+.attribute-card,
+.hub-card,
+.badge-text,
+.carousel-slide-title,
+.carousel-slide-subtitle,
+.environment-content h3,
+.community-content h3,
+.hub-card h3,
+.attribute-card h3,
+.section-title {
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+    hyphens: auto;
+}
+
+/* Screen reader only class */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Ensure all body text uses Open Sans */
+p, 
+li, 
+span:not([class*="heading"]):not([class*="title"]):not([class*="btn"]),
+.accreditation-text p,
+.environment-content p,
+.community-content p,
+.hub-card p,
+.attribute-card p,
+.cta-description,
+.section-subtitle,
+.badge-text span,
+.application-status-banner p,
+.environment-features li,
+.community-link {
+    font-family: 'Open Sans', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif !important;
+}
+
+/* Ensure all headings use Montserrat */
+h1, h2, h3, h4, h5, h6,
+.carousel-slide-title,
+.section-title,
+.accreditation-text h3,
+.environment-content h3,
+.community-content h3,
+.hub-card h3,
+.attribute-card h3,
+.cta-title,
+.application-status-banner h3,
+.stat-label,
+.badge-text strong {
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
 }
 </style>
 </head>
@@ -1257,8 +1793,8 @@ body > *:first-child:not(header) {
                         <a href="<?php echo $baseUrl; ?>/programs" class="btn btn-primary">
                             <i class="fas fa-book-open" aria-hidden="true"></i> Explore Programs
                         </a>
-                        <a href="<?php echo $baseUrl; ?>/admissions" class="btn btn-secondary">
-                            <i class="fas fa-file-alt" aria-hidden="true"></i> Apply Now
+                        <a href="<?php echo $baseUrl; ?>/student-life" class="btn btn-secondary">
+                            <i class="fas fa-users" aria-hidden="true"></i> Discover Community
                         </a>
                     </div>
                 </div>
@@ -1333,6 +1869,15 @@ body > *:first-child:not(header) {
         <?php endif; ?>
     </section>
 
+    <!-- ========== APPLICATION STATUS BANNER ========== -->
+    <div class="container">
+        <div class="application-status-banner centralized-content">
+            <h3><i class="fas fa-times-circle"></i> 2025/2026 Admissions Status</h3>
+            <p>The application portal for the 2025/2026 academic session is now closed. Sales of forms period ended on 28th September 2025. No further applications are being accepted for this session.</p>
+            <p><strong>Next Admissions Cycle:</strong> 2026/2027 academic session</p>
+        </div>
+    </div>
+
     <!-- ========== STATISTICS - FULL WIDTH CONTENT ========== -->
     <section class="stats-section" aria-label="College statistics">
         <div class="container">
@@ -1349,7 +1894,7 @@ body > *:first-child:not(header) {
                         <i class="fas fa-user-graduate" aria-hidden="true"></i>
                     </div>
                     <div class="stat-number">5,000+</div>
-                    <div class="stat-label">Graduates</div>
+                    <div class="stat-label">Nursing Graduates</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-icon">
@@ -1362,8 +1907,8 @@ body > *:first-child:not(header) {
                     <div class="stat-icon">
                         <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
                     </div>
-                    <div class="stat-number">50+</div>
-                    <div class="stat-label">Expert Faculty</div>
+                    <div class="stat-number">4</div>
+                    <div class="stat-label">Academic Programs</div>
                 </div>
             </div>
         </div>
@@ -1376,7 +1921,7 @@ body > *:first-child:not(header) {
                 <div class="accreditation-content">
                     <div class="accreditation-text">
                         <h3>Nationally Recognized Accreditation</h3>
-                        <p>Our programs meet the highest standards set by Nigeria's regulatory bodies for nursing education.</p>
+                        <p>Our programs meet the highest standards set by Nigeria's regulatory bodies for nursing education and technical education.</p>
                     </div>
                     <div class="accreditation-badges">
                         <div class="accreditation-badge">
@@ -1384,7 +1929,7 @@ body > *:first-child:not(header) {
                                 <i class="fas fa-stethoscope" aria-hidden="true"></i>
                             </div>
                             <div class="badge-text">
-                                <strong>NMCN</strong>
+                                <strong>NMCN Approved</strong>
                                 <span>Nursing & Midwifery Council of Nigeria</span>
                             </div>
                         </div>
@@ -1393,7 +1938,7 @@ body > *:first-child:not(header) {
                                 <i class="fas fa-university" aria-hidden="true"></i>
                             </div>
                             <div class="badge-text">
-                                <strong>NBTE</strong>
+                                <strong>NBTE Accredited</strong>
                                 <span>National Board for Technical Education</span>
                             </div>
                         </div>
@@ -1403,131 +1948,191 @@ body > *:first-child:not(header) {
         </div>
     </section>
 
-    <!-- ========== PROGRAMS - FULL WIDTH CONTENT ========== -->
-    <section class="programs-section" aria-label="Academic programs">
+    <!-- ========== LEARNING ENVIRONMENT SECTION ========== -->
+    <section class="learning-environment-section" aria-label="Learning environment">
         <div class="container">
             <div class="section-header">
-                <h2 class="section-title">Accredited Nursing Programs</h2>
+                <h2 class="section-title">Our Learning Environment</h2>
                 <p class="section-subtitle">
-                    Fully approved programs meeting NMCN & NBTE standards. We offer comprehensive 
-                    nursing education recognized nationwide.
+                    We provide state-of-the-art facilities and a supportive community designed to foster both academic excellence and personal growth.
                 </p>
             </div>
             
-            <div class="program-cards-grid">
-                <!-- Basic Nursing -->
-                <article class="program-card">
-                    <div class="program-card-header">
-                        <span class="program-card-accreditation">NMCN</span>
-                        <h3 class="program-card-title">Basic Nursing</h3>
-                        <div class="program-card-duration">
-                            <i class="far fa-clock" aria-hidden="true"></i> Duration: 3 Years
-                        </div>
+            <div class="environment-grid">
+                <div class="environment-card">
+                    <!-- Your actual image: environment-simulation-lab.jpg -->
+                    <div class="environment-image-container">
+                        <div class="environment-image" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/homepage/environment-simulation-lab.jpg');"></div>
+                        <div class="image-caption">Close-up of simulation equipment</div>
                     </div>
-                    <div class="program-card-body">
-                        <p class="program-card-description">
-                            Comprehensive general nursing education preparing students for registration as Registered Nurses (RN). 
-                            Includes medical, surgical, pediatric, and community nursing.
-                        </p>
-                        <div class="program-card-highlights">
-                            <div class="highlight-title">
-                                <i class="fas fa-star" aria-hidden="true"></i> Key Features
-                            </div>
-                            <ul class="highlight-list">
-                                <li>Full NMCN accreditation</li>
-                                <li>Clinical rotations</li>
-                                <li>Simulation labs</li>
-                                <li>Exam preparation</li>
-                            </ul>
-                        </div>
+                    <div class="environment-content">
+                        <h3>Advanced Simulation Labs</h3>
+                        <p>Train with high-fidelity manikins, virtual reality simulations, and fully equipped clinical environments that mirror real healthcare settings.</p>
+                        <ul class="environment-features">
+                            <li>High-fidelity patient simulators</li>
+                            <li>Virtual reality training modules</li>
+                            <li>Maternity and pediatric labs</li>
+                            <li>Emergency response simulation</li>
+                            <li>24/7 access for practice sessions</li>
+                        </ul>
                     </div>
-                    <div class="program-card-footer">
-                        <a href="<?php echo $baseUrl; ?>/programs/basic-nursing" 
-                           class="program-card-link"
-                           aria-label="Learn more about Basic Nursing">
-                            Learn More <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                        </a>
-                        <a href="<?php echo $baseUrl; ?>/admissions" class="program-card-apply">
-                            <i class="fas fa-file-alt" aria-hidden="true"></i> Apply Now
-                        </a>
-                    </div>
-                </article>
+                </div>
                 
-                <!-- National Diploma -->
-                <article class="program-card">
-                    <div class="program-card-header">
-                        <span class="program-card-accreditation">NBTE</span>
-                        <h3 class="program-card-title">National Diploma in Nursing</h3>
-                        <div class="program-card-duration">
-                            <i class="far fa-clock" aria-hidden="true"></i> Duration: 2 Years
-                        </div>
+                <div class="environment-card">
+                    <!-- Your actual image: environment-student-support.jpg -->
+                    <div class="environment-image-container">
+                        <div class="environment-image" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/homepage/environment-student-support.jpg');"></div>
+                        <div class="image-caption">Students collaborating/being mentored</div>
                     </div>
-                    <div class="program-card-body">
-                        <p class="program-card-description">
-                            Polytechnic-based nursing education leading to ND qualification. Combines theoretical knowledge 
-                            with practical skills for healthcare delivery.
-                        </p>
-                        <div class="program-card-highlights">
-                            <div class="highlight-title">
-                                <i class="fas fa-star" aria-hidden="true"></i> Key Features
-                            </div>
-                            <ul class="highlight-list">
-                                <li>NBTE accredited</li>
-                                <li>JAMB UTME pathway</li>
-                                <li>Industry curriculum</li>
-                                <li>Technical skills</li>
-                            </ul>
-                        </div>
+                    <div class="environment-content">
+                        <h3>Comprehensive Student Support</h3>
+                        <p>From academic advising to wellness resources, we ensure every student has the support they need to thrive personally and professionally.</p>
+                        <ul class="environment-features">
+                            <li>Academic success coaching</li>
+                            <li>Mental health and wellness services</li>
+                            <li>Career counseling and placement</li>
+                            <li>Peer mentoring programs</li>
+                            <li>Learning resource center</li>
+                        </ul>
                     </div>
-                    <div class="program-card-footer">
-                        <a href="<?php echo $baseUrl; ?>/programs/nd-nursing" 
-                           class="program-card-link"
-                           aria-label="Learn more about National Diploma in Nursing">
-                            Learn More <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                        </a>
-                        <a href="<?php echo $baseUrl; ?>/admissions" class="program-card-apply">
-                            <i class="fas fa-file-alt" aria-hidden="true"></i> Apply Now
-                        </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== GRADUATE ATTRIBUTES SECTION ========== -->
+    <section class="graduate-attributes-section" aria-label="Graduate attributes">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">The FCTCNS Graduate</h2>
+                <p class="section-subtitle">
+                    Our graduates are distinguished by their clinical competence, ethical practice, and commitment to community health.
+                </p>
+            </div>
+            
+            <div class="attributes-grid">
+                <div class="attribute-card">
+                    <div class="attribute-icon">
+                        <i class="fas fa-user-md" aria-hidden="true"></i>
                     </div>
-                </article>
+                    <h3>Clinical Excellence</h3>
+                    <p>Proficient in evidence-based practice with hands-on experience across diverse healthcare settings.</p>
+                </div>
                 
-                <!-- Higher National Diploma -->
-                <article class="program-card">
-                    <div class="program-card-header">
-                        <span class="program-card-accreditation">NBTE</span>
-                        <h3 class="program-card-title">Higher National Diploma in Nursing</h3>
-                        <div class="program-card-duration">
-                            <i class="far fa-clock" aria-hidden="true"></i> Duration: 2 Years
-                        </div>
+                <div class="attribute-card">
+                    <div class="attribute-icon">
+                        <i class="fas fa-brain" aria-hidden="true"></i>
                     </div>
-                    <div class="program-card-body">
-                        <p class="program-card-description">
-                            Advanced nursing education for Registered Nurses or ND holders. Focus on nursing administration, 
-                            education, and specialized clinical practice.
-                        </p>
-                        <div class="program-card-highlights">
-                            <div class="highlight-title">
-                                <i class="fas fa-star" aria-hidden="true"></i> Key Features
-                            </div>
-                            <ul class="highlight-list">
-                                <li>Advanced specialization</li>
-                                <li>Leadership training</li>
-                                <li>Research methodology</li>
-                                <li>Career advancement</li>
-                            </ul>
-                        </div>
+                    <h3>Critical Thinking</h3>
+                    <p>Skilled in clinical reasoning, problem-solving, and making sound decisions in complex situations.</p>
+                </div>
+                
+                <div class="attribute-card">
+                    <div class="attribute-icon">
+                        <i class="fas fa-hands-helping" aria-hidden="true"></i>
                     </div>
-                    <div class="program-card-footer">
-                        <a href="<?php echo $baseUrl; ?>/programs/hnd-nursing" 
-                           class="program-card-link"
-                           aria-label="Learn more about Higher National Diploma in Nursing">
-                            Learn More <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    <h3>Compassionate Care</h3>
+                    <p>Deliver patient-centered care with empathy, respect, and cultural sensitivity.</p>
+                </div>
+                
+                <div class="attribute-card">
+                    <div class="attribute-icon">
+                        <i class="fas fa-chart-line" aria-hidden="true"></i>
+                    </div>
+                    <h3>Leadership Ready</h3>
+                    <p>Prepared to lead healthcare teams, advocate for patients, and drive quality improvement.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== CAMPUS & COMMUNITY SECTION ========== -->
+    <section class="campus-community-section" aria-label="Campus and community">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Campus & Community Life</h2>
+                <p class="section-subtitle">
+                    Experience a vibrant campus community that extends learning beyond the classroom and into meaningful service.
+                </p>
+            </div>
+            
+            <div class="community-grid">
+                <div class="community-card">
+                    <!-- Your actual image: community-student-life.jpg -->
+                    <div class="community-image-container">
+                        <div class="community-image" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/homepage/community-student-life.jpg');"></div>
+                        <div class="image-caption">Student group activities/clubs</div>
+                    </div>
+                    <div class="community-content">
+                        <h3>Student Organizations</h3>
+                        <p>Join nursing associations, community service groups, and professional development clubs that enhance your education and build lasting connections.</p>
+                        <a href="<?php echo $baseUrl; ?>/student-life" class="community-link">
+                            Explore Student Life <i class="fas fa-arrow-right" aria-hidden="true"></i>
                         </a>
-                        <a href="<?php echo $baseUrl; ?>/admissions" class="program-card-apply">
-                            <i class="fas fa-file-alt" aria-hidden="true"></i> Apply Now
+                    </div>
+                </div>
+                
+                <div class="community-card">
+                    <!-- Your actual image: community-outreach.jpg -->
+                    <div class="community-image-container">
+                        <div class="community-image" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/homepage/community-outreach.jpg');"></div>
+                        <div class="image-caption">Community health events/volunteering</div>
+                    </div>
+                    <div class="community-content">
+                        <h3>Community Outreach</h3>
+                        <p>Participate in health screening campaigns, health education programs, and community partnerships that make a real difference in public health.</p>
+                        <a href="<?php echo $baseUrl; ?>/community" class="community-link">
+                            View Community Impact <i class="fas fa-arrow-right" aria-hidden="true"></i>
                         </a>
                     </div>
-                </article>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== NAVIGATION HUB SECTION ========== -->
+    <section class="navigation-hub-section" aria-label="Next steps navigation">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Take Your Next Step</h2>
+                <p class="section-subtitle">
+                    Begin your journey toward a rewarding nursing career with these essential resources.
+                </p>
+            </div>
+            
+            <div class="hub-grid">
+                <div class="hub-card">
+                    <div class="hub-icon">
+                        <i class="fas fa-book-medical" aria-hidden="true"></i>
+                    </div>
+                    <h3>Explore Programs</h3>
+                    <p>Discover our accredited nursing programs and find the path that matches your career goals.</p>
+                    <a href="<?php echo $baseUrl; ?>/programs" class="hub-link">
+                        View Programs <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+                
+                <div class="hub-card">
+                    <div class="hub-icon">
+                        <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                    </div>
+                    <h3>Plan Your Visit</h3>
+                    <p>Schedule a campus tour to experience our facilities and meet with faculty and current students.</p>
+                    <a href="<?php echo $baseUrl; ?>/visit" class="hub-link">
+                        Schedule Tour <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+                
+                <div class="hub-card">
+                    <div class="hub-icon">
+                        <i class="fas fa-comments" aria-hidden="true"></i>
+                    </div>
+                    <h3>Contact Admissions</h3>
+                    <p>Our admissions team is ready to answer your questions about requirements, deadlines, and next steps.</p>
+                    <a href="<?php echo $baseUrl; ?>/contact" class="hub-link">
+                        Get in Touch <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </section>
@@ -1536,23 +2141,22 @@ body > *:first-child:not(header) {
     <section class="cta-section" aria-label="Call to action">
         <div class="container">
             <div class="cta-content">
-                <h2 class="cta-title">Begin Your Nursing Career Today</h2>
+                <h2 class="cta-title">Ready to Start Your Nursing Journey?</h2>
                 <p class="cta-description">
-                    Join our community of healthcare professionals making a difference across Nigeria. 
-                    Our graduates are highly sought after nationwide.
+                    While the 2025/2026 admissions are closed, now is the perfect time to explore our programs, plan your visit, and prepare for the next admissions cycle in 2026/2027.
                 </p>
                 <div class="cta-buttons">
-                    <a href="<?php echo $baseUrl; ?>/admissions" 
-                       class="btn btn-primary">
-                        <i class="fas fa-file-alt" aria-hidden="true"></i> Apply Now
-                    </a>
                     <a href="<?php echo $baseUrl; ?>/programs" 
-                       class="btn btn-secondary">
-                        <i class="fas fa-book-open" aria-hidden="true"></i> View Programs
+                       class="btn btn-primary">
+                        <i class="fas fa-book-open" aria-hidden="true"></i> Explore Programs
                     </a>
                     <a href="<?php echo $baseUrl; ?>/contact" 
                        class="btn btn-secondary">
                         <i class="fas fa-phone-alt" aria-hidden="true"></i> Contact Admissions
+                    </a>
+                    <a href="<?php echo $baseUrl; ?>/student-life" 
+                       class="btn btn-secondary">
+                        <i class="fas fa-users" aria-hidden="true"></i> Student Life
                     </a>
                 </div>
             </div>
@@ -1700,28 +2304,6 @@ body > *:first-child:not(header) {
     } else {
         carouselController.init();
     }
-})();
-
-// Accessibility and mobile enhancements
-(function() {
-    'use strict';
-    
-    // Add screen reader only class
-    const style = document.createElement('style');
-    style.textContent = `
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
-    `;
-    document.head.appendChild(style);
 })();
 </script>
 

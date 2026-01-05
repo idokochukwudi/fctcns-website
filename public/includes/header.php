@@ -382,8 +382,8 @@ if (class_exists('Session')) {
         
         /* Logo */
         .brand-logo {
-            width: 50px;
-            height: 50px;
+            width: 65px;
+            height: 65px;
             flex-shrink: 0;
         }
         
@@ -1417,7 +1417,7 @@ if (class_exists('Session')) {
         <div class="top-bar-left">
             <a href="tel:+23492900000" class="top-bar-link">
                 <i class="fas fa-phone"></i>
-                <span>+234 (0) 9 290 0000</span>
+                <span>+234 808 277 5076</span>
             </a>
             <a href="mailto:info@fctcns.edu.ng" class="top-bar-link">
                 <i class="fas fa-envelope"></i>
@@ -1492,12 +1492,6 @@ if (class_exists('Session')) {
             <a href="<?php echo $baseUrl; ?>/admissions" class="primary-cta">
                 <i class="fas fa-file-alt"></i>
                 <span>Apply Now</span>
-            </a>
-            
-            <!-- STUDENT PORTAL Button - Desktop -->
-            <a href="<?php echo $baseUrl; ?>/student-life" class="primary-cta" style="background: var(--color-accent);">
-                <i class="fas fa-graduation-cap"></i>
-                <span>Student Portal</span>
             </a>
             
             <!-- Mobile Apply Button with Hover Tooltip -->

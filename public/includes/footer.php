@@ -193,8 +193,8 @@ $currentYear = date('Y'); // Shows 2026
         }
 
         .footer-logo img {
-            max-height: 48px;
-            height: 48px;
+            max-height: 68px;
+            height: 68px;
             width: auto;
         }
 

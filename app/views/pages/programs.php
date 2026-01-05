@@ -1,9 +1,9 @@
 <?php
 /**
- * Programs Page View Template - Updated with Consistent Color Scheme
+ * Programs Page View Template - Updated with Program Corrections & Image-Focused Hero
  * 
  * @package FCTCNS
- * @version 4.8
+ * @version 4.9
  */
 
 extract($data ?? []);
@@ -17,6 +17,30 @@ if (!function_exists('e')) {
 $baseUrl = $baseUrl ?? '/';
 $page_title = $page_title ?? 'Nursing Programs | FCT College of Nursing Sciences';
 $page_description = $page_description ?? 'Explore our accredited nursing education programs designed to develop competent healthcare professionals.';
+
+// Define program images with fallbacks
+$programImages = [
+    'nd-nursing' => [
+        'primary' => $baseUrl . '/assets/images/programs/nd-nursing.jpg',
+        'fallback' => $baseUrl . '/assets/images/programs/national-diploma.jpg',
+        'placeholder' => $baseUrl . '/assets/images/placeholder/program-placeholder.jpg'
+    ],
+    'basic-nursing' => [
+        'primary' => $baseUrl . '/assets/images/programs/basic-nursing.jpg',
+        'fallback' => $baseUrl . '/assets/images/programs/basic-nursing-program.jpg',
+        'placeholder' => $baseUrl . '/assets/images/placeholder/program-placeholder.jpg'
+    ],
+    'basic-midwifery' => [
+        'primary' => $baseUrl . '/assets/images/programs/basic-midwifery.jpg',
+        'fallback' => $baseUrl . '/assets/images/programs/midwifery-program.jpg',
+        'placeholder' => $baseUrl . '/assets/images/placeholder/program-placeholder.jpg'
+    ],
+    'post-basic' => [
+        'primary' => $baseUrl . '/assets/images/programs/post-basic.jpg',
+        'fallback' => $baseUrl . '/assets/images/programs/post-basic-nursing.jpg',
+        'placeholder' => $baseUrl . '/assets/images/placeholder/program-placeholder.jpg'
+    ]
+];
 ?>
 
 <!DOCTYPE html>
@@ -125,89 +149,197 @@ body {
 }
 
 /* ==========================================================================
-   HERO SECTION - Consistent with Admissions Page
+   HERO SECTION - Clean Image Background (Like Admissions Page)
    ========================================================================== */
 .programs-hero {
     position: relative;
-    height: 75vh;
-    max-height: 650px;
-    min-height: 500px;
+    height: 80vh; /* Reduced from 85vh */
+    max-height: 650px; /* Reduced from 700px */
+    min-height: 500px; /* Reduced from 550px */
     overflow: hidden;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary); /* Fallback color */
 }
 
 .programs-hero-bg {
     position: absolute;
-    top: 0; 
-    left: 0; 
-    width: 100%; 
+    top: 0;
+    left: 0;
+    width: 100%;
     height: 100%;
-    background-size: cover; 
+    background-size: cover;
     background-position: center;
-    background-image: url('<?php echo $baseUrl; ?>/assets/images/programs/hero-bg.jpg');
-    opacity: 0.6;
+    background-image: url('<?php echo $baseUrl; ?>/assets/images/programs/programs-hero.jpg');
+    background-attachment: fixed; /* Parallax effect */
 }
 
 .programs-hero-bg::after {
-    content: ''; 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
     height: 100%;
     background: linear-gradient(
         to bottom,
-        rgba(0, 0, 0, 0.4) 0%,
-        rgba(0, 0, 0, 0.25) 50%,
-        rgba(0, 0, 0, 0.15) 100%
+        rgba(0, 0, 0, 0.5) 0%,
+        rgba(93, 74, 138, 0.3) 50%,
+        rgba(212, 165, 116, 0.2) 100%
     );
 }
 
+/* FIXED: Added padding-top to prevent header overlap */
 .programs-hero-content {
     position: relative;
     z-index: 3;
     color: var(--color-white);
-    max-width: 700px;
-    padding: var(--spacing-xl);
-    margin: 0 auto;
     text-align: center;
-    margin-top: 15vh;
-    background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(8px);
+    padding: var(--spacing-lg); /* Reduced from var(--spacing-xl) */
+    max-width: 800px;
+    width: 100%;
+    /* FIXED: Reduced opacity from 0.6 to 0.4 for more transparency */
+    background: rgba(0, 0, 0, 0.4); /* More transparent background */
     border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(5px); /* Reduced blur for more transparency */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 0 var(--spacing-md);
+    margin-top: 80px; /* Increased from 60px for better spacing */
 }
 
 .programs-hero-badge { 
     display: inline-block;
     background: var(--color-accent); 
     color: var(--color-gray-900); 
-    padding: 0.5rem 1.5rem; 
+    padding: 0.6rem 1.5rem; /* Reduced padding */
     border-radius: var(--radius-full); 
-    font-size: 0.85rem; 
-    font-weight: 600; 
-    margin-bottom: var(--spacing-md);
-    letter-spacing: 0.5px;
+    font-size: 0.85rem; /* Slightly smaller */
+    font-weight: 700; 
+    margin-bottom: var(--spacing-md); /* Reduced from var(--spacing-lg) */
+    letter-spacing: 1px;
     text-transform: uppercase;
     font-family: var(--font-heading);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .programs-hero-title { 
     font-family: var(--font-heading); 
-    font-size: clamp(1.8rem, 4vw, 2.8rem); 
-    font-weight: 700; 
+    font-size: clamp(1.8rem, 5vw, 3rem); /* Reduced max from 3.5rem to 3rem */
+    font-weight: 800; 
     color: var(--color-white); 
-    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
-    line-height: 1.2;
-    margin-bottom: var(--spacing-sm);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    line-height: 1.1;
+    margin-bottom: var(--spacing-sm); /* Reduced from var(--spacing-md) */
+    letter-spacing: -0.5px;
 }
 
 .programs-hero-subtitle { 
-    font-size: clamp(1rem, 2.5vw, 1.3rem); 
+    font-size: clamp(1rem, 2.5vw, 1.3rem); /* Reduced max from 1.5rem to 1.3rem */
     color: rgba(255,255,255,0.95);
-    line-height: 1.6;
-    max-width: 600px;
+    line-height: 1.5; /* Reduced from 1.6 */
+    max-width: 700px;
     margin: 0 auto;
+    font-weight: 400;
+    margin-bottom: var(--spacing-md); /* Added margin bottom */
+}
+
+/* Program Stats - Made more compact */
+.hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg); /* Reduced from var(--spacing-xl) */
+    margin: var(--spacing-md) 0; /* Reduced from var(--spacing-lg) */
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    text-align: center;
+    min-width: 100px; /* Ensure consistent width */
+}
+
+.stat-number {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 2rem; /* Reduced from 2.5rem */
+    font-weight: 700;
+    color: var(--color-accent);
+    line-height: 1;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.8rem; /* Reduced from 0.9rem */
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 0.25rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Hero Actions - Made more compact */
+.hero-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    margin-top: var(--spacing-lg); /* Reduced from var(--spacing-xl) */
+    flex-wrap: wrap;
+}
+
+.btn-hero-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem; /* Reduced from 0.75rem */
+    background: var(--color-accent);
+    color: var(--color-gray-900);
+    padding: 0.8rem 1.8rem; /* Reduced from 1rem 2.5rem */
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition-smooth);
+    border: 2px solid var(--color-accent);
+    font-family: var(--font-heading);
+    font-size: 1rem; /* Reduced from 1.1rem */
+    letter-spacing: 0.3px;
+    min-height: 48px; /* Reduced from 56px */
+    box-shadow: 0 4px 15px rgba(212, 165, 116, 0.3);
+}
+
+.btn-hero-primary:hover { 
+    background: var(--color-accent-dark); 
+    color: var(--color-gray-900);
+    transform: translateY(-3px); 
+    box-shadow: 0 8px 25px rgba(212, 165, 116, 0.4); 
+    border-color: var(--color-accent-dark);
+}
+
+.btn-hero-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem; /* Reduced from 0.75rem */
+    background: transparent;
+    color: var(--color-white);
+    padding: 0.8rem 1.8rem; /* Reduced from 1rem 2.5rem */
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition-smooth);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    font-family: var(--font-heading);
+    font-size: 1rem; /* Reduced from 1.1rem */
+    letter-spacing: 0.3px;
+    min-height: 48px; /* Reduced from 56px */
+    backdrop-filter: blur(10px);
+}
+
+.btn-hero-secondary:hover { 
+    background: rgba(255, 255, 255, 0.1); 
+    color: var(--color-white);
+    transform: translateY(-3px); 
+    box-shadow: var(--shadow-soft); 
+    border-color: var(--color-accent);
 }
 
 /* ==========================================================================
@@ -294,13 +426,14 @@ body {
     position: relative;
 }
 
-/* Program Images - Updated to use actual images */
+/* Program Images - Improved with better fallback */
 .program-card-img {
     width: 100%;
     height: 220px;
     object-fit: cover;
     display: block;
     transition: var(--transition-smooth);
+    background: var(--color-gray-50);
 }
 
 .program-card:hover .program-card-img {
@@ -514,6 +647,43 @@ body {
 }
 
 /* ==========================================================================
+   IMAGE LOADING STATES
+   ========================================================================== */
+.img-loading {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ==========================================================================
+   PROGRAM DURATION BREAKDOWN
+   ========================================================================== */
+.program-duration-breakdown {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255,255,255,0.8);
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.duration-breakdown {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(255,255,255,0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+}
+
+/* ==========================================================================
    RESPONSIVE DESIGN
    ========================================================================== */
 @media (max-width: 768px) {
@@ -527,15 +697,66 @@ body {
     }
     
     .programs-hero {
-        height: 60vh;
-        min-height: 400px;
+        height: 70vh;
+        min-height: 450px;
+        background-attachment: scroll; /* Remove parallax on mobile */
     }
     
     .programs-hero-content {
-        margin-top: 10vh;
-        padding: var(--spacing-lg);
-        margin-left: var(--spacing-md);
-        margin-right: var(--spacing-md);
+        padding: var(--spacing-md); /* Further reduced on mobile */
+        margin: 0 var(--spacing-sm);
+        margin-top: 60px; /* Reduced for mobile */
+        background: rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(3px);
+    }
+    
+    .programs-hero-badge {
+        padding: 0.5rem 1.2rem; /* Further reduced */
+        font-size: 0.8rem;
+        margin-bottom: var(--spacing-sm); /* Further reduced */
+    }
+    
+    .programs-hero-title {
+        font-size: clamp(1.6rem, 4vw, 2.2rem); /* Further reduced */
+        margin-bottom: var(--spacing-xs); /* Further reduced */
+    }
+    
+    .programs-hero-subtitle {
+        font-size: clamp(0.95rem, 2vw, 1.1rem); /* Further reduced */
+        line-height: 1.4; /* Further reduced */
+        margin-bottom: var(--spacing-sm); /* Further reduced */
+    }
+    
+    .hero-stats {
+        gap: var(--spacing-sm); /* Further reduced */
+        margin: var(--spacing-sm) 0; /* Further reduced */
+    }
+    
+    .stat-number {
+        font-size: 1.6rem; /* Further reduced */
+    }
+    
+    .stat-label {
+        font-size: 0.75rem; /* Further reduced */
+    }
+    
+    .hero-actions {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md); /* Further reduced */
+    }
+    
+    .btn-hero-primary,
+    .btn-hero-secondary {
+        width: 100%;
+        justify-content: center;
+        padding: 0.7rem 1.5rem; /* Further reduced */
+        min-height: 44px; /* Further reduced */
+        font-size: 0.95rem; /* Further reduced */
+    }
+    
+    .section {
+        padding: var(--spacing-xl) 0;
     }
     
     .grid {
@@ -571,25 +792,46 @@ body {
     .program-highlights {
         padding: var(--spacing-sm);
     }
+    
+    .program-duration-breakdown {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
 }
 
 @media (max-width: 480px) {
     .programs-hero {
-        height: 55vh;
-        min-height: 350px;
+        height: 65vh; /* Further reduced */
+        min-height: 400px;
+    }
+    
+    .programs-hero-content {
+        margin-top: 50px; /* Further reduced */
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(2px);
     }
     
     .programs-hero-badge {
-        padding: 0.4rem 1rem;
+        padding: 0.4rem 1rem; /* Further reduced */
         font-size: 0.75rem;
     }
     
     .programs-hero-title {
-        font-size: 1.6rem;
+        font-size: 1.5rem; /* Further reduced */
     }
     
     .programs-hero-subtitle {
-        font-size: 1rem;
+        font-size: 0.9rem; /* Further reduced */
+    }
+    
+    .hero-stats {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+    
+    .stat-item {
+        min-width: auto;
     }
     
     .section-title {
@@ -631,8 +873,11 @@ body {
         background: transparent;
         backdrop-filter: none;
         border: none;
+        margin-top: 0;
     }
     
+    .btn-hero-primary,
+    .btn-hero-secondary,
     .btn-primary,
     .btn-secondary,
     .btn-outline {
@@ -657,10 +902,16 @@ body {
     }
     
     .program-card:hover,
+    .btn-hero-primary:hover,
+    .btn-hero-secondary:hover,
     .btn-primary:hover,
     .btn-secondary:hover,
     .btn-outline:hover {
         transform: none !important;
+    }
+    
+    .img-loading {
+        animation: none !important;
     }
 }
 
@@ -674,7 +925,7 @@ body {
 <body>
 
 <main class="programs-page">
-    <!-- Hero Section -->
+    <!-- Hero Section with Clean Background Image -->
     <section class="programs-hero">
         <div class="programs-hero-bg"></div>
         <div class="container">
@@ -682,14 +933,42 @@ body {
                 <span class="programs-hero-badge">Accredited Programs</span>
                 <h1 class="programs-hero-title">Nursing Education Programs</h1>
                 <p class="programs-hero-subtitle">
-                    Fully accredited programs combining theoretical excellence with hands-on clinical training to prepare competent healthcare professionals.
+                    Fully accredited programs combining theoretical excellence with hands-on clinical training.
                 </p>
+                
+                <!-- Program Stats -->
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">4</span>
+                        <span class="stat-label">Programs</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">100%</span>
+                        <span class="stat-label">Accredited</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">4+</span>
+                        <span class="stat-label">Years Duration</span>
+                    </div>
+                </div>
+                
+                <!-- Hero Actions -->
+                <div class="hero-actions">
+                    <a href="#programs" class="btn-hero-primary">
+                        <i class="fas fa-book-medical"></i>
+                        Explore Programs
+                    </a>
+                    <a href="<?php echo $baseUrl; ?>/admissions" class="btn-hero-secondary">
+                        <i class="fas fa-graduation-cap"></i>
+                        Apply Now
+                    </a>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Programs Grid -->
-    <section class="section">
+    <section class="section" id="programs">
         <div class="container">
             <div class="section-header">
                 <h2 class="section-title">Our Accredited Programs</h2>
@@ -697,32 +976,43 @@ body {
             </div>
 
             <div class="grid">
-                <!-- National Diploma in Nursing -->
+                <!-- National Diploma in Nursing (Updated) -->
                 <article class="program-card">
-                    <!-- UPDATED: Actual image reference -->
-                    <img src="<?php echo $baseUrl; ?>/assets/images/programs/nd-nursing.jpg" alt="National Diploma in Nursing Program" class="program-card-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/program-placeholder.jpg';">
+                    <img 
+                        src="<?php echo $programImages['nd-nursing']['primary']; ?>" 
+                        alt="National Diploma in Nursing Program" 
+                        class="program-card-img img-loading"
+                        data-fallback="<?php echo $programImages['nd-nursing']['fallback']; ?>"
+                        data-placeholder="<?php echo $programImages['nd-nursing']['placeholder']; ?>"
+                    >
                     
                     <div class="program-card-header">
-                        <h3 class="program-card-title">National Diploma in Nursing</h3>
+                        <h3 class="program-card-title">ND/HND Nursing Programme</h3>
                         <div class="program-card-duration">
-                            <i class="far fa-clock"></i> Duration: 3 Years
+                            <i class="far fa-clock"></i> Duration: 4 Years (Non-Terminal)
+                        </div>
+                        <div class="program-duration-breakdown">
+                            <span class="duration-breakdown">ND: 2 Years</span>
+                            <span>→</span>
+                            <span class="duration-breakdown">HND: 2 Years</span>
                         </div>
                         <span class="program-status status-active">Currently Available</span>
                     </div>
                     
                     <div class="program-card-body">
                         <p class="program-card-description">
-                            Comprehensive three-year program leading to ND qualification. Combines theoretical knowledge with practical skills for healthcare delivery.
+                            Comprehensive four-year non-terminal program leading to National Diploma (ND) and Higher National Diploma (HND) qualifications. Combines theoretical knowledge with practical skills for advanced healthcare delivery.
                         </p>
                         
                         <div class="program-highlights">
                             <div class="highlight-title"><i class="fas fa-star"></i> Key Features</div>
                             <ul class="highlight-list">
-                                <li>NBTE accredited</li>
+                                <li>NBTE accredited program</li>
+                                <li>Non-terminal ND/HND structure</li>
                                 <li>JAMB UTME pathway</li>
-                                <li>Clinical rotations</li>
+                                <li>Clinical rotations and internships</li>
                                 <li>Modern simulation labs</li>
-                                <li>Research methodology</li>
+                                <li>Research methodology training</li>
                             </ul>
                         </div>
                         
@@ -733,10 +1023,15 @@ body {
                     </div>
                 </article>
 
-                <!-- Basic Nursing -->
+                <!-- Basic Nursing (Transition) -->
                 <article class="program-card">
-                    <!-- UPDATED: Actual image reference -->
-                    <img src="<?php echo $baseUrl; ?>/assets/images/programs/basic-nursing.jpg" alt="Basic Nursing Program" class="program-card-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/program-placeholder.jpg';">
+                    <img 
+                        src="<?php echo $programImages['basic-nursing']['primary']; ?>" 
+                        alt="Basic Nursing Program" 
+                        class="program-card-img img-loading"
+                        data-fallback="<?php echo $programImages['basic-nursing']['fallback']; ?>"
+                        data-placeholder="<?php echo $programImages['basic-nursing']['placeholder']; ?>"
+                    >
                     
                     <div class="program-card-header">
                         <h3 class="program-card-title">Basic Nursing</h3>
@@ -748,7 +1043,7 @@ body {
                     
                     <div class="program-card-body">
                         <p class="program-card-description">
-                            Comprehensive general nursing education preparing students for registration as Registered Nurses (RN).
+                            Comprehensive general nursing education preparing students for registration as Registered Nurses (RN). <strong>Note: This program is transitioning to the ND/HND system.</strong>
                         </p>
                         
                         <div class="program-highlights">
@@ -769,10 +1064,15 @@ body {
                     </div>
                 </article>
 
-                <!-- Basic Midwifery -->
+                <!-- Basic Midwifery (Transition) -->
                 <article class="program-card">
-                    <!-- UPDATED: Actual image reference -->
-                    <img src="<?php echo $baseUrl; ?>/assets/images/programs/basic-midwifery.jpg" alt="Basic Midwifery Program" class="program-card-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/program-placeholder.jpg';">
+                    <img 
+                        src="<?php echo $programImages['basic-midwifery']['primary']; ?>" 
+                        alt="Basic Midwifery Program" 
+                        class="program-card-img img-loading"
+                        data-fallback="<?php echo $programImages['basic-midwifery']['fallback']; ?>"
+                        data-placeholder="<?php echo $programImages['basic-midwifery']['placeholder']; ?>"
+                    >
                     
                     <div class="program-card-header">
                         <h3 class="program-card-title">Basic Midwifery</h3>
@@ -784,7 +1084,7 @@ body {
                     
                     <div class="program-card-body">
                         <p class="program-card-description">
-                            Specialized training in maternal and child healthcare, antenatal care, delivery, and postnatal services.
+                            Specialized training in maternal and child healthcare, antenatal care, delivery, and postnatal services. <strong>Note: This program is transitioning to the ND/HND system.</strong>
                         </p>
                         
                         <div class="program-highlights">
@@ -805,22 +1105,27 @@ body {
                     </div>
                 </article>
 
-                <!-- Post Basic Nursing Specialization -->
+                <!-- Post Basic Nursing Specialization (Transition) -->
                 <article class="program-card">
-                    <!-- UPDATED: Actual image reference -->
-                    <img src="<?php echo $baseUrl; ?>/assets/images/programs/post-basic.jpg" alt="Post Basic Nursing Specialization" class="program-card-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/program-placeholder.jpg';">
+                    <img 
+                        src="<?php echo $programImages['post-basic']['primary']; ?>" 
+                        alt="Post Basic Nursing Specialization" 
+                        class="program-card-img img-loading"
+                        data-fallback="<?php echo $programImages['post-basic']['fallback']; ?>"
+                        data-placeholder="<?php echo $programImages['post-basic']['placeholder']; ?>"
+                    >
                     
                     <div class="program-card-header">
                         <h3 class="program-card-title">Post Basic Nursing Specialization</h3>
                         <div class="program-card-duration">
                             <i class="far fa-clock"></i> Duration: 18 Months
                         </div>
-                        <span class="program-status status-active">Currently Available</span>
+                        <span class="program-status status-transition">Program Transition</span>
                     </div>
                     
                     <div class="program-card-body">
                         <p class="program-card-description">
-                            Advanced specialization for registered nurses in intensive care, pediatrics, perioperative, or psychiatric nursing.
+                            Advanced specialization for registered nurses in intensive care, pediatrics, perioperative, or psychiatric nursing. <strong>Note: This program is transitioning to the ND/HND system.</strong>
                         </p>
                         
                         <div class="program-highlights">
@@ -836,7 +1141,7 @@ body {
                         
                         <div class="program-card-footer">
                             <a href="<?php echo $baseUrl; ?>/admissions" class="btn-outline">Learn More</a>
-                            <a href="<?php echo $baseUrl; ?>/admissions" class="btn-primary">Apply Now</a>
+                            <a href="<?php echo $baseUrl; ?>/admissions" class="btn-primary">Contact for Info</a>
                         </div>
                     </div>
                 </article>
@@ -861,29 +1166,100 @@ body {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Add image loading error handling
+    // Enhanced image loading with multiple fallbacks
     const programImages = document.querySelectorAll('.program-card-img');
     
+    function loadImageWithFallback(img) {
+        const primarySrc = img.src;
+        const fallbackSrc = img.dataset.fallback;
+        const placeholderSrc = img.dataset.placeholder;
+        
+        // First, try the primary image
+        const primaryImage = new Image();
+        
+        primaryImage.onload = function() {
+            img.src = primarySrc;
+            img.classList.remove('img-loading');
+        };
+        
+        primaryImage.onerror = function() {
+            // If primary fails, try fallback
+            const fallbackImage = new Image();
+            
+            fallbackImage.onload = function() {
+                img.src = fallbackSrc;
+                img.classList.remove('img-loading');
+            };
+            
+            fallbackImage.onerror = function() {
+                // If fallback fails, use placeholder
+                img.src = placeholderSrc;
+                img.alt = 'Program Image - Image not available';
+                img.classList.remove('img-loading');
+            };
+            
+            fallbackImage.src = fallbackSrc;
+        };
+        
+        primaryImage.src = primarySrc;
+    }
+    
+    // Load all images with fallback
     programImages.forEach(img => {
-        img.addEventListener('error', function() {
-            this.src = '<?php echo $baseUrl; ?>/assets/images/placeholder/program-placeholder.jpg';
-            this.alt = 'Program Image';
+        loadImageWithFallback(img);
+    });
+    
+    // Handle hero background image loading
+    const heroBg = document.querySelector('.programs-hero-bg');
+    if (heroBg) {
+        const heroImage = new Image();
+        
+        heroImage.onload = function() {
+            console.log('Programs hero background image loaded successfully');
+        };
+        
+        heroImage.onerror = function() {
+            console.warn('Programs hero background image failed to load');
+            heroBg.style.backgroundImage = 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))';
+            heroBg.style.opacity = '1';
+        };
+        
+        heroImage.src = '<?php echo $baseUrl; ?>/assets/images/programs/programs-hero.jpg';
+    }
+    
+    // Add smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+            
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                window.scrollTo({
+                    top: targetElement.offsetTop - 100,
+                    behavior: 'smooth'
+                });
+            }
         });
     });
     
-    // Add smooth scrolling for program cards
+    // Animate program cards on scroll
     const programCards = document.querySelectorAll('.program-card');
-    
-    programCards.forEach(card => {
-        card.addEventListener('click', function(e) {
-            // Only trigger if not clicking on a button
-            if (!e.target.closest('a')) {
-                const link = this.querySelector('a.btn-outline');
-                if (link) {
-                    link.click();
-                }
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
             }
         });
+    }, { threshold: 0.1 });
+    
+    programCards.forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
     });
 });
 </script>
