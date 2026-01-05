@@ -9,7 +9,7 @@
                 <div class="mb-4">
                     <h1 class="h2 fw-bold text-dark mb-2">Admission Status Verification</h1>
                     <p class="text-muted mb-0">2025/2026 ND Nursing Programme</p>
-                    <p class="text-muted">Federal Capital Territory College of Nursing Sciences</p>
+                    <p class="text-muted">FCT College of Nursing Sciences</p>
                 </div>
             </div>
 
