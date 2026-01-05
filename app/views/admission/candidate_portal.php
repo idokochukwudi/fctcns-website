@@ -269,7 +269,7 @@
                             </div>
                             <div>
                                 <i class="fas fa-phone text-muted me-2"></i>
-                                <span class="text-muted">[Contact Number]</span>
+                                <span class="text-muted">08082775076 - WhatsApp Only</span>
                             </div>
                         </div>
                     </div>
