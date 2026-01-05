@@ -20,6 +20,46 @@ class Router {
     private $params = [];
 
     /**
+     * Constructor - Register routes on initialization
+     */
+    public function __construct() {
+        $this->registerRoutes();
+    }
+
+    /**
+     * Register all application routes
+     */
+    private function registerRoutes() {
+        // Register admission routes
+        $this->get('/viewadmissionlist', 'AdmissionController@index');
+        $this->get('/admission', 'AdmissionController@index');
+        $this->get('/admission/search', 'AdmissionController@search');
+        $this->get('/admission/check', 'AdmissionController@check');
+        
+        // Admin routes
+        $this->get('/admin/admission/update', 'AdmissionController@adminUpdate');
+        $this->post('/admin/admission/update', 'AdmissionController@adminUpdate');
+        $this->get('/admin/admission/manual-correction', 'AdmissionController@manualCorrection');
+        $this->post('/admin/admission/manual-correction', 'AdmissionController@manualCorrection');
+        
+        // Candidate admission check portal (simple page for candidates)
+        // FIXED: Both GET and POST go to candidatePortal() method
+        $this->get('/admission/check-portal', 'AdmissionController@candidatePortal');
+        $this->post('/admission/check-portal', 'AdmissionController@candidatePortal');
+        
+        // AJAX API endpoint for checking status (optional - if you need separate API)
+        // $this->post('/api/admission/check', 'AdmissionController@checkStatus');
+
+        // Same page accessible from multiple URLs
+        $this->get('/admissions/2025-2026', 'AdmissionController@index');
+        $this->get('/admission-list', 'AdmissionController@index');
+        
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log("Router: Admission routes registered");
+        }
+    }
+
+    /**
      * Add a GET route
      */
     public function get($path, $handler) {
@@ -144,7 +184,9 @@ class Router {
             $requestUri = rtrim($requestUri, '/');
         }
         
-        error_log("Router matching: $requestMethod $requestUri");
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log("Router matching: $requestMethod $requestUri");
+        }
         
         foreach ($this->routes as $route) {
             if ($route['method'] !== $requestMethod) {
@@ -152,7 +194,11 @@ class Router {
             }
             
             if (preg_match($route['pattern'], $requestUri, $matches)) {
-                error_log("Route matched: {$route['path']}");
+                if (defined('APP_DEBUG') && APP_DEBUG) {
+                    error_log("Route matched: {$route['path']}");
+                    error_log("Route pattern: {$route['pattern']}");
+                    error_log("Request URI: $requestUri");
+                }
                 
                 array_shift($matches);
                 $this->params = $matches;
@@ -165,7 +211,9 @@ class Router {
             }
         }
         
-        error_log("No route matched for: $requestUri");
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log("No route matched for: $requestUri");
+        }
         return null;
     }
 

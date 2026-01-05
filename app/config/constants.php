@@ -257,6 +257,13 @@ if (!defined('DB_COLLATION')) {
     define('DB_COLLATION', 'utf8mb4_unicode_ci');
 }
 
+// Admission update configuration
+if (!defined('ALLOW_REVERSE_ADMISSION_UPDATES')) {
+    // Set to true to allow Accepted → Approved updates
+    // Set to false for normal operation (Approved → Accepted only)
+    define('ALLOW_REVERSE_ADMISSION_UPDATES', false);
+}
+
 // ============================================================================
 // MVC DEFAULT SETTINGS
 // ============================================================================
