@@ -573,6 +573,47 @@
                             </div>
                         <?php endif; ?>
                         
+                        <!-- Important Dates for Students -->
+                        <div class="mt-4 pt-4" style="border-top: 1px solid rgba(0, 0, 0, 0.06);">
+                            <h5 class="fw-bold mb-3">
+                                <i class="fas fa-calendar-alt me-2"></i>Important Dates
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="alert alert-info mb-0">
+                                        <h6 class="fw-bold mb-2">
+                                            <i class="fas fa-door-open me-2"></i>Resumption
+                                        </h6>
+                                        <p class="mb-0">January 6, 2025</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-info mb-0">
+                                        <h6 class="fw-bold mb-2">
+                                            <i class="fas fa-users me-2"></i>Orientation
+                                        </h6>
+                                        <p class="mb-0">January 6-9, 2025</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-info mb-0">
+                                        <h6 class="fw-bold mb-2">
+                                            <i class="fas fa-chalkboard-teacher me-2"></i>Lectures Start
+                                        </h6>
+                                        <p class="mb-0">January 12, 2025</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-warning mb-0">
+                                        <h6 class="fw-bold mb-2">
+                                            <i class="fas fa-calendar-times me-2"></i>Acceptance Deadline
+                                        </h6>
+                                        <p class="mb-0">January 9, 2025</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Action Buttons -->
                         <div class="action-buttons no-print">
                             <button onclick="window.print()" class="btn btn-outline-secondary">
@@ -675,12 +716,22 @@
             </div>
             
             <div class="info-item">
-                <div class="info-icon" style="background: #ffc107;">
-                    <i class="fas fa-exclamation-triangle"></i>
+                <div class="info-icon" style="background: #17a2b8;">
+                    <i class="fas fa-users"></i>
                 </div>
                 <div class="info-content">
-                    <h6>Important Notice</h6>
-                    <p>Accept admission before deadline</p>
+                    <h6>Orientation Period</h6>
+                    <p>January 6-9, 2025</p>
+                </div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-icon" style="background: #6c757d;">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <div class="info-content">
+                    <h6>Lectures Begin</h6>
+                    <p>January 12, 2025</p>
                 </div>
             </div>
         </div>
