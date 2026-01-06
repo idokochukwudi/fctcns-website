@@ -65,70 +65,30 @@ if (empty($carouselSlides)) {
 
 <style>
 /* ==========================================================================
-   TARGETED FIX FOR SPACE ABOVE CAROUSEL ONLY
+   CRITICAL: NO GAP BETWEEN BODY AND HEADER & FOOTER
    ========================================================================== */
-/* Remove default browser spacing */
-html {
-    margin: 0;
-    padding: 0;
-}
-
-/* Only target the body and elements before carousel */
-body {
+html, body {
     margin: 0 !important;
     padding: 0 !important;
+    width: 100%;
+    overflow-x: hidden;
 }
 
-/* Target the hero section specifically */
-.hero-section {
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
+/* Remove ALL top spacing from body content */
+body > *:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
 }
 
-/* Target the carousel container */
-.hero-carousel {
-    margin: 0 !important;
-    padding: 0 !important;
-    position: relative;
-    top: 0;
-}
-
-/* Remove any space from the main content wrapper */
-main#main-content,
+/* Remove spacing from main wrapper */
+#main-content,
 .homepage-content {
     margin: 0 !important;
     padding: 0 !important;
 }
 
-/* Only remove top margins/paddings, keep others intact */
-.hero-section,
-.hero-carousel,
-.carousel-inner,
-.carousel-slide {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-    border-top: none !important;
-}
-
-/* If there's still space, try this specific selector */
-body > .homepage-content > .hero-section:first-child {
-    margin-top: -1px !important;
-    padding-top: 0 !important;
-}
-
-/* Ensure carousel starts at the very top */
-.carousel-slide {
-    top: 0 !important;
-}
-
-/* Remove any line-height or font spacing */
-.carousel-slide-content {
-    margin-top: 0 !important;
-    padding-top: var(--spacing-xl) !important; /* Keep original padding but no extra top space */
-}
 /* ==========================================================================
-   CRITICAL MOBILE ENHANCEMENTS & FIXES - FULL WIDTH
+   CRITICAL MOBILE ENHANCEMENTS & FIXES
    ========================================================================== */
 * {
     -webkit-tap-highlight-color: transparent;
@@ -137,12 +97,6 @@ body > .homepage-content > .hero-section:first-child {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-}
-
-html, body {
-    width: 100%;
-    overflow-x: hidden;
-    position: relative;
 }
 
 body {
@@ -241,101 +195,97 @@ button, .btn,
 }
 
 /* ==========================================================================
-   FULL WIDTH CONTAINERS & CENTRALIZED CONTENT
+   MAIN CONTENT STRUCTURE
    ========================================================================== */
+.homepage-content {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+}
+
 .container {
     width: 100%;
-    max-width: 100%;
-    margin: 0;
-    padding: 0;
-}
-
-/* FULL WIDTH SECTIONS - NO TOP MARGIN/PADDING */
-.hero-section,
-.cta-section,
-.stats-section,
-.accreditation-section,
-.learning-environment-section,
-.graduate-attributes-section,
-.campus-community-section,
-.navigation-hub-section {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* Centralized content containers */
-.container > *,
-.stats-grid,
-.accreditation-container,
-.environment-grid,
-.attributes-grid,
-.community-grid,
-.hub-grid,
-.cta-content {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 var(--spacing-md);
 }
 
-/* ==========================================================================
-   APPLICATION STATUS BANNER - CENTRALIZED
-   ========================================================================== */
-.application-status-banner {
-    background: linear-gradient(135deg, var(--color-closed-light), var(--color-white));
-    border-left: 5px solid var(--color-closed);
-    padding: var(--spacing-md);
-    margin: var(--spacing-md) auto var(--spacing-lg) auto;
-    border-radius: var(--radius-md);
-    max-width: 1200px;
-    text-align: center;
-    box-shadow: var(--shadow-soft);
-    width: 95%;
+.section {
+    padding: var(--spacing-xl) 0;
+    width: 100%;
 }
 
-.application-status-banner h3 {
-    color: var(--color-closed);
-    margin-bottom: var(--spacing-xs);
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-xs);
+.section-alt {
+    background: var(--color-off-white);
+    border-top: 1px solid var(--color-gray-100);
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 var(--spacing-md);
+}
+
+.section-title {
     font-family: var(--font-heading);
-    text-align: center;
-}
-
-.application-status-banner p {
-    color: var(--color-gray-800);
-    line-height: 1.5;
-    font-size: 0.95rem;
-    margin-bottom: 0.5rem;
-    text-align: center;
-}
-
-.application-status-banner strong {
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    font-weight: 600;
     color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+    position: relative;
+    display: inline-block;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 2px;
+    background: var(--color-accent);
+    border-radius: 1px;
+}
+
+.section-subtitle {
+    font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+    color: var(--color-gray-800);
+    line-height: 1.6;
+    margin-top: var(--spacing-lg);
+    font-weight: 400;
+    padding: 0 var(--spacing-sm);
+    text-align: center;
+    font-family: var(--font-body);
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* ==========================================================================
-   HERO CAROUSEL - FULL WIDTH (NO WHITE GAPS, NO TOP SPACE)
+   HERO CAROUSEL - NO GAP AT TOP
    ========================================================================== */
 .hero-section {
     position: relative;
     width: 100%;
-    margin: 0;
-    padding: 0;
     background: linear-gradient(135deg, #4A3A6F, #5D4A8A);
     overflow: hidden;
+    margin: 0;
+    padding: 0;
+    border: none;
 }
 
 .hero-carousel {
     position: relative;
     width: 100%;
-    height: 75vh;
-    max-height: 650px;
-    min-height: 500px;
+    height: 85vh;
+    min-height: 550px;
+    max-height: 800px;
     overflow: hidden;
 }
 
@@ -365,7 +315,6 @@ button, .btn,
     z-index: 2;
 }
 
-/* Carousel background with full width */
 .carousel-slide-bg {
     position: absolute;
     top: 0;
@@ -378,7 +327,6 @@ button, .btn,
     z-index: 1;
 }
 
-/* Professional overlay for text readability */
 .carousel-slide-bg::after {
     content: '';
     position: absolute;
@@ -388,13 +336,12 @@ button, .btn,
     height: 100%;
     background: linear-gradient(
         to bottom,
-        rgba(0, 0, 0, 0.6) 0%,
-        rgba(0, 0, 0, 0.4) 50%,
-        rgba(0, 0, 0, 0.2) 100%
+        rgba(0, 0, 0, 0.7) 0%,
+        rgba(0, 0, 0, 0.5) 50%,
+        rgba(0, 0, 0, 0.3) 100%
     );
 }
 
-/* Carousel content - PROPERLY CENTERED */
 .carousel-slide-content {
     position: relative;
     z-index: 3;
@@ -403,62 +350,51 @@ button, .btn,
     padding: var(--spacing-xl);
     margin: 0 auto;
     text-align: center;
-    width: 90%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    width: 95%;
 }
 
 .carousel-slide-badge {
     display: inline-block;
     background: var(--color-accent);
     color: var(--color-gray-900);
-    padding: 0.4rem 1.2rem;
+    padding: 0.5rem 1.5rem;
     border-radius: var(--radius-full);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 0.5px;
     margin-bottom: var(--spacing-md);
     text-transform: uppercase;
     font-family: var(--font-heading);
-    text-align: center;
 }
 
-/* Carousel title - NO CUTOFF */
 .carousel-slide-title {
     font-family: var(--font-heading);
-    font-size: clamp(1.5rem, 4.5vw, 2.8rem);
-    font-weight: 600;
-    line-height: 1.3;
+    font-size: clamp(1.75rem, 5vw, 3rem);
+    font-weight: 700;
+    line-height: 1.2;
     margin-bottom: var(--spacing-sm);
     color: var(--color-white);
-    letter-spacing: -0.2px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     width: 100%;
     word-wrap: break-word;
     overflow-wrap: break-word;
-    hyphens: auto;
     text-align: center;
     padding: 0 10px;
 }
 
-/* Carousel subtitle - NO CUTOFF */
 .carousel-slide-subtitle {
-    font-size: clamp(0.95rem, 2.8vw, 1.35rem);
+    font-size: clamp(1rem, 3vw, 1.4rem);
     font-weight: 400;
     margin-bottom: var(--spacing-lg);
-    line-height: 1.6;
+    line-height: 1.5;
     color: rgba(255, 255, 255, 0.95);
     font-family: var(--font-body);
     max-width: 700px;
     margin-left: auto;
     margin-right: auto;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     text-align: center;
     width: 100%;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
     padding: 0 10px;
 }
 
@@ -472,22 +408,134 @@ button, .btn,
 }
 
 /* ==========================================================================
-   BUTTONS - PROFESSIONAL STYLING
+   CAROUSEL NAVIGATION - VERY FAINT
+   ========================================================================== */
+.carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.04); /* VERY FAINT */
+    border: 1px solid rgba(255, 255, 255, 0.08); /* VERY FAINT */
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.25); /* VERY FAINT */
+    font-size: 0.9rem;
+    z-index: 10;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    opacity: 0.5; /* Very low visibility */
+}
+
+.carousel-nav:hover {
+    background: rgba(255, 255, 255, 0.08); /* Still very faint on hover */
+    color: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 0.12);
+    opacity: 0.7;
+}
+
+.carousel-nav-prev {
+    left: 1.5rem;
+}
+
+.carousel-nav-next {
+    right: 1.5rem;
+}
+
+.carousel-controls {
+    position: absolute;
+    bottom: var(--spacing-lg);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.carousel-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15); /* Faint */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    padding: 0;
+}
+
+.carousel-indicator.active {
+    background: rgba(255, 255, 255, 0.4); /* Still faint when active */
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.carousel-indicator:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* ==========================================================================
+   APPLICATION STATUS BANNER - PROPERLY CENTERED ON ALL SCREENS
+   ========================================================================== */
+.application-status-banner {
+    background: linear-gradient(135deg, var(--color-closed-light), var(--color-white));
+    border-left: 5px solid var(--color-closed);
+    padding: var(--spacing-md);
+    margin: var(--spacing-lg) auto;
+    border-radius: var(--radius-md);
+    max-width: 800px;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+    width: 95%;
+    position: relative;
+    z-index: 5;
+}
+
+.application-status-banner h3 {
+    color: var(--color-closed);
+    margin-bottom: var(--spacing-xs);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    font-family: var(--font-heading);
+}
+
+.application-status-banner p {
+    color: var(--color-gray-800);
+    line-height: 1.5;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.application-status-banner strong {
+    color: var(--color-primary);
+}
+
+/* ==========================================================================
+   BUTTONS
    ========================================================================== */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.75rem 1.5rem;
+    padding: 0.85rem 1.75rem;
     font-family: var(--font-heading);
-    font-size: 0.9rem;
-    font-weight: 500;
+    font-size: 0.95rem;
+    font-weight: 600;
     text-decoration: none;
     border-radius: var(--radius-md);
     transition: var(--transition-smooth);
-    border: 1px solid transparent;
+    border: 2px solid transparent;
     cursor: pointer;
-    min-height: 42px;
+    min-height: 44px;
     letter-spacing: 0.3px;
     white-space: nowrap;
     text-align: center;
@@ -503,48 +551,30 @@ button, .btn,
 .btn-primary:focus {
     background: var(--color-accent-dark);
     color: var(--color-gray-900);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-soft);
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--color-primary);
     color: var(--color-white);
-    border-color: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    border-color: var(--color-primary);
 }
 
 .btn-secondary:hover,
 .btn-secondary:focus {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--color-primary-dark);
     color: var(--color-white);
-    border-color: rgba(255, 255, 255, 0.3);
-}
-
-.btn-disabled {
-    background: var(--color-gray-300);
-    color: var(--color-gray-600);
-    border-color: var(--color-gray-300);
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-.btn-disabled:hover,
-.btn-disabled:focus {
-    background: var(--color-gray-300);
-    color: var(--color-gray-600);
-    transform: none;
-    box-shadow: none;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
 }
 
 /* ==========================================================================
-   STATISTICS SECTION - MATURE PROFESSIONAL DESIGN - FULL WIDTH CONTENT
+   STATISTICS SECTION
    ========================================================================== */
 .stats-section {
-    background: var(--color-off-white);
-    padding: var(--spacing-xl) 0 !important;
-    border-bottom: 1px solid var(--color-gray-100);
+    background: var(--color-white);
+    padding: var(--spacing-xl) 0;
 }
 
 .stats-grid {
@@ -554,12 +584,11 @@ button, .btn,
     text-align: center;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 var(--spacing-md);
 }
 
 .stat-item {
     padding: var(--spacing-lg);
-    background: var(--color-white);
+    background: var(--color-off-white);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-subtle);
     transition: var(--transition-smooth);
@@ -571,125 +600,15 @@ button, .btn,
 }
 
 .stat-item:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
     box-shadow: var(--shadow-soft);
-    border-color: var(--color-primary-transparent);
+    border-color: var(--color-primary-light);
 }
 
 .stat-icon {
     font-size: 1.75rem;
     color: var(--color-primary);
     margin-bottom: var(--spacing-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 50px;
-    height: 50px;
-    background: var(--color-primary-very-light);
-    border-radius: 50%;
-}
-
-.stat-number {
-    font-family: var(--font-heading);
-    font-size: 1.75rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    color: var(--color-primary);
-    line-height: 1;
-}
-
-.stat-label {
-    font-size: 0.85rem;
-    color: var(--color-gray-800);
-    font-weight: 500;
-    line-height: 1.4;
-    letter-spacing: 0.3px;
-    font-family: var(--font-heading);
-}
-
-/* ==========================================================================
-   ACCREDITATION SECTION - PROFESSIONAL ARRANGEMENT - FULL WIDTH CONTENT
-   ========================================================================== */
-.accreditation-section {
-    background: var(--color-white);
-    padding: var(--spacing-xl) 0 !important;
-    border-bottom: 1px solid var(--color-gray-100);
-}
-
-.accreditation-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
-}
-
-.accreditation-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-lg);
-    text-align: center;
-    align-items: center;
-}
-
-.accreditation-text {
-    max-width: 800px;
-    margin: 0 auto;
-    text-align: center;
-    padding: 0 var(--spacing-md);
-}
-
-.accreditation-text h3 {
-    font-family: var(--font-heading);
-    font-size: 1.75rem;
-    font-weight: 600;
-    margin-bottom: var(--spacing-sm);
-    color: var(--color-primary);
-    line-height: 1.3;
-    text-align: center;
-}
-
-.accreditation-text p {
-    font-size: 1.05rem;
-    color: var(--color-gray-800);
-    line-height: 1.6;
-    font-weight: 400;
-    margin-bottom: var(--spacing-lg);
-    text-align: center;
-    font-family: var(--font-body);
-}
-
-.accreditation-badges {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
-}
-
-.accreditation-badge {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-lg);
-    background: var(--color-primary-very-light);
-    border-radius: var(--radius-md);
-    transition: var(--transition-smooth);
-    border: 1px solid var(--color-primary-transparent);
-    text-align: center;
-    flex-direction: column;
-}
-
-.accreditation-badge:hover {
-    background: var(--color-white);
-    box-shadow: var(--shadow-subtle);
-    transform: translateY(-1px);
-}
-
-.badge-icon {
-    font-size: 2rem;
-    color: var(--color-primary);
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -700,98 +619,265 @@ button, .btn,
     box-shadow: var(--shadow-subtle);
 }
 
+.stat-number {
+    font-family: var(--font-heading);
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: var(--color-primary);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--color-gray-800);
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.3px;
+}
+
+/* ==========================================================================
+   ACCREDITATION SECTION - FIXED FOR NO OVERFLOW
+   ========================================================================== */
+.accreditation-section {
+    background: var(--color-off-white);
+    padding: var(--spacing-xl) 0;
+    border-top: 1px solid var(--color-gray-100);
+    width: 100%;
+    overflow: hidden;
+}
+
+.accreditation-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.accreditation-text {
+    text-align: center;
+    max-width: 800px;
+    width: 100%;
+    padding: 0 var(--spacing-md);
+}
+
+.accreditation-text h3 {
+    font-family: var(--font-heading);
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-primary);
+    line-height: 1.3;
+}
+
+.accreditation-text p {
+    font-size: 1.05rem;
+    color: var(--color-gray-800);
+    line-height: 1.6;
+    font-weight: 400;
+    margin-bottom: var(--spacing-lg);
+    font-family: var(--font-body);
+}
+
+/* FIXED ACCREDITATION BADGES - NO OVERFLOW */
+.accreditation-badges {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+}
+
+.accreditation-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--color-white);
+    border-radius: var(--radius-lg);
+    transition: var(--transition-smooth);
+    border: 1px solid var(--color-gray-100);
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.accreditation-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-soft);
+    border-color: var(--color-primary-light);
+}
+
+.badge-icon {
+    font-size: 2rem;
+    color: var(--color-primary);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 70px;
+    background: var(--color-primary-very-light);
+    border-radius: 50%;
+    min-width: 70px;
+}
+
 .badge-text {
     display: flex;
     flex-direction: column;
     flex: 1;
-    min-width: 0;
-    text-align: center;
-    align-items: center;
+    min-width: 0; /* CRITICAL: Allows text to shrink */
+    overflow: hidden;
 }
 
 .badge-text strong {
     font-family: var(--font-heading);
-    font-size: 1.1rem;
+    font-size: clamp(1.1rem, 2vw, 1.3rem);
     font-weight: 600;
     color: var(--color-primary);
     line-height: 1.3;
     margin-bottom: 0.25rem;
     word-wrap: break-word;
-    text-align: center;
+    overflow-wrap: break-word;
+    hyphens: auto;
 }
 
 .badge-text span {
-    font-size: 0.85rem;
+    font-size: clamp(0.85rem, 1.8vw, 0.95rem);
     color: var(--color-gray-800);
     font-weight: 400;
     line-height: 1.4;
     font-family: var(--font-body);
-    text-align: center;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
 }
 
 /* ==========================================================================
-   SECTION STYLES - REUSABLE
+   PROGRAMS PREVIEW SECTION
    ========================================================================== */
-.section-header {
-    text-align: center;
-    margin-bottom: var(--spacing-xl);
-    max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 var(--spacing-md);
+.programs-preview-section {
+    background: var(--color-white);
+    padding: var(--spacing-xl) 0;
 }
 
-.section-title {
-    font-family: var(--font-heading);
-    font-size: 1.75rem;
-    font-weight: 600;
+.programs-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.program-card {
+    background: var(--color-off-white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-subtle);
+    transition: var(--transition-smooth);
+    border: 1px solid var(--color-gray-100);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.program-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-soft);
+    border-color: var(--color-primary-light);
+}
+
+.program-icon {
+    font-size: 2.5rem;
     color: var(--color-primary);
-    margin-bottom: var(--spacing-sm);
-    position: relative;
-    display: inline-block;
+    margin: var(--spacing-lg) auto var(--spacing-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    background: var(--color-white);
+    border-radius: 50%;
+    box-shadow: var(--shadow-subtle);
+}
+
+.program-content {
+    padding: var(--spacing-lg);
     text-align: center;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-.section-title::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 50px;
-    height: 2px;
-    background: var(--color-accent);
-    border-radius: 1px;
+.program-content h3 {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-primary);
+    line-height: 1.3;
 }
 
-.section-subtitle {
-    font-size: 1.05rem;
+.program-content p {
     color: var(--color-gray-800);
     line-height: 1.6;
-    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    font-size: 0.95rem;
     font-weight: 400;
-    padding: 0 var(--spacing-sm);
-    text-align: center;
+    flex-grow: 1;
     font-family: var(--font-body);
 }
 
+.program-features {
+    list-style: none;
+    padding-left: 0;
+    margin: var(--spacing-md) 0;
+    text-align: left;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.program-features li {
+    padding: 0.35rem 0;
+    color: var(--color-gray-800);
+    position: relative;
+    padding-left: 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 400;
+    line-height: 1.5;
+    font-family: var(--font-body);
+}
+
+.program-features li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--color-accent);
+    font-weight: bold;
+    font-size: 1rem;
+}
+
 /* ==========================================================================
-   LEARNING ENVIRONMENT SECTION WITH IMAGE CAPTIONS
+   LEARNING ENVIRONMENT SECTION
    ========================================================================== */
 .learning-environment-section {
     background: var(--color-off-white);
-    padding: var(--spacing-xl) 0 !important;
+    padding: var(--spacing-xl) 0;
+    border-top: 1px solid var(--color-gray-100);
 }
 
 .environment-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--spacing-xl);
-    margin-top: var(--spacing-lg);
     max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 var(--spacing-md);
+    margin: 0 auto;
 }
 
 .environment-card {
@@ -802,12 +888,14 @@ button, .btn,
     transition: var(--transition-smooth);
     border: 1px solid var(--color-gray-100);
     height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .environment-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-soft);
-    border-color: var(--color-primary-transparent);
+    border-color: var(--color-primary-light);
 }
 
 .environment-image-container {
@@ -824,7 +912,6 @@ button, .btn,
     background-repeat: no-repeat;
 }
 
-/* Image caption styling */
 .image-caption {
     position: absolute;
     bottom: 0;
@@ -843,6 +930,9 @@ button, .btn,
 .environment-content {
     padding: var(--spacing-lg);
     text-align: center;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .environment-content h3 {
@@ -852,7 +942,6 @@ button, .btn,
     margin-bottom: var(--spacing-sm);
     color: var(--color-primary);
     line-height: 1.3;
-    text-align: center;
 }
 
 .environment-content p {
@@ -861,516 +950,90 @@ button, .btn,
     margin-bottom: var(--spacing-md);
     font-size: 1rem;
     font-weight: 400;
-    text-align: center;
-    font-family: var(--font-body);
-}
-
-.environment-features {
-    list-style: none;
-    padding-left: 0;
-    margin-top: var(--spacing-md);
-    text-align: left;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.environment-features li {
-    padding: 0.35rem 0;
-    color: var(--color-gray-800);
-    position: relative;
-    padding-left: 1.75rem;
-    font-size: 0.95rem;
-    font-weight: 400;
-    line-height: 1.5;
-    font-family: var(--font-body);
-}
-
-.environment-features li::before {
-    content: '✓';
-    position: absolute;
-    left: 0;
-    color: var(--color-accent);
-    font-weight: bold;
-    font-size: 1.1rem;
-    top: 0.35rem;
-}
-
-/* ==========================================================================
-   GRADUATE ATTRIBUTES SECTION
-   ========================================================================== */
-.graduate-attributes-section {
-    background: var(--color-white);
-    padding: var(--spacing-xl) 0 !important;
-    border-top: 1px solid var(--color-gray-100);
-}
-
-.attributes-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-lg);
-    margin-top: var(--spacing-lg);
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 var(--spacing-md);
-}
-
-.attribute-card {
-    background: var(--color-primary-very-light);
-    padding: var(--spacing-lg);
-    border-radius: var(--radius-lg);
-    border-left: 4px solid var(--color-primary);
-    transition: var(--transition-smooth);
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    text-align: center;
-}
-
-.attribute-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-soft);
-}
-
-.attribute-icon {
-    font-size: 1.75rem;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 60px;
-    height: 60px;
-    background: var(--color-white);
-    border-radius: 50%;
-    flex-shrink: 0;
-    margin: 0 auto;
-}
-
-.attribute-card h3 {
-    font-family: var(--font-heading);
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: var(--spacing-sm);
-    color: var(--color-primary);
-    line-height: 1.3;
-    min-height: 3em;
-    text-align: center;
-}
-
-.attribute-card p {
-    color: var(--color-gray-800);
-    line-height: 1.6;
-    font-size: 0.95rem;
-    font-weight: 400;
     flex-grow: 1;
-    text-align: center;
     font-family: var(--font-body);
 }
 
 /* ==========================================================================
-   CAMPUS & COMMUNITY SECTION WITH IMAGE CAPTIONS
-   ========================================================================== */
-.campus-community-section {
-    background: var(--color-off-white);
-    padding: var(--spacing-xl) 0 !important;
-    border-top: 1px solid var(--color-gray-100);
-}
-
-.community-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--spacing-xl);
-    margin-top: var(--spacing-lg);
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 var(--spacing-md);
-}
-
-.community-card {
-    display: flex;
-    flex-direction: column;
-    background: var(--color-white);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    box-shadow: var(--shadow-subtle);
-    transition: var(--transition-smooth);
-    border: 1px solid var(--color-gray-100);
-    height: 100%;
-}
-
-.community-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-soft);
-    border-color: var(--color-primary-transparent);
-}
-
-.community-image-container {
-    position: relative;
-    height: 250px;
-    width: 100%;
-}
-
-.community-image {
-    height: 100%;
-    width: 100%;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-.community-content {
-    padding: var(--spacing-lg);
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    text-align: center;
-}
-
-.community-content h3 {
-    font-family: var(--font-heading);
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: var(--spacing-sm);
-    color: var(--color-primary);
-    line-height: 1.3;
-    text-align: center;
-}
-
-.community-content p {
-    color: var(--color-gray-800);
-    line-height: 1.6;
-    margin-bottom: var(--spacing-md);
-    font-size: 1rem;
-    font-weight: 400;
-    flex-grow: 1;
-    text-align: center;
-    font-family: var(--font-body);
-}
-
-.community-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--color-primary);
-    font-weight: 500;
-    text-decoration: none;
-    font-family: var(--font-heading);
-    transition: var(--transition-smooth);
-    font-size: 0.95rem;
-    margin-top: auto;
-    text-align: center;
-    justify-content: center;
-}
-
-.community-link:hover {
-    color: var(--color-primary-dark);
-    gap: 0.75rem;
-}
-
-/* ==========================================================================
-   NAVIGATION HUB SECTION
-   ========================================================================== */
-.navigation-hub-section {
-    background: var(--color-white);
-    padding: var(--spacing-xl) 0 !important;
-    border-top: 1px solid var(--color-gray-100);
-}
-
-.hub-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--spacing-lg);
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 var(--spacing-md);
-}
-
-.hub-card {
-    background: var(--color-primary-very-light);
-    padding: var(--spacing-xl);
-    border-radius: var(--radius-lg);
-    text-align: center;
-    border: 1px solid var(--color-primary-transparent);
-    transition: var(--transition-smooth);
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-.hub-card:hover {
-    background: var(--color-white);
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-soft);
-    border-color: var(--color-primary);
-}
-
-.hub-icon {
-    font-size: 2.5rem;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 80px;
-    height: 80px;
-    background: var(--color-white);
-    border-radius: 50%;
-    margin: 0 auto var(--spacing-md);
-    box-shadow: var(--shadow-subtle);
-    flex-shrink: 0;
-}
-
-.hub-card h3 {
-    font-family: var(--font-heading);
-    font-size: 1.4rem;
-    font-weight: 600;
-    margin-bottom: var(--spacing-sm);
-    color: var(--color-primary);
-    line-height: 1.3;
-    min-height: 3.5em;
-    text-align: center;
-}
-
-.hub-card p {
-    color: var(--color-gray-800);
-    line-height: 1.6;
-    margin-bottom: var(--spacing-lg);
-    font-size: 1rem;
-    font-weight: 400;
-    flex-grow: 1;
-    text-align: center;
-    font-family: var(--font-body);
-}
-
-.hub-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    color: var(--color-primary);
-    font-weight: 500;
-    text-decoration: none;
-    font-family: var(--font-heading);
-    transition: var(--transition-smooth);
-    font-size: 1rem;
-    padding: 0.75rem 1.5rem;
-    border: 2px solid var(--color-primary);
-    border-radius: var(--radius-md);
-    margin-top: auto;
-    text-align: center;
-}
-
-.hub-link:hover {
-    background: var(--color-primary);
-    color: var(--color-white);
-    gap: 0.75rem;
-}
-
-/* ==========================================================================
-   CALL TO ACTION - PROFESSIONAL WITH VISIBLE BUTTONS - FULL WIDTH
+   CTA SECTION - FIXED FONT COLOR & NO SPACE AT BOTTOM
    ========================================================================== */
 .cta-section {
-    background: var(--color-white);
-    padding: var(--spacing-xl) 0 !important;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    padding: var(--spacing-xxl) 0;
     text-align: center;
-    border-top: 1px solid var(--color-gray-100);
+    color: var(--color-white);
+    margin-bottom: 0 !important;
+    border-bottom: none !important;
 }
 
 .cta-content {
-    max-width: 1000px;
+    max-width: 800px;
     margin: 0 auto;
-    position: relative;
-    z-index: 2;
     padding: 0 var(--spacing-md);
-    text-align: center;
 }
 
+/* FIXED: CTA Title Color - High Contrast White */
 .cta-title {
     font-family: var(--font-heading);
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: var(--color-primary);
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 700;
     margin-bottom: var(--spacing-md);
-    line-height: 1.3;
-    text-align: center;
+    line-height: 1.2;
+    color: var(--color-white) !important; /* High contrast white */
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); /* Stronger shadow for better readability */
 }
 
 .cta-description {
-    font-size: 1.05rem;
-    color: var(--color-gray-800);
-    margin-bottom: var(--spacing-lg);
+    font-size: 1.1rem;
+    margin-bottom: var(--spacing-xl);
     line-height: 1.6;
     font-weight: 400;
-    max-width: 800px;
+    color: rgba(255, 255, 255, 0.95); /* High contrast with slight transparency */
+    font-family: var(--font-body);
+    max-width: 600px;
     margin-left: auto;
     margin-right: auto;
-    text-align: center;
-    font-family: var(--font-body);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .cta-buttons {
     display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-lg);
-    align-items: center;
-    width: 100%;
-    justify-content: center;
-}
-
-/* FIX FOR CTA BUTTONS - VISIBLE ON WHITE BACKGROUND */
-.cta-section .btn-secondary {
-    background: var(--color-primary);
-    color: var(--color-white);
-    border-color: var(--color-primary);
-}
-
-.cta-section .btn-secondary:hover,
-.cta-section .btn-secondary:focus {
-    background: var(--color-primary-dark);
-    color: var(--color-white);
-    border-color: var(--color-primary-dark);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-soft);
-}
-
-.cta-buttons .btn {
-    width: 100%;
-    max-width: 250px;
-    margin: 0 auto;
-    justify-content: center;
-    text-align: center;
-}
-
-/* ==========================================================================
-   CAROUSEL CONTROLS - VERY FAINT NAVIGATION
-   ========================================================================== */
-.carousel-controls {
-    position: absolute;
-    bottom: var(--spacing-md);
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
-    display: flex;
-    gap: 0.5rem;
     flex-wrap: wrap;
+    gap: var(--spacing-md);
     justify-content: center;
 }
 
-.carousel-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    cursor: pointer;
-    transition: var(--transition-smooth);
-    padding: 0;
-    min-height: 8px;
-    min-width: 8px;
+.cta-section .btn-primary {
+    background: var(--color-accent);
+    color: var(--color-gray-900);
+    border-color: var(--color-accent);
 }
 
-.carousel-indicator.active {
-    background: rgba(255, 255, 255, 0.8);
-    border-color: rgba(255, 255, 255, 0.6);
+.cta-section .btn-primary:hover {
+    background: var(--color-accent-dark);
+    color: var(--color-gray-900);
 }
 
-.carousel-indicator:hover {
-    background: rgba(255, 255, 255, 0.5);
-    border-color: rgba(255, 255, 255, 0.4);
-}
-
-/* VERY FAINT NAVIGATION ICONS */
-.carousel-nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: var(--transition-smooth);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.9rem;
-    z-index: 10;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    min-height: 36px;
-    min-width: 36px;
-    opacity: 0.7;
-}
-
-.carousel-nav:hover,
-.carousel-nav:focus {
-    background: rgba(255, 255, 255, 0.12);
-    color: rgba(255, 255, 255, 0.8);
-    border-color: rgba(255, 255, 255, 0.2);
-    opacity: 0.9;
-}
-
-.carousel-nav-prev {
-    left: 1rem;
-}
-
-.carousel-nav-next {
-    right: 1rem;
-}
-
-/* Fallback carousel */
-.carousel-fallback {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-    height: 75vh;
-    max-height: 650px;
-    min-height: 500px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: var(--spacing-lg);
-    width: 100%;
-}
-
-.carousel-fallback-content {
-    max-width: 800px;
+.cta-section .btn-secondary {
+    background: rgba(255, 255, 255, 0.15);
     color: var(--color-white);
-    padding: var(--spacing-xl);
-    text-align: center;
+    border-color: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
-.carousel-fallback h1 {
-    font-family: var(--font-heading);
-    font-size: clamp(1.5rem, 4vw, 2rem);
-    margin-bottom: var(--spacing-md);
+.cta-section .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.25);
     color: var(--color-white);
-    line-height: 1.3;
-    font-weight: 600;
-    text-align: center;
-}
-
-.carousel-fallback p {
-    font-size: 1.1rem;
-    margin-bottom: var(--spacing-lg);
-    color: rgba(255, 255, 255, 0.9);
-    line-height: 1.6;
-    text-align: center;
-    font-family: var(--font-body);
 }
 
 /* ==========================================================================
-   ENHANCED RESPONSIVENESS - BOTH MOBILE & DESKTOP
+   RESPONSIVE DESIGN FOR ALL SCREEN SIZES
    ========================================================================== */
+
+/* Tablet and larger (768px+) */
 @media (min-width: 768px) {
     :root {
-        --spacing-xs: 0.5rem;
         --spacing-sm: 1rem;
         --spacing-md: 1.5rem;
         --spacing-lg: 2rem;
@@ -1378,47 +1041,62 @@ button, .btn,
         --spacing-xxl: 3.5rem;
     }
     
+    .container {
+        padding: 0 var(--spacing-lg);
+    }
+    
+    .hero-carousel {
+        height: 90vh;
+        min-height: 600px;
+    }
+    
+    .application-status-banner {
+        max-width: 700px;
+        padding: var(--spacing-lg);
+    }
+    
+    .application-status-banner h3 {
+        font-size: 1.3rem;
+    }
+    
+    .application-status-banner p {
+        font-size: 1rem;
+    }
+    
     .stats-grid {
         grid-template-columns: repeat(4, 1fr);
-        gap: var(--spacing-md);
+        gap: var(--spacing-lg);
     }
     
     .stat-item {
         padding: var(--spacing-xl);
     }
     
-    .stat-number {
-        font-size: 2rem;
-    }
-    
-    .stat-icon {
-        font-size: 2rem;
-        width: 60px;
-        height: 60px;
-    }
-    
+    /* FIXED: Accreditation badges for tablet */
     .accreditation-badges {
         flex-direction: row;
         justify-content: center;
-        max-width: 1200px;
+        max-width: 1000px;
+        gap: var(--spacing-lg);
     }
     
     .accreditation-badge {
         flex: 1;
-        min-width: 300px;
-        max-width: 350px;
-        flex-direction: row;
-        text-align: left;
+        min-width: 0; /* Allow shrinking */
+        max-width: 400px;
     }
     
-    .badge-text {
-        align-items: flex-start;
-        text-align: left;
+    .badge-text strong {
+        font-size: clamp(1.1rem, 1.8vw, 1.3rem);
     }
     
-    .badge-text strong,
     .badge-text span {
-        text-align: left;
+        font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+    }
+    
+    .programs-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-xl);
     }
     
     .environment-grid {
@@ -1426,95 +1104,20 @@ button, .btn,
         gap: var(--spacing-xl);
     }
     
-    .attributes-grid {
-        grid-template-columns: repeat(4, 1fr);
+    .carousel-slide-title {
+        font-size: clamp(2rem, 5vw, 3.5rem);
     }
     
-    .community-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-xl);
+    .carousel-slide-subtitle {
+        font-size: clamp(1.1rem, 3vw, 1.5rem);
     }
     
-    .hub-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    
-    .cta-buttons {
-        flex-direction: row;
-        justify-content: center;
-        gap: var(--spacing-md);
-    }
-    
-    .cta-buttons .btn {
-        width: auto;
-        min-width: 160px;
-    }
-    
+    /* Make carousel nav even fainter on larger screens */
     .carousel-nav {
         width: 40px;
         height: 40px;
         font-size: 1rem;
-    }
-    
-    .carousel-nav-prev {
-        left: 2rem;
-    }
-    
-    .carousel-nav-next {
-        right: 2rem;
-    }
-    
-    .environment-content h3,
-    .community-content h3 {
-        font-size: 1.75rem;
-    }
-    
-    .environment-content p,
-    .community-content p {
-        font-size: 1.05rem;
-    }
-    
-    .carousel-slide-title {
-        font-size: clamp(1.8rem, 4.5vw, 3rem);
-    }
-    
-    .carousel-slide-subtitle {
-        font-size: clamp(1.1rem, 2.8vw, 1.4rem);
-    }
-}
-
-@media (min-width: 1024px) {
-    .carousel-slide-content {
-        text-align: center;
-        margin: 0 auto;
-        padding: var(--spacing-xxl);
-    }
-    
-    .carousel-slide-cta {
-        justify-content: center;
-    }
-    
-    .accreditation-content {
-        flex-direction: row;
-        align-items: flex-start;
-        gap: var(--spacing-xl);
-    }
-    
-    .accreditation-text {
-        flex: 1;
-        text-align: left;
-        margin: 0;
-        padding: 0;
-    }
-    
-    .accreditation-text h3,
-    .accreditation-text p {
-        text-align: left;
-    }
-    
-    .accreditation-badges {
-        flex: 1;
-        max-width: none;
+        opacity: 0.4;
     }
     
     .carousel-nav-prev {
@@ -1525,210 +1128,255 @@ button, .btn,
         right: 3rem;
     }
     
-    /* Full width containers for large screens */
-    .stats-grid,
-    .environment-grid,
-    .attributes-grid,
-    .community-grid,
-    .hub-grid {
-        padding: 0 var(--spacing-lg);
+    .carousel-controls {
+        bottom: var(--spacing-xl);
+    }
+}
+
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
+    .carousel-slide-content {
+        padding: var(--spacing-xxl);
     }
     
-    .environment-content,
-    .community-content {
+    .programs-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .environment-content {
         padding: var(--spacing-xl);
     }
     
     .hero-carousel {
-        max-height: 700px;
+        max-height: 850px;
+    }
+    
+    /* FIXED: Accreditation badges for desktop */
+    .accreditation-badges {
+        max-width: 1100px;
+        gap: var(--spacing-xl);
+    }
+    
+    .accreditation-badge {
+        max-width: 450px;
+    }
+    
+    .badge-text strong {
+        font-size: 1.3rem;
+    }
+    
+    .badge-text span {
+        font-size: 0.95rem;
+    }
+    
+    /* Very faint navigation on desktop */
+    .carousel-nav {
+        opacity: 0.3;
+    }
+    
+    .carousel-nav:hover {
+        opacity: 0.5;
     }
 }
 
-@media (min-width: 1400px) {
-    .container {
-        max-width: 100%;
-    }
-    
-    .stats-grid,
-    .environment-grid,
-    .attributes-grid,
-    .community-grid,
-    .hub-grid {
-        max-width: 1400px;
-    }
-    
-    .carousel-slide-content {
-        max-width: 1000px;
-    }
-}
-
-@media (max-width: 480px) {
+/* Mobile (767px and below) */
+@media (max-width: 767px) {
     .hero-carousel {
-        height: 70vh;
-        min-height: 450px;
+        height: 80vh;
+        min-height: 500px;
     }
     
     .carousel-slide-content {
         padding: var(--spacing-lg);
-        width: 95%;
     }
     
     .carousel-slide-title {
-        font-size: 1.4rem;
+        font-size: 1.5rem;
         line-height: 1.2;
-        padding: 0 5px;
     }
     
     .carousel-slide-subtitle {
-        font-size: 0.9rem;
-        line-height: 1.5;
-        padding: 0 5px;
+        font-size: 1rem;
+        line-height: 1.4;
     }
     
     .carousel-slide-cta {
         flex-direction: column;
         align-items: center;
-        gap: var(--spacing-xs);
     }
     
     .carousel-slide-cta .btn {
         width: 100%;
         max-width: 280px;
-        margin: 5px 0;
     }
     
     .carousel-nav {
         width: 32px;
         height: 32px;
         font-size: 0.8rem;
+        opacity: 0.4;
     }
     
     .carousel-nav-prev {
-        left: 0.75rem;
+        left: 1rem;
     }
     
     .carousel-nav-next {
-        right: 0.75rem;
+        right: 1rem;
+    }
+    
+    .section {
+        padding: var(--spacing-lg) 0;
+    }
+    
+    .cta-section {
+        padding: var(--spacing-xl) 0;
+    }
+    
+    .application-status-banner {
+        margin: var(--spacing-md) auto;
+        width: 92%;
+    }
+    
+    /* FIXED: Accreditation badges for mobile */
+    .accreditation-badge {
+        flex-direction: column;
+        text-align: center;
+        padding: var(--spacing-md);
+        gap: var(--spacing-sm);
+    }
+    
+    .badge-icon {
+        margin: 0 auto;
+    }
+    
+    .badge-text {
+        align-items: center;
+        text-align: center;
+    }
+}
+
+/* Small mobile (480px and below) */
+@media (max-width: 480px) {
+    .hero-carousel {
+        height: 75vh;
+        min-height: 450px;
+    }
+    
+    .carousel-slide-title {
+        font-size: 1.3rem;
+    }
+    
+    .carousel-slide-subtitle {
+        font-size: 0.95rem;
+    }
+    
+    .carousel-controls {
+        bottom: var(--spacing-md);
+    }
+    
+    .carousel-indicator {
+        width: 6px;
+        height: 6px;
     }
     
     .stat-item {
         padding: var(--spacing-md);
     }
     
-    .stat-number {
-        font-size: 1.5rem;
+    /* FIXED: Accreditation badges for small mobile */
+    .accreditation-badge {
+        padding: var(--spacing-sm);
     }
     
-    .stat-icon {
-        font-size: 1.5rem;
-        width: 45px;
-        height: 45px;
+    .badge-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.75rem;
+        min-width: 60px;
     }
     
-    .attribute-icon {
-        width: 50px;
-        height: 50px;
-        font-size: 1.5rem;
+    .badge-text strong {
+        font-size: 1rem;
     }
     
-    .hub-icon {
-        width: 70px;
-        height: 70px;
-        font-size: 2rem;
+    .badge-text span {
+        font-size: 0.8rem;
+        line-height: 1.3;
     }
     
-    .attribute-card h3 {
-        min-height: auto;
-        font-size: 1.1rem;
+    .cta-buttons {
+        flex-direction: column;
+        align-items: center;
     }
     
-    .hub-card h3 {
-        min-height: auto;
-        font-size: 1.3rem;
+    .cta-buttons .btn {
+        width: 100%;
+        max-width: 280px;
     }
     
     .application-status-banner {
-        width: 95%;
         padding: var(--spacing-sm);
-    }
-}
-
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-}
-
-:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
-}
-
-/* Print Styles */
-@media print {
-    .hero-carousel,
-    .carousel-nav,
-    .carousel-controls {
-        display: none !important;
+        margin: var(--spacing-md) auto;
+        width: 94%;
     }
     
-    .carousel-fallback {
-        height: auto;
-        min-height: auto;
+    .application-status-banner h3 {
+        font-size: 1rem;
     }
     
-    .btn {
-        display: none;
+    .application-status-banner p {
+        font-size: 0.85rem;
+        line-height: 1.4;
     }
     
-    .stats-section,
-    .accreditation-section {
-        page-break-inside: avoid;
+    /* FIXED: CTA text for small mobile */
+    .cta-title {
+        font-size: 1.5rem;
+        text-shadow: 0 1px 5px rgba(0, 0, 0, 0.6);
     }
     
-    .environment-image-container,
-    .community-image-container {
-        display: none;
+    .cta-description {
+        font-size: 0.95rem;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
     }
 }
 
-/* Safe Area Insets */
-@supports (padding: max(0px)) {
-    .carousel-slide-content,
-    .stats-grid,
-    .environment-grid,
-    .attributes-grid,
-    .community-grid,
-    .hub-grid {
-        padding-left: max(var(--spacing-md), env(safe-area-inset-left));
-        padding-right: max(var(--spacing-md), env(safe-area-inset-right));
+/* Large desktop (1400px+) */
+@media (min-width: 1400px) {
+    .container {
+        max-width: 1300px;
+    }
+    
+    .application-status-banner {
+        max-width: 750px;
+    }
+    
+    .hero-carousel {
+        max-height: 900px;
+    }
+    
+    /* FIXED: Accreditation badges for large desktop */
+    .accreditation-badges {
+        max-width: 1200px;
+    }
+    
+    .accreditation-badge {
+        max-width: 500px;
+    }
+    
+    .badge-text strong {
+        font-size: 1.4rem;
+    }
+    
+    .badge-text span {
+        font-size: 1rem;
     }
 }
 
-/* Fix for text overflow */
-.attribute-card,
-.hub-card,
-.badge-text,
-.carousel-slide-title,
-.carousel-slide-subtitle,
-.environment-content h3,
-.community-content h3,
-.hub-card h3,
-.attribute-card h3,
-.section-title {
-    overflow-wrap: break-word !important;
-    word-wrap: break-word !important;
-    hyphens: auto;
-}
-
-/* Screen reader only class */
+/* ==========================================================================
+   ACCESSIBILITY & UTILITY CLASSES
+   ========================================================================== */
 .sr-only {
     position: absolute;
     width: 1px;
@@ -1741,38 +1389,35 @@ button, .btn,
     border: 0;
 }
 
-/* Ensure all body text uses Open Sans */
-p, 
-li, 
-span:not([class*="heading"]):not([class*="title"]):not([class*="btn"]),
-.accreditation-text p,
-.environment-content p,
-.community-content p,
-.hub-card p,
-.attribute-card p,
-.cta-description,
-.section-subtitle,
-.badge-text span,
-.application-status-banner p,
-.environment-features li,
-.community-link {
-    font-family: 'Open Sans', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif !important;
+:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
 }
 
-/* Ensure all headings use Montserrat */
-h1, h2, h3, h4, h5, h6,
-.carousel-slide-title,
-.section-title,
-.accreditation-text h3,
-.environment-content h3,
-.community-content h3,
-.hub-card h3,
-.attribute-card h3,
-.cta-title,
-.application-status-banner h3,
-.stat-label,
-.badge-text strong {
-    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Print styles */
+@media print {
+    .hero-carousel,
+    .carousel-nav,
+    .carousel-controls,
+    .btn {
+        display: none !important;
+    }
+    
+    .section {
+        page-break-inside: avoid;
+    }
 }
 </style>
 </head>
@@ -1781,7 +1426,7 @@ h1, h2, h3, h4, h5, h6,
 <!-- Homepage Content -->
 <main id="main-content" class="homepage-content" role="main">
     
-    <!-- ========== HERO CAROUSEL - FULL WIDTH ========== -->
+    <!-- ========== HERO CAROUSEL ========== -->
     <section class="hero-section" aria-label="Featured content carousel">
         <?php if (empty($carouselSlides)): ?>
             <!-- Fallback carousel -->
@@ -1800,7 +1445,7 @@ h1, h2, h3, h4, h5, h6,
                 </div>
             </div>
         <?php else: ?>
-            <!-- Dynamic Carousel - FULL WIDTH -->
+            <!-- Dynamic Carousel -->
             <div id="heroCarousel" class="hero-carousel" role="region" aria-label="Featured slides" tabindex="0">
                 <div class="carousel-inner">
                     <?php foreach ($carouselSlides as $index => $slide): ?>
@@ -1839,7 +1484,7 @@ h1, h2, h3, h4, h5, h6,
                     <?php endforeach; ?>
                 </div>
                 
-                <!-- Faint Navigation Arrows -->
+                <!-- VERY FAINT Navigation Arrows -->
                 <button class="carousel-nav carousel-nav-prev" 
                         aria-label="Previous slide"
                         onclick="carouselController.prev()">
@@ -1853,7 +1498,7 @@ h1, h2, h3, h4, h5, h6,
                     <span class="sr-only">Next Slide</span>
                 </button>
                 
-                <!-- Indicators -->
+                <!-- Faint Indicators -->
                 <div class="carousel-controls">
                     <?php foreach ($carouselSlides as $index => $slide): ?>
                     <button class="carousel-indicator <?php echo $index === 0 ? 'active' : ''; ?>"
@@ -1871,16 +1516,20 @@ h1, h2, h3, h4, h5, h6,
 
     <!-- ========== APPLICATION STATUS BANNER ========== -->
     <div class="container">
-        <div class="application-status-banner centralized-content">
+        <div class="application-status-banner">
             <h3><i class="fas fa-times-circle"></i> 2025/2026 Admissions Status</h3>
             <p>The application portal for the 2025/2026 academic session is now closed. Sales of forms period ended on 28th September 2025. No further applications are being accepted for this session.</p>
             <p><strong>Next Admissions Cycle:</strong> 2026/2027 academic session</p>
         </div>
     </div>
 
-    <!-- ========== STATISTICS - FULL WIDTH CONTENT ========== -->
+    <!-- ========== STATISTICS SECTION ========== -->
     <section class="stats-section" aria-label="College statistics">
         <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Our Impact in Numbers</h2>
+                <p class="section-subtitle">A legacy of excellence in nursing education since 1989</p>
+            </div>
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="stat-icon">
@@ -1914,34 +1563,122 @@ h1, h2, h3, h4, h5, h6,
         </div>
     </section>
 
-    <!-- ========== ACCREDITATION - FULL WIDTH CONTENT ========== -->
+    <!-- ========== ACCREDITATION SECTION - FIXED ========== -->
     <section class="accreditation-section" aria-label="Accreditation badges">
         <div class="container">
-            <div class="accreditation-container">
-                <div class="accreditation-content">
-                    <div class="accreditation-text">
-                        <h3>Nationally Recognized Accreditation</h3>
-                        <p>Our programs meet the highest standards set by Nigeria's regulatory bodies for nursing education and technical education.</p>
+            <div class="section-header">
+                <h2 class="section-title">Nationally Recognized Accreditation</h2>
+                <p class="section-subtitle">Our programs meet the highest standards set by Nigeria's regulatory bodies for nursing education</p>
+            </div>
+            
+            <div class="accreditation-content">
+                <div class="accreditation-text">
+                    <h3>Quality Assured Education</h3>
+                    <p>FCT College of Nursing Sciences maintains full accreditation with all relevant professional bodies, ensuring our graduates are prepared for successful nursing careers.</p>
+                </div>
+                
+                <div class="accreditation-badges">
+                    <div class="accreditation-badge">
+                        <div class="badge-icon">
+                            <i class="fas fa-stethoscope" aria-hidden="true"></i>
+                        </div>
+                        <div class="badge-text">
+                            <strong>NMCN Approved</strong>
+                            <span>Nursing & Midwifery Council of Nigeria - Full accreditation for all nursing programs</span>
+                        </div>
                     </div>
-                    <div class="accreditation-badges">
-                        <div class="accreditation-badge">
-                            <div class="badge-icon">
-                                <i class="fas fa-stethoscope" aria-hidden="true"></i>
-                            </div>
-                            <div class="badge-text">
-                                <strong>NMCN Approved</strong>
-                                <span>Nursing & Midwifery Council of Nigeria</span>
-                            </div>
+                    <div class="accreditation-badge">
+                        <div class="badge-icon">
+                            <i class="fas fa-university" aria-hidden="true"></i>
                         </div>
-                        <div class="accreditation-badge">
-                            <div class="badge-icon">
-                                <i class="fas fa-university" aria-hidden="true"></i>
-                            </div>
-                            <div class="badge-text">
-                                <strong>NBTE Accredited</strong>
-                                <span>National Board for Technical Education</span>
-                            </div>
+                        <div class="badge-text">
+                            <strong>NBTE Accredited</strong>
+                            <span>National Board for Technical Education - Accreditation for technical programs</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== PROGRAMS PREVIEW SECTION ========== -->
+    <section class="programs-preview-section section-alt" aria-label="Academic programs">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Our Academic Programs</h2>
+                <p class="section-subtitle">Choose from our range of accredited nursing programs designed to launch successful healthcare careers</p>
+            </div>
+            
+            <div class="programs-grid">
+                <div class="program-card">
+                    <div class="program-icon">
+                        <i class="fas fa-user-nurse" aria-hidden="true"></i>
+                    </div>
+                    <div class="program-content">
+                        <h3>Basic Nursing</h3>
+                        <p>Comprehensive 3-year program covering fundamentals of nursing practice, patient care, and clinical skills.</p>
+                        <ul class="program-features">
+                            <li>3-year duration</li>
+                            <li>Clinical rotations</li>
+                            <li>NMCN accredited</li>
+                        </ul>
+                        <a href="<?php echo $baseUrl; ?>/programs#basic-nursing" class="btn btn-secondary" style="margin-top: auto;">
+                            Learn More <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="program-card">
+                    <div class="program-icon">
+                        <i class="fas fa-baby" aria-hidden="true"></i>
+                    </div>
+                    <div class="program-content">
+                        <h3>Midwifery</h3>
+                        <p>Specialized program focusing on maternal and child health, antenatal care, and delivery procedures.</p>
+                        <ul class="program-features">
+                            <li>3-year duration</li>
+                            <li>Maternity specialization</li>
+                            <li>NMCN accredited</li>
+                        </ul>
+                        <a href="<?php echo $baseUrl; ?>/programs#midwifery" class="btn btn-secondary" style="margin-top: auto;">
+                            Learn More <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="program-card">
+                    <div class="program-icon">
+                        <i class="fas fa-procedures" aria-hidden="true"></i>
+                    </div>
+                    <div class="program-content">
+                        <h3>Post-Basic Nursing</h3>
+                        <p>Advanced program for registered nurses seeking specialization in areas like anesthesia, critical care, or public health.</p>
+                        <ul class="program-features">
+                            <li>18-month duration</li>
+                            <li>Specialization options</li>
+                            <li>For registered nurses</li>
+                        </ul>
+                        <a href="<?php echo $baseUrl; ?>/programs#post-basic" class="btn btn-secondary" style="margin-top: auto;">
+                            Learn More <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="program-card">
+                    <div class="program-icon">
+                        <i class="fas fa-heartbeat" aria-hidden="true"></i>
+                    </div>
+                    <div class="program-content">
+                        <h3>Community Health</h3>
+                        <p>Program focusing on public health, disease prevention, and community-based healthcare delivery.</p>
+                        <ul class="program-features">
+                            <li>3-year duration</li>
+                            <li>Community focus</li>
+                            <li>Public health emphasis</li>
+                        </ul>
+                        <a href="<?php echo $baseUrl; ?>/programs#community-health" class="btn btn-secondary" style="margin-top: auto;">
+                            Learn More <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -1952,137 +1689,35 @@ h1, h2, h3, h4, h5, h6,
     <section class="learning-environment-section" aria-label="Learning environment">
         <div class="container">
             <div class="section-header">
-                <h2 class="section-title">Our Learning Environment</h2>
-                <p class="section-subtitle">
-                    We provide state-of-the-art facilities and a supportive community designed to foster both academic excellence and personal growth.
-                </p>
+                <h2 class="section-title">State-of-the-Art Learning Facilities</h2>
+                <p class="section-subtitle">Modern facilities designed to provide hands-on training and real-world experience</p>
             </div>
             
             <div class="environment-grid">
                 <div class="environment-card">
-                    <!-- Your actual image: environment-simulation-lab.jpg -->
                     <div class="environment-image-container">
                         <div class="environment-image" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/homepage/environment-simulation-lab.jpg');"></div>
-                        <div class="image-caption">Close-up of simulation equipment</div>
+                        <div class="image-caption">Advanced simulation laboratory</div>
                     </div>
                     <div class="environment-content">
-                        <h3>Advanced Simulation Labs</h3>
+                        <h3>Simulation Laboratories</h3>
                         <p>Train with high-fidelity manikins, virtual reality simulations, and fully equipped clinical environments that mirror real healthcare settings.</p>
-                        <ul class="environment-features">
-                            <li>High-fidelity patient simulators</li>
-                            <li>Virtual reality training modules</li>
-                            <li>Maternity and pediatric labs</li>
-                            <li>Emergency response simulation</li>
-                            <li>24/7 access for practice sessions</li>
-                        </ul>
+                        <a href="<?php echo $baseUrl; ?>/facilities#labs" class="btn btn-secondary" style="margin-top: auto;">
+                            View Facilities <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </a>
                     </div>
                 </div>
                 
                 <div class="environment-card">
-                    <!-- Your actual image: environment-student-support.jpg -->
                     <div class="environment-image-container">
                         <div class="environment-image" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/homepage/environment-student-support.jpg');"></div>
-                        <div class="image-caption">Students collaborating/being mentored</div>
+                        <div class="image-caption">Student support and collaboration spaces</div>
                     </div>
                     <div class="environment-content">
-                        <h3>Comprehensive Student Support</h3>
-                        <p>From academic advising to wellness resources, we ensure every student has the support they need to thrive personally and professionally.</p>
-                        <ul class="environment-features">
-                            <li>Academic success coaching</li>
-                            <li>Mental health and wellness services</li>
-                            <li>Career counseling and placement</li>
-                            <li>Peer mentoring programs</li>
-                            <li>Learning resource center</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ========== GRADUATE ATTRIBUTES SECTION ========== -->
-    <section class="graduate-attributes-section" aria-label="Graduate attributes">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">The FCTCNS Graduate</h2>
-                <p class="section-subtitle">
-                    Our graduates are distinguished by their clinical competence, ethical practice, and commitment to community health.
-                </p>
-            </div>
-            
-            <div class="attributes-grid">
-                <div class="attribute-card">
-                    <div class="attribute-icon">
-                        <i class="fas fa-user-md" aria-hidden="true"></i>
-                    </div>
-                    <h3>Clinical Excellence</h3>
-                    <p>Proficient in evidence-based practice with hands-on experience across diverse healthcare settings.</p>
-                </div>
-                
-                <div class="attribute-card">
-                    <div class="attribute-icon">
-                        <i class="fas fa-brain" aria-hidden="true"></i>
-                    </div>
-                    <h3>Critical Thinking</h3>
-                    <p>Skilled in clinical reasoning, problem-solving, and making sound decisions in complex situations.</p>
-                </div>
-                
-                <div class="attribute-card">
-                    <div class="attribute-icon">
-                        <i class="fas fa-hands-helping" aria-hidden="true"></i>
-                    </div>
-                    <h3>Compassionate Care</h3>
-                    <p>Deliver patient-centered care with empathy, respect, and cultural sensitivity.</p>
-                </div>
-                
-                <div class="attribute-card">
-                    <div class="attribute-icon">
-                        <i class="fas fa-chart-line" aria-hidden="true"></i>
-                    </div>
-                    <h3>Leadership Ready</h3>
-                    <p>Prepared to lead healthcare teams, advocate for patients, and drive quality improvement.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ========== CAMPUS & COMMUNITY SECTION ========== -->
-    <section class="campus-community-section" aria-label="Campus and community">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Campus & Community Life</h2>
-                <p class="section-subtitle">
-                    Experience a vibrant campus community that extends learning beyond the classroom and into meaningful service.
-                </p>
-            </div>
-            
-            <div class="community-grid">
-                <div class="community-card">
-                    <!-- Your actual image: community-student-life.jpg -->
-                    <div class="community-image-container">
-                        <div class="community-image" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/homepage/community-student-life.jpg');"></div>
-                        <div class="image-caption">Student group activities/clubs</div>
-                    </div>
-                    <div class="community-content">
-                        <h3>Student Organizations</h3>
-                        <p>Join nursing associations, community service groups, and professional development clubs that enhance your education and build lasting connections.</p>
-                        <a href="<?php echo $baseUrl; ?>/student-life" class="community-link">
-                            Explore Student Life <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                        </a>
-                    </div>
-                </div>
-                
-                <div class="community-card">
-                    <!-- Your actual image: community-outreach.jpg -->
-                    <div class="community-image-container">
-                        <div class="community-image" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/homepage/community-outreach.jpg');"></div>
-                        <div class="image-caption">Community health events/volunteering</div>
-                    </div>
-                    <div class="community-content">
-                        <h3>Community Outreach</h3>
-                        <p>Participate in health screening campaigns, health education programs, and community partnerships that make a real difference in public health.</p>
-                        <a href="<?php echo $baseUrl; ?>/community" class="community-link">
-                            View Community Impact <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        <h3>Learning Resources</h3>
+                        <p>Access comprehensive learning materials, digital resources, and collaborative spaces designed to enhance your educational experience.</p>
+                        <a href="<?php echo $baseUrl; ?>/facilities#resources" class="btn btn-secondary" style="margin-top: auto;">
+                            Explore Resources <i class="fas fa-arrow-right" aria-hidden="true"></i>
                         </a>
                     </div>
                 </div>
@@ -2090,60 +1725,13 @@ h1, h2, h3, h4, h5, h6,
         </div>
     </section>
 
-    <!-- ========== NAVIGATION HUB SECTION ========== -->
-    <section class="navigation-hub-section" aria-label="Next steps navigation">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Take Your Next Step</h2>
-                <p class="section-subtitle">
-                    Begin your journey toward a rewarding nursing career with these essential resources.
-                </p>
-            </div>
-            
-            <div class="hub-grid">
-                <div class="hub-card">
-                    <div class="hub-icon">
-                        <i class="fas fa-book-medical" aria-hidden="true"></i>
-                    </div>
-                    <h3>Explore Programs</h3>
-                    <p>Discover our accredited nursing programs and find the path that matches your career goals.</p>
-                    <a href="<?php echo $baseUrl; ?>/programs" class="hub-link">
-                        View Programs <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                    </a>
-                </div>
-                
-                <div class="hub-card">
-                    <div class="hub-icon">
-                        <i class="fas fa-calendar-check" aria-hidden="true"></i>
-                    </div>
-                    <h3>Plan Your Visit</h3>
-                    <p>Schedule a campus tour to experience our facilities and meet with faculty and current students.</p>
-                    <a href="<?php echo $baseUrl; ?>/visit" class="hub-link">
-                        Schedule Tour <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                    </a>
-                </div>
-                
-                <div class="hub-card">
-                    <div class="hub-icon">
-                        <i class="fas fa-comments" aria-hidden="true"></i>
-                    </div>
-                    <h3>Contact Admissions</h3>
-                    <p>Our admissions team is ready to answer your questions about requirements, deadlines, and next steps.</p>
-                    <a href="<?php echo $baseUrl; ?>/contact" class="hub-link">
-                        Get in Touch <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ========== CALL TO ACTION - FULL WIDTH ========== -->
+    <!-- ========== FINAL CALL TO ACTION - FIXED ========== -->
     <section class="cta-section" aria-label="Call to action">
         <div class="container">
             <div class="cta-content">
-                <h2 class="cta-title">Ready to Start Your Nursing Journey?</h2>
+                <h2 class="cta-title">Begin Your Nursing Journey Today</h2>
                 <p class="cta-description">
-                    While the 2025/2026 admissions are closed, now is the perfect time to explore our programs, plan your visit, and prepare for the next admissions cycle in 2026/2027.
+                    While the 2025/2026 admissions are closed, now is the perfect time to explore our programs, learn about our campus, and prepare for the next admissions cycle.
                 </p>
                 <div class="cta-buttons">
                     <a href="<?php echo $baseUrl; ?>/programs" 
@@ -2205,6 +1793,17 @@ h1, h2, h3, h4, h5, h6,
             
             // Touch support
             this.addTouchSupport(carousel);
+            
+            // Keyboard navigation
+            carousel.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    this.prev();
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    this.next();
+                }
+            });
         },
         
         goToSlide(index) {
