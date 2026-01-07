@@ -42,6 +42,54 @@ class Router {
         $this->get('/admin/admission/manual-correction', 'AdmissionController@manualCorrection');
         $this->post('/admin/admission/manual-correction', 'AdmissionController@manualCorrection');
         
+        // Nominal Roll Routes
+        $this->get('/admin/nominal-roll', 'NominalRollController@index');
+        $this->get('/admin/nominal-roll/create', 'NominalRollController@create');
+        $this->post('/admin/nominal-roll/store', 'NominalRollController@store');
+        $this->get('/admin/nominal-roll/view/{id}', 'NominalRollController@view');
+        $this->get('/admin/nominal-roll/edit/{id}', 'NominalRollController@edit');
+        $this->post('/admin/nominal-roll/update/{id}', 'NominalRollController@update');
+        $this->post('/admin/nominal-roll/delete/{id}', 'NominalRollController@destroy');
+        $this->get('/admin/nominal-roll/bulk-upload', 'NominalRollController@bulkUpload');
+        $this->post('/admin/nominal-roll/process-bulk-upload', 'NominalRollController@processBulkUpload');
+        $this->get('/admin/nominal-roll/download-template', 'NominalRollController@downloadTemplate');
+        $this->get('/admin/nominal-roll/export', 'NominalRollController@export');
+        
+        // PDF Export Routes - ADDED
+        $this->get('/admin/nominal-roll/export/pdf/(:num)', 'NominalRollController@exportPdf/$1');
+        $this->get('/admin/nominal-roll/export/pdf', 'NominalRollController@exportPdf');
+        
+        // Settings Routes
+        $this->get('/admin/nominal-roll/settings', 'NominalRollController@settings');
+        $this->post('/admin/nominal-roll/update-settings', 'NominalRollController@updateSettings');
+        $this->post('/admin/nominal-roll/toggle-editing', 'NominalRollController@toggleEditing');
+        
+        // Drafts Routes
+        $this->get('/admin/nominal-roll/drafts', 'NominalRollController@drafts');
+        $this->post('/admin/nominal-roll/approve-draft/{id}', 'NominalRollController@approveDraft');
+        
+        // Backup Routes
+        $this->post('/admin/nominal-roll/create-backup', 'NominalRollController@createBackup');
+        $this->post('/admin/nominal-roll/restore-backup/{id}', 'NominalRollController@restoreBackup');
+        $this->get('/admin/nominal-roll/download-backup/{id}', 'NominalRollController@downloadBackup');
+        
+        // Passport Photo Route
+        $this->get('/admin/nominal-roll/passport-photo/{id}', 'NominalRollController@viewPassportPhoto');
+        
+        // User Management Routes - ADDED
+        $this->get('/admin/users', 'UserManagementController@index');
+        $this->get('/admin/users/create', 'UserManagementController@create');
+        $this->post('/admin/users/store', 'UserManagementController@store');
+        $this->get('/admin/users/view/{id}', 'UserManagementController@view');
+        $this->get('/admin/users/edit/{id}', 'UserManagementController@edit');
+        $this->post('/admin/users/update/{id}', 'UserManagementController@update');
+        $this->post('/admin/users/delete/{id}', 'UserManagementController@destroy');
+        $this->post('/admin/users/toggle-status/{id}', 'UserManagementController@toggleStatus');
+        $this->post('/admin/users/reset-password/{id}', 'UserManagementController@resetPassword');
+        $this->get('/admin/users/export', 'UserManagementController@export');
+        $this->get('/admin/users/profile', 'UserManagementController@profile');
+        $this->post('/admin/users/update-profile', 'UserManagementController@updateProfile');
+        
         // Candidate admission check portal (simple page for candidates)
         // FIXED: Both GET and POST go to candidatePortal() method
         $this->get('/admission/check-portal', 'AdmissionController@candidatePortal');
@@ -55,7 +103,7 @@ class Router {
         $this->get('/admission-list', 'AdmissionController@index');
         
         if (defined('APP_DEBUG') && APP_DEBUG) {
-            error_log("Router: Admission routes registered");
+            error_log("Router: All routes registered including User Management and PDF export routes");
         }
     }
 

@@ -1,4 +1,3 @@
-<?php
 // Get the absolute path to the root
 $rootPath = dirname(__DIR__, 3); // Go up 3 levels from app/views/admin/
 
@@ -666,6 +665,18 @@ try {
                     </li>
                     <?php endif; ?>
                     
+                    <!-- NOMINAL ROLL LINK ADDED HERE -->
+                    <?php if (in_array($userRole, ['admin', 'editor'])): ?>
+                    <li class="nav-item">
+                        <a href="<?php echo BASE_URL; ?>/admin/nominal-roll" class="nav-link">
+                            <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                            </svg>
+                            <span>Nominal Roll</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    
                     <!-- Contact Management Link - Added -->
                     <li class="nav-item">
                         <a href="<?php echo BASE_URL; ?>/admin/contact" class="nav-link">
@@ -691,12 +702,13 @@ try {
                     </li>
                     
                     <?php if ($userRole === 'admin'): ?>
+                    <!-- User Management Link - UPDATED -->
                     <li class="nav-item">
                         <a href="<?php echo BASE_URL; ?>/admin/users" class="nav-link">
                             <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
                             </svg>
-                            <span>Users</span>
+                            <span>User Management</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -1088,9 +1100,23 @@ try {
                         <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Create new homepage slide</p>
                     </div>
                 </a>
+                
+                <!-- Nominal Roll Quick Action - ADDED HERE -->
+                <a href="<?php echo BASE_URL; ?>/admin/nominal-roll" class="action-btn">
+                    <div class="action-icon" style="background: rgba(159, 122, 234, 0.1); color: #9f7aea;">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>Nominal Roll</h4>
+                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Manage student records</p>
+                    </div>
+                </a>
                 <?php endif; ?>
                 
                 <?php if ($userRole === 'admin'): ?>
+                <!-- User Management Quick Action - UPDATED TEXT -->
                 <a href="<?php echo BASE_URL; ?>/admin/users/create" class="action-btn">
                     <div class="action-icon">
                         <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
@@ -1098,8 +1124,8 @@ try {
                         </svg>
                     </div>
                     <div>
-                        <h4>Add User</h4>
-                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Create new user account</p>
+                        <h4>User Management</h4>
+                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Manage user accounts</p>
                     </div>
                 </a>
                 <?php endif; ?>

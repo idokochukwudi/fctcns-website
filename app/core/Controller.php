@@ -300,27 +300,69 @@ class Controller {
     }
     
     /**
+     * Generate CSRF token for forms
+     * 
+     * @return string CSRF token
+     */
+    protected function csrfToken() {
+        if (!isset($_SESSION['csrf_tokens'])) {
+            $_SESSION['csrf_tokens'] = [];
+        }
+        
+        // Generate new token
+        $token = bin2hex(random_bytes(32));
+        
+        // Store with timestamp (for expiration)
+        $_SESSION['csrf_tokens'][$token] = time();
+        
+        // Clean up old tokens (older than 1 hour)
+        $this->cleanupOldCsrfTokens();
+        
+        return $token;
+    }
+    
+    /**
      * Validate CSRF token from POST data
      * 
      * @throws Exception If token is invalid
      */
     protected function validateCsrf() {
-        $token = $this->input('csrf_token');
-        if (empty($token) || !hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
+        // Check both possible field names
+        $token = $this->input('_csrf_token') ?? $this->input('csrf_token');
+        
+        if (empty($token)) {
+            throw new Exception('CSRF token is missing');
+        }
+        
+        if (!isset($_SESSION['csrf_tokens'][$token])) {
             throw new Exception('Invalid CSRF token');
         }
+        
+        $tokenTime = $_SESSION['csrf_tokens'][$token];
+        
+        // Token expires after 1 hour (3600 seconds)
+        if (time() - $tokenTime > 3600) {
+            unset($_SESSION['csrf_tokens'][$token]);
+            throw new Exception('CSRF token has expired');
+        }
+        
+        // Remove token after single use (prevents replay attacks)
+        unset($_SESSION['csrf_tokens'][$token]);
+        
+        return true;
     }
     
     /**
-     * Generate or retrieve CSRF token
-     * 
-     * @return string CSRF token
+     * Clean up old CSRF tokens (older than 1 hour)
      */
-    protected function csrfToken() {
-        if (empty($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    private function cleanupOldCsrfTokens() {
+        if (isset($_SESSION['csrf_tokens'])) {
+            foreach ($_SESSION['csrf_tokens'] as $token => $timestamp) {
+                if (time() - $timestamp > 3600) {
+                    unset($_SESSION['csrf_tokens'][$token]);
+                }
+            }
         }
-        return $_SESSION['csrf_token'];
     }
     
     /**

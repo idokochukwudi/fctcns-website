@@ -20,6 +20,7 @@ class NominalRollModel {
     private const TABLE_SETTINGS = 'nominal_roll_settings';
     private const TABLE_ACTIVITY_LOGS = 'nominal_roll_activity_logs';
     private const TABLE_BULK_UPLOADS = 'nominal_roll_bulk_uploads';
+    private const TABLE_BACKUPS = 'nominal_roll_backups';
     
     /**
      * Constructor
@@ -28,6 +29,37 @@ class NominalRollModel {
         require_once __DIR__ . '/../config/database.php';
         $database = Database::getInstance();
         $this->db = $database->getConnection();
+        
+        // Test connection
+        try {
+            error_log("=== MODEL CONSTRUCTOR START ===");
+            error_log("Database connection test: " . ($this->db ? "Connected" : "Not connected"));
+            if ($this->db) {
+                $stmt = $this->db->query("SELECT 1");
+                error_log("Database query test: " . ($stmt ? "Success" : "Failed"));
+                
+                // Test table existence
+                $tables = [
+                    self::TABLE_EMPLOYEES,
+                    self::TABLE_SETTINGS,
+                    self::TABLE_ACTIVITY_LOGS,
+                    self::TABLE_BULK_UPLOADS,
+                    self::TABLE_BACKUPS
+                ];
+                
+                foreach ($tables as $table) {
+                    try {
+                        $testStmt = $this->db->query("SELECT 1 FROM $table LIMIT 1");
+                        error_log("Table $table test: " . ($testStmt ? "Exists" : "Does not exist"));
+                    } catch (PDOException $e) {
+                        error_log("Table $table test: Does not exist - " . $e->getMessage());
+                    }
+                }
+            }
+            error_log("=== MODEL CONSTRUCTOR END ===");
+        } catch (Exception $e) {
+            error_log("Database connection error: " . $e->getMessage());
+        }
     }
     
     /**
@@ -37,10 +69,15 @@ class NominalRollModel {
      */
     
     /**
-     * Create new employee record
+     * Create new employee record - UPDATED
      */
     public function createEmployee($data, $userId = null) {
         try {
+            error_log("=== MODEL createEmployee START ===");
+            error_log("Data to insert: " . print_r($data, true));
+            error_log("User ID: " . $userId);
+            
+            // FIXED: Updated SQL to match all new fields from the form
             $sql = "INSERT INTO " . self::TABLE_EMPLOYEES . " SET
                     employee_number = :employee_number,
                     surname = :surname,
@@ -49,32 +86,71 @@ class NominalRollModel {
                     sex = :sex,
                     date_of_birth = :date_of_birth,
                     marital_status = :marital_status,
+                    nationality = :nationality,
+                    religion = :religion,
                     rank = :rank,
                     grade_level = :grade_level,
-                    qualification = :qualification,
-                    qualification_date = :qualification_date,
+                    step = :step,
+                    cadre = :cadre,
+                    staff_type = :staff_type,
+                    employment_type = :employment_type,
+                    appointment_type = :appointment_type,
+                    department = :department,
+                    highest_qualification = :highest_qualification,
+                    year_of_highest_qualification = :year_of_highest_qualification,
+                    institution_attended = :institution_attended,
+                    course_of_study = :course_of_study,
+                    class_of_degree = :class_of_degree,
+                    professional_certifications = :professional_certifications,
+                    additional_qualifications = :additional_qualifications,
                     date_of_first_appointment = :date_of_first_appointment,
                     date_of_confirmation = :date_of_confirmation,
                     rank_on_first_appointment = :rank_on_first_appointment,
                     date_of_present_appointment = :date_of_present_appointment,
                     state = :state,
                     local_govt_area = :local_govt_area,
+                    geopolitical_zone = :geopolitical_zone,
+                    state_of_residence = :state_of_residence,
+                    residential_address = :residential_address,
+                    contact_address = :contact_address,
                     pf_number = :pf_number,
                     nhf_number = :nhf_number,
+                    nin = :nin,
+                    telephone_number = :telephone_number,
+                    email = :email,
+                    blood_group = :blood_group,
+                    genotype = :genotype,
+                    disability = :disability,
+                    disability_type = :disability_type,
                     bank_name = :bank_name,
+                    other_bank_name = :other_bank_name,
                     bank_branch = :bank_branch,
                     account_number = :account_number,
+                    account_name = :account_name,
                     pension_fund_admin = :pension_fund_admin,
+                    other_pension_fund_admin = :other_pension_fund_admin,
                     pension_number = :pension_number,
-                    telephone_number = :telephone_number,
+                    tin_number = :tin_number,
+                    salary_structure = :salary_structure,
+                    emergency_contact_name = :emergency_contact_name,
+                    emergency_contact_phone = :emergency_contact_phone,
+                    emergency_contact_relationship = :emergency_contact_relationship,
+                    next_of_kin_name = :next_of_kin_name,
+                    next_of_kin_phone = :next_of_kin_phone,
+                    next_of_kin_relationship = :next_of_kin_relationship,
+                    next_of_kin_address = :next_of_kin_address,
                     passport_photo = :passport_photo,
+                    is_draft = :is_draft,
+                    status = :status,
                     created_by = :created_by,
                     created_at = NOW(),
                     updated_at = NOW()";
             
+            error_log("SQL Query: " . $sql);
+            
             $stmt = $this->db->prepare($sql);
             
-            // Bind parameters
+            // FIXED: Updated parameters to match new fields
             $params = [
                 ':employee_number' => $data['employee_number'] ?? '',
                 ':surname' => $data['surname'] ?? '',
@@ -83,41 +159,92 @@ class NominalRollModel {
                 ':sex' => $data['sex'] ?? '',
                 ':date_of_birth' => $data['date_of_birth'] ?? '',
                 ':marital_status' => $data['marital_status'] ?? '',
+                ':nationality' => $data['nationality'] ?? null,
+                ':religion' => $data['religion'] ?? null,
                 ':rank' => $data['rank'] ?? '',
                 ':grade_level' => $data['grade_level'] ?? '',
-                ':qualification' => $data['qualification'] ?? null,
-                ':qualification_date' => !empty($data['qualification_date']) ? $data['qualification_date'] : null,
+                ':step' => $data['step'] ?? null,
+                ':cadre' => $data['cadre'] ?? null,
+                ':staff_type' => $data['staff_type'] ?? null,
+                ':employment_type' => $data['employment_type'] ?? null,
+                ':appointment_type' => $data['appointment_type'] ?? null,
+                ':department' => $data['department'] ?? null,
+                ':highest_qualification' => $data['highest_qualification'] ?? null,
+                ':year_of_highest_qualification' => !empty($data['year_of_highest_qualification']) ? $data['year_of_highest_qualification'] : null,
+                ':institution_attended' => $data['institution_attended'] ?? null,
+                ':course_of_study' => $data['course_of_study'] ?? null,
+                ':class_of_degree' => $data['class_of_degree'] ?? null,
+                ':professional_certifications' => $data['professional_certifications'] ?? null,
+                ':additional_qualifications' => $data['additional_qualifications'] ?? null,
                 ':date_of_first_appointment' => $data['date_of_first_appointment'] ?? '',
                 ':date_of_confirmation' => !empty($data['date_of_confirmation']) ? $data['date_of_confirmation'] : null,
                 ':rank_on_first_appointment' => $data['rank_on_first_appointment'] ?? null,
                 ':date_of_present_appointment' => !empty($data['date_of_present_appointment']) ? $data['date_of_present_appointment'] : null,
                 ':state' => $data['state'] ?? '',
                 ':local_govt_area' => $data['local_govt_area'] ?? '',
+                ':geopolitical_zone' => $data['geopolitical_zone'] ?? null,
+                ':state_of_residence' => $data['state_of_residence'] ?? null,
+                ':residential_address' => $data['residential_address'] ?? null,
+                ':contact_address' => $data['contact_address'] ?? null,
                 ':pf_number' => $data['pf_number'] ?? null,
                 ':nhf_number' => $data['nhf_number'] ?? null,
+                ':nin' => $data['nin'] ?? null,
+                ':telephone_number' => $data['telephone_number'] ?? null,
+                ':email' => $data['email'] ?? null,
+                ':blood_group' => $data['blood_group'] ?? null,
+                ':genotype' => $data['genotype'] ?? null,
+                ':disability' => $data['disability'] ?? 'No',
+                ':disability_type' => $data['disability_type'] ?? null,
                 ':bank_name' => $data['bank_name'] ?? null,
+                ':other_bank_name' => $data['other_bank_name'] ?? null,
                 ':bank_branch' => $data['bank_branch'] ?? null,
                 ':account_number' => $data['account_number'] ?? null,
+                ':account_name' => $data['account_name'] ?? null,
                 ':pension_fund_admin' => $data['pension_fund_admin'] ?? null,
+                ':other_pension_fund_admin' => $data['other_pension_fund_admin'] ?? null,
                 ':pension_number' => $data['pension_number'] ?? null,
-                ':telephone_number' => $data['telephone_number'] ?? null,
+                ':tin_number' => $data['tin_number'] ?? null,
+                ':salary_structure' => $data['salary_structure'] ?? null,
+                ':emergency_contact_name' => $data['emergency_contact_name'] ?? null,
+                ':emergency_contact_phone' => $data['emergency_contact_phone'] ?? null,
+                ':emergency_contact_relationship' => $data['emergency_contact_relationship'] ?? null,
+                ':next_of_kin_name' => $data['next_of_kin_name'] ?? null,
+                ':next_of_kin_phone' => $data['next_of_kin_phone'] ?? null,
+                ':next_of_kin_relationship' => $data['next_of_kin_relationship'] ?? null,
+                ':next_of_kin_address' => $data['next_of_kin_address'] ?? null,
                 ':passport_photo' => $data['passport_photo'] ?? null,
+                ':is_draft' => $data['is_draft'] ?? 0,
+                ':status' => $data['status'] ?? 'active',
                 ':created_by' => $userId
             ];
             
-            $stmt->execute($params);
+            error_log("Parameters: " . print_r($params, true));
+            
+            $result = $stmt->execute($params);
+            error_log("Execute result: " . ($result ? 'Success' : 'Failed'));
+            
+            if (!$result) {
+                error_log("PDO Error: " . print_r($stmt->errorInfo(), true));
+            }
             
             $employeeId = $this->db->lastInsertId();
+            error_log("Last insert ID: " . $employeeId);
             
             // Log the activity
             if ($employeeId) {
                 $this->logActivity($employeeId, $userId, 'employee_created', 'Employee record created', null, $data);
             }
             
+            error_log("=== MODEL createEmployee END ===");
             return $employeeId;
             
         } catch (PDOException $e) {
-            error_log("NominalRollModel createEmployee error: " . $e->getMessage());
+            error_log("PDOException in createEmployee: " . $e->getMessage());
+            error_log("Error Code: " . $e->getCode());
+            error_log("SQL State: " . $e->errorInfo[0] ?? 'N/A');
+            error_log("Driver Error: " . $e->errorInfo[1] ?? 'N/A');
+            error_log("Driver Message: " . $e->errorInfo[2] ?? 'N/A');
+            
             throw new Exception("Failed to create employee record: " . $e->getMessage());
         }
     }
@@ -138,7 +265,14 @@ class NominalRollModel {
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':id' => $id]);
             
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Parse additional qualifications JSON
+            if ($employee && !empty($employee['additional_qualifications'])) {
+                $employee['additional_qualifications'] = json_decode($employee['additional_qualifications'], true);
+            }
+            
+            return $employee;
             
         } catch (PDOException $e) {
             error_log("NominalRollModel getEmployee error: " . $e->getMessage());
@@ -157,7 +291,14 @@ class NominalRollModel {
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':employee_number' => $employeeNumber]);
             
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Parse additional qualifications JSON
+            if ($employee && !empty($employee['additional_qualifications'])) {
+                $employee['additional_qualifications'] = json_decode($employee['additional_qualifications'], true);
+            }
+            
+            return $employee;
             
         } catch (PDOException $e) {
             error_log("NominalRollModel getEmployeeByNumber error: " . $e->getMessage());
@@ -166,13 +307,14 @@ class NominalRollModel {
     }
     
     /**
-     * Update employee record
+     * Update employee record - FIXED
      */
     public function updateEmployee($id, $data, $userId = null) {
         try {
             // First, get the old data for logging
             $oldData = $this->getEmployee($id);
             
+            // FIXED: Removed 'qualification' field and added all new fields from the form
             $sql = "UPDATE " . self::TABLE_EMPLOYEES . " SET
                     employee_number = :employee_number,
                     surname = :surname,
@@ -181,31 +323,69 @@ class NominalRollModel {
                     sex = :sex,
                     date_of_birth = :date_of_birth,
                     marital_status = :marital_status,
+                    nationality = :nationality,
+                    religion = :religion,
                     rank = :rank,
                     grade_level = :grade_level,
-                    qualification = :qualification,
-                    qualification_date = :qualification_date,
+                    step = :step,
+                    cadre = :cadre,
+                    staff_type = :staff_type,
+                    employment_type = :employment_type,
+                    appointment_type = :appointment_type,
+                    department = :department,
+                    highest_qualification = :highest_qualification,
+                    year_of_highest_qualification = :year_of_highest_qualification,
+                    institution_attended = :institution_attended,
+                    course_of_study = :course_of_study,
+                    class_of_degree = :class_of_degree,
+                    professional_certifications = :professional_certifications,
+                    additional_qualifications = :additional_qualifications,
                     date_of_first_appointment = :date_of_first_appointment,
                     date_of_confirmation = :date_of_confirmation,
                     rank_on_first_appointment = :rank_on_first_appointment,
                     date_of_present_appointment = :date_of_present_appointment,
                     state = :state,
                     local_govt_area = :local_govt_area,
+                    geopolitical_zone = :geopolitical_zone,
+                    state_of_residence = :state_of_residence,
+                    residential_address = :residential_address,
+                    contact_address = :contact_address,
                     pf_number = :pf_number,
                     nhf_number = :nhf_number,
+                    nin = :nin,
+                    telephone_number = :telephone_number,
+                    email = :email,
+                    blood_group = :blood_group,
+                    genotype = :genotype,
+                    disability = :disability,
+                    disability_type = :disability_type,
                     bank_name = :bank_name,
+                    other_bank_name = :other_bank_name,
                     bank_branch = :bank_branch,
                     account_number = :account_number,
+                    account_name = :account_name,
                     pension_fund_admin = :pension_fund_admin,
+                    other_pension_fund_admin = :other_pension_fund_admin,
                     pension_number = :pension_number,
-                    telephone_number = :telephone_number,
+                    tin_number = :tin_number,
+                    salary_structure = :salary_structure,
+                    emergency_contact_name = :emergency_contact_name,
+                    emergency_contact_phone = :emergency_contact_phone,
+                    emergency_contact_relationship = :emergency_contact_relationship,
+                    next_of_kin_name = :next_of_kin_name,
+                    next_of_kin_phone = :next_of_kin_phone,
+                    next_of_kin_relationship = :next_of_kin_relationship,
+                    next_of_kin_address = :next_of_kin_address,
                     passport_photo = :passport_photo,
+                    is_draft = :is_draft,
+                    status = :status,
                     updated_by = :updated_by,
                     updated_at = NOW()
                     WHERE id = :id";
             
             $stmt = $this->db->prepare($sql);
             
+            // FIXED: Updated parameters to match new fields
             $params = [
                 ':id' => $id,
                 ':employee_number' => $data['employee_number'] ?? '',
@@ -215,25 +395,62 @@ class NominalRollModel {
                 ':sex' => $data['sex'] ?? '',
                 ':date_of_birth' => $data['date_of_birth'] ?? '',
                 ':marital_status' => $data['marital_status'] ?? '',
+                ':nationality' => $data['nationality'] ?? null,
+                ':religion' => $data['religion'] ?? null,
                 ':rank' => $data['rank'] ?? '',
                 ':grade_level' => $data['grade_level'] ?? '',
-                ':qualification' => $data['qualification'] ?? null,
-                ':qualification_date' => !empty($data['qualification_date']) ? $data['qualification_date'] : null,
+                ':step' => $data['step'] ?? null,
+                ':cadre' => $data['cadre'] ?? null,
+                ':staff_type' => $data['staff_type'] ?? null,
+                ':employment_type' => $data['employment_type'] ?? null,
+                ':appointment_type' => $data['appointment_type'] ?? null,
+                ':department' => $data['department'] ?? null,
+                ':highest_qualification' => $data['highest_qualification'] ?? null,
+                ':year_of_highest_qualification' => !empty($data['year_of_highest_qualification']) ? $data['year_of_highest_qualification'] : null,
+                ':institution_attended' => $data['institution_attended'] ?? null,
+                ':course_of_study' => $data['course_of_study'] ?? null,
+                ':class_of_degree' => $data['class_of_degree'] ?? null,
+                ':professional_certifications' => $data['professional_certifications'] ?? null,
+                ':additional_qualifications' => $data['additional_qualifications'] ?? null,
                 ':date_of_first_appointment' => $data['date_of_first_appointment'] ?? '',
                 ':date_of_confirmation' => !empty($data['date_of_confirmation']) ? $data['date_of_confirmation'] : null,
                 ':rank_on_first_appointment' => $data['rank_on_first_appointment'] ?? null,
                 ':date_of_present_appointment' => !empty($data['date_of_present_appointment']) ? $data['date_of_present_appointment'] : null,
                 ':state' => $data['state'] ?? '',
                 ':local_govt_area' => $data['local_govt_area'] ?? '',
+                ':geopolitical_zone' => $data['geopolitical_zone'] ?? null,
+                ':state_of_residence' => $data['state_of_residence'] ?? null,
+                ':residential_address' => $data['residential_address'] ?? null,
+                ':contact_address' => $data['contact_address'] ?? null,
                 ':pf_number' => $data['pf_number'] ?? null,
                 ':nhf_number' => $data['nhf_number'] ?? null,
+                ':nin' => $data['nin'] ?? null,
+                ':telephone_number' => $data['telephone_number'] ?? null,
+                ':email' => $data['email'] ?? null,
+                ':blood_group' => $data['blood_group'] ?? null,
+                ':genotype' => $data['genotype'] ?? null,
+                ':disability' => $data['disability'] ?? 'No',
+                ':disability_type' => $data['disability_type'] ?? null,
                 ':bank_name' => $data['bank_name'] ?? null,
+                ':other_bank_name' => $data['other_bank_name'] ?? null,
                 ':bank_branch' => $data['bank_branch'] ?? null,
                 ':account_number' => $data['account_number'] ?? null,
+                ':account_name' => $data['account_name'] ?? null,
                 ':pension_fund_admin' => $data['pension_fund_admin'] ?? null,
+                ':other_pension_fund_admin' => $data['other_pension_fund_admin'] ?? null,
                 ':pension_number' => $data['pension_number'] ?? null,
-                ':telephone_number' => $data['telephone_number'] ?? null,
+                ':tin_number' => $data['tin_number'] ?? null,
+                ':salary_structure' => $data['salary_structure'] ?? null,
+                ':emergency_contact_name' => $data['emergency_contact_name'] ?? null,
+                ':emergency_contact_phone' => $data['emergency_contact_phone'] ?? null,
+                ':emergency_contact_relationship' => $data['emergency_contact_relationship'] ?? null,
+                ':next_of_kin_name' => $data['next_of_kin_name'] ?? null,
+                ':next_of_kin_phone' => $data['next_of_kin_phone'] ?? null,
+                ':next_of_kin_relationship' => $data['next_of_kin_relationship'] ?? null,
+                ':next_of_kin_address' => $data['next_of_kin_address'] ?? null,
                 ':passport_photo' => $data['passport_photo'] ?? null,
+                ':is_draft' => $data['is_draft'] ?? 0,
+                ':status' => $data['status'] ?? 'active',
                 ':updated_by' => $userId
             ];
             
@@ -250,6 +467,42 @@ class NominalRollModel {
         } catch (PDOException $e) {
             error_log("NominalRollModel updateEmployee error: " . $e->getMessage());
             throw new Exception("Failed to update employee record: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Update employee status
+     */
+    public function updateEmployeeStatus($id, $status, $userId = null) {
+        try {
+            $oldData = $this->getEmployee($id);
+            
+            $sql = "UPDATE " . self::TABLE_EMPLOYEES . " SET
+                    status = :status,
+                    is_draft = :is_draft,
+                    updated_by = :updated_by,
+                    updated_at = NOW()
+                    WHERE id = :id";
+            
+            $stmt = $this->db->prepare($sql);
+            $result = $stmt->execute([
+                ':id' => $id,
+                ':status' => $status,
+                ':is_draft' => $status === 'draft' ? 1 : 0,
+                ':updated_by' => $userId
+            ]);
+            
+            // Log the activity
+            if ($result) {
+                $newData = $this->getEmployee($id);
+                $this->logActivity($id, $userId, 'status_updated', "Employee status changed to {$status}", $oldData, $newData);
+            }
+            
+            return $result;
+            
+        } catch (PDOException $e) {
+            error_log("NominalRollModel updateEmployeeStatus error: " . $e->getMessage());
+            throw new Exception("Failed to update employee status: " . $e->getMessage());
         }
     }
     
@@ -291,7 +544,8 @@ class NominalRollModel {
             
             if (!empty($filters['search'])) {
                 $whereConditions[] = "(e.surname LIKE :search OR e.first_name LIKE :search OR 
-                                      e.employee_number LIKE :search OR e.state LIKE :search)";
+                                      e.employee_number LIKE :search OR e.state LIKE :search OR
+                                      e.email LIKE :search)";
                 $params[':search'] = '%' . $filters['search'] . '%';
             }
             
@@ -313,6 +567,16 @@ class NominalRollModel {
             if (!empty($filters['sex'])) {
                 $whereConditions[] = "e.sex = :sex";
                 $params[':sex'] = $filters['sex'];
+            }
+            
+            if (!empty($filters['status'])) {
+                $whereConditions[] = "e.status = :status";
+                $params[':status'] = $filters['status'];
+            }
+            
+            if (isset($filters['is_draft']) && $filters['is_draft'] !== '') {
+                $whereConditions[] = "e.is_draft = :is_draft";
+                $params[':is_draft'] = $filters['is_draft'];
             }
             
             $whereClause = $whereConditions ? "WHERE " . implode(" AND ", $whereConditions) : "";
@@ -346,6 +610,13 @@ class NominalRollModel {
             $stmt->execute();
             $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
+            // Parse additional qualifications JSON for each employee
+            foreach ($employees as &$employee) {
+                if (!empty($employee['additional_qualifications'])) {
+                    $employee['additional_qualifications'] = json_decode($employee['additional_qualifications'], true);
+                }
+            }
+            
             return [
                 'employees' => $employees,
                 'total' => $total,
@@ -365,38 +636,50 @@ class NominalRollModel {
      */
     public function getEmployeeStats() {
         try {
-            $stats = [];
-            
-            // Total employees
-            $sql = "SELECT COUNT(*) as total FROM " . self::TABLE_EMPLOYEES;
+            // Use the view if it exists, otherwise calculate manually
+            $sql = "SELECT * FROM nominal_roll_statistics LIMIT 1";
             $stmt = $this->db->query($sql);
-            $stats['total'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+            $stats = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            // Count by sex
-            $sql = "SELECT sex, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY sex";
-            $stmt = $this->db->query($sql);
-            $stats['by_sex'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Count by state
-            $sql = "SELECT state, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY state ORDER BY count DESC";
-            $stmt = $this->db->query($sql);
-            $stats['by_state'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Count by grade level
-            $sql = "SELECT grade_level, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY grade_level ORDER BY grade_level DESC";
-            $stmt = $this->db->query($sql);
-            $stats['by_grade'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Count by rank
-            $sql = "SELECT rank, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY rank ORDER BY count DESC LIMIT 10";
-            $stmt = $this->db->query($sql);
-            $stats['by_rank'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Recent updates (last 7 days)
-            $sql = "SELECT COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " 
-                    WHERE updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
-            $stmt = $this->db->query($sql);
-            $stats['recent_updates'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+            if (!$stats) {
+                // Calculate manually if view doesn't exist
+                $stats = [];
+                
+                // Total employees
+                $sql = "SELECT COUNT(*) as total FROM " . self::TABLE_EMPLOYEES;
+                $stmt = $this->db->query($sql);
+                $stats['total_employees'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                
+                // Count by sex
+                $sql = "SELECT sex, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY sex";
+                $stmt = $this->db->query($sql);
+                $stats['by_sex'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Count by state
+                $sql = "SELECT state, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY state ORDER BY count DESC";
+                $stmt = $this->db->query($sql);
+                $stats['by_state'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Count by grade level
+                $sql = "SELECT grade_level, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY grade_level ORDER BY grade_level DESC";
+                $stmt = $this->db->query($sql);
+                $stats['by_grade'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Count by rank
+                $sql = "SELECT rank, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY rank ORDER BY count DESC LIMIT 10";
+                $stmt = $this->db->query($sql);
+                $stats['by_rank'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Draft count
+                $sql = "SELECT COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " WHERE is_draft = 1";
+                $stmt = $this->db->query($sql);
+                $stats['draft_count'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+                
+                // Photos count
+                $sql = "SELECT COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " WHERE passport_photo IS NOT NULL";
+                $stmt = $this->db->query($sql);
+                $stats['photos_count'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+            }
             
             return $stats;
             
@@ -407,7 +690,7 @@ class NominalRollModel {
     }
     
     /**
-     * Get distinct values for filters
+     * Get distinct values for filters - UPDATED
      */
     public function getFilterOptions() {
         try {
@@ -418,21 +701,65 @@ class NominalRollModel {
             $stmt = $this->db->query($sql);
             $options['states'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
+            // States of residence
+            $sql = "SELECT DISTINCT state_of_residence FROM " . self::TABLE_EMPLOYEES . " WHERE state_of_residence IS NOT NULL AND state_of_residence != '' ORDER BY state_of_residence";
+            $stmt = $this->db->query($sql);
+            $options['states_of_residence'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
             // Grade Levels
             $sql = "SELECT DISTINCT grade_level FROM " . self::TABLE_EMPLOYEES . " WHERE grade_level IS NOT NULL AND grade_level != '' ORDER BY grade_level DESC";
             $stmt = $this->db->query($sql);
             $options['grade_levels'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            // Steps
+            $sql = "SELECT DISTINCT step FROM " . self::TABLE_EMPLOYEES . " WHERE step IS NOT NULL AND step != '' ORDER BY step";
+            $stmt = $this->db->query($sql);
+            $options['steps'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
             // Ranks
             $sql = "SELECT DISTINCT rank FROM " . self::TABLE_EMPLOYEES . " WHERE rank IS NOT NULL AND rank != '' ORDER BY rank";
             $stmt = $this->db->query($sql);
             $options['ranks'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
+            // Cadres
+            $sql = "SELECT DISTINCT cadre FROM " . self::TABLE_EMPLOYEES . " WHERE cadre IS NOT NULL AND cadre != '' ORDER BY cadre";
+            $stmt = $this->db->query($sql);
+            $options['cadres'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            // Staff Types
+            $sql = "SELECT DISTINCT staff_type FROM " . self::TABLE_EMPLOYEES . " WHERE staff_type IS NOT NULL AND staff_type != '' ORDER BY staff_type";
+            $stmt = $this->db->query($sql);
+            $options['staff_types'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            // Highest Qualifications
+            $sql = "SELECT DISTINCT highest_qualification FROM " . self::TABLE_EMPLOYEES . " WHERE highest_qualification IS NOT NULL AND highest_qualification != '' ORDER BY highest_qualification";
+            $stmt = $this->db->query($sql);
+            $options['highest_qualifications'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
             // Sex options
             $options['sex_options'] = ['Male', 'Female'];
             
             // Marital status options
             $options['marital_status_options'] = ['Single', 'Married', 'Divorced', 'Widowed'];
+            
+            // Nationality options
+            $options['nationality_options'] = ['Nigerian', 'Ghanaian', 'Other'];
+            
+            // Religion options
+            $options['religion_options'] = ['Christianity', 'Islam', 'Traditional', 'Other'];
+            
+            // Status options
+            $options['status_options'] = ['active', 'draft', 'inactive'];
+            
+            // Bank names
+            $sql = "SELECT DISTINCT bank_name FROM " . self::TABLE_EMPLOYEES . " WHERE bank_name IS NOT NULL AND bank_name != '' ORDER BY bank_name";
+            $stmt = $this->db->query($sql);
+            $options['bank_names'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            // Pension fund admins
+            $sql = "SELECT DISTINCT pension_fund_admin FROM " . self::TABLE_EMPLOYEES . " WHERE pension_fund_admin IS NOT NULL AND pension_fund_admin != '' ORDER BY pension_fund_admin";
+            $stmt = $this->db->query($sql);
+            $options['pension_fund_admins'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
             return $options;
             
@@ -453,7 +780,7 @@ class NominalRollModel {
      */
     public function getSettings() {
         try {
-            $sql = "SELECT * FROM " . self::TABLE_SETTINGS;
+            $sql = "SELECT * FROM " . self::TABLE_SETTINGS . " ORDER BY setting_key";
             $stmt = $this->db->query($sql);
             $settings = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
@@ -530,11 +857,14 @@ class NominalRollModel {
     /**
      * Create bulk upload record
      */
-    public function createBulkUpload($filename, $filePath, $totalRows, $userId = null) {
+    public function createBulkUpload($filename, $filePath, $totalRows, $userId = null, $importType = 'create', $updateExisting = 0, $skipDuplicates = 1) {
         try {
             $sql = "INSERT INTO " . self::TABLE_BULK_UPLOADS . " SET
                     filename = :filename,
                     file_path = :file_path,
+                    import_type = :import_type,
+                    update_existing = :update_existing,
+                    skip_duplicates = :skip_duplicates,
                     total_rows = :total_rows,
                     uploaded_by = :uploaded_by,
                     status = :status,
@@ -544,6 +874,9 @@ class NominalRollModel {
             $stmt->execute([
                 ':filename' => $filename,
                 ':file_path' => $filePath,
+                ':import_type' => $importType,
+                ':update_existing' => $updateExisting,
+                ':skip_duplicates' => $skipDuplicates,
                 ':total_rows' => $totalRows,
                 ':uploaded_by' => $userId,
                 ':status' => 'processing'
@@ -606,6 +939,250 @@ class NominalRollModel {
         } catch (PDOException $e) {
             error_log("NominalRollModel getBulkUploads error: " . $e->getMessage());
             return [];
+        }
+    }
+    
+    /**
+     * ============================================
+     * BACKUP OPERATIONS
+     * ============================================
+     */
+    
+    /**
+     * Create backup
+     */
+    public function createBackup($type = 'manual', $userId = null) {
+        try {
+            // Create backup directory
+            $backupDir = ROOT_PATH . '/storage/backups/nominal-roll/';
+            if (!file_exists($backupDir)) {
+                mkdir($backupDir, 0755, true);
+            }
+            
+            // Generate filename
+            $timestamp = date('Y-m-d_H-i-s');
+            $filename = "nominal_roll_backup_{$timestamp}.sql";
+            $filePath = $backupDir . $filename;
+            
+            // Get all employee data
+            $employees = $this->exportEmployees([]);
+            $totalRecords = count($employees);
+            
+            // Create SQL backup
+            $sqlContent = "-- Nominal Roll Backup\n";
+            $sqlContent .= "-- Generated: " . date('Y-m-d H:i:s') . "\n";
+            $sqlContent .= "-- Total Records: " . $totalRecords . "\n\n";
+            
+            // Create table structure (simplified)
+            $sqlContent .= "TRUNCATE TABLE " . self::TABLE_EMPLOYEES . ";\n\n";
+            
+            // Insert data
+            foreach ($employees as $employee) {
+                $columns = [];
+                $values = [];
+                
+                foreach ($employee as $key => $value) {
+                    if ($value !== null) {
+                        $columns[] = "`$key`";
+                        $values[] = "'" . addslashes($value) . "'";
+                    }
+                }
+                
+                $sqlContent .= "INSERT INTO " . self::TABLE_EMPLOYEES . " (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ");\n";
+            }
+            
+            // Save to file
+            if (file_put_contents($filePath, $sqlContent) === false) {
+                throw new Exception("Failed to write backup file");
+            }
+            
+            $fileSize = filesize($filePath) / 1024 / 1024; // MB
+            
+            // Create backup record
+            $sql = "INSERT INTO " . self::TABLE_BACKUPS . " SET
+                    backup_type = :backup_type,
+                    file_name = :file_name,
+                    file_path = :file_path,
+                    file_size = :file_size,
+                    records_count = :records_count,
+                    status = :status,
+                    created_by = :created_by,
+                    created_at = NOW()";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':backup_type' => $type,
+                ':file_name' => $filename,
+                ':file_path' => $filePath,
+                ':file_size' => round($fileSize, 2),
+                ':records_count' => $totalRecords,
+                ':status' => 'success',
+                ':created_by' => $userId
+            ]);
+            
+            $backupId = $this->db->lastInsertId();
+            
+            // Clean up old backups if auto backup is enabled
+            $this->cleanupOldBackups();
+            
+            return [
+                'success' => true,
+                'backup_id' => $backupId,
+                'file_name' => $filename,
+                'file_path' => $filePath,
+                'file_size' => $fileSize,
+                'records_count' => $totalRecords
+            ];
+            
+        } catch (Exception $e) {
+            error_log("NominalRollModel createBackup error: " . $e->getMessage());
+            
+            // Log failed backup
+            $sql = "INSERT INTO " . self::TABLE_BACKUPS . " SET
+                    backup_type = :backup_type,
+                    file_name = :file_name,
+                    file_path = :file_path,
+                    status = :status,
+                    created_by = :created_by,
+                    created_at = NOW()";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':backup_type' => $type,
+                ':file_name' => 'failed_backup_' . date('Y-m-d_H-i-s'),
+                ':file_path' => '',
+                ':status' => 'failed',
+                ':created_by' => $userId
+            ]);
+            
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+    
+    /**
+     * Get backup by ID
+     */
+    public function getBackup($id) {
+        try {
+            $sql = "SELECT b.*, u.username as created_by_name
+                    FROM " . self::TABLE_BACKUPS . " b
+                    LEFT JOIN users u ON b.created_by = u.id
+                    WHERE b.id = :id";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':id' => $id]);
+            
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("NominalRollModel getBackup error: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Get backup history
+     */
+    public function getBackups($limit = 20) {
+        try {
+            $sql = "SELECT b.*, u.username as created_by_name
+                    FROM " . self::TABLE_BACKUPS . " b
+                    LEFT JOIN users u ON b.created_by = u.id
+                    ORDER BY b.created_at DESC
+                    LIMIT :limit";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("NominalRollModel getBackups error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Restore from backup
+     */
+    public function restoreBackup($id, $userId = null) {
+        try {
+            $backup = $this->getBackup($id);
+            
+            if (!$backup || !file_exists($backup['file_path'])) {
+                throw new Exception("Backup file not found");
+            }
+            
+            // Read backup file
+            $sqlContent = file_get_contents($backup['file_path']);
+            if (!$sqlContent) {
+                throw new Exception("Failed to read backup file");
+            }
+            
+            // Execute SQL statements
+            $statements = explode(';', $sqlContent);
+            
+            $this->db->beginTransaction();
+            
+            foreach ($statements as $statement) {
+                $statement = trim($statement);
+                if (!empty($statement)) {
+                    $this->db->exec($statement);
+                }
+            }
+            
+            $this->db->commit();
+            
+            // Log the activity
+            $this->logActivity(null, $userId, 'backup_restored', "Backup restored from {$backup['file_name']}", null, [
+                'backup_id' => $id,
+                'backup_file' => $backup['file_name']
+            ]);
+            
+            return true;
+            
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("NominalRollModel restoreBackup error: " . $e->getMessage());
+            throw new Exception("Failed to restore backup: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Cleanup old backups
+     */
+    private function cleanupOldBackups() {
+        try {
+            $retentionDays = (int)$this->getSetting('backup_retention', '30');
+            $cutoffDate = date('Y-m-d H:i:s', strtotime("-{$retentionDays} days"));
+            
+            // Get old backups
+            $sql = "SELECT id, file_path FROM " . self::TABLE_BACKUPS . " 
+                    WHERE created_at < :cutoff_date AND status = 'success'";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':cutoff_date' => $cutoffDate]);
+            $oldBackups = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($oldBackups as $backup) {
+                // Delete file
+                if (file_exists($backup['file_path'])) {
+                    unlink($backup['file_path']);
+                }
+                
+                // Delete record
+                $deleteStmt = $this->db->prepare("DELETE FROM " . self::TABLE_BACKUPS . " WHERE id = :id");
+                $deleteStmt->execute([':id' => $backup['id']]);
+            }
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("NominalRollModel cleanupOldBackups error: " . $e->getMessage());
+            return false;
         }
     }
     
@@ -698,16 +1275,16 @@ class NominalRollModel {
      */
     
     /**
-     * Export employees to CSV
+     * Export employees
      */
-    public function exportEmployeesToCSV($filters = []) {
+    public function exportEmployees($filters = []) {
         try {
             // Build WHERE clause
             $whereConditions = [];
             $params = [];
             
             if (!empty($filters['search'])) {
-                $whereConditions[] = "(surname LIKE :search OR first_name LIKE :search OR employee_number LIKE :search)";
+                $whereConditions[] = "(surname LIKE :search OR first_name LIKE :search OR employee_number LIKE :search OR email LIKE :search)";
                 $params[':search'] = '%' . $filters['search'] . '%';
             }
             
@@ -716,18 +1293,59 @@ class NominalRollModel {
                 $params[':state'] = $filters['state'];
             }
             
+            if (!empty($filters['grade_level'])) {
+                $whereConditions[] = "grade_level = :grade_level";
+                $params[':grade_level'] = $filters['grade_level'];
+            }
+            
+            if (!empty($filters['rank'])) {
+                $whereConditions[] = "rank = :rank";
+                $params[':rank'] = $filters['rank'];
+            }
+            
+            if (!empty($filters['sex'])) {
+                $whereConditions[] = "sex = :sex";
+                $params[':sex'] = $filters['sex'];
+            }
+            
+            if (!empty($filters['status'])) {
+                $whereConditions[] = "status = :status";
+                $params[':status'] = $filters['status'];
+            }
+            
+            if (isset($filters['is_draft']) && $filters['is_draft'] !== '') {
+                $whereConditions[] = "is_draft = :is_draft";
+                $params[':is_draft'] = $filters['is_draft'];
+            }
+            
             $whereClause = $whereConditions ? "WHERE " . implode(" AND ", $whereConditions) : "";
             
             $sql = "SELECT * FROM " . self::TABLE_EMPLOYEES . " $whereClause ORDER BY surname, first_name";
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Decode JSON fields
+            foreach ($employees as &$employee) {
+                if (!empty($employee['additional_qualifications'])) {
+                    $employee['additional_qualifications'] = json_decode($employee['additional_qualifications'], true);
+                }
+            }
+            
+            return $employees;
             
         } catch (PDOException $e) {
-            error_log("NominalRollModel exportEmployeesToCSV error: " . $e->getMessage());
+            error_log("NominalRollModel exportEmployees error: " . $e->getMessage());
             throw new Exception("Failed to export employees: " . $e->getMessage());
         }
+    }
+    
+    /**
+     * Export employees to CSV (legacy method)
+     */
+    public function exportEmployeesToCSV($filters = []) {
+        return $this->exportEmployees($filters);
     }
     
     /**
@@ -760,17 +1378,17 @@ class NominalRollModel {
     
     /**
      * ============================================
-     * VALIDATION & UTILITY METHODS
+     * VALIDATION & UTILITY METHODS - UPDATED
      * ============================================
      */
     
     /**
-     * Validate employee data
+     * Validate employee data - UPDATED
      */
     public function validateEmployeeData($data, $isUpdate = false) {
         $errors = [];
         
-        // Required fields
+        // Required fields - UPDATED with new fields
         $requiredFields = [
             'employee_number' => 'Employee Number',
             'surname' => 'Surname',
@@ -778,10 +1396,13 @@ class NominalRollModel {
             'sex' => 'Sex',
             'date_of_birth' => 'Date of Birth',
             'marital_status' => 'Marital Status',
+            'nationality' => 'Nationality', // Added
             'rank' => 'Rank',
             'grade_level' => 'Grade Level',
+            'highest_qualification' => 'Highest Qualification', // Added
+            'year_of_highest_qualification' => 'Year of Highest Qualification', // Added
             'date_of_first_appointment' => 'Date of First Appointment',
-            'state' => 'State',
+            'state' => 'State of Origin',
             'local_govt_area' => 'Local Government Area'
         ];
         
@@ -800,7 +1421,11 @@ class NominalRollModel {
         }
         
         // Validate dates
-        $dateFields = ['date_of_birth', 'date_of_first_appointment', 'date_of_confirmation', 'qualification_date', 'date_of_present_appointment'];
+        $dateFields = [
+            'date_of_birth', 'date_of_first_appointment', 
+            'date_of_confirmation', 'date_of_present_appointment'
+        ];
+        
         foreach ($dateFields as $field) {
             if (!empty($data[$field])) {
                 if (!$this->isValidDate($data[$field])) {
@@ -809,14 +1434,34 @@ class NominalRollModel {
             }
         }
         
+        // Validate year
+        if (!empty($data['year_of_highest_qualification'])) {
+            $year = (int)$data['year_of_highest_qualification'];
+            $currentYear = (int)date('Y');
+            
+            if ($year < 1900 || $year > $currentYear) {
+                $errors[] = "Year of Highest Qualification must be between 1900 and $currentYear";
+            }
+        }
+        
+        // Validate email
+        if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "Invalid email address format";
+        }
+        
         // Validate bank account number (if provided)
         if (!empty($data['account_number']) && !preg_match('/^[0-9]{10,20}$/', $data['account_number'])) {
             $errors[] = "Account Number must be 10-20 digits";
         }
         
         // Validate phone number (if provided)
-        if (!empty($data['telephone_number']) && !preg_match('/^[0-9\+\-\s\(\)]{7,20}$/', $data['telephone_number'])) {
-            $errors[] = "Telephone Number must be valid";
+        if (!empty($data['telephone_number']) && !preg_match('/^[0-9]{11}$/', $data['telephone_number'])) {
+            $errors[] = "Telephone Number must be 11 digits (e.g., 08012345678)";
+        }
+        
+        // Validate NIN (if provided)
+        if (!empty($data['nin']) && !preg_match('/^[0-9]{11}$/', $data['nin'])) {
+            $errors[] = "NIN must be 11 digits";
         }
         
         return $errors;
@@ -865,11 +1510,14 @@ class NominalRollModel {
                 
                 // Validate headers
                 $expectedHeaders = [
-                    'S/N', 'Surname', 'First Name', 'Middle Name', 'Sex', 'Date of Birth',
-                    'Marital Status', 'Rank', 'Grade Level (GL)', 'Qualification with date',
+                    'S/N', 'Employee Number', 'Surname', 'First Name', 'Middle Name', 'Sex', 'Date of Birth',
+                    'Marital Status', 'Rank', 'Grade Level (GL)', 'Qualification', 'Qualification Date',
+                    'Highest Qualification', 'Year of Highest Qualification', 'Additional Qualifications',
                     'Date of 1st Appt.', 'Date of Confirmation', 'Rank on 1st Appt.',
-                    'Date of Present. Appt.', 'State', 'Local Govt. Area', 'PF No',
-                    'NHF No', 'Bank/Branch', 'Acct. No', 'Pension Fund Adm.', 'Pen. No', 'Tel No'
+                    'Date of Present. Appt.', 'State of Origin', 'Local Govt. Area', 'State of Residence',
+                    'Residential Address', 'PF No', 'NHF No', 'Bank Name', 'Bank Branch', 'Other Bank Name',
+                    'Account No', 'Pension Fund Admin', 'Other Pension Fund Admin', 'Pension No', 
+                    'Telephone No', 'Email'
                 ];
                 
                 // Clean headers (remove BOM if present)
@@ -879,8 +1527,9 @@ class NominalRollModel {
                     return trim($header);
                 }, $headers);
                 
-                if (count($headers) < count($expectedHeaders)) {
-                    throw new Exception("CSV file must have at least " . count($expectedHeaders) . " columns");
+                // Check if headers match expected format
+                if (count($headers) < 15) { // Minimum required fields
+                    throw new Exception("CSV file must have proper column headers");
                 }
                 
                 while (($row = fgetcsv($handle, 1000, ',')) !== false) {
@@ -924,6 +1573,90 @@ class NominalRollModel {
     }
     
     /**
+     * Parse Excel file
+     */
+    public function parseExcelFile($filePath) {
+        try {
+            // Check if PHPExcel/PhpSpreadsheet is available
+            if (!class_exists('PhpOffice\PhpSpreadsheet\Spreadsheet')) {
+                throw new Exception("PhpSpreadsheet library is not installed");
+            }
+            
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($filePath);
+            $spreadsheet = $reader->load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+            
+            $data = [];
+            $errors = [];
+            $rowCount = 0;
+            $highestRow = $worksheet->getHighestRow();
+            $highestColumn = $worksheet->getHighestColumn();
+            
+            // Get headers from first row
+            $headers = [];
+            for ($col = 1; $col <= \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn); $col++) {
+                $cellValue = $worksheet->getCellByColumnAndRow($col, 1)->getValue();
+                $headers[] = trim($cellValue);
+            }
+            
+            // Process data rows
+            for ($row = 2; $row <= $highestRow; $row++) {
+                $rowCount++;
+                $rowData = [];
+                
+                // Skip empty rows
+                $isEmpty = true;
+                for ($col = 1; $col <= count($headers); $col++) {
+                    $cellValue = $worksheet->getCellByColumnAndRow($col, $row)->getValue();
+                    if (!empty(trim($cellValue))) {
+                        $isEmpty = false;
+                    }
+                }
+                
+                if ($isEmpty) {
+                    continue;
+                }
+                
+                // Get row values
+                for ($col = 1; $col <= count($headers); $col++) {
+                    $cellValue = $worksheet->getCellByColumnAndRow($col, $row)->getValue();
+                    $header = $headers[$col - 1] ?? '';
+                    
+                    if (!empty($header)) {
+                        $rowData[$header] = trim($cellValue);
+                    }
+                }
+                
+                // Parse and validate row
+                $employeeData = $this->parseCSVRow(array_values($rowData), $headers, $rowCount);
+                
+                if (isset($employeeData['error'])) {
+                    $errors[] = "Row $rowCount: " . $employeeData['error'];
+                } else {
+                    $data[] = $employeeData;
+                }
+                
+                // Limit for safety
+                if ($rowCount > 1000) {
+                    $errors[] = "File exceeds maximum allowed rows (1000)";
+                    break;
+                }
+            }
+            
+            return [
+                'data' => $data,
+                'errors' => $errors,
+                'total_rows' => $rowCount,
+                'valid_rows' => count($data)
+            ];
+            
+        } catch (Exception $e) {
+            error_log("NominalRollModel parseExcelFile error: " . $e->getMessage());
+            throw new Exception("Failed to parse Excel file: " . $e->getMessage());
+        }
+    }
+    
+    /**
      * Parse single CSV row
      */
     private function parseCSVRow($row, $headers, $rowNumber) {
@@ -932,7 +1665,7 @@ class NominalRollModel {
         
         // Map CSV columns to database fields
         $columnMapping = [
-            'S/N' => 'serial_number',
+            'Employee Number' => 'employee_number',
             'Surname' => 'surname',
             'First Name' => 'first_name',
             'Middle Name' => 'middle_name',
@@ -941,20 +1674,30 @@ class NominalRollModel {
             'Marital Status' => 'marital_status',
             'Rank' => 'rank',
             'Grade Level (GL)' => 'grade_level',
-            'Qualification with date' => 'qualification',
+            'Qualification' => 'qualification',
+            'Qualification Date' => 'qualification_date',
+            'Highest Qualification' => 'highest_qualification',
+            'Year of Highest Qualification' => 'year_of_highest_qualification',
+            'Additional Qualifications' => 'additional_qualifications',
             'Date of 1st Appt.' => 'date_of_first_appointment',
             'Date of Confirmation' => 'date_of_confirmation',
             'Rank on 1st Appt.' => 'rank_on_first_appointment',
             'Date of Present. Appt.' => 'date_of_present_appointment',
-            'State' => 'state',
+            'State of Origin' => 'state',
             'Local Govt. Area' => 'local_govt_area',
+            'State of Residence' => 'state_of_residence',
+            'Residential Address' => 'residential_address',
             'PF No' => 'pf_number',
             'NHF No' => 'nhf_number',
-            'Bank/Branch' => 'bank_info',
-            'Acct. No' => 'account_number',
-            'Pension Fund Adm.' => 'pension_fund_admin',
-            'Pen. No' => 'pension_number',
-            'Tel No' => 'telephone_number'
+            'Bank Name' => 'bank_name',
+            'Bank Branch' => 'bank_branch',
+            'Other Bank Name' => 'other_bank_name',
+            'Account No' => 'account_number',
+            'Pension Fund Admin' => 'pension_fund_admin',
+            'Other Pension Fund Admin' => 'other_pension_fund_admin',
+            'Pension No' => 'pension_number',
+            'Telephone No' => 'telephone_number',
+            'Email' => 'email'
         ];
         
         // Process each column
@@ -975,25 +1718,31 @@ class NominalRollModel {
                     case 'Date of Birth':
                     case 'Date of 1st Appt.':
                     case 'Date of Confirmation':
+                    case 'Qualification Date':
                     case 'Date of Present. Appt.':
                         $value = $this->normalizeDate($value);
                         break;
                         
-                    case 'Bank/Branch':
-                        // Split bank name and branch
-                        $bankParts = explode('/', $value, 2);
-                        $employeeData['bank_name'] = trim($bankParts[0] ?? '');
-                        $employeeData['bank_branch'] = trim($bankParts[1] ?? '');
-                        continue 2; // Skip to next iteration
-                        
-                    case 'Qualification with date':
-                        // Extract qualification and date
-                        if (preg_match('/(.*?)\s*(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})$/', $value, $matches)) {
-                            $employeeData['qualification'] = trim($matches[1]);
-                            $employeeData['qualification_date'] = $this->normalizeDate(trim($matches[2]));
-                        } else {
-                            $employeeData['qualification'] = $value;
-                            $employeeData['qualification_date'] = null;
+                    case 'Additional Qualifications':
+                        // Parse JSON or comma-separated list
+                        if (!empty($value)) {
+                            if (strpos($value, '[') === 0) {
+                                // JSON format
+                                $employeeData[$columnMapping[$header]] = $value;
+                            } else {
+                                // Comma-separated list
+                                $quals = explode(',', $value);
+                                $additionalQuals = [];
+                                foreach ($quals as $qual) {
+                                    $qual = trim($qual);
+                                    if (!empty($qual)) {
+                                        $additionalQuals[] = ['qualification' => $qual];
+                                    }
+                                }
+                                if (!empty($additionalQuals)) {
+                                    $employeeData[$columnMapping[$header]] = json_encode($additionalQuals);
+                                }
+                            }
                         }
                         continue 2; // Skip to next iteration
                 }
@@ -1007,6 +1756,10 @@ class NominalRollModel {
         if (empty($employeeData['employee_number'])) {
             $employeeData['employee_number'] = $this->generateEmployeeNumber();
         }
+        
+        // Set default status
+        $employeeData['is_draft'] = 0;
+        $employeeData['status'] = 'active';
         
         // Validate the parsed data
         $validationErrors = $this->validateEmployeeData($employeeData);
@@ -1057,13 +1810,19 @@ class NominalRollModel {
         }
         
         // Try different date formats
-        $formats = ['Y-m-d', 'd/m/Y', 'd-m-Y', 'm/d/Y', 'Y/m/d'];
+        $formats = ['Y-m-d', 'd/m/Y', 'd-m-Y', 'm/d/Y', 'Y/m/d', 'Y-m-d H:i:s', 'd/m/Y H:i:s'];
         
         foreach ($formats as $format) {
             $date = DateTime::createFromFormat($format, $value);
             if ($date !== false) {
                 return $date->format('Y-m-d');
             }
+        }
+        
+        // Try to parse any date format
+        $timestamp = strtotime($value);
+        if ($timestamp !== false) {
+            return date('Y-m-d', $timestamp);
         }
         
         return null;
