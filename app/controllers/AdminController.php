@@ -193,7 +193,7 @@ class AdminController extends Controller {
     }
 
     /**
-     * Process login
+     * Process login - WITH SECURITY ENHANCEMENTS
      */
     public function processLogin() {
         require_once __DIR__ . '/../config/database.php';
@@ -223,6 +223,25 @@ class AdminController extends Controller {
             $db = Database::getInstance();
             $conn = $db->getConnection();
 
+            // =============================================
+            // SECURITY ENHANCEMENT: Check for locked account
+            // =============================================
+            $stmt = $conn->prepare("
+                SELECT id, failed_login_attempts, locked_until 
+                FROM users 
+                WHERE username = ? OR email = ?
+            ");
+            $stmt->execute([$username, $username]);
+            $userLockData = $stmt->fetch();
+
+            if ($userLockData && $userLockData['locked_until'] && strtotime($userLockData['locked_until']) > time()) {
+                $lockTime = date('h:i A', strtotime($userLockData['locked_until']));
+                Session::setFlash('error', "Account is locked. Try again after $lockTime");
+                $this->redirect('/admin');
+                return;
+            }
+
+            // Get user with password check
             $stmt = $conn->prepare("
                 SELECT id, username, email, password_hash, full_name, role, is_active
                 FROM users
@@ -233,11 +252,30 @@ class AdminController extends Controller {
 
             if ($user && password_verify($password, $user['password_hash'])) {
                 if ($user['is_active']) {
-                    Session::loginUser($user['id'], $user['username'], $user['role']);
+                    // =============================================
+                    // SECURITY ENHANCEMENT: Reset failed attempts on successful login
+                    // =============================================
+                    $stmt = $conn->prepare("
+                        UPDATE users 
+                        SET failed_login_attempts = 0,
+                            locked_until = NULL,
+                            last_login = NOW(),
+                            last_login_ip = ?,
+                            login_count = login_count + 1
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([$_SERVER['REMOTE_ADDR'], $user['id']]);
+                    
+                    // =============================================
+                    // Log login history
+                    // =============================================
+                    $stmt = $conn->prepare("
+                        INSERT INTO user_login_history (user_id, ip_address, user_agent, success) 
+                        VALUES (?, ?, ?, 1)
+                    ");
+                    $stmt->execute([$user['id'], $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT']]);
 
-                    // Update last login
-                    $stmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
-                    $stmt->execute([$user['id']]);
+                    Session::loginUser($user['id'], $user['username'], $user['role']);
 
                     $this->flash('success', 'Login successful!');
                     $this->redirect('/admin/dashboard');
@@ -246,6 +284,30 @@ class AdminController extends Controller {
                     $this->redirect('/admin');
                 }
             } else {
+                // =============================================
+                // SECURITY ENHANCEMENT: Increment failed attempts
+                // =============================================
+                if ($user) {
+                    // User exists but password is wrong
+                    $stmt = $conn->prepare("
+                        UPDATE users 
+                        SET failed_login_attempts = failed_login_attempts + 1,
+                            locked_until = CASE 
+                                WHEN failed_login_attempts >= 4 THEN DATE_ADD(NOW(), INTERVAL 30 MINUTE)
+                                ELSE NULL 
+                            END
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([$user['id']]);
+                    
+                    // Log failed attempt
+                    $stmt = $conn->prepare("
+                        INSERT INTO user_login_history (user_id, ip_address, user_agent, success) 
+                        VALUES (?, ?, ?, 0)
+                    ");
+                    $stmt->execute([$user['id'], $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT']]);
+                }
+                
                 Session::setFlash('error', 'Invalid credentials');
                 $this->redirect('/admin');
             }
@@ -257,10 +319,47 @@ class AdminController extends Controller {
     }
 
     /**
+     * Log login history
+     */
+    private function logLoginHistory($conn, $user_id, $ip_address, $user_agent, $success) {
+        try {
+            $stmt = $conn->prepare("
+                INSERT INTO user_login_history (user_id, ip_address, user_agent, success) 
+                VALUES (?, ?, ?, ?)
+            ");
+            $stmt->execute([$user_id, $ip_address, $user_agent, $success ? 1 : 0]);
+            return true;
+        } catch (Exception $e) {
+            error_log("Failed to log login history: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Logout
      */
     public function logout() {
         require_once __DIR__ . '/../config/session.php';
+        
+        // Optional: Log logout activity
+        try {
+            require_once __DIR__ . '/../config/database.php';
+            $db = Database::getInstance();
+            $conn = $db->getConnection();
+            
+            if (isset($_SESSION['user_id'])) {
+                $stmt = $conn->prepare("
+                    INSERT INTO user_activity_log (user_id, activity_type, ip_address, user_agent)
+                    VALUES (?, 'logout', ?, ?)
+                ");
+                $ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+                $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+                $stmt->execute([$_SESSION['user_id'], $ip_address, $user_agent]);
+            }
+        } catch (Exception $e) {
+            // Don't fail logout if logging fails
+            error_log("Failed to log logout activity: " . $e->getMessage());
+        }
         
         // Destroy session
         Session::logout();
@@ -306,6 +405,15 @@ class AdminController extends Controller {
             // Get total news
             $stmt = $conn->query("SELECT COUNT(*) as total FROM news");
             $stats['total_news'] = $stmt->fetch()['total'];
+
+            // Get recent login activity
+            $stmt = $conn->query("
+                SELECT COUNT(*) as total 
+                FROM user_login_history 
+                WHERE success = 1 
+                AND login_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+            ");
+            $stats['recent_logins'] = $stmt->fetch()['total'];
 
         } catch (Exception $e) {
             error_log("Dashboard stats error: " . $e->getMessage());
@@ -614,6 +722,12 @@ class AdminController extends Controller {
                         <h3>News Articles</h3>
                         <div class="stat-number"><?php echo $stats['total_news'] ?? 0; ?></div>
                     </div>
+                    <?php if (isset($stats['recent_logins'])): ?>
+                    <div class="stat-card">
+                        <h3>Recent Logins (24h)</h3>
+                        <div class="stat-number"><?php echo $stats['recent_logins']; ?></div>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 
                 <div style="margin-top: 2rem;">
@@ -630,6 +744,9 @@ class AdminController extends Controller {
                         </a>
                         <a href="<?php echo $this->data['baseUrl'] ?? BASE_URL; ?>" class="action-btn" style="background: #CBD5E0; color: #2D3748;">
                             View Website
+                        </a>
+                        <a href="<?php echo $this->data['baseUrl'] ?? BASE_URL; ?>/admin/login-history" class="action-btn" style="background: #4FD1C7; color: white;">
+                            Login History
                         </a>
                     </div>
                 </div>

@@ -6,13 +6,25 @@
 class AuthMiddleware {
     
     /**
-     * Check if user is authenticated
+     * Check if user is authenticated with security checks
      */
     public static function authenticate() {
         require_once __DIR__ . '/../config/session.php';
         
+        // First check session security
+        Session::checkSessionSecurity();
+        
         if (!Session::isAuthenticated()) {
             Session::setFlash('error', 'Please login to access admin area');
+            header('Location: /admin');
+            exit;
+        }
+        
+        // Optional: Check if session is too old (e.g., 8 hours)
+        $loginTime = $_SESSION['login_time'] ?? 0;
+        if (time() - $loginTime > 28800) { // 8 hours in seconds
+            Session::logout();
+            Session::setFlash('error', 'Session expired. Please login again.');
             header('Location: /admin');
             exit;
         }

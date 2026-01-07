@@ -139,6 +139,42 @@ class Session {
     }
 
     /**
+     * Check session security
+     * Validates IP and User Agent to prevent session hijacking
+     */
+    public static function checkSessionSecurity() {
+        $currentIp = $_SERVER['REMOTE_ADDR'] ?? '';
+        $currentUserAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        
+        // Get stored session security data
+        $storedIp = $_SESSION['ip'] ?? '';
+        $storedUserAgent = $_SESSION['user_agent'] ?? '';
+        
+        // If no security data is stored yet, store it now
+        if (empty($storedIp) || empty($storedUserAgent)) {
+            $_SESSION['ip'] = $currentIp;
+            $_SESSION['user_agent'] = $currentUserAgent;
+            return true;
+        }
+        
+        // Check if IP or User Agent changed
+        if ($storedIp !== $currentIp || $storedUserAgent !== $currentUserAgent) {
+            // Log the security violation
+            error_log("Session security violation detected. IP changed from $storedIp to $currentIp or User Agent changed.");
+            
+            // Destroy the session
+            self::logout();
+            
+            // Redirect to login with error message
+            self::setFlash('error', 'Security violation detected. Please login again.');
+            header('Location: /admin');
+            exit;
+        }
+        
+        return true;
+    }
+
+    /**
      * Set a flash message (temporary message shown once)
      */
     public static function setFlash($type, $message) {
@@ -173,6 +209,11 @@ class Session {
      * Check if user is authenticated
      */
     public static function isAuthenticated() {
+        // First check session security
+        if (!self::checkSessionSecurity()) {
+            return false;
+        }
+        
         return isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && isset($_SESSION['login_time']);
     }
 
@@ -180,6 +221,10 @@ class Session {
      * Check if user has specific role
      */
     public static function hasRole($role) {
+        if (!self::checkSessionSecurity()) {
+            return false;
+        }
+        
         return isset($_SESSION['user_role']) && $_SESSION['user_role'] === $role;
     }
 
@@ -187,6 +232,10 @@ class Session {
      * Check if user has any of the specified roles
      */
     public static function hasAnyRole($roles) {
+        if (!self::checkSessionSecurity()) {
+            return false;
+        }
+        
         if (!isset($_SESSION['user_role'])) {
             return false;
         }
@@ -204,6 +253,10 @@ class Session {
         $_SESSION['user_role'] = $role;
         $_SESSION['login_time'] = time();
         
+        // Store security data
+        $_SESSION['ip'] = $_SERVER['REMOTE_ADDR'] ?? '';
+        $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        
         // Store additional user data if provided
         if (!empty($additionalData) && is_array($additionalData)) {
             foreach ($additionalData as $key => $value) {
@@ -216,14 +269,16 @@ class Session {
         
         // Update session creation time
         $_SESSION['created'] = time();
-        $_SESSION['ip'] = $_SERVER['REMOTE_ADDR'] ?? '';
-        $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? '';
     }
 
     /**
      * Get user ID
      */
     public static function getUserId() {
+        if (!self::checkSessionSecurity()) {
+            return null;
+        }
+        
         return $_SESSION['user_id'] ?? null;
     }
 
@@ -231,6 +286,10 @@ class Session {
      * Get username
      */
     public static function getUsername() {
+        if (!self::checkSessionSecurity()) {
+            return null;
+        }
+        
         return $_SESSION['username'] ?? null;
     }
 
@@ -238,6 +297,10 @@ class Session {
      * Get user role
      */
     public static function getUserRole() {
+        if (!self::checkSessionSecurity()) {
+            return null;
+        }
+        
         return $_SESSION['user_role'] ?? null;
     }
 
@@ -245,6 +308,10 @@ class Session {
      * Get user data
      */
     public static function getUserData($key = null) {
+        if (!self::checkSessionSecurity()) {
+            return null;
+        }
+        
         if ($key === null) {
             // Return all user data
             $userData = [];
@@ -260,11 +327,11 @@ class Session {
     }
 
     /**
-     * Clear user session on logout
+     * Enhanced logout to clear all security data
      */
     public static function logout() {
         // Clear all user-related session variables
-        $userKeys = ['user_id', 'username', 'user_role', 'login_time'];
+        $userKeys = ['user_id', 'username', 'user_role', 'login_time', 'ip', 'user_agent', 'created'];
         foreach ($userKeys as $key) {
             unset($_SESSION[$key]);
         }
@@ -278,8 +345,6 @@ class Session {
         
         // Clear flash messages
         unset($_SESSION['flash']);
-        
-        // Keep CSRF token for security
         
         // Regenerate session ID after logout
         session_regenerate_id(true);
