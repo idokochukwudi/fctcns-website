@@ -36,9 +36,27 @@
                 <a href="<?php echo $baseUrl; ?>/admin/nominal-roll" class="btn btn-outline">
                     <i class="fas fa-arrow-left"></i> Back to List
                 </a>
-                <button type="button" class="btn btn-success" onclick="window.print()">
+                
+                <!-- Standard Print -->
+                <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/print/<?php echo $employee['id']; ?>" 
+                   class="btn btn-success" target="_blank">
                     <i class="fas fa-print"></i> Print
-                </button>
+                </a>
+
+                <!-- Direct Auto-Print -->
+                <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/print/direct/<?php echo $employee['id']; ?>" 
+                   class="btn btn-info" target="_blank">
+                    <i class="fas fa-bolt"></i> Auto-Print
+                </a>
+
+                <!-- Print with Audit -->
+                <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
+                <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/print/with-audit/<?php echo $employee['id']; ?>" 
+                   class="btn btn-warning" target="_blank">
+                    <i class="fas fa-file-contract"></i> Print with Audit
+                </a>
+                <?php endif; ?>
+                
                 <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/export?format=pdf&id=<?php echo $employee['id']; ?>" 
                    class="btn btn-danger" target="_blank">
                     <i class="fas fa-file-pdf"></i> Export PDF
@@ -495,9 +513,25 @@
             <i class="fas fa-file-pdf"></i> Export as PDF
         </a>
         
-        <button type="button" class="btn btn-info" onclick="window.print()">
+        <!-- Standard Print -->
+        <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/print/<?php echo $employee['id']; ?>" 
+           class="btn btn-success" target="_blank">
             <i class="fas fa-print"></i> Print Record
-        </button>
+        </a>
+
+        <!-- Direct Auto-Print -->
+        <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/print/direct/<?php echo $employee['id']; ?>" 
+           class="btn btn-info" target="_blank">
+            <i class="fas fa-bolt"></i> Auto-Print
+        </a>
+
+        <!-- Print with Audit (Admin only) -->
+        <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
+        <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/print/with-audit/<?php echo $employee['id']; ?>" 
+           class="btn btn-warning" target="_blank">
+            <i class="fas fa-file-contract"></i> Print with Audit
+        </a>
+        <?php endif; ?>
         
         <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/export?format=excel&id=<?php echo $employee['id']; ?>" 
            class="btn btn-success" target="_blank">
@@ -839,6 +873,17 @@ window.printRecord = function() {
     background: #4299e1;
     color: white;
     border-color: #4299e1;
+}
+
+.btn-warning {
+    background: #f6ad55;
+    color: white;
+    border-color: #f6ad55;
+}
+
+.btn-warning:hover {
+    background: #ed8936;
+    border-color: #ed8936;
 }
 
 /* Profile Card */

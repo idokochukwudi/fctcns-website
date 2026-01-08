@@ -368,7 +368,13 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Print employee record
+     * ============================================
+     * INDUSTRIAL STANDARD PRINT FUNCTIONS
+     * ============================================
+     */
+    
+    /**
+     * Print employee record (deprecated - use printView instead)
      */
     public function print($id) {
         try {
@@ -391,6 +397,70 @@ class NominalRollController extends Controller {
             error_log("NominalRollController print error: " . $e->getMessage());
             $this->showError("Failed to load print view.");
         }
+    }
+    
+    /**
+     * Industrial Standard Print View
+     */
+    public function printView($id = null)
+    {
+        // Get employee ID
+        $employeeId = $id ?? ($_GET['id'] ?? null);
+        
+        if (!$employeeId) {
+            Session::set('error', 'Employee ID is required');
+            $this->redirect('/admin/nominal-roll');
+            return;
+        }
+        
+        // Load employee data
+        $employee = $this->model->getEmployee($employeeId);
+        
+        if (!$employee) {
+            $this->flash('error', 'Employee not found');
+            $this->redirect('/admin/nominal-roll');
+            return;
+        }
+        
+        // Prepare data for view
+        $data = [
+            'employee' => $employee,
+            'baseUrl' => BASE_URL,
+            'showAudit' => $_GET['audit'] ?? false,
+            'autoPrint' => $_GET['autoprint'] ?? false,
+            'documentId' => 'EMP-' . $employee['id'] . '-' . date('YmdHis'),
+            'confidential' => true,
+            'pageTitle' => 'Print Employee Record - ' . $employee['surname'] . ', ' . $employee['first_name'],
+            'user' => $_SESSION ?? [],
+            'isSuperAdmin' => ($_SESSION['user_role'] ?? '') === 'admin',
+            'isEditor' => in_array($_SESSION['user_role'] ?? '', ['admin', 'editor']),
+            'editingEnabled' => $this->model->isEditingEnabled()
+        ];
+        
+        // Merge with controller data
+        $this->data = array_merge($this->data, $data);
+        
+        // Load print view
+        $this->render('admin/nominal-roll/print-industrial');
+    }
+
+    /**
+     * Direct Print (auto-prints on load)
+     */
+    public function printDirect($id = null)
+    {
+        $this->printView($id);
+        // Auto-print is handled in the view via $autoPrint flag
+    }
+
+    /**
+     * Print with Audit Trail
+     */
+    public function printWithAudit($id = null)
+    {
+        $_GET['audit'] = true;
+        $_GET['autoprint'] = true;
+        $this->printView($id);
     }
     
     /**
@@ -432,7 +502,7 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Update employee record - FIXED VERSION WITH PASSPORT PHOTO FIX
+     * Update employee record - UPDATED VERSION WITH CONSISTENT QUALIFICATIONS PROCESSING
      */
     public function update($id) {
         // Check if user has permission
@@ -465,16 +535,12 @@ class NominalRollController extends Controller {
             // Debug info
             $this->debugPhotoInfo($employee, $_FILES);
             
-            // Get form data
+            // Get form data (uses getFormData() which processes qualifications consistently)
             $data = $this->getFormData();
             
             // Log what data we have
             error_log("Form data received (before photo handling):");
-            foreach ($data as $key => $value) {
-                if ($key === 'passport_photo') {
-                    error_log("  $key: " . ($value ?? 'NULL'));
-                }
-            }
+            error_log("Additional qualifications JSON: " . ($data['additional_qualifications'] ?? 'NULL'));
             
             // Handle draft status
             $isDraft = $this->input('save_as_draft', 0);
@@ -1971,7 +2037,7 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * Get form data from POST - FIXED VERSION with corrected additional qualifications handling
+     * Get form data from POST - CORRECTED VERSION for additional qualifications
      */
     private function getFormData($sanitize = false) {
         // Get all form fields
@@ -2035,27 +2101,51 @@ class NominalRollController extends Controller {
             'next_of_kin_phone' => $this->input('next_of_kin_phone', ''),
             'next_of_kin_address' => $this->input('next_of_kin_address', ''),
             'next_of_kin_relationship' => $this->input('next_of_kin_relationship', ''),
-            // FIX: Removed the incorrect lines:
-            // 'qualification_name' => $this->input('qualification_name', []),
-            // 'qualification_year' => $this->input('qualification_year', []),
         ];
         
-        // FIX: Process additional qualifications correctly
-        $additionalQualsRaw = $this->input('additional_qualifications', []);
-        $additionalQuals = [];
-        foreach ($additionalQualsRaw as $qual) {
-            if (!empty(trim($qual['qualification'] ?? ''))) {
-                $additionalQuals[] = [
-                    'qualification' => trim($qual['qualification']),
-                    'year' => $qual['year'] ?? null
-                ];
+        // ========================================
+        // CORRECTED: Process additional qualifications - BOTH CREATE AND UPDATE USE THIS SAME LOGIC
+        // ========================================
+        $additionalQualifications = [];
+        
+        if (isset($_POST['qualification_name']) && isset($_POST['qualification_year'])) {
+            $names = $_POST['qualification_name'];
+            $years = $_POST['qualification_year'];
+            
+            error_log("Processing qualifications from POST:");
+            error_log("qualification_names: " . print_r($names, true));
+            error_log("qualification_years: " . print_r($years, true));
+            
+            for ($i = 0; $i < count($names); $i++) {
+                $name = trim($names[$i] ?? '');
+                $year = trim($years[$i] ?? '');
+                
+                // Only save if both fields are filled (as per your specification)
+                if (!empty($name) && !empty($year)) {
+                    $additionalQualifications[] = [
+                        'qualification' => $name,
+                        'year' => $year
+                    ];
+                    error_log("Added qualification: {$name} (Year: {$year})");
+                } else if (!empty($name) || !empty($year)) {
+                    error_log("Skipped incomplete qualification: {$name} (Year: {$year})");
+                }
             }
         }
-        $data['additional_qualifications'] = !empty($additionalQuals) ? json_encode($additionalQuals) : null;
+        
+        // Convert to JSON
+        $additionalQualificationsJson = !empty($additionalQualifications) 
+            ? json_encode($additionalQualifications) 
+            : null;
+        
+        $data['additional_qualifications'] = $additionalQualificationsJson;
+        error_log("Final additional_qualifications JSON: " . $data['additional_qualifications']);
+        // ========================================
+        // END CORRECTION
+        // ========================================
         
         // IMPORTANT: DO NOT initialize passport_photo here
         // It will be handled separately in create/store and update methods
-        // $data['passport_photo'] = null; // REMOVE THIS LINE
         
         // Handle disability type visibility
         if ($data['disability'] !== 'Yes') {

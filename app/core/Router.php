@@ -59,6 +59,17 @@ class Router {
         $this->get('/admin/nominal-roll/export/pdf/(:num)', 'NominalRollController@exportPdf/$1');
         $this->get('/admin/nominal-roll/export/pdf', 'NominalRollController@exportPdf');
         
+        // PRINT ROUTES - ADDED
+        // Standard print routes
+        $this->get('/admin/nominal-roll/print/{id}', 'NominalRollController@printView');
+        $this->get('/admin/nominal-roll/print', 'NominalRollController@printView'); // For query string
+
+        // Direct print routes (auto-prints)
+        $this->get('/admin/nominal-roll/print/direct/{id}', 'NominalRollController@printDirect');
+
+        // Print with options
+        $this->get('/admin/nominal-roll/print/with-audit/{id}', 'NominalRollController@printWithAudit');
+        
         // Settings Routes
         $this->get('/admin/nominal-roll/settings', 'NominalRollController@settings');
         $this->post('/admin/nominal-roll/update-settings', 'NominalRollController@updateSettings');
@@ -103,7 +114,7 @@ class Router {
         $this->get('/admission-list', 'AdmissionController@index');
         
         if (defined('APP_DEBUG') && APP_DEBUG) {
-            error_log("Router: All routes registered including User Management and PDF export routes");
+            error_log("Router: All routes registered including User Management, PDF export, and Print routes");
         }
     }
 

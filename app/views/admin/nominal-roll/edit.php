@@ -396,7 +396,7 @@
                                       placeholder="List professional certifications separated by commas"><?php echo htmlspecialchars($formData['professional_certifications'] ?? $employee['professional_certifications'] ?? ''); ?></textarea>
                         </div>
 
-                        <!-- Additional Qualifications - FIXED: Added full-width-group class -->
+                        <!-- Additional Qualifications - UPDATED to match create form -->
                         <div class="form-group full-width-group">
                             <label>Additional Qualifications</label>
                             <div id="qualifications-container">
@@ -425,11 +425,11 @@
                                 <div class="qualification-entry">
                                     <div class="qualification-row">
                                         <input type="text" 
-                                               name="additional_qualifications[<?php echo $index; ?>][qualification]" 
+                                               name="qualification_name[]" 
                                                class="form-control qualification-name"
                                                value="<?php echo htmlspecialchars($qualName); ?>"
                                                placeholder="Qualification (e.g., BSc Nursing)">
-                                        <select name="additional_qualifications[<?php echo $index; ?>][year]" class="form-control qualification-year">
+                                        <select name="qualification_year[]" class="form-control qualification-year">
                                             <option value="">Year</option>
                                             <?php for ($year = date('Y'); $year >= 1960; $year--) { ?>
                                             <option value="<?php echo $year; ?>" <?php echo $qualYear == $year ? 'selected' : ''; ?>>
@@ -451,10 +451,10 @@
                                 <div class="qualification-entry">
                                     <div class="qualification-row">
                                         <input type="text" 
-                                               name="additional_qualifications[0][qualification]" 
+                                               name="qualification_name[]" 
                                                class="form-control qualification-name"
                                                placeholder="Qualification (e.g., BSc Nursing)">
-                                        <select name="additional_qualifications[0][year]" class="form-control qualification-year">
+                                        <select name="qualification_year[]" class="form-control qualification-year">
                                             <option value="">Year</option>
                                             <?php for ($year = date('Y'); $year >= 1960; $year--) { ?>
                                             <option value="<?php echo $year; ?>"><?php echo $year; ?></option>
@@ -1055,15 +1055,15 @@
 </div>
 <?php } ?>
 
-<!-- Template for Qualification Entry -->
+<!-- Template for Qualification Entry - UPDATED to match create form -->
 <template id="qualification-template">
     <div class="qualification-entry">
         <div class="qualification-row">
             <input type="text" 
-                   name="additional_qualifications[__INDEX__][qualification]" 
+                   name="qualification_name[]" 
                    class="form-control qualification-name"
                    placeholder="Qualification (e.g., BSc Nursing)">
-            <select name="additional_qualifications[__INDEX__][year]" class="form-control qualification-year">
+            <select name="qualification_year[]" class="form-control qualification-year">
                 <option value="">Year</option>
                 <?php for ($year = date('Y'); $year >= 1960; $year--) { ?>
                 <option value="<?php echo $year; ?>"><?php echo $year; ?></option>
@@ -1246,33 +1246,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Multiple Qualifications with Year - FIXED
+    // Multiple Qualifications with Year - UPDATED to match create form
     const qualificationsContainer = document.getElementById('qualifications-container');
     const addQualificationBtn = document.getElementById('add-qualification-btn');
     const qualificationTemplate = document.getElementById('qualification-template');
-
-    // Function to get the next index for new qualification
-    function getNextQualificationIndex() {
-        const entries = document.querySelectorAll('.qualification-entry');
-        return entries.length;
-    }
 
     // Function to add a new qualification field
     function addQualificationField(name = '', year = '') {
         const templateContent = qualificationTemplate.content.cloneNode(true);
         const entry = templateContent.querySelector('.qualification-entry');
-        const nextIndex = getNextQualificationIndex();
         
-        // Update the name attributes with the correct index
+        // Set values if provided
         const nameInput = entry.querySelector('.qualification-name');
         const yearSelect = entry.querySelector('.qualification-year');
         
-        nameInput.name = nameInput.name.replace('__INDEX__', nextIndex);
-        yearSelect.name = yearSelect.name.replace('__INDEX__', nextIndex);
-        
-        // Set values if provided
-        if (name) nameInput.value = name;
-        if (year) yearSelect.value = year;
+        nameInput.value = name;
+        yearSelect.value = year;
         
         // Add remove functionality
         const removeBtn = entry.querySelector('.remove-qualification');
@@ -1282,7 +1271,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         qualificationsContainer.appendChild(entry);
     }
-    
+
     // Add more qualifications button
     addQualificationBtn.addEventListener('click', function() {
         addQualificationField();

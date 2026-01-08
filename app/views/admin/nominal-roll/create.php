@@ -360,8 +360,8 @@
                                       placeholder="List professional certifications separated by commas"><?php echo htmlspecialchars($formData['professional_certifications'] ?? ''); ?></textarea>
                         </div>
 
-                        <!-- Additional Qualifications - FIXED -->
-                        <div class="form-group">
+                        <!-- Additional Qualifications - FIXED: Added full-width-group class -->
+                        <div class="form-group full-width-group">
                             <label>Additional Qualifications</label>
                             <div id="qualifications-container">
                                 <!-- Initial field will be added by JavaScript -->
@@ -852,7 +852,7 @@
     </form>
 </div>
 
-<!-- Template for Qualification Entry - SIMPLE FIX -->
+<!-- Template for Qualification Entry - UPDATED with button text -->
 <template id="qualification-template">
     <div class="qualification-entry">
         <div class="qualification-row">
@@ -868,12 +868,48 @@
             </select>
             <button type="button" class="btn btn-danger remove-qualification" title="Remove">
                 <i class="fas fa-trash"></i>
+                <span class="btn-text">Remove</span>
             </button>
         </div>
     </div>
 </template>
 
-<!-- JavaScript for Enhanced Form - SIMPLE WORKING VERSION -->
+<?php
+// ========================================
+// FIX: Pre-populate additional qualifications if editing
+// ========================================
+if (isset($formData['additional_qualifications']) && !empty($formData['additional_qualifications'])): 
+    // Decode the JSON if it's a string
+    $existingQuals = $formData['additional_qualifications'];
+    if (is_string($existingQuals)) {
+        $existingQuals = json_decode($existingQuals, true);
+    }
+    
+    // Add existing qualifications
+    if (is_array($existingQuals)) {
+        echo "<script>";
+        echo "document.addEventListener('DOMContentLoaded', function() {";
+        echo "const qualificationsContainer = document.getElementById('qualifications-container');";
+        echo "if (qualificationsContainer) {";
+        echo "qualificationsContainer.innerHTML = '';"; // Clear the initial empty field
+        
+        foreach ($existingQuals as $qual) {
+            $qName = htmlspecialchars($qual['qualification'] ?? '', ENT_QUOTES, 'UTF-8');
+            $qYear = htmlspecialchars($qual['year'] ?? '', ENT_QUOTES, 'UTF-8');
+            echo "addQualificationField('{$qName}', '{$qYear}');";
+        }
+        
+        echo "}";
+        echo "});";
+        echo "</script>";
+    }
+endif;
+?>
+<!-- ========================================
+// END FIX
+// ======================================== -->
+
+<!-- JavaScript for Enhanced Form - UPDATED -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Nigerian States and LGAs Data
@@ -1032,11 +1068,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Multiple Qualifications with Year - SIMPLE WORKING VERSION
+    // Multiple Qualifications with Year - RESTORED ORIGINAL WORKING VERSION
     const qualificationsContainer = document.getElementById('qualifications-container');
     const addQualificationBtn = document.getElementById('add-qualification-btn');
     const qualificationTemplate = document.getElementById('qualification-template');
 
+    // Function to add qualification field - ORIGINAL WORKING VERSION
     function addQualificationField(name = '', year = '') {
         const templateContent = qualificationTemplate.content.cloneNode(true);
         const entry = templateContent.querySelector('.qualification-entry');
@@ -1057,8 +1094,10 @@ document.addEventListener('DOMContentLoaded', function() {
         qualificationsContainer.appendChild(entry);
     }
     
-    // Add initial qualification field on page load
+    // Add initial qualification field on page load (only if no existing qualifications)
+    <?php if (!isset($formData['additional_qualifications']) || empty($formData['additional_qualifications'])): ?>
     addQualificationField();
+    <?php endif; ?>
     
     // Add more qualifications button
     addQualificationBtn.addEventListener('click', function() {
@@ -1351,6 +1390,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Show/hide button text on mobile
+    function updateButtonTextForMobile() {
+        const isMobile = window.innerWidth <= 768;
+        const btnTexts = document.querySelectorAll('.btn-text');
+        
+        btnTexts.forEach(btnText => {
+            if (isMobile) {
+                btnText.style.display = 'inline !important';
+            } else {
+                btnText.style.display = 'inline';
+            }
+        });
+    }
+    
+    // Initial update
+    updateButtonTextForMobile();
+    
+    // Update on resize
+    window.addEventListener('resize', updateButtonTextForMobile);
 });
 </script>
 
@@ -1436,6 +1495,13 @@ document.addEventListener('DOMContentLoaded', function() {
     gap: 20px;
 }
 
+/* FIX: Full-width group for Additional Qualifications */
+@media (min-width: 640px) {
+    .form-grid .full-width-group {
+        grid-column: span 2;  /* Make this group span both columns for full width */
+    }
+}
+
 /* Form Groups */
 .form-group {
     margin-bottom: 0;
@@ -1490,34 +1556,38 @@ textarea.form-control {
     min-height: 80px;
 }
 
-/* Qualifications */
+/* Qualifications - UPDATED */
 .qualification-entry {
     margin-bottom: 15px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
 }
 
 .qualification-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 3fr 1fr auto;
     gap: 10px;
-    align-items: center;
+    align-items: start;
 }
 
 .qualification-name {
-    flex: 3;
+    min-width: 0;
 }
 
 .qualification-year {
-    flex: 1;
-    min-width: 100px;
+    min-width: 120px;
 }
 
 .remove-qualification {
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    display: flex;
+    padding: 10px 16px;
+    white-space: nowrap;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    flex-shrink: 0;
     background: #e53e3e !important;
     color: white !important;
     border: 1px solid #c53030 !important;
@@ -1526,9 +1596,38 @@ textarea.form-control {
     transition: all 0.2s;
 }
 
+.remove-qualification i {
+    font-size: 14px;
+}
+
+.remove-qualification .btn-text {
+    display: inline;
+}
+
 .remove-qualification:hover {
     background: #c53030 !important;
     transform: scale(1.05);
+}
+
+/* Mobile adjustments for qualifications */
+@media (max-width: 768px) {
+    .qualification-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .qualification-year {
+        min-width: 100%;
+    }
+    
+    .remove-qualification {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .remove-qualification .btn-text {
+        display: inline !important;
+    }
 }
 
 #add-qualification-btn {
@@ -1761,22 +1860,6 @@ textarea.form-control {
     
     .card-header {
         padding: 15px 20px;
-    }
-    
-    .qualification-row {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .qualification-name,
-    .qualification-year {
-        width: 100%;
-    }
-    
-    .remove-qualification {
-        width: 100%;
-        height: 40px;
-        margin-top: 5px;
     }
     
     .form-actions {
