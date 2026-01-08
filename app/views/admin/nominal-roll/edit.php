@@ -29,23 +29,23 @@
     </div>
 
     <!-- Flash Messages -->
-    <?php if (!empty($flash_success)): ?>
+    <?php if (!empty($flash_success)) { ?>
     <div class="alert alert-success">
         <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($flash_success); ?>
     </div>
-    <?php endif; ?>
+    <?php } ?>
     
-    <?php if (!empty($flash_error)): ?>
+    <?php if (!empty($flash_error)) { ?>
     <div class="alert alert-danger">
         <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($flash_error); ?>
     </div>
-    <?php endif; ?>
+    <?php } ?>
     
-    <?php if (!empty($error)): ?>
+    <?php if (!empty($error)) { ?>
     <div class="alert alert-danger">
         <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
     </div>
-    <?php endif; ?>
+    <?php } ?>
 
     <!-- Employee Form -->
     <form method="POST" action="<?php echo $baseUrl; ?>/admin/nominal-roll/update/<?php echo $employee['id']; ?>" enctype="multipart/form-data" class="employee-form" id="employeeForm">
@@ -110,8 +110,8 @@
                             <label for="sex">Sex *</label>
                             <select id="sex" name="sex" class="form-control" required>
                                 <option value="">Select Sex</option>
-                                <option value="Male" <?php echo ($formData['sex'] ?? $employee['sex'] ?? '') === 'Male' ? 'selected' : ''; ?>>Male</option>
-                                <option value="Female" <?php echo ($formData['sex'] ?? $employee['sex'] ?? '') === 'Female' ? 'selected' : ''; ?>>Female</option>
+                                <option value="Male" <?php echo (isset($formData['sex']) ? $formData['sex'] : (isset($employee['sex']) ? $employee['sex'] : '')) === 'Male' ? 'selected' : ''; ?>>Male</option>
+                                <option value="Female" <?php echo (isset($formData['sex']) ? $formData['sex'] : (isset($employee['sex']) ? $employee['sex'] : '')) === 'Female' ? 'selected' : ''; ?>>Female</option>
                             </select>
                         </div>
 
@@ -131,10 +131,10 @@
                             <label for="marital_status">Marital Status *</label>
                             <select id="marital_status" name="marital_status" class="form-control" required>
                                 <option value="">Select Status</option>
-                                <option value="Single" <?php echo ($formData['marital_status'] ?? $employee['marital_status'] ?? '') === 'Single' ? 'selected' : ''; ?>>Single</option>
-                                <option value="Married" <?php echo ($formData['marital_status'] ?? $employee['marital_status'] ?? '') === 'Married' ? 'selected' : ''; ?>>Married</option>
-                                <option value="Divorced" <?php echo ($formData['marital_status'] ?? $employee['marital_status'] ?? '') === 'Divorced' ? 'selected' : ''; ?>>Divorced</option>
-                                <option value="Widowed" <?php echo ($formData['marital_status'] ?? $employee['marital_status'] ?? '') === 'Widowed' ? 'selected' : ''; ?>>Widowed</option>
+                                <option value="Single" <?php echo (isset($formData['marital_status']) ? $formData['marital_status'] : (isset($employee['marital_status']) ? $employee['marital_status'] : '')) === 'Single' ? 'selected' : ''; ?>>Single</option>
+                                <option value="Married" <?php echo (isset($formData['marital_status']) ? $formData['marital_status'] : (isset($employee['marital_status']) ? $employee['marital_status'] : '')) === 'Married' ? 'selected' : ''; ?>>Married</option>
+                                <option value="Divorced" <?php echo (isset($formData['marital_status']) ? $formData['marital_status'] : (isset($employee['marital_status']) ? $employee['marital_status'] : '')) === 'Divorced' ? 'selected' : ''; ?>>Divorced</option>
+                                <option value="Widowed" <?php echo (isset($formData['marital_status']) ? $formData['marital_status'] : (isset($employee['marital_status']) ? $employee['marital_status'] : '')) === 'Widowed' ? 'selected' : ''; ?>>Widowed</option>
                             </select>
                         </div>
 
@@ -143,9 +143,9 @@
                             <label for="nationality">Nationality *</label>
                             <select id="nationality" name="nationality" class="form-control" required>
                                 <option value="">Select Nationality</option>
-                                <option value="Nigerian" <?php echo ($formData['nationality'] ?? $employee['nationality'] ?? '') === 'Nigerian' ? 'selected' : ''; ?>>Nigerian</option>
-                                <option value="Ghanaian" <?php echo ($formData['nationality'] ?? $employee['nationality'] ?? '') === 'Ghanaian' ? 'selected' : ''; ?>>Ghanaian</option>
-                                <option value="Other" <?php echo ($formData['nationality'] ?? $employee['nationality'] ?? '') === 'Other' ? 'selected' : ''; ?>>Other</option>
+                                <option value="Nigerian" <?php echo (isset($formData['nationality']) ? $formData['nationality'] : (isset($employee['nationality']) ? $employee['nationality'] : '')) === 'Nigerian' ? 'selected' : ''; ?>>Nigerian</option>
+                                <option value="Ghanaian" <?php echo (isset($formData['nationality']) ? $formData['nationality'] : (isset($employee['nationality']) ? $employee['nationality'] : '')) === 'Ghanaian' ? 'selected' : ''; ?>>Ghanaian</option>
+                                <option value="Other" <?php echo (isset($formData['nationality']) ? $formData['nationality'] : (isset($employee['nationality']) ? $employee['nationality'] : '')) === 'Other' ? 'selected' : ''; ?>>Other</option>
                             </select>
                         </div>
 
@@ -154,10 +154,10 @@
                             <label for="religion">Religion</label>
                             <select id="religion" name="religion" class="form-control">
                                 <option value="">Select Religion</option>
-                                <option value="Christianity" <?php echo ($formData['religion'] ?? $employee['religion'] ?? '') === 'Christianity' ? 'selected' : ''; ?>>Christianity</option>
-                                <option value="Islam" <?php echo ($formData['religion'] ?? $employee['religion'] ?? '') === 'Islam' ? 'selected' : ''; ?>>Islam</option>
-                                <option value="Traditional" <?php echo ($formData['religion'] ?? $employee['religion'] ?? '') === 'Traditional' ? 'selected' : ''; ?>>Traditional Religion</option>
-                                <option value="Other" <?php echo ($formData['religion'] ?? $employee['religion'] ?? '') === 'Other' ? 'selected' : ''; ?>>Other</option>
+                                <option value="Christianity" <?php echo (isset($formData['religion']) ? $formData['religion'] : (isset($employee['religion']) ? $employee['religion'] : '')) === 'Christianity' ? 'selected' : ''; ?>>Christianity</option>
+                                <option value="Islam" <?php echo (isset($formData['religion']) ? $formData['religion'] : (isset($employee['religion']) ? $employee['religion'] : '')) === 'Islam' ? 'selected' : ''; ?>>Islam</option>
+                                <option value="Traditional" <?php echo (isset($formData['religion']) ? $formData['religion'] : (isset($employee['religion']) ? $employee['religion'] : '')) === 'Traditional' ? 'selected' : ''; ?>>Traditional Religion</option>
+                                <option value="Other" <?php echo (isset($formData['religion']) ? $formData['religion'] : (isset($employee['religion']) ? $employee['religion'] : '')) === 'Other' ? 'selected' : ''; ?>>Other</option>
                             </select>
                         </div>
                     </div>
@@ -190,11 +190,11 @@
                             <label for="grade_level">Grade Level (GL) *</label>
                             <select id="grade_level" name="grade_level" class="form-control" required>
                                 <option value="">Select Grade Level</option>
-                                <?php for ($i = 1; $i <= 17; $i++): ?>
-                                <option value="<?php echo $i; ?>" <?php echo ($formData['grade_level'] ?? $employee['grade_level'] ?? '') == $i ? 'selected' : ''; ?>>
+                                <?php for ($i = 1; $i <= 17; $i++) { ?>
+                                <option value="<?php echo $i; ?>" <?php echo (isset($formData['grade_level']) ? $formData['grade_level'] : (isset($employee['grade_level']) ? $employee['grade_level'] : '')) == $i ? 'selected' : ''; ?>>
                                     GL <?php echo $i; ?>
                                 </option>
-                                <?php endfor; ?>
+                                <?php } ?>
                             </select>
                         </div>
 
@@ -203,11 +203,11 @@
                             <label for="step">Step</label>
                             <select id="step" name="step" class="form-control">
                                 <option value="">Select Step</option>
-                                <?php for ($i = 1; $i <= 15; $i++): ?>
-                                <option value="<?php echo $i; ?>" <?php echo ($formData['step'] ?? $employee['step'] ?? '') == $i ? 'selected' : ''; ?>>
+                                <?php for ($i = 1; $i <= 15; $i++) { ?>
+                                <option value="<?php echo $i; ?>" <?php echo (isset($formData['step']) ? $formData['step'] : (isset($employee['step']) ? $employee['step'] : '')) == $i ? 'selected' : ''; ?>>
                                     Step <?php echo $i; ?>
                                 </option>
-                                <?php endfor; ?>
+                                <?php } ?>
                             </select>
                         </div>
 
@@ -227,10 +227,10 @@
                             <label for="staff_type">Staff Type</label>
                             <select id="staff_type" name="staff_type" class="form-control">
                                 <option value="">Select Staff Type</option>
-                                <option value="Academic" <?php echo ($formData['staff_type'] ?? $employee['staff_type'] ?? '') === 'Academic' ? 'selected' : ''; ?>>Academic</option>
-                                <option value="Non-Academic" <?php echo ($formData['staff_type'] ?? $employee['staff_type'] ?? '') === 'Non-Academic' ? 'selected' : ''; ?>>Non-Academic</option>
-                                <option value="Administrative" <?php echo ($formData['staff_type'] ?? $employee['staff_type'] ?? '') === 'Administrative' ? 'selected' : ''; ?>>Administrative</option>
-                                <option value="Technical" <?php echo ($formData['staff_type'] ?? $employee['staff_type'] ?? '') === 'Technical' ? 'selected' : ''; ?>>Technical</option>
+                                <option value="Academic" <?php echo (isset($formData['staff_type']) ? $formData['staff_type'] : (isset($employee['staff_type']) ? $employee['staff_type'] : '')) === 'Academic' ? 'selected' : ''; ?>>Academic</option>
+                                <option value="Non-Academic" <?php echo (isset($formData['staff_type']) ? $formData['staff_type'] : (isset($employee['staff_type']) ? $employee['staff_type'] : '')) === 'Non-Academic' ? 'selected' : ''; ?>>Non-Academic</option>
+                                <option value="Administrative" <?php echo (isset($formData['staff_type']) ? $formData['staff_type'] : (isset($employee['staff_type']) ? $employee['staff_type'] : '')) === 'Administrative' ? 'selected' : ''; ?>>Administrative</option>
+                                <option value="Technical" <?php echo (isset($formData['staff_type']) ? $formData['staff_type'] : (isset($employee['staff_type']) ? $employee['staff_type'] : '')) === 'Technical' ? 'selected' : ''; ?>>Technical</option>
                             </select>
                         </div>
 
@@ -239,10 +239,10 @@
                             <label for="employment_type">Employment Type</label>
                             <select id="employment_type" name="employment_type" class="form-control">
                                 <option value="">Select Employment Type</option>
-                                <option value="Permanent" <?php echo ($formData['employment_type'] ?? $employee['employment_type'] ?? '') === 'Permanent' ? 'selected' : ''; ?>>Permanent</option>
-                                <option value="Contract" <?php echo ($formData['employment_type'] ?? $employee['employment_type'] ?? '') === 'Contract' ? 'selected' : ''; ?>>Contract</option>
-                                <option value="Adjunct" <?php echo ($formData['employment_type'] ?? $employee['employment_type'] ?? '') === 'Adjunct' ? 'selected' : ''; ?>>Adjunct</option>
-                                <option value="Visiting" <?php echo ($formData['employment_type'] ?? $employee['employment_type'] ?? '') === 'Visiting' ? 'selected' : ''; ?>>Visiting</option>
+                                <option value="Permanent" <?php echo (isset($formData['employment_type']) ? $formData['employment_type'] : (isset($employee['employment_type']) ? $employee['employment_type'] : '')) === 'Permanent' ? 'selected' : ''; ?>>Permanent</option>
+                                <option value="Contract" <?php echo (isset($formData['employment_type']) ? $formData['employment_type'] : (isset($employee['employment_type']) ? $employee['employment_type'] : '')) === 'Contract' ? 'selected' : ''; ?>>Contract</option>
+                                <option value="Adjunct" <?php echo (isset($formData['employment_type']) ? $formData['employment_type'] : (isset($employee['employment_type']) ? $employee['employment_type'] : '')) === 'Adjunct' ? 'selected' : ''; ?>>Adjunct</option>
+                                <option value="Visiting" <?php echo (isset($formData['employment_type']) ? $formData['employment_type'] : (isset($employee['employment_type']) ? $employee['employment_type'] : '')) === 'Visiting' ? 'selected' : ''; ?>>Visiting</option>
                             </select>
                         </div>
 
@@ -251,10 +251,10 @@
                             <label for="appointment_type">Appointment Type</label>
                             <select id="appointment_type" name="appointment_type" class="form-control">
                                 <option value="">Select Appointment Type</option>
-                                <option value="Confirmed" <?php echo ($formData['appointment_type'] ?? $employee['appointment_type'] ?? '') === 'Confirmed' ? 'selected' : ''; ?>>Confirmed</option>
-                                <option value="Acting" <?php echo ($formData['appointment_type'] ?? $employee['appointment_type'] ?? '') === 'Acting' ? 'selected' : ''; ?>>Acting</option>
-                                <option value="Secondment" <?php echo ($formData['appointment_type'] ?? $employee['appointment_type'] ?? '') === 'Secondment' ? 'selected' : ''; ?>>Secondment</option>
-                                <option value="Deputation" <?php echo ($formData['appointment_type'] ?? $employee['appointment_type'] ?? '') === 'Deputation' ? 'selected' : ''; ?>>Deputation</option>
+                                <option value="Confirmed" <?php echo (isset($formData['appointment_type']) ? $formData['appointment_type'] : (isset($employee['appointment_type']) ? $employee['appointment_type'] : '')) === 'Confirmed' ? 'selected' : ''; ?>>Confirmed</option>
+                                <option value="Acting" <?php echo (isset($formData['appointment_type']) ? $formData['appointment_type'] : (isset($employee['appointment_type']) ? $employee['appointment_type'] : '')) === 'Acting' ? 'selected' : ''; ?>>Acting</option>
+                                <option value="Secondment" <?php echo (isset($formData['appointment_type']) ? $formData['appointment_type'] : (isset($employee['appointment_type']) ? $employee['appointment_type'] : '')) === 'Secondment' ? 'selected' : ''; ?>>Secondment</option>
+                                <option value="Deputation" <?php echo (isset($formData['appointment_type']) ? $formData['appointment_type'] : (isset($employee['appointment_type']) ? $employee['appointment_type'] : '')) === 'Deputation' ? 'selected' : ''; ?>>Deputation</option>
                             </select>
                         </div>
 
@@ -326,15 +326,15 @@
                             <label for="highest_qualification">Highest Qualification *</label>
                             <select id="highest_qualification" name="highest_qualification" class="form-control" required>
                                 <option value="">Select Highest Qualification</option>
-                                <option value="PhD" <?php echo ($formData['highest_qualification'] ?? $employee['highest_qualification'] ?? '') === 'PhD' ? 'selected' : ''; ?>>PhD</option>
-                                <option value="MSc" <?php echo ($formData['highest_qualification'] ?? $employee['highest_qualification'] ?? '') === 'MSc' ? 'selected' : ''; ?>>MSc/M.A</option>
-                                <option value="BSc" <?php echo ($formData['highest_qualification'] ?? $employee['highest_qualification'] ?? '') === 'BSc' ? 'selected' : ''; ?>>BSc/B.A/B.Ed</option>
-                                <option value="HND" <?php echo ($formData['highest_qualification'] ?? $employee['highest_qualification'] ?? '') === 'HND' ? 'selected' : ''; ?>>HND</option>
-                                <option value="OND" <?php echo ($formData['highest_qualification'] ?? $employee['highest_qualification'] ?? '') === 'OND' ? 'selected' : ''; ?>>OND</option>
-                                <option value="NCE" <?php echo ($formData['highest_qualification'] ?? $employee['highest_qualification'] ?? '') === 'NCE' ? 'selected' : ''; ?>>NCE</option>
-                                <option value="SSCE" <?php echo ($formData['highest_qualification'] ?? $employee['highest_qualification'] ?? '') === 'SSCE' ? 'selected' : ''; ?>>SSCE/WASC</option>
-                                <option value="FSLC" <?php echo ($formData['highest_qualification'] ?? $employee['highest_qualification'] ?? '') === 'FSLC' ? 'selected' : ''; ?>>FSLC</option>
-                                <option value="Others" <?php echo ($formData['highest_qualification'] ?? $employee['highest_qualification'] ?? '') === 'Others' ? 'selected' : ''; ?>>Others</option>
+                                <option value="PhD" <?php echo (isset($formData['highest_qualification']) ? $formData['highest_qualification'] : (isset($employee['highest_qualification']) ? $employee['highest_qualification'] : '')) === 'PhD' ? 'selected' : ''; ?>>PhD</option>
+                                <option value="MSc" <?php echo (isset($formData['highest_qualification']) ? $formData['highest_qualification'] : (isset($employee['highest_qualification']) ? $employee['highest_qualification'] : '')) === 'MSc' ? 'selected' : ''; ?>>MSc/M.A</option>
+                                <option value="BSc" <?php echo (isset($formData['highest_qualification']) ? $formData['highest_qualification'] : (isset($employee['highest_qualification']) ? $employee['highest_qualification'] : '')) === 'BSc' ? 'selected' : ''; ?>>BSc/B.A/B.Ed</option>
+                                <option value="HND" <?php echo (isset($formData['highest_qualification']) ? $formData['highest_qualification'] : (isset($employee['highest_qualification']) ? $employee['highest_qualification'] : '')) === 'HND' ? 'selected' : ''; ?>>HND</option>
+                                <option value="OND" <?php echo (isset($formData['highest_qualification']) ? $formData['highest_qualification'] : (isset($employee['highest_qualification']) ? $employee['highest_qualification'] : '')) === 'OND' ? 'selected' : ''; ?>>OND</option>
+                                <option value="NCE" <?php echo (isset($formData['highest_qualification']) ? $formData['highest_qualification'] : (isset($employee['highest_qualification']) ? $employee['highest_qualification'] : '')) === 'NCE' ? 'selected' : ''; ?>>NCE</option>
+                                <option value="SSCE" <?php echo (isset($formData['highest_qualification']) ? $formData['highest_qualification'] : (isset($employee['highest_qualification']) ? $employee['highest_qualification'] : '')) === 'SSCE' ? 'selected' : ''; ?>>SSCE/WASC</option>
+                                <option value="FSLC" <?php echo (isset($formData['highest_qualification']) ? $formData['highest_qualification'] : (isset($employee['highest_qualification']) ? $employee['highest_qualification'] : '')) === 'FSLC' ? 'selected' : ''; ?>>FSLC</option>
+                                <option value="Others" <?php echo (isset($formData['highest_qualification']) ? $formData['highest_qualification'] : (isset($employee['highest_qualification']) ? $employee['highest_qualification'] : '')) === 'Others' ? 'selected' : ''; ?>>Others</option>
                             </select>
                         </div>
 
@@ -343,11 +343,11 @@
                             <label for="year_of_highest_qualification">Year of Highest Qualification *</label>
                             <select id="year_of_highest_qualification" name="year_of_highest_qualification" class="form-control" required>
                                 <option value="">Select Year</option>
-                                <?php for ($year = date('Y'); $year >= 1960; $year--): ?>
-                                <option value="<?php echo $year; ?>" <?php echo ($formData['year_of_highest_qualification'] ?? $employee['year_of_highest_qualification'] ?? '') == $year ? 'selected' : ''; ?>>
+                                <?php for ($year = date('Y'); $year >= 1960; $year--) { ?>
+                                <option value="<?php echo $year; ?>" <?php echo (isset($formData['year_of_highest_qualification']) ? $formData['year_of_highest_qualification'] : (isset($employee['year_of_highest_qualification']) ? $employee['year_of_highest_qualification'] : '')) == $year ? 'selected' : ''; ?>>
                                     <?php echo $year; ?>
                                 </option>
-                                <?php endfor; ?>
+                                <?php } ?>
                             </select>
                         </div>
 
@@ -378,11 +378,11 @@
                             <label for="class_of_degree">Class of Degree</label>
                             <select id="class_of_degree" name="class_of_degree" class="form-control">
                                 <option value="">Select Class</option>
-                                <option value="First Class" <?php echo ($formData['class_of_degree'] ?? $employee['class_of_degree'] ?? '') === 'First Class' ? 'selected' : ''; ?>>First Class</option>
-                                <option value="Second Class Upper" <?php echo ($formData['class_of_degree'] ?? $employee['class_of_degree'] ?? '') === 'Second Class Upper' ? 'selected' : ''; ?>>Second Class Upper</option>
-                                <option value="Second Class Lower" <?php echo ($formData['class_of_degree'] ?? $employee['class_of_degree'] ?? '') === 'Second Class Lower' ? 'selected' : ''; ?>>Second Class Lower</option>
-                                <option value="Third Class" <?php echo ($formData['class_of_degree'] ?? $employee['class_of_degree'] ?? '') === 'Third Class' ? 'selected' : ''; ?>>Third Class</option>
-                                <option value="Pass" <?php echo ($formData['class_of_degree'] ?? $employee['class_of_degree'] ?? '') === 'Pass' ? 'selected' : ''; ?>>Pass</option>
+                                <option value="First Class" <?php echo (isset($formData['class_of_degree']) ? $formData['class_of_degree'] : (isset($employee['class_of_degree']) ? $employee['class_of_degree'] : '')) === 'First Class' ? 'selected' : ''; ?>>First Class</option>
+                                <option value="Second Class Upper" <?php echo (isset($formData['class_of_degree']) ? $formData['class_of_degree'] : (isset($employee['class_of_degree']) ? $employee['class_of_degree'] : '')) === 'Second Class Upper' ? 'selected' : ''; ?>>Second Class Upper</option>
+                                <option value="Second Class Lower" <?php echo (isset($formData['class_of_degree']) ? $formData['class_of_degree'] : (isset($employee['class_of_degree']) ? $employee['class_of_degree'] : '')) === 'Second Class Lower' ? 'selected' : ''; ?>>Second Class Lower</option>
+                                <option value="Third Class" <?php echo (isset($formData['class_of_degree']) ? $formData['class_of_degree'] : (isset($employee['class_of_degree']) ? $employee['class_of_degree'] : '')) === 'Third Class' ? 'selected' : ''; ?>>Third Class</option>
+                                <option value="Pass" <?php echo (isset($formData['class_of_degree']) ? $formData['class_of_degree'] : (isset($employee['class_of_degree']) ? $employee['class_of_degree'] : '')) === 'Pass' ? 'selected' : ''; ?>>Pass</option>
                             </select>
                         </div>
 
@@ -396,8 +396,8 @@
                                       placeholder="List professional certifications separated by commas"><?php echo htmlspecialchars($formData['professional_certifications'] ?? $employee['professional_certifications'] ?? ''); ?></textarea>
                         </div>
 
-                        <!-- Additional Qualifications - FIXED -->
-                        <div class="form-group">
+                        <!-- Additional Qualifications - FIXED: Added full-width-group class -->
+                        <div class="form-group full-width-group">
                             <label>Additional Qualifications</label>
                             <div id="qualifications-container">
                                 <?php
@@ -417,8 +417,8 @@
                                 }
                                 
                                 // Display existing qualifications
-                                if (!empty($additional_qualifications) && is_array($additional_qualifications)):
-                                    foreach ($additional_qualifications as $index => $qual):
+                                if (!empty($additional_qualifications) && is_array($additional_qualifications)) {
+                                    foreach ($additional_qualifications as $index => $qual) {
                                         $qualName = $qual['qualification'] ?? $qual['name'] ?? $qual ?? '';
                                         $qualYear = $qual['year'] ?? '';
                                 ?>
@@ -431,11 +431,11 @@
                                                placeholder="Qualification (e.g., BSc Nursing)">
                                         <select name="additional_qualifications[<?php echo $index; ?>][year]" class="form-control qualification-year">
                                             <option value="">Year</option>
-                                            <?php for ($year = date('Y'); $year >= 1960; $year--): ?>
+                                            <?php for ($year = date('Y'); $year >= 1960; $year--) { ?>
                                             <option value="<?php echo $year; ?>" <?php echo $qualYear == $year ? 'selected' : ''; ?>>
                                                 <?php echo $year; ?>
                                             </option>
-                                            <?php endfor; ?>
+                                            <?php } ?>
                                         </select>
                                         <button type="button" class="btn btn-danger remove-qualification" title="Remove">
                                             <i class="fas fa-trash"></i>
@@ -444,8 +444,8 @@
                                     </div>
                                 </div>
                                 <?php 
-                                    endforeach;
-                                else:
+                                    }
+                                } else {
                                 ?>
                                 <!-- Default empty entry when no qualifications exist -->
                                 <div class="qualification-entry">
@@ -456,9 +456,9 @@
                                                placeholder="Qualification (e.g., BSc Nursing)">
                                         <select name="additional_qualifications[0][year]" class="form-control qualification-year">
                                             <option value="">Year</option>
-                                            <?php for ($year = date('Y'); $year >= 1960; $year--): ?>
+                                            <?php for ($year = date('Y'); $year >= 1960; $year--) { ?>
                                             <option value="<?php echo $year; ?>"><?php echo $year; ?></option>
-                                            <?php endfor; ?>
+                                            <?php } ?>
                                         </select>
                                         <button type="button" class="btn btn-danger remove-qualification" title="Remove">
                                             <i class="fas fa-trash"></i>
@@ -466,7 +466,7 @@
                                         </button>
                                     </div>
                                 </div>
-                                <?php endif; ?>
+                                <?php } ?>
                             </div>
                             <button type="button" id="add-qualification-btn" class="btn btn-sm btn-outline">
                                 <i class="fas fa-plus"></i> Add Qualification
@@ -499,12 +499,12 @@
                                     'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau',
                                     'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
                                 ];
-                                foreach ($nigerian_states as $state): ?>
+                                foreach ($nigerian_states as $state) { ?>
                                 <option value="<?php echo htmlspecialchars($state); ?>"
-                                    <?php echo ($formData['state'] ?? $employee['state'] ?? '') === $state ? 'selected' : ''; ?>>
+                                    <?php echo (isset($formData['state']) ? $formData['state'] : (isset($employee['state']) ? $employee['state'] : '')) === $state ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($state); ?>
                                 </option>
-                                <?php endforeach; ?>
+                                <?php } ?>
                             </select>
                         </div>
 
@@ -522,12 +522,12 @@
                             <label for="geopolitical_zone">Geopolitical Zone</label>
                             <select id="geopolitical_zone" name="geopolitical_zone" class="form-control">
                                 <option value="">Select Zone</option>
-                                <option value="North Central" <?php echo ($formData['geopolitical_zone'] ?? $employee['geopolitical_zone'] ?? '') === 'North Central' ? 'selected' : ''; ?>>North Central</option>
-                                <option value="North East" <?php echo ($formData['geopolitical_zone'] ?? $employee['geopolitical_zone'] ?? '') === 'North East' ? 'selected' : ''; ?>>North East</option>
-                                <option value="North West" <?php echo ($formData['geopolitical_zone'] ?? $employee['geopolitical_zone'] ?? '') === 'North West' ? 'selected' : ''; ?>>North West</option>
-                                <option value="South East" <?php echo ($formData['geopolitical_zone'] ?? $employee['geopolitical_zone'] ?? '') === 'South East' ? 'selected' : ''; ?>>South East</option>
-                                <option value="South South" <?php echo ($formData['geopolitical_zone'] ?? $employee['geopolitical_zone'] ?? '') === 'South South' ? 'selected' : ''; ?>>South South</option>
-                                <option value="South West" <?php echo ($formData['geopolitical_zone'] ?? $employee['geopolitical_zone'] ?? '') === 'South West' ? 'selected' : ''; ?>>South West</option>
+                                <option value="North Central" <?php echo (isset($formData['geopolitical_zone']) ? $formData['geopolitical_zone'] : (isset($employee['geopolitical_zone']) ? $employee['geopolitical_zone'] : '')) === 'North Central' ? 'selected' : ''; ?>>North Central</option>
+                                <option value="North East" <?php echo (isset($formData['geopolitical_zone']) ? $formData['geopolitical_zone'] : (isset($employee['geopolitical_zone']) ? $employee['geopolitical_zone'] : '')) === 'North East' ? 'selected' : ''; ?>>North East</option>
+                                <option value="North West" <?php echo (isset($formData['geopolitical_zone']) ? $formData['geopolitical_zone'] : (isset($employee['geopolitical_zone']) ? $employee['geopolitical_zone'] : '')) === 'North West' ? 'selected' : ''; ?>>North West</option>
+                                <option value="South East" <?php echo (isset($formData['geopolitical_zone']) ? $formData['geopolitical_zone'] : (isset($employee['geopolitical_zone']) ? $employee['geopolitical_zone'] : '')) === 'South East' ? 'selected' : ''; ?>>South East</option>
+                                <option value="South South" <?php echo (isset($formData['geopolitical_zone']) ? $formData['geopolitical_zone'] : (isset($employee['geopolitical_zone']) ? $employee['geopolitical_zone'] : '')) === 'South South' ? 'selected' : ''; ?>>South South</option>
+                                <option value="South West" <?php echo (isset($formData['geopolitical_zone']) ? $formData['geopolitical_zone'] : (isset($employee['geopolitical_zone']) ? $employee['geopolitical_zone'] : '')) === 'South West' ? 'selected' : ''; ?>>South West</option>
                             </select>
                         </div>
 
@@ -536,12 +536,12 @@
                             <label for="state_of_residence">State of Residence</label>
                             <select id="state_of_residence" name="state_of_residence" class="form-control">
                                 <option value="">Same as State of Origin</option>
-                                <?php foreach ($nigerian_states as $state): ?>
+                                <?php foreach ($nigerian_states as $state) { ?>
                                 <option value="<?php echo htmlspecialchars($state); ?>"
-                                    <?php echo ($formData['state_of_residence'] ?? $employee['state_of_residence'] ?? '') === $state ? 'selected' : ''; ?>>
+                                    <?php echo (isset($formData['state_of_residence']) ? $formData['state_of_residence'] : (isset($employee['state_of_residence']) ? $employee['state_of_residence'] : '')) === $state ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($state); ?>
                                 </option>
-                                <?php endforeach; ?>
+                                <?php } ?>
                             </select>
                         </div>
 
@@ -637,14 +637,14 @@
                             <label for="blood_group">Blood Group</label>
                             <select id="blood_group" name="blood_group" class="form-control">
                                 <option value="">Select Blood Group</option>
-                                <option value="O+" <?php echo ($formData['blood_group'] ?? $employee['blood_group'] ?? '') === 'O+' ? 'selected' : ''; ?>>O Positive (O+)</option>
-                                <option value="O-" <?php echo ($formData['blood_group'] ?? $employee['blood_group'] ?? '') === 'O-' ? 'selected' : ''; ?>>O Negative (O-)</option>
-                                <option value="A+" <?php echo ($formData['blood_group'] ?? $employee['blood_group'] ?? '') === 'A+' ? 'selected' : ''; ?>>A Positive (A+)</option>
-                                <option value="A-" <?php echo ($formData['blood_group'] ?? $employee['blood_group'] ?? '') === 'A-' ? 'selected' : ''; ?>>A Negative (A-)</option>
-                                <option value="B+" <?php echo ($formData['blood_group'] ?? $employee['blood_group'] ?? '') === 'B+' ? 'selected' : ''; ?>>B Positive (B+)</option>
-                                <option value="B-" <?php echo ($formData['blood_group'] ?? $employee['blood_group'] ?? '') === 'B-' ? 'selected' : ''; ?>>B Negative (B-)</option>
-                                <option value="AB+" <?php echo ($formData['blood_group'] ?? $employee['blood_group'] ?? '') === 'AB+' ? 'selected' : ''; ?>>AB Positive (AB+)</option>
-                                <option value="AB-" <?php echo ($formData['blood_group'] ?? $employee['blood_group'] ?? '') === 'AB-' ? 'selected' : ''; ?>>AB Negative (AB-)</option>
+                                <option value="O+" <?php echo (isset($formData['blood_group']) ? $formData['blood_group'] : (isset($employee['blood_group']) ? $employee['blood_group'] : '')) === 'O+' ? 'selected' : ''; ?>>O Positive (O+)</option>
+                                <option value="O-" <?php echo (isset($formData['blood_group']) ? $formData['blood_group'] : (isset($employee['blood_group']) ? $employee['blood_group'] : '')) === 'O-' ? 'selected' : ''; ?>>O Negative (O-)</option>
+                                <option value="A+" <?php echo (isset($formData['blood_group']) ? $formData['blood_group'] : (isset($employee['blood_group']) ? $employee['blood_group'] : '')) === 'A+' ? 'selected' : ''; ?>>A Positive (A+)</option>
+                                <option value="A-" <?php echo (isset($formData['blood_group']) ? $formData['blood_group'] : (isset($employee['blood_group']) ? $employee['blood_group'] : '')) === 'A-' ? 'selected' : ''; ?>>A Negative (A-)</option>
+                                <option value="B+" <?php echo (isset($formData['blood_group']) ? $formData['blood_group'] : (isset($employee['blood_group']) ? $employee['blood_group'] : '')) === 'B+' ? 'selected' : ''; ?>>B Positive (B+)</option>
+                                <option value="B-" <?php echo (isset($formData['blood_group']) ? $formData['blood_group'] : (isset($employee['blood_group']) ? $employee['blood_group'] : '')) === 'B-' ? 'selected' : ''; ?>>B Negative (B-)</option>
+                                <option value="AB+" <?php echo (isset($formData['blood_group']) ? $formData['blood_group'] : (isset($employee['blood_group']) ? $employee['blood_group'] : '')) === 'AB+' ? 'selected' : ''; ?>>AB Positive (AB+)</option>
+                                <option value="AB-" <?php echo (isset($formData['blood_group']) ? $formData['blood_group'] : (isset($employee['blood_group']) ? $employee['blood_group'] : '')) === 'AB-' ? 'selected' : ''; ?>>AB Negative (AB-)</option>
                             </select>
                         </div>
 
@@ -653,10 +653,10 @@
                             <label for="genotype">Genotype</label>
                             <select id="genotype" name="genotype" class="form-control">
                                 <option value="">Select Genotype</option>
-                                <option value="AA" <?php echo ($formData['genotype'] ?? $employee['genotype'] ?? '') === 'AA' ? 'selected' : ''; ?>>AA</option>
-                                <option value="AS" <?php echo ($formData['genotype'] ?? $employee['genotype'] ?? '') === 'AS' ? 'selected' : ''; ?>>AS</option>
-                                <option value="SS" <?php echo ($formData['genotype'] ?? $employee['genotype'] ?? '') === 'SS' ? 'selected' : ''; ?>>SS</option>
-                                <option value="AC" <?php echo ($formData['genotype'] ?? $employee['genotype'] ?? '') === 'AC' ? 'selected' : ''; ?>>AC</option>
+                                <option value="AA" <?php echo (isset($formData['genotype']) ? $formData['genotype'] : (isset($employee['genotype']) ? $employee['genotype'] : '')) === 'AA' ? 'selected' : ''; ?>>AA</option>
+                                <option value="AS" <?php echo (isset($formData['genotype']) ? $formData['genotype'] : (isset($employee['genotype']) ? $employee['genotype'] : '')) === 'AS' ? 'selected' : ''; ?>>AS</option>
+                                <option value="SS" <?php echo (isset($formData['genotype']) ? $formData['genotype'] : (isset($employee['genotype']) ? $employee['genotype'] : '')) === 'SS' ? 'selected' : ''; ?>>SS</option>
+                                <option value="AC" <?php echo (isset($formData['genotype']) ? $formData['genotype'] : (isset($employee['genotype']) ? $employee['genotype'] : '')) === 'AC' ? 'selected' : ''; ?>>AC</option>
                             </select>
                         </div>
 
@@ -664,13 +664,13 @@
                         <div class="form-group">
                             <label for="disability">Disability</label>
                             <select id="disability" name="disability" class="form-control">
-                                <option value="No" <?php echo ($formData['disability'] ?? $employee['disability'] ?? 'No') === 'Yes' ? '' : 'selected'; ?>>No</option>
-                                <option value="Yes" <?php echo ($formData['disability'] ?? $employee['disability'] ?? 'No') === 'Yes' ? 'selected' : ''; ?>>Yes</option>
+                                <option value="No" <?php echo (isset($formData['disability']) ? $formData['disability'] : (isset($employee['disability']) ? $employee['disability'] : 'No')) === 'Yes' ? '' : 'selected'; ?>>No</option>
+                                <option value="Yes" <?php echo (isset($formData['disability']) ? $formData['disability'] : (isset($employee['disability']) ? $employee['disability'] : 'No')) === 'Yes' ? 'selected' : ''; ?>>Yes</option>
                             </select>
                         </div>
 
                         <!-- Disability Type -->
-                        <div class="form-group" id="disabilityTypeContainer" style="<?php echo ($formData['disability'] ?? $employee['disability'] ?? 'No') === 'Yes' ? 'display: block;' : 'display: none;'; ?>">
+                        <div class="form-group" id="disabilityTypeContainer" style="<?php echo (isset($formData['disability']) ? $formData['disability'] : (isset($employee['disability']) ? $employee['disability'] : 'No')) === 'Yes' ? 'display: block;' : 'display: none;'; ?>">
                             <label for="disability_type">Type of Disability</label>
                             <input type="text" 
                                    id="disability_type" 
@@ -706,23 +706,23 @@
                                     'Union Bank', 'United Bank for Africa', 'Unity Bank', 'Wema Bank',
                                     'Zenith Bank'
                                 ];
-                                foreach ($nigerian_banks as $bank): ?>
+                                foreach ($nigerian_banks as $bank) { ?>
                                 <option value="<?php echo htmlspecialchars($bank); ?>"
-                                    <?php echo ($formData['bank_name'] ?? $employee['bank_name'] ?? '') === $bank ? 'selected' : ''; ?>>
+                                    <?php echo (isset($formData['bank_name']) ? $formData['bank_name'] : (isset($employee['bank_name']) ? $employee['bank_name'] : '')) === $bank ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($bank); ?>
                                 </option>
-                                <?php endforeach; ?>
-                                <option value="Other" <?php echo (!empty($formData['bank_name'] ?? $employee['bank_name'] ?? '') && !in_array($formData['bank_name'] ?? $employee['bank_name'] ?? '', $nigerian_banks)) ? 'selected' : ''; ?>>Other Bank</option>
+                                <?php } ?>
+                                <option value="Other" <?php echo (!empty(isset($formData['bank_name']) ? $formData['bank_name'] : (isset($employee['bank_name']) ? $employee['bank_name'] : '')) && !in_array(isset($formData['bank_name']) ? $formData['bank_name'] : (isset($employee['bank_name']) ? $employee['bank_name'] : ''), $nigerian_banks)) ? 'selected' : ''; ?>>Other Bank</option>
                             </select>
                         </div>
 
                         <!-- Other Bank Name -->
-                        <div class="form-group" id="otherBankContainer" style="<?php echo (!empty($formData['bank_name'] ?? $employee['bank_name'] ?? '') && !in_array($formData['bank_name'] ?? $employee['bank_name'] ?? '', $nigerian_banks)) ? 'display: block;' : 'display: none;'; ?>">
+                        <div class="form-group" id="otherBankContainer" style="<?php echo (!empty(isset($formData['bank_name']) ? $formData['bank_name'] : (isset($employee['bank_name']) ? $employee['bank_name'] : '')) && !in_array(isset($formData['bank_name']) ? $formData['bank_name'] : (isset($employee['bank_name']) ? $employee['bank_name'] : ''), $nigerian_banks)) ? 'display: block;' : 'display: none;'; ?>">
                             <label for="other_bank_name">Specify Bank Name</label>
                             <input type="text" 
                                    id="other_bank_name" 
                                    name="other_bank_name" 
-                                   value="<?php echo htmlspecialchars($formData['other_bank_name'] ?? (!in_array($employee['bank_name'] ?? '', $nigerian_banks) ? $employee['bank_name'] ?? '' : '') ?? ''); ?>"
+                                   value="<?php echo htmlspecialchars($formData['other_bank_name'] ?? (!in_array(isset($employee['bank_name']) ? $employee['bank_name'] : '', $nigerian_banks) ? (isset($employee['bank_name']) ? $employee['bank_name'] : '') : '') ?? ''); ?>"
                                    class="form-control"
                                    placeholder="Enter bank name">
                         </div>
@@ -777,23 +777,23 @@
                                     'Radix Pension Managers', 'Sigma Pensions', 'Stanbic IBTC Pension Managers',
                                     'Trustfund Pensions', 'Veritas Glanvills Pensions'
                                 ];
-                                foreach ($pension_administrators as $pfa): ?>
+                                foreach ($pension_administrators as $pfa) { ?>
                                 <option value="<?php echo htmlspecialchars($pfa); ?>"
-                                    <?php echo ($formData['pension_fund_admin'] ?? $employee['pension_fund_admin'] ?? '') === $pfa ? 'selected' : ''; ?>>
+                                    <?php echo (isset($formData['pension_fund_admin']) ? $formData['pension_fund_admin'] : (isset($employee['pension_fund_admin']) ? $employee['pension_fund_admin'] : '')) === $pfa ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($pfa); ?>
                                 </option>
-                                <?php endforeach; ?>
-                                <option value="Other" <?php echo (!empty($formData['pension_fund_admin'] ?? $employee['pension_fund_admin'] ?? '') && !in_array($formData['pension_fund_admin'] ?? $employee['pension_fund_admin'] ?? '', $pension_administrators)) ? 'selected' : ''; ?>>Other PFA</option>
+                                <?php } ?>
+                                <option value="Other" <?php echo (!empty(isset($formData['pension_fund_admin']) ? $formData['pension_fund_admin'] : (isset($employee['pension_fund_admin']) ? $employee['pension_fund_admin'] : '')) && !in_array(isset($formData['pension_fund_admin']) ? $formData['pension_fund_admin'] : (isset($employee['pension_fund_admin']) ? $employee['pension_fund_admin'] : ''), $pension_administrators)) ? 'selected' : ''; ?>>Other PFA</option>
                             </select>
                         </div>
 
                         <!-- Other PFA -->
-                        <div class="form-group" id="otherPFAContainer" style="<?php echo (!empty($formData['pension_fund_admin'] ?? $employee['pension_fund_admin'] ?? '') && !in_array($formData['pension_fund_admin'] ?? $employee['pension_fund_admin'] ?? '', $pension_administrators)) ? 'display: block;' : 'display: none;'; ?>">
+                        <div class="form-group" id="otherPFAContainer" style="<?php echo (!empty(isset($formData['pension_fund_admin']) ? $formData['pension_fund_admin'] : (isset($employee['pension_fund_admin']) ? $employee['pension_fund_admin'] : '')) && !in_array(isset($formData['pension_fund_admin']) ? $formData['pension_fund_admin'] : (isset($employee['pension_fund_admin']) ? $employee['pension_fund_admin'] : ''), $pension_administrators)) ? 'display: block;' : 'display: none;'; ?>">
                             <label for="other_pension_fund_admin">Specify PFA</label>
                             <input type="text" 
                                    id="other_pension_fund_admin" 
                                    name="other_pension_fund_admin" 
-                                   value="<?php echo htmlspecialchars($formData['other_pension_fund_admin'] ?? (!in_array($employee['pension_fund_admin'] ?? '', $pension_administrators) ? $employee['pension_fund_admin'] ?? '' : '') ?? ''); ?>"
+                                   value="<?php echo htmlspecialchars($formData['other_pension_fund_admin'] ?? (!in_array(isset($employee['pension_fund_admin']) ? $employee['pension_fund_admin'] : '', $pension_administrators) ? (isset($employee['pension_fund_admin']) ? $employee['pension_fund_admin'] : '') : '') ?? ''); ?>"
                                    class="form-control"
                                    placeholder="Enter PFA name">
                         </div>
@@ -825,11 +825,11 @@
                             <label for="salary_structure">Salary Structure</label>
                             <select id="salary_structure" name="salary_structure" class="form-control">
                                 <option value="">Select Salary Structure</option>
-                                <option value="CONMESS" <?php echo ($formData['salary_structure'] ?? $employee['salary_structure'] ?? '') === 'CONMESS' ? 'selected' : ''; ?>>CONMESS</option>
-                                <option value="CONTISS" <?php echo ($formData['salary_structure'] ?? $employee['salary_structure'] ?? '') === 'CONTISS' ? 'selected' : ''; ?>>CONTISS</option>
-                                <option value="CONHESS" <?php echo ($formData['salary_structure'] ?? $employee['salary_structure'] ?? '') === 'CONHESS' ? 'selected' : ''; ?>>CONHESS</option>
-                                <option value="CONPSS" <?php echo ($formData['salary_structure'] ?? $employee['salary_structure'] ?? '') === 'CONPSS' ? 'selected' : ''; ?>>CONPSS</option>
-                                <option value="Others" <?php echo ($formData['salary_structure'] ?? $employee['salary_structure'] ?? '') === 'Others' ? 'selected' : ''; ?>>Others</option>
+                                <option value="CONMESS" <?php echo (isset($formData['salary_structure']) ? $formData['salary_structure'] : (isset($employee['salary_structure']) ? $employee['salary_structure'] : '')) === 'CONMESS' ? 'selected' : ''; ?>>CONMESS</option>
+                                <option value="CONTISS" <?php echo (isset($formData['salary_structure']) ? $formData['salary_structure'] : (isset($employee['salary_structure']) ? $employee['salary_structure'] : '')) === 'CONTISS' ? 'selected' : ''; ?>>CONTISS</option>
+                                <option value="CONHESS" <?php echo (isset($formData['salary_structure']) ? $formData['salary_structure'] : (isset($employee['salary_structure']) ? $employee['salary_structure'] : '')) === 'CONHESS' ? 'selected' : ''; ?>>CONHESS</option>
+                                <option value="CONPSS" <?php echo (isset($formData['salary_structure']) ? $formData['salary_structure'] : (isset($employee['salary_structure']) ? $employee['salary_structure'] : '')) === 'CONPSS' ? 'selected' : ''; ?>>CONPSS</option>
+                                <option value="Others" <?php echo (isset($formData['salary_structure']) ? $formData['salary_structure'] : (isset($employee['salary_structure']) ? $employee['salary_structure'] : '')) === 'Others' ? 'selected' : ''; ?>>Others</option>
                             </select>
                         </div>
                     </div>
@@ -872,13 +872,13 @@
                             <label for="emergency_contact_relationship">Emergency Contact Relationship</label>
                             <select id="emergency_contact_relationship" name="emergency_contact_relationship" class="form-control">
                                 <option value="">Select Relationship</option>
-                                <option value="Spouse" <?php echo ($formData['emergency_contact_relationship'] ?? $employee['emergency_contact_relationship'] ?? '') === 'Spouse' ? 'selected' : ''; ?>>Spouse</option>
-                                <option value="Parent" <?php echo ($formData['emergency_contact_relationship'] ?? $employee['emergency_contact_relationship'] ?? '') === 'Parent' ? 'selected' : ''; ?>>Parent</option>
-                                <option value="Sibling" <?php echo ($formData['emergency_contact_relationship'] ?? $employee['emergency_contact_relationship'] ?? '') === 'Sibling' ? 'selected' : ''; ?>>Sibling</option>
-                                <option value="Child" <?php echo ($formData['emergency_contact_relationship'] ?? $employee['emergency_contact_relationship'] ?? '') === 'Child' ? 'selected' : ''; ?>>Child</option>
-                                <option value="Relative" <?php echo ($formData['emergency_contact_relationship'] ?? $employee['emergency_contact_relationship'] ?? '') === 'Relative' ? 'selected' : ''; ?>>Relative</option>
-                                <option value="Friend" <?php echo ($formData['emergency_contact_relationship'] ?? $employee['emergency_contact_relationship'] ?? '') === 'Friend' ? 'selected' : ''; ?>>Friend</option>
-                                <option value="Other" <?php echo ($formData['emergency_contact_relationship'] ?? $employee['emergency_contact_relationship'] ?? '') === 'Other' ? 'selected' : ''; ?>>Other</option>
+                                <option value="Spouse" <?php echo (isset($formData['emergency_contact_relationship']) ? $formData['emergency_contact_relationship'] : (isset($employee['emergency_contact_relationship']) ? $employee['emergency_contact_relationship'] : '')) === 'Spouse' ? 'selected' : ''; ?>>Spouse</option>
+                                <option value="Parent" <?php echo (isset($formData['emergency_contact_relationship']) ? $formData['emergency_contact_relationship'] : (isset($employee['emergency_contact_relationship']) ? $employee['emergency_contact_relationship'] : '')) === 'Parent' ? 'selected' : ''; ?>>Parent</option>
+                                <option value="Sibling" <?php echo (isset($formData['emergency_contact_relationship']) ? $formData['emergency_contact_relationship'] : (isset($employee['emergency_contact_relationship']) ? $employee['emergency_contact_relationship'] : '')) === 'Sibling' ? 'selected' : ''; ?>>Sibling</option>
+                                <option value="Child" <?php echo (isset($formData['emergency_contact_relationship']) ? $formData['emergency_contact_relationship'] : (isset($employee['emergency_contact_relationship']) ? $employee['emergency_contact_relationship'] : '')) === 'Child' ? 'selected' : ''; ?>>Child</option>
+                                <option value="Relative" <?php echo (isset($formData['emergency_contact_relationship']) ? $formData['emergency_contact_relationship'] : (isset($employee['emergency_contact_relationship']) ? $employee['emergency_contact_relationship'] : '')) === 'Relative' ? 'selected' : ''; ?>>Relative</option>
+                                <option value="Friend" <?php echo (isset($formData['emergency_contact_relationship']) ? $formData['emergency_contact_relationship'] : (isset($employee['emergency_contact_relationship']) ? $employee['emergency_contact_relationship'] : '')) === 'Friend' ? 'selected' : ''; ?>>Friend</option>
+                                <option value="Other" <?php echo (isset($formData['emergency_contact_relationship']) ? $formData['emergency_contact_relationship'] : (isset($employee['emergency_contact_relationship']) ? $employee['emergency_contact_relationship'] : '')) === 'Other' ? 'selected' : ''; ?>>Other</option>
                             </select>
                         </div>
 
@@ -911,12 +911,12 @@
                             <label for="next_of_kin_relationship">Next of Kin Relationship</label>
                             <select id="next_of_kin_relationship" name="next_of_kin_relationship" class="form-control">
                                 <option value="">Select Relationship</option>
-                                <option value="Spouse" <?php echo ($formData['next_of_kin_relationship'] ?? $employee['next_of_kin_relationship'] ?? '') === 'Spouse' ? 'selected' : ''; ?>>Spouse</option>
-                                <option value="Parent" <?php echo ($formData['next_of_kin_relationship'] ?? $employee['next_of_kin_relationship'] ?? '') === 'Parent' ? 'selected' : ''; ?>>Parent</option>
-                                <option value="Sibling" <?php echo ($formData['next_of_kin_relationship'] ?? $employee['next_of_kin_relationship'] ?? '') === 'Sibling' ? 'selected' : ''; ?>>Sibling</option>
-                                <option value="Child" <?php echo ($formData['next_of_kin_relationship'] ?? $employee['next_of_kin_relationship'] ?? '') === 'Child' ? 'selected' : ''; ?>>Child</option>
-                                <option value="Relative" <?php echo ($formData['next_of_kin_relationship'] ?? $employee['next_of_kin_relationship'] ?? '') === 'Relative' ? 'selected' : ''; ?>>Relative</option>
-                                <option value="Other" <?php echo ($formData['next_of_kin_relationship'] ?? $employee['next_of_kin_relationship'] ?? '') === 'Other' ? 'selected' : ''; ?>>Other</option>
+                                <option value="Spouse" <?php echo (isset($formData['next_of_kin_relationship']) ? $formData['next_of_kin_relationship'] : (isset($employee['next_of_kin_relationship']) ? $employee['next_of_kin_relationship'] : '')) === 'Spouse' ? 'selected' : ''; ?>>Spouse</option>
+                                <option value="Parent" <?php echo (isset($formData['next_of_kin_relationship']) ? $formData['next_of_kin_relationship'] : (isset($employee['next_of_kin_relationship']) ? $employee['next_of_kin_relationship'] : '')) === 'Parent' ? 'selected' : ''; ?>>Parent</option>
+                                <option value="Sibling" <?php echo (isset($formData['next_of_kin_relationship']) ? $formData['next_of_kin_relationship'] : (isset($employee['next_of_kin_relationship']) ? $employee['next_of_kin_relationship'] : '')) === 'Sibling' ? 'selected' : ''; ?>>Sibling</option>
+                                <option value="Child" <?php echo (isset($formData['next_of_kin_relationship']) ? $formData['next_of_kin_relationship'] : (isset($employee['next_of_kin_relationship']) ? $employee['next_of_kin_relationship'] : '')) === 'Child' ? 'selected' : ''; ?>>Child</option>
+                                <option value="Relative" <?php echo (isset($formData['next_of_kin_relationship']) ? $formData['next_of_kin_relationship'] : (isset($employee['next_of_kin_relationship']) ? $employee['next_of_kin_relationship'] : '')) === 'Relative' ? 'selected' : ''; ?>>Relative</option>
+                                <option value="Other" <?php echo (isset($formData['next_of_kin_relationship']) ? $formData['next_of_kin_relationship'] : (isset($employee['next_of_kin_relationship']) ? $employee['next_of_kin_relationship'] : '')) === 'Other' ? 'selected' : ''; ?>>Other</option>
                             </select>
                         </div>
 
@@ -934,7 +934,7 @@
             </div>
         </div>
 
-        <!-- Row 5: Passport Photo -->
+        <!-- Row 5: Passport Photo - FIXED -->
         <div class="form-row">
             <div class="form-card">
                 <div class="card-header">
@@ -945,31 +945,23 @@
                         <!-- Current Photo -->
                         <div class="current-photo">
                             <label>Current Photo</label>
-                            <?php 
-                            // Get the correct photo URL
-                            $currentPhotoUrl = '';
-                            if (!empty($employee['passport_photo'])) {
-                                $cleanPath = ltrim($employee['passport_photo'], '/');
-                                $currentPhotoUrl = $baseUrl . '/' . $cleanPath;
-                            }
-                            ?>
-                            
-                            <?php if (!empty($currentPhotoUrl)): ?>
-                            <div class="photo-preview">
-                                <img src="<?php echo htmlspecialchars($currentPhotoUrl); ?>" 
-                                     alt="Passport Photo" 
-                                     class="current-photo-img"
-                                     onerror="this.onerror=null; this.src='<?php echo $baseUrl; ?>/assets/img/default-avatar.png';">
-                                <div class="photo-info">
-                                    <small>Current passport photo</small>
+                            <?php if (!empty($employee['passport_photo'])) { ?>
+                                <div class="photo-preview">
+                                    <img src="<?php echo $baseUrl; ?>/admin/nominal-roll/passport-photo/<?php echo $employee['id']; ?>" 
+                                         alt="Passport Photo" 
+                                         class="current-photo-img"
+                                         style="max-width: 200px; border: 1px solid #ddd; border-radius: 4px;"
+                                         onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/><text x=\'50%\' y=\'50%\' font-family=\'Arial\' font-size=\'14\' fill=\'%23666\' text-anchor=\'middle\' dominant-baseline=\'middle\'>Photo Missing</text></svg>';">
+                                    <div class="photo-info">
+                                        <small>Current passport photo</small>
+                                    </div>
                                 </div>
-                            </div>
-                            <?php else: ?>
-                            <div class="no-photo">
-                                <i class="fas fa-user-circle"></i>
-                                <p>No passport photo uploaded</p>
-                            </div>
-                            <?php endif; ?>
+                            <?php } else { ?>
+                                <div class="no-photo">
+                                    <i class="fas fa-user-circle"></i>
+                                    <p>No passport photo uploaded</p>
+                                </div>
+                            <?php } ?>
                         </div>
 
                         <!-- Upload New Photo -->
@@ -1017,19 +1009,19 @@
                 <i class="fas fa-times"></i> Cancel
             </a>
             
-            <?php if ($isSuperAdmin): ?>
+            <?php if ($isSuperAdmin) { ?>
             <button type="button" 
                     class="btn btn-danger btn-lg" 
                     onclick="openDeleteModal()">
                 <i class="fas fa-trash"></i> Delete Employee
             </button>
-            <?php endif; ?>
+            <?php } ?>
         </div>
     </form>
 </div>
 
 <!-- Delete Confirmation Modal -->
-<?php if ($isSuperAdmin): ?>
+<?php if ($isSuperAdmin) { ?>
 <div class="modal" id="deleteModal" style="display: none;">
     <div class="modal-overlay"></div>
     <div class="modal-content">
@@ -1061,7 +1053,7 @@
         </div>
     </div>
 </div>
-<?php endif; ?>
+<?php } ?>
 
 <!-- Template for Qualification Entry -->
 <template id="qualification-template">
@@ -1073,9 +1065,9 @@
                    placeholder="Qualification (e.g., BSc Nursing)">
             <select name="additional_qualifications[__INDEX__][year]" class="form-control qualification-year">
                 <option value="">Year</option>
-                <?php for ($year = date('Y'); $year >= 1960; $year--): ?>
+                <?php for ($year = date('Y'); $year >= 1960; $year--) { ?>
                 <option value="<?php echo $year; ?>"><?php echo $year; ?></option>
-                <?php endfor; ?>
+                <?php } ?>
             </select>
             <button type="button" class="btn btn-danger remove-qualification" title="Remove">
                 <i class="fas fa-trash"></i>
@@ -1215,8 +1207,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const lgaSelect = document.getElementById('local_govt_area');
     
     // Get current values
-    const currentState = '<?php echo $employee["state"] ?? ""; ?>';
-    const currentLGA = '<?php echo $employee["local_govt_area"] ?? ""; ?>';
+    const currentState = '<?php echo isset($employee["state"]) ? $employee["state"] : ""; ?>';
+    const currentLGA = '<?php echo isset($employee["local_govt_area"]) ? $employee["local_govt_area"] : ""; ?>';
 
     if (stateSelect && lgaSelect) {
         // Function to populate LGAs
@@ -1955,6 +1947,13 @@ document.addEventListener('keydown', function(event) {
     }
 }
 
+/* FIX: Full-width group for Additional Qualifications */
+@media (min-width: 640px) {
+    .form-grid .full-width-group {
+        grid-column: span 2;  /* Make this group span both columns for full width */
+    }
+}
+
 .form-group {
     margin-bottom: 0;
 }
@@ -1980,8 +1979,8 @@ document.addEventListener('keydown', function(event) {
     font-size: 14px;
     transition: all 0.3s ease;
     background: white;
-    min-height: 42px; /* ADD THIS LINE - Fix 8 */
-    box-sizing: border-box; /* ADD THIS LINE - Fix 8 */
+    min-height: 42px; /* FIXED: Consistent field height */
+    box-sizing: border-box; /* FIXED: Proper box sizing */
 }
 
 .form-control:focus {
@@ -2001,48 +2000,48 @@ document.addEventListener('keydown', function(event) {
     color: #718096;
 }
 
-/* Qualification Styles - IMPROVED - ALL FIXES APPLIED */
+/* Qualification Styles - FIXED: Increased width for qualification name input */
 .qualification-entry {
-    margin-bottom: 12px; /* Fix 6 */
-    padding: 15px; /* Fix 6 */
-    background: #f8fafc; /* Fix 6 */
-    border-radius: 8px; /* Fix 6 */
-    border: 1px solid #e2e8f0; /* Fix 6 */
-    transition: all 0.2s ease; /* Fix 6 */
+    margin-bottom: 12px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
 }
 
 .qualification-entry:hover {
-    background: #edf2f7; /* Fix 6 */
-    border-color: #cbd5e0; /* Fix 6 */
+    background: #edf2f7;
+    border-color: #cbd5e0;
 }
 
 .qualification-row {
-    display: grid; /* Fix 2 */
-    grid-template-columns: 2fr 1fr auto; /* Fix 2 */
-    gap: 10px; /* Fix 2 */
-    align-items: start; /* Fix 2 */
+    display: grid;
+    grid-template-columns: 3fr 1fr auto;  /* Increased width for qualification name input */
+    gap: 10px;
+    align-items: start;
 }
 
 .qualification-name {
-    min-width: 0; /* Prevents overflow - Fix 2 */
+    min-width: 0; /* Prevents overflow */
 }
 
 .qualification-year {
-    min-width: 120px; /* Fix 2 */
+    min-width: 120px;
 }
 
 .remove-qualification {
-    padding: 10px 16px; /* Fix 3 */
-    white-space: nowrap; /* Fix 3 */
-    display: inline-flex; /* Fix 3 */
-    align-items: center; /* Fix 3 */
-    gap: 8px; /* Fix 3 */
-    min-height: 42px; /* Fix 3 */
-    flex-shrink: 0; /* Fix 3 */
+    padding: 10px 16px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    flex-shrink: 0;
 }
 
 .remove-qualification i {
-    font-size: 14px; /* Fix 3 */
+    font-size: 14px;
 }
 
 .remove-qualification .btn-text {
@@ -2052,44 +2051,55 @@ document.addEventListener('keydown', function(event) {
 /* Mobile Media Query - Updated */
 @media (max-width: 768px) {
     .qualification-row {
-        grid-template-columns: 1fr; /* Fix 4 */
-        gap: 10px; /* Fix 4 */
+        grid-template-columns: 1fr;
+        gap: 10px;
     }
     
     .qualification-year {
-        min-width: 100%; /* Fix 4 */
+        min-width: 100%;
     }
     
     .remove-qualification {
-        width: 100%; /* Fix 4 */
-        justify-content: center; /* Fix 4 */
+        width: 100%;
+        justify-content: center;
     }
     
     .remove-qualification .btn-text {
-        display: inline !important; /* Fix 4 */
+        display: inline !important;
+    }
+    
+    /* Adjust photo section for mobile */
+    .photo-section {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .current-photo-img {
+        max-width: 150px;
+        max-height: 150px;
     }
 }
 
-/* Desktop-specific styling - Fix 5 */
+/* Desktop-specific styling */
 @media (min-width: 769px) {
     .remove-qualification .btn-text {
-        display: inline; /* Fix 5 */
+        display: inline;
     }
 }
 
-/* Add qualification button styling - Fix 7 */
+/* Add qualification button styling */
 #add-qualification-btn {
-    margin-top: 10px; /* Fix 7 */
-    background: white; /* Fix 7 */
-    border: 2px dashed #cbd5e0; /* Fix 7 */
-    color: #667eea; /* Fix 7 */
-    font-weight: 600; /* Fix 7 */
+    margin-top: 10px;
+    background: white;
+    border: 2px dashed #cbd5e0;
+    color: #667eea;
+    font-weight: 600;
 }
 
 #add-qualification-btn:hover {
-    background: #f8fafc; /* Fix 7 */
-    border-color: #667eea; /* Fix 7 */
-    border-style: solid; /* Fix 7 */
+    background: #f8fafc;
+    border-color: #667eea;
+    border-style: solid;
 }
 
 /* Form Actions */
@@ -2228,11 +2238,6 @@ document.addEventListener('keydown', function(event) {
         justify-content: center;
     }
     
-    .photo-section {
-        grid-template-columns: 1fr;
-        gap: 20px;
-    }
-    
     .modal-content {
         margin: 20px;
         width: calc(100% - 40px);
@@ -2250,6 +2255,10 @@ document.addEventListener('keydown', function(event) {
     
     .form-actions {
         padding: 20px;
+    }
+    
+    .header-title h1 {
+        font-size: 24px;
     }
 }
 </style>

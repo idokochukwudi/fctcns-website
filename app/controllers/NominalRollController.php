@@ -189,10 +189,10 @@ class NominalRollController extends Controller {
             error_log("Final status: " . $data['status']);
             
             // ========================================
-            // FIX: Handle passport photo upload BEFORE validation
+            // FIXED: Handle passport photo upload for NEW employee
             // ========================================
             if (!empty($_FILES['passport_photo']['name']) && $_FILES['passport_photo']['error'] === UPLOAD_ERR_OK) {
-                error_log("Passport photo found, attempting upload");
+                error_log("Passport photo found for new employee, attempting upload");
                 try {
                     $photoPath = $this->uploadPassportPhoto();
                     if ($photoPath) {
@@ -212,10 +212,12 @@ class NominalRollController extends Controller {
                     }
                 }
             } else {
-                error_log("No passport photo uploaded or upload error occurred");
+                error_log("No passport photo uploaded for new employee");
                 if (!empty($_FILES['passport_photo']['error'])) {
                     error_log("Upload error code: " . $_FILES['passport_photo']['error']);
                 }
+                // For new employees, set to null if no photo uploaded
+                $data['passport_photo'] = null;
             }
             
             // Validate employee data
@@ -327,6 +329,45 @@ class NominalRollController extends Controller {
     }
     
     /**
+     * View passport photo (for img src)
+     */
+    public function viewPassportPhoto($id) {
+        try {
+            $employee = $this->model->getEmployee($id);
+            
+            if (!$employee || empty($employee['passport_photo'])) {
+                // Serve a default image
+                $defaultImage = ROOT_PATH . '/assets/images/default-avatar.png';
+                header('Content-Type: image/png');
+                readfile($defaultImage);
+                exit;
+            }
+            
+            $photoPath = ROOT_PATH . '/' . $employee['passport_photo'];
+            
+            if (!file_exists($photoPath)) {
+                // Fallback to default if file is missing
+                $defaultImage = ROOT_PATH . '/assets/images/default-avatar.png';
+                header('Content-Type: image/png');
+                readfile($defaultImage);
+                exit;
+            }
+            
+            // Determine MIME type and output image
+            $mimeType = mime_content_type($photoPath);
+            header('Content-Type: ' . $mimeType);
+            header('Content-Length: ' . filesize($photoPath));
+            readfile($photoPath);
+            exit;
+            
+        } catch (Exception $e) {
+            error_log("Passport photo error for ID {$id}: " . $e->getMessage());
+            http_response_code(404);
+            exit;
+        }
+    }
+    
+    /**
      * Print employee record
      */
     public function print($id) {
@@ -391,7 +432,7 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Update employee record
+     * Update employee record - FIXED VERSION WITH PASSPORT PHOTO FIX
      */
     public function update($id) {
         // Check if user has permission
@@ -407,6 +448,8 @@ class NominalRollController extends Controller {
         }
         
         try {
+            error_log("=== UPDATE METHOD START FOR EMPLOYEE ID: $id ===");
+            
             // Validate CSRF token
             $this->validateCsrf();
             
@@ -416,8 +459,22 @@ class NominalRollController extends Controller {
                 throw new Exception("Employee not found.");
             }
             
+            error_log("Existing employee found: " . $employee['employee_number']);
+            error_log("Existing passport photo: " . ($employee['passport_photo'] ?? 'NULL'));
+            
+            // Debug info
+            $this->debugPhotoInfo($employee, $_FILES);
+            
             // Get form data
             $data = $this->getFormData();
+            
+            // Log what data we have
+            error_log("Form data received (before photo handling):");
+            foreach ($data as $key => $value) {
+                if ($key === 'passport_photo') {
+                    error_log("  $key: " . ($value ?? 'NULL'));
+                }
+            }
             
             // Handle draft status
             $isDraft = $this->input('save_as_draft', 0);
@@ -446,35 +503,82 @@ class NominalRollController extends Controller {
                 throw new Exception(implode('<br>', $errors));
             }
             
-            // Handle passport photo upload
-            if (!empty($_FILES['passport_photo']['name'])) {
-                $photoPath = $this->uploadPassportPhoto();
-                if ($photoPath) {
-                    $data['passport_photo'] = $photoPath;
-                    
-                    // Delete old passport photo if exists
-                    if (!empty($employee['passport_photo'])) {
-                        $this->deleteFile($employee['passport_photo']);
+            // ========== CRITICAL PASSPORT PHOTO FIX START ==========
+            $passportPhotoHandled = false;
+            
+            error_log("Checking for uploaded passport photo...");
+            error_log("FILES array for passport_photo: " . print_r($_FILES['passport_photo'] ?? [], true));
+            
+            if (!empty($_FILES['passport_photo']['name']) && $_FILES['passport_photo']['error'] === UPLOAD_ERR_OK) {
+                error_log("New passport photo detected for upload");
+                try {
+                    $photoPath = $this->uploadPassportPhoto();
+                    if ($photoPath) {
+                        error_log("New photo uploaded successfully to: " . $photoPath);
+                        $data['passport_photo'] = $photoPath;
+                        $passportPhotoHandled = true;
+                        
+                        // Delete old passport photo if exists
+                        if (!empty($employee['passport_photo'])) {
+                            error_log("Deleting old passport photo: " . $employee['passport_photo']);
+                            $this->deleteFile($employee['passport_photo']);
+                        }
+                    } else {
+                        error_log("Photo upload returned null/empty path");
+                    }
+                } catch (Exception $e) {
+                    error_log("Photo upload exception: " . $e->getMessage());
+                    // Don't fail the entire update if photo upload fails
+                    $photoRequired = $this->model->getSetting('photo_required', '0') === '1';
+                    if ($photoRequired) {
+                        throw $e;
+                    } else {
+                        $passportPhotoHandled = false;
                     }
                 }
+            } else {
+                error_log("No new passport photo uploaded");
+                if (!empty($_FILES['passport_photo']['error'])) {
+                    error_log("Upload error code: " . $_FILES['passport_photo']['error']);
+                }
             }
+            
+            // If no new photo was uploaded, preserve the existing one
+            if (!$passportPhotoHandled) {
+                error_log("No new photo uploaded, checking for existing photo...");
+                if (!empty($employee['passport_photo'])) {
+                    error_log("Preserving existing passport photo: " . $employee['passport_photo']);
+                    $data['passport_photo'] = $employee['passport_photo'];
+                } else {
+                    error_log("No existing passport photo found, setting to NULL");
+                    $data['passport_photo'] = null;
+                }
+            }
+            
+            error_log("Final passport_photo value for update: " . ($data['passport_photo'] ?? 'NULL'));
+            // ========== CRITICAL PASSPORT PHOTO FIX END ==========
             
             // Get user ID
             $userId = $_SESSION['user_id'] ?? null;
             
             // Update employee
+            error_log("Calling model->updateEmployee with data...");
             $result = $this->model->updateEmployee($id, $data, $userId);
             
             if ($result) {
                 $message = $isDraft ? 'Employee draft updated successfully!' : 'Employee record updated successfully!';
                 $_SESSION['flash_success'] = $message;
+                error_log("Update successful, redirecting to view page");
                 $this->redirect('/admin/nominal-roll/view/' . $id);
             } else {
                 throw new Exception("Failed to update employee record.");
             }
             
+            error_log("=== UPDATE METHOD END ===");
+            
         } catch (Exception $e) {
             error_log("NominalRollController update error: " . $e->getMessage());
+            error_log("Exception trace: " . $e->getTraceAsString());
             
             // Check if it's a CSRF error
             if (strpos($e->getMessage(), 'CSRF') !== false) {
@@ -1867,7 +1971,7 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * Get form data from POST - FIXED VERSION
+     * Get form data from POST - FIXED VERSION with corrected additional qualifications handling
      */
     private function getFormData($sanitize = false) {
         // Get all form fields
@@ -1931,38 +2035,27 @@ class NominalRollController extends Controller {
             'next_of_kin_phone' => $this->input('next_of_kin_phone', ''),
             'next_of_kin_address' => $this->input('next_of_kin_address', ''),
             'next_of_kin_relationship' => $this->input('next_of_kin_relationship', ''),
-            // Handle additional qualifications as arrays
-            'qualification_name' => $this->input('qualification_name', []),
-            'qualification_year' => $this->input('qualification_year', []),
+            // FIX: Removed the incorrect lines:
+            // 'qualification_name' => $this->input('qualification_name', []),
+            // 'qualification_year' => $this->input('qualification_year', []),
         ];
         
-        // Process additional qualifications
+        // FIX: Process additional qualifications correctly
+        $additionalQualsRaw = $this->input('additional_qualifications', []);
         $additionalQuals = [];
-        $qualNames = $data['qualification_name'] ?? [];
-        $qualYears = $data['qualification_year'] ?? [];
-
-        if (!empty($qualNames) && is_array($qualNames)) {
-            for ($i = 0; $i < count($qualNames); $i++) {
-                if (!empty(trim($qualNames[$i]))) {
-                    $additionalQuals[] = [
-                        'qualification' => trim($qualNames[$i]),
-                        'year' => !empty($qualYears[$i]) ? $qualYears[$i] : null
-                    ];
-                }
+        foreach ($additionalQualsRaw as $qual) {
+            if (!empty(trim($qual['qualification'] ?? ''))) {
+                $additionalQuals[] = [
+                    'qualification' => trim($qual['qualification']),
+                    'year' => $qual['year'] ?? null
+                ];
             }
         }
-
-        if (!empty($additionalQuals)) {
-            $data['additional_qualifications'] = json_encode($additionalQuals);
-        } else {
-            $data['additional_qualifications'] = null;
-        }
-
-        // Remove temporary array keys
-        unset($data['qualification_name'], $data['qualification_year']);
+        $data['additional_qualifications'] = !empty($additionalQuals) ? json_encode($additionalQuals) : null;
         
-        // FIX: Initialize passport_photo as null - it will be set by uploadPassportPhoto() if a file is uploaded
-        $data['passport_photo'] = null;
+        // IMPORTANT: DO NOT initialize passport_photo here
+        // It will be handled separately in create/store and update methods
+        // $data['passport_photo'] = null; // REMOVE THIS LINE
         
         // Handle disability type visibility
         if ($data['disability'] !== 'Yes') {
@@ -1992,6 +2085,19 @@ class NominalRollController extends Controller {
         }
         
         return $data;
+    }
+    
+    /**
+     * Debug helper method
+     */
+    private function debugPhotoInfo($employee, $files) {
+        error_log("=== DEBUG PHOTO INFO ===");
+        error_log("Existing employee photo: " . ($employee['passport_photo'] ?? 'NULL'));
+        error_log("Files uploaded: " . (!empty($files['passport_photo']['name']) ? 'YES' : 'NO'));
+        if (!empty($files['passport_photo'])) {
+            error_log("File details: " . print_r($files['passport_photo'], true));
+        }
+        error_log("=== END DEBUG ===");
     }
     
     /**

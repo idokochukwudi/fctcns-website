@@ -88,7 +88,7 @@ class NominalRollModel {
                     marital_status = :marital_status,
                     nationality = :nationality,
                     religion = :religion,
-                    rank = :rank,
+                    `rank` = :rank,  -- FIXED: Wrapped 'rank' in backticks
                     grade_level = :grade_level,
                     step = :step,
                     cadre = :cadre,
@@ -325,7 +325,7 @@ class NominalRollModel {
                     marital_status = :marital_status,
                     nationality = :nationality,
                     religion = :religion,
-                    rank = :rank,
+                    `rank` = :rank,  -- FIXED: Wrapped 'rank' in backticks
                     grade_level = :grade_level,
                     step = :step,
                     cadre = :cadre,
@@ -560,7 +560,7 @@ class NominalRollModel {
             }
             
             if (!empty($filters['rank'])) {
-                $whereConditions[] = "e.rank = :rank";
+                $whereConditions[] = "e.`rank` = :rank";  // FIXED: Wrapped 'rank' in backticks
                 $params[':rank'] = $filters['rank'];
             }
             
@@ -666,7 +666,7 @@ class NominalRollModel {
                 $stats['by_grade'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 // Count by rank
-                $sql = "SELECT rank, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY rank ORDER BY count DESC LIMIT 10";
+                $sql = "SELECT `rank`, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY `rank` ORDER BY count DESC LIMIT 10";  // FIXED: Wrapped 'rank' in backticks
                 $stmt = $this->db->query($sql);
                 $stats['by_rank'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
@@ -717,7 +717,7 @@ class NominalRollModel {
             $options['steps'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
             // Ranks
-            $sql = "SELECT DISTINCT rank FROM " . self::TABLE_EMPLOYEES . " WHERE rank IS NOT NULL AND rank != '' ORDER BY rank";
+            $sql = "SELECT DISTINCT `rank` FROM " . self::TABLE_EMPLOYEES . " WHERE `rank` IS NOT NULL AND `rank` != '' ORDER BY `rank`";  // FIXED: Wrapped 'rank' in backticks
             $stmt = $this->db->query($sql);
             $options['ranks'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
@@ -1299,7 +1299,7 @@ class NominalRollModel {
             }
             
             if (!empty($filters['rank'])) {
-                $whereConditions[] = "rank = :rank";
+                $whereConditions[] = "`rank` = :rank";  // FIXED: Wrapped 'rank' in backticks
                 $params[':rank'] = $filters['rank'];
             }
             

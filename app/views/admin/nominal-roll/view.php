@@ -52,38 +52,15 @@
         <div class="profile-header">
             <div class="profile-photo">
                 <?php 
-                // FIXED PHOTO DISPLAY LOGIC FOR VIEW.PHP
-                // Replaced lines 70-130 with fixed version
-                
-                $photoUrl = '';
-                $defaultAvatar = $baseUrl . '/assets/img/default-avatar.png';
-
-                if (!empty($employee['passport_photo'])) {
-                    // Clean the path
-                    $cleanPath = trim($employee['passport_photo'], '/');
-                    
-                    // Build URL - expecting path like: storage/uploads/passports/passport_123.jpg
-                    if (strpos($cleanPath, 'storage/') === 0) {
-                        // Path already has storage prefix - use directly
-                        $photoUrl = $baseUrl . '/' . $cleanPath;
-                    } else if (strpos($cleanPath, 'uploads/passports/') === 0) {
-                        // Path missing storage prefix
-                        $photoUrl = $baseUrl . '/storage/' . $cleanPath;
-                    } else {
-                        // Assume it's just the filename
-                        $photoUrl = $baseUrl . '/storage/uploads/passports/' . basename($cleanPath);
-                    }
-                    
-                    error_log("Photo Display - DB Path: " . $employee['passport_photo']);
-                    error_log("Photo Display - Final URL: " . $photoUrl);
-                }
+                // FIXED: Use the route method for displaying passport photos with error handling
                 ?>
                 
-                <?php if (!empty($photoUrl)): ?>
-                    <img src="<?php echo htmlspecialchars($photoUrl); ?>" 
+                <?php if (!empty($employee['passport_photo'])): ?>
+                    <img src="<?php echo $baseUrl; ?>/admin/nominal-roll/passport-photo/<?php echo $employee['id']; ?>" 
                          alt="Passport Photo" 
                          class="passport-photo"
-                         onerror="console.error('Failed to load photo:', this.src); this.onerror=null; this.src='<?php echo htmlspecialchars($defaultAvatar); ?>';">
+                         style="max-width: 200px; border: 1px solid #ddd; border-radius: 4px;"
+                         onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'><rect width=\'100%\' height=\'100%\' fill=\'%23f0f0f0\'/><text x=\'50%\' y=\'50%\' font-family=\'Arial\' font-size=\'14\' fill=\'%23666\' text-anchor=\'middle\' dominant-baseline=\'middle\'>Photo Missing</text></svg>';">
                 <?php else: ?>
                     <div class="no-photo">
                         <i class="fas fa-user-circle"></i>
@@ -421,31 +398,46 @@
             <!-- Audit Trail Tab -->
             <div id="audit" class="tab-pane">
                 <div class="tab-card">
-                    <?php if (!empty($auditTrail) && is_array($auditTrail)): ?>
+                    <?php if (!empty($activityLogs) && is_array($activityLogs)): ?>
                     <div class="audit-trail">
                         <h4>Activity Log</h4>
                         <div class="timeline">
-                            <?php foreach ($auditTrail as $audit): ?>
+                            <?php foreach ($activityLogs as $audit): ?>
                             <div class="timeline-item">
                                 <div class="timeline-marker">
-                                    <?php if (($audit['action_type'] ?? '') === 'created'): ?>
+                                    <?php if (($audit['action'] ?? '') === 'employee_created'): ?>
                                     <i class="fas fa-plus-circle text-success"></i>
-                                    <?php elseif (($audit['action_type'] ?? '') === 'updated'): ?>
+                                    <?php elseif (($audit['action'] ?? '') === 'employee_updated'): ?>
                                     <i class="fas fa-edit text-primary"></i>
-                                    <?php elseif (($audit['action_type'] ?? '') === 'deleted'): ?>
+                                    <?php elseif (($audit['action'] ?? '') === 'employee_deleted'): ?>
                                     <i class="fas fa-trash text-danger"></i>
+                                    <?php elseif (($audit['action'] ?? '') === 'status_updated'): ?>
+                                    <i class="fas fa-sync-alt text-warning"></i>
                                     <?php else: ?>
                                     <i class="fas fa-info-circle text-info"></i>
                                     <?php endif; ?>
                                 </div>
                                 <div class="timeline-content">
                                     <div class="timeline-header">
-                                        <span class="action"><?php echo ucfirst($audit['action_type'] ?? 'unknown'); ?> by <?php echo htmlspecialchars($audit['user_name'] ?? 'System'); ?></span>
+                                        <span class="action">
+                                            <?php 
+                                            $actionText = $audit['action'] ?? 'unknown';
+                                            $actionMap = [
+                                                'employee_created' => 'Record created',
+                                                'employee_updated' => 'Record updated',
+                                                'employee_deleted' => 'Record deleted',
+                                                'status_updated' => 'Status updated',
+                                                'backup_restored' => 'Backup restored'
+                                            ];
+                                            echo $actionMap[$actionText] ?? ucfirst(str_replace('_', ' ', $actionText));
+                                            ?>
+                                            by <?php echo htmlspecialchars($audit['user_name'] ?? 'System'); ?>
+                                        </span>
                                         <span class="time"><?php echo !empty($audit['created_at']) ? date('M d, Y H:i', strtotime($audit['created_at'])) : 'N/A'; ?></span>
                                     </div>
                                     <div class="timeline-body">
-                                        <?php if (!empty($audit['details'])): ?>
-                                        <p class="details"><?php echo htmlspecialchars($audit['details']); ?></p>
+                                        <?php if (!empty($audit['description'])): ?>
+                                        <p class="details"><?php echo htmlspecialchars($audit['description']); ?></p>
                                         <?php endif; ?>
                                         <?php if (!empty($audit['ip_address'])): ?>
                                         <small class="text-muted">IP: <?php echo htmlspecialchars($audit['ip_address']); ?></small>
@@ -465,7 +457,7 @@
                     <?php endif; ?>
 
                     <div class="record-info">
-                        <h4>Record Information</h4>
+                        <h4>Record Information</div>
                         <div class="info-grid">
                             <div class="info-item">
                                 <label>Created At</label>
@@ -639,6 +631,11 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Image failed to load:', this.src);
             // Check if this is a passport photo
             if (this.classList.contains('passport-photo')) {
+                // Check if we already have a data URI (from the inline onerror handler)
+                if (this.src && this.src.startsWith('data:')) {
+                    console.log('Image already has data URI, not changing');
+                    return;
+                }
                 // Use default avatar
                 const defaultAvatar = '<?php echo $baseUrl ?? ""; ?>/assets/img/default-avatar.png';
                 console.log('Setting default avatar:', defaultAvatar);
