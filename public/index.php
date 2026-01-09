@@ -1,4 +1,26 @@
 <?php
+// ============================================================================
+// ERROR REPORTING - ADD THIS AT THE VERY TOP
+// ============================================================================
+
+// Enable ALL error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+ini_set('log_errors', 1);
+
+// Create application error log
+$logDir = __DIR__ . '/../storage/logs';
+if (!file_exists($logDir)) {
+    mkdir($logDir, 0755, true);
+}
+$errorLogFile = $logDir . '/app_errors.log';
+ini_set('error_log', $errorLogFile);
+
+// Log request start
+error_log("\n=== " . date('Y-m-d H:i:s') . " - Request: " . $_SERVER['REQUEST_METHOD'] . " " . $_SERVER['REQUEST_URI'] . " ===");
+
+// Rest of your code...
 /**
  * FCT College of Nursing Sciences - Main Entry Point
  * 
