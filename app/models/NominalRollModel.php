@@ -90,7 +90,7 @@ class NominalRollModel {
                     marital_status = :marital_status,
                     nationality = :nationality,
                     religion = :religion,
-                    `rank` = :rank,  -- FIXED: Wrapped 'rank' in backticks
+                    `rank` = :rank,
                     grade_level = :grade_level,
                     step = :step,
                     cadre = :cadre,
@@ -332,6 +332,7 @@ class NominalRollModel {
             
             error_log("=== Step 2: Building SQL query ===");
             // FIXED: Removed 'qualification' field and added all new fields from the form
+            // FIXED: Removed PHP comments from SQL string
             $sql = "UPDATE " . self::TABLE_EMPLOYEES . " SET
                     employee_number = :employee_number,
                     surname = :surname,
@@ -342,7 +343,7 @@ class NominalRollModel {
                     marital_status = :marital_status,
                     nationality = :nationality,
                     religion = :religion,
-                    `rank` = :rank,  // FIXED: Wrapped 'rank' in backticks
+                    `rank` = :rank,
                     grade_level = :grade_level,
                     step = :step,
                     cadre = :cadre,
@@ -651,7 +652,7 @@ class NominalRollModel {
             }
             
             if (!empty($filters['rank'])) {
-                $whereConditions[] = "e.`rank` = :rank";  // FIXED: Wrapped 'rank' in backticks
+                $whereConditions[] = "e.`rank` = :rank";
                 $params[':rank'] = $filters['rank'];
             }
             
@@ -757,7 +758,7 @@ class NominalRollModel {
                 $stats['by_grade'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 // Count by rank
-                $sql = "SELECT `rank`, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY `rank` ORDER BY count DESC LIMIT 10";  // FIXED: Wrapped 'rank' in backticks
+                $sql = "SELECT `rank`, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY `rank` ORDER BY count DESC LIMIT 10";
                 $stmt = $this->db->query($sql);
                 $stats['by_rank'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
@@ -808,7 +809,7 @@ class NominalRollModel {
             $options['steps'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
             // Ranks
-            $sql = "SELECT DISTINCT `rank` FROM " . self::TABLE_EMPLOYEES . " WHERE `rank` IS NOT NULL AND `rank` != '' ORDER BY `rank`";  // FIXED: Wrapped 'rank' in backticks
+            $sql = "SELECT DISTINCT `rank` FROM " . self::TABLE_EMPLOYEES . " WHERE `rank` IS NOT NULL AND `rank` != '' ORDER BY `rank`";
             $stmt = $this->db->query($sql);
             $options['ranks'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
@@ -1390,7 +1391,7 @@ class NominalRollModel {
             }
             
             if (!empty($filters['rank'])) {
-                $whereConditions[] = "`rank` = :rank";  // FIXED: Wrapped 'rank' in backticks
+                $whereConditions[] = "`rank` = :rank";
                 $params[':rank'] = $filters['rank'];
             }
             
@@ -1487,11 +1488,11 @@ class NominalRollModel {
             'sex' => 'Sex',
             'date_of_birth' => 'Date of Birth',
             'marital_status' => 'Marital Status',
-            'nationality' => 'Nationality', // Added
+            'nationality' => 'Nationality',
             'rank' => 'Rank',
             'grade_level' => 'Grade Level',
-            'highest_qualification' => 'Highest Qualification', // Added
-            'year_of_highest_qualification' => 'Year of Highest Qualification', // Added
+            'highest_qualification' => 'Highest Qualification',
+            'year_of_highest_qualification' => 'Year of Highest Qualification',
             'date_of_first_appointment' => 'Date of First Appointment',
             'state' => 'State of Origin',
             'local_govt_area' => 'Local Government Area'
@@ -2143,7 +2144,7 @@ class NominalRollModel {
             foreach ($selectedFields as $field) {
                 // Handle reserved words and special cases
                 if ($field === 'rank') {
-                    $selectFields[] = "`rank`"; // Backticks for MySQL reserved word
+                    $selectFields[] = "`rank`";
                 } elseif ($field === 'date_of_birth' || 
                          $field === 'date_of_first_appointment' || 
                          $field === 'date_of_confirmation' || 
