@@ -502,11 +502,9 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Update employee record - DEBUG VERSION WITH SIMPLIFIED LOGIC
+     * Update employee record - UPDATED VERSION WITH CONSISTENT QUALIFICATIONS PROCESSING
      */
     public function update($id) {
-        error_log("=== UPDATE METHOD CALLED FOR ID: $id ===");
-        
         // Check if user has permission
         if (!$this->data['isEditor'] || (!$this->data['editingEnabled'] && !$this->data['isSuperAdmin'])) {
             $this->flash('error', 'Editing is currently disabled. Only Super Admin can modify records.');
@@ -520,101 +518,142 @@ class NominalRollController extends Controller {
         }
         
         try {
-            error_log("=== UPDATE START ===");
+            error_log("=== UPDATE METHOD START FOR EMPLOYEE ID: $id ===");
             
-            // 1. Log session status
-            error_log("Session ID: " . session_id());
-            error_log("Session status: " . session_status());
-            error_log("User ID in session: " . ($_SESSION['user_id'] ?? 'NOT SET'));
+            // Validate CSRF token
+            $this->validateCsrf();
             
-            // 2. Check CSRF (temporarily disable for testing)
-            // $this->validateCsrf();
-            error_log("CSRF check skipped for testing");
-            
-            // 3. Check if employee exists
+            // Check if employee exists
             $employee = $this->model->getEmployee($id);
             if (!$employee) {
                 throw new Exception("Employee not found.");
             }
             
-            error_log("Employee found: " . $employee['employee_number']);
+            error_log("Existing employee found: " . $employee['employee_number']);
+            error_log("Existing passport photo: " . ($employee['passport_photo'] ?? 'NULL'));
             
-            // 4. Get form data (simplified)
-            $data = [
-                'surname' => $_POST['surname'] ?? '',
-                'first_name' => $_POST['first_name'] ?? '',
-                'employee_number' => $_POST['employee_number'] ?? '',
-                'middle_name' => $_POST['middle_name'] ?? '',
-                'sex' => $_POST['sex'] ?? '',
-                'date_of_birth' => $_POST['date_of_birth'] ?? '',
-                'marital_status' => $_POST['marital_status'] ?? '',
-                'rank' => $_POST['rank'] ?? '',
-                'grade_level' => $_POST['grade_level'] ?? '',
-                'highest_qualification' => $_POST['highest_qualification'] ?? '',
-                'year_of_highest_qualification' => $_POST['year_of_highest_qualification'] ?? '',
-                'date_of_first_appointment' => $_POST['date_of_first_appointment'] ?? '',
-                'date_of_confirmation' => $_POST['date_of_confirmation'] ?? '',
-                'rank_on_first_appointment' => $_POST['rank_on_first_appointment'] ?? '',
-                'date_of_present_appointment' => $_POST['date_of_present_appointment'] ?? '',
-                'state' => $_POST['state'] ?? '',
-                'local_govt_area' => $_POST['local_govt_area'] ?? '',
-                'state_of_residence' => $_POST['state_of_residence'] ?? '',
-                'residential_address' => $_POST['residential_address'] ?? '',
-                'pf_number' => $_POST['pf_number'] ?? '',
-                'nhf_number' => $_POST['nhf_number'] ?? '',
-                'bank_name' => $_POST['bank_name'] ?? '',
-                'bank_branch' => $_POST['bank_branch'] ?? '',
-                'other_bank_name' => $_POST['other_bank_name'] ?? '',
-                'account_number' => $_POST['account_number'] ?? '',
-                'pension_fund_admin' => $_POST['pension_fund_admin'] ?? '',
-                'other_pension_fund_admin' => $_POST['other_pension_fund_admin'] ?? '',
-                'pension_number' => $_POST['pension_number'] ?? '',
-                'telephone_number' => $_POST['telephone_number'] ?? '',
-                'email' => $_POST['email'] ?? '',
-            ];
+            // Debug info
+            $this->debugPhotoInfo($employee, $_FILES);
             
-            error_log("Form data received");
+            // Get form data (uses getFormData() which processes qualifications consistently)
+            $data = $this->getFormData();
             
-            // 5. Handle file upload (temporarily simplified)
-            if (!empty($_FILES['passport_photo']['name']) && $_FILES['passport_photo']['error'] === UPLOAD_ERR_OK) {
-                error_log("File upload attempted");
-                error_log("File info: " . print_r($_FILES['passport_photo'], true));
-                
-                // TEMPORARY: Just log, don't process
-                $data['passport_photo'] = $employee['passport_photo']; // Keep existing
-                error_log("File upload detected but skipped for testing");
+            // Log what data we have
+            error_log("Form data received (before photo handling):");
+            error_log("Additional qualifications JSON: " . ($data['additional_qualifications'] ?? 'NULL'));
+            
+            // Handle draft status
+            $isDraft = $this->input('save_as_draft', 0);
+            $data['is_draft'] = $isDraft ? 1 : 0;
+            $data['status'] = $isDraft ? 'draft' : 'active';
+            
+            // FIX: Updated validation call with proper logic
+            $validationData = $data;
+            
+            // If employee number is the same, skip unique check
+            if (isset($employee['employee_number']) && $validationData['employee_number'] === $employee['employee_number']) {
+                $errors = [];
+                // Still validate other fields
+                $tempErrors = $this->model->validateEmployeeData($validationData, true);
+                // Remove employee number duplicate error if present
+                foreach ($tempErrors as $error) {
+                    if (strpos($error, 'Employee Number already exists') === false) {
+                        $errors[] = $error;
+                    }
+                }
             } else {
-                error_log("No file uploaded or upload error");
-                $data['passport_photo'] = $employee['passport_photo'];
+                $errors = $this->model->validateEmployeeData($validationData, true);
             }
             
-            // 6. Simple validation
-            if (empty($data['surname']) || empty($data['first_name']) || empty($data['employee_number'])) {
-                throw new Exception("Required fields missing");
+            if (!empty($errors)) {
+                throw new Exception(implode('<br>', $errors));
             }
             
-            // 7. Update employee (temporarily skip validation)
+            // ========== CRITICAL PASSPORT PHOTO FIX START ==========
+            $passportPhotoHandled = false;
+            
+            error_log("Checking for uploaded passport photo...");
+            error_log("FILES array for passport_photo: " . print_r($_FILES['passport_photo'] ?? [], true));
+            
+            if (!empty($_FILES['passport_photo']['name']) && $_FILES['passport_photo']['error'] === UPLOAD_ERR_OK) {
+                error_log("New passport photo detected for upload");
+                try {
+                    $photoPath = $this->uploadPassportPhoto();
+                    if ($photoPath) {
+                        error_log("New photo uploaded successfully to: " . $photoPath);
+                        $data['passport_photo'] = $photoPath;
+                        $passportPhotoHandled = true;
+                        
+                        // Delete old passport photo if exists
+                        if (!empty($employee['passport_photo'])) {
+                            error_log("Deleting old passport photo: " . $employee['passport_photo']);
+                            $this->deleteFile($employee['passport_photo']);
+                        }
+                    } else {
+                        error_log("Photo upload returned null/empty path");
+                    }
+                } catch (Exception $e) {
+                    error_log("Photo upload exception: " . $e->getMessage());
+                    // Don't fail the entire update if photo upload fails
+                    $photoRequired = $this->model->getSetting('photo_required', '0') === '1';
+                    if ($photoRequired) {
+                        throw $e;
+                    } else {
+                        $passportPhotoHandled = false;
+                    }
+                }
+            } else {
+                error_log("No new passport photo uploaded");
+                if (!empty($_FILES['passport_photo']['error'])) {
+                    error_log("Upload error code: " . $_FILES['passport_photo']['error']);
+                }
+            }
+            
+            // If no new photo was uploaded, preserve the existing one
+            if (!$passportPhotoHandled) {
+                error_log("No new photo uploaded, checking for existing photo...");
+                if (!empty($employee['passport_photo'])) {
+                    error_log("Preserving existing passport photo: " . $employee['passport_photo']);
+                    $data['passport_photo'] = $employee['passport_photo'];
+                } else {
+                    error_log("No existing passport photo found, setting to NULL");
+                    $data['passport_photo'] = null;
+                }
+            }
+            
+            error_log("Final passport_photo value for update: " . ($data['passport_photo'] ?? 'NULL'));
+            // ========== CRITICAL PASSPORT PHOTO FIX END ==========
+            
+            // Get user ID
             $userId = $_SESSION['user_id'] ?? null;
-            error_log("Attempting to update employee with user ID: " . $userId);
             
+            // Update employee
+            error_log("Calling model->updateEmployee with data...");
             $result = $this->model->updateEmployee($id, $data, $userId);
             
             if ($result) {
-                error_log("Update successful!");
-                $_SESSION['flash_success'] = 'Employee record updated successfully!';
+                $message = $isDraft ? 'Employee draft updated successfully!' : 'Employee record updated successfully!';
+                $_SESSION['flash_success'] = $message;
+                error_log("Update successful, redirecting to view page");
                 $this->redirect('/admin/nominal-roll/view/' . $id);
             } else {
-                error_log("Update failed in model");
                 throw new Exception("Failed to update employee record.");
             }
             
+            error_log("=== UPDATE METHOD END ===");
+            
         } catch (Exception $e) {
-            error_log("UPDATE ERROR: " . $e->getMessage());
-            error_log("Stack trace: " . $e->getTraceAsString());
+            error_log("NominalRollController update error: " . $e->getMessage());
+            error_log("Exception trace: " . $e->getTraceAsString());
             
-            $this->flash('error', 'Update failed: ' . $e->getMessage());
+            // Check if it's a CSRF error
+            if (strpos($e->getMessage(), 'CSRF') !== false) {
+                $this->flash('error', 'Security error: ' . $e->getMessage());
+                $this->redirect('/admin/nominal-roll/edit/' . $id);
+                return;
+            }
             
-            // Get employee for re-display
+            // Get employee and filter options for re-display
             $employee = $this->model->getEmployee($id);
             $filterOptions = $this->model->getFilterOptions();
             
@@ -622,7 +661,7 @@ class NominalRollController extends Controller {
                 'employee' => $employee,
                 'filterOptions' => $filterOptions,
                 'error' => $e->getMessage(),
-                'formData' => $_POST,
+                'formData' => $this->getFormData(true),
                 'pageTitle' => 'Edit Employee - ' . $employee['surname'] . ', ' . $employee['first_name'],
                 'pageDescription' => 'Edit employee record details'
             ]);
