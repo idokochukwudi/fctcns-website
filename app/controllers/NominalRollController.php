@@ -1100,7 +1100,7 @@ class NominalRollController extends Controller {
     
     /**
      * ============================================
-     * EXPORT FUNCTIONALITY
+     * EXPORT FUNCTIONALITY - UPDATED VERSION
      * ============================================
      */
     
@@ -1261,378 +1261,612 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Export to PDF format
+     * ============================================
+     * REPORTING METHODS - UPDATED WITH FIXES
+     * ============================================
      */
-    public function exportPdf($id = null) {
+    
+    /**
+     * Display reports page
+     */
+    public function reports() {
         try {
-            if ($id) {
-                // Single employee PDF
-                $employee = $this->model->getEmployee($id);
-                
-                if (!$employee) {
-                    throw new Exception("Employee not found.");
+            $availableFields = $this->model->getAvailableReportFields();
+            $defaultFields = $this->model->getDefaultReportFields();
+            $savedReports = $this->model->getSavedReports($_SESSION['user_id'] ?? null);
+            
+            $this->data = [
+                'availableFields' => $availableFields,
+                'defaultFields' => $defaultFields,
+                'savedReports' => $savedReports,
+                'pageTitle' => 'Nominal Roll Reports',
+                'pageDescription' => 'Generate custom reports'
+            ];
+            
+            $this->render('admin/nominal-roll/reports');
+            
+        } catch (Exception $e) {
+            error_log("Reports error: " . $e->getMessage());
+            $this->flash('error', 'Failed to load reports');
+            $this->redirect('/admin/nominal-roll');
+        }
+    }
+    
+    /**
+     * Generate report preview via AJAX - NEW METHOD
+     */
+    public function generatePreview() {
+        header('Content-Type: application/json');
+        
+        try {
+            // Check if it's an AJAX request
+            if (empty($_SERVER['HTTP_X_REQUESTED_WITH']) || 
+                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
+                throw new Exception('Invalid request type');
+            }
+            
+            // Get POST data
+            $postData = json_decode(file_get_contents('php://input'), true);
+            
+            if (!$postData) {
+                $postData = $_POST;
+            }
+            
+            // Get selected fields
+            $selectedFields = $postData['selected_fields'] ?? [];
+            
+            if (empty($selectedFields)) {
+                throw new Exception('Please select at least one field');
+            }
+            
+            // Get filters
+            $filters = [
+                'search' => $postData['search'] ?? '',
+                'state' => $postData['filter_state'] ?? '',
+                'department' => $postData['filter_department'] ?? '',
+                'grade_level' => $postData['filter_grade_level'] ?? '',
+                'sex' => $postData['filter_sex'] ?? '',
+                'rank' => $postData['filter_rank'] ?? '',
+                'status' => $postData['filter_status'] ?? 'active'
+            ];
+            
+            $sortOrder = $postData['sort_order'] ?? 'surname_asc';
+            
+            // Generate report data using REAL database data
+            $reportData = $this->model->generateReportData($selectedFields, $filters, $sortOrder);
+            
+            // Get field labels
+            $availableFields = $this->model->getAvailableReportFields();
+            $fieldLabels = [];
+            foreach ($availableFields as $category) {
+                foreach ($category['fields'] as $key => $label) {
+                    $fieldLabels[$key] = $label;
+                }
+            }
+            
+            // Get statistics
+            $statistics = $this->model->getReportStatistics($reportData, $selectedFields);
+            
+            // Return limited preview (e.g., first 10 records)
+            $previewData = array_slice($reportData, 0, 10);
+            
+            echo json_encode([
+                'success' => true,
+                'fields' => $selectedFields,
+                'fieldLabels' => $fieldLabels,
+                'data' => $previewData,
+                'fullData' => $reportData,
+                'totalRecords' => count($reportData),
+                'previewRecords' => count($previewData),
+                'statistics' => $statistics,
+                'config' => [
+                    'selected_fields' => $selectedFields,
+                    'sort_order' => $sortOrder,
+                    'filters' => $filters
+                ]
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Report preview error: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        exit;
+    }
+    
+    /**
+     * Generate report - UPDATED VERSION (redirects to reportPreview)
+     */
+    public function generateReport() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/nominal-roll/reports');
+            return;
+        }
+        
+        try {
+            // Validate CSRF token
+            if (!$this->validateCsrfToken()) {
+                $this->flash('error', 'Invalid or expired CSRF token. Please try again.');
+                $this->redirect('/admin/nominal-roll/reports');
+                return;
+            }
+            
+            $selectedFields = $_POST['selected_fields'] ?? [];
+            
+            if (empty($selectedFields)) {
+                throw new Exception('Please select at least one field');
+            }
+            
+            $filters = [
+                'search' => $_POST['search'] ?? '',
+                'state' => $_POST['filter_state'] ?? '',
+                'department' => $_POST['filter_department'] ?? '',
+                'grade_level' => $_POST['filter_grade_level'] ?? '',
+                'sex' => $_POST['filter_sex'] ?? '',
+                'rank' => $_POST['filter_rank'] ?? '',
+                'status' => $_POST['filter_status'] ?? 'active'
+            ];
+            
+            $sortOrder = $_POST['sort_order'] ?? 'surname_asc';
+            
+            // Generate report data
+            $reportData = $this->model->generateReportData($selectedFields, $filters, $sortOrder);
+            
+            // Get field labels
+            $availableFields = $this->model->getAvailableReportFields();
+            $fieldLabels = [];
+            foreach ($availableFields as $category) {
+                foreach ($category['fields'] as $key => $label) {
+                    $fieldLabels[$key] = $label;
+                }
+            }
+            
+            // Get statistics
+            $statistics = $this->model->getReportStatistics($reportData, $selectedFields);
+            
+            // Store in session for export
+            $_SESSION['current_report'] = [
+                'data' => $reportData,
+                'config' => [
+                    'selected_fields' => $selectedFields,
+                    'filters' => $filters,
+                    'sort_order' => $sortOrder
+                ],
+                'field_labels' => $fieldLabels,
+                'statistics' => $statistics,
+                'generated_at' => date('Y-m-d H:i:s')
+            ];
+            
+            // Redirect to preview page instead of rendering
+            $this->redirect('/admin/nominal-roll/report-preview');
+            
+        } catch (Exception $e) {
+            error_log("Generate report error: " . $e->getMessage());
+            $this->flash('error', $e->getMessage());
+            $this->redirect('/admin/nominal-roll/reports');
+        }
+    }
+    
+    /**
+     * Display report preview page - NEW METHOD
+     */
+    public function reportPreview() {
+        try {
+            // Check if report data exists in session
+            if (!isset($_SESSION['current_report'])) {
+                $this->flash('error', 'No report data found. Please generate a report first.');
+                $this->redirect('/admin/nominal-roll/reports');
+                return;
+            }
+            
+            $report = $_SESSION['current_report'];
+            
+            $this->data = [
+                'reportData' => $report['data'],
+                'reportConfig' => $report['config'],
+                'fieldLabels' => $report['field_labels'],
+                'statistics' => $report['statistics'],
+                'pageTitle' => 'Report Preview',
+                'pageDescription' => 'Preview generated report'
+            ];
+            
+            $this->render('admin/nominal-roll/report-preview');
+            
+        } catch (Exception $e) {
+            error_log("Report preview error: " . $e->getMessage());
+            $this->flash('error', 'Failed to load report preview: ' . $e->getMessage());
+            $this->redirect('/admin/nominal-roll/reports');
+        }
+    }
+    
+    /**
+     * Export to Excel with selected fields - UPDATED VERSION (FIXED)
+     */
+    public function exportExcel() {
+        try {
+            // Check if coming from preview
+            $fromPreview = $this->input('from_preview', 0);
+            
+            if ($fromPreview) {
+                // Validate CSRF token
+                if (!$this->validateCsrfToken()) {
+                    throw new Exception('Invalid CSRF token');
                 }
                 
-                $this->data = array_merge($this->data, [
-                    'employee' => $employee,
-                    'single_employee' => true
-                ]);
+                // Get selected fields from POST
+                $selectedFields = $_POST['selected_fields'] ?? [];
                 
-                $html = $this->renderPdfHtml($this->data);
-                $filename = "employee_{$employee['employee_number']}.pdf";
+                if (empty($selectedFields)) {
+                    throw new Exception('No fields selected for export');
+                }
+                
+                // Get filters from POST
+                $filters = [
+                    'search' => $this->input('search', ''),
+                    'state' => $this->input('state', ''),
+                    'department' => $this->input('department', ''),
+                    'grade_level' => $this->input('grade_level', ''),
+                    'sex' => $this->input('sex', ''),
+                    'rank' => $this->input('rank', ''),
+                    'status' => $this->input('status', 'active')
+                ];
+                
+                $sortOrder = $this->input('sort_order', 'surname_asc');
+                
+                // Generate report data with selected fields
+                $reportData = $this->model->generateReportData($selectedFields, $filters, $sortOrder);
+                
+                // Get field labels
+                $availableFields = $this->model->getAvailableReportFields();
+                $fieldLabels = [];
+                foreach ($availableFields as $category) {
+                    foreach ($category['fields'] as $key => $label) {
+                        $fieldLabels[$key] = $label;
+                    }
+                }
+                
+                // Export with selected fields
+                $this->exportToExcelCustom($reportData, $selectedFields, $fieldLabels);
                 
             } else {
-                // Multiple employees PDF
+                // Original export logic for default export
                 $filters = [
                     'search' => $this->input('search', ''),
                     'state' => $this->input('state', ''),
                     'grade_level' => $this->input('grade_level', ''),
                     'rank' => $this->input('rank', ''),
                     'sex' => $this->input('sex', ''),
-                    'status' => $this->input('status', 'active'),
+                    'status' => $this->input('status', ''),
                     'is_draft' => $this->input('is_draft', '')
                 ];
                 
                 $employees = $this->model->exportEmployees($filters);
-                
-                $this->data = array_merge($this->data, [
-                    'employees' => $employees,
-                    'single_employee' => false,
-                    'filters' => $filters
-                ]);
-                
-                $html = $this->renderPdfHtml($this->data);
-                $filename = "nominal_roll_" . date('Y-m-d') . ".pdf";
+                $this->exportToExcel($employees);
             }
-            
-            // Use mPDF if available, otherwise fallback to simple PDF
-            $this->generatePdf($html, $filename);
             
         } catch (Exception $e) {
-            error_log("NominalRollController exportPdf error: " . $e->getMessage());
-            $this->flash('error', 'Failed to generate PDF: ' . $e->getMessage());
+            error_log("NominalRollController exportExcel error: " . $e->getMessage());
+            $this->flash('error', 'Failed to export data: ' . $e->getMessage());
             
-            if ($id) {
-                $this->redirect('/admin/nominal-roll/view/' . $id);
+            // Redirect back to reports page
+            if (isset($_POST['from_preview'])) {
+                $this->redirect('/admin/nominal-roll/report-preview');
             } else {
-                $this->redirect('/admin/nominal-roll');
+                $this->redirect('/admin/nominal-roll/reports');
             }
         }
     }
-    
+
     /**
-     * Render HTML for PDF generation
+     * Custom Excel export with selected fields
      */
-    private function renderPdfHtml($data) {
-        extract($data);
+    private function exportToExcelCustom($data, $selectedFields, $fieldLabels) {
+        // Set headers for Excel download
+        header('Content-Type: application/vnd.ms-excel');
+        $filename = 'nominal_roll_report_' . date('Y-m-d_His') . '.xls';
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
         
-        ob_start();
+        echo '<html>';
+        echo '<head>';
+        echo '<meta charset="UTF-8">';
+        echo '<style>';
+        echo 'td { border: 1px solid #ddd; padding: 5px; }';
+        echo 'th { background-color: #f2f2f2; border: 1px solid #ddd; padding: 8px; font-weight: bold; }';
+        echo '</style>';
+        echo '</head>';
+        echo '<body>';
         
-        if ($single_employee) {
-            // Single employee PDF template
-            ?>
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>Employee Record - <?php echo htmlspecialchars($employee['employee_number']); ?></title>
-                <style>
-                    body { font-family: DejaVu Sans, sans-serif; font-size: 12px; line-height: 1.4; }
-                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px; }
-                    .header h1 { margin: 0; font-size: 20px; }
-                    .header .subtitle { margin: 5px 0; font-size: 14px; color: #666; }
-                    .employee-photo { float: right; width: 100px; height: 120px; margin-left: 20px; }
-                    .employee-photo img { width: 100px; height: 120px; object-fit: cover; border: 1px solid #000; }
-                    .pf-number { font-size: 14px; font-weight: bold; background: #f0f0f0; padding: 5px; margin: 10px 0; }
-                    .section { margin: 20px 0; page-break-inside: avoid; }
-                    .section-title { font-size: 14px; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
-                    .info-grid { display: table; width: 100%; }
-                    .info-row { display: table-row; }
-                    .info-label, .info-value { display: table-cell; padding: 5px 10px 5px 0; vertical-align: top; }
-                    .info-label { font-weight: bold; width: 35%; }
-                    .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ccc; padding-top: 10px; }
-                    @page { margin: 20mm; }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>FCT COLLEGE OF NURSING SCIENCES</h1>
-                    <div class="subtitle">EMPLOYEE NOMINAL ROLL RECORD</div>
-                    <div class="subtitle">Generated on: <?php echo date('F j, Y'); ?></div>
-                </div>
+        // Report title
+        echo '<h2>Nominal Roll Report - Custom Export</h2>';
+        echo '<p>Generated: ' . date('d/m/Y H:i:s') . '</p>';
+        echo '<p>Total Records: ' . count($data) . '</p>';
+        echo '<p>Fields: ' . count($selectedFields) . ' selected</p>';
+        
+        echo '<table>';
+        
+        // Headers
+        echo '<tr>';
+        echo '<th>S/N</th>';
+        foreach ($selectedFields as $field) {
+            $label = $fieldLabels[$field] ?? ucwords(str_replace('_', ' ', $field));
+            echo '<th>' . $label . '</th>';
+        }
+        echo '</tr>';
+        
+        // Data rows
+        $rowNumber = 1;
+        foreach ($data as $row) {
+            echo '<tr>';
+            echo '<td>' . $rowNumber++ . '</td>';
+            foreach ($selectedFields as $field) {
+                $value = $row[$field] ?? '';
                 
-                <?php if (!empty($employee['passport_photo'])): ?>
-                <div class="employee-photo">
-                    <img src="<?php echo ROOT_PATH . '/' . $employee['passport_photo']; ?>" alt="Passport Photo">
-                </div>
-                <?php endif; ?>
+                // Format dates
+                if (strpos($field, 'date') !== false && !empty($value)) {
+                    $value = date('d/m/Y', strtotime($value));
+                }
                 
-                <div style="margin-bottom: 15px;">
-                    <h2 style="margin: 0 0 5px 0; font-size: 16px;">
-                        <?php echo htmlspecialchars($employee['surname'] . ', ' . $employee['first_name'] . ' ' . ($employee['middle_name'] ?? '')); ?>
-                    </h2>
-                    <div style="font-size: 14px; margin-bottom: 5px;">
-                        <strong><?php echo htmlspecialchars($employee['rank']); ?></strong>
-                        <span style="margin-left: 10px;">GL <?php echo htmlspecialchars($employee['grade_level']); ?></span>
-                    </div>
-                    <div class="pf-number">
-                        PF Number: <?php echo htmlspecialchars($employee['pf_number'] ?? 'Not specified'); ?>
-                    </div>
-                </div>
+                // Format gender
+                if ($field === 'sex') {
+                    if ($value === 'M' || strtolower($value) === 'male') {
+                        $value = 'Male';
+                    } else if ($value === 'F' || strtolower($value) === 'female') {
+                        $value = 'Female';
+                    }
+                }
                 
-                <div class="section">
-                    <div class="section-title">PERSONAL INFORMATION</div>
-                    <div class="info-grid">
-                        <div class="info-row">
-                            <div class="info-label">Employee Number:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['employee_number']); ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Sex:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['sex']); ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Date of Birth:</div>
-                            <div class="info-value"><?php echo !empty($employee['date_of_birth']) ? date('M d, Y', strtotime($employee['date_of_birth'])) : 'N/A'; ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Marital Status:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['marital_status'] ?? 'N/A'); ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Telephone:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['telephone_number'] ?? 'N/A'); ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Email:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['email'] ?? 'N/A'); ?></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">EMPLOYMENT INFORMATION</div>
-                    <div class="info-grid">
-                        <div class="info-row">
-                            <div class="info-label">Date of 1st Appointment:</div>
-                            <div class="info-value"><?php echo !empty($employee['date_of_first_appointment']) ? date('M d, Y', strtotime($employee['date_of_first_appointment'])) : 'N/A'; ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Date of Confirmation:</div>
-                            <div class="info-value"><?php echo !empty($employee['date_of_confirmation']) ? date('M d, Y', strtotime($employee['date_of_confirmation'])) : 'N/A'; ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Rank on 1st Appointment:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['rank_on_first_appointment'] ?? 'N/A'); ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Date of Present Appointment:</div>
-                            <div class="info-value"><?php echo !empty($employee['date_of_present_appointment']) ? date('M d, Y', strtotime($employee['date_of_present_appointment'])) : 'N/A'; ?></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">QUALIFICATIONS</div>
-                    <div class="info-grid">
-                        <div class="info-row">
-                            <div class="info-label">Highest Qualification:</div>
-                            <div class="info-value">
-                                <?php echo htmlspecialchars($employee['highest_qualification'] ?? 'N/A'); ?>
-                                <?php if (!empty($employee['year_of_highest_qualification'])): ?>
-                                (<?php echo htmlspecialchars($employee['year_of_highest_qualification']); ?>)
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <?php
-                        $additional_qualifications = [];
-                        if (!empty($employee['additional_qualifications'])) {
-                            if (is_string($employee['additional_qualifications'])) {
-                                $additional_qualifications = json_decode($employee['additional_qualifications'], true);
-                            }
-                        }
-                        if (!empty($additional_qualifications) && is_array($additional_qualifications)):
-                        ?>
-                        <div class="info-row">
-                            <div class="info-label">Additional Qualifications:</div>
-                            <div class="info-value">
-                                <?php foreach ($additional_qualifications as $qual): ?>
-                                • <?php echo htmlspecialchars($qual['qualification'] ?? $qual ?? ''); ?>
-                                <?php if (!empty($qual['year'])): ?>
-                                (<?php echo htmlspecialchars($qual['year']); ?>)
-                                <?php endif; ?>
-                                <br>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">LOCATION INFORMATION</div>
-                    <div class="info-grid">
-                        <div class="info-row">
-                            <div class="info-label">State of Origin:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['state']); ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Local Government Area:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['local_govt_area']); ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">State of Residence:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['state_of_residence'] ?? 'Same as Origin'); ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Residential Address:</div>
-                            <div class="info-value"><?php echo nl2br(htmlspecialchars($employee['residential_address'] ?? 'N/A')); ?></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">FINANCIAL INFORMATION</div>
-                    <div class="info-grid">
-                        <div class="info-row">
-                            <div class="info-label">Bank Name:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['bank_name'] ?? 'N/A'); ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Bank Branch:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['bank_branch'] ?? 'N/A'); ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Account Number:</div>
-                            <div class="info-value"><?php echo !empty($employee['account_number']) ? '****' . substr($employee['account_number'], -4) : 'N/A'; ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">NHF Number:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['nhf_number'] ?? 'N/A'); ?></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Pension Number:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['pension_number'] ?? 'N/A'); ?></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="footer">
-                    <p>This is an official document from FCT College of Nursing Sciences</p>
-                    <p>Generated on <?php echo date('F j, Y \a\t H:i:s'); ?></p>
-                </div>
-            </body>
-            </html>
-            <?php
-        } else {
-            // Multiple employees PDF template
-            ?>
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>Nominal Roll - <?php echo date('Y-m-d'); ?></title>
-                <style>
-                    body { font-family: DejaVu Sans, sans-serif; font-size: 10px; }
-                    .header { text-align: center; margin-bottom: 20px; }
-                    .header h1 { margin: 0; font-size: 16px; }
-                    .header .subtitle { margin: 5px 0; font-size: 12px; color: #666; }
-                    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-                    th { background: #f0f0f0; font-weight: bold; padding: 6px; border: 1px solid #000; text-align: left; }
-                    td { padding: 5px; border: 1px solid #ccc; }
-                    .footer { margin-top: 20px; text-align: center; font-size: 9px; color: #666; }
-                    @page { margin: 15mm; }
-                    @page { size: landscape; }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>FCT COLLEGE OF NURSING SCIENCES - NOMINAL ROLL</h1>
-                    <div class="subtitle">Generated on: <?php echo date('F j, Y'); ?></div>
-                    <div class="subtitle">Total Employees: <?php echo count($employees); ?></div>
-                </div>
-                
-                <table>
-                    <thead>
-                        <tr>
-                            <th>S/N</th>
-                            <th>Employee No.</th>
-                            <th>Name</th>
-                            <th>PF Number</th>
-                            <th>Sex</th>
-                            <th>Rank</th>
-                            <th>GL</th>
-                            <th>State</th>
-                            <th>DOB</th>
-                            <th>1st Appt.</th>
-                            <th>Qualification</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($employees as $index => $emp): ?>
-                        <tr>
-                            <td><?php echo $index + 1; ?></td>
-                            <td><?php echo htmlspecialchars($emp['employee_number']); ?></td>
-                            <td><?php echo htmlspecialchars($emp['surname'] . ', ' . $emp['first_name']); ?></td>
-                            <td><?php echo htmlspecialchars($emp['pf_number'] ?? '-'); ?></td>
-                            <td><?php echo htmlspecialchars($emp['sex']); ?></td>
-                            <td><?php echo htmlspecialchars($emp['rank']); ?></td>
-                            <td><?php echo htmlspecialchars($emp['grade_level']); ?></td>
-                            <td><?php echo htmlspecialchars($emp['state']); ?></td>
-                            <td><?php echo !empty($emp['date_of_birth']) ? date('d/m/Y', strtotime($emp['date_of_birth'])) : '-'; ?></td>
-                            <td><?php echo !empty($emp['date_of_first_appointment']) ? date('d/m/Y', strtotime($emp['date_of_first_appointment'])) : '-'; ?></td>
-                            <td><?php echo htmlspecialchars($emp['highest_qualification'] ?? '-'); ?></td>
-                            <td><?php echo htmlspecialchars($emp['telephone_number'] ?? '-'); ?></td>
-                            <td><?php echo htmlspecialchars($emp['email'] ?? '-'); ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-                
-                <div class="footer">
-                    <p>Official Document - <?php echo count($employees); ?> employee(s) listed</p>
-                    <p>Generated by: <?php echo htmlspecialchars($_SESSION['username'] ?? 'System'); ?> on <?php echo date('F j, Y \a\t H:i:s'); ?></p>
-                </div>
-            </body>
-            </html>
-            <?php
+                echo '<td>' . htmlspecialchars($value) . '</td>';
+            }
+            echo '</tr>';
         }
         
-        return ob_get_clean();
+        echo '</table>';
+        
+        echo '</body></html>';
+        exit;
     }
     
     /**
-     * Generate PDF from HTML
+     * Export to CSV with selected fields - UPDATED VERSION
      */
-    private function generatePdf($html, $filename) {
-        // Try to use mPDF if available
-        if (class_exists('Mpdf\Mpdf')) {
-            $mpdf = new \Mpdf\Mpdf([
-                'mode' => 'utf-8',
-                'format' => 'A4',
-                'default_font_size' => 10,
-                'default_font' => 'dejavusans',
-                'margin_left' => 15,
-                'margin_right' => 15,
-                'margin_top' => 20,
-                'margin_bottom' => 20,
-                'margin_header' => 10,
-                'margin_footer' => 10
-            ]);
+    public function exportCsv() {
+        try {
+            // Check if coming from preview
+            $fromPreview = $this->input('from_preview', 0);
             
-            $mpdf->WriteHTML($html);
-            $mpdf->Output($filename, 'D');
-        } else {
-            // Fallback: Output as HTML with print styling
-            header('Content-Type: application/pdf');
-            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            if ($fromPreview) {
+                // Validate CSRF token
+                if (!$this->validateCsrfToken()) {
+                    throw new Exception('Invalid CSRF token');
+                }
+                
+                // Get selected fields from POST
+                $selectedFields = $_POST['selected_fields'] ?? [];
+                
+                if (empty($selectedFields)) {
+                    throw new Exception('No fields selected for export');
+                }
+                
+                // Get filters from POST
+                $filters = [
+                    'search' => $this->input('search', ''),
+                    'state' => $this->input('state', ''),
+                    'department' => $this->input('department', ''),
+                    'grade_level' => $this->input('grade_level', ''),
+                    'sex' => $this->input('sex', ''),
+                    'rank' => $this->input('rank', ''),
+                    'status' => $this->input('status', 'active')
+                ];
+                
+                $sortOrder = $this->input('sort_order', 'surname_asc');
+                
+                // Generate report data with selected fields
+                $reportData = $this->model->generateReportData($selectedFields, $filters, $sortOrder);
+                
+                // Get field labels
+                $availableFields = $this->model->getAvailableReportFields();
+                $fieldLabels = [];
+                foreach ($availableFields as $category) {
+                    foreach ($category['fields'] as $key => $label) {
+                        $fieldLabels[$key] = $label;
+                    }
+                }
+                
+                // Export with selected fields
+                $this->exportToCsvCustom($reportData, $selectedFields, $fieldLabels);
+                
+            } else {
+                // Original export logic for default export
+                $filters = [
+                    'search' => $this->input('search', ''),
+                    'state' => $this->input('state', ''),
+                    'grade_level' => $this->input('grade_level', ''),
+                    'rank' => $this->input('rank', ''),
+                    'sex' => $this->input('sex', ''),
+                    'status' => $this->input('status', ''),
+                    'is_draft' => $this->input('is_draft', '')
+                ];
+                
+                $employees = $this->model->exportEmployees($filters);
+                $this->exportToCSV($employees);
+            }
             
-            // Simple HTML that browsers can print as PDF
-            echo $html;
+        } catch (Exception $e) {
+            error_log("NominalRollController exportCsv error: " . $e->getMessage());
+            $this->flash('error', 'Failed to export data: ' . $e->getMessage());
+            $this->redirect('/admin/nominal-roll/reports');
         }
+    }
+
+    /**
+     * Custom CSV export with selected fields
+     */
+    private function exportToCsvCustom($data, $selectedFields, $fieldLabels) {
+        // Set headers for CSV download
+        header('Content-Type: text/csv; charset=utf-8');
+        $filename = 'nominal_roll_report_' . date('Y-m-d_His') . '.csv';
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        
+        $output = fopen('php://output', 'w');
+        
+        // Add UTF-8 BOM for Excel compatibility
+        fputs($output, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
+        
+        // Headers
+        $headers = ['S/N'];
+        foreach ($selectedFields as $field) {
+            $headers[] = $fieldLabels[$field] ?? ucwords(str_replace('_', ' ', $field));
+        }
+        fputcsv($output, $headers);
+        
+        // Data rows
+        $rowNumber = 1;
+        foreach ($data as $row) {
+            $csvRow = [$rowNumber++];
+            foreach ($selectedFields as $field) {
+                $value = $row[$field] ?? '';
+                
+                // Format dates
+                if (strpos($field, 'date') !== false && !empty($value)) {
+                    $value = date('d/m/Y', strtotime($value));
+                }
+                
+                // Format gender
+                if ($field === 'sex') {
+                    if ($value === 'M' || strtolower($value) === 'male') {
+                        $value = 'Male';
+                    } else if ($value === 'F' || strtolower($value) === 'female') {
+                        $value = 'Female';
+                    }
+                }
+                
+                $csvRow[] = $value;
+            }
+            fputcsv($output, $csvRow);
+        }
+        
+        // Add summary
+        fputcsv($output, []); // Empty row
+        fputcsv($output, ['EXPORT SUMMARY']);
+        fputcsv($output, ['Total Records:', count($data)]);
+        fputcsv($output, ['Generated On:', date('Y-m-d H:i:s')]);
+        fputcsv($output, ['Generated By:', $_SESSION['username'] ?? 'System']);
+        
+        fclose($output);
         exit;
+    }
+    
+    /**
+     * Save report configuration - UPDATED WITH CSRF VALIDATION
+     */
+    public function saveReport() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/nominal-roll/reports');
+            return;
+        }
+        
+        try {
+            // Validate CSRF token
+            if (!$this->validateCsrfToken()) {
+                $this->flash('error', 'Invalid or expired CSRF token. Please try again.');
+                $this->redirect('/admin/nominal-roll/reports');
+                return;
+            }
+            
+            $reportId = $this->model->saveReportConfig([
+                'report_name' => $_POST['report_name'],
+                'selected_fields' => $_POST['selected_fields'] ?? [],
+                'filters' => $_POST['filters'] ?? [],
+                'sort_order' => $_POST['sort_order'] ?? 'surname_asc',
+                'is_public' => $_POST['is_public'] ?? 0
+            ], $_SESSION['user_id'] ?? null);
+            
+            if ($reportId) {
+                $this->flash('success', 'Report configuration saved!');
+            } else {
+                $this->flash('error', 'Failed to save report');
+            }
+            
+        } catch (Exception $e) {
+            $this->flash('error', 'Error: ' . $e->getMessage());
+        }
+        
+        $this->redirect('/admin/nominal-roll/reports');
+    }
+    
+    /**
+     * Load saved report - UPDATED VERSION (redirects to reportPreview)
+     */
+    public function loadReport($id) {
+        try {
+            $report = $this->model->getReportForUser($id, $_SESSION['user_id'] ?? null);
+            
+            if (!$report) {
+                throw new Exception('Report not found or you do not have permission to access it');
+            }
+            
+            // Generate data
+            $reportData = $this->model->generateReportData(
+                $report['selected_fields'],
+                $report['filters'] ?? [],
+                $report['sort_order']
+            );
+            
+            // Get field labels
+            $availableFields = $this->model->getAvailableReportFields();
+            $fieldLabels = [];
+            foreach ($availableFields as $category) {
+                foreach ($category['fields'] as $key => $label) {
+                    $fieldLabels[$key] = $label;
+                }
+            }
+            
+            // Get statistics
+            $statistics = $this->model->getReportStatistics($reportData, $report['selected_fields']);
+            
+            // Store in session
+            $_SESSION['current_report'] = [
+                'data' => $reportData,
+                'config' => [
+                    'selected_fields' => $report['selected_fields'],
+                    'filters' => $report['filters'] ?? [],
+                    'sort_order' => $report['sort_order']
+                ],
+                'field_labels' => $fieldLabels,
+                'statistics' => $statistics,
+                'generated_at' => date('Y-m-d H:i:s')
+            ];
+            
+            $this->flash('success', 'Report loaded successfully');
+            $this->redirect('/admin/nominal-roll/report-preview');
+            
+        } catch (Exception $e) {
+            $this->flash('error', $e->getMessage());
+            $this->redirect('/admin/nominal-roll/reports');
+        }
+    }
+    
+    /**
+     * Delete saved report
+     */
+    public function deleteReport($id) {
+        try {
+            $result = $this->model->deleteReport($id, $_SESSION['user_id'] ?? null);
+            
+            if ($result) {
+                $this->flash('success', 'Report deleted successfully');
+            } else {
+                $this->flash('error', 'Failed to delete report or insufficient permissions');
+            }
+            
+        } catch (Exception $e) {
+            $this->flash('error', $e->getMessage());
+        }
+        
+        $this->redirect('/admin/nominal-roll/reports');
     }
     
     /**
@@ -2419,6 +2653,407 @@ class NominalRollController extends Controller {
             error_log("NominalRollController deleteFile error: " . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Render HTML for PDF generation
+     */
+    private function renderPdfHtml($data) {
+        extract($data);
+        
+        ob_start();
+        
+        if ($single_employee) {
+            // Single employee PDF template
+            ?>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Employee Record - <?php echo htmlspecialchars($employee['employee_number']); ?></title>
+                <style>
+                    body { font-family: DejaVu Sans, sans-serif; font-size: 12px; line-height: 1.4; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px; }
+                    .header h1 { margin: 0; font-size: 20px; }
+                    .header .subtitle { margin: 5px 0; font-size: 14px; color: #666; }
+                    .employee-photo { float: right; width: 100px; height: 120px; margin-left: 20px; }
+                    .employee-photo img { width: 100px; height: 120px; object-fit: cover; border: 1px solid #000; }
+                    .pf-number { font-size: 14px; font-weight: bold; background: #f0f0f0; padding: 5px; margin: 10px 0; }
+                    .section { margin: 20px 0; page-break-inside: avoid; }
+                    .section-title { font-size: 14px; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
+                    .info-grid { display: table; width: 100%; }
+                    .info-row { display: table-row; }
+                    .info-label, .info-value { display: table-cell; padding: 5px 10px 5px 0; vertical-align: top; }
+                    .info-label { font-weight: bold; width: 35%; }
+                    .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ccc; padding-top: 10px; }
+                    @page { margin: 20mm; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>FCT COLLEGE OF NURSING SCIENCES</h1>
+                    <div class="subtitle">EMPLOYEE NOMINAL ROLL RECORD</div>
+                    <div class="subtitle">Generated on: <?php echo date('F j, Y'); ?></div>
+                </div>
+                
+                <?php if (!empty($employee['passport_photo'])): ?>
+                <div class="employee-photo">
+                    <img src="<?php echo ROOT_PATH . '/' . $employee['passport_photo']; ?>" alt="Passport Photo">
+                </div>
+                <?php endif; ?>
+                
+                <div style="margin-bottom: 15px;">
+                    <h2 style="margin: 0 0 5px 0; font-size: 16px;">
+                        <?php echo htmlspecialchars($employee['surname'] . ', ' . $employee['first_name'] . ' ' . ($employee['middle_name'] ?? '')); ?>
+                    </h2>
+                    <div style="font-size: 14px; margin-bottom: 5px;">
+                        <strong><?php echo htmlspecialchars($employee['rank']); ?></strong>
+                        <span style="margin-left: 10px;">GL <?php echo htmlspecialchars($employee['grade_level']); ?></span>
+                    </div>
+                    <div class="pf-number">
+                        PF Number: <?php echo htmlspecialchars($employee['pf_number'] ?? 'Not specified'); ?>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">PERSONAL INFORMATION</div>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <div class="info-label">Employee Number:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['employee_number']); ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Sex:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['sex']); ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Date of Birth:</div>
+                            <div class="info-value"><?php echo !empty($employee['date_of_birth']) ? date('M d, Y', strtotime($employee['date_of_birth'])) : 'N/A'; ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Marital Status:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['marital_status'] ?? 'N/A'); ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Telephone:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['telephone_number'] ?? 'N/A'); ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Email:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['email'] ?? 'N/A'); ?></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">EMPLOYMENT INFORMATION</div>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <div class="info-label">Date of 1st Appointment:</div>
+                            <div class="info-value"><?php echo !empty($employee['date_of_first_appointment']) ? date('M d, Y', strtotime($employee['date_of_first_appointment'])) : 'N/A'; ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Date of Confirmation:</div>
+                            <div class="info-value"><?php echo !empty($employee['date_of_confirmation']) ? date('M d, Y', strtotime($employee['date_of_confirmation'])) : 'N/A'; ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Rank on 1st Appointment:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['rank_on_first_appointment'] ?? 'N/A'); ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Date of Present Appointment:</div>
+                            <div class="info-value"><?php echo !empty($employee['date_of_present_appointment']) ? date('M d, Y', strtotime($employee['date_of_present_appointment'])) : 'N/A'; ?></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">QUALIFICATIONS</div>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <div class="info-label">Highest Qualification:</div>
+                            <div class="info-value">
+                                <?php echo htmlspecialchars($employee['highest_qualification'] ?? 'N/A'); ?>
+                                <?php if (!empty($employee['year_of_highest_qualification'])): ?>
+                                (<?php echo htmlspecialchars($employee['year_of_highest_qualification']); ?>)
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php
+                        $additional_qualifications = [];
+                        if (!empty($employee['additional_qualifications'])) {
+                            if (is_string($employee['additional_qualifications'])) {
+                                $additional_qualifications = json_decode($employee['additional_qualifications'], true);
+                            }
+                        }
+                        if (!empty($additional_qualifications) && is_array($additional_qualifications)):
+                        ?>
+                        <div class="info-row">
+                            <div class="info-label">Additional Qualifications:</div>
+                            <div class="info-value">
+                                <?php foreach ($additional_qualifications as $qual): ?>
+                                • <?php echo htmlspecialchars($qual['qualification'] ?? $qual ?? ''); ?>
+                                <?php if (!empty($qual['year'])): ?>
+                                (<?php echo htmlspecialchars($qual['year']); ?>)
+                                <?php endif; ?>
+                                <br>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">LOCATION INFORMATION</div>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <div class="info-label">State of Origin:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['state']); ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Local Government Area:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['local_govt_area']); ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">State of Residence:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['state_of_residence'] ?? 'Same as Origin'); ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Residential Address:</div>
+                            <div class="info-value"><?php echo nl2br(htmlspecialchars($employee['residential_address'] ?? 'N/A')); ?></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">FINANCIAL INFORMATION</div>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <div class="info-label">Bank Name:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['bank_name'] ?? 'N/A'); ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Bank Branch:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['bank_branch'] ?? 'N/A'); ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Account Number:</div>
+                            <div class="info-value"><?php echo !empty($employee['account_number']) ? '****' . substr($employee['account_number'], -4) : 'N/A'; ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">NHF Number:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['nhf_number'] ?? 'N/A'); ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Pension Number:</div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['pension_number'] ?? 'N/A'); ?></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>This is an official document from FCT College of Nursing Sciences</p>
+                    <p>Generated on <?php echo date('F j, Y \a\t H:i:s'); ?></p>
+                </div>
+            </body>
+            </html>
+            <?php
+        } else {
+            // Multiple employees PDF template
+            ?>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Nominal Roll - <?php echo date('Y-m-d'); ?></title>
+                <style>
+                    body { font-family: DejaVu Sans, sans-serif; font-size: 10px; }
+                    .header { text-align: center; margin-bottom: 20px; }
+                    .header h1 { margin: 0; font-size: 16px; }
+                    .header .subtitle { margin: 5px 0; font-size: 12px; color: #666; }
+                    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                    th { background: #f0f0f0; font-weight: bold; padding: 6px; border: 1px solid #000; text-align: left; }
+                    td { padding: 5px; border: 1px solid #ccc; }
+                    .footer { margin-top: 20px; text-align: center; font-size: 9px; color: #666; }
+                    @page { margin: 15mm; }
+                    @page { size: landscape; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>FCT COLLEGE OF NURSING SCIENCES - NOMINAL ROLL</h1>
+                    <div class="subtitle">Generated on: <?php echo date('F j, Y'); ?></div>
+                    <div class="subtitle">Total Employees: <?php echo count($employees); ?></div>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>S/N</th>
+                            <th>Employee No.</th>
+                            <th>Name</th>
+                            <th>PF Number</th>
+                            <th>Sex</th>
+                            <th>Rank</th>
+                            <th>GL</th>
+                            <th>State</th>
+                            <th>DOB</th>
+                            <th>1st Appt.</th>
+                            <th>Qualification</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($employees as $index => $emp): ?>
+                        <tr>
+                            <td><?php echo $index + 1; ?></td>
+                            <td><?php echo htmlspecialchars($emp['employee_number']); ?></td>
+                            <td><?php echo htmlspecialchars($emp['surname'] . ', ' . $emp['first_name']); ?></td>
+                            <td><?php echo htmlspecialchars($emp['pf_number'] ?? '-'); ?></td>
+                            <td><?php echo htmlspecialchars($emp['sex']); ?></td>
+                            <td><?php echo htmlspecialchars($emp['rank']); ?></td>
+                            <td><?php echo htmlspecialchars($emp['grade_level']); ?></td>
+                            <td><?php echo htmlspecialchars($emp['state']); ?></td>
+                            <td><?php echo !empty($emp['date_of_birth']) ? date('d/m/Y', strtotime($emp['date_of_birth'])) : '-'; ?></td>
+                            <td><?php echo !empty($emp['date_of_first_appointment']) ? date('d/m/Y', strtotime($emp['date_of_first_appointment'])) : '-'; ?></td>
+                            <td><?php echo htmlspecialchars($emp['highest_qualification'] ?? '-'); ?></td>
+                            <td><?php echo htmlspecialchars($emp['telephone_number'] ?? '-'); ?></td>
+                            <td><?php echo htmlspecialchars($emp['email'] ?? '-'); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                
+                <div class="footer">
+                    <p>Official Document - <?php echo count($employees); ?> employee(s) listed</p>
+                    <p>Generated by: <?php echo htmlspecialchars($_SESSION['username'] ?? 'System'); ?> on <?php echo date('F j, Y \a\t H:i:s'); ?></p>
+                </div>
+            </body>
+            </html>
+            <?php
+        }
+        
+        return ob_get_clean();
+    }
+    
+    /**
+     * Generate PDF from HTML
+     */
+    private function generatePdf($html, $filename) {
+        // Try to use mPDF if available
+        if (class_exists('Mpdf\Mpdf')) {
+            $mpdf = new \Mpdf\Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'default_font_size' => 10,
+                'default_font' => 'dejavusans',
+                'margin_left' => 15,
+                'margin_right' => 15,
+                'margin_top' => 20,
+                'margin_bottom' => 20,
+                'margin_header' => 10,
+                'margin_footer' => 10
+            ]);
+            
+            $mpdf->WriteHTML($html);
+            $mpdf->Output($filename, 'D');
+        } else {
+            // Fallback: Output as HTML with print styling
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            
+            // Simple HTML that browsers can print as PDF
+            echo $html;
+        }
+        exit;
+    }
+    
+    /**
+     * Export to PDF format
+     */
+    public function exportPdf($id = null) {
+        try {
+            if ($id) {
+                // Single employee PDF
+                $employee = $this->model->getEmployee($id);
+                
+                if (!$employee) {
+                    throw new Exception("Employee not found.");
+                }
+                
+                $this->data = array_merge($this->data, [
+                    'employee' => $employee,
+                    'single_employee' => true
+                ]);
+                
+                $html = $this->renderPdfHtml($this->data);
+                $filename = "employee_{$employee['employee_number']}.pdf";
+                
+            } else {
+                // Multiple employees PDF
+                $filters = [
+                    'search' => $this->input('search', ''),
+                    'state' => $this->input('state', ''),
+                    'grade_level' => $this->input('grade_level', ''),
+                    'rank' => $this->input('rank', ''),
+                    'sex' => $this->input('sex', ''),
+                    'status' => $this->input('status', 'active'),
+                    'is_draft' => $this->input('is_draft', '')
+                ];
+                
+                $employees = $this->model->exportEmployees($filters);
+                
+                $this->data = array_merge($this->data, [
+                    'employees' => $employees,
+                    'single_employee' => false,
+                    'filters' => $filters
+                ]);
+                
+                $html = $this->renderPdfHtml($this->data);
+                $filename = "nominal_roll_" . date('Y-m-d') . ".pdf";
+            }
+            
+            // Use mPDF if available, otherwise fallback to simple PDF
+            $this->generatePdf($html, $filename);
+            
+        } catch (Exception $e) {
+            error_log("NominalRollController exportPdf error: " . $e->getMessage());
+            $this->flash('error', 'Failed to generate PDF: ' . $e->getMessage());
+            
+            if ($id) {
+                $this->redirect('/admin/nominal-roll/view/' . $id);
+            } else {
+                $this->redirect('/admin/nominal-roll');
+            }
+        }
+    }
+    
+    /**
+     * Validate CSRF token (add this method to your controller)
+     */
+    private function validateCsrfToken() {
+        if (!isset($_POST['csrf_token']) || !isset($_POST['csrf_token_time'])) {
+            return false;
+        }
+        
+        if (!isset($_SESSION['csrf_token']) || !isset($_SESSION['csrf_token_time'])) {
+            return false;
+        }
+        
+        // Check if tokens match
+        if ($_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            return false;
+        }
+        
+        // Check if token is expired (e.g., 1 hour expiration)
+        $tokenAge = time() - $_POST['csrf_token_time'];
+        if ($tokenAge > 3600) { // 1 hour expiration
+            return false;
+        }
+        
+        return true;
     }
     
     /**

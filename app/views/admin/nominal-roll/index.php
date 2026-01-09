@@ -26,6 +26,11 @@
                 </a>
                 <?php endif; ?>
                 
+                <!-- REPORTS BUTTON ADDED HERE -->
+                <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/reports" class="btn btn-info">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a>
+                
                 <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/export?<?php echo http_build_query($filters); ?>" 
                    class="btn btn-success" target="_blank">
                     <i class="fas fa-download"></i> Export CSV
@@ -123,7 +128,10 @@
     
     <!-- Search and Filters -->
     <div class="search-filters-card">
-        <form method="GET" action="<?php echo $baseUrl; ?>/admin/nominal-roll" class="search-form">
+        <form method="GET" action="<?php echo $baseUrl; ?>/admin/nominal-roll" class="search-form" id="searchForm">
+            <!-- Hidden input to track if filters were submitted -->
+            <input type="hidden" name="filtered" value="1">
+            
             <div class="search-row">
                 <!-- Search Input -->
                 <div class="search-input-group">
@@ -131,6 +139,7 @@
                         <i class="fas fa-search"></i>
                         <input type="text" 
                                name="search" 
+                               id="searchInput"
                                placeholder="Search by name, employee number, state..." 
                                value="<?php echo htmlspecialchars($filters['search'] ?? ''); ?>"
                                class="form-control">
@@ -138,6 +147,12 @@
                     <button type="submit" class="btn btn-primary btn-search">
                         <i class="fas fa-search"></i> Search
                     </button>
+                    <?php if (!empty($filters['search'])): ?>
+                    <a href="<?php echo $baseUrl; ?>/admin/nominal-roll?<?php echo http_build_query(array_diff_key($filters, ['search' => ''])); ?>" 
+                       class="btn btn-outline btn-clear-search" title="Clear search">
+                        <i class="fas fa-times"></i>
+                    </a>
+                    <?php endif; ?>
                 </div>
                 
                 <!-- Advanced Filters Toggle -->
@@ -146,7 +161,7 @@
                     <span class="badge" id="activeFiltersCount">
                         <?php 
                         $activeFilters = array_filter($filters, function($value, $key) {
-                            return !empty($value) && $key !== 'search' && $key !== 'page';
+                            return !empty($value) && $key !== 'search' && $key !== 'page' && $key !== 'filtered';
                         }, ARRAY_FILTER_USE_BOTH);
                         $filterCount = count($activeFilters);
                         ?>
@@ -155,15 +170,22 @@
                         <?php endif; ?>
                     </span>
                 </button>
+                
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/reports" class="btn btn-sm btn-outline-info" title="Generate Reports">
+                        <i class="fas fa-chart-bar"></i> Quick Report
+                    </a>
+                </div>
             </div>
             
             <!-- Advanced Filters (Hidden by default) -->
-            <div class="advanced-filters" id="advancedFilters" style="display: none;">
+            <div class="advanced-filters" id="advancedFilters" style="display: <?php echo !empty($filters['filtered']) ? 'block' : 'none'; ?>;">
                 <div class="filter-grid">
                     <!-- State Filter -->
                     <div class="form-group">
                         <label>State</label>
-                        <select name="state" class="form-control">
+                        <select name="state" class="form-control filter-select">
                             <option value="">All States</option>
                             <?php foreach ($filterOptions['states'] as $state): ?>
                             <option value="<?php echo htmlspecialchars($state); ?>" 
@@ -177,7 +199,7 @@
                     <!-- Grade Level Filter -->
                     <div class="form-group">
                         <label>Grade Level</label>
-                        <select name="grade_level" class="form-control">
+                        <select name="grade_level" class="form-control filter-select">
                             <option value="">All Grade Levels</option>
                             <?php foreach ($filterOptions['grade_levels'] as $grade): ?>
                             <option value="<?php echo htmlspecialchars($grade); ?>" 
@@ -191,7 +213,7 @@
                     <!-- Rank Filter -->
                     <div class="form-group">
                         <label>Rank</label>
-                        <select name="rank" class="form-control">
+                        <select name="rank" class="form-control filter-select">
                             <option value="">All Ranks</option>
                             <?php foreach ($filterOptions['ranks'] as $rank): ?>
                             <option value="<?php echo htmlspecialchars($rank); ?>" 
@@ -205,10 +227,35 @@
                     <!-- Sex Filter -->
                     <div class="form-group">
                         <label>Sex</label>
-                        <select name="sex" class="form-control">
+                        <select name="sex" class="form-control filter-select">
                             <option value="">All</option>
                             <option value="Male" <?php echo ($filters['sex'] ?? '') === 'Male' ? 'selected' : ''; ?>>Male</option>
                             <option value="Female" <?php echo ($filters['sex'] ?? '') === 'Female' ? 'selected' : ''; ?>>Female</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Department Filter -->
+                    <div class="form-group">
+                        <label>Department</label>
+                        <select name="department" class="form-control filter-select">
+                            <option value="">All Departments</option>
+                            <?php foreach ($filterOptions['departments'] ?? [] as $dept): ?>
+                            <option value="<?php echo htmlspecialchars($dept); ?>" 
+                                <?php echo ($filters['department'] ?? '') === $dept ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($dept); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <!-- Status Filter -->
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status" class="form-control filter-select">
+                            <option value="">All Status</option>
+                            <option value="active" <?php echo ($filters['status'] ?? '') === 'active' ? 'selected' : ''; ?>>Active</option>
+                            <option value="inactive" <?php echo ($filters['status'] ?? '') === 'inactive' ? 'selected' : ''; ?>>Inactive</option>
+                            <option value="retired" <?php echo ($filters['status'] ?? '') === 'retired' ? 'selected' : ''; ?>>Retired</option>
                         </select>
                     </div>
                 </div>
@@ -217,10 +264,40 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-check"></i> Apply Filters
                     </button>
-                    <a href="<?php echo $baseUrl; ?>/admin/nominal-roll" class="btn btn-outline">
+                    <a href="<?php echo $baseUrl; ?>/admin/nominal-roll" class="btn btn-outline btn-clear-filters">
                         <i class="fas fa-times"></i> Clear All
                     </a>
+                    <button type="button" class="btn btn-outline" id="saveFilterSet" title="Save this filter set">
+                        <i class="fas fa-save"></i> Save Filters
+                    </button>
                 </div>
+                
+                <!-- Active Filters Display -->
+                <?php if ($filterCount > 0): ?>
+                <div class="active-filters-display mt-3">
+                    <div class="active-filters-header">
+                        <small><strong>Active Filters:</strong></small>
+                    </div>
+                    <div class="active-filters-tags">
+                        <?php foreach ($activeFilters as $key => $value): ?>
+                            <?php if (!empty($value)): ?>
+                                <?php 
+                                $filterLabel = str_replace('_', ' ', $key);
+                                $filterLabel = ucwords($filterLabel);
+                                ?>
+                                <span class="filter-tag">
+                                    <?php echo htmlspecialchars($filterLabel); ?>: 
+                                    <strong><?php echo htmlspecialchars($value); ?></strong>
+                                    <a href="<?php echo $baseUrl; ?>/admin/nominal-roll?<?php echo http_build_query(array_merge($filters, [$key => ''])); ?>" 
+                                       class="remove-filter" title="Remove this filter">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                </span>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </form>
     </div>
@@ -231,38 +308,101 @@
         <div class="empty-state">
             <i class="fas fa-users-slash"></i>
             <h3>No employees found</h3>
-            <p>Try adjusting your search or filters</p>
-            <?php if ($isEditor && ($editingEnabled || $isSuperAdmin)): ?>
-            <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/create" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Add First Employee
-            </a>
-            <?php endif; ?>
+            <p>
+                <?php if (!empty($filters['search']) || $filterCount > 0): ?>
+                Try adjusting your search or filters
+                <?php else: ?>
+                No employees in the database yet
+                <?php endif; ?>
+            </p>
+            <div class="empty-state-actions">
+                <?php if ($isEditor && ($editingEnabled || $isSuperAdmin)): ?>
+                <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/create" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add First Employee
+                </a>
+                <?php endif; ?>
+                <?php if (!empty($filters['search']) || $filterCount > 0): ?>
+                <a href="<?php echo $baseUrl; ?>/admin/nominal-roll" class="btn btn-outline">
+                    <i class="fas fa-times"></i> Clear All Filters
+                </a>
+                <?php endif; ?>
+            </div>
         </div>
         <?php else: ?>
         
+        <div class="table-header">
+            <div class="table-summary">
+                Showing <?php echo (($pagination['page'] - 1) * $pagination['limit']) + 1; ?> to 
+                <?php echo min($pagination['page'] * $pagination['limit'], $pagination['total']); ?> of 
+                <?php echo number_format($pagination['total']); ?> employees
+            </div>
+            <div class="table-actions">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-columns"></i> Columns
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <h6 class="dropdown-header">Show/Hide Columns</h6>
+                        <?php 
+                        $visibleColumns = ['employee_number', 'name', 'sex', 'rank', 'grade_level', 'state', 'date_of_first_appointment'];
+                        $columnLabels = [
+                            'employee_number' => 'Employee No.',
+                            'name' => 'Name',
+                            'sex' => 'Sex',
+                            'rank' => 'Rank',
+                            'grade_level' => 'Grade Level',
+                            'state' => 'State',
+                            'date_of_first_appointment' => 'Date of 1st Appt.'
+                        ];
+                        foreach ($visibleColumns as $col): ?>
+                        <div class="dropdown-item">
+                            <div class="form-check">
+                                <input class="form-check-input column-toggle" 
+                                       type="checkbox" 
+                                       id="toggle_<?php echo $col; ?>" 
+                                       data-column="<?php echo $col; ?>" 
+                                       checked>
+                                <label class="form-check-label" for="toggle_<?php echo $col; ?>">
+                                    <?php echo $columnLabels[$col] ?? ucwords(str_replace('_', ' ', $col)); ?>
+                                </label>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/reports?preset=current" 
+                   class="btn btn-sm btn-info" title="Generate report from current view">
+                    <i class="fas fa-chart-bar"></i> Report This View
+                </a>
+            </div>
+        </div>
+        
         <div class="table-responsive">
-            <table class="data-table">
+            <table class="data-table" id="employeesTable">
                 <thead>
                     <tr>
-                        <th>S/N</th>
-                        <th>Employee No.</th>
-                        <th>Name</th>
-                        <th>Sex</th>
-                        <th>Rank</th>
-                        <th>Grade Level</th>
-                        <th>State</th>
-                        <th>Date of 1st Appt.</th>
-                        <th>Actions</th>
+                        <th class="serial-column">S/N</th>
+                        <th class="employee-number">Employee No.</th>
+                        <th class="name-column">Name</th>
+                        <th class="sex-column">Sex</th>
+                        <th class="rank-column">Rank</th>
+                        <th class="grade-column">Grade Level</th>
+                        <th class="state-column">State</th>
+                        <th class="date-column">Date of 1st Appt.</th>
+                        <th class="actions-column">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($employees as $index => $employee): ?>
                     <tr>
-                        <td><?php echo (($pagination['page'] - 1) * $pagination['limit']) + $index + 1; ?></td>
-                        <td>
+                        <td class="serial-column"><?php echo (($pagination['page'] - 1) * $pagination['limit']) + $index + 1; ?></td>
+                        <td class="employee-number">
                             <strong><?php echo htmlspecialchars($employee['employee_number']); ?></strong>
+                            <?php if (!empty($employee['is_draft'])): ?>
+                            <span class="badge badge-warning badge-sm">Draft</span>
+                            <?php endif; ?>
                         </td>
-                        <td>
+                        <td class="name-column">
                             <div class="employee-name">
                                 <strong><?php echo htmlspecialchars($employee['surname'] . ', ' . $employee['first_name']); ?></strong>
                                 <?php if (!empty($employee['middle_name'])): ?>
@@ -270,26 +410,55 @@
                                     <?php echo htmlspecialchars($employee['middle_name']); ?>
                                 </div>
                                 <?php endif; ?>
+                                <?php if (!empty($employee['department'])): ?>
+                                <div class="text-muted extra-info">
+                                    <i class="fas fa-building"></i> <?php echo htmlspecialchars($employee['department']); ?>
+                                </div>
+                                <?php endif; ?>
                             </div>
                         </td>
-                        <td>
+                        <td class="sex-column">
                             <span class="badge <?php echo $employee['sex'] === 'Male' ? 'badge-info' : 'badge-pink'; ?>">
                                 <?php echo htmlspecialchars($employee['sex']); ?>
                             </span>
                         </td>
-                        <td><?php echo htmlspecialchars($employee['rank']); ?></td>
-                        <td>
-                            <span class="badge badge-secondary">GL <?php echo htmlspecialchars($employee['grade_level']); ?></span>
+                        <td class="rank-column">
+                            <span class="rank-badge"><?php echo htmlspecialchars($employee['rank']); ?></span>
                         </td>
-                        <td><?php echo htmlspecialchars($employee['state']); ?></td>
-                        <td>
+                        <td class="grade-column">
+                            <span class="badge badge-secondary">GL <?php echo htmlspecialchars($employee['grade_level']); ?></span>
+                            <?php if (!empty($employee['step'])): ?>
+                            <span class="badge badge-light">Step <?php echo htmlspecialchars($employee['step']); ?></span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="state-column">
+                            <div class="state-info">
+                                <span class="state-name"><?php echo htmlspecialchars($employee['state']); ?></span>
+                                <?php if (!empty($employee['local_govt_area'])): ?>
+                                <div class="text-muted small">
+                                    <?php echo htmlspecialchars($employee['local_govt_area']); ?>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                        <td class="date-column">
                             <?php if (!empty($employee['date_of_first_appointment'])): ?>
-                            <?php echo date('M d, Y', strtotime($employee['date_of_first_appointment'])); ?>
+                            <div class="date-display">
+                                <?php echo date('M d, Y', strtotime($employee['date_of_first_appointment'])); ?>
+                                <?php 
+                                $yearsOfService = date('Y') - date('Y', strtotime($employee['date_of_first_appointment']));
+                                if ($yearsOfService > 0): 
+                                ?>
+                                <div class="text-muted small">
+                                    <i class="fas fa-calendar-alt"></i> <?php echo $yearsOfService; ?> yrs
+                                </div>
+                                <?php endif; ?>
+                            </div>
                             <?php else: ?>
                             <span class="text-muted">-</span>
                             <?php endif; ?>
                         </td>
-                        <td>
+                        <td class="actions-column">
                             <div class="action-buttons">
                                 <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/view/<?php echo $employee['id']; ?>" 
                                    class="btn btn-sm btn-info" title="View Details">
@@ -309,6 +478,13 @@
                                    class="btn btn-sm btn-danger" title="Export as PDF" target="_blank">
                                     <i class="fas fa-file-pdf"></i>
                                     <span class="btn-text">PDF</span>
+                                </a>
+                                
+                                <!-- Quick Report Button -->
+                                <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/reports?quick=<?php echo $employee['id']; ?>" 
+                                   class="btn btn-sm btn-success" title="Quick Report">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <span class="btn-text">Report</span>
                                 </a>
                                 
                                 <?php if ($isSuperAdmin): ?>
@@ -335,9 +511,8 @@
         <?php if ($pagination['total_pages'] > 1): ?>
         <div class="pagination">
             <div class="pagination-info">
-                Showing <?php echo (($pagination['page'] - 1) * $pagination['limit']) + 1; ?> to 
-                <?php echo min($pagination['page'] * $pagination['limit'], $pagination['total']); ?> of 
-                <?php echo number_format($pagination['total']); ?> entries
+                Page <?php echo $pagination['page']; ?> of <?php echo $pagination['total_pages']; ?>
+                (<?php echo number_format($pagination['total']); ?> total records)
             </div>
             
             <div class="pagination-controls">
@@ -387,13 +562,28 @@
                 </a>
                 <?php endif; ?>
             </div>
+            
+            <div class="pagination-jump">
+                <div class="input-group input-group-sm">
+                    <input type="number" 
+                           id="jumpToPage" 
+                           min="1" 
+                           max="<?php echo $pagination['total_pages']; ?>" 
+                           class="form-control" 
+                           placeholder="Page" 
+                           style="width: 70px;">
+                    <button class="btn btn-outline" onclick="jumpToPage()">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
         </div>
         <?php endif; ?>
         <?php endif; ?>
     </div>
 </div>
 
-<!-- JavaScript for Filters and Actions -->
+<!-- JavaScript for Filters, Search, and Actions -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Toggle advanced filters
@@ -401,15 +591,36 @@ document.addEventListener('DOMContentLoaded', function() {
     const advancedFilters = document.getElementById('advancedFilters');
     
     if (toggleFiltersBtn && advancedFilters) {
+        // Show filters if they were previously active
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasFilters = urlParams.has('state') || urlParams.has('grade_level') || 
+                          urlParams.has('rank') || urlParams.has('sex') || 
+                          urlParams.has('department') || urlParams.has('status');
+        
+        if (hasFilters) {
+            advancedFilters.style.display = 'block';
+            toggleFiltersBtn.innerHTML = '<i class="fas fa-filter"></i> Hide Filters';
+        }
+        
         toggleFiltersBtn.addEventListener('click', function() {
             if (advancedFilters.style.display === 'none') {
                 advancedFilters.style.display = 'block';
                 this.innerHTML = '<i class="fas fa-filter"></i> Hide Filters';
+                // Store in localStorage
+                localStorage.setItem('nominalFiltersVisible', 'true');
             } else {
                 advancedFilters.style.display = 'none';
                 this.innerHTML = '<i class="fas fa-filter"></i> Filters';
+                localStorage.setItem('nominalFiltersVisible', 'false');
             }
         });
+    }
+    
+    // Restore filter visibility from localStorage
+    const filtersVisible = localStorage.getItem('nominalFiltersVisible');
+    if (filtersVisible === 'true' && advancedFilters && toggleFiltersBtn) {
+        advancedFilters.style.display = 'block';
+        toggleFiltersBtn.innerHTML = '<i class="fas fa-filter"></i> Hide Filters';
     }
     
     // Update active filters count
@@ -421,7 +632,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let activeCount = 0;
             
             for (let [key, value] of formData.entries()) {
-                if (key !== 'search' && key !== 'page' && value.trim() !== '') {
+                if (key !== 'search' && key !== 'page' && key !== 'filtered' && value.trim() !== '') {
                     activeCount++;
                 }
             }
@@ -429,31 +640,71 @@ document.addEventListener('DOMContentLoaded', function() {
             if (activeCount > 0) {
                 activeFiltersCount.textContent = activeCount;
                 activeFiltersCount.style.display = 'inline-block';
+                activeFiltersCount.classList.add('badge-active');
             } else {
                 activeFiltersCount.style.display = 'none';
+                activeFiltersCount.classList.remove('badge-active');
             }
         }
     }
     
     // Update count on filter change
-    document.querySelectorAll('.advanced-filters select').forEach(select => {
-        select.addEventListener('change', updateActiveFiltersCount);
+    document.querySelectorAll('.advanced-filters select, #searchInput').forEach(element => {
+        element.addEventListener('change', updateActiveFiltersCount);
+        element.addEventListener('input', function() {
+            if (this.id === 'searchInput') {
+                updateActiveFiltersCount();
+            }
+        });
     });
     
     // Initialize count
     updateActiveFiltersCount();
     
-    // Quick search with debounce
-    const searchInput = document.querySelector('input[name="search"]');
+    // Enhanced search with debounce and suggestions
+    const searchInput = document.getElementById('searchInput');
     let searchTimeout;
+    let lastSearchValue = '';
     
     if (searchInput) {
+        // Show loading indicator on search
+        const searchForm = document.getElementById('searchForm');
+        const originalSubmit = searchForm.querySelector('button[type="submit"]');
+        
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                this.form.submit();
-            }, 500);
+            
+            // Only search if value changed
+            if (this.value === lastSearchValue) return;
+            
+            // Show loading for longer searches
+            if (this.value.length >= 3) {
+                searchTimeout = setTimeout(() => {
+                    // Add loading class to search button
+                    originalSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+                    originalSubmit.disabled = true;
+                    
+                    // Submit form
+                    searchForm.submit();
+                }, 800);
+            }
+            
+            lastSearchValue = this.value;
         });
+        
+        // Prevent form submission on Enter for instant search
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && this.value.length >= 1) {
+                e.preventDefault();
+                originalSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+                originalSubmit.disabled = true;
+                searchForm.submit();
+            }
+        });
+        
+        // Restore button state on page load
+        originalSubmit.innerHTML = '<i class="fas fa-search"></i> Search';
+        originalSubmit.disabled = false;
     }
     
     // Show/hide button text on mobile
@@ -476,21 +727,69 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update on resize
     window.addEventListener('resize', updateButtonTextForMobile);
     
-    // Delete confirmation with employee details
+    // Enhanced delete confirmation with employee details
     window.confirmDelete = function(form) {
         const row = form.closest('tr');
         const employeeName = row.querySelector('.employee-name strong').textContent;
-        const employeeNumber = row.querySelector('td:nth-child(2) strong').textContent;
+        const employeeNumber = row.querySelector('.employee-number strong').textContent;
         
-        return confirm(`Are you sure you want to delete employee:\n\n${employeeName}\nEmployee No: ${employeeNumber}\n\nThis action cannot be undone.`);
+        return Swal.fire({
+            title: 'Delete Employee?',
+            html: `<div class="text-left">
+                <p><strong>Are you sure you want to delete this employee?</strong></p>
+                <div class="alert alert-warning p-2 mb-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    This action cannot be undone!
+                </div>
+                <div class="employee-details">
+                    <p><strong>Name:</strong> ${employeeName}</p>
+                    <p><strong>Employee No:</strong> ${employeeNumber}</p>
+                </div>
+            </div>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Deleting...',
+                    text: 'Please wait',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // Submit the form
+                form.submit();
+                return true;
+            }
+            return false;
+        });
     };
     
     // Export confirmation
     document.querySelectorAll('.btn-danger[href*="export"]').forEach(btn => {
         btn.addEventListener('click', function(e) {
-            if (!confirm('This will generate a PDF file for this employee. Continue?')) {
-                e.preventDefault();
-            }
+            e.preventDefault();
+            const url = this.href;
+            Swal.fire({
+                title: 'Generate PDF',
+                text: 'This will generate a PDF file for this employee. Continue?',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Generate PDF',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Open in new tab
+                    window.open(url, '_blank');
+                }
+            });
         });
     });
     
@@ -503,11 +802,195 @@ document.addEventListener('DOMContentLoaded', function() {
                     advancedFilters.style.display = 'none';
                     if (toggleFiltersBtn) {
                         toggleFiltersBtn.innerHTML = '<i class="fas fa-filter"></i> Filters';
+                        localStorage.setItem('nominalFiltersVisible', 'false');
                     }
                 }, 100);
             });
         }
     }
+    
+    // Column toggle functionality
+    document.querySelectorAll('.column-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const column = this.getAttribute('data-column');
+            const columnClass = '.' + column + '-column';
+            const isChecked = this.checked;
+            
+            // Show/hide column in table
+            document.querySelectorAll(columnClass).forEach(cell => {
+                if (isChecked) {
+                    cell.style.display = '';
+                } else {
+                    cell.style.display = 'none';
+                }
+            });
+            
+            // Save preference to localStorage
+            const preferences = JSON.parse(localStorage.getItem('nominalColumnPrefs') || '{}');
+            preferences[column] = isChecked;
+            localStorage.setItem('nominalColumnPrefs', JSON.stringify(preferences));
+        });
+        
+        // Load saved preferences
+        const preferences = JSON.parse(localStorage.getItem('nominalColumnPrefs') || '{}');
+        const column = toggle.getAttribute('data-column');
+        if (preferences[column] === false) {
+            toggle.checked = false;
+            toggle.dispatchEvent(new Event('change'));
+        }
+    });
+    
+    // Save filter set
+    document.getElementById('saveFilterSet')?.addEventListener('click', function() {
+        const filters = {};
+        document.querySelectorAll('.filter-select').forEach(select => {
+            if (select.value) {
+                filters[select.name] = select.value;
+            }
+        });
+        
+        const searchValue = document.getElementById('searchInput').value;
+        if (searchValue) {
+            filters.search = searchValue;
+        }
+        
+        if (Object.keys(filters).length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Filters',
+                text: 'Please apply some filters before saving.'
+            });
+            return;
+        }
+        
+        Swal.fire({
+            title: 'Save Filter Set',
+            input: 'text',
+            inputLabel: 'Filter Set Name',
+            inputPlaceholder: 'e.g., "Active Lagos Staff"',
+            showCancelButton: true,
+            confirmButtonText: 'Save',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                const filterSets = JSON.parse(localStorage.getItem('nominalFilterSets') || '[]');
+                filterSets.push({
+                    name: result.value,
+                    filters: filters,
+                    date: new Date().toISOString()
+                });
+                localStorage.setItem('nominalFilterSets', JSON.stringify(filterSets));
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Saved!',
+                    text: 'Filter set saved successfully.'
+                });
+            }
+        });
+    });
+    
+    // Jump to page functionality
+    window.jumpToPage = function() {
+        const pageInput = document.getElementById('jumpToPage');
+        const page = parseInt(pageInput.value);
+        const totalPages = <?php echo $pagination['total_pages'] ?? 1; ?>;
+        
+        if (!page || page < 1 || page > totalPages) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Page',
+                text: `Please enter a page number between 1 and ${totalPages}`
+            });
+            return;
+        }
+        
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('page', page);
+        window.location.href = currentUrl.toString();
+    };
+    
+    // Quick filter badges
+    document.querySelectorAll('.filter-tag .remove-filter').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = this.href;
+        });
+    });
+    
+    // Clear all filters with confirmation
+    document.querySelector('.btn-clear-filters')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        const hasFilters = document.querySelectorAll('.filter-select').length > 0;
+        const hasSearch = document.getElementById('searchInput').value;
+        
+        if (!hasFilters && !hasSearch) {
+            window.location.href = this.href;
+            return;
+        }
+        
+        Swal.fire({
+            title: 'Clear All Filters?',
+            text: 'This will remove all applied filters and search terms.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Clear All',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = this.href;
+            }
+        }.bind(this));
+    });
+    
+    // Quick search suggestions (optional - can be enhanced with AJAX)
+    if (searchInput) {
+        // Load recent searches
+        const recentSearches = JSON.parse(localStorage.getItem('nominalRecentSearches') || '[]');
+        
+        searchInput.addEventListener('focus', function() {
+            if (recentSearches.length > 0 && !this.value) {
+                // Show recent searches dropdown (simplified)
+                console.log('Recent searches:', recentSearches);
+            }
+        });
+        
+        searchInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                // Add to recent searches
+                const searchTerm = this.value.trim();
+                const index = recentSearches.indexOf(searchTerm);
+                if (index > -1) {
+                    recentSearches.splice(index, 1);
+                }
+                recentSearches.unshift(searchTerm);
+                if (recentSearches.length > 10) {
+                    recentSearches.pop();
+                }
+                localStorage.setItem('nominalRecentSearches', JSON.stringify(recentSearches));
+            }
+        });
+    }
+    
+    // Table row click to view details
+    document.querySelectorAll('.data-table tbody tr').forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Don't trigger if clicking on action buttons or links
+            if (e.target.closest('a') || e.target.closest('button') || e.target.closest('form')) {
+                return;
+            }
+            
+            const viewLink = this.querySelector('.btn-info');
+            if (viewLink) {
+                window.location.href = viewLink.href;
+            }
+        });
+        
+        // Add hover effect
+        row.addEventListener('mouseenter', function() {
+            this.style.cursor = 'pointer';
+        });
+    });
 });
 </script>
 
@@ -559,6 +1042,19 @@ document.addEventListener('DOMContentLoaded', function() {
     min-width: 120px;
 }
 
+.header-actions .btn-info {
+    background: #17a2b8;
+    color: white;
+    border-color: #17a2b8;
+}
+
+.header-actions .btn-info:hover {
+    background: #138496;
+    border-color: #117a8b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(23, 162, 184, 0.2);
+}
+
 /* Stats Cards */
 .stats-cards {
     display: grid;
@@ -597,7 +1093,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .stat-icon.bg-primary { background: #3490dc; }
 .stat-icon.bg-success { background: #38a169; }
-.stat-icon.bg-info { background: #4299e1; }
+.stat-icon.bg-info { background: #17a2b8; }
 .stat-icon.bg-warning { background: #d69e2e; }
 
 .stat-content h3 {
@@ -678,6 +1174,21 @@ document.addEventListener('DOMContentLoaded', function() {
     justify-content: center;
 }
 
+.btn-clear-search {
+    height: 40px;
+    width: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.quick-actions {
+    display: flex;
+    gap: 8px;
+}
+
 /* Advanced Filters */
 .advanced-filters {
     margin-top: 16px;
@@ -695,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .filter-actions {
     display: flex;
     gap: 8px;
-    justify-content: flex-end;
+    justify-content: flex-start;
 }
 
 .filter-actions .btn {
@@ -707,12 +1218,71 @@ document.addEventListener('DOMContentLoaded', function() {
     justify-content: center;
 }
 
+.active-filters-display {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 16px;
+}
+
+.active-filters-header {
+    margin-bottom: 8px;
+}
+
+.active-filters-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.filter-tag {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-tag .remove-filter {
+    color: #dc3545;
+    text-decoration: none;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.filter-tag .remove-filter:hover {
+    color: #bd2130;
+}
+
 /* Data Table */
 .data-table-card {
     background: white;
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     overflow: hidden;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8f9fa;
+}
+
+.table-summary {
+    font-size: 14px;
+    color: #666;
+}
+
+.table-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
 .table-responsive {
@@ -747,6 +1317,10 @@ document.addEventListener('DOMContentLoaded', function() {
     vertical-align: middle;
 }
 
+.data-table tbody tr {
+    transition: background-color 0.2s;
+}
+
 .data-table tbody tr:hover {
     background: #f8fafc;
 }
@@ -767,6 +1341,29 @@ document.addEventListener('DOMContentLoaded', function() {
     color: #666;
 }
 
+.employee-name .extra-info {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 2px;
+}
+
+.extra-info i {
+    margin-right: 4px;
+}
+
+.state-info {
+    line-height: 1.4;
+}
+
+.state-name {
+    display: block;
+    font-weight: 500;
+}
+
+.date-display {
+    line-height: 1.4;
+}
+
 /* Badges */
 .badge {
     display: inline-block;
@@ -775,6 +1372,11 @@ document.addEventListener('DOMContentLoaded', function() {
     font-weight: 600;
     border-radius: 4px;
     white-space: nowrap;
+}
+
+.badge-sm {
+    padding: 2px 6px;
+    font-size: 11px;
 }
 
 .badge-info {
@@ -790,6 +1392,31 @@ document.addEventListener('DOMContentLoaded', function() {
 .badge-secondary {
     background: #f8f9fa;
     color: #6c757d;
+}
+
+.badge-warning {
+    background: #fff7e6;
+    color: #fa8c16;
+}
+
+.badge-light {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+}
+
+.badge-active {
+    background: #dc3545;
+    color: white;
+}
+
+.rank-badge {
+    background: #e8f5e8;
+    color: #28a745;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
 }
 
 /* Action Buttons */
@@ -858,6 +1485,17 @@ document.addEventListener('DOMContentLoaded', function() {
     background: #c53030;
     transform: translateY(-2px);
     box-shadow: 0 2px 4px rgba(227, 52, 47, 0.2);
+}
+
+.action-buttons .btn-success {
+    background: #38a169;
+    color: white;
+}
+
+.action-buttons .btn-success:hover {
+    background: #2f855a;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(56, 161, 105, 0.2);
 }
 
 .action-buttons .btn-dark {
@@ -937,6 +1575,16 @@ document.addEventListener('DOMContentLoaded', function() {
     border-color: #ccc;
 }
 
+.pagination-jump {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pagination-jump .input-group {
+    width: auto;
+}
+
 /* Empty State */
 .empty-state {
     text-align: center;
@@ -961,6 +1609,13 @@ document.addEventListener('DOMContentLoaded', function() {
     color: #a0aec0;
     font-size: 16px;
     margin: 0 0 30px 0;
+}
+
+.empty-state-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 .empty-state .btn {
@@ -1025,6 +1680,19 @@ document.addEventListener('DOMContentLoaded', function() {
     border-color: #2f855a;
     transform: translateY(-2px);
     box-shadow: 0 4px 6px rgba(56, 161, 105, 0.2);
+}
+
+.btn-info {
+    background: #17a2b8;
+    color: white;
+    border-color: #17a2b8;
+}
+
+.btn-info:hover {
+    background: #138496;
+    border-color: #117a8b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(23, 162, 184, 0.2);
 }
 
 .btn-outline {
@@ -1152,6 +1820,11 @@ document.addEventListener('DOMContentLoaded', function() {
         max-width: calc(50% - 5px);
     }
     
+    .search-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
     .search-input-group {
         min-width: 100%;
         flex-direction: column;
@@ -1161,9 +1834,24 @@ document.addEventListener('DOMContentLoaded', function() {
         width: 100%;
     }
     
+    .quick-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
     .stats-cards {
         grid-template-columns: 1fr;
         gap: 12px;
+    }
+    
+    .table-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+    
+    .table-actions {
+        justify-content: center;
     }
     
     .pagination {
@@ -1234,6 +1922,14 @@ document.addEventListener('DOMContentLoaded', function() {
     .employee-name {
         min-width: 150px;
     }
+    
+    .empty-state-actions {
+        flex-direction: column;
+    }
+    
+    .empty-state .btn {
+        width: 100%;
+    }
 }
 
 /* Print Styles */
@@ -1242,7 +1938,8 @@ document.addEventListener('DOMContentLoaded', function() {
     .search-filters-card,
     .action-buttons .btn:not(.btn-info),
     .action-buttons form,
-    .pagination {
+    .pagination,
+    .table-header {
         display: none !important;
     }
     
@@ -1253,6 +1950,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     .data-table th,
     .data-table td {
+        border: 1px solid #ddd !important;
+    }
+    
+    .badge {
+        background: #f8f9fa !important;
+        color: #000 !important;
         border: 1px solid #ddd !important;
     }
 }

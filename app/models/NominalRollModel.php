@@ -21,6 +21,7 @@ class NominalRollModel {
     private const TABLE_ACTIVITY_LOGS = 'nominal_roll_activity_logs';
     private const TABLE_BULK_UPLOADS = 'nominal_roll_bulk_uploads';
     private const TABLE_BACKUPS = 'nominal_roll_backups';
+    private const TABLE_REPORTS = 'nominal_roll_reports';
     
     /**
      * Constructor
@@ -44,7 +45,8 @@ class NominalRollModel {
                     self::TABLE_SETTINGS,
                     self::TABLE_ACTIVITY_LOGS,
                     self::TABLE_BULK_UPLOADS,
-                    self::TABLE_BACKUPS
+                    self::TABLE_BACKUPS,
+                    self::TABLE_REPORTS
                 ];
                 
                 foreach ($tables as $table) {
@@ -325,7 +327,7 @@ class NominalRollModel {
                     marital_status = :marital_status,
                     nationality = :nationality,
                     religion = :religion,
-                    `rank` = :rank,  -- FIXED: Wrapped 'rank' in backticks
+                    `rank` = :rank,  // FIXED: Wrapped 'rank' in backticks
                     grade_level = :grade_level,
                     step = :step,
                     cadre = :cadre,
@@ -1826,5 +1828,603 @@ class NominalRollModel {
         }
         
         return null;
+    }
+    
+    /**
+     * ============================================
+     * REPORTING METHODS FOR NOMINAL ROLL
+     * ============================================
+     */
+    
+    /**
+     * Get all available fields for reporting with categories
+     */
+    public function getAvailableReportFields() {
+        return [
+            'basic_info' => [
+                'label' => 'Basic Information',
+                'fields' => [
+                    'employee_number' => 'Employee Number',
+                    'surname' => 'Surname',
+                    'first_name' => 'First Name',
+                    'middle_name' => 'Middle Name',
+                    'sex' => 'Sex',
+                    'date_of_birth' => 'Date of Birth',
+                    'marital_status' => 'Marital Status',
+                    'nationality' => 'Nationality',
+                    'religion' => 'Religion'
+                ]
+            ],
+            'employment' => [
+                'label' => 'Employment Details',
+                'fields' => [
+                    'rank' => 'Rank',
+                    'grade_level' => 'Grade Level',
+                    'step' => 'Step',
+                    'cadre' => 'Cadre',
+                    'staff_type' => 'Staff Type',
+                    'employment_type' => 'Employment Type',
+                    'appointment_type' => 'Appointment Type',
+                    'department' => 'Department',
+                    'date_of_first_appointment' => 'Date of 1st Appointment',
+                    'date_of_confirmation' => 'Date of Confirmation',
+                    'rank_on_first_appointment' => 'Rank on 1st Appointment',
+                    'date_of_present_appointment' => 'Date of Present Appointment'
+                ]
+            ],
+            'qualifications' => [
+                'label' => 'Qualifications',
+                'fields' => [
+                    'highest_qualification' => 'Highest Qualification',
+                    'year_of_highest_qualification' => 'Year of Highest Qualification',
+                    'institution_attended' => 'Institution Attended',
+                    'course_of_study' => 'Course of Study',
+                    'class_of_degree' => 'Class of Degree'
+                ]
+            ],
+            'location' => [
+                'label' => 'Location & Origin',
+                'fields' => [
+                    'state' => 'State of Origin',
+                    'local_govt_area' => 'Local Govt. Area',
+                    'geopolitical_zone' => 'Geopolitical Zone',
+                    'state_of_residence' => 'State of Residence',
+                    'residential_address' => 'Residential Address',
+                    'contact_address' => 'Contact Address'
+                ]
+            ],
+            'identification' => [
+                'label' => 'Identification',
+                'fields' => [
+                    'pf_number' => 'PF Number',
+                    'nhf_number' => 'NHF Number',
+                    'nin' => 'NIN',
+                    'telephone_number' => 'Telephone Number',
+                    'email' => 'Email'
+                ]
+            ],
+            'financial' => [
+                'label' => 'Financial Information',
+                'fields' => [
+                    'bank_name' => 'Bank Name',
+                    'bank_branch' => 'Bank Branch',
+                    'account_number' => 'Account Number',
+                    'account_name' => 'Account Name',
+                    'pension_fund_admin' => 'Pension Fund Admin',
+                    'pension_number' => 'Pension Number',
+                    'tin_number' => 'TIN Number'
+                ]
+            ],
+            'emergency' => [
+                'label' => 'Emergency Contacts',
+                'fields' => [
+                    'emergency_contact_name' => 'Emergency Contact Name',
+                    'emergency_contact_phone' => 'Emergency Contact Phone',
+                    'emergency_contact_relationship' => 'Emergency Contact Relationship',
+                    'next_of_kin_name' => 'Next of Kin Name',
+                    'next_of_kin_phone' => 'Next of Kin Phone',
+                    'next_of_kin_relationship' => 'Next of Kin Relationship',
+                    'next_of_kin_address' => 'Next of Kin Address'
+                ]
+            ]
+        ];
+    }
+    
+    /**
+     * Get default report fields
+     */
+    public function getDefaultReportFields() {
+        return [
+            'employee_number',
+            'surname',
+            'first_name',
+            'sex',
+            'rank',
+            'grade_level',
+            'state',
+            'local_govt_area',
+            'date_of_birth',
+            'date_of_first_appointment',
+            'telephone_number',
+            'email'
+        ];
+    }
+    
+    /**
+     * Save report configuration
+     */
+    public function saveReportConfig($data, $userId = null) {
+        try {
+            $sql = "INSERT INTO " . self::TABLE_REPORTS . " SET
+                    report_name = :report_name,
+                    report_type = :report_type,
+                    selected_fields = :selected_fields,
+                    filters = :filters,
+                    sort_order = :sort_order,
+                    page_orientation = :page_orientation,
+                    page_size = :page_size,
+                    include_photos = :include_photos,
+                    include_summary = :include_summary,
+                    is_public = :is_public,
+                    created_by = :created_by,
+                    created_at = NOW()";
+            
+            $stmt = $this->db->prepare($sql);
+            
+            $result = $stmt->execute([
+                ':report_name' => $data['report_name'],
+                ':report_type' => $data['report_type'] ?? 'custom',
+                ':selected_fields' => json_encode($data['selected_fields']),
+                ':filters' => isset($data['filters']) ? json_encode($data['filters']) : null,
+                ':sort_order' => $data['sort_order'] ?? 'surname_asc',
+                ':page_orientation' => $data['page_orientation'] ?? 'landscape',
+                ':page_size' => $data['page_size'] ?? 'A4',
+                ':include_photos' => $data['include_photos'] ?? 0,
+                ':include_summary' => $data['include_summary'] ?? 1,
+                ':is_public' => $data['is_public'] ?? 0,
+                ':created_by' => $userId
+            ]);
+            
+            return $result ? $this->db->lastInsertId() : false;
+            
+        } catch (PDOException $e) {
+            error_log("Save report config error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get saved reports
+     */
+    public function getSavedReports($userId = null, $includePublic = true) {
+        try {
+            $conditions = [];
+            $params = [];
+            
+            if ($userId) {
+                if ($includePublic) {
+                    $conditions[] = "(r.created_by = :user_id OR r.is_public = 1)";
+                    $params[':user_id'] = $userId;
+                } else {
+                    $conditions[] = "r.created_by = :user_id";
+                    $params[':user_id'] = $userId;
+                }
+            } elseif ($includePublic) {
+                $conditions[] = "r.is_public = 1";
+            }
+            
+            $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+            
+            $sql = "SELECT r.*, u.username as created_by_name
+                    FROM " . self::TABLE_REPORTS . " r
+                    LEFT JOIN users u ON r.created_by = u.id
+                    $whereClause
+                    ORDER BY r.created_at DESC";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            
+            $reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Decode JSON fields
+            foreach ($reports as &$report) {
+                $report['selected_fields'] = json_decode($report['selected_fields'], true);
+                if (!empty($report['filters'])) {
+                    $report['filters'] = json_decode($report['filters'], true);
+                }
+            }
+            
+            return $reports;
+            
+        } catch (PDOException $e) {
+            error_log("Get saved reports error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Generate report data - FIXED VERSION with improved field handling
+     */
+    public function generateReportData($selectedFields, $filters = [], $sortOrder = 'surname_asc') {
+        try {
+            // Start with required fields
+            $selectFields = ['id'];
+            
+            // Add selected fields with proper escaping for reserved words
+            foreach ($selectedFields as $field) {
+                // Handle reserved words and special cases
+                if ($field === 'rank') {
+                    $selectFields[] = "`rank`"; // Backticks for MySQL reserved word
+                } elseif ($field === 'date_of_birth' || 
+                         $field === 'date_of_first_appointment' || 
+                         $field === 'date_of_confirmation' || 
+                         $field === 'date_of_present_appointment') {
+                    // Format dates properly
+                    $selectFields[] = "DATE_FORMAT(`{$field}`, '%Y-%m-%d') as `{$field}`";
+                } elseif ($field === 'year_of_highest_qualification') {
+                    // Ensure year field is formatted properly
+                    $selectFields[] = "`{$field}`";
+                } else {
+                    // Regular field
+                    $selectFields[] = "`{$field}`";
+                }
+            }
+            
+            // Build WHERE clause
+            $whereConditions = [];
+            $params = [];
+            
+            // Basic filters
+            if (!empty($filters['search'])) {
+                $whereConditions[] = "(surname LIKE :search OR first_name LIKE :search OR employee_number LIKE :search)";
+                $params[':search'] = '%' . $filters['search'] . '%';
+            }
+            
+            if (!empty($filters['state'])) {
+                $whereConditions[] = "state = :state";
+                $params[':state'] = $filters['state'];
+            }
+            
+            if (!empty($filters['grade_level'])) {
+                $whereConditions[] = "grade_level = :grade_level";
+                $params[':grade_level'] = $filters['grade_level'];
+            }
+            
+            if (!empty($filters['rank'])) {
+                $whereConditions[] = "`rank` = :rank";
+                $params[':rank'] = $filters['rank'];
+            }
+            
+            if (!empty($filters['sex'])) {
+                $whereConditions[] = "sex = :sex";
+                $params[':sex'] = $filters['sex'];
+            }
+            
+            if (!empty($filters['department'])) {
+                $whereConditions[] = "department = :department";
+                $params[':department'] = $filters['department'];
+            }
+            
+            // Default: only active employees
+            if (isset($filters['status']) && $filters['status'] !== '') {
+                $whereConditions[] = "status = :status";
+                $params[':status'] = $filters['status'];
+            } else {
+                $whereConditions[] = "status = 'active'";
+            }
+            
+            $whereClause = !empty($whereConditions) ? "WHERE " . implode(" AND ", $whereConditions) : "";
+            
+            // Sort order mapping
+            $orderByMap = [
+                'surname_asc' => 'surname ASC, first_name ASC',
+                'surname_desc' => 'surname DESC, first_name DESC',
+                'employee_number_asc' => 'employee_number ASC',
+                'employee_number_desc' => 'employee_number DESC',
+                'grade_level_asc' => 'grade_level ASC, surname ASC',
+                'grade_level_desc' => 'grade_level DESC, surname ASC',
+                'state_asc' => 'state ASC, surname ASC',
+                'date_of_first_appointment_asc' => 'date_of_first_appointment ASC',
+                'date_of_first_appointment_desc' => 'date_of_first_appointment DESC'
+            ];
+            
+            $orderBy = $orderByMap[$sortOrder] ?? 'surname ASC, first_name ASC';
+            
+            // Execute query
+            $sql = "SELECT " . implode(', ', $selectFields) . "
+                    FROM " . self::TABLE_EMPLOYEES . " 
+                    {$whereClause}
+                    ORDER BY {$orderBy}";
+            
+            error_log("Report SQL: " . $sql);
+            error_log("Report params: " . print_r($params, true));
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Process the data - ensure all selected fields are present
+            foreach ($data as &$row) {
+                foreach ($selectedFields as $field) {
+                    if (!array_key_exists($field, $row)) {
+                        $row[$field] = '';
+                    }
+                    
+                    // Format specific fields
+                    switch ($field) {
+                        case 'additional_qualifications':
+                            if (!empty($row[$field])) {
+                                $qualifications = json_decode($row[$field], true);
+                                if (is_array($qualifications)) {
+                                    $formatted = [];
+                                    foreach ($qualifications as $qual) {
+                                        if (isset($qual['qualification'])) {
+                                            $formatted[] = $qual['qualification'];
+                                        }
+                                    }
+                                    $row[$field] = implode(', ', $formatted);
+                                }
+                            }
+                            break;
+                            
+                        case 'professional_certifications':
+                        case 'other_bank_name':
+                        case 'other_pension_fund_admin':
+                        case 'disability_type':
+                            // These fields might need special formatting
+                            if ($row[$field] === null) {
+                                $row[$field] = '';
+                            }
+                            break;
+                    }
+                }
+            }
+            
+            return $data;
+            
+        } catch (PDOException $e) {
+            error_log("Generate report data error: " . $e->getMessage());
+            error_log("SQL Error Info: " . print_r($stmt->errorInfo(), true));
+            return [];
+        }
+    }
+    
+    /**
+     * Get report by ID
+     */
+    public function getReport($id) {
+        try {
+            $sql = "SELECT r.*, u.username as created_by_name
+                    FROM " . self::TABLE_REPORTS . " r
+                    LEFT JOIN users u ON r.created_by = u.id
+                    WHERE r.id = :id";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':id' => $id]);
+            
+            $report = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($report) {
+                $report['selected_fields'] = json_decode($report['selected_fields'], true);
+                if (!empty($report['filters'])) {
+                    $report['filters'] = json_decode($report['filters'], true);
+                }
+            }
+            
+            return $report;
+            
+        } catch (PDOException $e) {
+            error_log("Get report error: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Get report by ID with access control
+     */
+    public function getReportForUser($id, $userId) {
+        try {
+            $sql = "SELECT r.*, u.username as created_by_name
+                    FROM " . self::TABLE_REPORTS . " r
+                    LEFT JOIN users u ON r.created_by = u.id
+                    WHERE r.id = :id AND (r.created_by = :user_id OR r.is_public = 1)";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':id' => $id, ':user_id' => $userId]);
+            
+            $report = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($report) {
+                $report['selected_fields'] = json_decode($report['selected_fields'], true);
+                if (!empty($report['filters'])) {
+                    $report['filters'] = json_decode($report['filters'], true);
+                }
+            }
+            
+            return $report;
+            
+        } catch (PDOException $e) {
+            error_log("Get report for user error: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Delete report
+     */
+    public function deleteReport($id, $userId = null) {
+        try {
+            if ($userId) {
+                // Check ownership
+                $report = $this->getReport($id);
+                if (!$report || ($report['created_by'] != $userId && !$report['is_public'])) {
+                    return false;
+                }
+            }
+            
+            $sql = "DELETE FROM " . self::TABLE_REPORTS . " WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([':id' => $id]);
+            
+        } catch (PDOException $e) {
+            error_log("Delete report error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get report statistics
+     */
+    public function getReportStatistics($data, $selectedFields) {
+        $stats = [
+            'total_records' => count($data),
+            'summary' => []
+        ];
+        
+        if (empty($data)) {
+            return $stats;
+        }
+        
+        // Count by sex
+        if (in_array('sex', $selectedFields)) {
+            $genderCount = [];
+            foreach ($data as $row) {
+                $gender = $row['sex'] ?? 'Unknown';
+                $genderCount[$gender] = ($genderCount[$gender] ?? 0) + 1;
+            }
+            $stats['summary']['by_sex'] = $genderCount;
+        }
+        
+        // Count by state
+        if (in_array('state', $selectedFields)) {
+            $stateCount = [];
+            foreach ($data as $row) {
+                $state = $row['state'] ?? 'Unknown';
+                $stateCount[$state] = ($stateCount[$state] ?? 0) + 1;
+            }
+            arsort($stateCount);
+            $stats['summary']['by_state'] = array_slice($stateCount, 0, 5);
+        }
+        
+        // Count by grade level
+        if (in_array('grade_level', $selectedFields)) {
+            $gradeCount = [];
+            foreach ($data as $row) {
+                $grade = $row['grade_level'] ?? 'Unknown';
+                $gradeCount[$grade] = ($gradeCount[$grade] ?? 0) + 1;
+            }
+            arsort($gradeCount);
+            $stats['summary']['by_grade'] = $gradeCount;
+        }
+        
+        return $stats;
+    }
+    
+    /**
+     * ============================================
+     * NEW METHODS FOR CUSTOM EXPORT
+     * ============================================
+     */
+    
+    /**
+     * Get employee data for export with selected fields
+     */
+    public function getExportData($selectedFields, $filters = []) {
+        try {
+            // Use the generateReportData method which already handles field selection
+            return $this->generateReportData($selectedFields, $filters, 'surname_asc');
+            
+        } catch (Exception $e) {
+            error_log("Get export data error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get employee counts for export summary
+     */
+    public function getExportSummary($filters = []) {
+        try {
+            $summary = [];
+            
+            // Total employees
+            $sql = "SELECT COUNT(*) as total FROM " . self::TABLE_EMPLOYEES . " WHERE status = 'active'";
+            $stmt = $this->db->query($sql);
+            $summary['total_employees'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+            
+            // Count by sex
+            $sql = "SELECT sex, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " WHERE status = 'active' GROUP BY sex";
+            $stmt = $this->db->query($sql);
+            $summary['by_sex'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Count by state
+            $sql = "SELECT state, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " WHERE status = 'active' GROUP BY state ORDER BY count DESC LIMIT 5";
+            $stmt = $this->db->query($sql);
+            $summary['by_state'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Count by grade level
+            $sql = "SELECT grade_level, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " WHERE status = 'active' GROUP BY grade_level ORDER BY grade_level DESC";
+            $stmt = $this->db->query($sql);
+            $summary['by_grade'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            return $summary;
+            
+        } catch (PDOException $e) {
+            error_log("Get export summary error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Validate selected fields for export
+     */
+    public function validateExportFields($selectedFields) {
+        $allFields = [];
+        $availableFields = $this->getAvailableReportFields();
+        
+        // Flatten all available fields
+        foreach ($availableFields as $category) {
+            foreach ($category['fields'] as $key => $label) {
+                $allFields[$key] = $label;
+            }
+        }
+        
+        // Check if all selected fields exist
+        $invalidFields = [];
+        foreach ($selectedFields as $field) {
+            if (!isset($allFields[$field])) {
+                $invalidFields[] = $field;
+            }
+        }
+        
+        if (!empty($invalidFields)) {
+            throw new Exception("Invalid fields selected: " . implode(', ', $invalidFields));
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Get field labels for export headers
+     */
+    public function getFieldLabels($selectedFields) {
+        $labels = [];
+        $availableFields = $this->getAvailableReportFields();
+        
+        // Flatten all available fields
+        foreach ($availableFields as $category) {
+            foreach ($category['fields'] as $key => $label) {
+                $labels[$key] = $label;
+            }
+        }
+        
+        // Return labels for selected fields
+        $selectedLabels = [];
+        foreach ($selectedFields as $field) {
+            $selectedLabels[$field] = $labels[$field] ?? $field;
+        }
+        
+        return $selectedLabels;
     }
 }

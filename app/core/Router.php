@@ -87,6 +87,31 @@ class Router {
         // Passport Photo Route
         $this->get('/admin/nominal-roll/passport-photo/{id}', 'NominalRollController@viewPassportPhoto');
         
+        // ============================================
+        // REPORTING ROUTES - UPDATED WITH FIXED EXPORT
+        // ============================================
+        $this->get('/admin/nominal-roll/reports', 'NominalRollController@reports');
+        $this->post('/admin/nominal-roll/generate-report', 'NominalRollController@generateReport');
+        $this->get('/admin/nominal-roll/report-preview', 'NominalRollController@reportPreview'); // ADDED
+        $this->post('/admin/nominal-roll/save-report', 'NominalRollController@saveReport');
+        $this->get('/admin/nominal-roll/load-report/{id}', 'NominalRollController@loadReport');
+        $this->post('/admin/nominal-roll/delete-report/{id}', 'NominalRollController@deleteReport');
+        
+        // FIXED: Added POST route for export-excel (was missing)
+        $this->post('/admin/nominal-roll/export-excel', 'NominalRollController@exportExcel');
+        // Keep the original GET route too
+        $this->get('/admin/nominal-roll/export-excel', 'NominalRollController@exportExcel');
+        
+        // FIXED: Added POST route for export-csv (was missing)
+        $this->post('/admin/nominal-roll/export-csv', 'NominalRollController@exportCsv');
+        // Keep the original GET route too
+        $this->get('/admin/nominal-roll/export-csv', 'NominalRollController@exportCsv');
+        
+        // ============================================
+        // NEW REPORT PREVIEW AJAX ROUTE - ADDED
+        // ============================================
+        $this->post('/admin/nominal-roll/generate-preview', 'NominalRollController@generatePreview');
+        
         // User Management Routes - ADDED
         $this->get('/admin/users', 'UserManagementController@index');
         $this->get('/admin/users/create', 'UserManagementController@create');
@@ -113,8 +138,48 @@ class Router {
         $this->get('/admissions/2025-2026', 'AdmissionController@index');
         $this->get('/admission-list', 'AdmissionController@index');
         
+        // ============================================
+        // ADD MISSING DEFAULT ROUTES FROM YOUR ERROR MESSAGE
+        // ============================================
+        $this->get('/', 'PageController@home');
+        $this->get('/login', 'AuthController@login');
+        $this->post('/login', 'AuthController@login');
+        $this->get('/logout', 'AuthController@logout');
+        $this->get('/dashboard', 'DashboardController@index');
+        $this->get('/debug', 'DebugController@index');
+        $this->get('/db-inspect', 'DebugController@dbInspect');
+        $this->get('/db/create-tables', 'DebugController@createTables');
+        
+        // Applications routes
+        $this->get('/admin/applications', 'ApplicationsController@index');
+        $this->get('/admin/applications/create', 'ApplicationsController@create');
+        $this->post('/admin/applications/store', 'ApplicationsController@store');
+        $this->get('/admin/applications/view/{id}', 'ApplicationsController@view');
+        $this->get('/admin/applications/edit/{id}', 'ApplicationsController@edit');
+        $this->post('/admin/applications/update-status/{id}', 'ApplicationsController@updateStatus');
+        
+        // Research routes
+        $this->get('/admin/research', 'ResearchController@index');
+        $this->get('/admin/research/create', 'ResearchController@create');
+        $this->get('/admin/research/edit/{id}', 'ResearchController@edit');
+        $this->get('/admin/research/view/{id}', 'ResearchController@view');
+        $this->post('/admin/research/store', 'ResearchController@store');
+        $this->post('/admin/research/update/{id}', 'ResearchController@update');
+        $this->post('/admin/research/toggle-status/{id}', 'ResearchController@toggleStatus');
+        $this->post('/admin/research/bulk-action', 'ResearchController@bulkAction');
+        $this->get('/admin/research/export', 'ResearchController@export');
+        
+        // News routes
+        $this->get('/admin/news', 'NewsController@index');
+        $this->get('/admin/news/create', 'NewsController@create');
+        $this->post('/admin/news/store', 'NewsController@store');
+        
+        // 404 route - should be last
+        $this->get('/404', 'PageController@notFound');
+        
         if (defined('APP_DEBUG') && APP_DEBUG) {
-            error_log("Router: All routes registered including User Management, PDF export, and Print routes");
+            error_log("Router: All routes registered including Reporting, User Management, PDF export, and Print routes");
+            error_log("Router: Export routes fixed - added POST methods for export-excel and export-csv");
         }
     }
 
