@@ -1,4 +1,28 @@
 <?php
+// ============================================================================
+// ERROR REPORTING - ADD THIS AT THE VERY TOP
+// ============================================================================
+
+// Enable ALL error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+ini_set('log_errors', 1);
+
+// Set custom error log file
+$errorLogPath = __DIR__ . '/../logs/php_errors.log';
+ini_set('error_log', $errorLogPath);
+
+// Ensure logs directory exists
+$logsDir = dirname($errorLogPath);
+if (!file_exists($logsDir)) {
+    mkdir($logsDir, 0755, true);
+}
+
+// Log start of request
+error_log("=== REQUEST START: " . date('Y-m-d H:i:s') . " ===");
+error_log("Request URI: " . ($_SERVER['REQUEST_URI'] ?? 'Unknown'));
+error_log("Request Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'Unknown'));
 /**
  * FCT College of Nursing Sciences - Main Entry Point
  * 
