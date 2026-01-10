@@ -2425,7 +2425,7 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Upload passport photo - VERIFIED VERSION
+     * Upload passport photo - UNIVERSAL FIX (works on all servers)
      */
     private function uploadPassportPhoto() {
         try {
@@ -2434,7 +2434,7 @@ class NominalRollController extends Controller {
             error_log("=== UPLOAD PASSPORT PHOTO START ===");
             error_log("File details: " . print_r($file, true));
             
-            // Check for upload errors
+            // 1. Check for upload errors FIRST
             if ($file['error'] !== UPLOAD_ERR_OK) {
                 $photoRequired = $this->model->getSetting('photo_required', '0') === '1';
                 if ($photoRequired && $file['error'] === UPLOAD_ERR_NO_FILE) {
@@ -2444,34 +2444,59 @@ class NominalRollController extends Controller {
                 return null;
             }
             
-            // Get settings
-            $maxSize = (int)$this->model->getSetting('passport_max_size', '2097152'); // 2MB default
-            $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
-            
-            // Validate file size
+            // 2. Validate file size
+            $maxSize = (int)$this->model->getSetting('passport_max_size', '2097152');
             if ($file['size'] > $maxSize) {
                 throw new Exception("File size must be less than " . ($maxSize / 1024 / 1024) . "MB");
             }
             
-            // Validate file type
+            // 3. Get and validate file extension
             $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
             error_log("File extension: " . $fileExt);
             
-            if (!in_array($fileExt, $allowedTypes)) {
-                throw new Exception("Only " . implode(', ', $allowedTypes) . " files are allowed");
+            $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+            if (!in_array($fileExt, $allowedExtensions)) {
+                throw new Exception("Only " . implode(', ', $allowedExtensions) . " files are allowed");
             }
             
-            // Validate MIME type for extra security
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mimeType = finfo_file($finfo, $file['tmp_name']);
-            finfo_close($finfo);
+            // 4. UNIVERSAL MIME TYPE VALIDATION (works on all servers)
+            $isValidImage = false;
             
-            $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-            if (!in_array($mimeType, $allowedMimes)) {
-                throw new Exception("Invalid file type. Only images are allowed.");
+            // Method 1: Try getimagesize() - ALWAYS AVAILABLE
+            $imageInfo = @getimagesize($file['tmp_name']);
+            if ($imageInfo !== false) {
+                error_log("Image validated via getimagesize. Type: " . $imageInfo[2]);
+                $validImageTypes = [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF];
+                if (in_array($imageInfo[2], $validImageTypes)) {
+                    $isValidImage = true;
+                }
             }
             
-            // Create upload directory if not exists
+            // Method 2: Try mime_content_type() if available
+            if (!$isValidImage && function_exists('mime_content_type')) {
+                $mimeType = mime_content_type($file['tmp_name']);
+                error_log("MIME type detected: " . $mimeType);
+                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                if (in_array($mimeType, $allowedMimes)) {
+                    $isValidImage = true;
+                }
+            }
+            
+            // Method 3: Check file type from $_FILES (least reliable but works as fallback)
+            if (!$isValidImage && !empty($file['type'])) {
+                error_log("Checking file type from FILES array: " . $file['type']);
+                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                if (in_array($file['type'], $allowedMimes)) {
+                    $isValidImage = true;
+                }
+            }
+            
+            // Final validation check
+            if (!$isValidImage) {
+                throw new Exception("File is not a valid image or could not be verified.");
+            }
+            
+            // 5. Create upload directory
             $uploadDir = ROOT_PATH . '/storage/uploads/passports/';
             error_log("Upload directory: " . $uploadDir);
             
@@ -2480,29 +2505,28 @@ class NominalRollController extends Controller {
                 if (!mkdir($uploadDir, 0755, true)) {
                     throw new Exception("Failed to create upload directory");
                 }
-                error_log("Upload directory created successfully");
             }
             
-            // Verify directory is writable
+            // 6. Verify directory is writable
             if (!is_writable($uploadDir)) {
                 throw new Exception("Upload directory is not writable");
             }
             
-            // Generate unique filename
+            // 7. Generate unique filename
             $filename = 'passport_' . time() . '_' . uniqid() . '.' . $fileExt;
             $filePath = $uploadDir . $filename;
             
             error_log("Generated filename: " . $filename);
             error_log("Full file path: " . $filePath);
             
-            // Move uploaded file
+            // 8. Move uploaded file
             if (!move_uploaded_file($file['tmp_name'], $filePath)) {
                 throw new Exception("Failed to save uploaded file");
             }
             
             error_log("File moved successfully to: " . $filePath);
             
-            // Verify file was actually created
+            // 9. Verify file was actually created
             if (!file_exists($filePath)) {
                 throw new Exception("File was not created at expected location");
             }
@@ -2510,16 +2534,18 @@ class NominalRollController extends Controller {
             $fileSize = filesize($filePath);
             error_log("Verified file exists, size: " . $fileSize . " bytes");
             
-            // Create thumbnail
-            try {
-                $this->createPassportThumbnail($filePath);
-                error_log("Thumbnail created successfully");
-            } catch (Exception $e) {
-                error_log("Thumbnail creation failed: " . $e->getMessage());
-                // Don't fail upload if thumbnail fails
+            // 10. Create thumbnail if GD available (optional)
+            if (function_exists('gd_info')) {
+                try {
+                    $this->createPassportThumbnail($filePath);
+                    error_log("Thumbnail created successfully");
+                } catch (Exception $e) {
+                    error_log("Thumbnail creation failed: " . $e->getMessage());
+                    // Don't fail upload if thumbnail fails
+                }
             }
             
-            // CRITICAL: Return the relative path for database storage
+            // 11. Return relative path
             $relativePath = 'storage/uploads/passports/' . $filename;
             
             error_log("=== UPLOAD SUCCESS ===");
