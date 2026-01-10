@@ -423,8 +423,9 @@ $statusColor = $isValid ? '#28a745' : '#dc3545';
             <div class="employee-card">
                 <?php if (!empty($employee['passport_photo'])): ?>
                 <div class="employee-photo">
-                    <img src="<?php echo $baseUrl; ?>/admin/nominal-roll/passport-photo/<?php echo $employee['id']; ?>" 
-                         alt="Passport Photo">
+                    <img src="<?php echo $baseUrl; ?>/verify/passport/<?php echo $employee['id']; ?>" 
+     alt="Passport Photo"
+     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI2YwZjBmMCIvPjxjaXJjbGUgY3g9Ijc1IiBjeT0iNzAiIHI9IjQwIiBmaWxsPSIjY2NjIi8+PHJlY3QgeD0iNDAiIHk9IjEyMCIgd2lkdGg9IjcwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjY2NjIiByeD0iNSIvPjx0ZXh0IHg9Ijc1IiB5PSIxNzAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzY2NiI+Tm8gUGhvdG88L3RleHQ+PC9zdmc+'; this.onerror=null;">
                 </div>
                 <?php endif; ?>
                 

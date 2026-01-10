@@ -101,6 +101,77 @@ class VerificationController extends Controller {
     }
     
     /**
+     * Get passport photo - PUBLIC ACCESS
+     * Add this method to your existing VerificationController
+     */
+    public function getPassportPhoto($id) {
+        try {
+            // Get employee data
+            $employee = $this->model->getEmployee($id);
+            
+            if (!$employee) {
+                $this->serveDefaultPhoto();
+                return;
+            }
+            
+            // Check if photo exists in database
+            if (empty($employee['passport_photo'])) {
+                $this->serveDefaultPhoto();
+                return;
+            }
+            
+            $photoPath = ROOT_PATH . '/' . $employee['passport_photo'];
+            
+            // Check if file exists on server
+            if (!file_exists($photoPath)) {
+                error_log("Photo file not found: " . $photoPath);
+                $this->serveDefaultPhoto();
+                return;
+            }
+            
+            // Determine MIME type from extension
+            $ext = strtolower(pathinfo($photoPath, PATHINFO_EXTENSION));
+            $mimeTypes = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'svg' => 'image/svg+xml'
+            ];
+            
+            $contentType = $mimeTypes[$ext] ?? 'image/jpeg';
+            
+            // Output the image
+            header('Content-Type: ' . $contentType);
+            header('Content-Length: ' . filesize($photoPath));
+            header('Cache-Control: public, max-age=86400'); // Cache for 1 day
+            readfile($photoPath);
+            exit;
+            
+        } catch (Exception $e) {
+            error_log("Passport photo error: " . $e->getMessage());
+            $this->serveDefaultPhoto();
+        }
+    }
+    
+    /**
+     * Serve default photo when no photo exists
+     * Add this method too
+     */
+    private function serveDefaultPhoto() {
+        // Create a simple SVG placeholder
+        header('Content-Type: image/svg+xml');
+        echo '<?xml version="1.0" encoding="UTF-8"?>
+        <svg width="150" height="180" xmlns="http://www.w3.org/2000/svg">
+            <rect width="150" height="180" fill="#f0f0f0"/>
+            <circle cx="75" cy="70" r="40" fill="#ccc"/>
+            <rect x="40" y="120" width="70" height="50" fill="#ccc" rx="5"/>
+            <text x="75" y="170" text-anchor="middle" font-family="Arial" font-size="12" fill="#666">No Photo</text>
+        </svg>';
+        exit;
+    }
+    
+    /**
      * Render verification confirmation page
      */
     private function renderVerificationConfirmation($data) {

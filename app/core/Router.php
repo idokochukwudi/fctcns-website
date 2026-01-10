@@ -70,8 +70,14 @@ class Router {
         // Print with options
         $this->get('/admin/nominal-roll/print/with-audit/{id}', 'NominalRollController@printWithAudit');
         
-        // QR CODE VERIFICATION ROUTES - ADDED
+        // ============================================
+        // QR CODE VERIFICATION ROUTES - UPDATED AS REQUESTED
+        // ============================================
+        // Public QR Code Verification Routes - EXACT routes as requested
         $this->get('/verify/employee/{id}', 'VerificationController@verifyEmployee');
+        $this->get('/verify/passport/{id}', 'VerificationController@getPassportPhoto');
+        
+        // Keep existing route for backward compatibility
         $this->get('/verify/document/{ref}', 'VerificationController@verifyDocument');
         
         // Settings Routes
@@ -191,7 +197,9 @@ class Router {
             error_log("Router: All routes registered including Reporting, User Management, PDF export, Print routes, and QR Verification routes");
             error_log("Router: Export routes fixed - added POST methods for export-excel and export-csv");
             error_log("Router: Preview export routes added - export-preview-excel and export-preview-csv");
-            error_log("Router: QR Verification routes added - /verify/employee/{id} and /verify/document/{ref}");
+            error_log("Router: QR Verification routes UPDATED - EXACT routes as requested:");
+            error_log("Router:   /verify/employee/{id} -> VerificationController@verifyEmployee");
+            error_log("Router:   /verify/passport/{id} -> VerificationController@getPassportPhoto");
         }
     }
 
