@@ -71,8 +71,8 @@ class Router {
         $this->get('/admin/nominal-roll/print/with-audit/{id}', 'NominalRollController@printWithAudit');
         
         // QR CODE VERIFICATION ROUTES - ADDED
-        $this->get('/verify/employee/{id}', 'NominalRollController@verifyEmployee');
-        $this->get('/verify/document/{ref}', 'NominalRollController@verifyDocument');
+        $this->get('/verify/employee/{id}', 'VerificationController@verifyEmployee');
+        $this->get('/verify/document/{ref}', 'VerificationController@verifyDocument');
         
         // Settings Routes
         $this->get('/admin/nominal-roll/settings', 'NominalRollController@settings');
