@@ -1358,7 +1358,7 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Generate report preview via AJAX - NEW METHOD
+     * Generate report preview via AJAX - NEW METHOD WITH SESSION STORAGE FIX
      */
     public function generatePreview() {
         header('Content-Type: application/json');
@@ -1412,8 +1412,24 @@ class NominalRollController extends Controller {
             // Get statistics
             $statistics = $this->model->getReportStatistics($reportData, $selectedFields);
             
-            // Return limited preview (e.g., first 10 records)
+            // Get limited preview (e.g., first 10 records)
             $previewData = array_slice($reportData, 0, 10);
+            
+            // ============ CRITICAL FIX: Store data in session for export ============
+            $_SESSION['current_report_data'] = [
+                'full_data' => $reportData,          // All data for export
+                'preview_data' => $previewData,      // Limited preview data
+                'selected_fields' => $selectedFields,
+                'field_labels' => $fieldLabels,
+                'filters' => $filters,
+                'sort_order' => $sortOrder,
+                'total_records' => count($reportData),
+                'preview_records' => count($previewData),
+                'statistics' => $statistics,
+                'generated_at' => date('Y-m-d H:i:s')
+            ];
+            
+            // ============ END FIX ============
             
             echo json_encode([
                 'success' => true,
@@ -1551,73 +1567,78 @@ class NominalRollController extends Controller {
      * Export to Excel with selected fields - UPDATED VERSION (FIXED)
      */
     public function exportExcel() {
+        $this->handleExport('excel');
+    }
+    
+    /**
+     * Export to CSV with selected fields - UPDATED VERSION
+     */
+    public function exportCsv() {
+        $this->handleExport('csv');
+    }
+
+    /**
+     * Handle export from preview
+     */
+    private function handleExport($format) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/nominal-roll/reports');
+            return;
+        }
+        
         try {
-            // Check if coming from preview
-            $fromPreview = $this->input('from_preview', 0);
+            // Validate CSRF token
+            if (!$this->validateCsrfToken()) {
+                throw new Exception('Invalid CSRF token');
+            }
             
-            if ($fromPreview) {
-                // Validate CSRF token
-                if (!$this->validateCsrfToken()) {
-                    throw new Exception('Invalid CSRF token');
+            // Get selected fields from POST
+            $selectedFields = $_POST['selected_fields'] ?? [];
+            
+            if (empty($selectedFields)) {
+                throw new Exception('No fields selected for export');
+            }
+            
+            // Get filters from POST
+            $filters = [
+                'search' => $this->input('search', ''),
+                'state' => $this->input('filter_state', ''),
+                'department' => $this->input('filter_department', ''),
+                'grade_level' => $this->input('filter_grade_level', ''),
+                'sex' => $this->input('filter_sex', ''),
+                'rank' => $this->input('filter_rank', ''),
+                'status' => $this->input('filter_status', 'active')
+            ];
+            
+            $sortOrder = $this->input('sort_order', 'surname_asc');
+            
+            // Generate report data with selected fields - IMPORTANT: Use the same method as preview
+            $reportData = $this->model->generateReportData($selectedFields, $filters, $sortOrder);
+            
+            // Get field labels
+            $availableFields = $this->model->getAvailableReportFields();
+            $fieldLabels = [];
+            foreach ($availableFields as $category) {
+                foreach ($category['fields'] as $key => $label) {
+                    $fieldLabels[$key] = $label;
                 }
-                
-                // Get selected fields from POST
-                $selectedFields = $_POST['selected_fields'] ?? [];
-                
-                if (empty($selectedFields)) {
-                    throw new Exception('No fields selected for export');
-                }
-                
-                // Get filters from POST
-                $filters = [
-                    'search' => $this->input('search', ''),
-                    'state' => $this->input('state', ''),
-                    'department' => $this->input('department', ''),
-                    'grade_level' => $this->input('grade_level', ''),
-                    'sex' => $this->input('sex', ''),
-                    'rank' => $this->input('rank', ''),
-                    'status' => $this->input('status', 'active')
-                ];
-                
-                $sortOrder = $this->input('sort_order', 'surname_asc');
-                
-                // Generate report data with selected fields
-                $reportData = $this->model->generateReportData($selectedFields, $filters, $sortOrder);
-                
-                // Get field labels
-                $availableFields = $this->model->getAvailableReportFields();
-                $fieldLabels = [];
-                foreach ($availableFields as $category) {
-                    foreach ($category['fields'] as $key => $label) {
-                        $fieldLabels[$key] = $label;
-                    }
-                }
-                
-                // Export with selected fields
+            }
+            
+            // Export with selected fields
+            if ($format === 'excel') {
                 $this->exportToExcelCustom($reportData, $selectedFields, $fieldLabels);
-                
             } else {
-                // Original export logic for default export
-                $filters = [
-                    'search' => $this->input('search', ''),
-                    'state' => $this->input('state', ''),
-                    'grade_level' => $this->input('grade_level', ''),
-                    'rank' => $this->input('rank', ''),
-                    'sex' => $this->input('sex', ''),
-                    'status' => $this->input('status', ''),
-                    'is_draft' => $this->input('is_draft', '')
-                ];
-                
-                $employees = $this->model->exportEmployees($filters);
-                $this->exportToExcel($employees);
+                $this->exportToCsvCustom($reportData, $selectedFields, $fieldLabels);
             }
             
         } catch (Exception $e) {
-            error_log("NominalRollController exportExcel error: " . $e->getMessage());
-            $this->flash('error', 'Failed to export data: ' . $e->getMessage());
+            error_log("NominalRollController handleExport error: " . $e->getMessage());
+            
+            // Store error in session
+            $_SESSION['flash_error'] = 'Failed to export data: ' . $e->getMessage();
             
             // Redirect back to reports page
-            if (isset($_POST['from_preview'])) {
+            if ($this->input('from_preview')) {
                 $this->redirect('/admin/nominal-roll/report-preview');
             } else {
                 $this->redirect('/admin/nominal-roll/reports');
@@ -1693,78 +1714,6 @@ class NominalRollController extends Controller {
         echo '</body></html>';
         exit;
     }
-    
-    /**
-     * Export to CSV with selected fields - UPDATED VERSION
-     */
-    public function exportCsv() {
-        try {
-            // Check if coming from preview
-            $fromPreview = $this->input('from_preview', 0);
-            
-            if ($fromPreview) {
-                // Validate CSRF token
-                if (!$this->validateCsrfToken()) {
-                    throw new Exception('Invalid CSRF token');
-                }
-                
-                // Get selected fields from POST
-                $selectedFields = $_POST['selected_fields'] ?? [];
-                
-                if (empty($selectedFields)) {
-                    throw new Exception('No fields selected for export');
-                }
-                
-                // Get filters from POST
-                $filters = [
-                    'search' => $this->input('search', ''),
-                    'state' => $this->input('state', ''),
-                    'department' => $this->input('department', ''),
-                    'grade_level' => $this->input('grade_level', ''),
-                    'sex' => $this->input('sex', ''),
-                    'rank' => $this->input('rank', ''),
-                    'status' => $this->input('status', 'active')
-                ];
-                
-                $sortOrder = $this->input('sort_order', 'surname_asc');
-                
-                // Generate report data with selected fields
-                $reportData = $this->model->generateReportData($selectedFields, $filters, $sortOrder);
-                
-                // Get field labels
-                $availableFields = $this->model->getAvailableReportFields();
-                $fieldLabels = [];
-                foreach ($availableFields as $category) {
-                    foreach ($category['fields'] as $key => $label) {
-                        $fieldLabels[$key] = $label;
-                    }
-                }
-                
-                // Export with selected fields
-                $this->exportToCsvCustom($reportData, $selectedFields, $fieldLabels);
-                
-            } else {
-                // Original export logic for default export
-                $filters = [
-                    'search' => $this->input('search', ''),
-                    'state' => $this->input('state', ''),
-                    'grade_level' => $this->input('grade_level', ''),
-                    'rank' => $this->input('rank', ''),
-                    'sex' => $this->input('sex', ''),
-                    'status' => $this->input('status', ''),
-                    'is_draft' => $this->input('is_draft', '')
-                ];
-                
-                $employees = $this->model->exportEmployees($filters);
-                $this->exportToCSV($employees);
-            }
-            
-        } catch (Exception $e) {
-            error_log("NominalRollController exportCsv error: " . $e->getMessage());
-            $this->flash('error', 'Failed to export data: ' . $e->getMessage());
-            $this->redirect('/admin/nominal-roll/reports');
-        }
-    }
 
     /**
      * Custom CSV export with selected fields
@@ -1822,6 +1771,197 @@ class NominalRollController extends Controller {
         
         fclose($output);
         exit;
+    }
+    
+    /**
+     * Export to Excel from PREVIEW data - NEW METHOD
+     */
+    public function exportExcelFromPreview() {
+        try {
+            // Check if preview data exists in session
+            if (!isset($_SESSION['current_report_data'])) {
+                $this->flash('error', 'No preview data found. Please generate a preview first.');
+                $this->redirect('/admin/nominal-roll/reports');
+                return;
+            }
+            
+            $reportData = $_SESSION['current_report_data'];
+            
+            // Get data for export
+            $data = $reportData['full_data'];
+            $selectedFields = $reportData['selected_fields'];
+            $fieldLabels = $reportData['field_labels'];
+            
+            // Set headers for Excel download
+            header('Content-Type: application/vnd.ms-excel');
+            $filename = 'nominal_roll_report_' . date('Y-m-d_His') . '.xls';
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            
+            echo '<html>';
+            echo '<head>';
+            echo '<meta charset="UTF-8">';
+            echo '<style>';
+            echo 'td { border: 1px solid #ddd; padding: 5px; }';
+            echo 'th { background-color: #f2f2f2; border: 1px solid #ddd; padding: 8px; font-weight: bold; }';
+            echo '</style>';
+            echo '</head>';
+            echo '<body>';
+            
+            // Report title
+            echo '<h2>Nominal Roll Report - FCT College of Nursing Sciences</h2>';
+            echo '<p>Generated: ' . date('d/m/Y H:i:s') . '</p>';
+            echo '<p>Total Records: ' . count($data) . '</p>';
+            echo '<p>Generated By: ' . ($_SESSION['username'] ?? 'System') . '</p>';
+            echo '<p>Preview Generated At: ' . ($reportData['generated_at'] ?? date('Y-m-d H:i:s')) . '</p>';
+            
+            echo '<table>';
+            
+            // Headers
+            echo '<tr>';
+            echo '<th>S/N</th>';
+            foreach ($selectedFields as $field) {
+                $label = $fieldLabels[$field] ?? ucwords(str_replace('_', ' ', $field));
+                echo '<th>' . htmlspecialchars($label) . '</th>';
+            }
+            echo '</tr>';
+            
+            // Data rows
+            $rowNumber = 1;
+            foreach ($data as $row) {
+                echo '<tr>';
+                echo '<td>' . $rowNumber++ . '</td>';
+                foreach ($selectedFields as $field) {
+                    $value = $row[$field] ?? '';
+                    
+                    // Format dates
+                    if (strpos($field, 'date') !== false && !empty($value)) {
+                        try {
+                            $date = new DateTime($value);
+                            $value = $date->format('d/m/Y');
+                        } catch (Exception $e) {
+                            // Keep original value if date parsing fails
+                        }
+                    }
+                    
+                    // Format gender
+                    if ($field === 'sex') {
+                        if ($value === 'M' || strtolower($value) === 'male') {
+                            $value = 'Male';
+                        } else if ($value === 'F' || strtolower($value) === 'female') {
+                            $value = 'Female';
+                        }
+                    }
+                    
+                    // Format empty values
+                    if (empty($value)) {
+                        $value = '-';
+                    }
+                    
+                    echo '<td>' . htmlspecialchars($value) . '</td>';
+                }
+                echo '</tr>';
+            }
+            
+            echo '</table>';
+            
+            echo '</body></html>';
+            exit;
+            
+        } catch (Exception $e) {
+            error_log("Export Excel from preview error: " . $e->getMessage());
+            $this->flash('error', 'Failed to export to Excel: ' . $e->getMessage());
+            $this->redirect('/admin/nominal-roll/reports');
+        }
+    }
+
+    /**
+     * Export to CSV from PREVIEW data - NEW METHOD
+     */
+    public function exportCsvFromPreview() {
+        try {
+            // Check if preview data exists in session
+            if (!isset($_SESSION['current_report_data'])) {
+                $this->flash('error', 'No preview data found. Please generate a preview first.');
+                $this->redirect('/admin/nominal-roll/reports');
+                return;
+            }
+            
+            $reportData = $_SESSION['current_report_data'];
+            
+            // Get data for export
+            $data = $reportData['full_data'];
+            $selectedFields = $reportData['selected_fields'];
+            $fieldLabels = $reportData['field_labels'];
+            
+            // Set headers for CSV download
+            header('Content-Type: text/csv; charset=utf-8');
+            $filename = 'nominal_roll_report_' . date('Y-m-d_His') . '.csv';
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            
+            $output = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for Excel compatibility
+            fputs($output, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
+            
+            // Headers
+            $headers = ['S/N'];
+            foreach ($selectedFields as $field) {
+                $headers[] = $fieldLabels[$field] ?? ucwords(str_replace('_', ' ', $field));
+            }
+            fputcsv($output, $headers);
+            
+            // Data rows
+            $rowNumber = 1;
+            foreach ($data as $row) {
+                $csvRow = [$rowNumber++];
+                foreach ($selectedFields as $field) {
+                    $value = $row[$field] ?? '';
+                    
+                    // Format dates
+                    if (strpos($field, 'date') !== false && !empty($value)) {
+                        try {
+                            $date = new DateTime($value);
+                            $value = $date->format('d/m/Y');
+                        } catch (Exception $e) {
+                            // Keep original value if date parsing fails
+                        }
+                    }
+                    
+                    // Format gender
+                    if ($field === 'sex') {
+                        if ($value === 'M' || strtolower($value) === 'male') {
+                            $value = 'Male';
+                        } else if ($value === 'F' || strtolower($value) === 'female') {
+                            $value = 'Female';
+                        }
+                    }
+                    
+                    // Format empty values
+                    if (empty($value)) {
+                        $value = '-';
+                    }
+                    
+                    $csvRow[] = $value;
+                }
+                fputcsv($output, $csvRow);
+            }
+            
+            // Add summary
+            fputcsv($output, []); // Empty row
+            fputcsv($output, ['EXPORT SUMMARY']);
+            fputcsv($output, ['Total Records:', count($data)]);
+            fputcsv($output, ['Preview Generated At:', $reportData['generated_at'] ?? date('Y-m-d H:i:s')]);
+            fputcsv($output, ['Exported On:', date('Y-m-d H:i:s')]);
+            fputcsv($output, ['Exported By:', $_SESSION['username'] ?? 'System']);
+            
+            fclose($output);
+            exit;
+            
+        } catch (Exception $e) {
+            error_log("Export CSV from preview error: " . $e->getMessage());
+            $this->flash('error', 'Failed to export to CSV: ' . $e->getMessage());
+            $this->redirect('/admin/nominal-roll/reports');
+        }
     }
     
     /**

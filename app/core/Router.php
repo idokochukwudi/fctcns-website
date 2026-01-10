@@ -108,6 +108,12 @@ class Router {
         $this->get('/admin/nominal-roll/export-csv', 'NominalRollController@exportCsv');
         
         // ============================================
+        // NEW ROUTES FOR EXPORTING PREVIEW DATA - ADDED
+        // ============================================
+        $this->get('/admin/nominal-roll/export-preview-excel', 'NominalRollController@exportExcelFromPreview');
+        $this->get('/admin/nominal-roll/export-preview-csv', 'NominalRollController@exportCsvFromPreview');
+        
+        // ============================================
         // NEW REPORT PREVIEW AJAX ROUTE - ADDED
         // ============================================
         $this->post('/admin/nominal-roll/generate-preview', 'NominalRollController@generatePreview');
@@ -180,6 +186,7 @@ class Router {
         if (defined('APP_DEBUG') && APP_DEBUG) {
             error_log("Router: All routes registered including Reporting, User Management, PDF export, and Print routes");
             error_log("Router: Export routes fixed - added POST methods for export-excel and export-csv");
+            error_log("Router: Preview export routes added - export-preview-excel and export-preview-csv");
         }
     }
 

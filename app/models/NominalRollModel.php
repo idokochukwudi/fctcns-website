@@ -2133,43 +2133,50 @@ class NominalRollModel {
     }
     
     /**
-     * Generate report data - FIXED VERSION with improved field handling
+     * Generate report data - OPTIMIZED VERSION with caching
      */
-    public function generateReportData($selectedFields, $filters = [], $sortOrder = 'surname_asc') {
+    public function generateReportData($selectedFields, $filters = [], $sortOrder = 'surname_asc', $useCache = true) {
         try {
+            // Generate cache key
+            $cacheKey = 'report_data_' . md5(serialize([$selectedFields, $filters, $sortOrder]));
+            
+            // Check cache if enabled
+            if ($useCache && function_exists('apc_fetch')) {
+                $cachedData = apc_fetch($cacheKey);
+                if ($cachedData !== false) {
+                    return $cachedData;
+                }
+            }
+            
             // Start with required fields
             $selectFields = ['id'];
             
-            // Add selected fields with proper escaping for reserved words
+            // Optimize field selection - only select what's needed
             foreach ($selectedFields as $field) {
                 // Handle reserved words and special cases
                 if ($field === 'rank') {
                     $selectFields[] = "`rank`";
-                } elseif ($field === 'date_of_birth' || 
-                         $field === 'date_of_first_appointment' || 
-                         $field === 'date_of_confirmation' || 
-                         $field === 'date_of_present_appointment') {
-                    // Format dates properly
-                    $selectFields[] = "DATE_FORMAT(`{$field}`, '%Y-%m-%d') as `{$field}`";
-                } elseif ($field === 'year_of_highest_qualification') {
-                    // Ensure year field is formatted properly
+                } elseif (in_array($field, ['date_of_birth', 'date_of_first_appointment', 'date_of_confirmation', 'date_of_present_appointment'])) {
+                    // Store dates as-is for client-side formatting
                     $selectFields[] = "`{$field}`";
                 } else {
-                    // Regular field
                     $selectFields[] = "`{$field}`";
                 }
             }
             
-            // Build WHERE clause
+            // Build WHERE clause with indexes in mind
             $whereConditions = [];
             $params = [];
             
-            // Basic filters
-            if (!empty($filters['search'])) {
-                $whereConditions[] = "(surname LIKE :search OR first_name LIKE :search OR employee_number LIKE :search)";
-                $params[':search'] = '%' . $filters['search'] . '%';
+            // Use indexed columns first for better performance
+            if (!empty($filters['status'])) {
+                $whereConditions[] = "status = :status";
+                $params[':status'] = $filters['status'];
+            } else {
+                $whereConditions[] = "status = 'active'"; // Most common case
             }
             
+            // Add other filters
             if (!empty($filters['state'])) {
                 $whereConditions[] = "state = :state";
                 $params[':state'] = $filters['state'];
@@ -2180,39 +2187,37 @@ class NominalRollModel {
                 $params[':grade_level'] = $filters['grade_level'];
             }
             
-            if (!empty($filters['rank'])) {
-                $whereConditions[] = "`rank` = :rank";
-                $params[':rank'] = $filters['rank'];
+            if (!empty($filters['search'])) {
+                // Use full-text search if available, otherwise use LIKE with optimizations
+                $whereConditions[] = "(surname LIKE :search OR first_name LIKE :search OR employee_number = :exact_search)";
+                $params[':search'] = '%' . $filters['search'] . '%';
+                $params[':exact_search'] = $filters['search'];
             }
             
-            if (!empty($filters['sex'])) {
-                $whereConditions[] = "sex = :sex";
-                $params[':sex'] = $filters['sex'];
-            }
+            // Add remaining filters
+            $filterMap = [
+                'rank' => 'rank',
+                'sex' => 'sex',
+                'department' => 'department'
+            ];
             
-            if (!empty($filters['department'])) {
-                $whereConditions[] = "department = :department";
-                $params[':department'] = $filters['department'];
-            }
-            
-            // Default: only active employees
-            if (isset($filters['status']) && $filters['status'] !== '') {
-                $whereConditions[] = "status = :status";
-                $params[':status'] = $filters['status'];
-            } else {
-                $whereConditions[] = "status = 'active'";
+            foreach ($filterMap as $key => $column) {
+                if (!empty($filters[$key])) {
+                    $whereConditions[] = "`{$column}` = :{$key}";
+                    $params[":{$key}"] = $filters[$key];
+                }
             }
             
             $whereClause = !empty($whereConditions) ? "WHERE " . implode(" AND ", $whereConditions) : "";
             
-            // Sort order mapping
+            // Sort order with indexes
             $orderByMap = [
                 'surname_asc' => 'surname ASC, first_name ASC',
                 'surname_desc' => 'surname DESC, first_name DESC',
                 'employee_number_asc' => 'employee_number ASC',
                 'employee_number_desc' => 'employee_number DESC',
-                'grade_level_asc' => 'grade_level ASC, surname ASC',
-                'grade_level_desc' => 'grade_level DESC, surname ASC',
+                'grade_level_asc' => 'CAST(grade_level AS UNSIGNED) ASC, surname ASC',
+                'grade_level_desc' => 'CAST(grade_level AS UNSIGNED) DESC, surname ASC',
                 'state_asc' => 'state ASC, surname ASC',
                 'date_of_first_appointment_asc' => 'date_of_first_appointment ASC',
                 'date_of_first_appointment_desc' => 'date_of_first_appointment DESC'
@@ -2220,62 +2225,37 @@ class NominalRollModel {
             
             $orderBy = $orderByMap[$sortOrder] ?? 'surname ASC, first_name ASC';
             
-            // Execute query
+            // Execute query with LIMIT for large datasets
             $sql = "SELECT " . implode(', ', $selectFields) . "
                     FROM " . self::TABLE_EMPLOYEES . " 
                     {$whereClause}
-                    ORDER BY {$orderBy}";
-            
-            error_log("Report SQL: " . $sql);
-            error_log("Report params: " . print_r($params, true));
+                    ORDER BY {$orderBy}
+                    LIMIT 10000"; // Safety limit for export
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // Process the data - ensure all selected fields are present
+            // Process data efficiently
             foreach ($data as &$row) {
+                // Ensure all selected fields exist
                 foreach ($selectedFields as $field) {
                     if (!array_key_exists($field, $row)) {
                         $row[$field] = '';
                     }
-                    
-                    // Format specific fields
-                    switch ($field) {
-                        case 'additional_qualifications':
-                            if (!empty($row[$field])) {
-                                $qualifications = json_decode($row[$field], true);
-                                if (is_array($qualifications)) {
-                                    $formatted = [];
-                                    foreach ($qualifications as $qual) {
-                                        if (isset($qual['qualification'])) {
-                                            $formatted[] = $qual['qualification'];
-                                        }
-                                    }
-                                    $row[$field] = implode(', ', $formatted);
-                                }
-                            }
-                            break;
-                            
-                        case 'professional_certifications':
-                        case 'other_bank_name':
-                        case 'other_pension_fund_admin':
-                        case 'disability_type':
-                            // These fields might need special formatting
-                            if ($row[$field] === null) {
-                                $row[$field] = '';
-                            }
-                            break;
-                    }
                 }
+            }
+            
+            // Cache the result for 5 minutes if APC is available
+            if ($useCache && function_exists('apc_store') && count($data) > 0) {
+                apc_store($cacheKey, $data, 300); // 5 minutes cache
             }
             
             return $data;
             
         } catch (PDOException $e) {
             error_log("Generate report data error: " . $e->getMessage());
-            error_log("SQL Error Info: " . print_r($stmt->errorInfo(), true));
             return [];
         }
     }

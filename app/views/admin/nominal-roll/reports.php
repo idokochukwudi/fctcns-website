@@ -92,6 +92,29 @@
             font-weight: 700;
         }
         
+        /* Progressive Loading Styles */
+        .loading-skeleton {
+            animation: skeleton-loading 1.5s infinite ease-in-out;
+        }
+
+        @keyframes skeleton-loading {
+            0% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0.5; }
+        }
+
+        .skeleton-row {
+            height: 40px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
         .main-container {
             padding: 15px;
             max-width: 1400px;
@@ -1063,7 +1086,7 @@
                 <div class="stat-icon">
                     <i class="fas fa-list-alt"></i>
                 </div>
-                <h3 id="totalFieldsCount">--</h3>
+                <h3 id="totalFieldsCount"><?php echo $totalFields ?? '--'; ?></h3>
                 <p>Available Fields</p>
                 <div class="mt-3">
                     <small class="text-muted">In database</small>
@@ -1113,7 +1136,7 @@
                                 <div class="category-title" onclick="toggleCategory('<?= $categoryKey ?>')">
                                     <span>
                                         <i class="fas fa-chevron-right me-2 category-icon" id="icon_<?= $categoryKey ?>"></i>
-                                        <?= $category['label'] ?>
+                                        <?= htmlspecialchars($category['label']) ?>
                                         <span class="badge badge-secondary ms-2" id="count_<?= $categoryKey ?>">0</span>
                                     </span>
                                     <div class="form-check form-switch m-0">
@@ -1130,13 +1153,13 @@
                                             <input class="form-check-input field-checkbox" 
                                                    type="checkbox" 
                                                    name="selected_fields[]" 
-                                                   value="<?= $fieldKey ?>" 
-                                                   id="field_<?= $fieldKey ?>"
-                                                   data-category="<?= $categoryKey ?>"
+                                                   value="<?= htmlspecialchars($fieldKey) ?>" 
+                                                   id="field_<?= htmlspecialchars($fieldKey) ?>"
+                                                   data-category="<?= htmlspecialchars($categoryKey) ?>"
                                                    <?= in_array($fieldKey, $defaultFields) ? 'checked' : '' ?>
                                                    onchange="updateCounts()">
-                                            <label class="form-check-label" for="field_<?= $fieldKey ?>">
-                                                <?= $fieldLabel ?>
+                                            <label class="form-check-label" for="field_<?= htmlspecialchars($fieldKey) ?>">
+                                                <?= htmlspecialchars($fieldLabel) ?>
                                                 <?php if (in_array($fieldKey, $defaultFields)): ?>
                                                 <span class="default-badge ms-2">Default</span>
                                                 <?php endif; ?>
@@ -1179,16 +1202,12 @@
                                     <label for="filter_state" class="form-label">State</label>
                                     <select name="filter_state" id="filter_state" class="form-select filter-select" onchange="updateFilterCount()">
                                         <option value="">All States</option>
-                                        <option value="Lagos">Lagos</option>
-                                        <option value="Abuja">Abuja</option>
-                                        <option value="Rivers">Rivers</option>
-                                        <option value="Kano">Kano</option>
-                                        <option value="Oyo">Oyo</option>
-                                        <option value="Kaduna">Kaduna</option>
-                                        <option value="Edo">Edo</option>
-                                        <option value="Delta">Delta</option>
-                                        <option value="Ogun">Ogun</option>
-                                        <option value="Enugu">Enugu</option>
+                                        <?php
+                                        // You should populate this from your database
+                                        $states = ['Lagos', 'Abuja', 'Rivers', 'Kano', 'Oyo', 'Kaduna', 'Edo', 'Delta', 'Ogun', 'Enugu'];
+                                        foreach ($states as $state): ?>
+                                        <option value="<?= htmlspecialchars($state) ?>"><?= htmlspecialchars($state) ?></option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                             </div>
@@ -1199,13 +1218,11 @@
                                     <label for="filter_department" class="form-label">Department</label>
                                     <select name="filter_department" id="filter_department" class="form-select filter-select" onchange="updateFilterCount()">
                                         <option value="">All Departments</option>
-                                        <option value="IT">IT Department</option>
-                                        <option value="HR">Human Resources</option>
-                                        <option value="Finance">Finance</option>
-                                        <option value="Operations">Operations</option>
-                                        <option value="Marketing">Marketing</option>
-                                        <option value="Academic">Academic</option>
-                                        <option value="Administration">Administration</option>
+                                        <?php
+                                        $departments = ['IT', 'HR', 'Finance', 'Operations', 'Marketing', 'Academic', 'Administration'];
+                                        foreach ($departments as $dept): ?>
+                                        <option value="<?= htmlspecialchars($dept) ?>"><?= htmlspecialchars($dept) ?></option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                             </div>
@@ -1241,13 +1258,11 @@
                                     <label for="filter_rank" class="form-label">Rank</label>
                                     <select name="filter_rank" id="filter_rank" class="form-select filter-select" onchange="updateFilterCount()">
                                         <option value="">All Ranks</option>
-                                        <option value="Director">Director</option>
-                                        <option value="Manager">Manager</option>
-                                        <option value="Supervisor">Supervisor</option>
-                                        <option value="Officer">Officer</option>
-                                        <option value="Assistant">Assistant</option>
-                                        <option value="Lecturer">Lecturer</option>
-                                        <option value="Professor">Professor</option>
+                                        <?php
+                                        $ranks = ['Director', 'Manager', 'Supervisor', 'Officer', 'Assistant', 'Lecturer', 'Professor'];
+                                        foreach ($ranks as $rank): ?>
+                                        <option value="<?= htmlspecialchars($rank) ?>"><?= htmlspecialchars($rank) ?></option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                             </div>
@@ -1413,7 +1428,7 @@
                                     }
                                     $displayFields = array_slice($report['selected_fields'], 0, 5);
                                     foreach ($displayFields as $field): ?>
-                                    <span class="field-tag"><?= $fieldLabels[$field] ?? $field ?></span>
+                                    <span class="field-tag"><?= htmlspecialchars($fieldLabels[$field] ?? $field) ?></span>
                                     <?php endforeach; ?>
                                     <?php if (count($report['selected_fields']) > 5): ?>
                                     <span class="badge badge-primary">+<?= count($report['selected_fields']) - 5 ?> more</span>
@@ -1479,6 +1494,10 @@
         // Global variables
         let totalFields = <?= $totalFields ?>;
         let currentReportData = null; // Store current report data for export
+        let fieldCache = {}; // Cache for field data
+        let lastRequestTime = 0;
+        const REQUEST_DELAY = 500; // Debounce delay in ms
+        let previewGenerationInProgress = false;
         
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize counts
@@ -1512,6 +1531,15 @@
                 return true;
             });
         });
+        
+        // Check if preview data exists
+        function checkPreviewDataExists() {
+            // Check if we have preview data in localStorage or if preview panel is visible
+            const previewPanel = document.getElementById('previewPanel');
+            const hasLocalPreview = localStorage.getItem('lastPreviewData');
+            
+            return previewPanel.classList.contains('show') || hasLocalPreview;
+        }
         
         // Check if there's preview data in session
         function checkForPreview() {
@@ -1577,39 +1605,48 @@
             updateCounts();
         }
         
-        // Update counts
+        // Optimize updateCounts function
         function updateCounts() {
-            // Count selected fields
-            const selectedCount = document.querySelectorAll('.field-checkbox:checked').length;
+            // Debounce rapid updates
+            const now = Date.now();
+            if (now - lastRequestTime < 100) {
+                return;
+            }
+            lastRequestTime = now;
             
-            // Update selected fields count
-            document.getElementById('selectedFieldsCount').textContent = selectedCount;
-            document.getElementById('selectedFieldsBadge').textContent = selectedCount + ' selected';
-            
-            // Update progress bar
-            const progressPercent = totalFields > 0 ? Math.round((selectedCount / totalFields) * 100) : 0;
-            document.getElementById('fieldProgress').style.width = progressPercent + '%';
-            document.getElementById('fieldProgressText').textContent = progressPercent + '% selected';
-            
-            // Update category counts
-            const categories = <?= json_encode(array_keys($availableFields)) ?>;
-            categories.forEach(categoryId => {
-                const checkboxes = document.querySelectorAll('.field-checkbox[data-category="' + categoryId + '"]');
-                const selectedInCategory = Array.from(checkboxes).filter(cb => cb.checked).length;
-                document.getElementById('count_' + categoryId).textContent = selectedInCategory;
+            // Use requestAnimationFrame for smooth UI updates
+            requestAnimationFrame(() => {
+                const selectedCount = document.querySelectorAll('.field-checkbox:checked').length;
                 
-                // Update category checkbox state
-                const categoryCheckbox = document.getElementById('cat_' + categoryId);
-                if (selectedInCategory === 0) {
-                    categoryCheckbox.checked = false;
-                    categoryCheckbox.indeterminate = false;
-                } else if (selectedInCategory === checkboxes.length) {
-                    categoryCheckbox.checked = true;
-                    categoryCheckbox.indeterminate = false;
-                } else {
-                    categoryCheckbox.checked = true;
-                    categoryCheckbox.indeterminate = true;
-                }
+                // Update counts
+                document.getElementById('selectedFieldsCount').textContent = selectedCount;
+                document.getElementById('selectedFieldsBadge').textContent = selectedCount + ' selected';
+                
+                // Update progress
+                const progressPercent = totalFields > 0 ? Math.round((selectedCount / totalFields) * 100) : 0;
+                document.getElementById('fieldProgress').style.width = progressPercent + '%';
+                document.getElementById('fieldProgressText').textContent = progressPercent + '% selected';
+                
+                // Update category counts efficiently
+                const categories = <?= json_encode(array_keys($availableFields)) ?>;
+                categories.forEach(categoryId => {
+                    const checkboxes = document.querySelectorAll('.field-checkbox[data-category="' + categoryId + '"]');
+                    const selectedInCategory = Array.from(checkboxes).filter(cb => cb.checked).length;
+                    document.getElementById('count_' + categoryId).textContent = selectedInCategory;
+                    
+                    // Update category checkbox state
+                    const categoryCheckbox = document.getElementById('cat_' + categoryId);
+                    if (selectedInCategory === 0) {
+                        categoryCheckbox.checked = false;
+                        categoryCheckbox.indeterminate = false;
+                    } else if (selectedInCategory === checkboxes.length) {
+                        categoryCheckbox.checked = true;
+                        categoryCheckbox.indeterminate = false;
+                    } else {
+                        categoryCheckbox.checked = true;
+                        categoryCheckbox.indeterminate = true;
+                    }
+                });
             });
         }
         
@@ -1649,8 +1686,13 @@
             }
         }
         
-        // Generate preview with REAL data - FIXED VERSION
+        // Optimize generatePreview with debouncing
         async function generatePreview() {
+            if (previewGenerationInProgress) {
+                showAlert('Please wait for the current preview to finish', 'info');
+                return;
+            }
+            
             const selectedCount = document.querySelectorAll('.field-checkbox:checked').length;
             
             if (selectedCount === 0) {
@@ -1658,54 +1700,34 @@
                 return false;
             }
             
-            if (selectedCount > 30) {
-                if (!confirm('You have selected ' + selectedCount + ' fields. This may generate a very wide report. Continue?')) {
-                    return;
-                }
-            }
-            
-            // Show loading state
+            previewGenerationInProgress = true;
             const submitBtn = document.getElementById('generateBtn');
             const originalText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Generating...';
             submitBtn.disabled = true;
             
-            // Show preview panel
-            document.getElementById('previewPanel').classList.add('show');
-            document.getElementById('previewLoading').classList.add('show');
-            document.getElementById('previewContent').innerHTML = '';
-            
             try {
-                // Collect form data
-                const formData = new FormData();
+                // Collect data efficiently
+                const formData = new FormData(document.getElementById('reportForm'));
                 
-                // Get selected fields
-                const selectedFields = [];
-                document.querySelectorAll('.field-checkbox:checked').forEach(checkbox => {
-                    selectedFields.push(checkbox.value);
-                    formData.append('selected_fields[]', checkbox.value);
-                });
+                // Show loading state
+                document.getElementById('previewPanel').classList.add('show');
+                document.getElementById('previewLoading').classList.add('show');
                 
-                // Get all filter values
-                formData.append('search', document.querySelector('[name="search"]').value);
-                formData.append('filter_state', document.querySelector('[name="filter_state"]').value);
-                formData.append('filter_department', document.querySelector('[name="filter_department"]').value);
-                formData.append('filter_grade_level', document.querySelector('[name="filter_grade_level"]').value);
-                formData.append('filter_sex', document.querySelector('[name="filter_sex"]').value);
-                formData.append('filter_rank', document.querySelector('[name="filter_rank"]').value);
-                formData.append('filter_status', document.querySelector('[name="filter_status"]').value);
-                formData.append('sort_order', document.querySelector('[name="sort_order"]').value);
-                formData.append('csrf_token', document.querySelector('[name="csrf_token"]').value);
-                formData.append('csrf_token_time', document.querySelector('[name="csrf_token_time"]').value);
+                // Use AbortController for timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
                 
-                // Make AJAX request to get REAL data
                 const response = await fetch('/admin/nominal-roll/generate-preview', {
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: formData
+                    body: formData,
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -1714,18 +1736,13 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Store full data in global variable for export
                     currentReportData = result;
-                    
-                    // Store in localStorage for persistence
+                    // Store preview data in localStorage
                     localStorage.setItem('lastPreviewData', JSON.stringify(result));
+                    localStorage.setItem('lastPreviewId', Date.now()); // Store timestamp as ID
                     
-                    // Show preview with REAL data
                     showPreviewWithData(result);
-                    
-                    // Update stats with real counts
                     updatePreviewStats(result);
-                    
                     showAlert(`Preview generated: Showing ${result.previewRecords || 0} of ${result.totalRecords || 0} records`, 'success');
                 } else {
                     throw new Error(result.error || 'Failed to generate preview');
@@ -1733,21 +1750,19 @@
                 
             } catch (error) {
                 console.error('Preview generation error:', error);
-                showAlert('Error generating preview: ' + error.message, 'danger');
-                
-                // Fallback to sample data if AJAX fails
-                fallbackToSampleData();
+                if (error.name === 'AbortError') {
+                    showAlert('Preview generation timed out. Please try with fewer filters.', 'warning');
+                } else {
+                    showAlert('Error generating preview: ' + error.message, 'danger');
+                    fallbackToSampleData();
+                }
             } finally {
-                // Reset button
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
                 document.getElementById('previewLoading').classList.remove('show');
-                
-                // Prepare data for save modal
+                previewGenerationInProgress = false;
                 prepareSaveData();
             }
-            
-            return true;
         }
         
         // Fallback to sample data if AJAX fails
@@ -1824,6 +1839,9 @@
             
             // Store in global variable for export
             currentReportData = previewData;
+            // Store in localStorage
+            localStorage.setItem('lastPreviewData', JSON.stringify(previewData));
+            localStorage.setItem('lastPreviewId', Date.now());
             
             showPreviewWithData(previewData);
             showAlert('Showing sample data. Real data could not be loaded.', 'warning');
@@ -2042,158 +2060,93 @@
             document.getElementById('saveSortOrder').value = document.querySelector('[name="sort_order"]').value;
         }
         
-        // Export to Excel - SIMPLIFIED VERSION (FIXED)
-        async function exportExcel() {
+        // Export to Excel - UPDATED VERSION to use preview export routes
+        function exportExcel() {
             try {
-                // Collect current configuration
-                const selectedFields = [];
-                document.querySelectorAll('.field-checkbox:checked').forEach(cb => {
-                    selectedFields.push(cb.value);
-                });
-                
-                if (selectedFields.length === 0) {
-                    showAlert('Please select at least one field to export', 'warning');
+                const exportBtn = document.querySelector('[onclick="exportExcel()"]');
+                const originalBtnText = exportBtn.innerHTML;
+                exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+                exportBtn.disabled = true;
+
+                // Check if preview has been generated
+                const previewPanel = document.getElementById('previewPanel');
+                if (!previewPanel.classList.contains('show')) {
+                    showAlert('Please generate a preview first before exporting', 'warning');
+                    exportBtn.innerHTML = originalBtnText;
+                    exportBtn.disabled = false;
                     return;
                 }
+
+                // Check if preview data exists
+                if (!checkPreviewDataExists()) {
+                    showAlert('No preview data available. Please generate a preview first.', 'warning');
+                    exportBtn.innerHTML = originalBtnText;
+                    exportBtn.disabled = false;
+                    return;
+                }
+
+                // Simple redirect to export endpoint
+                window.location.href = '/admin/nominal-roll/export-preview-excel';
                 
-                // Get filter values
-                const filters = {
-                    search: document.querySelector('[name="search"]').value,
-                    state: document.querySelector('[name="filter_state"]').value,
-                    department: document.querySelector('[name="filter_department"]').value,
-                    grade_level: document.querySelector('[name="filter_grade_level"]').value,
-                    sex: document.querySelector('[name="filter_sex"]').value,
-                    rank: document.querySelector('[name="filter_rank"]').value,
-                    status: document.querySelector('[name="filter_status"]').value || 'active'
-                };
-                
-                const sortOrder = document.querySelector('[name="sort_order"]').value;
-                
-                // Create a form submission
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/admin/nominal-roll/export-excel';
-                form.style.display = 'none';
-                
-                // Add CSRF token
-                const csrfToken = document.querySelector('[name="csrf_token"]').value;
-                const csrfTokenTime = document.querySelector('[name="csrf_token_time"]').value;
-                
-                // Add all form fields
-                const addHiddenField = (name, value) => {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = name;
-                    input.value = value;
-                    form.appendChild(input);
-                };
-                
-                // Add CSRF tokens
-                addHiddenField('csrf_token', csrfToken);
-                addHiddenField('csrf_token_time', csrfTokenTime);
-                
-                // Add selected fields
-                selectedFields.forEach(field => {
-                    addHiddenField('selected_fields[]', field);
-                });
-                
-                // Add filters
-                Object.keys(filters).forEach(key => {
-                    const filterName = key.replace('filter_', '');
-                    addHiddenField(filterName, filters[key]);
-                });
-                
-                // Add sort order
-                addHiddenField('sort_order', sortOrder);
-                
-                // Add flag to indicate this is from preview
-                addHiddenField('from_preview', '1');
-                
-                // Submit the form
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
-                
+                // Reset button after delay
+                setTimeout(() => {
+                    exportBtn.innerHTML = originalBtnText;
+                    exportBtn.disabled = false;
+                }, 3000);
+
             } catch (error) {
                 console.error('Excel export error:', error);
                 showAlert('Error exporting to Excel: ' + error.message, 'danger');
+                
+                // Reset button
+                const exportBtn = document.querySelector('[onclick="exportExcel()"]');
+                exportBtn.innerHTML = '<i class="fas fa-file-excel me-1"></i> Excel';
+                exportBtn.disabled = false;
             }
         }
-        
-        // Export to CSV
-        async function exportCSV() {
+
+        // Export to CSV - UPDATED VERSION to use preview export routes
+        function exportCSV() {
             try {
-                // Collect current configuration
-                const selectedFields = [];
-                document.querySelectorAll('.field-checkbox:checked').forEach(cb => {
-                    selectedFields.push(cb.value);
-                });
-                
-                if (selectedFields.length === 0) {
-                    showAlert('Please select at least one field to export', 'warning');
+                const exportBtn = document.querySelector('[onclick="exportCSV()"]');
+                const originalBtnText = exportBtn.innerHTML;
+                exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+                exportBtn.disabled = true;
+
+                // Check if preview has been generated
+                const previewPanel = document.getElementById('previewPanel');
+                if (!previewPanel.classList.contains('show')) {
+                    showAlert('Please generate a preview first before exporting', 'warning');
+                    exportBtn.innerHTML = originalBtnText;
+                    exportBtn.disabled = false;
                     return;
                 }
+
+                // Check if preview data exists
+                if (!checkPreviewDataExists()) {
+                    showAlert('No preview data available. Please generate a preview first.', 'warning');
+                    exportBtn.innerHTML = originalBtnText;
+                    exportBtn.disabled = false;
+                    return;
+                }
+
+                // Simple redirect to export endpoint
+                window.location.href = '/admin/nominal-roll/export-preview-csv';
                 
-                const filters = {
-                    search: document.querySelector('[name="search"]').value,
-                    state: document.querySelector('[name="filter_state"]').value,
-                    department: document.querySelector('[name="filter_department"]').value,
-                    grade_level: document.querySelector('[name="filter_grade_level"]').value,
-                    sex: document.querySelector('[name="filter_sex"]').value,
-                    rank: document.querySelector('[name="filter_rank"]').value,
-                    status: document.querySelector('[name="filter_status"]').value || 'active'
-                };
-                
-                const sortOrder = document.querySelector('[name="sort_order"]').value;
-                
-                // Create a form submission
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/admin/nominal-roll/export-csv';
-                form.style.display = 'none';
-                
-                // Add CSRF token
-                const csrfToken = document.querySelector('[name="csrf_token"]').value;
-                const csrfTokenTime = document.querySelector('[name="csrf_token_time"]').value;
-                
-                // Add all form fields
-                const addHiddenField = (name, value) => {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = name;
-                    input.value = value;
-                    form.appendChild(input);
-                };
-                
-                // Add CSRF tokens
-                addHiddenField('csrf_token', csrfToken);
-                addHiddenField('csrf_token_time', csrfTokenTime);
-                
-                // Add selected fields
-                selectedFields.forEach(field => {
-                    addHiddenField('selected_fields[]', field);
-                });
-                
-                // Add filters
-                Object.keys(filters).forEach(key => {
-                    const filterName = key.replace('filter_', '');
-                    addHiddenField(filterName, filters[key]);
-                });
-                
-                // Add sort order
-                addHiddenField('sort_order', sortOrder);
-                
-                // Add flag to indicate this is from preview
-                addHiddenField('from_preview', '1');
-                
-                // Submit the form
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
-                
+                // Reset button after delay
+                setTimeout(() => {
+                    exportBtn.innerHTML = originalBtnText;
+                    exportBtn.disabled = false;
+                }, 3000);
+
             } catch (error) {
                 console.error('CSV export error:', error);
                 showAlert('Error exporting to CSV: ' + error.message, 'danger');
+                
+                // Reset button
+                const exportBtn = document.querySelector('[onclick="exportCSV()"]');
+                exportBtn.innerHTML = '<i class="fas fa-file-csv me-1"></i> CSV';
+                exportBtn.disabled = false;
             }
         }
         
