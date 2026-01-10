@@ -701,19 +701,13 @@ if (!empty($employee['date_of_first_appointment'])) {
             const docId = '<?php echo $documentId; ?>';
             const baseUrl = '<?php echo $baseUrl; ?>';
             
-            let verificationUrl;
-            if (employeeId) {
-                verificationUrl = baseUrl + '/verify/employee/' + employeeId + '?ref=' + docId;
-            } else {
-                verificationUrl = baseUrl + '/verify/document/' + docId;
-            }
+            // Use the new verification route
+            const verificationUrl = baseUrl + '/verify/employee/' + employeeId + '?ref=' + docId;
             
             // Create QR Code
             const qrContainer = document.getElementById('qr-code');
             if (qrContainer) {
-                // Clear any existing content
                 qrContainer.innerHTML = '';
-                
                 try {
                     new QRCode(qrContainer, {
                         text: verificationUrl,
@@ -724,7 +718,6 @@ if (!empty($employee['date_of_first_appointment'])) {
                         correctLevel: QRCode.CorrectLevel.H
                     });
                 } catch (error) {
-                    console.error('QR Code generation error:', error);
                     qrContainer.innerHTML = '<div style="color:#999;font-size:11px;">QR Code unavailable</div>';
                 }
             }

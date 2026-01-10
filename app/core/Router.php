@@ -70,6 +70,10 @@ class Router {
         // Print with options
         $this->get('/admin/nominal-roll/print/with-audit/{id}', 'NominalRollController@printWithAudit');
         
+        // QR CODE VERIFICATION ROUTES - ADDED
+        $this->get('/verify/employee/{id}', 'NominalRollController@verifyEmployee');
+        $this->get('/verify/document/{ref}', 'NominalRollController@verifyDocument');
+        
         // Settings Routes
         $this->get('/admin/nominal-roll/settings', 'NominalRollController@settings');
         $this->post('/admin/nominal-roll/update-settings', 'NominalRollController@updateSettings');
@@ -184,9 +188,10 @@ class Router {
         $this->get('/404', 'PageController@notFound');
         
         if (defined('APP_DEBUG') && APP_DEBUG) {
-            error_log("Router: All routes registered including Reporting, User Management, PDF export, and Print routes");
+            error_log("Router: All routes registered including Reporting, User Management, PDF export, Print routes, and QR Verification routes");
             error_log("Router: Export routes fixed - added POST methods for export-excel and export-csv");
             error_log("Router: Preview export routes added - export-preview-excel and export-preview-csv");
+            error_log("Router: QR Verification routes added - /verify/employee/{id} and /verify/document/{ref}");
         }
     }
 

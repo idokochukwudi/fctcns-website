@@ -518,6 +518,144 @@ class NominalRollController extends Controller {
     }
     
     /**
+     * ============================================
+     * VERIFICATION METHODS (NEW)
+     * ============================================
+     */
+    
+    /**
+     * Verify employee via QR code - Shows nice confirmation
+     */
+    public function verifyEmployee($id) {
+        try {
+            // Get employee data
+            $employee = $this->model->getEmployee($id);
+            
+            if (!$employee) {
+                // Show error page
+                $this->renderVerificationError('Employee record not found or has been deleted.');
+                return;
+            }
+            
+            // Get document reference from query string
+            $documentRef = $_GET['ref'] ?? '';
+            $verifierName = $_GET['name'] ?? '';
+            $verifierNotes = $_GET['notes'] ?? '';
+            
+            // Prepare verification data
+            $verificationData = [
+                'employee' => $employee,
+                'documentRef' => $documentRef,
+                'expectedRef' => 'EMP-' . $employee['id'] . '-' . date('Ymd', strtotime($employee['updated_at'] ?? 'now')),
+                'isValid' => strpos($documentRef, 'EMP-' . $employee['id']) === 0,
+                'verificationDate' => date('Y-m-d H:i:s'),
+                'verificationId' => uniqid('VER-'),
+                'ipAddress' => $_SERVER['REMOTE_ADDR'],
+                'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+                'verifierName' => $verifierName,
+                'verifierNotes' => $verifierNotes,
+                'baseUrl' => $this->data['baseUrl'] ?? BASE_URL
+            ];
+            
+            // Log verification attempt
+            $this->logVerification($verificationData);
+            
+            // Show verification confirmation page
+            $this->renderVerificationConfirmation($verificationData);
+            
+        } catch (Exception $e) {
+            error_log("Employee verification error: " . $e->getMessage());
+            $this->renderVerificationError('An error occurred during verification.');
+        }
+    }
+
+    /**
+     * Verify document by reference
+     */
+    public function verifyDocument($ref) {
+        try {
+            // Extract employee ID from document reference
+            $parts = explode('-', $ref);
+            $employeeId = isset($parts[1]) ? $parts[1] : null;
+            
+            if (!$employeeId) {
+                $this->renderVerificationError('Invalid document reference format.');
+                return;
+            }
+            
+            // Redirect to employee verification
+            $this->redirect('/verify/employee/' . $employeeId . '?ref=' . urlencode($ref));
+            
+        } catch (Exception $e) {
+            error_log("Document verification error: " . $e->getMessage());
+            $this->renderVerificationError('An error occurred during verification.');
+        }
+    }
+
+    /**
+     * Render verification confirmation page
+     */
+    private function renderVerificationConfirmation($data) {
+        // Set verification data
+        $this->data = array_merge($this->data, [
+            'verificationData' => $data,
+            'employee' => $data['employee'],
+            'pageTitle' => 'Document Verification - FCT College of Nursing Sciences',
+            'layout' => 'verification' // Use a special layout for verification
+        ]);
+        
+        // Load verification view
+        $this->render('verification/confirmation');
+    }
+
+    /**
+     * Render verification error page
+     */
+    private function renderVerificationError($message) {
+        $this->data = array_merge($this->data, [
+            'errorMessage' => $message,
+            'pageTitle' => 'Verification Error - FCT College of Nursing Sciences',
+            'layout' => 'verification'
+        ]);
+        
+        $this->render('verification/error');
+    }
+
+    /**
+     * Log verification attempt
+     */
+    private function logVerification($data) {
+        try {
+            // Create logs directory if it doesn't exist
+            $logDir = ROOT_PATH . '/storage/logs/verifications/';
+            if (!file_exists($logDir)) {
+                mkdir($logDir, 0755, true);
+            }
+            
+            // Log file path
+            $logFile = $logDir . date('Y-m-d') . '.log';
+            
+            // Create log entry
+            $logEntry = sprintf(
+                "[%s] VERIFICATION - ID: %s, Employee: %s (%s), Valid: %s, IP: %s, User-Agent: %s\n",
+                date('Y-m-d H:i:s'),
+                $data['verificationId'],
+                $data['employee']['employee_number'] ?? 'N/A',
+                $data['employee']['surname'] . ', ' . $data['employee']['first_name'],
+                $data['isValid'] ? 'YES' : 'NO',
+                $data['ipAddress'],
+                substr($data['userAgent'], 0, 100)
+            );
+            
+            // Write to log file
+            file_put_contents($logFile, $logEntry, FILE_APPEND);
+            
+        } catch (Exception $e) {
+            error_log("Failed to log verification: " . $e->getMessage());
+        }
+    }
+    
+    /**
      * Display edit employee form
      */
     public function edit($id) {
