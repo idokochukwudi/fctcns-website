@@ -329,7 +329,7 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * View passport photo (for img src)
+     * View passport photo (for img src) - UNIVERSAL FIX
      */
     public function viewPassportPhoto($id) {
         try {
@@ -338,8 +338,18 @@ class NominalRollController extends Controller {
             if (!$employee || empty($employee['passport_photo'])) {
                 // Serve a default image
                 $defaultImage = ROOT_PATH . '/assets/images/default-avatar.png';
-                header('Content-Type: image/png');
-                readfile($defaultImage);
+                if (file_exists($defaultImage)) {
+                    header('Content-Type: image/png');
+                    readfile($defaultImage);
+                } else {
+                    // Create a simple default image
+                    header('Content-Type: image/svg+xml');
+                    echo '<?xml version="1.0" encoding="UTF-8"?>
+                    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="200" height="200" fill="#f0f0f0"/>
+                        <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="14" fill="#666">No Photo</text>
+                    </svg>';
+                }
                 exit;
             }
             
@@ -348,21 +358,40 @@ class NominalRollController extends Controller {
             if (!file_exists($photoPath)) {
                 // Fallback to default if file is missing
                 $defaultImage = ROOT_PATH . '/assets/images/default-avatar.png';
-                header('Content-Type: image/png');
-                readfile($defaultImage);
+                if (file_exists($defaultImage)) {
+                    header('Content-Type: image/png');
+                    readfile($defaultImage);
+                } else {
+                    header('Content-Type: image/svg+xml');
+                    echo '<?xml version="1.0" encoding="UTF-8"?>
+                    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="200" height="200" fill="#f0f0f0"/>
+                        <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="14" fill="#666">Photo Missing</text>
+                    </svg>';
+                }
                 exit;
             }
             
-            // Determine MIME type and output image
-            $mimeType = mime_content_type($photoPath);
+            // UNIVERSAL MIME TYPE DETECTION (works without mime_content_type)
+            $mimeType = $this->detectMimeType($photoPath);
+            
+            // Output image
             header('Content-Type: ' . $mimeType);
             header('Content-Length: ' . filesize($photoPath));
+            header('Cache-Control: public, max-age=86400'); // Cache for 24 hours
             readfile($photoPath);
             exit;
             
         } catch (Exception $e) {
             error_log("Passport photo error for ID {$id}: " . $e->getMessage());
-            http_response_code(404);
+            
+            // Return a simple error image
+            header('Content-Type: image/svg+xml');
+            echo '<?xml version="1.0" encoding="UTF-8"?>
+            <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+                <rect width="200" height="200" fill="#ffe6e6"/>
+                <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="12" fill="#cc0000">Error Loading Image</text>
+            </svg>';
             exit;
         }
     }
@@ -719,9 +748,9 @@ class NominalRollController extends Controller {
             
             // Check if it's a CSRF error
             if (strpos($e->getMessage(), 'CSRF') !== false) {
-                $this->flash('error', 'Security error: ' . $e->getMessage());
+                $this->flash('error', 'Security error: " . $e->getMessage() . "');
             } else {
-                $this->flash('error', 'Failed to delete employee: ' . $e->getMessage());
+                $this->flash('error', 'Failed to delete employee: " . $e->getMessage() . "');
             }
             
             $this->redirect('/admin/nominal-roll/view/' . $id);
@@ -811,7 +840,7 @@ class NominalRollController extends Controller {
             
         } catch (Exception $e) {
             error_log("NominalRollController approveDraft error: " . $e->getMessage());
-            $this->flash('error', 'Failed to approve draft: ' . $e->getMessage());
+            $this->flash('error', 'Failed to approve draft: " . $e->getMessage() . "');
             $this->redirect('/admin/nominal-roll/drafts');
         }
     }
@@ -2679,6 +2708,60 @@ class NominalRollController extends Controller {
             error_log("NominalRollController deleteFile error: " . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Detect MIME type without mime_content_type()
+     */
+    private function detectMimeType($filePath) {
+        // Method 1: Try file extension detection
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        
+        $mimeMap = [
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'gif'  => 'image/gif',
+            'svg'  => 'image/svg+xml',
+            'webp' => 'image/webp',
+            'bmp'  => 'image/bmp',
+            'ico'  => 'image/x-icon'
+        ];
+        
+        if (isset($mimeMap[$extension])) {
+            return $mimeMap[$extension];
+        }
+        
+        // Method 2: Try getimagesize() if available
+        if (function_exists('getimagesize')) {
+            $imageInfo = @getimagesize($filePath);
+            if ($imageInfo !== false && isset($imageInfo['mime'])) {
+                return $imageInfo['mime'];
+            }
+        }
+        
+        // Method 3: Try mime_content_type() if available (some servers have it)
+        if (function_exists('mime_content_type')) {
+            return mime_content_type($filePath);
+        }
+        
+        // Method 4: Check file signature (magic bytes)
+        $handle = fopen($filePath, 'rb');
+        if ($handle) {
+            $bytes = fread($handle, 12);
+            fclose($handle);
+            
+            if (strpos($bytes, "\xFF\xD8\xFF") === 0) {
+                return 'image/jpeg';
+            } elseif (strpos($bytes, "\x89PNG\r\n\x1a\n") === 0) {
+                return 'image/png';
+            } elseif (strpos($bytes, "GIF") === 0) {
+                return 'image/gif';
+            }
+        }
+        
+        // Default fallback
+        return 'application/octet-stream';
     }
     
     /**
