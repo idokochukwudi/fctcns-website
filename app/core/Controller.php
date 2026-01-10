@@ -353,6 +353,21 @@ class Controller {
     }
     
     /**
+     * Validate CSRF token (boolean return version)
+     * 
+     * @return bool True if valid, false otherwise
+     */
+    protected function validateCsrfToken() {
+        try {
+            $this->validateCsrf();
+            return true;
+        } catch (Exception $e) {
+            error_log("CSRF validation failed: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
      * Clean up old CSRF tokens (older than 1 hour)
      */
     private function cleanupOldCsrfTokens() {

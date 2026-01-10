@@ -132,9 +132,25 @@ class NominalRollController extends Controller {
             // Generate employee number
             $employeeNumber = $this->model->generateEmployeeNumber();
             
+            // Check for stored form data (from failed validation)
+            $formData = [];
+            $formErrors = [];
+            
+            if (isset($_SESSION['form_data'])) {
+                $formData = $_SESSION['form_data'];
+                unset($_SESSION['form_data']);
+            }
+            
+            if (isset($_SESSION['form_errors'])) {
+                $formErrors = $_SESSION['form_errors'];
+                unset($_SESSION['form_errors']);
+            }
+            
             $this->data = array_merge($this->data, [
                 'filterOptions' => $filterOptions,
                 'employeeNumber' => $employeeNumber,
+                'formData' => $formData,
+                'formErrors' => $formErrors,
                 'pageTitle' => 'Add New Employee - Nominal Roll',
                 'pageDescription' => 'Add a new employee to the nominal roll'
             ]);
@@ -169,7 +185,12 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            $this->validateCsrf();
+            if (!$this->validateCsrfToken()) {
+                $this->flash('error', 'Invalid or expired CSRF token. Please try again.');
+                $this->redirect('/admin/nominal-roll/create');
+                return;
+            }
+            
             error_log("CSRF validation passed");
             
             // Get form data
@@ -224,8 +245,17 @@ class NominalRollController extends Controller {
             $errors = $this->model->validateEmployeeData($data, false);
             error_log("Validation errors: " . print_r($errors, true));
             
+            // If there are validation errors, store form data in session for repopulation
             if (!empty($errors)) {
-                throw new Exception(implode('<br>', $errors));
+                // Store the form data in session
+                $_SESSION['form_data'] = $data;
+                
+                // Also store errors in session
+                $_SESSION['form_errors'] = $errors;
+                
+                // Redirect back to create form
+                $this->redirect('/admin/nominal-roll/create');
+                return;
             }
             
             // Get user ID
@@ -280,18 +310,13 @@ class NominalRollController extends Controller {
                 return;
             }
             
-            // Get filter options for re-display
-            $filterOptions = $this->model->getFilterOptions();
+            // Store form data in session for error display
+            if (isset($data)) {
+                $_SESSION['form_data'] = $data;
+                $_SESSION['form_errors'] = [$e->getMessage()];
+            }
             
-            $this->data = array_merge($this->data, [
-                'filterOptions' => $filterOptions,
-                'error' => $e->getMessage(),
-                'formData' => $this->getFormData(true),
-                'pageTitle' => 'Add New Employee - Nominal Roll',
-                'pageDescription' => 'Add a new employee to the nominal roll'
-            ]);
-            
-            $this->render('admin/nominal-roll/create');
+            $this->redirect('/admin/nominal-roll/create');
         }
         
         error_log("=== NOMINAL ROLL STORE END ===");
@@ -550,7 +575,11 @@ class NominalRollController extends Controller {
             error_log("=== UPDATE METHOD START FOR EMPLOYEE ID: $id ===");
             
             // Validate CSRF token
-            $this->validateCsrf();
+            if (!$this->validateCsrfToken()) {
+                $this->flash('error', 'Invalid or expired CSRF token. Please try again.');
+                $this->redirect('/admin/nominal-roll/edit/' . $id);
+                return;
+            }
             
             // Check if employee exists
             $employee = $this->model->getEmployee($id);
@@ -717,7 +746,11 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            $this->validateCsrf();
+            if (!$this->validateCsrfToken()) {
+                $this->flash('error', 'Security error: Invalid or expired CSRF token.');
+                $this->redirect('/admin/nominal-roll/view/' . $id);
+                return;
+            }
             
             // Check if employee exists
             $employee = $this->model->getEmployee($id);
@@ -897,7 +930,10 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            $this->validateCsrf();
+            if (!$this->validateCsrfToken()) {
+                $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
+                return;
+            }
             
             // Check if file was uploaded
             if (!isset($_FILES['bulk_file']) || $_FILES['bulk_file']['error'] !== UPLOAD_ERR_OK) {
@@ -1958,7 +1994,10 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            $this->validateCsrf();
+            if (!$this->validateCsrfToken()) {
+                $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
+                return;
+            }
             
             $key = $this->input('key', '');
             $value = $this->input('value', '');
@@ -2005,7 +2044,10 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            $this->validateCsrf();
+            if (!$this->validateCsrfToken()) {
+                $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
+                return;
+            }
             
             $settings = $this->input('settings', []);
             
@@ -2051,7 +2093,10 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            $this->validateCsrf();
+            if (!$this->validateCsrfToken()) {
+                $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
+                return;
+            }
             
             // Get current setting
             $currentValue = $this->model->getSetting('editing_enabled', '1');
@@ -2097,7 +2142,10 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            $this->validateCsrf();
+            if (!$this->validateCsrfToken()) {
+                $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
+                return;
+            }
             
             $backupType = $this->input('type', 'manual');
             $backupResult = $this->model->createBackup($backupType, $_SESSION['user_id'] ?? null);
@@ -2200,7 +2248,10 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            $this->validateCsrf();
+            if (!$this->validateCsrfToken()) {
+                $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
+                return;
+            }
             
             // Clear logs older than 90 days
             $result = $this->model->clearOldActivityLogs(90);
@@ -2238,7 +2289,10 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            $this->validateCsrf();
+            if (!$this->validateCsrfToken()) {
+                $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
+                return;
+            }
             
             $result = $this->model->deleteBackup($id);
             
@@ -2274,7 +2328,10 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            $this->validateCsrf();
+            if (!$this->validateCsrfToken()) {
+                $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
+                return;
+            }
             
             $result = $this->model->resetAllSettings($_SESSION['user_id'] ?? null);
             
@@ -3137,32 +3194,6 @@ class NominalRollController extends Controller {
                 $this->redirect('/admin/nominal-roll');
             }
         }
-    }
-    
-    /**
-     * Validate CSRF token (add this method to your controller)
-     */
-    private function validateCsrfToken() {
-        if (!isset($_POST['csrf_token']) || !isset($_POST['csrf_token_time'])) {
-            return false;
-        }
-        
-        if (!isset($_SESSION['csrf_token']) || !isset($_SESSION['csrf_token_time'])) {
-            return false;
-        }
-        
-        // Check if tokens match
-        if ($_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-            return false;
-        }
-        
-        // Check if token is expired (e.g., 1 hour expiration)
-        $tokenAge = time() - $_POST['csrf_token_time'];
-        if ($tokenAge > 3600) { // 1 hour expiration
-            return false;
-        }
-        
-        return true;
     }
     
     /**
