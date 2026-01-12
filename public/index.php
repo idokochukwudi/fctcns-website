@@ -252,10 +252,10 @@ try {
     });
     
     // ============================================================================
-    // ADMIN ROUTES
+    // ADMIN ROUTES - COMMENT OUT THE CATCH-ALL ROUTES
     // ============================================================================
 
-    // Admin area - ALL admin routes go to the admin SPA index
+    // Admin area - ONLY the dashboard goes to admin SPA
     $router->get('/admin', function() {
         $path = APP_PATH . '/views/admin/index.php';
         if (file_exists($path)) {
@@ -265,6 +265,10 @@ try {
         }
     });
 
+    // ============================================================================
+    // COMMENT OUT THESE CATCH-ALL ROUTES - THEY INTERFERE WITH SPECIFIC ROUTES
+    // ============================================================================
+    /*
     // IMPORTANT: Catch-all for admin SPA routes must come AFTER specific admin routes
     // This allows the specific contact routes above to work before falling back to SPA
     $router->get('/admin/(.*)', function($any) {
@@ -284,6 +288,7 @@ try {
             echo "<h1>Admin Area</h1>";
         }
     });
+    */
     
     // ============================================================================
     // API ROUTES

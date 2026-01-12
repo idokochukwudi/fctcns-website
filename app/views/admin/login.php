@@ -1,66 +1,12 @@
 <?php
-// Get the absolute path to the root
-$rootPath = dirname(__DIR__, 3); // Go up 3 levels from app/views/admin/
+// This is a PURE VIEW FILE - no processing logic here
+// All data comes from the controller
 
-// Load constants first (it handles .env loading)
-require_once $rootPath . '/app/config/constants.php';
-
-// Now load session and database (constants are defined)
-require_once APP_PATH . '/config/session.php';
-require_once APP_PATH . '/config/database.php';
-
-// Redirect if already logged in
-if (Session::isAuthenticated()) {
-    header('Location: ' . BASE_URL . '/admin/dashboard');
+// Check if we have the required data
+if (!isset($error) && !isset($success) && !isset($baseUrl)) {
+    // If accessed directly, redirect to proper login
+    header('Location: /admin/login');
     exit;
-}
-
-// Handle login form submission
-$error = '';
-$success = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-    
-    if (empty($username) || empty($password)) {
-        $error = 'Please enter username and password';
-    } else {
-        try {
-            $db = Database::getInstance();
-            $conn = $db->getConnection();
-            
-            // Query user
-            $stmt = $conn->prepare("
-                SELECT id, username, email, password_hash, full_name, role, is_active 
-                FROM users 
-                WHERE username = ? OR email = ?
-            ");
-            $stmt->execute([$username, $username]);
-            $user = $stmt->fetch();
-            
-            if ($user && password_verify($password, $user['password_hash'])) {
-                if ($user['is_active']) {
-                    // Set session
-                    Session::loginUser($user['id'], $user['username'], $user['role']);
-                    
-                    // Update last login
-                    $stmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
-                    $stmt->execute([$user['id']]);
-                    
-                    header('Location: ' . BASE_URL . '/admin/dashboard');
-                    exit;
-                } else {
-                    $error = 'Account is deactivated. Contact administrator.';
-                }
-            } else {
-                $error = 'Invalid username or password';
-            }
-        } catch (Exception $e) {
-            error_log("Login error: " . $e->getMessage());
-            $error = 'Login failed. Please try again.';
-        }
-    }
 }
 ?>
 <!DOCTYPE html>
@@ -83,13 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             --admin-success: #38a169;
             --admin-error: #e53e3e;
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -99,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             justify-content: center;
             padding: 20px;
         }
-        
+
         .login-container {
             background: white;
             border-radius: 16px;
@@ -108,14 +54,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             max-width: 420px;
             overflow: hidden;
         }
-        
+
         .login-header {
             background: var(--admin-primary);
             color: white;
             padding: 2rem;
             text-align: center;
         }
-        
+
         .login-logo {
             width: 80px;
             height: 80px;
@@ -129,22 +75,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 2rem;
             font-weight: bold;
         }
-        
+
         .login-title {
             font-size: 1.5rem;
             font-weight: 600;
             margin-bottom: 0.5rem;
         }
-        
+
         .login-subtitle {
             font-size: 0.875rem;
             opacity: 0.9;
         }
-        
+
         .login-body {
             padding: 2rem;
         }
-        
+
         .alert {
             padding: 0.875rem 1rem;
             border-radius: 8px;
@@ -154,23 +100,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             align-items: center;
             gap: 0.75rem;
         }
-        
+
         .alert-error {
             background: #fed7d7;
             color: #c53030;
             border: 1px solid #fc8181;
         }
-        
+
         .alert-success {
             background: #c6f6d5;
             color: #276749;
             border: 1px solid #9ae6b4;
         }
-        
+
         .form-group {
             margin-bottom: 1.5rem;
         }
-        
+
         .form-label {
             display: block;
             color: var(--admin-gray-800);
@@ -178,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-weight: 600;
             margin-bottom: 0.5rem;
         }
-        
+
         .form-control {
             width: 100%;
             padding: 0.875rem 1rem;
@@ -188,13 +134,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transition: all 0.2s;
             background: white;
         }
-        
+
         .form-control:focus {
             outline: none;
             border-color: var(--admin-primary-light);
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
         }
-        
+
         .btn {
             display: inline-flex;
             align-items: center;
@@ -208,21 +154,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             cursor: pointer;
             transition: all 0.2s;
         }
-        
+
         .btn-primary {
             background: var(--admin-primary);
             color: white;
         }
-        
+
         .btn-primary:hover {
             background: var(--admin-primary-dark);
             transform: translateY(-1px);
         }
-        
+
         .btn-primary:active {
             transform: translateY(0);
         }
-        
+
         .login-footer {
             padding: 1.5rem;
             text-align: center;
@@ -230,16 +176,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--admin-gray-600);
             font-size: 0.875rem;
         }
-        
+
         .login-footer a {
             color: var(--admin-primary);
             text-decoration: none;
         }
-        
+
         .login-footer a:hover {
             text-decoration: underline;
         }
-        
+
         .password-toggle {
             position: absolute;
             right: 1rem;
@@ -250,7 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--admin-gray-600);
             cursor: pointer;
         }
-        
+
         .password-wrapper {
             position: relative;
         }
@@ -263,45 +209,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h1 class="login-title">Administrator Portal</h1>
             <p class="login-subtitle">FCT College of Nursing Sciences</p>
         </div>
-        
+
         <div class="login-body">
             <?php if ($error): ?>
                 <div class="alert alert-error">
-                    <svg style="width: 20px; height: 20px; flex-shrink: 0;" fill="currentColor" viewBox="0 0 20 20">
+                    <svg style="width: 20px; height: 20px; flex-shrink: 0;" fill="currentColor" viewBox="0 0 20 20">   
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                     </svg>
                     <?php echo htmlspecialchars($error); ?>
                 </div>
             <?php endif; ?>
-            
+
             <?php if ($success): ?>
                 <div class="alert alert-success">
-                    <svg style="width: 20px; height: 20px; flex-shrink: 0;" fill="currentColor" viewBox="0 0 20 20">
+                    <svg style="width: 20px; height: 20px; flex-shrink: 0;" fill="currentColor" viewBox="0 0 20 20">   
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                     </svg>
                     <?php echo htmlspecialchars($success); ?>
                 </div>
             <?php endif; ?>
-            
-            <form method="POST" action="<?php echo BASE_URL; ?>/admin/login">
+
+            <form method="POST" action="/admin/login">
                 <div class="form-group">
                     <label class="form-label" for="username">Username or Email</label>
-                    <input type="text" 
-                           id="username" 
-                           name="username" 
-                           class="form-control" 
+                    <input type="text"
+                           id="username"
+                           name="username"
+                           class="form-control"
                            required
                            autocomplete="username"
                            value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label" for="password">Password</label>
                     <div class="password-wrapper">
-                        <input type="password" 
-                               id="password" 
-                               name="password" 
-                               class="form-control" 
+                        <input type="password"
+                               id="password"
+                               name="password"
+                               class="form-control"
                                required
                                autocomplete="current-password">
                         <button type="button" class="password-toggle" onclick="togglePassword()">
@@ -312,7 +258,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </button>
                     </div>
                 </div>
-                
+
+                <input type="hidden" name="csrf_token" value="<?php echo Session::getCSRFToken(); ?>">
+
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary">
                         <svg style="width: 20px; height: 20px; margin-right: 8px;" fill="currentColor" viewBox="0 0 20 20">
@@ -322,10 +270,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </button>
                 </div>
             </form>
-            
-            <!-- Add this after the login form, before the closing div of login-body -->
-            <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
-                <a href="<?php echo BASE_URL; ?>/" 
+
+            <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">  
+                <a href="<?php echo $baseUrl ?? '/'; ?>"
                    style="color: #4a5568; text-decoration: none; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.5rem;">
                     <svg style="width: 16px; height: 16px;" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
@@ -334,18 +281,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </a>
             </div>
         </div>
-        
+
         <div class="login-footer">
             <p>Need help? <a href="mailto:support@fctcns.edu.ng">Contact Support</a></p>
             <p style="margin-top: 8px;">&copy; <?php echo date('Y'); ?> FCT College of Nursing Sciences</p>
         </div>
     </div>
-    
+
     <script>
         function togglePassword() {
             const passwordInput = document.getElementById('password');
             const eyeIcon = document.getElementById('eye-icon');
-            
+
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
                 eyeIcon.innerHTML = `
@@ -360,7 +307,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 `;
             }
         }
-        
+
         // Auto-focus username field
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('username').focus();

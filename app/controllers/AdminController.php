@@ -16,13 +16,14 @@ class AdminController extends Controller {
     }
     
     /**
-     * Show login page
+     * Show login page - FIXED VERSION
      */
     public function login() {
         // If already logged in, redirect to dashboard
         require_once __DIR__ . '/../config/session.php';
         if (Session::isAuthenticated()) {
-            $this->redirect('/admin/dashboard');
+            header('Location: /admin/dashboard');
+            exit;
         }
 
         // Get flash messages
@@ -33,15 +34,18 @@ class AdminController extends Controller {
         $viewPath = APP_PATH . '/views/admin/login.php';
         
         if (file_exists($viewPath)) {
-            // Set data and render
-            $this->data = [
+            // IMPORTANT: Set data for the view
+            $data = [
                 'error' => $error,
                 'success' => $success,
                 'pageTitle' => 'Admin Login - FCT College of Nursing Sciences',
-                'currentPage' => 'admin-login'
+                'currentPage' => 'admin-login',
+                'baseUrl' => BASE_URL
             ];
             
-            $this->render('admin/login');
+            // Render the view with data
+            extract($data);
+            include $viewPath;
         } else {
             // Fallback to simple login form
             $this->showSimpleLogin($error, $success);
@@ -49,11 +53,95 @@ class AdminController extends Controller {
     }
 
     /**
-     * Fallback simple login form
+     * Process login - FIXED VERSION with CSRF check
+     */
+    public function processLogin() {
+        require_once __DIR__ . '/../config/database.php';
+        require_once __DIR__ . '/../config/session.php';
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /admin/login');
+            exit;
+        }
+
+        // Validate CSRF token - check both possible field names
+        $csrfToken = $_POST['csrf_token'] ?? $_POST['_csrf_token'] ?? '';
+        if (!Session::validateCSRFToken($csrfToken)) {
+            Session::setFlash('error', 'Security token expired. Please try again.');
+            header('Location: /admin/login');
+            exit;
+        }
+
+        $username = trim($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        if (empty($username) || empty($password)) {
+            Session::setFlash('error', 'Please enter username and password');
+            header('Location: /admin/login');
+            exit;
+        }
+
+        try {
+            $db = Database::getInstance();
+            $conn = $db->getConnection();
+
+            // Get user with password check
+            $stmt = $conn->prepare("
+                SELECT id, username, email, password_hash, full_name, role, is_active
+                FROM users
+                WHERE username = ? OR email = ?
+            ");
+            $stmt->execute([$username, $username]);
+            $user = $stmt->fetch();
+
+            if ($user && password_verify($password, $user['password_hash'])) {
+                if ($user['is_active']) {
+                    // Update last login
+                    $stmt = $conn->prepare("
+                        UPDATE users 
+                        SET last_login = NOW(),
+                            last_login_ip = ?,
+                            login_count = login_count + 1
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([$_SERVER['REMOTE_ADDR'] ?? '127.0.0.1', $user['id']]);
+                    
+                    // CRITICAL FIX: Set session BEFORE redirect
+                    Session::loginUser($user['id'], $user['username'], $user['role']);
+                    
+                    // Debug: Check session
+                    error_log("DEBUG: User logged in - ID: {$user['id']}, Role: {$user['role']}");
+                    
+                    // Redirect to dashboard
+                    header('Location: /admin/dashboard');
+                    exit;
+                } else {
+                    Session::setFlash('error', 'Account is deactivated');
+                    header('Location: /admin/login');
+                    exit;
+                }
+            } else {
+                Session::setFlash('error', 'Invalid username or password');
+                header('Location: /admin/login');
+                exit;
+            }
+        } catch (Exception $e) {
+            error_log("Login error: " . $e->getMessage());
+            Session::setFlash('error', 'Login failed. Please try again.');
+            header('Location: /admin/login');
+            exit;
+        }
+    }
+
+    /**
+     * Fallback simple login form - FIXED FORM ACTION
      */
     private function showSimpleLogin($error = null, $success = null) {
         // Set content type and output HTML directly
         header('Content-Type: text/html; charset=UTF-8');
+        
+        // Get CSRF token from Session class
+        $csrfToken = Session::getCSRFToken();
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -171,7 +259,8 @@ class AdminController extends Controller {
                 </div>
                 <?php endif; ?>
                 
-                <form method="POST" action="<?php echo $this->data['baseUrl'] ?? BASE_URL; ?>/admin/process-login">
+                <!-- FIXED: Changed action from /admin/process-login to /admin/login -->
+                <form method="POST" action="/admin/login">
                     <div class="form-group">
                         <label for="username">Username or Email</label>
                         <input type="text" id="username" name="username" required>
@@ -182,157 +271,20 @@ class AdminController extends Controller {
                         <input type="password" id="password" name="password" required>
                     </div>
                     
-                    <input type="hidden" name="_csrf_token" value="<?php echo $this->csrfToken(); ?>">
+                    <!-- FIXED: Using Session class CSRF token -->
+                    <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
                     
                     <button type="submit" class="btn-login">Sign In</button>
                 </form>
+                
+                <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #666;">
+                    <p>Default credentials: admin / admin123</p>
+                    <p>If login fails, check your database users table</p>
+                </div>
             </div>
         </body>
         </html>
         <?php
-    }
-
-    /**
-     * Process login - WITH SECURITY ENHANCEMENTS
-     */
-    public function processLogin() {
-        require_once __DIR__ . '/../config/database.php';
-        require_once __DIR__ . '/../config/session.php';
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin');
-        }
-
-        // Validate CSRF token
-        try {
-            $this->validateCsrf();
-        } catch (Exception $e) {
-            Session::setFlash('error', 'Security token expired. Please try again.');
-            $this->redirect('/admin');
-        }
-
-        $username = trim($this->input('username', ''));
-        $password = $this->input('password', '');
-
-        if (empty($username) || empty($password)) {
-            Session::setFlash('error', 'Please enter username and password');
-            $this->redirect('/admin');
-        }
-
-        try {
-            $db = Database::getInstance();
-            $conn = $db->getConnection();
-
-            // =============================================
-            // SECURITY ENHANCEMENT: Check for locked account
-            // =============================================
-            $stmt = $conn->prepare("
-                SELECT id, failed_login_attempts, locked_until 
-                FROM users 
-                WHERE username = ? OR email = ?
-            ");
-            $stmt->execute([$username, $username]);
-            $userLockData = $stmt->fetch();
-
-            if ($userLockData && $userLockData['locked_until'] && strtotime($userLockData['locked_until']) > time()) {
-                $lockTime = date('h:i A', strtotime($userLockData['locked_until']));
-                Session::setFlash('error', "Account is locked. Try again after $lockTime");
-                $this->redirect('/admin');
-                return;
-            }
-
-            // Get user with password check
-            $stmt = $conn->prepare("
-                SELECT id, username, email, password_hash, full_name, role, is_active
-                FROM users
-                WHERE username = ? OR email = ?
-            ");
-            $stmt->execute([$username, $username]);
-            $user = $stmt->fetch();
-
-            if ($user && password_verify($password, $user['password_hash'])) {
-                if ($user['is_active']) {
-                    // =============================================
-                    // SECURITY ENHANCEMENT: Reset failed attempts on successful login
-                    // =============================================
-                    $stmt = $conn->prepare("
-                        UPDATE users 
-                        SET failed_login_attempts = 0,
-                            locked_until = NULL,
-                            last_login = NOW(),
-                            last_login_ip = ?,
-                            login_count = login_count + 1
-                        WHERE id = ?
-                    ");
-                    $stmt->execute([$_SERVER['REMOTE_ADDR'], $user['id']]);
-                    
-                    // =============================================
-                    // Log login history
-                    // =============================================
-                    $stmt = $conn->prepare("
-                        INSERT INTO user_login_history (user_id, ip_address, user_agent, success) 
-                        VALUES (?, ?, ?, 1)
-                    ");
-                    $stmt->execute([$user['id'], $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT']]);
-
-                    Session::loginUser($user['id'], $user['username'], $user['role']);
-
-                    $this->flash('success', 'Login successful!');
-                    $this->redirect('/admin/dashboard');
-                } else {
-                    Session::setFlash('error', 'Account is deactivated');
-                    $this->redirect('/admin');
-                }
-            } else {
-                // =============================================
-                // SECURITY ENHANCEMENT: Increment failed attempts
-                // =============================================
-                if ($user) {
-                    // User exists but password is wrong
-                    $stmt = $conn->prepare("
-                        UPDATE users 
-                        SET failed_login_attempts = failed_login_attempts + 1,
-                            locked_until = CASE 
-                                WHEN failed_login_attempts >= 4 THEN DATE_ADD(NOW(), INTERVAL 30 MINUTE)
-                                ELSE NULL 
-                            END
-                        WHERE id = ?
-                    ");
-                    $stmt->execute([$user['id']]);
-                    
-                    // Log failed attempt
-                    $stmt = $conn->prepare("
-                        INSERT INTO user_login_history (user_id, ip_address, user_agent, success) 
-                        VALUES (?, ?, ?, 0)
-                    ");
-                    $stmt->execute([$user['id'], $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT']]);
-                }
-                
-                Session::setFlash('error', 'Invalid credentials');
-                $this->redirect('/admin');
-            }
-        } catch (Exception $e) {
-            error_log("Login error: " . $e->getMessage());
-            Session::setFlash('error', 'Login failed. Please try again.');
-            $this->redirect('/admin');
-        }
-    }
-
-    /**
-     * Log login history
-     */
-    private function logLoginHistory($conn, $user_id, $ip_address, $user_agent, $success) {
-        try {
-            $stmt = $conn->prepare("
-                INSERT INTO user_login_history (user_id, ip_address, user_agent, success) 
-                VALUES (?, ?, ?, ?)
-            ");
-            $stmt->execute([$user_id, $ip_address, $user_agent, $success ? 1 : 0]);
-            return true;
-        } catch (Exception $e) {
-            error_log("Failed to log login history: " . $e->getMessage());
-            return false;
-        }
     }
 
     /**
@@ -370,7 +322,8 @@ class AdminController extends Controller {
         }
         
         // Redirect to admin login
-        $this->redirect('/admin');
+        header('Location: /admin/login');
+        exit;
     }
 
     /**
@@ -424,16 +377,19 @@ class AdminController extends Controller {
         $viewPath = APP_PATH . '/views/admin/dashboard.php';
         
         if (file_exists($viewPath)) {
-            // Set data and render
-            $this->data = array_merge($this->data, [
+            // Set data for the view
+            $data = [
                 'stats' => $stats,
                 'error' => $error,
                 'user' => $_SESSION,
                 'pageTitle' => 'Admin Dashboard - FCT College of Nursing Sciences',
-                'currentPage' => 'dashboard'
-            ]);
+                'currentPage' => 'dashboard',
+                'baseUrl' => BASE_URL
+            ];
             
-            $this->render('admin/dashboard');
+            // Render the view with data
+            extract($data);
+            include $viewPath;
         } else {
             // Fallback to simple dashboard
             $this->showSimpleDashboard($stats, $error);
@@ -448,15 +404,17 @@ class AdminController extends Controller {
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
 
-        $this->data = array_merge($this->data, [
-            'pageTitle' => 'Debug Information',
-            'currentPage' => 'debug'
-        ]);
-        
         // Try to render debug view
         $viewPath = APP_PATH . '/views/admin/debug.php';
         if (file_exists($viewPath)) {
-            $this->render('admin/debug');
+            $data = [
+                'pageTitle' => 'Debug Information',
+                'currentPage' => 'debug',
+                'baseUrl' => BASE_URL
+            ];
+            
+            extract($data);
+            include $viewPath;
         } else {
             // Show basic debug info
             echo '<h1>Debug Information</h1>';
@@ -482,7 +440,8 @@ class AdminController extends Controller {
         // Only allow admin users
         if ($_SESSION['user_role'] !== 'admin') {
             $this->flash('error', 'Access denied. Admin privileges required.');
-            $this->redirect('/admin/dashboard');
+            header('Location: /admin/dashboard');
+            exit;
         }
         
         // Get database information
@@ -509,18 +468,20 @@ class AdminController extends Controller {
             $error = $e->getMessage();
         }
         
-        $this->data = array_merge($this->data, [
-            'tables' => $tables,
-            'tableDetails' => $tableDetails ?? [],
-            'error' => $error,
-            'pageTitle' => 'Database Inspection',
-            'currentPage' => 'db-inspect'
-        ]);
-        
         // Load the inspection view
         $viewPath = APP_PATH . '/views/admin/db_inspect.php';
         if (file_exists($viewPath)) {
-            $this->render('admin/db_inspect');
+            $data = [
+                'tables' => $tables,
+                'tableDetails' => $tableDetails ?? [],
+                'error' => $error,
+                'pageTitle' => 'Database Inspection',
+                'currentPage' => 'db-inspect',
+                'baseUrl' => BASE_URL
+            ];
+            
+            extract($data);
+            include $viewPath;
         } else {
             // Show basic table info
             echo '<h1>Database Inspection</h1>';
@@ -546,18 +507,21 @@ class AdminController extends Controller {
         // Only allow admin users
         if ($_SESSION['user_role'] !== 'admin') {
             $this->flash('error', 'Access denied. Admin privileges required.');
-            $this->redirect('/admin/dashboard');
+            header('Location: /admin/dashboard');
+            exit;
         }
-        
-        $this->data = array_merge($this->data, [
-            'pageTitle' => 'Create Database Tables',
-            'currentPage' => 'db-create-tables'
-        ]);
         
         // Load the table creation view
         $viewPath = APP_PATH . '/views/admin/db_create_tables.php';
         if (file_exists($viewPath)) {
-            $this->render('admin/db_create_tables');
+            $data = [
+                'pageTitle' => 'Create Database Tables',
+                'currentPage' => 'db-create-tables',
+                'baseUrl' => BASE_URL
+            ];
+            
+            extract($data);
+            include $viewPath;
         } else {
             echo '<h1>Database Table Creation</h1>';
             echo '<p>This tool helps create database tables.</p>';
@@ -568,26 +532,29 @@ class AdminController extends Controller {
      * 404 Not Found page for admin
      */
     public function notFound() {
-        $this->status(404);
-        $this->data = array_merge($this->data, [
-            'pageTitle' => '404 - Admin Page Not Found',
-            'currentPage' => '404'
-        ]);
+        http_response_code(404);
         
         // Try admin 404 view first
         $adminViewPath = APP_PATH . '/views/admin/404.php';
         if (file_exists($adminViewPath)) {
-            $this->render('admin/404');
+            $data = [
+                'pageTitle' => '404 - Admin Page Not Found',
+                'currentPage' => '404',
+                'baseUrl' => BASE_URL
+            ];
+            
+            extract($data);
+            include $adminViewPath;
         } else {
             // Try general 404 view
             $generalViewPath = APP_PATH . '/views/pages/404.php';
             if (file_exists($generalViewPath)) {
-                $this->render('pages/404');
+                include $generalViewPath;
             } else {
                 // Fallback
                 echo '<h1>404 - Admin Page Not Found</h1>';
                 echo '<p>The requested admin page was not found.</p>';
-                echo '<p><a href="' . ($this->data['baseUrl'] ?? BASE_URL) . '/admin/dashboard">Return to Dashboard</a></p>';
+                echo '<p><a href="/admin/dashboard">Return to Dashboard</a></p>';
             }
         }
     }
@@ -596,8 +563,8 @@ class AdminController extends Controller {
      * Fallback simple dashboard
      */
     private function showSimpleDashboard($stats, $error) {
-        // Set content type and output HTML directly
-        header('Content-Type: text/html; charset=UTF-8');
+        // Get user info from session
+        $username = $_SESSION['username'] ?? 'Admin';
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -689,10 +656,10 @@ class AdminController extends Controller {
         </head>
         <body>
             <nav class="navbar">
-                <a href="<?php echo $this->data['baseUrl'] ?? BASE_URL; ?>/admin/dashboard" class="navbar-brand">FCT CNS Admin Dashboard</a>
+                <a href="/admin/dashboard" class="navbar-brand">FCT CNS Admin Dashboard</a>
                 <div>
-                    <span style="margin-right: 1rem;">Welcome, <?php echo htmlspecialchars($_SESSION['username'] ?? 'Admin'); ?></span>
-                    <a href="<?php echo $this->data['baseUrl'] ?? BASE_URL; ?>/admin/logout" class="logout-btn">Logout</a>
+                    <span style="margin-right: 1rem;">Welcome, <?php echo htmlspecialchars($username); ?></span>
+                    <a href="/admin/logout" class="logout-btn">Logout</a>
                 </div>
             </nav>
             
@@ -733,20 +700,20 @@ class AdminController extends Controller {
                 <div style="margin-top: 2rem;">
                     <h2>Quick Actions</h2>
                     <div class="action-buttons">
-                        <a href="<?php echo $this->data['baseUrl'] ?? BASE_URL; ?>/admin/applications" class="action-btn" style="background: #7FB285; color: white;">
+                        <a href="/admin/applications" class="action-btn" style="background: #7FB285; color: white;">
                             View Applications
                         </a>
-                        <a href="<?php echo $this->data['baseUrl'] ?? BASE_URL; ?>/admin/users" class="action-btn" style="background: #6B4E9B; color: white;">
+                        <a href="/admin/users" class="action-btn" style="background: #6B4E9B; color: white;">
                             Manage Users
                         </a>
-                        <a href="<?php echo $this->data['baseUrl'] ?? BASE_URL; ?>/admin/news" class="action-btn" style="background: #4A5568; color: white;">
+                        <a href="/admin/news" class="action-btn" style="background: #4A5568; color: white;">
                             Manage News
                         </a>
-                        <a href="<?php echo $this->data['baseUrl'] ?? BASE_URL; ?>" class="action-btn" style="background: #CBD5E0; color: #2D3748;">
+                        <a href="/" class="action-btn" style="background: #CBD5E0; color: #2D3748;">
                             View Website
                         </a>
-                        <a href="<?php echo $this->data['baseUrl'] ?? BASE_URL; ?>/admin/login-history" class="action-btn" style="background: #4FD1C7; color: white;">
-                            Login History
+                        <a href="/admin/research" class="action-btn" style="background: #4FD1C7; color: white;">
+                            Research Publications
                         </a>
                     </div>
                 </div>
@@ -754,20 +721,5 @@ class AdminController extends Controller {
         </body>
         </html>
         <?php
-    }
-
-    /**
-     * Override render method for admin-specific behavior
-     */
-    protected function render($view = null, $data = []) {
-        // Add common admin data
-        $data['user'] = $_SESSION ?? [];
-        $data['baseUrl'] = $this->data['baseUrl'] ?? BASE_URL;
-        
-        // Merge with controller data
-        $this->data = array_merge($this->data, $data);
-        
-        // Call parent render method
-        parent::render($view);
     }
 }

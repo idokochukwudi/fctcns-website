@@ -92,7 +92,7 @@ if (session_status() === PHP_SESSION_NONE) {
 class Session {
 
     /**
-     * Generate and store a CSRF token
+     * Generate and store a CSRF token (single token version - legacy)
      */
     public static function generateCSRFToken() {
         if (empty($_SESSION['csrf_token']) || empty($_SESSION['csrf_token_time'])) {
@@ -103,7 +103,7 @@ class Session {
     }
 
     /**
-     * Validate a CSRF token
+     * Validate a CSRF token (single token version - legacy)
      */
     public static function validateCSRFToken($token) {
         if (empty($_SESSION['csrf_token']) || empty($token)) {
@@ -125,14 +125,77 @@ class Session {
     }
 
     /**
-     * Get CSRF token for forms
+     * Generate and store a CSRF token (multi-token version for controllers)
+     * This maintains backward compatibility while supporting multiple tokens
+     */
+    public static function generateCSRFTokenMulti() {
+        if (!isset($_SESSION['csrf_tokens'])) {
+            $_SESSION['csrf_tokens'] = [];
+        }
+        
+        // Generate new token
+        $token = bin2hex(random_bytes(32));
+        
+        // Store with timestamp
+        $_SESSION['csrf_tokens'][$token] = time();
+        
+        // Clean up old tokens (older than 1 hour)
+        self::cleanupOldCSRFTokens();
+        
+        return $token;
+    }
+
+    /**
+     * Validate a CSRF token (multi-token version)
+     */
+    public static function validateCSRFTokenMulti($token) {
+        if (empty($token) || !isset($_SESSION['csrf_tokens'][$token])) {
+            return false;
+        }
+        
+        $tokenTime = $_SESSION['csrf_tokens'][$token];
+        
+        // Check if token is expired (1 hour)
+        if (time() - $tokenTime > (defined('CSRF_TOKEN_LIFETIME') ? CSRF_TOKEN_LIFETIME : 3600)) {
+            unset($_SESSION['csrf_tokens'][$token]);
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Clean up old CSRF tokens
+     */
+    public static function cleanupOldCSRFTokens() {
+        if (isset($_SESSION['csrf_tokens'])) {
+            $lifetime = defined('CSRF_TOKEN_LIFETIME') ? CSRF_TOKEN_LIFETIME : 3600;
+            foreach ($_SESSION['csrf_tokens'] as $token => $timestamp) {
+                if (time() - $timestamp > $lifetime) {
+                    unset($_SESSION['csrf_tokens'][$token]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Remove a specific CSRF token after use
+     */
+    public static function removeCSRFToken($token) {
+        if (isset($_SESSION['csrf_tokens'][$token])) {
+            unset($_SESSION['csrf_tokens'][$token]);
+        }
+    }
+
+    /**
+     * Get CSRF token for forms (legacy compatibility)
      */
     public static function getCSRFToken() {
         return self::generateCSRFToken();
     }
 
     /**
-     * Clear CSRF token
+     * Clear CSRF token (legacy single token)
      */
     public static function clearCSRFToken() {
         unset($_SESSION['csrf_token'], $_SESSION['csrf_token_time']);
@@ -203,6 +266,53 @@ class Session {
         $messages = $_SESSION['flash'] ?? [];
         unset($_SESSION['flash']);
         return $messages;
+    }
+
+    /**
+     * Set a flash message (temporary message shown once)
+     * Alias for setFlash with flexible interface
+     */
+    public static function flash($key, $message = null) {
+        if ($message === null) {
+            // Get and clear flash message
+            $message = $_SESSION['flash'][$key] ?? null;
+            unset($_SESSION['flash'][$key]);
+            return $message;
+        }
+        
+        // Set flash message
+        if (!isset($_SESSION['flash'])) {
+            $_SESSION['flash'] = [];
+        }
+        $_SESSION['flash'][$key] = $message;
+    }
+
+    /**
+     * Check if a flash message exists
+     */
+    public static function has($key) {
+        return isset($_SESSION['flash'][$key]);
+    }
+
+    /**
+     * Keep old form data
+     */
+    public static function old($key, $default = '') {
+        return $_SESSION['old'][$key] ?? $default;
+    }
+
+    /**
+     * Set old form data
+     */
+    public static function setOld($data) {
+        $_SESSION['old'] = $data;
+    }
+
+    /**
+     * Clear old form data
+     */
+    public static function clearOld() {
+        unset($_SESSION['old']);
     }
 
     /**
@@ -346,6 +456,13 @@ class Session {
         // Clear flash messages
         unset($_SESSION['flash']);
         
+        // Clear old form data
+        unset($_SESSION['old']);
+        
+        // Clear CSRF tokens (both single and multi-token versions)
+        unset($_SESSION['csrf_token'], $_SESSION['csrf_token_time']);
+        unset($_SESSION['csrf_tokens']);
+        
         // Regenerate session ID after logout
         session_regenerate_id(true);
     }
@@ -392,14 +509,19 @@ class Session {
     }
 
     /**
-     * Check if session has key
+     * Check if session has key (for general session data)
      */
-    public static function has($key) {
+    public static function hasKey($key) {
         return isset($_SESSION[$key]);
     }
 }
 
-// Initialize CSRF token for forms if not exists
+// Initialize CSRF token for forms if not exists (legacy single token)
 if (!isset($_SESSION['csrf_token'])) {
     Session::generateCSRFToken();
+}
+
+// Initialize CSRF tokens array if not exists (multi-token version)
+if (!isset($_SESSION['csrf_tokens'])) {
+    $_SESSION['csrf_tokens'] = [];
 }

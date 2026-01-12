@@ -12,12 +12,7 @@
 // Extract data passed from controller
 extract($data ?? []);
 
-// Helper function for escaping output
-function e($text) {
-    return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
-}
-
-// Set defaults
+// Set defaults - REMOVED the e() function declaration as it's in url_helper.php
 $page_title = $page_title ?? '404 - Page Not Found';
 $page_description = $page_description ?? 'The page you requested could not be found.';
 $baseUrl = $baseUrl ?? (defined('BASE_URL') ? BASE_URL : '/fctcns-website');

@@ -1,4 +1,26 @@
 <?php
+// ============================================================================
+// ERROR REPORTING - ADD THIS AT THE VERY TOP
+// ============================================================================
+
+// Enable ALL error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+ini_set('log_errors', 1);
+
+// Create application error log
+$logDir = __DIR__ . '/../storage/logs';
+if (!file_exists($logDir)) {
+    mkdir($logDir, 0755, true);
+}
+$errorLogFile = $logDir . '/app_errors.log';
+ini_set('error_log', $errorLogFile);
+
+// Log request start
+error_log("\n=== " . date('Y-m-d H:i:s') . " - Request: " . $_SERVER['REQUEST_METHOD'] . " " . $_SERVER['REQUEST_URI'] . " ===");
+
+// Rest of your code...
 /**
  * FCT College of Nursing Sciences - Main Entry Point
  * 
@@ -18,11 +40,33 @@ ob_start();
 // Set timezone
 date_default_timezone_set('Africa/Lagos');
 
-// Get the root directory
-$rootDir = dirname(__DIR__);
+// ============================================================================
+// LOAD CONSTANTS - FIXED FOR BOTH LOCAL AND PRODUCTION
+// ============================================================================
 
-// Load application constants FIRST (this defines all constants)
-require_once $rootDir . '/app/config/constants.php';
+// Get the root directory - SMART VERSION for both local and production
+$possibleRootPaths = [
+    // Production path (Go54 hosting)
+    '/home2/fctcnsed/fctcns-app',
+    // Local development path (XAMPP)
+    dirname(__DIR__, 2), // Goes up 2 levels from public/ to project root
+    // Fallback
+    dirname(__DIR__),
+];
+
+$constantsLoaded = false;
+foreach ($possibleRootPaths as $rootDir) {
+    $constantsPath = $rootDir . '/app/config/constants.php';
+    if (file_exists($constantsPath)) {
+        require_once $constantsPath;
+        $constantsLoaded = true;
+        break;
+    }
+}
+
+if (!$constantsLoaded) {
+    die('ERROR: Could not load constants.php. Check file paths.');
+}
 
 // ============================================================================
 // SESSION CONFIGURATION
@@ -88,6 +132,21 @@ require_once APP_PATH . '/core/Router.php';
 try {
     // Create router instance
     $router = new Router();
+    
+    // ============================================================================
+    // DEBUG ROUTE - ADDED FOR TROUBLESHOOTING
+    // ============================================================================
+    
+    // Debug route
+    $router->get('/debug-test', function() {
+        echo "<h1>Debug Test Route</h1>";
+        echo "<p>This route works!</p>";
+        echo "<pre>";
+        echo "REQUEST_URI: " . $_SERVER['REQUEST_URI'] . "\n";
+        echo "SCRIPT_NAME: " . $_SERVER['SCRIPT_NAME'] . "\n";
+        echo "PHP_SELF: " . $_SERVER['PHP_SELF'] . "\n";
+        echo "</pre>";
+    });
     
     // ============================================================================
     // PUBLIC ROUTES - Using Controller Methods

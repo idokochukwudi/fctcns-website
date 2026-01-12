@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simple Test Form</title>
+  </head>
+  <body>
+    <h1>Simple Form Test</h1>
+
+    <form
+      method="POST"
+      action="/admin/research/store"
+      enctype="multipart/form-data"
+    >
+      <!-- Get CSRF token from your actual form -->
+      <input type="hidden" name="csrf_token" value="YOUR_CSRF_TOKEN_HERE" />
+
+      <h3>Required Fields:</h3>
+      <div>
+        <label>Title:</label><br />
+        <input type="text" name="title" value="Simple Test Title" required />
+      </div>
+
+      <div>
+        <label>Authors:</label><br />
+        <textarea name="authors" required>
+Test Author 1, Test Author 2</textarea
+        >
+      </div>
+
+      <div>
+        <label>Abstract:</label><br />
+        <textarea name="abstract" required>
+This is a simple test abstract with enough characters to pass validation. It should work without any issues.</textarea
+        >
+      </div>
+
+      <div>
+        <label>Research Area:</label><br />
+        <select name="research_area" required>
+          <option value="nursing">Nursing</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Publication Date:</label><br />
+        <input
+          type="date"
+          name="publication_date"
+          value="2026-01-12"
+          required
+        />
+      </div>
+
+      <h3>Checkboxes (IMPORTANT - test both checked):</h3>
+      <div>
+        <input type="checkbox" name="is_published" value="1" checked />
+        <label>Publish this publication</label>
+      </div>
+
+      <div>
+        <input type="checkbox" name="is_featured" value="1" checked />
+        <label>Feature this publication</label>
+      </div>
+
+      <h3>NO FILES - leave file inputs empty</h3>
+
+      <div>
+        <button type="submit" name="save">Submit Test</button>
+      </div>
+    </form>
+
+    <script>
+      // First, get the CSRF token from the actual site
+      fetch("/admin/research/create")
+        .then((response) => response.text())
+        .then((html) => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const csrfInput = doc.querySelector('input[name="csrf_token"]');
+          if (csrfInput) {
+            document.querySelector('input[name="csrf_token"]').value =
+              csrfInput.value;
+            console.log("CSRF token loaded:", csrfInput.value);
+          }
+        })
+        .catch((err) => console.error("Failed to get CSRF token:", err));
+    </script>
+  </body>
+</html>

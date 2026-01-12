@@ -30,6 +30,120 @@ class Router {
      * Register all application routes
      */
     private function registerRoutes() {
+        // ============================================
+        // ADMIN AUTHENTICATION ROUTES - ADDED
+        // ============================================
+        $this->get('/admin/login', 'AdminController@login');
+        $this->post('/admin/login', 'AdminController@processLogin');
+        $this->get('/admin/logout', 'AdminController@logout');
+        $this->get('/admin/dashboard', 'AdminController@dashboard');
+        
+        // ============================================
+        // RESEARCH MODULE ROUTES - ADDED AS REQUESTED
+        // ============================================
+        // Admin Research Routes
+        $this->get('/admin/research', 'ResearchController@index');
+        $this->get('/admin/research/create', 'ResearchController@create');
+        $this->post('/admin/research/store', 'ResearchController@store');
+        
+        // Secure test route - only in development/debug mode
+        if (defined('APP_DEBUG') && APP_DEBUG === true) {
+            $this->get('/admin/research/test-direct-create', 'ResearchController@testDirectCreate');
+        }
+        
+        $this->get('/admin/research/{id}/edit', 'ResearchController@edit');
+        $this->post('/admin/research/{id}/update', 'ResearchController@update');
+        $this->get('/admin/research/{id}', 'ResearchController@show');
+        $this->post('/admin/research/{id}/delete', 'ResearchController@destroy');
+        $this->post('/admin/research/{id}/toggle', 'ResearchController@toggleStatus');
+        $this->post('/admin/research/bulk-action', 'ResearchController@bulkAction');
+        
+        // Public Research Routes
+        $this->get('/research', 'ResearchController@publicIndex');
+        $this->get('/research/{id}', 'ResearchController@publicShow');
+        $this->get('/research/{id}/download', 'ResearchController@download');
+
+        // ============================================
+        // PUBLIC PAGES ROUTES - ADDED
+        // ============================================
+        $this->get('/', 'PageController@home');
+        $this->get('/about', 'PageController@about');
+        $this->get('/programs', 'PageController@programs');
+        $this->get('/admissions', 'PageController@admissions');
+        $this->get('/contact', 'PageController@contact');
+        $this->get('/news', 'PageController@news');
+        $this->get('/faculty', 'PageController@faculty');
+        $this->get('/alumni', 'PageController@alumni');
+        $this->get('/student-life', 'PageController@studentLife');
+        $this->get('/library', 'PageController@library');
+        
+        // Contact form submission
+        $this->post('/contact/submit', 'PageController@submitContact');
+        
+        // ============================================
+        // APPLICATION ROUTES - ADDED
+        // ============================================
+        $this->get('/apply', 'PublicApplicationController@showApplicationForm');
+        $this->post('/apply/step/{step}', 'PublicApplicationController@processStep');
+        $this->get('/apply/step/{step}', 'PublicApplicationController@showStep');
+        $this->post('/apply/submit', 'PublicApplicationController@submitApplication');
+        $this->get('/apply/success', 'PublicApplicationController@applicationSuccess');
+        $this->get('/apply/reset', 'PublicApplicationController@resetApplication');
+        
+        // ============================================
+        // ADMIN CONTACT MANAGEMENT ROUTES - ADDED
+        // ============================================
+        $this->get('/admin/contact', 'ContactController@index');
+        $this->get('/admin/contact/view/{id}', 'ContactController@view');
+        $this->post('/admin/contact/update/{id}', 'ContactController@update');
+        $this->post('/admin/contact/delete/{id}', 'ContactController@delete');
+        $this->get('/admin/contact/export', 'ContactController@export');
+        $this->get('/admin/contact/settings', 'ContactController@settings');
+        $this->post('/admin/contact/save-settings', 'ContactController@saveSettings');
+        $this->post('/admin/contact/quick-update/{id}', 'ContactController@quickUpdate');
+        
+        // ============================================
+        // ADMIN CAROUSEL MANAGEMENT ROUTES - ADDED
+        // ============================================
+        $this->get('/admin/carousel', 'AdminCarouselController@index');
+        $this->get('/admin/carousel/create', 'AdminCarouselController@create');
+        $this->post('/admin/carousel/store', 'AdminCarouselController@store');
+        $this->get('/admin/carousel/edit/{id}', 'AdminCarouselController@edit');
+        $this->post('/admin/carousel/update/{id}', 'AdminCarouselController@update');
+        $this->post('/admin/carousel/delete/{id}', 'AdminCarouselController@delete');
+        $this->post('/admin/carousel/toggle/{id}', 'AdminCarouselController@toggle');
+        $this->post('/admin/carousel/upload-image', 'AdminCarouselController@uploadImage');
+        
+        // ============================================
+        // SETUP AND INSTALLATION ROUTES - ADDED
+        // ============================================
+        $this->get('/setup', function() {
+            $path = PUBLIC_PATH . '/pages/setup.php';
+            if (file_exists($path)) {
+                include $path;
+            } else {
+                echo "<h1>Setup</h1>";
+            }
+        });
+        
+        $this->get('/database/install', function() {
+            $path = ROOT_PATH . '/database/install.php';
+            if (file_exists($path)) {
+                include $path;
+            } else {
+                echo "<h1>Database Installation</h1>";
+            }
+        });
+        
+        $this->get('/database/test', function() {
+            $path = ROOT_PATH . '/database/test.php';
+            if (file_exists($path)) {
+                include $path;
+            } else {
+                echo "<h1>Database Test</h1>";
+            }
+        });
+
         // Register admission routes
         $this->get('/viewadmissionlist', 'AdmissionController@index');
         $this->get('/admission', 'AdmissionController@index');
@@ -157,11 +271,9 @@ class Router {
         // ============================================
         // ADD MISSING DEFAULT ROUTES FROM YOUR ERROR MESSAGE
         // ============================================
-        $this->get('/', 'PageController@home');
         $this->get('/login', 'AuthController@login');
         $this->post('/login', 'AuthController@login');
         $this->get('/logout', 'AuthController@logout');
-        $this->get('/dashboard', 'DashboardController@index');
         $this->get('/debug', 'DebugController@index');
         $this->get('/db-inspect', 'DebugController@dbInspect');
         $this->get('/db/create-tables', 'DebugController@createTables');
@@ -174,32 +286,47 @@ class Router {
         $this->get('/admin/applications/edit/{id}', 'ApplicationsController@edit');
         $this->post('/admin/applications/update-status/{id}', 'ApplicationsController@updateStatus');
         
-        // Research routes
-        $this->get('/admin/research', 'ResearchController@index');
-        $this->get('/admin/research/create', 'ResearchController@create');
-        $this->get('/admin/research/edit/{id}', 'ResearchController@edit');
-        $this->get('/admin/research/view/{id}', 'ResearchController@view');
-        $this->post('/admin/research/store', 'ResearchController@store');
-        $this->post('/admin/research/update/{id}', 'ResearchController@update');
-        $this->post('/admin/research/toggle-status/{id}', 'ResearchController@toggleStatus');
-        $this->post('/admin/research/bulk-action', 'ResearchController@bulkAction');
-        $this->get('/admin/research/export', 'ResearchController@export');
-        
         // News routes
         $this->get('/admin/news', 'NewsController@index');
         $this->get('/admin/news/create', 'NewsController@create');
         $this->post('/admin/news/store', 'NewsController@store');
         
+        // ============================================
+        // API ROUTES - ADDED
+        // ============================================
+        $this->get('/api/carousel', function() {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'success', 'message' => 'API endpoint']);
+        });
+        
+        $this->get('/api/news/latest', function() {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'success', 'data' => []]);
+        });
+        
+        // ============================================
+        // DEBUG ROUTE - ADDED
+        // ============================================
+        $this->get('/debug-test', function() {
+            echo "<h1>Debug Test Route</h1>";
+            echo "<p>This route works!</p>";
+            echo "<pre>";
+            echo "REQUEST_URI: " . $_SERVER['REQUEST_URI'] . "\n";
+            echo "SCRIPT_NAME: " . $_SERVER['SCRIPT_NAME'] . "\n";
+            echo "PHP_SELF: " . $_SERVER['PHP_SELF'] . "\n";
+            echo "</pre>";
+        });
+        
         // 404 route - should be last
         $this->get('/404', 'PageController@notFound');
         
         if (defined('APP_DEBUG') && APP_DEBUG) {
-            error_log("Router: All routes registered including Reporting, User Management, PDF export, Print routes, and QR Verification routes");
-            error_log("Router: Export routes fixed - added POST methods for export-excel and export-csv");
-            error_log("Router: Preview export routes added - export-preview-excel and export-preview-csv");
-            error_log("Router: QR Verification routes UPDATED - EXACT routes as requested:");
-            error_log("Router:   /verify/employee/{id} -> VerificationController@verifyEmployee");
-            error_log("Router:   /verify/passport/{id} -> VerificationController@getPassportPhoto");
+            error_log("Router: All routes registered including RESEARCH MODULE routes");
+            error_log("Router: Admin Authentication Routes:");
+            error_log("Router:   /admin/login -> AdminController@login");
+            error_log("Router:   POST /admin/login -> AdminController@processLogin");
+            error_log("Router:   /admin/logout -> AdminController@logout");
+            error_log("Router:   /admin/dashboard -> AdminController@dashboard");
         }
     }
 

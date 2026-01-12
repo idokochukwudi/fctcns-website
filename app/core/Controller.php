@@ -328,13 +328,19 @@ class Controller {
      */
     protected function validateCsrf() {
         // Check both possible field names
-        $token = $this->input('_csrf_token') ?? $this->input('csrf_token');
+        $token = $this->input('csrf_token') ?? $this->input('_csrf_token');
+        
+        error_log("CSRF Validation Debug:");
+        error_log("  Token from form: " . ($token ? substr($token, 0, 10) . "..." : "EMPTY"));
+        error_log("  Session tokens: " . (isset($_SESSION['csrf_tokens']) ? print_r($_SESSION['csrf_tokens'], true) : "NOT SET"));
         
         if (empty($token)) {
+            error_log("  ERROR: CSRF token is missing");
             throw new Exception('CSRF token is missing');
         }
         
         if (!isset($_SESSION['csrf_tokens'][$token])) {
+            error_log("  ERROR: CSRF token not found in session");
             throw new Exception('Invalid CSRF token');
         }
         
@@ -343,12 +349,14 @@ class Controller {
         // Token expires after 1 hour (3600 seconds)
         if (time() - $tokenTime > 3600) {
             unset($_SESSION['csrf_tokens'][$token]);
+            error_log("  ERROR: CSRF token expired");
             throw new Exception('CSRF token has expired');
         }
         
-        // Remove token after single use (prevents replay attacks)
-        unset($_SESSION['csrf_tokens'][$token]);
+        // DON'T remove token immediately - wait until successful form processing
+        // unset($_SESSION['csrf_tokens'][$token]);
         
+        error_log("  SUCCESS: CSRF token validated");
         return true;
     }
     

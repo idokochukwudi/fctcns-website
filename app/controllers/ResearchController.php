@@ -1,856 +1,1139 @@
 <?php
 /**
  * Research Controller
- * Handles research publications management
- * Extends the base Controller class for common functionality
+ * Handles all research-related requests
+ * Extends base Controller for common functionality
  */
-class ResearchController extends Controller {
+class ResearchController extends Controller
+{
+    private $model;
+    private $uploadDir;
+    private $thumbnailDir;
+    private $publicUploadUrl;
     
-    private $db;
-    
-    /**
-     * Constructor
-     */
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
         
-        // Set admin layout
-        $this->layout = 'admin';
+        // Load model
+        $this->model = new ResearchModel();
         
+        // Set upload directories using your constants
+        $this->uploadDir = UPLOADS_PATH . '/research/';
+        $this->thumbnailDir = UPLOADS_PATH . '/research/thumbnails/';
+        
+        // Set public URL for uploaded files
+        $this->publicUploadUrl = BASE_URL . '/uploads/research/';
+        
+        // Create upload directories if they don't exist
+        $this->ensureDirectories();
+        
+        // Set admin layout for admin methods
+        $this->layout = 'admin';
+    }
+    
+    /**
+     * Ensure upload directories exist
+     */
+    private function ensureDirectories()
+    {
+        if (!is_dir($this->uploadDir)) {
+            mkdir($this->uploadDir, 0755, true);
+        }
+        
+        if (!is_dir($this->thumbnailDir)) {
+            mkdir($this->thumbnailDir, 0755, true);
+        }
+    }
+    
+    // ============================================================================
+    // ADMIN ACTIONS (REQUIRE AUTHENTICATION)
+    // ============================================================================
+    
+    /**
+     * ADMIN: List all publications
+     */
+    public function index()
+    {
         // Require authentication
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
         
-        // Setup database
-        require_once __DIR__ . '/../config/database.php';
-        $database = Database::getInstance();
-        $this->db = $database->getConnection();
+        // Get user info from session
+        $userRole = Session::getUserRole();
+        $username = Session::getUsername();
+        $userId = Session::getUserId();
         
-        // Initialize common data
-        $this->data = array_merge($this->data, [
-            'user' => $_SESSION ?? [],
-            'baseUrl' => defined('BASE_URL') ? BASE_URL : '',
-            'currentPage' => 'research'
-        ]);
-    }
-    
-    /**
-     * Show research list
-     */
-    public function index() {
-        $research = [];
-        $categories = [];
-        $stats = [];
-        $error = null;
+        // Get filter parameters
+        $filters = [
+            'is_published' => $this->query('status'),
+            'research_area' => $this->query('category'),
+            'publication_type' => $this->query('type'),
+            'year' => $this->query('year'),
+            'search' => $this->query('search'),
+            'order_by' => $this->query('order_by', 'publication_date'),
+            'order_dir' => $this->query('order_dir', 'DESC')
+        ];
         
-        // Get user role for permissions
-        $userRole = $_SESSION['user_role'] ?? 'guest';
+        // Remove empty filters
+        $filters = array_filter($filters);
         
-        try {
-            // Build query based on user role
-            $query = "
-                SELECT 
-                    rp.*,
-                    rc.name as category_name,
-                    rc.slug as category_slug,
-                    YEAR(rp.publication_date) as year,
-                    u.username as created_by_name
-                FROM research_publications rp
-                LEFT JOIN research_categories rc ON rp.research_area = rc.slug
-                LEFT JOIN users u ON rp.created_by = u.id
-            ";
-            
-            if (!in_array($userRole, ['admin', 'editor'])) {
-                // Others only see published research
-                $query .= " WHERE rp.is_published = 1";
-            }
-            
-            $query .= " ORDER BY rp.created_at DESC";
-            
-            $stmt = $this->db->query($query);
-            $research = $stmt->fetchAll();
-            
-            // Get categories
-            $categoriesStmt = $this->db->query("
-                SELECT * FROM research_categories 
-                WHERE is_active = 1 
-                ORDER BY sort_order, name
-            ");
-            $categories = $categoriesStmt->fetchAll();
-            
-            // Get statistics - updated to use correct field names
-            $statsStmt = $this->db->query("
-                SELECT 
-                    COUNT(*) as total,
-                    SUM(CASE WHEN rp.is_published = 1 THEN 1 ELSE 0 END) as published,
-                    SUM(CASE WHEN YEAR(rp.publication_date) = YEAR(CURDATE()) THEN 1 ELSE 0 END) as current_year,
-                    COUNT(DISTINCT YEAR(rp.publication_date)) as years_represented
-                FROM research_publications rp
-            ");
-            $stats = $statsStmt->fetch();
-            
-        } catch (Exception $e) {
-            error_log("ResearchController index error: " . $e->getMessage());
-            $error = "Failed to load research publications.";
-        }
-        
-        // Set data for view
-        $this->data = array_merge($this->data, [
-            'research' => $research,
-            'categories' => $categories,
-            'stats' => $stats,
-            'error' => $error,
+        $data = [
+            'publications' => $this->model->getAll($filters),
+            'categories' => $this->model->getCategories(),
+            'stats' => $this->model->getStats(),
+            'filters' => $filters,
             'userRole' => $userRole,
-            'pageTitle' => 'Research Publications - FCT College of Nursing Sciences',
-            'pageDescription' => 'Manage research publications and articles'
-        ]);
-
-        // Render view
-        $this->render('admin/research/index');
+            'username' => $username,
+            'userId' => $userId,
+            'pageTitle' => 'Research Publications - Admin',
+            'currentPage' => 'research'
+        ];
+        
+        $this->render('admin/research/index', $data);
     }
     
     /**
-     * Show create research form
+     * ADMIN: Show create form
      */
-    public function create() {
-        // Check permissions
-        $userRole = $_SESSION['user_role'] ?? 'guest';
-        if (!in_array($userRole, ['admin', 'editor'])) {
-            $this->flash('error', 'You do not have permission to create research publications');
-            $this->redirect('/admin/research');
-            return;
-        }
+    public function create()
+    {
+        // Require authentication
+        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+        AuthMiddleware::authenticate();
         
-        // Get available years for dropdown
-        $years = range(date('Y'), date('Y') - 20, -1);
+        // Get user info from session
+        $userRole = Session::getUserRole();
+        $username = Session::getUsername();
+        $userId = Session::getUserId();
         
-        // Get categories
-        try {
-            $categoriesStmt = $this->db->query("
-                SELECT * FROM research_categories 
-                WHERE is_active = 1 
-                ORDER BY sort_order, name
-            ");
-            $categories = $categoriesStmt->fetchAll();
-        } catch (Exception $e) {
-            error_log("ResearchController create error: " . $e->getMessage());
-            $categories = [];
-        }
+        // Generate CSRF token using same method as view (Session class if available)
+        $csrf_token = $this->getCSRFTokenForView();
         
-        // Set data for view
-        $this->data = array_merge($this->data, [
-            'years' => $years,
-            'categories' => $categories,
-            'pageTitle' => 'Create Research Publication - FCT College of Nursing Sciences',
-            'pageDescription' => 'Create a new research publication'
-        ]);
+        $data = [
+            'categories' => $this->model->getCategories(),
+            'publication' => null,
+            'userRole' => $userRole,
+            'username' => $username,
+            'userId' => $userId,
+            'pageTitle' => 'Add New Research Publication',
+            'currentPage' => 'research',
+            'csrf_token' => $csrf_token
+        ];
         
-        $this->render('admin/research/create');
+        $this->render('admin/research/create', $data);
     }
     
     /**
-     * Store new research
+     * ADMIN: Save new publication - UPDATED CSRF VERSION
      */
-    public function store() {
-        // Check permissions
-        $userRole = $_SESSION['user_role'] ?? 'guest';
-        if (!in_array($userRole, ['admin', 'editor'])) {
-            $this->flash('error', 'You do not have permission to create research publications');
-            $this->redirect('/admin/research');
-            return;
-        }
+    public function store()
+    {
+        // Require authentication
+        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+        AuthMiddleware::authenticate();
         
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->flash('error', 'Invalid request method');
+        // Validate CSRF token using Session class
+        $token = $this->input('csrf_token');
+        
+        if (empty($token)) {
+            error_log("ERROR: No CSRF token in POST data");
+            $this->flash('error', 'Security token missing. Please refresh the page and try again.');
             $this->redirect('/admin/research/create');
             return;
         }
         
-        try {
-            // Validate CSRF token
-            $this->validateCsrf();
+        // Use Session class method for validation
+        if (!Session::validateCSRFTokenMulti($token)) {
+            error_log("ERROR: Invalid or expired CSRF token");
+            $this->flash('error', 'Invalid or expired security token. Please refresh the page and try again.');
+            $this->redirect('/admin/research/create');
+            return;
+        }
+        
+        error_log("CSRF validation PASSED using Session::validateCSRFTokenMulti()");
+        
+        // Get form data
+        $inputData = $this->input();
+        
+        // Validate required fields
+        $errors = $this->validatePublication($inputData);
+        
+        if (!empty($errors)) {
+            $this->flash('errors', $errors);
+            $this->flash('old', $inputData);
+            $this->redirect('/admin/research/create');
+            return;
+        }
+        
+        // Handle file uploads
+        $fileData = $this->handleFileUploads();
+        
+        // Prepare publication data
+        $publicationData = $this->preparePublicationData($inputData, $fileData);
+        
+        // Save to database
+        $id = $this->model->create($publicationData);
+        
+        if ($id) {
+            // Remove the token after successful save
+            Session::removeCSRFToken($token);
+            error_log("CSRF token removed after successful save");
             
-            $title = trim($this->input('title', ''));
-            $authors = trim($this->input('authors', ''));
-            $abstract = trim($this->input('abstract', ''));
-            $keywords = trim($this->input('keywords', ''));
-            $journal = trim($this->input('journal', ''));
-            $research_area = trim($this->input('research_area', ''));
-            $publication_date = $this->input('publication_date', '');
-            $doi = trim($this->input('doi', ''));
-            $url = trim($this->input('url', ''));
-            $is_published = $this->input('is_published', 0) ? 1 : 0;
-            $created_by = $_SESSION['user_id'] ?? null;
+            $this->flash('success', 'Research publication created successfully!');
             
-            // Validate
-            if (empty($title) || empty($authors)) {
-                throw new Exception('Title and authors are required');
-            }
-            
-            // Validate publication date
-            if (!empty($publication_date)) {
-                $date = DateTime::createFromFormat('Y-m-d', $publication_date);
-                if (!$date || $date->format('Y-m-d') !== $publication_date) {
-                    throw new Exception('Invalid publication date format. Use YYYY-MM-DD');
-                }
+            if ($this->input('save_and_view')) {
+                $this->redirect('/admin/research/' . $id);
             } else {
-                // Default to current date if not provided
-                $publication_date = date('Y-m-d');
+                $this->redirect('/admin/research');
             }
-            
-            $stmt = $this->db->prepare("
-                INSERT INTO research_publications 
-                (title, authors, abstract, keywords, journal, research_area, publication_date, doi, url, is_published, created_by, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-            ");
-            
-            $stmt->execute([
-                $title, $authors, $abstract, $keywords, $journal, 
-                $research_area, $publication_date, $doi, $url, $is_published, $created_by
-            ]);
-            
-            $researchId = $this->db->lastInsertId();
-            
-            // Log activity
-            $this->logActivity('research_created', "Research publication '{$title}' created");
-            
-            // Set success message
-            $this->flash('success', 'Research publication created successfully');
-            
-            // Redirect to the new research
-            $this->redirect('/admin/research/' . $researchId);
-            
-        } catch (Exception $e) {
-            error_log("ResearchController store error: " . $e->getMessage());
-            
-            // Get available years for dropdown
-            $years = range(date('Y'), date('Y') - 20, -1);
-            
-            // Get categories
-            try {
-                $categoriesStmt = $this->db->query("
-                    SELECT * FROM research_categories 
-                    WHERE is_active = 1 
-                    ORDER BY sort_order, name
-                ");
-                $categories = $categoriesStmt->fetchAll();
-            } catch (Exception $ex) {
-                $categories = [];
-            }
-            
-            // Set data with error for create form
-            $this->data = array_merge($this->data, [
-                'years' => $years,
-                'categories' => $categories,
-                'error' => $e->getMessage(),
-                'formData' => [
-                    'title' => $this->input('title', ''),
-                    'authors' => $this->input('authors', ''),
-                    'abstract' => $this->input('abstract', ''),
-                    'keywords' => $this->input('keywords', ''),
-                    'journal' => $this->input('journal', ''),
-                    'research_area' => $this->input('research_area', ''),
-                    'publication_date' => $this->input('publication_date', date('Y-m-d')),
-                    'doi' => $this->input('doi', ''),
-                    'url' => $this->input('url', ''),
-                    'is_published' => $this->input('is_published', 0)
-                ],
-                'pageTitle' => 'Create Research Publication - FCT College of Nursing Sciences',
-                'pageDescription' => 'Create a new research publication'
-            ]);
-            
-            $this->render('admin/research/create');
+        } else {
+            $this->flash('error', 'Failed to create publication. Please try again.');
+            $this->flash('old', $inputData);
+            $this->redirect('/admin/research/create');
         }
     }
     
     /**
-     * Show single research
+     * ADMIN: Show edit form
      */
-    public function show() {
-        // Enable error reporting for debugging
-        error_reporting(E_ALL);
-        ini_set('display_errors', 1);
-        ini_set('display_startup_errors', 1);
+    public function edit($id)
+    {
+        // Require authentication
+        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+        AuthMiddleware::authenticate();
         
-        $id = $_GET['id'] ?? null;
-        if (!$id) {
-            $this->flash('error', 'Research publication ID is required');
+        $publication = $this->model->getById($id);
+        
+        if (!$publication) {
+            $this->flash('error', 'Publication not found');
             $this->redirect('/admin/research');
             return;
         }
         
-        $research = null;
-        $relatedResearch = [];
-        $error = null;
+        // Get categories
+        $categories = $this->model->getCategories();
         
-        // Get user role for permissions
-        $userRole = $_SESSION['user_role'] ?? 'guest';
+        // Get flash messages from Session class
+        $flash_success = Session::has('success') ? Session::flash('success') : null;
+        $flash_error = Session::has('error') ? Session::flash('error') : null;
+        $flash_errors = Session::has('errors') ? Session::flash('errors') : null;
+        $old_input = Session::has('old') ? Session::flash('old') : [];
         
-        try {
-            // Build query based on user role
-            $query = "
-                SELECT 
-                    rp.*,
-                    rc.name as category_name,
-                    rc.slug as category_slug,
-                    YEAR(rp.publication_date) as year,
-                    u.username as created_by_name
-                FROM research_publications rp
-                LEFT JOIN research_categories rc ON rp.research_area = rc.slug
-                LEFT JOIN users u ON rp.created_by = u.id
-                WHERE rp.id = ?
-            ";
-            
-            if (!in_array($userRole, ['admin', 'editor'])) {
-                // Others only see published research
-                $query .= " AND rp.is_published = 1";
-            }
-            
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$id]);
-            $research = $stmt->fetch();
-            
-            if (!$research) {
-                $this->flash('error', 'Research publication not found or not accessible');
-                $this->redirect('/admin/research');
-                return;
-            }
-            
-            // Get related research by same authors or keywords or category
-            $relatedStmt = $this->db->prepare("
-                SELECT 
-                    rp.id, rp.title, rp.authors, rp.publication_date, 
-                    rp.journal_name, rp.citations, rp.downloads_count,
-                    rc.name as category_name
-                FROM research_publications rp
-                LEFT JOIN research_categories rc ON rp.research_area = rc.slug
-                WHERE rp.id != ? AND rp.is_published = 1
-                AND (
-                    rp.authors LIKE ? 
-                    OR rp.keywords LIKE ? 
-                    OR rp.research_area = ?
-                )
-                ORDER BY rp.publication_date DESC 
-                LIMIT 3
-            ");
-            
-            $searchTerm = "%" . strtok($research['authors'], ',') . "%";
-            $keywordTerm = "%" . strtok($research['keywords'] ?? '', ',') . "%";
-            
-            $relatedStmt->execute([
-                $id, 
-                $searchTerm, 
-                $keywordTerm,
-                $research['research_area']
-            ]);
-            $relatedResearch = $relatedStmt->fetchAll();
-            
-        } catch (Exception $e) {
-            error_log("ResearchController show error: " . $e->getMessage());
-            $error = "Failed to load research publication.";
+        // Use old input if available, otherwise use publication data
+        if (!empty($old_input)) {
+            $defaults = $old_input;
+        } else {
+            $defaults = [
+                'title' => $publication['title'] ?? '',
+                'authors' => $publication['authors'] ?? '',
+                'abstract' => $publication['abstract'] ?? '',
+                'keywords' => $publication['keywords'] ?? '',
+                'publication_type' => $publication['publication_type'] ?? 'journal',
+                'journal_name' => $publication['journal_name'] ?? '',
+                'volume' => $publication['volume'] ?? '',
+                'issue' => $publication['issue'] ?? '',
+                'pages' => $publication['pages'] ?? '',
+                'publisher' => $publication['publisher'] ?? '',
+                'publication_date' => $publication['publication_date'] ?? date('Y-m-d'),
+                'doi' => $publication['doi'] ?? '',
+                'url' => $publication['url'] ?? '',
+                'research_area' => $publication['research_area'] ?? '',
+                'citations' => $publication['citations'] ?? 0,
+                'impact_factor' => $publication['impact_factor'] ?? '',
+                'is_published' => $publication['is_published'] ?? 0,
+                'is_featured' => $publication['is_featured'] ?? 0
+            ];
         }
         
-        // Set data for view - also pass as 'publication' for view compatibility
-        $this->data = array_merge($this->data, [
-            'research' => $research,
-            'publication' => $research, // For compatibility with view file
-            'relatedResearch' => $relatedResearch,
-            'error' => $error,
-            'userRole' => $userRole,
-            'pageTitle' => $research['title'] . ' - Research Publication',
-            'pageDescription' => $research['abstract'] ? substr(strip_tags($research['abstract']), 0, 150) . '...' : 'Research publication details'
-        ]);
+        // File paths for display (get public URLs)
+        $currentFile = !empty($publication['file_path']) ? $this->getPublicFilePath($publication['file_path']) : '';
+        $currentThumbnail = !empty($publication['thumbnail_path']) ? $this->getPublicFilePath($publication['thumbnail_path']) : '';
         
-        $this->render('admin/research/show');
-    }
-    
-    /**
-     * Show edit research form
-     */
-    public function edit() {
-        $id = $_GET['id'] ?? null;
-        if (!$id) {
-            $this->flash('error', 'Research publication ID is required');
-            $this->redirect('/admin/research');
-            return;
-        }
+        // Get user info from session
+        $userRole = Session::getUserRole();
+        $username = Session::getUsername();
+        $userId = Session::getUserId();
         
-        // Check permissions
-        $userRole = $_SESSION['user_role'] ?? 'guest';
-        if (!in_array($userRole, ['admin', 'editor'])) {
-            $this->flash('error', 'You do not have permission to edit research publications');
-            $this->redirect('/admin/research');
-            return;
-        }
+        // Generate CSRF token using same method as view
+        $csrf_token = $this->getCSRFTokenForView();
         
-        try {
-            $query = "
-                SELECT 
-                    rp.*,
-                    rc.name as category_name,
-                    YEAR(rp.publication_date) as year
-                FROM research_publications rp
-                LEFT JOIN research_categories rc ON rp.research_area = rc.slug
-                WHERE rp.id = ?
-            ";
-            
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$id]);
-            $research = $stmt->fetch();
-            
-            if (!$research) {
-                $this->flash('error', 'Research publication not found');
-                $this->redirect('/admin/research');
-                return;
-            }
-            
-            // Get categories
-            $categoriesStmt = $this->db->query("
-                SELECT * FROM research_categories 
-                WHERE is_active = 1 
-                ORDER BY sort_order, name
-            ");
-            $categories = $categoriesStmt->fetchAll();
-            
-        } catch (Exception $e) {
-            error_log("ResearchController edit error: " . $e->getMessage());
-            $this->flash('error', 'Failed to load research publication');
-            $this->redirect('/admin/research');
-            return;
-        }
-        
-        // Set data for view - also pass as 'publication' for view compatibility
-        $this->data = array_merge($this->data, [
-            'research' => $research,
-            'publication' => $research, // CRITICAL FIX: Add this line
+        // Set data for view
+        $data = [
+            'publication' => $publication,
+            'publicationId' => $id,
             'categories' => $categories,
-            'pageTitle' => 'Edit Research Publication - ' . $research['title'],
-            'pageDescription' => 'Edit research publication details'
-        ]);
+            'defaults' => $defaults,
+            'currentFile' => $currentFile,
+            'currentThumbnail' => $currentThumbnail,
+            'flash_success' => $flash_success,
+            'flash_error' => $flash_error,
+            'flash_errors' => $flash_errors,
+            'old_input' => $old_input,
+            'userRole' => $userRole,
+            'username' => $username,
+            'userId' => $userId,
+            'pageTitle' => 'Edit Research Publication',
+            'currentPage' => 'research',
+            'csrf_token' => $csrf_token
+        ];
         
-        $this->render('admin/research/edit');
+        $this->render('admin/research/edit', $data);
     }
     
     /**
-     * Update research
+     * ADMIN: Update publication - UPDATED VERSION
      */
-    public function update() {
-        $id = $_POST['id'] ?? $_GET['id'] ?? null;
-        if (!$id) {
-            $this->flash('error', 'Research publication ID is required');
-            $this->redirect('/admin/research');
-            return;
-        }
+    public function update($id)
+    {
+        // Require authentication
+        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+        AuthMiddleware::authenticate();
         
-        // Check permissions
-        $userRole = $_SESSION['user_role'] ?? 'guest';
-        if (!in_array($userRole, ['admin', 'editor'])) {
-            $this->flash('error', 'You do not have permission to edit research publications');
-            $this->redirect('/admin/research');
-            return;
-        }
+        // Validate CSRF token using Session class
+        $token = $this->input('csrf_token');
         
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->flash('error', 'Invalid request method');
+        if (empty($token)) {
+            error_log("UPDATE ERROR: No CSRF token in POST data");
+            $this->flash('error', 'Security token missing. Please try again.');
             $this->redirect('/admin/research/' . $id . '/edit');
             return;
         }
         
-        try {
-            // Validate CSRF token
-            $this->validateCsrf();
+        // Use Session class method for validation
+        if (!Session::validateCSRFTokenMulti($token)) {
+            error_log("UPDATE ERROR: Invalid or expired CSRF token");
+            $this->flash('error', 'Invalid or expired security token. Please refresh the page and try again.');
+            $this->redirect('/admin/research/' . $id . '/edit');
+            return;
+        }
+        
+        error_log("CSRF validation PASSED for update");
+        
+        // Check if publication exists
+        $publication = $this->model->getById($id);
+        if (!$publication) {
+            $this->flash('error', 'Publication not found');
+            $this->redirect('/admin/research');
+            return;
+        }
+        
+        // Validate required fields
+        $errors = $this->validatePublication($this->input(), $id);
+        
+        if (!empty($errors)) {
+            $this->flash('errors', $errors);
+            $this->flash('old', $this->input());
+            $this->redirect('/admin/research/' . $id . '/edit');
+            return;
+        }
+        
+        // Handle file uploads (only if new files are uploaded)
+        $fileData = $this->handleFileUploads($publication);
+        
+        // Prepare update data
+        $updateData = $this->preparePublicationData($this->input(), $fileData);
+        
+        // Update in database
+        $result = $this->model->update($id, $updateData);
+        
+        if ($result) {
+            // Remove CSRF token after successful update
+            Session::removeCSRFToken($token);
+            error_log("CSRF token removed after successful update");
             
-            $title = trim($this->input('title', ''));
-            $authors = trim($this->input('authors', ''));
-            $abstract = trim($this->input('abstract', ''));
-            $keywords = trim($this->input('keywords', ''));
-            $journal = trim($this->input('journal', ''));
-            $research_area = trim($this->input('research_area', ''));
-            $publication_date = $this->input('publication_date', '');
-            $doi = trim($this->input('doi', ''));
-            $url = trim($this->input('url', ''));
-            $is_published = $this->input('is_published', 0) ? 1 : 0;
+            $this->flash('success', 'Publication updated successfully!');
             
-            // Validate
-            if (empty($title) || empty($authors)) {
-                throw new Exception('Title and authors are required');
+            // Delete old files if new ones were uploaded
+            if (!empty($fileData['file_path']) && !empty($publication['file_path'])) {
+                @unlink($this->getAbsolutePath($publication['file_path']));
             }
             
-            // Validate publication date
-            if (!empty($publication_date)) {
-                $date = DateTime::createFromFormat('Y-m-d', $publication_date);
-                if (!$date || $date->format('Y-m-d') !== $publication_date) {
-                    throw new Exception('Invalid publication date format. Use YYYY-MM-DD');
-                }
+            if (!empty($fileData['thumbnail_path']) && !empty($publication['thumbnail_path'])) {
+                @unlink($this->getAbsolutePath($publication['thumbnail_path']));
+            }
+            
+            if ($this->input('save_and_view')) {
+                $this->redirect('/admin/research/' . $id);
             } else {
-                // Default to current date if not provided
-                $publication_date = date('Y-m-d');
+                $this->redirect('/admin/research');
             }
-            
-            $stmt = $this->db->prepare("
-                UPDATE research_publications 
-                SET title = ?, authors = ?, abstract = ?, keywords = ?, 
-                    journal = ?, research_area = ?, publication_date = ?, doi = ?, url = ?, is_published = ?,
-                    updated_at = NOW()
-                WHERE id = ?
-            ");
-            
-            $stmt->execute([
-                $title, $authors, $abstract, $keywords, $journal, 
-                $research_area, $publication_date, $doi, $url, $is_published, $id
-            ]);
-            
-            // Log activity
-            $this->logActivity('research_updated', "Research publication #{$id} '{$title}' updated");
-            
-            // Set success message
-            $this->flash('success', 'Research publication updated successfully');
-            
-            // Redirect to the research
-            $this->redirect('/admin/research/' . $id);
-            
-        } catch (Exception $e) {
-            error_log("ResearchController update error: " . $e->getMessage());
-            
-            // Get research data for the form
-            try {
-                $query = "
-                    SELECT 
-                        rp.*,
-                        rc.name as category_name,
-                        YEAR(rp.publication_date) as year
-                    FROM research_publications rp
-                    LEFT JOIN research_categories rc ON rp.research_area = rc.slug
-                    WHERE rp.id = ?
-                ";
-                
-                $stmt = $this->db->prepare($query);
-                $stmt->execute([$id]);
-                $research = $stmt->fetch();
-                
-                if (!$research) {
-                    throw new Exception("Research publication not found");
-                }
-                
-                // Get categories
-                $categoriesStmt = $this->db->query("
-                    SELECT * FROM research_categories 
-                    WHERE is_active = 1 
-                    ORDER BY sort_order, name
-                ");
-                $categories = $categoriesStmt->fetchAll();
-                
-                // Set data for view - also pass as 'publication' for view compatibility
-                $this->data = array_merge($this->data, [
-                    'research' => $research,
-                    'publication' => $research, // CRITICAL FIX: Add this line
-                    'categories' => $categories,
-                    'error' => $e->getMessage(),
-                    'pageTitle' => 'Edit Research Publication - ' . ($research['title'] ?? 'Unknown'),
-                    'pageDescription' => 'Edit research publication details'
-                ]);
-                
-                $this->render('admin/research/edit');
-            } catch (Exception $ex) {
-                $this->showError($e->getMessage());
-            }
-        }
-    }
-    
-    /**
-     * Delete research
-     */
-    public function destroy() {
-        $id = $_POST['id'] ?? $_GET['id'] ?? null;
-        if (!$id) {
-            $this->flash('error', 'Research publication ID is required');
-            $this->redirect('/admin/research');
-            return;
-        }
-        
-        // Check permissions
-        $userRole = $_SESSION['user_role'] ?? 'guest';
-        if (!in_array($userRole, ['admin', 'editor'])) {
-            $this->flash('error', 'You do not have permission to delete research publications');
-            $this->redirect('/admin/research');
-            return;
-        }
-        
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->flash('error', 'Invalid request method');
-            $this->redirect('/admin/research');
-            return;
-        }
-        
-        try {
-            // Validate CSRF token
-            $this->validateCsrf();
-            
-            // Get research title before deletion for logging
-            $stmt = $this->db->prepare("SELECT title FROM research_publications WHERE id = ?");
-            $stmt->execute([$id]);
-            $research = $stmt->fetch();
-            
-            if (!$research) {
-                throw new Exception("Research publication not found.");
-            }
-            
-            // Delete research
-            $deleteStmt = $this->db->prepare("DELETE FROM research_publications WHERE id = ?");
-            $deleteStmt->execute([$id]);
-            
-            // Log activity
-            $this->logActivity('research_deleted', "Research publication '{$research['title']}' deleted");
-            
-            // Set success message
-            $this->flash('success', 'Research publication deleted successfully');
-            
-        } catch (Exception $e) {
-            error_log("ResearchController destroy error: " . $e->getMessage());
-            $this->flash('error', 'Failed to delete research publication: ' . $e->getMessage());
-        }
-
-        $this->redirect('/admin/research');
-    }
-    
-    /**
-     * Toggle research publication status
-     */
-    public function toggleStatus() {
-        $id = $_POST['id'] ?? $_GET['id'] ?? null;
-        if (!$id) {
-            $this->flash('error', 'Research publication ID is required');
-            $this->redirect('/admin/research');
-            return;
-        }
-        
-        // Check permissions
-        $userRole = $_SESSION['user_role'] ?? 'guest';
-        if (!in_array($userRole, ['admin', 'editor'])) {
-            $this->redirect('/admin/research');
-            return;
-        }
-        
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/research');
-            return;
-        }
-        
-        try {
-            // Validate CSRF token
-            $this->validateCsrf();
-            
-            $value = $this->input('value', 0);
-            
-            $stmt = $this->db->prepare("UPDATE research_publications SET is_published = ?, updated_at = NOW() WHERE id = ?");
-            $stmt->execute([$value, $id]);
-            
-            $status = $value ? 'published' : 'unpublished';
-            
-            $this->flash('success', "Research publication {$status} successfully!");
-            
-        } catch (Exception $e) {
-            error_log("ResearchController toggleStatus error: " . $e->getMessage());
-            $this->flash('error', 'Failed to update status: ' . $e->getMessage());
-        }
-
-        $this->redirect('/admin/research');
-    }
-    
-    /**
-     * Bulk operations on research publications
-     */
-    public function bulkAction() {
-        // Check permissions
-        $userRole = $_SESSION['user_role'] ?? 'guest';
-        if (!in_array($userRole, ['admin', 'editor'])) {
-            $this->redirect('/admin/research');
-            return;
-        }
-        
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/research');
-            return;
-        }
-
-        try {
-            // Validate CSRF token
-            $this->validateCsrf();
-            
-            $action = $this->input('action', '');
-            $researchIds = $this->input('research_ids', []);
-            
-            if (empty($researchIds) || !is_array($researchIds)) {
-                throw new Exception("No research publications selected.");
-            }
-            
-            $ids = implode(',', array_map('intval', $researchIds));
-            
-            switch ($action) {
-                case 'publish':
-                    $this->db->exec("UPDATE research_publications SET is_published = 1, updated_at = NOW() WHERE id IN ({$ids})");
-                    $message = "Selected research publications published successfully!";
-                    break;
-                    
-                case 'unpublish':
-                    $this->db->exec("UPDATE research_publications SET is_published = 0, updated_at = NOW() WHERE id IN ({$ids})");
-                    $message = "Selected research publications unpublished successfully!";
-                    break;
-                    
-                case 'delete':
-                    $this->db->exec("DELETE FROM research_publications WHERE id IN ({$ids})");
-                    $message = "Selected research publications deleted successfully!";
-                    break;
-                    
-                default:
-                    throw new Exception("Invalid action specified.");
-            }
-            
-            // Log activity
-            $this->logActivity('research_bulk_action', "Bulk action '{$action}' performed on research publications");
-            
-            $this->flash('success', $message);
-            
-        } catch (Exception $e) {
-            error_log("ResearchController bulkAction error: " . $e->getMessage());
-            $this->flash('error', 'Failed to perform bulk action: ' . $e->getMessage());
-        }
-
-        $this->redirect('/admin/research');
-    }
-    
-    /**
-     * Export research to CSV
-     */
-    public function export() {
-        // Check permissions
-        $userRole = $_SESSION['user_role'] ?? 'guest';
-        if (!in_array($userRole, ['admin', 'editor'])) {
-            $this->redirect('/admin/research');
-            return;
-        }
-        
-        try {
-            // Get all research publications with category information
-            $query = "
-                SELECT 
-                    rp.*,
-                    rc.name as category_name,
-                    YEAR(rp.publication_date) as year,
-                    u.username as created_by_name
-                FROM research_publications rp
-                LEFT JOIN research_categories rc ON rp.research_area = rc.slug
-                LEFT JOIN users u ON rp.created_by = u.id
-                ORDER BY rp.publication_date DESC, rp.created_at DESC
-            ";
-            
-            $stmt = $this->db->query($query);
-            $research = $stmt->fetchAll();
-            
-            // Set headers for CSV download
-            $this->header('Content-Type', 'text/csv; charset=utf-8');
-            $this->header('Content-Disposition', 'attachment; filename=research_publications_' . date('Y-m-d') . '.csv');
-            
-            // Create output stream
-            $output = fopen('php://output', 'w');
-            
-            // Add CSV headers
-            fputcsv($output, [
-                'ID', 'Title', 'Authors', 'Year', 'Journal', 'Research Area', 'Category',
-                'Publication Date', 'DOI', 'URL', 'Status', 'Keywords', 'Created By',
-                'Created At', 'Updated At'
-            ]);
-            
-            // Add data rows
-            foreach ($research as $pub) {
-                fputcsv($output, [
-                    $pub['id'],
-                    $pub['title'],
-                    $pub['authors'],
-                    $pub['year'],
-                    $pub['journal'],
-                    $pub['research_area'],
-                    $pub['category_name'] ?? '',
-                    date('Y-m-d', strtotime($pub['publication_date'])),
-                    $pub['doi'],
-                    $pub['url'],
-                    $pub['is_published'] ? 'Published' : 'Draft',
-                    $pub['keywords'],
-                    $pub['created_by_name'] ?? '',
-                    date('Y-m-d H:i:s', strtotime($pub['created_at'])),
-                    date('Y-m-d H:i:s', strtotime($pub['updated_at']))
-                ]);
-            }
-            
-            fclose($output);
-            exit;
-            
-        } catch (Exception $e) {
-            error_log("ResearchController export error: " . $e->getMessage());
-            $this->flash('error', 'Failed to export research publications.');
-            $this->redirect('/admin/research');
-        }
-    }
-    
-    /**
-     * Log activity
-     */
-    private function logActivity($action, $description) {
-        try {
-            $user_id = $_SESSION['user_id'] ?? null;
-            $ip_address = $_SERVER['REMOTE_ADDR'] ?? '';
-            $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-            
-            $stmt = $this->db->prepare("
-                INSERT INTO activity_logs 
-                (user_id, action, description, ip_address, user_agent, created_at)
-                VALUES (?, ?, ?, ?, ?, NOW())
-            ");
-            $stmt->execute([$user_id, $action, $description, $ip_address, $user_agent]);
-        } catch (Exception $e) {
-            error_log("Failed to log activity: " . $e->getMessage());
-        }
-    }
-    
-    /**
-     * Override render method for admin-specific views
-     */
-    protected function render($view = null, $data = []) {
-        // Add CSRF token to all forms
-        $data['csrf_token'] = $this->csrfToken();
-        
-        // Add flash messages
-        $data['flash_success'] = $this->getFlash('success');
-        $data['flash_error'] = $this->getFlash('error');
-        
-        // Merge with controller data
-        $this->data = array_merge($this->data, $data);
-        
-        // Call parent render method
-        parent::render($view);
-    }
-    
-    /**
-     * Show error message
-     */
-    private function showError($message) {
-        $this->data = array_merge($this->data, [
-            'error' => $message,
-            'pageTitle' => 'Error - FCT College of Nursing Sciences',
-            'pageDescription' => 'An error occurred'
-        ]);
-        
-        // Try to render error view
-        $errorViewPath = APP_PATH . '/views/admin/error.php';
-        if (file_exists($errorViewPath)) {
-            $this->render('admin/error');
         } else {
-            // Fallback error display
-            echo '<div style="padding: 20px; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 5px; margin: 20px;">';
-            echo '<h3>Error</h3>';
-            echo '<p>' . htmlspecialchars($message) . '</p>';
-            echo '<p><a href="' . ($this->data['baseUrl'] ?? '') . '/admin/dashboard">Back to Dashboard</a></p>';
-            echo '</div>';
+            $this->flash('error', 'Failed to update publication. Please try again.');
+            $this->flash('old', $this->input());
+            $this->redirect('/admin/research/' . $id . '/edit');
         }
+    }
+    
+    /**
+     * ADMIN: Show single publication
+     */
+    public function show($id)
+    {
+        // Require authentication
+        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+        AuthMiddleware::authenticate();
+        
+        // Get user info from session
+        $userRole = Session::getUserRole();
+        $username = Session::getUsername();
+        $userId = Session::getUserId();
+        
+        $publication = $this->model->getById($id);
+        
+        if (!$publication) {
+            $this->flash('error', 'Publication not found');
+            $this->redirect('/admin/research');
+            return;
+        }
+        
+        // Get categories
+        $categories = $this->model->getCategories();
+        
+        // Get category name
+        $categoryName = 'Unknown';
+        foreach ($categories as $cat) {
+            if ($cat['slug'] == $publication['research_area']) {
+                $categoryName = $cat['name'];
+                break;
+            }
+        }
+        
+        // Publication type labels
+        $pubTypes = [
+            'journal' => 'Journal Article',
+            'conference' => 'Conference Paper',
+            'book' => 'Book/Chapter',
+            'thesis' => 'Thesis/Dissertation',
+            'report' => 'Technical Report'
+        ];
+        
+        $pubTypeLabel = $pubTypes[$publication['publication_type']] ?? ucfirst($publication['publication_type']);
+        
+        // Convert file paths to public URLs using FIXED method
+        $fileUrl = !empty($publication['file_path']) ? $this->getPublicFilePath($publication['file_path']) : null;
+        $thumbnailUrl = !empty($publication['thumbnail_path']) ? $this->getPublicFilePath($publication['thumbnail_path']) : null;
+        
+        // Prepare data for view
+        $data = [
+            'publication' => $publication,
+            'categories' => $categories,
+            'categoryName' => $categoryName,
+            'pubDate' => date('F j, Y', strtotime($publication['publication_date'])),
+            'createdDate' => date('F j, Y', strtotime($publication['created_at'])),
+            'updatedDate' => date('F j, Y', strtotime($publication['updated_at'])),
+            'pubTypeLabel' => $pubTypeLabel,
+            'keywordsArray' => !empty($publication['keywords']) ? 
+                              array_map('trim', explode(',', $publication['keywords'])) : [],
+            'userRole' => $userRole,
+            'username' => $username,
+            'userId' => $userId,
+            'fileUrl' => $fileUrl,
+            'thumbnailUrl' => $thumbnailUrl,
+            'flash_success' => Session::has('success') ? Session::flash('success') : null,
+            'flash_error' => Session::has('error') ? Session::flash('error') : null,
+            'currentPage' => 'research',
+            'pageTitle' => htmlspecialchars($publication['title']) . ' - FCT College of Nursing Sciences - Admin'
+        ];
+        
+        $this->render('admin/research/show', $data);
+    }
+    
+    /**
+     * ADMIN: Delete publication
+     */
+    public function destroy($id)
+    {
+        // Require authentication
+        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+        AuthMiddleware::authenticate();
+        
+        // Validate CSRF token using Session class
+        $token = $this->input('csrf_token');
+        if (empty($token) || !Session::validateCSRFTokenMulti($token)) {
+            $this->json(['success' => false, 'message' => 'Security token expired'], 403);
+        }
+        
+        $result = $this->model->delete($id);
+        
+        if ($result) {
+            // Remove token after successful deletion
+            Session::removeCSRFToken($token);
+            
+            // Delete associated files
+            if (!empty($result['file_path'])) {
+                @unlink($this->getAbsolutePath($result['file_path']));
+            }
+            
+            if (!empty($result['thumbnail_path'])) {
+                @unlink($this->getAbsolutePath($result['thumbnail_path']));
+            }
+            
+            $this->json(['success' => true, 'message' => 'Publication deleted successfully!']);
+        } else {
+            $this->json(['success' => false, 'message' => 'Failed to delete publication'], 500);
+        }
+    }
+    
+    /**
+     * ADMIN: Toggle publish status
+     */
+    public function toggleStatus($id)
+    {
+        // Require authentication
+        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+        AuthMiddleware::authenticate();
+        
+        // Validate CSRF token using Session class
+        $token = $this->input('csrf_token');
+        if (empty($token) || !Session::validateCSRFTokenMulti($token)) {
+            $this->json(['success' => false, 'message' => 'Security token expired'], 403);
+        }
+        
+        $result = $this->model->toggleStatus($id);
+        
+        if ($result) {
+            // Remove token after successful operation
+            Session::removeCSRFToken($token);
+            
+            $publication = $this->model->getById($id);
+            $this->json([
+                'success' => true,
+                'is_published' => $publication['is_published'],
+                'message' => $publication['is_published'] ? 'Published successfully!' : 'Unpublished successfully!'
+            ]);
+        } else {
+            $this->json(['success' => false, 'message' => 'Failed to update status'], 500);
+        }
+    }
+    
+    /**
+     * ADMIN: Bulk actions
+     */
+    public function bulkAction()
+    {
+        // Require authentication
+        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+        AuthMiddleware::authenticate();
+        
+        // Validate CSRF token using Session class
+        $token = $this->input('csrf_token');
+        if (empty($token) || !Session::validateCSRFTokenMulti($token)) {
+            $this->flash('error', 'Security token expired. Please try again.');
+            $this->redirect('/admin/research');
+        }
+        
+        if (empty($this->input('selected_ids')) || empty($this->input('action'))) {
+            $this->flash('error', 'No items selected or no action specified');
+            $this->redirect('/admin/research');
+        }
+        
+        $ids = $this->input('selected_ids');
+        $action = $this->input('action');
+        $count = 0;
+        
+        switch ($action) {
+            case 'publish':
+                foreach ($ids as $id) {
+                    $this->model->toggleStatus($id, 1);
+                    $count++;
+                }
+                $this->flash('success', "{$count} publications published successfully!");
+                break;
+                
+            case 'unpublish':
+                foreach ($ids as $id) {
+                    $this->model->toggleStatus($id, 0);
+                    $count++;
+                }
+                $this->flash('success', "{$count} publications unpublished successfully!");
+                break;
+                
+            case 'delete':
+                foreach ($ids as $id) {
+                    $result = $this->model->delete($id);
+                    if ($result) {
+                        $count++;
+                        // Delete files
+                        if (!empty($result['file_path'])) @unlink($this->getAbsolutePath($result['file_path']));
+                        if (!empty($result['thumbnail_path'])) @unlink($this->getAbsolutePath($result['thumbnail_path']));
+                    }
+                }
+                $this->flash('success', "{$count} publications deleted successfully!");
+                break;
+                
+            case 'feature':
+                foreach ($ids as $id) {
+                    $this->model->update($id, ['is_featured' => 1]);
+                    $count++;
+                }
+                $this->flash('success', "{$count} publications featured successfully!");
+                break;
+                
+            case 'unfeature':
+                foreach ($ids as $id) {
+                    $this->model->update($id, ['is_featured' => 0]);
+                    $count++;
+                }
+                $this->flash('success', "{$count} publications unfeatured successfully!");
+                break;
+        }
+        
+        // Remove token after successful bulk action
+        Session::removeCSRFToken($token);
+        
+        $this->redirect('/admin/research');
+    }
+    
+    // ============================================================================
+    // PUBLIC ACTIONS (NO AUTHENTICATION REQUIRED)
+    // ============================================================================
+    
+    /**
+     * PUBLIC: Display research page
+     */
+    public function publicIndex()
+    {
+        // Switch to main layout for public pages
+        $this->layout = 'main';
+        
+        // Get filter parameters
+        $category = $this->query('category');
+        $search = $this->query('search');
+        
+        if ($category) {
+            $publications = $this->model->getByCategory($category, 50);
+        } elseif ($search) {
+            $publications = $this->model->getAll([
+                'search' => $search,
+                'is_published' => 1,
+                'limit' => 50
+            ]);
+        } else {
+            $publications = $this->model->getPublished(20);
+        }
+        
+        // Convert file paths to public URLs
+        foreach ($publications as &$pub) {
+            if (!empty($pub['file_path'])) {
+                $pub['file_url'] = $this->getPublicFilePath($pub['file_path']);
+            }
+            if (!empty($pub['thumbnail_path'])) {
+                $pub['thumbnail_url'] = $this->getPublicFilePath($pub['thumbnail_path']);
+            }
+        }
+        
+        $data = [
+            'publications' => $publications,
+            'categories' => $this->model->getCategories(),
+            'featured' => $this->model->getFeatured(5),
+            'currentCategory' => $category,
+            'searchTerm' => $search,
+            'pageTitle' => 'Research Publications - FCT College of Nursing Sciences',
+            'currentPage' => 'research'
+        ];
+        
+        $this->render('pages/research', $data);
+    }
+    
+    /**
+     * PUBLIC: View single publication
+     */
+    public function publicShow($id)
+    {
+        // Switch to main layout for public pages
+        $this->layout = 'main';
+        
+        $publication = $this->model->getById($id);
+        
+        if (!$publication || !$publication['is_published']) {
+            $this->flash('error', 'Publication not found or not published');
+            $this->redirect('/research');
+        }
+        
+        // Get categories
+        $categories = $this->model->getCategories();
+        
+        // Get category name
+        $categoryName = 'Unknown';
+        foreach ($categories as $cat) {
+            if ($cat['slug'] == $publication['research_area']) {
+                $categoryName = $cat['name'];
+                break;
+            }
+        }
+        
+        // Publication type labels
+        $pubTypes = [
+            'journal' => 'Journal Article',
+            'conference' => 'Conference Paper',
+            'book' => 'Book/Chapter',
+            'thesis' => 'Thesis/Dissertation',
+            'report' => 'Technical Report'
+        ];
+        
+        $pubTypeLabel = $pubTypes[$publication['publication_type']] ?? ucfirst($publication['publication_type']);
+        
+        // Convert file paths to public URLs using FIXED method
+        $fileUrl = !empty($publication['file_path']) ? $this->getPublicFilePath($publication['file_path']) : null;
+        $thumbnailUrl = !empty($publication['thumbnail_path']) ? $this->getPublicFilePath($publication['thumbnail_path']) : null;
+        
+        // Increment view count
+        $this->model->incrementViews($id);
+        
+        $data = [
+            'publication' => $publication,
+            'categories' => $categories,
+            'categoryName' => $categoryName,
+            'pubDate' => date('F j, Y', strtotime($publication['publication_date'])),
+            'pubTypeLabel' => $pubTypeLabel,
+            'keywordsArray' => !empty($publication['keywords']) ? 
+                              array_map('trim', explode(',', $publication['keywords'])) : [],
+            'related' => $this->model->getByCategory($publication['research_area'], 5),
+            'fileUrl' => $fileUrl,
+            'thumbnailUrl' => $thumbnailUrl,
+            'pageTitle' => htmlspecialchars($publication['title']) . ' - FCT College of Nursing Sciences',
+            'currentPage' => 'research'
+        ];
+        
+        // Check if research-detail.php exists
+        $viewPath = 'pages/research-detail.php';
+        $fullPath = APP_PATH . '/views/' . $viewPath;
+        
+        if (file_exists($fullPath)) {
+            $this->render('pages/research-detail', $data);
+        } else {
+            $data['showDetail'] = true;
+            $this->render('pages/research', $data);
+        }
+    }
+    
+    /**
+     * PUBLIC: Download research file
+     */
+    public function download($id)
+    {
+        $publication = $this->model->getById($id);
+        
+        if (!$publication || !$publication['is_published'] || empty($publication['file_path'])) {
+            $this->flash('error', 'File not available for download');
+            $this->redirect('/research');
+        }
+        
+        // Get absolute file path
+        $filePath = $this->getAbsolutePath($publication['file_path']);
+        
+        if (!file_exists($filePath)) {
+            error_log("Download ERROR: File not found at path: $filePath");
+            $this->flash('error', 'File not found on server');
+            $this->redirect('/research/' . $id);
+        }
+        
+        // Check file permissions
+        if (!is_readable($filePath)) {
+            error_log("Download ERROR: File not readable. Permissions: " . substr(sprintf('%o', fileperms($filePath)), -4));
+            @chmod($filePath, 0644);
+            
+            if (!is_readable($filePath)) {
+                $this->flash('error', 'File permission error. Contact administrator.');
+                $this->redirect('/research/' . $id);
+            }
+        }
+        
+        // Increment download count
+        $this->model->incrementDownloads($id);
+        
+        // Serve file for download
+        $fileName = basename($filePath);
+        
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($filePath));
+        
+        // Clear output buffer
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        readfile($filePath);
+        exit;
+    }
+    
+    // ============================================================================
+    // HELPER METHODS
+    // ============================================================================
+    
+    /**
+     * Get CSRF token that matches what the view expects
+     * UPDATED to use Session::generateCSRFTokenMulti()
+     */
+    private function getCSRFTokenForView()
+    {
+        // Use the new multi-token method
+        if (method_exists('Session', 'generateCSRFTokenMulti')) {
+            $token = Session::generateCSRFTokenMulti();
+            error_log("Using Session::generateCSRFTokenMulti(): " . substr($token, 0, 10) . "...");
+            return $token;
+        }
+        
+        // Fallback to controller's own generation
+        error_log("Falling back to controller's generateCsrfToken()");
+        return $this->generateCsrfToken();
+    }
+    
+    /**
+     * Generate CSRF token (compatible with Controller logic)
+     */
+    private function generateCsrfToken()
+    {
+        if (!isset($_SESSION['csrf_tokens'])) {
+            $_SESSION['csrf_tokens'] = [];
+        }
+        
+        // Generate new token
+        $token = bin2hex(random_bytes(32));
+        
+        // Store with timestamp
+        $_SESSION['csrf_tokens'][$token] = time();
+        
+        // Clean up old tokens (older than 1 hour)
+        $this->cleanupOldCsrfTokens();
+        
+        error_log("Generated new CSRF token: " . substr($token, 0, 10) . "...");
+        return $token;
+    }
+    
+    /**
+     * Clean up old CSRF tokens
+     */
+    private function cleanupOldCsrfTokens()
+    {
+        if (isset($_SESSION['csrf_tokens'])) {
+            foreach ($_SESSION['csrf_tokens'] as $token => $timestamp) {
+                if (time() - $timestamp > 3600) {
+                    unset($_SESSION['csrf_tokens'][$token]);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Convert file path to public URL - FIXED VERSION
+     */
+    private function getPublicFilePath($filePath)
+    {
+        // If already a URL, return as is
+        if (strpos($filePath, 'http') === 0) {
+            return $filePath;
+        }
+        
+        // If it's an absolute Windows path (C:\ or C:/)
+        if (strpos($filePath, 'C:\\') === 0 || strpos($filePath, 'C:/') === 0) {
+            // Extract just the filename
+            $filename = basename($filePath);
+            
+            // Determine if it's a thumbnail or main file
+            if (strpos($filePath, 'thumbnails') !== false || strpos($filename, 'thumbnail') !== false) {
+                return BASE_URL . '/uploads/research/thumbnails/' . $filename;
+            } else {
+                return BASE_URL . '/uploads/research/' . $filename;
+            }
+        }
+        
+        // If it's an absolute Unix path starting with /
+        if (strpos($filePath, '/') === 0) {
+            // Check if it contains 'uploads' directory
+            if (strpos($filePath, 'uploads') !== false) {
+                // Extract everything from 'uploads' onward
+                $parts = explode('uploads', $filePath, 2);
+                if (count($parts) > 1) {
+                    return BASE_URL . '/uploads' . $parts[1];
+                }
+            }
+            
+            // If we can't parse it, just use the filename
+            $filename = basename($filePath);
+            if (strpos($filePath, 'thumbnails') !== false) {
+                return BASE_URL . '/uploads/research/thumbnails/' . $filename;
+            } else {
+                return BASE_URL . '/uploads/research/' . $filename;
+            }
+        }
+        
+        // If it's a relative path (like "research/filename.pdf" or "research/thumbnails/filename.jpg")
+        if (strpos($filePath, 'research/thumbnails/') === 0) {
+            return BASE_URL . '/uploads/' . $filePath;
+        } elseif (strpos($filePath, 'research/') === 0) {
+            return BASE_URL . '/uploads/' . $filePath;
+        } elseif (strpos($filePath, 'thumbnails/') === 0) {
+            return BASE_URL . '/uploads/research/' . $filePath;
+        }
+        
+        // Default: assume it's a filename in the research directory
+        $filename = basename($filePath);
+        if (strpos($filename, 'thumbnail') !== false) {
+            return BASE_URL . '/uploads/research/thumbnails/' . $filename;
+        } else {
+            return BASE_URL . '/uploads/research/' . $filename;
+        }
+    }
+    
+    /**
+     * Convert stored file path to absolute path on server
+     */
+    private function getAbsolutePath($filePath)
+    {
+        // If it's already an absolute path, return it
+        if (strpos($filePath, 'C:\\') === 0 || strpos($filePath, 'C:/') === 0 || strpos($filePath, '/') === 0) {
+            return $filePath;
+        }
+        
+        // If it's a relative path starting with research/
+        if (strpos($filePath, 'research/thumbnails/') === 0) {
+            return UPLOADS_PATH . '/' . $filePath;
+        } elseif (strpos($filePath, 'research/') === 0) {
+            return UPLOADS_PATH . '/' . $filePath;
+        } elseif (strpos($filePath, 'thumbnails/') === 0) {
+            return UPLOADS_PATH . '/research/' . $filePath;
+        }
+        
+        // Default: assume it's just a filename
+        $filename = basename($filePath);
+        
+        // Check if it's likely a thumbnail
+        if (strpos($filename, 'thumbnail') !== false) {
+            return $this->thumbnailDir . $filename;
+        } else {
+            return $this->uploadDir . $filename;
+        }
+    }
+    
+    /**
+     * Validate publication data
+     */
+    private function validatePublication($data, $id = null)
+    {
+        $errors = [];
+        
+        // Required fields
+        if (empty(trim($data['title'] ?? ''))) {
+            $errors['title'] = 'Title is required';
+        } elseif (strlen($data['title']) > 500) {
+            $errors['title'] = 'Title must be less than 500 characters';
+        }
+        
+        if (empty(trim($data['authors'] ?? ''))) {
+            $errors['authors'] = 'At least one author is required';
+        }
+        
+        if (empty(trim($data['abstract'] ?? ''))) {
+            $errors['abstract'] = 'Abstract is required';
+        } elseif (strlen($data['abstract']) < 50) {
+            $errors['abstract'] = 'Abstract must be at least 50 characters';
+        }
+        
+        if (empty($data['research_area'] ?? '')) {
+            $errors['research_area'] = 'Research area is required';
+        }
+        
+        if (empty($data['publication_date'] ?? '')) {
+            $errors['publication_date'] = 'Publication date is required';
+        } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $data['publication_date'])) {
+            $errors['publication_date'] = 'Invalid date format (YYYY-MM-DD required)';
+        }
+        
+        return $errors;
+    }
+    
+    /**
+     * Prepare publication data from form
+     */
+    private function preparePublicationData($formData, $fileData = [])
+    {
+        // Proper checkbox handling
+        $isPublished = isset($formData['is_published']) && $formData['is_published'] == '1' ? 1 : 0;
+        $isFeatured = isset($formData['is_featured']) && $formData['is_featured'] == '1' ? 1 : 0;
+        
+        $data = [
+            'title' => $formData['title'] ?? '',
+            'authors' => $formData['authors'] ?? '',
+            'abstract' => $formData['abstract'] ?? '',
+            'publication_type' => $formData['publication_type'] ?? 'journal',
+            'journal_name' => $formData['journal_name'] ?? null,
+            'volume' => $formData['volume'] ?? null,
+            'issue' => $formData['issue'] ?? null,
+            'pages' => $formData['pages'] ?? null,
+            'publisher' => $formData['publisher'] ?? null,
+            'publication_date' => $formData['publication_date'] ?? date('Y-m-d'),
+            'doi' => $formData['doi'] ?? null,
+            'url' => $formData['url'] ?? null,
+            'keywords' => $formData['keywords'] ?? null,
+            'research_area' => $formData['research_area'] ?? '',
+            'citations' => $formData['citations'] ?? 0,
+            'impact_factor' => $formData['impact_factor'] ?? null,
+            'is_featured' => $isFeatured,
+            'is_published' => $isPublished,
+            'published_at' => $isPublished ? date('Y-m-d H:i:s') : null,
+            'created_by' => $_SESSION['user_id'] ?? 1
+        ];
+        
+        // Merge file data if provided
+        if (!empty($fileData)) {
+            $data = array_merge($data, $fileData);
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * Handle file uploads
+     */
+    private function handleFileUploads($existingPublication = null)
+    {
+        $fileData = [];
+        
+        // Handle research file upload
+        if (isset($_FILES['research_file']) && $_FILES['research_file']['error'] === UPLOAD_ERR_OK && !empty($_FILES['research_file']['name'])) {
+            $uploadResult = $this->uploadResearchFile($_FILES['research_file']);
+            
+            if ($uploadResult['success']) {
+                $fileData['file_path'] = $uploadResult['file_path'];
+                $fileData['file_size'] = $uploadResult['file_size'];
+                $fileData['file_type'] = $uploadResult['file_type'];
+                
+                // Set proper file permissions
+                @chmod($this->getAbsolutePath($uploadResult['file_path']), 0644);
+            }
+        }
+        
+        // Handle thumbnail upload
+        if (isset($_FILES['thumbnail']) && $_FILES['thumbnail']['error'] === UPLOAD_ERR_OK && !empty($_FILES['thumbnail']['name'])) {
+            $uploadResult = $this->uploadThumbnail($_FILES['thumbnail']);
+            
+            if ($uploadResult['success']) {
+                $fileData['thumbnail_path'] = $uploadResult['file_path'];
+                @chmod($this->getAbsolutePath($uploadResult['file_path']), 0644);
+            }
+        }
+        
+        return $fileData;
+    }
+    
+    /**
+     * Upload research file
+     */
+    private function uploadResearchFile($file)
+    {
+        $allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        $maxSize = 10 * 1024 * 1024; // 10MB
+        
+        $result = $this->uploadFile($file, $this->uploadDir, $allowedTypes, $maxSize);
+        
+        // If successful, store as relative path
+        if ($result['success'] && !empty($result['file_path'])) {
+            // Convert to relative path from uploads directory
+            $uploadsPath = realpath(UPLOADS_PATH);
+            if ($uploadsPath && strpos($result['file_path'], $uploadsPath) === 0) {
+                $relativePath = str_replace($uploadsPath . DIRECTORY_SEPARATOR, '', $result['file_path']);
+                $result['file_path'] = str_replace('\\', '/', $relativePath);
+            } else {
+                // Store just the filename
+                $filename = basename($result['file_path']);
+                $result['file_path'] = 'research/' . $filename;
+            }
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Upload thumbnail
+     */
+    private function uploadThumbnail($file)
+    {
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $maxSize = 2 * 1024 * 1024; // 2MB
+        
+        $result = $this->uploadFile($file, $this->thumbnailDir, $allowedTypes, $maxSize, true);
+        
+        // If successful, store as relative path
+        if ($result['success'] && !empty($result['file_path'])) {
+            // Convert to relative path from uploads directory
+            $uploadsPath = realpath(UPLOADS_PATH);
+            if ($uploadsPath && strpos($result['file_path'], $uploadsPath) === 0) {
+                $relativePath = str_replace($uploadsPath . DIRECTORY_SEPARATOR, '', $result['file_path']);
+                $result['file_path'] = str_replace('\\', '/', $relativePath);
+            } else {
+                // Store just the filename
+                $filename = basename($result['file_path']);
+                $result['file_path'] = 'research/thumbnails/' . $filename;
+            }
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Generic file upload function
+     */
+    private function uploadFile($file, $directory, $allowedTypes, $maxSize, $isImage = false)
+    {
+        $result = [
+            'success' => false,
+            'error' => '',
+            'file_path' => null,
+            'file_size' => null,
+            'file_type' => null
+        ];
+        
+        // Check for upload errors
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $result['error'] = 'File upload failed with error code: ' . $file['error'];
+            return $result;
+        }
+        
+        // Check file size
+        if ($file['size'] > $maxSize) {
+            $result['error'] = 'File size exceeds maximum allowed size';
+            return $result;
+        }
+        
+        // Check file type
+        $fileType = mime_content_type($file['tmp_name']);
+        if (!in_array($fileType, $allowedTypes)) {
+            $result['error'] = 'Invalid file type. Allowed types: ' . implode(', ', $allowedTypes);
+            return $result;
+        }
+        
+        // For images, additional validation
+        if ($isImage) {
+            $imageInfo = getimagesize($file['tmp_name']);
+            if (!$imageInfo) {
+                $result['error'] = 'Uploaded file is not a valid image';
+                return $result;
+            }
+        }
+        
+        // Generate unique filename
+        $originalName = pathinfo($file['name'], PATHINFO_FILENAME);
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = uniqid() . '_' . preg_replace('/[^a-z0-9]/i', '_', $originalName) . '.' . $extension;
+        $filePath = $directory . $filename;
+        
+        // Move uploaded file
+        if (move_uploaded_file($file['tmp_name'], $filePath)) {
+            $result['success'] = true;
+            $result['file_path'] = $filePath;
+            $result['file_size'] = $file['size'];
+            $result['file_type'] = $fileType;
+        } else {
+            $result['error'] = 'Failed to move uploaded file';
+        }
+        
+        return $result;
     }
 }
