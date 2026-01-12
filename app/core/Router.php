@@ -256,6 +256,98 @@ class Router {
         $this->get('/admin/users/profile', 'UserManagementController@profile');
         $this->post('/admin/users/update-profile', 'UserManagementController@updateProfile');
         
+        // ============================================
+        // DEBUG ROUTES FOR TESTING - ADDED AS REQUESTED
+        // ============================================
+        $this->get('/admin/users-debug', function() {
+            echo '<h1>Step 1: Router Test</h1>';
+            echo '<p>If you see this, router is working</p>';
+            exit;
+        });
+        
+        $this->get('/admin/users-test2', function() {
+            echo '<h1>Step 2: Controller Test</h1>';
+            
+            try {
+                // Check if controller file exists
+                $controllerPath = APP_PATH . '/controllers/UserManagementController.php';
+                if (!file_exists($controllerPath)) {
+                    echo '<p style="color: red;">✗ Controller file not found at: ' . $controllerPath . '</p>';
+                    exit;
+                }
+                
+                echo '<p style="color: green;">✓ Controller file exists</p>';
+                
+                // Load the controller
+                require_once $controllerPath;
+                
+                // Check if class exists
+                if (!class_exists('UserManagementController')) {
+                    echo '<p style="color: red;">✗ UserManagementController class not found in file</p>';
+                    exit;
+                }
+                
+                echo '<p style="color: green;">✓ UserManagementController class exists</p>';
+                
+                // Try to instantiate it
+                $controller = new UserManagementController();
+                echo '<p style="color: green;">✓ Controller instantiated successfully</p>';
+                
+                // Check if index method exists
+                if (method_exists($controller, 'index')) {
+                    echo '<p style="color: green;">✓ index() method exists</p>';
+                } else {
+                    echo '<p style="color: red;">✗ index() method NOT found</p>';
+                }
+                
+            } catch (Exception $e) {
+                echo '<p style="color: red;">✗ Error: ' . $e->getMessage() . '</p>';
+                echo '<pre>' . $e->getTraceAsString() . '</pre>';
+            }
+            
+            exit;
+        });
+        
+        $this->get('/admin/users-test3', function() {
+            echo '<h1>Step 3: Route Matching Test</h1>';
+            
+            // Check if /admin/users route exists in router
+            $routes = $this->getRoutes();
+            $userRouteFound = false;
+            
+            foreach ($routes as $route) {
+                if ($route['path'] === '/admin/users' && $route['method'] === 'GET') {
+                    $userRouteFound = true;
+                    echo '<p style="color: green;">✓ Found route: GET /admin/users -> ' . $route['handler'] . '</p>';
+                    break;
+                }
+            }
+            
+            if (!$userRouteFound) {
+                echo '<p style="color: red;">✗ Route GET /admin/users NOT found in router</p>';
+                echo '<p>Available routes with "user":</p>';
+                foreach ($routes as $route) {
+                    if (strpos($route['path'], 'user') !== false) {
+                        echo '<p>' . $route['method'] . ' ' . $route['path'] . ' -> ' . $route['handler'] . '</p>';
+                    }
+                }
+            }
+            
+            // Also check if there are multiple /admin/users routes causing conflict
+            $count = 0;
+            foreach ($routes as $route) {
+                if ($route['path'] === '/admin/users') {
+                    $count++;
+                }
+            }
+            
+            if ($count > 1) {
+                echo '<p style="color: red;">✗ Found ' . $count . ' /admin/users routes (conflict!)</p>';
+            }
+            
+            exit;
+        });
+        
         // Candidate admission check portal (simple page for candidates)
         // FIXED: Both GET and POST go to candidatePortal() method
         $this->get('/admission/check-portal', 'AdmissionController@candidatePortal');
@@ -455,21 +547,20 @@ class Router {
             $requestUri = rtrim($requestUri, '/');
         }
         
-        if (defined('APP_DEBUG') && APP_DEBUG) {
-            error_log("Router matching: $requestMethod $requestUri");
-        }
+        // Debug logging - ADDED
+        error_log("Router matching: $requestMethod $requestUri");
         
         foreach ($this->routes as $route) {
             if ($route['method'] !== $requestMethod) {
                 continue;
             }
             
+            // Debug: log each route being checked - ADDED
+            error_log("Checking route: {$route['path']} against $requestUri");
+            
             if (preg_match($route['pattern'], $requestUri, $matches)) {
-                if (defined('APP_DEBUG') && APP_DEBUG) {
-                    error_log("Route matched: {$route['path']}");
-                    error_log("Route pattern: {$route['pattern']}");
-                    error_log("Request URI: $requestUri");
-                }
+                // Debug: log when matched - ADDED
+                error_log("MATCHED: {$route['path']} with pattern {$route['pattern']}");
                 
                 array_shift($matches);
                 $this->params = $matches;
@@ -482,9 +573,8 @@ class Router {
             }
         }
         
-        if (defined('APP_DEBUG') && APP_DEBUG) {
-            error_log("No route matched for: $requestUri");
-        }
+        // Debug: log when no match found - ADDED
+        error_log("NO ROUTE MATCHED for: $requestUri");
         return null;
     }
 

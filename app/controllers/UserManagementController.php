@@ -86,7 +86,7 @@ class UserManagementController extends Controller {
             $totalPages = ceil($total / $this->perPage);
             $offset = ($page - 1) * $this->perPage;
             
-            // Get users
+            // Get users - FIXED SQL (integers directly, not parameters)
             $sql = "SELECT u.*, 
                            COUNT(DISTINCT up.permission) as permission_count,
                            COUNT(DISTINCT al.id) as activity_count,
@@ -97,13 +97,10 @@ class UserManagementController extends Controller {
                     $where
                     GROUP BY u.id
                     ORDER BY u.created_at DESC
-                    LIMIT ? OFFSET ?";
-            
-            $params[] = $this->perPage;
-            $params[] = $offset;
+                    LIMIT {$this->perPage} OFFSET {$offset}"; // FIXED: Integers directly
             
             $stmt = $this->db->prepare($sql);
-            $stmt->execute($params);
+            $stmt->execute($params); // $params doesn't include LIMIT/OFFSET
             $users = $stmt->fetchAll();
             
             // Get statistics

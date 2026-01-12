@@ -125,7 +125,7 @@ class ResearchController extends Controller
     }
     
     /**
-     * ADMIN: Save new publication - UPDATED CSRF VERSION
+     * ADMIN: Save new publication
      */
     public function store()
     {
@@ -143,15 +143,15 @@ class ResearchController extends Controller
             return;
         }
         
-        // Use Session class method for validation
-        if (!Session::validateCSRFTokenMulti($token)) {
+        // Use validateCSRFToken() for consistency
+        if (!Session::validateCSRFToken($token)) {
             error_log("ERROR: Invalid or expired CSRF token");
             $this->flash('error', 'Invalid or expired security token. Please refresh the page and try again.');
             $this->redirect('/admin/research/create');
             return;
         }
         
-        error_log("CSRF validation PASSED using Session::validateCSRFTokenMulti()");
+        error_log("CSRF validation PASSED using Session::validateCSRFToken()");
         
         // Get form data
         $inputData = $this->input();
@@ -176,9 +176,9 @@ class ResearchController extends Controller
         $id = $this->model->create($publicationData);
         
         if ($id) {
-            // Remove the token after successful save
-            Session::removeCSRFToken($token);
-            error_log("CSRF token removed after successful save");
+            // Clear CSRF token after successful save
+            Session::clearCSRFToken();
+            error_log("CSRF token cleared after successful save");
             
             $this->flash('success', 'Research publication created successfully!');
             
@@ -282,7 +282,7 @@ class ResearchController extends Controller
     }
     
     /**
-     * ADMIN: Update publication - UPDATED VERSION
+     * ADMIN: Update publication
      */
     public function update($id)
     {
@@ -300,8 +300,8 @@ class ResearchController extends Controller
             return;
         }
         
-        // Use Session class method for validation
-        if (!Session::validateCSRFTokenMulti($token)) {
+        // Use validateCSRFToken() for consistency
+        if (!Session::validateCSRFToken($token)) {
             error_log("UPDATE ERROR: Invalid or expired CSRF token");
             $this->flash('error', 'Invalid or expired security token. Please refresh the page and try again.');
             $this->redirect('/admin/research/' . $id . '/edit');
@@ -338,9 +338,9 @@ class ResearchController extends Controller
         $result = $this->model->update($id, $updateData);
         
         if ($result) {
-            // Remove CSRF token after successful update
-            Session::removeCSRFToken($token);
-            error_log("CSRF token removed after successful update");
+            // Clear CSRF token after successful update
+            Session::clearCSRFToken();
+            error_log("CSRF token cleared after successful update");
             
             $this->flash('success', 'Publication updated successfully!');
             
@@ -440,7 +440,7 @@ class ResearchController extends Controller
     }
     
     /**
-     * ADMIN: Delete publication
+     * ADMIN: Delete publication - FIXED VERSION
      */
     public function destroy($id)
     {
@@ -448,17 +448,19 @@ class ResearchController extends Controller
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
         
-        // Validate CSRF token using Session class
+        // Validate CSRF token using Session class - FIXED: Use validateCSRFToken()
         $token = $this->input('csrf_token');
-        if (empty($token) || !Session::validateCSRFTokenMulti($token)) {
-            $this->json(['success' => false, 'message' => 'Security token expired'], 403);
+        if (empty($token) || !Session::validateCSRFToken($token)) {
+            $this->flash('error', 'Security token expired. Please try again.');
+            $this->redirect('/admin/research');
+            return;
         }
         
         $result = $this->model->delete($id);
         
         if ($result) {
-            // Remove token after successful deletion
-            Session::removeCSRFToken($token);
+            // Clear CSRF token after successful deletion
+            Session::clearCSRFToken();
             
             // Delete associated files
             if (!empty($result['file_path'])) {
@@ -469,14 +471,16 @@ class ResearchController extends Controller
                 @unlink($this->getAbsolutePath($result['thumbnail_path']));
             }
             
-            $this->json(['success' => true, 'message' => 'Publication deleted successfully!']);
+            $this->flash('success', 'Publication deleted successfully!');
+            $this->redirect('/admin/research');
         } else {
-            $this->json(['success' => false, 'message' => 'Failed to delete publication'], 500);
+            $this->flash('error', 'Failed to delete publication');
+            $this->redirect('/admin/research');
         }
     }
     
     /**
-     * ADMIN: Toggle publish status
+     * ADMIN: Toggle publish status - FIXED VERSION
      */
     public function toggleStatus($id)
     {
@@ -484,17 +488,18 @@ class ResearchController extends Controller
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
         
-        // Validate CSRF token using Session class
+        // Validate CSRF token using Session class - FIXED: Use validateCSRFToken()
         $token = $this->input('csrf_token');
-        if (empty($token) || !Session::validateCSRFTokenMulti($token)) {
+        if (empty($token) || !Session::validateCSRFToken($token)) {
             $this->json(['success' => false, 'message' => 'Security token expired'], 403);
+            return;
         }
         
         $result = $this->model->toggleStatus($id);
         
         if ($result) {
-            // Remove token after successful operation
-            Session::removeCSRFToken($token);
+            // Clear CSRF token after successful operation
+            Session::clearCSRFToken();
             
             $publication = $this->model->getById($id);
             $this->json([
@@ -508,7 +513,7 @@ class ResearchController extends Controller
     }
     
     /**
-     * ADMIN: Bulk actions
+     * ADMIN: Bulk actions - FIXED VERSION
      */
     public function bulkAction()
     {
@@ -516,11 +521,12 @@ class ResearchController extends Controller
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
         
-        // Validate CSRF token using Session class
+        // Validate CSRF token using Session class - FIXED: Use validateCSRFToken()
         $token = $this->input('csrf_token');
-        if (empty($token) || !Session::validateCSRFTokenMulti($token)) {
+        if (empty($token) || !Session::validateCSRFToken($token)) {
             $this->flash('error', 'Security token expired. Please try again.');
             $this->redirect('/admin/research');
+            return;
         }
         
         if (empty($this->input('selected_ids')) || empty($this->input('action'))) {
@@ -579,8 +585,8 @@ class ResearchController extends Controller
                 break;
         }
         
-        // Remove token after successful bulk action
-        Session::removeCSRFToken($token);
+        // Clear CSRF token after successful bulk action
+        Session::clearCSRFToken();
         
         $this->redirect('/admin/research');
     }
@@ -769,19 +775,16 @@ class ResearchController extends Controller
     
     /**
      * Get CSRF token that matches what the view expects
-     * UPDATED to use Session::generateCSRFTokenMulti()
      */
     private function getCSRFTokenForView()
     {
-        // Use the new multi-token method
-        if (method_exists('Session', 'generateCSRFTokenMulti')) {
-            $token = Session::generateCSRFTokenMulti();
-            error_log("Using Session::generateCSRFTokenMulti(): " . substr($token, 0, 10) . "...");
+        // Use the legacy method that matches what the view uses
+        if (method_exists('Session', 'getCSRFToken')) {
+            $token = Session::getCSRFToken();
             return $token;
         }
         
-        // Fallback to controller's own generation
-        error_log("Falling back to controller's generateCsrfToken()");
+        // Fallback
         return $this->generateCsrfToken();
     }
     
@@ -803,7 +806,6 @@ class ResearchController extends Controller
         // Clean up old tokens (older than 1 hour)
         $this->cleanupOldCsrfTokens();
         
-        error_log("Generated new CSRF token: " . substr($token, 0, 10) . "...");
         return $token;
     }
     
@@ -822,7 +824,7 @@ class ResearchController extends Controller
     }
     
     /**
-     * Convert file path to public URL - FIXED VERSION
+     * Convert file path to public URL
      */
     private function getPublicFilePath($filePath)
     {

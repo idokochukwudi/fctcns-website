@@ -369,7 +369,7 @@ if (class_exists('Session')) {
             }
         }
         
-        /* ENHANCED BRAND - Clean, Mature Typography */
+        /* ENHANCED BRAND - Clean, Mature Typography with Improved Font Styling */
         .brand {
             display: flex;
             align-items: center;
@@ -408,7 +408,7 @@ if (class_exists('Session')) {
             flex: 1;
         }
         
-        /* ENHANCED BRAND NAME - Mature sans-serif with proper hierarchy */
+        /* ENHANCED BRAND NAME - Improved Font Styling for Better Presentation */
         .brand-name {
             font-family: var(--font-brand);
             font-weight: 600;
@@ -421,32 +421,36 @@ if (class_exists('Session')) {
         
         .brand-line-1 {
             font-size: 1rem;
-            font-weight: 500; /* Stronger weight for better visibility */
+            font-weight: 600; /* Increased weight for better clarity */
             color: var(--color-primary);
-            letter-spacing: 0.2px;
-            margin-bottom: 0.15rem;
-            opacity: 0.95; /* More visible */
+            letter-spacing: 0.5px;
+            margin-bottom: 0.1rem;
+            text-transform: uppercase;
+            opacity: 0.95;
         }
         
         .brand-line-2 {
             font-size: 1.5rem;
-            font-weight: 700; /* Bold weight for emphasis */
+            font-weight: 800; /* Extra bold for maximum clarity */
             color: var(--color-primary-dark);
-            letter-spacing: -0.01em;
-            line-height: 1.1;
+            letter-spacing: -0.02em;
+            line-height: 1;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            font-family: 'Poppins', sans-serif; /* Explicit font for clarity */
         }
         
         /* Desktop Brand Styling - Enhanced */
         @media (min-width: 1024px) {
             .brand-line-1 {
                 font-size: 1.1rem;
-                font-weight: 500;
+                font-weight: 600;
+                letter-spacing: 0.6px;
             }
             
             .brand-line-2 {
-                font-size: 1.8rem; /* Larger for desktop */
-                font-weight: 700;
+                font-size: 1.9rem; /* Slightly larger for desktop */
+                font-weight: 800;
+                letter-spacing: -0.03em;
             }
         }
         
@@ -454,10 +458,12 @@ if (class_exists('Session')) {
         @media (min-width: 768px) and (max-width: 1023px) {
             .brand-line-1 {
                 font-size: 1rem;
+                font-weight: 600;
             }
             
             .brand-line-2 {
-                font-size: 1.4rem;
+                font-size: 1.5rem;
+                font-weight: 800;
             }
         }
         
@@ -469,12 +475,14 @@ if (class_exists('Session')) {
             
             .brand-line-1 {
                 font-size: 0.9rem;
-                font-weight: 500; /* Consistent strong weight */
+                font-weight: 600;
+                letter-spacing: 0.4px;
             }
             
             .brand-line-2 {
-                font-size: 1.2rem;
-                font-weight: 700;
+                font-size: 1.3rem;
+                font-weight: 800;
+                letter-spacing: -0.01em;
             }
         }
         
@@ -482,10 +490,12 @@ if (class_exists('Session')) {
         @media (max-width: 480px) {
             .brand-line-1 {
                 font-size: 0.85rem;
+                font-weight: 600;
             }
             
             .brand-line-2 {
-                font-size: 1.1rem;
+                font-size: 1.2rem;
+                font-weight: 800;
             }
         }
         
@@ -1466,7 +1476,7 @@ if (class_exists('Session')) {
 <!-- Main Header -->
 <header class="site-header" role="banner">
     <div class="header-container">
-        <!-- Enhanced Brand with mature typography -->
+        <!-- Enhanced Brand with improved font styling -->
         <a href="<?php echo $baseUrl; ?>/" class="brand">
             <div class="brand-logo">
                 <img src="<?php echo $baseUrl; ?>/assets/images/logo/logo.png" 
@@ -1550,7 +1560,7 @@ if (class_exists('Session')) {
         </div>
     </div>
     
-    <!-- Desktop Navigation with Enhanced States -->
+    <!-- Desktop Navigation with Research Tab -->
     <nav class="nav-container" aria-label="Main navigation">
         <ul class="nav-menu">
             <li class="nav-item">
@@ -1587,6 +1597,19 @@ if (class_exists('Session')) {
                    class="nav-link <?php echo $currentPage == 'admissions' ? 'active' : ''; ?>">
                     Admissions
                 </a>
+            </li>
+            <!-- ADDED RESEARCH TAB -->
+            <li class="nav-item has-dropdown">
+                <a href="<?php echo $baseUrl; ?>/research" 
+                   class="nav-link <?php echo $currentPage == 'research' ? 'active' : ''; ?>">
+                    Research
+                </a>
+                <div class="dropdown-menu">
+                    <a href="<?php echo $baseUrl; ?>/research/publications" class="dropdown-link">Publications</a>
+                    <a href="<?php echo $baseUrl; ?>/research/projects" class="dropdown-link">Research Projects</a>
+                    <a href="<?php echo $baseUrl; ?>/research/facilities" class="dropdown-link">Research Facilities</a>
+                    <a href="<?php echo $baseUrl; ?>/research/grants" class="dropdown-link">Grants & Funding</a>
+                </div>
             </li>
             <li class="nav-item">
                 <a href="<?php echo $baseUrl; ?>/student-life" 
@@ -1648,6 +1671,14 @@ if (class_exists('Session')) {
             <a href="<?php echo $baseUrl; ?>/admissions" 
                class="mobile-nav-link <?php echo $currentPage == 'admissions' ? 'active' : ''; ?>">
                 <span>Admissions</span>
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </li>
+        <!-- ADDED RESEARCH TAB FOR MOBILE -->
+        <li class="mobile-nav-item">
+            <a href="<?php echo $baseUrl; ?>/research" 
+               class="mobile-nav-link <?php echo $currentPage == 'research' ? 'active' : ''; ?>">
+                <span>Research</span>
                 <i class="fas fa-chevron-right"></i>
             </a>
         </li>
