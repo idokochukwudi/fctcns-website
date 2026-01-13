@@ -31,6 +31,9 @@ $isSuperAdmin = $userRole === 'admin';
 // Generate CSRF token for logout
 $csrf_token = bin2hex(random_bytes(32));
 $_SESSION['csrf_token'] = $csrf_token;
+
+// Get current limit from query or default
+$currentLimit = isset($_GET['limit']) ? intval($_GET['limit']) : 5;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1190,7 +1193,8 @@ body {
 <body>
     <!-- Top Navigation Bar with Logout -->
     <nav class="top-navbar" role="navigation" aria-label="Main navigation">
-        <a href="<?php echo BASE_URL; ?>/admin/dashboard" class="nav-brand" aria-label="Go to Dashboard">
+        <!-- CHANGE 1: Disabled "Back to Dashboard" Link -->
+        <div class="nav-brand" style="cursor: default;">
             <div class="nav-logo">
                 <i class="fas fa-users"></i>
             </div>
@@ -1198,7 +1202,7 @@ body {
                 <h1>Nominal Roll Management</h1>
                 <div class="subtitle">FCT College of Nursing Sciences</div>
             </div>
-        </a>
+        </div>
         
         <div class="nav-user">
             <div class="user-profile" role="button" aria-haspopup="true" aria-expanded="false" aria-label="User profile">
@@ -1349,10 +1353,11 @@ body {
                     <div class="search-input-group">
                         <div class="input-with-icon">
                             <i class="fas fa-search" aria-hidden="true"></i>
+                            <!-- CHANGE 2: Updated search placeholder -->
                             <input type="text" 
                                    name="search" 
                                    id="searchInput"
-                                   placeholder="Search by name, employee number, state..." 
+                                   placeholder="Search by name, employee ID, employee number, state, department..." 
                                    value="<?php echo isset($filters['search']) ? htmlspecialchars($filters['search']) : ''; ?>"
                                    class="form-control"
                                    aria-label="Search employees">
@@ -1535,6 +1540,18 @@ body {
                     <?php echo isset($pagination['total']) ? number_format($pagination['total']) : '5'; ?> employees
                 </div>
                 <div class="table-actions">
+                    <!-- CHANGE 3: Added Records per page selector -->
+                    <div class="records-per-page" style="display: flex; align-items: center; gap: 8px; margin-right: 12px;">
+                        <label for="recordsPerPage" style="font-size: 0.875rem; color: var(--gray-600); margin: 0; white-space: nowrap;">Show:</label>
+                        <select id="recordsPerPage" class="form-control" style="width: 80px; height: 36px; padding: 6px 8px; font-size: 0.875rem;" onchange="changeRecordsPerPage(this.value)">
+                            <option value="5" <?php echo (isset($currentLimit) && $currentLimit == 5) || !isset($currentLimit) ? 'selected' : ''; ?>>5</option>
+                            <option value="10" <?php echo isset($currentLimit) && $currentLimit == 10 ? 'selected' : ''; ?>>10</option>
+                            <option value="25" <?php echo isset($currentLimit) && $currentLimit == 25 ? 'selected' : ''; ?>>25</option>
+                            <option value="50" <?php echo isset($currentLimit) && $currentLimit == 50 ? 'selected' : ''; ?>>50</option>
+                            <option value="100" <?php echo isset($currentLimit) && $currentLimit == 100 ? 'selected' : ''; ?>>100</option>
+                        </select>
+                    </div>
+                    
                     <div class="btn-group" role="group" aria-label="Table Actions">
                         <button type="button" class="btn btn-sm btn-outline" id="toggleColumnsBtn" aria-expanded="false" aria-controls="columnsDropdown">
                             <i class="fas fa-columns" aria-hidden="true"></i> Columns
@@ -1865,16 +1882,35 @@ body {
                 const searchForm = document.getElementById("searchForm");
                 const searchButton = searchForm.querySelector('button[type="submit"]');
                 
+                // CHANGE 5 & 6: Enhanced search with dynamic placeholder rotation and better debouncing
+                const placeholders = [
+                    "Search by name...",
+                    "Search by employee number...",
+                    "Search by employee ID...",
+                    "Search by state...",
+                    "Search by department..."
+                ];
+                let placeholderIndex = 0;
+                
+                // Rotate placeholder every 3 seconds
+                setInterval(() => {
+                    if (document.activeElement !== searchInput && !searchInput.value) {
+                        searchInput.placeholder = placeholders[placeholderIndex];
+                        placeholderIndex = (placeholderIndex + 1) % placeholders.length;
+                    }
+                }, 3000);
+                
                 searchInput.addEventListener("input", function() {
                     clearTimeout(searchTimeout);
                     
                     if (this.value !== previousValue) {
-                        if (this.value.length >= 3) {
+                        // CHANGE 5: Changed from 3 to 2 characters for better UX
+                        if (this.value.length >= 2) {
                             searchTimeout = setTimeout(() => {
                                 searchButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
                                 searchButton.disabled = true;
                                 searchForm.submit();
-                            }, 800);
+                            }, 600); // CHANGE 5: Changed from 800 to 600ms for faster response
                         }
                         previousValue = this.value;
                     }
@@ -2123,6 +2159,14 @@ body {
                 });
             });
         });
+        
+        // CHANGE 4: Records per page function
+        window.changeRecordsPerPage = function(limit) {
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('limit', limit);
+            currentUrl.searchParams.set('page', '1'); // Reset to first page when changing limit
+            window.location.href = currentUrl.toString();
+        };
         
         // Global functions
         window.confirmDelete = function(form) {

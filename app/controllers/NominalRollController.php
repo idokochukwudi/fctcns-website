@@ -67,11 +67,12 @@ class NominalRollController extends Controller {
         try {
             // Get current page
             $page = $this->input('page', 1);
-            $limit = $this->model->getSetting('records_per_page', 20);
+            // Changed default from 20 to 5, but allow user to override via GET parameter
+            $limit = $this->input('limit', $this->model->getSetting('records_per_page', 5));
             
-            // Get filters
+            // Get filters - search will query: employee_number, name, ID, state, department
             $filters = [
-                'search' => $this->input('search', ''),
+                'search' => $this->input('search', ''), // Searches: employee_number, name, id, state, department
                 'state' => $this->input('state', ''),
                 'grade_level' => $this->input('grade_level', ''),
                 'rank' => $this->input('rank', ''),
@@ -101,6 +102,7 @@ class NominalRollController extends Controller {
                 'filters' => $filters,
                 'filterOptions' => $filterOptions,
                 'stats' => $stats,
+                'currentLimit' => $limit, // ADDED: for the records per page selector
                 'pageTitle' => 'Nominal Roll Management - FCT College of Nursing Sciences',
                 'pageDescription' => 'Manage employee records and details'
             ]);
@@ -935,7 +937,7 @@ class NominalRollController extends Controller {
         try {
             // Get current page
             $page = $this->input('page', 1);
-            $limit = $this->model->getSetting('records_per_page', 20);
+            $limit = $this->model->getSetting('records_per_page', 5); // Changed from 20 to 5
             
             // Get filters
             $filters = [
@@ -964,6 +966,7 @@ class NominalRollController extends Controller {
                 ],
                 'filters' => $filters,
                 'filterOptions' => $filterOptions,
+                'currentLimit' => $limit, // ADDED: for the records per page selector
                 'pageTitle' => 'Draft Employees - Nominal Roll',
                 'pageDescription' => 'Review and manage draft employee records'
             ]);
@@ -2047,7 +2050,7 @@ class NominalRollController extends Controller {
                 $headers[] = $fieldLabels[$field] ?? ucwords(str_replace('_', ' ', $field));
             }
             fputcsv($output, $headers);
-            
+        
             // Data rows
             $rowNumber = 1;
             foreach ($data as $row) {
