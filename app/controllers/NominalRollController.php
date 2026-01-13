@@ -16,7 +16,7 @@ class NominalRollController extends Controller {
     /**
      * @var array User role permissions
      */
-    private $allowedRoles = ['admin', 'editor', 'viewer'];
+    private $allowedRoles = ['admin', 'editor', 'viewer', 'nominal_roll_user']; // ADDED nominal_roll_user
     
     /**
      * Constructor
@@ -42,13 +42,36 @@ class NominalRollController extends Controller {
         require_once __DIR__ . '/../models/NominalRollModel.php';
         $this->model = new NominalRollModel();
         
+        // Check permissions using base controller method
+        $userId = $_SESSION['user_id'] ?? 0;
+        $hasCreatePermission = $this->checkPermission('nominal_roll_create', $userId);
+        $hasEditPermission = $this->checkPermission('nominal_roll_edit', $userId);
+        $hasViewPermission = $this->checkPermission('nominal_roll_view', $userId);
+        $hasExportPermission = $this->checkPermission('nominal_roll_export', $userId);
+        $hasBulkUploadPermission = $this->checkPermission('nominal_roll_bulk_upload', $userId);
+        $hasDeletePermission = $this->checkPermission('nominal_roll_delete', $userId);
+        $hasSettingsPermission = $this->checkPermission('nominal_roll_settings', $userId);
+        $hasApprovePermission = $this->checkPermission('nominal_roll_approve', $userId);
+        
         // Initialize common data
         $this->data = array_merge($this->data, [
             'user' => $_SESSION ?? [],
             'baseUrl' => defined('BASE_URL') ? BASE_URL : '',
             'currentPage' => 'nominal-roll',
             'isSuperAdmin' => ($_SESSION['user_role'] ?? '') === 'admin',
-            'isEditor' => in_array($_SESSION['user_role'] ?? '', ['admin', 'editor']),
+            
+            // PERMISSION-BASED FLAGS (NOT role-based)
+            'hasCreatePermission' => $hasCreatePermission,
+            'hasEditPermission' => $hasEditPermission,
+            'hasViewPermission' => $hasViewPermission,
+            'hasExportPermission' => $hasExportPermission,
+            'hasBulkUploadPermission' => $hasBulkUploadPermission,
+            'hasDeletePermission' => $hasDeletePermission,
+            'hasSettingsPermission' => $hasSettingsPermission,
+            'hasApprovePermission' => $hasApprovePermission,
+            
+            // Legacy role-based flags (for compatibility)
+            'isEditor' => in_array($_SESSION['user_role'] ?? '', ['admin', 'editor', 'nominal_roll_user']),
             'isViewer' => ($_SESSION['user_role'] ?? '') === 'viewer',
             'editingEnabled' => $this->model->isEditingEnabled()
         ]);
@@ -121,8 +144,8 @@ class NominalRollController extends Controller {
      */
     public function create() {
         // Check if user has permission to create
-        if (!$this->data['isEditor'] || (!$this->data['editingEnabled'] && !$this->data['isSuperAdmin'])) {
-            $this->flash('error', 'Editing is currently disabled. Only Super Admin can modify records.');
+        if (!$this->data['hasCreatePermission'] || (!$this->data['editingEnabled'] && !$this->data['isSuperAdmin'])) {
+            $this->flash('error', 'You do not have permission to create employee records.');
             $this->redirect('/admin/nominal-roll');
             return;
         }
@@ -174,8 +197,8 @@ class NominalRollController extends Controller {
         error_log("FILES data: " . print_r($_FILES, true));
         
         // Check if user has permission
-        if (!$this->data['isEditor'] || (!$this->data['editingEnabled'] && !$this->data['isSuperAdmin'])) {
-            $this->flash('error', 'Editing is currently disabled. Only Super Admin can modify records.');
+        if (!$this->data['hasCreatePermission'] || (!$this->data['editingEnabled'] && !$this->data['isSuperAdmin'])) {
+            $this->flash('error', 'You do not have permission to create employee records.');
             $this->redirect('/admin/nominal-roll/create');
             return;
         }
@@ -489,7 +512,7 @@ class NominalRollController extends Controller {
             'pageTitle' => 'Print Employee Record - ' . $employee['surname'] . ', ' . $employee['first_name'],
             'user' => $_SESSION ?? [],
             'isSuperAdmin' => ($_SESSION['user_role'] ?? '') === 'admin',
-            'isEditor' => in_array($_SESSION['user_role'] ?? '', ['admin', 'editor']),
+            'hasEditPermission' => $this->data['hasEditPermission'],
             'editingEnabled' => $this->model->isEditingEnabled()
         ];
         
@@ -662,7 +685,7 @@ class NominalRollController extends Controller {
      */
     public function edit($id) {
         // Check if user has permission to edit
-        if (!$this->data['isEditor'] || (!$this->data['editingEnabled'] && !$this->data['isSuperAdmin'])) {
+        if (!$this->data['hasEditPermission'] || (!$this->data['editingEnabled'] && !$this->data['isSuperAdmin'])) {
             $this->flash('error', 'Editing is currently disabled. Only Super Admin can modify records.');
             $this->redirect('/admin/nominal-roll/view/' . $id);
             return;
@@ -700,7 +723,7 @@ class NominalRollController extends Controller {
      */
     public function update($id) {
         // Check if user has permission
-        if (!$this->data['isEditor'] || (!$this->data['editingEnabled'] && !$this->data['isSuperAdmin'])) {
+        if (!$this->data['hasEditPermission'] || (!$this->data['editingEnabled'] && !$this->data['isSuperAdmin'])) {
             $this->flash('error', 'Editing is currently disabled. Only Super Admin can modify records.');
             $this->redirect('/admin/nominal-roll/view/' . $id);
             return;
@@ -872,9 +895,9 @@ class NominalRollController extends Controller {
      * Delete employee record
      */
     public function destroy($id) {
-        // Check if user has permission (only super admin can delete)
-        if (!$this->data['isSuperAdmin']) {
-            $this->flash('error', 'Only Super Admin can delete employee records.');
+        // Check if user has permission (only users with delete permission can delete)
+        if (!$this->data['hasDeletePermission']) {
+            $this->flash('error', 'You do not have permission to delete employee records.');
             $this->redirect('/admin/nominal-roll/view/' . $id);
             return;
         }
@@ -984,7 +1007,7 @@ class NominalRollController extends Controller {
      */
     public function approveDraft($id) {
         // Check if user has permission
-        if (!$this->data['isEditor'] || (!$this->data['editingEnabled'] && !$this->data['isSuperAdmin'])) {
+        if (!$this->data['hasApprovePermission']) {
             $this->flash('error', 'You do not have permission to approve drafts.');
             $this->redirect('/admin/nominal-roll/drafts');
             return;
@@ -1029,8 +1052,8 @@ class NominalRollController extends Controller {
      * Display bulk upload form
      */
     public function bulkUpload() {
-        // Check if user has permission (only admin and editor)
-        if (!$this->data['isEditor']) {
+        // Check if user has permission
+        if (!$this->data['hasBulkUploadPermission']) {
             $this->flash('error', 'You do not have permission to upload bulk data.');
             $this->redirect('/admin/nominal-roll');
             return;
@@ -1059,7 +1082,7 @@ class NominalRollController extends Controller {
      */
     public function processBulkUpload() {
         // Check if user has permission
-        if (!$this->data['isEditor']) {
+        if (!$this->data['hasBulkUploadPermission']) {
             $this->jsonResponse(['error' => 'You do not have permission to upload bulk data.']);
             return;
         }
@@ -1314,6 +1337,13 @@ class NominalRollController extends Controller {
      * Export employees data in various formats
      */
     public function export() {
+        // Check if user has permission to export
+        if (!$this->data['hasExportPermission']) {
+            $this->flash('error', 'You do not have permission to export data.');
+            $this->redirect('/admin/nominal-roll');
+            return;
+        }
+        
         try {
             $format = $this->input('format', 'csv');
             $id = $this->input('id', null);
@@ -1448,7 +1478,7 @@ class NominalRollController extends Controller {
         ];
         
         foreach ($headers as $header) {
-            echo '<th>' . htmlspecialchars($header) . '</th>';
+            echo '<th>' . htmlspecialchars($header, ENT_COMPAT | ENT_HTML401, 'UTF-8', true) . '</th>';
         }
         echo '</tr>';
         
@@ -1457,7 +1487,7 @@ class NominalRollController extends Controller {
             echo '<tr>';
             foreach ($headers as $header) {
                 $field = strtolower(str_replace(' ', '_', $header));
-                echo '<td>' . htmlspecialchars($employee[$field] ?? '') . '</td>';
+                echo '<td>' . htmlspecialchars($employee[$field] ?? '', ENT_COMPAT | ENT_HTML401, 'UTF-8', true) . '</td>';
             }
             echo '</tr>';
         }
@@ -1819,7 +1849,7 @@ class NominalRollController extends Controller {
         echo '<th>S/N</th>';
         foreach ($selectedFields as $field) {
             $label = $fieldLabels[$field] ?? ucwords(str_replace('_', ' ', $field));
-            echo '<th>' . $label . '</th>';
+            echo '<th>' . htmlspecialchars($label, ENT_COMPAT | ENT_HTML401, 'UTF-8', true) . '</th>';
         }
         echo '</tr>';
         
@@ -1845,7 +1875,7 @@ class NominalRollController extends Controller {
                     }
                 }
                 
-                echo '<td>' . htmlspecialchars($value) . '</td>';
+                echo '<td>' . htmlspecialchars($value, ENT_COMPAT | ENT_HTML401, 'UTF-8', true) . '</td>';
             }
             echo '</tr>';
         }
@@ -1962,7 +1992,7 @@ class NominalRollController extends Controller {
             echo '<th>S/N</th>';
             foreach ($selectedFields as $field) {
                 $label = $fieldLabels[$field] ?? ucwords(str_replace('_', ' ', $field));
-                echo '<th>' . htmlspecialchars($label) . '</th>';
+                echo '<th>' . htmlspecialchars($label, ENT_COMPAT | ENT_HTML401, 'UTF-8', true) . '</th>';
             }
             echo '</tr>';
             
@@ -1998,7 +2028,7 @@ class NominalRollController extends Controller {
                         $value = '-';
                     }
                     
-                    echo '<td>' . htmlspecialchars($value) . '</td>';
+                    echo '<td>' . htmlspecialchars($value, ENT_COMPAT | ENT_HTML401, 'UTF-8', true) . '</td>';
                 }
                 echo '</tr>';
             }
@@ -2222,12 +2252,12 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * Display settings page (Super Admin only)
+     * Display settings page
      */
     public function settings() {
-        // Check if user is super admin
-        if (!$this->data['isSuperAdmin']) {
-            $this->flash('error', 'Only Super Admin can access settings.');
+        // Check if user has permission (super admin OR has settings permission)
+        if (!$this->data['isSuperAdmin'] && !$this->data['hasSettingsPermission']) {
+            $this->flash('error', 'You do not have permission to access settings.');
             $this->redirect('/admin/nominal-roll');
             return;
         }
@@ -2259,12 +2289,12 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Update settings (Super Admin only)
+     * Update settings
      */
     public function updateSettings() {
-        // Check if user is super admin
-        if (!$this->data['isSuperAdmin']) {
-            $this->jsonResponse(['error' => 'Only Super Admin can update settings.']);
+        // Check if user is super admin OR has settings permission
+        if (!$this->data['isSuperAdmin'] && !$this->data['hasSettingsPermission']) {
+            $this->jsonResponse(['error' => 'You do not have permission to update settings.']);
             return;
         }
         
@@ -2312,9 +2342,9 @@ class NominalRollController extends Controller {
      * Update multiple settings at once
      */
     public function updateMultipleSettings() {
-        // Check if user is super admin
-        if (!$this->data['isSuperAdmin']) {
-            $this->jsonResponse(['error' => 'Only Super Admin can update settings.']);
+        // Check if user is super admin OR has settings permission
+        if (!$this->data['isSuperAdmin'] && !$this->data['hasSettingsPermission']) {
+            $this->jsonResponse(['error' => 'You do not have permission to update settings.']);
             return;
         }
         
@@ -2358,12 +2388,12 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Toggle editing mode (Super Admin only)
+     * Toggle editing mode
      */
     public function toggleEditing() {
-        // Check if user is super admin
-        if (!$this->data['isSuperAdmin']) {
-            $this->jsonResponse(['error' => 'Only Super Admin can toggle editing mode.']);
+        // Check if user is super admin OR has settings permission
+        if (!$this->data['isSuperAdmin'] && !$this->data['hasSettingsPermission']) {
+            $this->jsonResponse(['error' => 'You do not have permission to toggle editing mode.']);
             return;
         }
         
@@ -2410,9 +2440,9 @@ class NominalRollController extends Controller {
      * Create manual backup
      */
     public function createBackup() {
-        // Check if user is super admin
-        if (!$this->data['isSuperAdmin']) {
-            $this->jsonResponse(['error' => 'Only Super Admin can create backups.']);
+        // Check if user is super admin OR has settings permission
+        if (!$this->data['isSuperAdmin'] && !$this->data['hasSettingsPermission']) {
+            $this->jsonResponse(['error' => 'You do not have permission to create backups.']);
             return;
         }
         
@@ -2451,9 +2481,9 @@ class NominalRollController extends Controller {
      * Restore from backup
      */
     public function restoreBackup($id) {
-        // Check if user is super admin
-        if (!$this->data['isSuperAdmin']) {
-            $this->flash('error', 'Only Super Admin can restore backups.');
+        // Check if user is super admin OR has settings permission
+        if (!$this->data['isSuperAdmin'] && !$this->data['hasSettingsPermission']) {
+            $this->flash('error', 'You do not have permission to restore backups.');
             $this->redirect('/admin/nominal-roll/settings');
             return;
         }
@@ -2516,9 +2546,9 @@ class NominalRollController extends Controller {
      * Clear activity logs
      */
     public function clearActivityLogs() {
-        // Check if user is super admin
-        if (!$this->data['isSuperAdmin']) {
-            $this->jsonResponse(['error' => 'Only Super Admin can clear activity logs.']);
+        // Check if user is super admin OR has settings permission
+        if (!$this->data['isSuperAdmin'] && !$this->data['hasSettingsPermission']) {
+            $this->jsonResponse(['error' => 'You do not have permission to clear activity logs.']);
             return;
         }
         
@@ -2557,9 +2587,9 @@ class NominalRollController extends Controller {
      * Delete backup
      */
     public function deleteBackup($id) {
-        // Check if user is super admin
-        if (!$this->data['isSuperAdmin']) {
-            $this->jsonResponse(['error' => 'Only Super Admin can delete backups.']);
+        // Check if user is super admin OR has settings permission
+        if (!$this->data['isSuperAdmin'] && !$this->data['hasSettingsPermission']) {
+            $this->jsonResponse(['error' => 'You do not have permission to delete backups.']);
             return;
         }
         
@@ -2596,9 +2626,9 @@ class NominalRollController extends Controller {
      * Reset all settings to defaults
      */
     public function resetAllSettings() {
-        // Check if user is super admin
-        if (!$this->data['isSuperAdmin']) {
-            $this->jsonResponse(['error' => 'Only Super Admin can reset settings.']);
+        // Check if user is super admin OR has settings permission
+        if (!$this->data['isSuperAdmin'] && !$this->data['hasSettingsPermission']) {
+            $this->jsonResponse(['error' => 'You do not have permission to reset settings.']);
             return;
         }
         
@@ -3117,7 +3147,7 @@ class NominalRollController extends Controller {
             <html>
             <head>
                 <meta charset="UTF-8">
-                <title>Employee Record - <?php echo htmlspecialchars($employee['employee_number']); ?></title>
+                <title>Employee Record - <?php echo htmlspecialchars($employee['employee_number'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></title>
                 <style>
                     body { font-family: DejaVu Sans, sans-serif; font-size: 12px; line-height: 1.4; }
                     .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px; }
@@ -3151,14 +3181,14 @@ class NominalRollController extends Controller {
                 
                 <div style="margin-bottom: 15px;">
                     <h2 style="margin: 0 0 5px 0; font-size: 16px;">
-                        <?php echo htmlspecialchars($employee['surname'] . ', ' . $employee['first_name'] . ' ' . ($employee['middle_name'] ?? '')); ?>
+                        <?php echo htmlspecialchars($employee['surname'] . ', ' . $employee['first_name'] . ' ' . ($employee['middle_name'] ?? ''), ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?>
                     </h2>
                     <div style="font-size: 14px; margin-bottom: 5px;">
-                        <strong><?php echo htmlspecialchars($employee['rank']); ?></strong>
-                        <span style="margin-left: 10px;">GL <?php echo htmlspecialchars($employee['grade_level']); ?></span>
+                        <strong><?php echo htmlspecialchars($employee['rank'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></strong>
+                        <span style="margin-left: 10px;">GL <?php echo htmlspecialchars($employee['grade_level'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></span>
                     </div>
                     <div class="pf-number">
-                        PF Number: <?php echo htmlspecialchars($employee['pf_number'] ?? 'Not specified'); ?>
+                        PF Number: <?php echo htmlspecialchars($employee['pf_number'] ?? 'Not specified', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?>
                     </div>
                 </div>
                 
@@ -3167,11 +3197,11 @@ class NominalRollController extends Controller {
                     <div class="info-grid">
                         <div class="info-row">
                             <div class="info-label">Employee Number:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['employee_number']); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['employee_number'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Sex:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['sex']); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['sex'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Date of Birth:</div>
@@ -3179,15 +3209,15 @@ class NominalRollController extends Controller {
                         </div>
                         <div class="info-row">
                             <div class="info-label">Marital Status:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['marital_status'] ?? 'N/A'); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['marital_status'] ?? 'N/A', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Telephone:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['telephone_number'] ?? 'N/A'); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['telephone_number'] ?? 'N/A', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Email:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['email'] ?? 'N/A'); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['email'] ?? 'N/A', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                     </div>
                 </div>
@@ -3205,7 +3235,7 @@ class NominalRollController extends Controller {
                         </div>
                         <div class="info-row">
                             <div class="info-label">Rank on 1st Appointment:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['rank_on_first_appointment'] ?? 'N/A'); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['rank_on_first_appointment'] ?? 'N/A', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Date of Present Appointment:</div>
@@ -3220,9 +3250,9 @@ class NominalRollController extends Controller {
                         <div class="info-row">
                             <div class="info-label">Highest Qualification:</div>
                             <div class="info-value">
-                                <?php echo htmlspecialchars($employee['highest_qualification'] ?? 'N/A'); ?>
+                                <?php echo htmlspecialchars($employee['highest_qualification'] ?? 'N/A', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?>
                                 <?php if (!empty($employee['year_of_highest_qualification'])): ?>
-                                (<?php echo htmlspecialchars($employee['year_of_highest_qualification']); ?>)
+                                (<?php echo htmlspecialchars($employee['year_of_highest_qualification'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?>)
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -3239,9 +3269,9 @@ class NominalRollController extends Controller {
                             <div class="info-label">Additional Qualifications:</div>
                             <div class="info-value">
                                 <?php foreach ($additional_qualifications as $qual): ?>
-                                • <?php echo htmlspecialchars($qual['qualification'] ?? $qual ?? ''); ?>
+                                • <?php echo htmlspecialchars($qual['qualification'] ?? $qual ?? '', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?>
                                 <?php if (!empty($qual['year'])): ?>
-                                (<?php echo htmlspecialchars($qual['year']); ?>)
+                                (<?php echo htmlspecialchars($qual['year'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?>)
                                 <?php endif; ?>
                                 <br>
                                 <?php endforeach; ?>
@@ -3256,19 +3286,19 @@ class NominalRollController extends Controller {
                     <div class="info-grid">
                         <div class="info-row">
                             <div class="info-label">State of Origin:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['state']); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['state'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Local Government Area:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['local_govt_area']); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['local_govt_area'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">State of Residence:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['state_of_residence'] ?? 'Same as Origin'); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['state_of_residence'] ?? 'Same as Origin', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Residential Address:</div>
-                            <div class="info-value"><?php echo nl2br(htmlspecialchars($employee['residential_address'] ?? 'N/A')); ?></div>
+                            <div class="info-value"><?php echo nl2br(htmlspecialchars($employee['residential_address'] ?? 'N/A', ENT_COMPAT | ENT_HTML401, 'UTF-8', true)); ?></div>
                         </div>
                     </div>
                 </div>
@@ -3278,11 +3308,11 @@ class NominalRollController extends Controller {
                     <div class="info-grid">
                         <div class="info-row">
                             <div class="info-label">Bank Name:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['bank_name'] ?? 'N/A'); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['bank_name'] ?? 'N/A', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Bank Branch:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['bank_branch'] ?? 'N/A'); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['bank_branch'] ?? 'N/A', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Account Number:</div>
@@ -3290,11 +3320,11 @@ class NominalRollController extends Controller {
                         </div>
                         <div class="info-row">
                             <div class="info-label">NHF Number:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['nhf_number'] ?? 'N/A'); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['nhf_number'] ?? 'N/A', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Pension Number:</div>
-                            <div class="info-value"><?php echo htmlspecialchars($employee['pension_number'] ?? 'N/A'); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($employee['pension_number'] ?? 'N/A', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                     </div>
                 </div>
@@ -3356,18 +3386,18 @@ class NominalRollController extends Controller {
                         <?php foreach ($employees as $index => $emp): ?>
                         <tr>
                             <td><?php echo $index + 1; ?></td>
-                            <td><?php echo htmlspecialchars($emp['employee_number']); ?></td>
-                            <td><?php echo htmlspecialchars($emp['surname'] . ', ' . $emp['first_name']); ?></td>
-                            <td><?php echo htmlspecialchars($emp['pf_number'] ?? '-'); ?></td>
-                            <td><?php echo htmlspecialchars($emp['sex']); ?></td>
-                            <td><?php echo htmlspecialchars($emp['rank']); ?></td>
-                            <td><?php echo htmlspecialchars($emp['grade_level']); ?></td>
-                            <td><?php echo htmlspecialchars($emp['state']); ?></td>
+                            <td><?php echo htmlspecialchars($emp['employee_number'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
+                            <td><?php echo htmlspecialchars($emp['surname'] . ', ' . $emp['first_name'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
+                            <td><?php echo htmlspecialchars($emp['pf_number'] ?? '-', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
+                            <td><?php echo htmlspecialchars($emp['sex'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
+                            <td><?php echo htmlspecialchars($emp['rank'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
+                            <td><?php echo htmlspecialchars($emp['grade_level'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
+                            <td><?php echo htmlspecialchars($emp['state'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
                             <td><?php echo !empty($emp['date_of_birth']) ? date('d/m/Y', strtotime($emp['date_of_birth'])) : '-'; ?></td>
                             <td><?php echo !empty($emp['date_of_first_appointment']) ? date('d/m/Y', strtotime($emp['date_of_first_appointment'])) : '-'; ?></td>
-                            <td><?php echo htmlspecialchars($emp['highest_qualification'] ?? '-'); ?></td>
-                            <td><?php echo htmlspecialchars($emp['telephone_number'] ?? '-'); ?></td>
-                            <td><?php echo htmlspecialchars($emp['email'] ?? '-'); ?></td>
+                            <td><?php echo htmlspecialchars($emp['highest_qualification'] ?? '-', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
+                            <td><?php echo htmlspecialchars($emp['telephone_number'] ?? '-', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
+                            <td><?php echo htmlspecialchars($emp['email'] ?? '-', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -3375,7 +3405,7 @@ class NominalRollController extends Controller {
                 
                 <div class="footer">
                     <p>Official Document - <?php echo count($employees); ?> employee(s) listed</p>
-                    <p>Generated by: <?php echo htmlspecialchars($_SESSION['username'] ?? 'System'); ?> on <?php echo date('F j, Y \a\t H:i:s'); ?></p>
+                    <p>Generated by: <?php echo htmlspecialchars($_SESSION['username'] ?? 'System', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?> on <?php echo date('F j, Y \a\t H:i:s'); ?></p>
                 </div>
             </body>
             </html>
@@ -3504,7 +3534,7 @@ class NominalRollController extends Controller {
             // Fallback error display
             echo '<div style="padding: 20px; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 5px; margin: 20px;">';
             echo '<h3>Error</h3>';
-            echo '<p>' . htmlspecialchars($message) . '</p>';
+            echo '<p>' . htmlspecialchars($message, ENT_COMPAT | ENT_HTML401, 'UTF-8', true) . '</p>';
             echo '<p><a href="' . ($this->data['baseUrl'] ?? '') . '/admin/dashboard">Back to Dashboard</a></p>';
             echo '</div>';
         }

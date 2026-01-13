@@ -1134,6 +1134,7 @@ try {
             <div class="nav-section">
                 <h3 class="nav-section-title">Management</h3>
                 <ul class="nav-links">
+                    <?php if ($userRole !== 'nominal_roll_user'): // HIDE FOR NOMINAL ROLL ONLY USERS ?>
                     <?php if (in_array($userRole, ['admin', 'editor'])): ?>
                     <li class="nav-item">
                         <a href="<?php echo BASE_URL; ?>/admin/applications" class="nav-link">
@@ -1167,7 +1168,7 @@ try {
                     </li>
                     <?php endif; ?>
                     
-                    <!-- Carousel Slides Link - ADDED HERE -->
+                    <!-- Carousel Slides Link -->
                     <?php if (in_array($userRole, ['admin', 'editor'])): ?>
                     <li class="nav-item">
                         <a href="<?php echo BASE_URL; ?>/admin/carousel" class="nav-link">
@@ -1178,9 +1179,10 @@ try {
                         </a>
                     </li>
                     <?php endif; ?>
+                    <?php endif; // End hide for nominal_roll_user ?>
                     
-                    <!-- NOMINAL ROLL LINK ADDED HERE -->
-                    <?php if (in_array($userRole, ['admin', 'editor'])): ?>
+                    <!-- ALWAYS SHOW NOMINAL ROLL -->
+                    <?php if (in_array($userRole, ['admin', 'editor', 'nominal_roll_user'])): ?>
                     <li class="nav-item">
                         <a href="<?php echo BASE_URL; ?>/admin/nominal-roll" class="nav-link">
                             <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
@@ -1191,7 +1193,8 @@ try {
                     </li>
                     <?php endif; ?>
                     
-                    <!-- Contact Management Link - Added -->
+                    <!-- Contact Management Link - Only show for non-nominal_roll_user -->
+                    <?php if ($userRole !== 'nominal_roll_user'): ?>
                     <li class="nav-item">
                         <a href="<?php echo BASE_URL; ?>/admin/contact" class="nav-link">
                             <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
@@ -1214,9 +1217,10 @@ try {
                             <?php endif; ?>
                         </a>
                     </li>
+                    <?php endif; ?>
                     
                     <?php if ($userRole === 'admin'): ?>
-                    <!-- User Management Link - UPDATED -->
+                    <!-- User Management Link -->
                     <li class="nav-item">
                         <a href="<?php echo BASE_URL; ?>/admin/users" class="nav-link">
                             <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
@@ -1237,6 +1241,7 @@ try {
                 </ul>
             </div>
             
+            <?php if ($userRole !== 'nominal_roll_user'): // Hide tools section for nominal_roll_user ?>
             <div class="nav-section">
                 <h3 class="nav-section-title">Tools</h3>
                 <ul class="nav-links">
@@ -1258,8 +1263,9 @@ try {
                     </li>
                 </ul>
             </div>
+            <?php endif; ?>
 
-            <!-- Logout Section - ADDED HERE -->
+            <!-- Logout Section -->
             <div class="nav-section">
                 <h3 class="nav-section-title">Account</h3>
                 <ul class="nav-links">
@@ -1284,7 +1290,20 @@ try {
                 </div>
                 <div class="user-info">
                     <h4><?php echo htmlspecialchars($username); ?></h4>
-                    <span><?php echo ucfirst($userRole); ?></span>
+                    <span>
+                        <?php 
+                        // Display role with proper formatting
+                        $roleDisplayNames = [
+                            'admin' => 'Administrator',
+                            'editor' => 'Editor',
+                            'viewer' => 'Viewer',
+                            'moderator' => 'Moderator',
+                            'supervisor' => 'Supervisor',
+                            'nominal_roll_user' => 'Nominal Roll User'
+                        ];
+                        echo isset($roleDisplayNames[$userRole]) ? $roleDisplayNames[$userRole] : ucfirst($userRole);
+                        ?>
+                    </span>
                 </div>
             </div>
         </div>
@@ -1320,6 +1339,7 @@ try {
         <div class="admin-content">
             <!-- Stats Grid -->
             <div class="stats-grid">
+                <?php if ($userRole !== 'nominal_roll_user'): // Hide non-nominal roll stats ?>
                 <div class="stat-card stat-users" style="border-left-color: var(--admin-primary);">
                     <div class="stat-header">
                         <div>
@@ -1401,7 +1421,7 @@ try {
                     </div>
                 </div>
                 
-                <!-- Contact Messages Card - Added -->
+                <!-- Contact Messages Card -->
                 <div class="stat-card" style="border-left-color: var(--admin-info);">
                     <div class="stat-header">
                         <div>
@@ -1422,9 +1442,55 @@ try {
                         <?php echo $stats['pending_contacts'] ?? 0; ?> pending
                     </div>
                 </div>
+                <?php endif; ?>
+                
+                <!-- Nominal Roll Statistics Card - Always shown for nominal_roll_user -->
+                <?php 
+                // Get nominal roll statistics
+                $nominalStats = [];
+                try {
+                    $nominalQueries = [
+                        'total_records' => "SELECT COUNT(*) as total FROM nominal_roll_employees",
+                        'active_records' => "SELECT COUNT(*) as total FROM nominal_roll_employees WHERE status = 'active'",
+                        'pending_records' => "SELECT COUNT(*) as total FROM nominal_roll_employees WHERE status = 'pending'"
+                    ];
+                    
+                    foreach ($nominalQueries as $key => $sql) {
+                        $stmt = $conn->query($sql);
+                        $nominalStats[$key] = $stmt->fetch()['total'];
+                    }
+                } catch (Exception $e) {
+                    $nominalStats = [
+                        'total_records' => 0,
+                        'active_records' => 0,
+                        'pending_records' => 0
+                    ];
+                }
+                ?>
+                
+                <div class="stat-card" style="border-left-color: #9f7aea;">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-value"><?php echo $nominalStats['total_records']; ?></div>
+                            <div class="stat-label">Total Nominal Records</div>
+                        </div>
+                        <div class="stat-icon" style="background: rgba(159, 122, 234, 0.1); color: #9f7aea;">
+                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-trend trend-up" style="background: rgba(56, 161, 105, 0.1); color: var(--admin-success);">
+                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <?php echo $nominalStats['active_records']; ?> active
+                    </div>
+                </div>
             </div>
             
             <!-- Content Grid -->
+            <?php if ($userRole !== 'nominal_roll_user'): // Hide non-nominal roll content ?>
             <div class="content-grid">
                 <!-- Recent Activities -->
                 <div class="content-card">
@@ -1516,7 +1582,7 @@ try {
                     </div>
                 </div>
                 
-                <!-- Recent Contact Submissions - Added -->
+                <!-- Recent Contact Submissions -->
                 <div class="content-card">
                     <div class="card-header">
                         <h3>📧 Recent Contact Messages</h3>
@@ -1570,9 +1636,139 @@ try {
                     </div>
                 </div>
             </div>
+            <?php else: ?>
+            <!-- Nominal Roll User Dashboard Content -->
+            <div class="content-grid">
+                <!-- Welcome Message for Nominal Roll Users -->
+                <div class="content-card" style="grid-column: 1 / -1;">
+                    <div class="card-header">
+                        <h3>Welcome, <?php echo htmlspecialchars($username); ?>!</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="text-align: center; padding: 2rem;">
+                            <div style="font-size: 3rem; color: #9f7aea; margin-bottom: 1rem;">👥</div>
+                            <h2 style="margin-bottom: 1rem; color: var(--admin-gray-800);">Nominal Roll Management</h2>
+                            <p style="color: var(--admin-gray-600); max-width: 600px; margin: 0 auto 2rem;">
+                                You have access to manage student records in the Nominal Roll system. 
+                                Click the button below or use the sidebar navigation to get started.
+                            </p>
+                            <a href="<?php echo BASE_URL; ?>/admin/nominal-roll" 
+                               style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: #9f7aea; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s;">
+                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                                </svg>
+                                Go to Nominal Roll
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions for Nominal Roll -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>Quick Actions</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; gap: 1rem;">
+                            <a href="<?php echo BASE_URL; ?>/admin/nominal-roll/create" 
+                               style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: rgba(159, 122, 234, 0.1); border-radius: 8px; text-decoration: none; color: var(--admin-gray-800); transition: background 0.2s;">
+                                <div style="width: 40px; height: 40px; background: #9f7aea; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 1rem;">Add New Record</h4>
+                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; color: var(--admin-gray-600);">Create new student record</p>
+                                </div>
+                            </a>
+                            
+                            <a href="<?php echo BASE_URL; ?>/admin/nominal-roll/export" 
+                               style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: rgba(66, 153, 225, 0.1); border-radius: 8px; text-decoration: none; color: var(--admin-gray-800); transition: background 0.2s;">
+                                <div style="width: 40px; height: 40px; background: var(--admin-primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 1rem;">Export Data</h4>
+                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; color: var(--admin-gray-600);">Export records to Excel/CSV</p>
+                                </div>
+                            </a>
+                            
+                            <a href="<?php echo BASE_URL; ?>/admin/nominal-roll/bulk-upload" 
+                               style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: rgba(56, 161, 105, 0.1); border-radius: 8px; text-decoration: none; color: var(--admin-gray-800); transition: background 0.2s;">
+                                <div style="width: 40px; height: 40px; background: var(--admin-success); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V15a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0; font-size: 1rem;">Bulk Upload</h4>
+                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; color: var(--admin-gray-600);">Upload multiple records at once</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Nominal Roll Activity -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>Recent Nominal Roll Activity</h3>
+                    </div>
+                    <div class="card-body">
+                        <?php 
+                        // Get recent nominal roll activities
+                        try {
+                            $stmt = $conn->prepare("
+                                SELECT al.*, u.username as user_name 
+                                FROM activity_logs al 
+                                LEFT JOIN users u ON al.user_id = u.id 
+                                WHERE al.action LIKE '%nominal_roll%' 
+                                ORDER BY al.created_at DESC 
+                                LIMIT 5
+                            ");
+                            $stmt->execute();
+                            $nominalActivities = $stmt->fetchAll();
+                        } catch (Exception $e) {
+                            $nominalActivities = [];
+                        }
+                        ?>
+                        
+                        <?php if (!empty($nominalActivities)): ?>
+                        <ul class="activity-list">
+                            <?php foreach ($nominalActivities as $activity): ?>
+                            <li class="activity-item">
+                                <div class="activity-icon" style="background: rgba(159, 122, 234, 0.1); color: #9f7aea;">
+                                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                                    </svg>
+                                </div>
+                                <div class="activity-info">
+                                    <h4><?php echo htmlspecialchars(str_replace('_', ' ', $activity['action'])); ?></h4>
+                                    <p><?php echo date('M d, Y H:i', strtotime($activity['created_at'])); ?>
+                                    <?php if (!empty($activity['user_name'])): ?>
+                                    <br><small>By: <?php echo htmlspecialchars($activity['user_name']); ?></small>
+                                    <?php endif; ?>
+                                    </p>
+                                </div>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <?php else: ?>
+                        <p style="color: var(--admin-gray-600); font-style: italic; text-align: center; padding: 20px;">
+                            No recent nominal roll activities
+                        </p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
             
             <!-- Quick Actions -->
             <div class="quick-actions">
+                <?php if ($userRole !== 'nominal_roll_user'): // Hide non-nominal roll quick actions ?>
                 <?php if (in_array($userRole, ['admin', 'editor'])): ?>
                 <a href="<?php echo BASE_URL; ?>/admin/applications/create" class="action-btn">
                     <div class="action-icon">
@@ -1610,7 +1806,7 @@ try {
                     </div>
                 </a>
                 
-                <!-- Carousel Quick Action - ADDED HERE -->
+                <!-- Carousel Quick Action -->
                 <a href="<?php echo BASE_URL; ?>/admin/carousel/create" class="action-btn">
                     <div class="action-icon">
                         <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
@@ -1622,23 +1818,10 @@ try {
                         <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Create new homepage slide</p>
                     </div>
                 </a>
-                
-                <!-- Nominal Roll Quick Action - ADDED HERE -->
-                <a href="<?php echo BASE_URL; ?>/admin/nominal-roll" class="action-btn">
-                    <div class="action-icon" style="background: rgba(159, 122, 234, 0.1); color: #9f7aea;">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h4>Nominal Roll</h4>
-                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Manage student records</p>
-                    </div>
-                </a>
                 <?php endif; ?>
                 
                 <?php if ($userRole === 'admin'): ?>
-                <!-- User Management Quick Action - UPDATED TEXT -->
+                <!-- User Management Quick Action -->
                 <a href="<?php echo BASE_URL; ?>/admin/users/create" class="action-btn">
                     <div class="action-icon">
                         <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
@@ -1664,7 +1847,7 @@ try {
                     </div>
                 </a>
                 
-                <!-- Contact Management Action - Added -->
+                <!-- Contact Management Action -->
                 <a href="<?php echo BASE_URL; ?>/admin/contact" class="action-btn">
                     <div class="action-icon" style="background: rgba(49, 130, 206, 0.1); color: var(--admin-info);">
                         <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
@@ -1676,6 +1859,47 @@ try {
                         <p style="font-size: 0.75rem; color: var(--admin-gray-600);">View and respond to messages</p>
                     </div>
                 </a>
+                <?php endif; ?>
+                
+                <!-- Always show Nominal Roll quick action -->
+                <a href="<?php echo BASE_URL; ?>/admin/nominal-roll" class="action-btn">
+                    <div class="action-icon" style="background: rgba(159, 122, 234, 0.1); color: #9f7aea;">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>Nominal Roll</h4>
+                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Manage student records</p>
+                    </div>
+                </a>
+                
+                <?php if ($userRole === 'nominal_roll_user'): ?>
+                <!-- Additional quick actions for nominal_roll_user -->
+                <a href="<?php echo BASE_URL; ?>/admin/nominal-roll/create" class="action-btn">
+                    <div class="action-icon" style="background: rgba(56, 161, 105, 0.1); color: var(--admin-success);">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>Add Student</h4>
+                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Create new student record</p>
+                    </div>
+                </a>
+                
+                <a href="<?php echo BASE_URL; ?>/admin/nominal-roll/export" class="action-btn">
+                    <div class="action-icon" style="background: rgba(66, 153, 225, 0.1); color: var(--admin-primary);">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>Export Data</h4>
+                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Export to Excel/CSV</p>
+                    </div>
+                </a>
+                <?php endif; ?>
             </div>
         </div>
     </main>
@@ -1884,12 +2108,39 @@ try {
                 window.print();
             }
         });
+        
+        // Enhanced dashboard for nominal_roll_user
+        <?php if ($userRole === 'nominal_roll_user'): ?>
+        // Focus on nominal roll related features
+        document.addEventListener('DOMContentLoaded', function() {
+            // Highlight the Nominal Roll link in sidebar
+            const nominalRollLink = document.querySelector('a[href*="nominal-roll"]');
+            if (nominalRollLink) {
+                nominalRollLink.classList.add('active');
+            }
+            
+            // Add keyboard shortcuts for nominal roll
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+Shift+N for new record
+                if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+                    e.preventDefault();
+                    window.location.href = '<?php echo BASE_URL; ?>/admin/nominal-roll/create';
+                }
+                
+                // Ctrl+Shift+E for export
+                if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+                    e.preventDefault();
+                    window.location.href = '<?php echo BASE_URL; ?>/admin/nominal-roll/export';
+                }
+            });
+        });
+        <?php endif; ?>
     </script>
     
     <!-- Add Chart.js for graphs (optional) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- USER MANAGEMENT JS - ADDED HERE -->
+    <!-- USER MANAGEMENT JS -->
     <script src="<?php echo BASE_URL; ?>/assets/js/user-management.js"></script>
 </body>
 </html>

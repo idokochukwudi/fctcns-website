@@ -19,10 +19,13 @@ class AdminController extends Controller {
      * Show login page - FIXED VERSION
      */
     public function login() {
-        // If already logged in, redirect to dashboard
+        // If already logged in, redirect to dashboard using RoleRedirectMiddleware
         require_once __DIR__ . '/../config/session.php';
         if (Session::isAuthenticated()) {
-            header('Location: /admin/dashboard');
+            // Use RoleRedirectMiddleware for proper redirection
+            require_once APP_PATH . '/middleware/RoleRedirectMiddleware.php';
+            $redirectUrl = RoleRedirectMiddleware::redirect();
+            header("Location: $redirectUrl");
             exit;
         }
 
@@ -53,7 +56,7 @@ class AdminController extends Controller {
     }
 
     /**
-     * Process login - FIXED VERSION with CSRF check
+     * Process login - FIXED VERSION with CSRF check and RoleRedirectMiddleware
      */
     public function processLogin() {
         require_once __DIR__ . '/../config/database.php';
@@ -109,11 +112,21 @@ class AdminController extends Controller {
                     // CRITICAL FIX: Set session BEFORE redirect
                     Session::loginUser($user['id'], $user['username'], $user['role']);
                     
+                    // Set additional session variables for compatibility
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['username'] = $user['username'];
+                    $_SESSION['user_role'] = $user['role'];
+                    $_SESSION['user_email'] = $user['email'];
+                    
                     // Debug: Check session
                     error_log("DEBUG: User logged in - ID: {$user['id']}, Role: {$user['role']}");
                     
-                    // Redirect to dashboard
-                    header('Location: /admin/dashboard');
+                    // STEP 1 FIX: Redirect based on role
+                    if ($user['role'] === 'nominal_roll_user') {
+                        header('Location: /admin/nominal-roll');  // Goes to nominal roll
+                    } else {
+                        header('Location: /admin/dashboard');     // Goes to dashboard
+                    }
                     exit;
                 } else {
                     Session::setFlash('error', 'Account is deactivated');
@@ -134,6 +147,82 @@ class AdminController extends Controller {
     }
 
     /**
+     * Show dashboard
+     */
+    public function dashboard() {
+        // STEP 2 FIX: BLOCK nominal_roll_user from dashboard
+        if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'nominal_roll_user') {
+            header('Location: /admin/nominal-roll');
+            exit;
+        }
+        
+        // Require authentication
+        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+        AuthMiddleware::authenticate();
+
+        // Get statistics
+        require_once __DIR__ . '/../config/database.php';
+        $db = Database::getInstance();
+        $conn = $db->getConnection();
+
+        $stats = [];
+        $error = null;
+
+        try {
+            // Get total users
+            $stmt = $conn->query("SELECT COUNT(*) as total FROM users");
+            $stats['total_users'] = $stmt->fetch()['total'];
+
+            // Get total applications
+            $stmt = $conn->query("SELECT COUNT(*) as total FROM applications");
+            $stats['total_applications'] = $stmt->fetch()['total'];
+
+            // Get total research
+            $stmt = $conn->query("SELECT COUNT(*) as total FROM research_publications");
+            $stats['total_research'] = $stmt->fetch()['total'];
+
+            // Get total news
+            $stmt = $conn->query("SELECT COUNT(*) as total FROM news");
+            $stats['total_news'] = $stmt->fetch()['total'];
+
+            // Get recent login activity
+            $stmt = $conn->query("
+                SELECT COUNT(*) as total 
+                FROM user_login_history 
+                WHERE success = 1 
+                AND login_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+            ");
+            $stats['recent_logins'] = $stmt->fetch()['total'];
+
+        } catch (Exception $e) {
+            error_log("Dashboard stats error: " . $e->getMessage());
+            $error = "Unable to load statistics. Please check database connection.";
+        }
+
+        // Check if dashboard view exists
+        $viewPath = APP_PATH . '/views/admin/dashboard.php';
+        
+        if (file_exists($viewPath)) {
+            // Set data for the view
+            $data = [
+                'stats' => $stats,
+                'error' => $error,
+                'user' => $_SESSION,
+                'pageTitle' => 'Admin Dashboard - FCT College of Nursing Sciences',
+                'currentPage' => 'dashboard',
+                'baseUrl' => BASE_URL
+            ];
+            
+            // Render the view with data
+            extract($data);
+            include $viewPath;
+        } else {
+            // Fallback to simple dashboard
+            $this->showSimpleDashboard($stats, $error);
+        }
+    }
+
+    /**
      * Fallback simple login form - FIXED FORM ACTION
      */
     private function showSimpleLogin($error = null, $success = null) {
@@ -141,6 +230,7 @@ class AdminController extends Controller {
         header('Content-Type: text/html; charset=UTF-8');
         
         // Get CSRF token from Session class
+        require_once __DIR__ . '/../config/session.php';
         $csrfToken = Session::getCSRFToken();
         ?>
         <!DOCTYPE html>
@@ -324,76 +414,6 @@ class AdminController extends Controller {
         // Redirect to admin login
         header('Location: /admin/login');
         exit;
-    }
-
-    /**
-     * Show dashboard
-     */
-    public function dashboard() {
-        // Require authentication
-        require_once __DIR__ . '/../middleware/AuthMiddleware.php';
-        AuthMiddleware::authenticate();
-
-        // Get statistics
-        require_once __DIR__ . '/../config/database.php';
-        $db = Database::getInstance();
-        $conn = $db->getConnection();
-
-        $stats = [];
-        $error = null;
-
-        try {
-            // Get total users
-            $stmt = $conn->query("SELECT COUNT(*) as total FROM users");
-            $stats['total_users'] = $stmt->fetch()['total'];
-
-            // Get total applications
-            $stmt = $conn->query("SELECT COUNT(*) as total FROM applications");
-            $stats['total_applications'] = $stmt->fetch()['total'];
-
-            // Get total research
-            $stmt = $conn->query("SELECT COUNT(*) as total FROM research_publications");
-            $stats['total_research'] = $stmt->fetch()['total'];
-
-            // Get total news
-            $stmt = $conn->query("SELECT COUNT(*) as total FROM news");
-            $stats['total_news'] = $stmt->fetch()['total'];
-
-            // Get recent login activity
-            $stmt = $conn->query("
-                SELECT COUNT(*) as total 
-                FROM user_login_history 
-                WHERE success = 1 
-                AND login_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)
-            ");
-            $stats['recent_logins'] = $stmt->fetch()['total'];
-
-        } catch (Exception $e) {
-            error_log("Dashboard stats error: " . $e->getMessage());
-            $error = "Unable to load statistics. Please check database connection.";
-        }
-
-        // Check if dashboard view exists
-        $viewPath = APP_PATH . '/views/admin/dashboard.php';
-        
-        if (file_exists($viewPath)) {
-            // Set data for the view
-            $data = [
-                'stats' => $stats,
-                'error' => $error,
-                'user' => $_SESSION,
-                'pageTitle' => 'Admin Dashboard - FCT College of Nursing Sciences',
-                'currentPage' => 'dashboard',
-                'baseUrl' => BASE_URL
-            ];
-            
-            // Render the view with data
-            extract($data);
-            include $viewPath;
-        } else {
-            // Fallback to simple dashboard
-            $this->showSimpleDashboard($stats, $error);
-        }
     }
 
     /**

@@ -348,6 +348,34 @@ class Router {
             exit;
         });
         
+        // ============================================
+        // DEBUG PERMISSION ROUTE - ADDED AS REQUESTED
+        // ============================================
+        $this->get('/debug-permission', function() {
+            require_once APP_PATH . '/config/database.php';
+            $database = Database::getInstance();
+            $db = $database->getConnection();
+            
+            $userId = $_SESSION['user_id'] ?? 0;
+            $stmt = $db->prepare("SELECT permission FROM user_permissions WHERE user_id = ?");
+            $stmt->execute([$userId]);
+            $permissions = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            echo "<h1>Debug Permission Check</h1>";
+            echo "<p>User ID: $userId</p>";
+            echo "<p>User Role: " . ($_SESSION['user_role'] ?? 'none') . "</p>";
+            echo "<h3>Permissions in database:</h3>";
+            echo "<pre>" . print_r($permissions, true) . "</pre>";
+            
+            // Check specific permission
+            $stmt = $db->prepare("SELECT COUNT(*) as count FROM user_permissions WHERE user_id = ? AND permission = 'nominal_roll_create'");
+            $stmt->execute([$userId]);
+            $hasCreate = $stmt->fetch()['count'] > 0;
+            
+            echo "<p>Has 'nominal_roll_create' permission: " . ($hasCreate ? 'YES' : 'NO') . "</p>";
+            exit;
+        });
+        
         // Candidate admission check portal (simple page for candidates)
         // FIXED: Both GET and POST go to candidatePortal() method
         $this->get('/admission/check-portal', 'AdmissionController@candidatePortal');

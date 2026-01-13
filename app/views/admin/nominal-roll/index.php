@@ -28,6 +28,16 @@ $username = isset($_SESSION['username']) ? $_SESSION['username'] : 'User';
 $isEditor = in_array($userRole, ['admin', 'editor']);
 $isSuperAdmin = $userRole === 'admin';
 
+// Permission flags (from controller)
+$hasCreatePermission = isset($hasCreatePermission) ? $hasCreatePermission : false;
+$hasEditPermission = isset($hasEditPermission) ? $hasEditPermission : false;
+$hasDeletePermission = isset($hasDeletePermission) ? $hasDeletePermission : false;
+$hasBulkUploadPermission = isset($hasBulkUploadPermission) ? $hasBulkUploadPermission : false;
+$hasSettingsPermission = isset($hasSettingsPermission) ? $hasSettingsPermission : false;
+
+// Editing enabled flag
+$editingEnabled = isset($editingEnabled) ? $editingEnabled : true;
+
 // Generate CSRF token for logout
 $csrf_token = bin2hex(random_bytes(32));
 $_SESSION['csrf_token'] = $csrf_token;
@@ -1239,13 +1249,15 @@ body {
                 </div>
                 
                 <div class="header-actions">
-                    <?php if (isset($isEditor) && $isEditor && (isset($editingEnabled) && $editingEnabled || isset($isSuperAdmin) && $isSuperAdmin)): ?>
+                    <!-- LINE 181: Add Employee button with permission check -->
+                    <?php if ($hasCreatePermission && ($editingEnabled || $isSuperAdmin)): ?>
                     <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/create" class="btn btn-primary">
                         <i class="fas fa-plus" aria-hidden="true"></i> Add Employee
                     </a>
                     <?php endif; ?>
                     
-                    <?php if (isset($isEditor) && $isEditor): ?>
+                    <!-- LINE 50: Bulk Upload button with permission check -->
+                    <?php if ($hasBulkUploadPermission): ?>
                     <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/bulk-upload" class="btn btn-secondary">
                         <i class="fas fa-upload" aria-hidden="true"></i> Bulk Upload
                     </a>
@@ -1262,7 +1274,8 @@ body {
                         <i class="fas fa-download" aria-hidden="true"></i> Export CSV
                     </a>
                     
-                    <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
+                    <!-- LINE 43: Settings button with permission check -->
+                    <?php if ($hasSettingsPermission || $isSuperAdmin): ?>
                     <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/settings" class="btn btn-outline">
                         <i class="fas fa-cog" aria-hidden="true"></i> Settings
                     </a>
@@ -1519,7 +1532,8 @@ body {
                     <?php endif; ?>
                 </p>
                 <div class="empty-state-actions">
-                    <?php if (isset($isEditor) && $isEditor && (isset($editingEnabled) && $editingEnabled || isset($isSuperAdmin) && $isSuperAdmin)): ?>
+                    <!-- LINE 254: Add First Employee button in empty state with permission check -->
+                    <?php if ($hasCreatePermission && ($editingEnabled || $isSuperAdmin)): ?>
                     <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/create" class="btn btn-primary">
                         <i class="fas fa-plus" aria-hidden="true"></i> Add First Employee
                     </a>
@@ -1681,7 +1695,8 @@ body {
                                         <span class="btn-text">View</span>
                                     </a>
                                     
-                                    <?php if (isset($isEditor) && $isEditor && (isset($editingEnabled) && $editingEnabled || isset($isSuperAdmin) && $isSuperAdmin)): ?>
+                                    <!-- LINE 273: Edit button in table with permission check -->
+                                    <?php if ($hasEditPermission && ($editingEnabled || $isSuperAdmin)): ?>
                                     <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/edit/<?php echo $employee['id']; ?>" 
                                        class="btn btn-sm btn-warning" title="Edit Employee" aria-label="Edit Employee">
                                         <i class="fas fa-edit" aria-hidden="true"></i>
@@ -1701,7 +1716,8 @@ body {
                                         <span class="btn-text">Report</span>
                                     </a>
                                     
-                                    <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
+                                    <!-- LINE 280: Delete button with permission check -->
+                                    <?php if ($hasDeletePermission && $isSuperAdmin): ?>
                                     <form method="POST" 
                                           action="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/delete/<?php echo $employee['id']; ?>" 
                                           class="d-inline delete-form"

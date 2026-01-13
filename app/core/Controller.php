@@ -444,4 +444,91 @@ class Controller {
         ];
         $this->render('500');
     }
+    
+    /**
+     * Check if user has specific permission
+     * 
+     * @param string $permission Permission name to check
+     * @param int|null $userId Optional user ID (defaults to current session user)
+     * @return bool True if user has permission
+     */
+    protected function checkPermission($permission, $userId = null) {
+        // Get user ID from session if not provided
+        if ($userId === null) {
+            $userId = $_SESSION['user_id'] ?? 0;
+        }
+        
+        if (!$userId) {
+            return false;
+        }
+        
+        try {
+            // Require database connection
+            require_once APP_PATH . '/config/database.php';
+            $database = Database::getInstance();
+            $db = $database->getConnection();
+            
+            // Check permission in user_permissions table
+            $stmt = $db->prepare("
+                SELECT is_allowed FROM user_permissions 
+                WHERE user_id = ? AND permission = ?
+            ");
+            $stmt->execute([$userId, $permission]);
+            $result = $stmt->fetch();
+            
+            return $result && $result['is_allowed'] == 1;
+        } catch (Exception $e) {
+            error_log("Permission check error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Check multiple permissions (require all or any)
+     * 
+     * @param array $permissions Array of permission names to check
+     * @param bool $requireAll True to require all permissions, false for any
+     * @return bool True if permissions check passes
+     */
+    protected function checkPermissions($permissions, $requireAll = true) {
+        $userId = $_SESSION['user_id'] ?? 0;
+        
+        if (!$userId) {
+            return false;
+        }
+        
+        foreach ($permissions as $permission) {
+            $hasPermission = $this->checkPermission($permission, $userId);
+            
+            if ($requireAll && !$hasPermission) {
+                return false; // Need all, found one missing
+            }
+            
+            if (!$requireAll && $hasPermission) {
+                return true; // Need any, found one
+            }
+        }
+        
+        return $requireAll; // If requireAll=true and got here, all passed
+    }
+    
+    /**
+     * Check if user has permission with admin override
+     * Admins automatically have all permissions
+     * 
+     * @param string $permission Permission name to check
+     * @return bool True if user has permission
+     */
+    protected function checkPermissionWithAdmin($permission) {
+        // Check if user is admin first
+        $userRole = $_SESSION['user_role'] ?? '';
+        $isAdmin = in_array($userRole, ['admin', 'super_admin']);
+        
+        if ($isAdmin) {
+            return true; // Admin has all permissions
+        }
+        
+        // Non-admin users: check specific permission
+        return $this->checkPermission($permission);
+    }
 }

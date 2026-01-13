@@ -7,6 +7,7 @@ class UserManagementController extends Controller {
     
     private $db;
     private $perPage = 20;
+    private $model;
     
     public function __construct() {
         parent::__construct();
@@ -16,19 +17,29 @@ class UserManagementController extends Controller {
         require_once APP_PATH . '/middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
         
-        // Check if user is admin
-        if (!in_array($_SESSION['user_role'], ['admin', 'super_admin'])) {
-            $this->flash('error', 'Access denied. Admin privileges required.');
+        // Check if user has permission to manage users
+        if (!$this->checkPermissionWithAdmin('user_view') && !$this->checkPermissionWithAdmin('user_create')) {
+            $this->flash('error', 'Access denied. You do not have permission to manage users.');
             $this->redirect('/admin/dashboard');
+            exit;
         }
+        
+        // Load model
+        // In constructor, replace model loading with:
+        require_once __DIR__ . '/../models/UserModel.php';
+        $this->model = new UserModel();
         
         // Setup database
         require_once APP_PATH . '/config/database.php';
         $database = Database::getInstance();
         $this->db = $database->getConnection();
         
-        // Initialize data
+        // Set permission flags for views
         $this->data = array_merge($this->data, [
+            'hasUserViewPermission' => $this->checkPermissionWithAdmin('user_view'),
+            'hasUserCreatePermission' => $this->checkPermissionWithAdmin('user_create'),
+            'hasUserEditPermission' => $this->checkPermissionWithAdmin('user_edit'),
+            'hasUserDeletePermission' => $this->checkPermissionWithAdmin('user_delete'),
             'user' => $_SESSION ?? [],
             'baseUrl' => BASE_URL,
             'currentPage' => 'user-management'
@@ -40,6 +51,13 @@ class UserManagementController extends Controller {
      */
     public function index() {
         try {
+            // Check if user has permission to view users
+            if (!$this->checkPermission('user_view')) {
+                $this->flash('error', 'Access denied. You do not have permission to view users.');
+                $this->redirect('/admin/dashboard');
+                return;
+            }
+            
             // Get filter parameters
             $page = max(1, (int)($this->query('page', 1)));
             $search = $this->query('search', '');
@@ -147,6 +165,13 @@ class UserManagementController extends Controller {
      */
     public function view($id) {
         try {
+            // Check if user has permission to view users
+            if (!$this->checkPermission('user_view')) {
+                $this->flash('error', 'Access denied. You do not have permission to view user details.');
+                $this->redirect('/admin/users');
+                return;
+            }
+            
             $user = $this->getUserById($id);
             
             if (!$user) {
@@ -220,6 +245,13 @@ class UserManagementController extends Controller {
      * Create user form
      */
     public function create() {
+        // Check if user has permission to create users
+        if (!$this->checkPermission('user_create')) {
+            $this->flash('error', 'Access denied. You do not have permission to create users.');
+            $this->redirect('/admin/users');
+            return;
+        }
+        
         $roles = $this->getAvailableRoles();
         $departments = $this->getDepartments();
         $permissions = $this->getAvailablePermissions();
@@ -245,6 +277,13 @@ class UserManagementController extends Controller {
         }
 
         try {
+            // Check if user has permission to create users
+            if (!$this->checkPermission('user_create')) {
+                $this->flash('error', 'Access denied. You do not have permission to create users.');
+                $this->redirect('/admin/users');
+                return;
+            }
+            
             $this->validateCsrf();
             
             $data = [
@@ -339,6 +378,13 @@ class UserManagementController extends Controller {
      */
     public function edit($id) {
         try {
+            // Check if user has permission to edit users
+            if (!$this->checkPermission('user_edit')) {
+                $this->flash('error', 'Access denied. You do not have permission to edit users.');
+                $this->redirect('/admin/users');
+                return;
+            }
+            
             $user = $this->getUserById($id);
             
             if (!$user) {
@@ -397,6 +443,13 @@ class UserManagementController extends Controller {
         }
 
         try {
+            // Check if user has permission to edit users
+            if (!$this->checkPermission('user_edit')) {
+                $this->flash('error', 'Access denied. You do not have permission to edit users.');
+                $this->redirect('/admin/users');
+                return;
+            }
+            
             $this->validateCsrf();
             
             $data = [
@@ -580,6 +633,13 @@ class UserManagementController extends Controller {
         }
 
         try {
+            // Check if user has permission to delete users
+            if (!$this->checkPermission('user_delete')) {
+                $this->flash('error', 'Access denied. You do not have permission to delete users.');
+                $this->redirect('/admin/users');
+                return;
+            }
+            
             $this->validateCsrf();
             
             // Don't allow deleting yourself
@@ -653,6 +713,13 @@ class UserManagementController extends Controller {
         }
 
         try {
+            // Check if user has permission to edit users (status change is an edit)
+            if (!$this->checkPermission('user_edit')) {
+                $this->flash('error', 'Access denied. You do not have permission to change user status.');
+                $this->redirect('/admin/users');
+                return;
+            }
+            
             $this->validateCsrf();
             
             $value = $this->input('value', 0);
@@ -692,6 +759,13 @@ class UserManagementController extends Controller {
         }
 
         try {
+            // Check if user has permission to edit users (password reset is an edit)
+            if (!$this->checkPermission('user_edit')) {
+                $this->flash('error', 'Access denied. You do not have permission to reset passwords.');
+                $this->redirect('/admin/users');
+                return;
+            }
+            
             $this->validateCsrf();
             
             $user = $this->getUserById($id);
@@ -730,6 +804,13 @@ class UserManagementController extends Controller {
      */
     public function export() {
         try {
+            // Check if user has permission to view users (export is a view operation)
+            if (!$this->checkPermission('user_view')) {
+                $this->flash('error', 'Access denied. You do not have permission to export users.');
+                $this->redirect('/admin/users');
+                return;
+            }
+            
             // Get filter parameters
             $search = $this->query('search', '');
             $role = $this->query('role', '');
@@ -993,9 +1074,12 @@ class UserManagementController extends Controller {
             
             $userId = $id ?: $_SESSION['user_id'];
             
-            // Don't allow removing other users' profile pictures unless admin
-            if ($userId != $_SESSION['user_id'] && !in_array($_SESSION['user_role'], ['admin', 'super_admin'])) {
-                throw new Exception("You don't have permission to remove this profile picture.");
+            // Check permissions for removing other users' profile pictures
+            if ($userId != $_SESSION['user_id']) {
+                // Check if user has permission to edit users
+                if (!$this->checkPermission('user_edit')) {
+                    throw new Exception("You don't have permission to remove other users' profile pictures.");
+                }
             }
             
             $user = $this->getUserById($userId);
@@ -1213,6 +1297,9 @@ class UserManagementController extends Controller {
             'admin_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'admin'",
             'editor_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'editor'",
             'viewer_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'viewer'",
+            'moderator_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'moderator'",
+            'supervisor_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'supervisor'",
+            'nominal_roll_user_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'nominal_roll_user'",
             'today_logins' => "SELECT COUNT(*) as count FROM users WHERE DATE(last_login) = CURDATE()",
             'must_change_password' => "SELECT COUNT(*) as count FROM users WHERE must_change_password = 1"
         ];
@@ -1226,7 +1313,7 @@ class UserManagementController extends Controller {
     }
     
     /**
-     * Get available roles
+     * Get available roles - UPDATED TO INCLUDE 'nominal_roll_user'
      */
     private function getAvailableRoles() {
         return [
@@ -1234,7 +1321,8 @@ class UserManagementController extends Controller {
             'editor' => 'Editor',
             'viewer' => 'Viewer',
             'moderator' => 'Moderator',
-            'supervisor' => 'Supervisor'
+            'supervisor' => 'Supervisor',
+            'nominal_roll_user' => 'Nominal Roll User' // ADDED
         ];
     }
     
@@ -1357,7 +1445,7 @@ class UserManagementController extends Controller {
     }
     
     /**
-     * Get default permissions for role
+     * Get default permissions for role - UPDATED TO INCLUDE 'nominal_roll_user' ROLE
      */
     private function getDefaultPermissionsForRole($role) {
         $defaults = [
@@ -1384,6 +1472,13 @@ class UserManagementController extends Controller {
             'supervisor' => [
                 'nominal_roll_view', 'nominal_roll_create', 'nominal_roll_edit',
                 'application_view', 'system_reports'
+            ],
+            // NEW ROLE: Nominal Roll Only User
+            'nominal_roll_user' => [
+                'nominal_roll_view',
+                'nominal_roll_create',
+                'nominal_roll_edit',
+                'nominal_roll_export'
             ]
         ];
         
