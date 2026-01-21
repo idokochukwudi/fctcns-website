@@ -1,1324 +1,1377 @@
 <?php
-/**
- * Bulk Upload View
- * Upload multiple employees via CSV/Excel file
- */
+// ============================================================================
+// Bulk Upload View - Nominal Roll (Admin)
+// ============================================================================
+
+// Check user authorization
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+    header('Location: /login');
+    exit();
+}
+
+$page_title = "Bulk Upload - Nominal Roll";
+
+// ==============================
+// FIX: Get CSRF token properly
+// ==============================
+// Try to get from controller data first, then session, then generate new
+$csrfToken = $this->data['csrfToken'] ?? 
+            ($_SESSION['csrf_tokens'] ?? false ? array_key_last($_SESSION['csrf_tokens']) : '');
 ?>
-<div class="bulk-upload-container">
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="header-content">
-            <div class="header-title">
-                <h1>Bulk Upload Employees</h1>
-                <p class="subtitle">Upload multiple employee records via CSV/Excel file</p>
-            </div>
-            <div class="header-actions">
-                <a href="<?php echo $baseUrl; ?>/admin/nominal-roll" class="btn btn-outline">
-                    <i class="fas fa-arrow-left"></i> Back to List
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $page_title; ?> - FCTCNS</title>
+    
+    <!-- CSRF Token -->
+    <meta name="csrf-token" id="csrf-token-meta" content="<?php echo htmlspecialchars($csrfToken); ?>">
+    
+    <!-- Hidden input as backup -->
+    <input type="hidden" id="csrf_token_hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .main-container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color), #34495e);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .back-button {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.3s ease;
+        }
+        
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+            color: white;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            padding: 15px 20px;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            border: none;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 8px;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+        }
+        
+        .alert {
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        /* Upload Area Styles */
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--secondary-color);
+            background: #f8fbff;
+        }
+        
+        .upload-area.active {
+            border-color: var(--success-color);
+            background: #f0fff4;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+        
+        .file-info {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: left;
+        }
+        
+        /* Validation Stats */
+        .validation-stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .stat-card.total { border-left: 4px solid #2196f3; }
+        .stat-card.valid { border-left: 4px solid #4caf50; }
+        .stat-card.errors { border-left: 4px solid #f44336; }
+        .stat-card.duplicates { border-left: 4px solid #ff9800; }
+        
+        .stat-card h5 {
+            font-size: 24px;
+            margin: 0;
+            font-weight: bold;
+        }
+        
+        .stat-card p {
+            margin: 5px 0 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* Progress Bar */
+        .progress-container {
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            border-radius: 5px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary-color), var(--success-color));
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        /* Error List */
+        .error-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .error-item {
+            padding: 10px 15px;
+            border-left: 4px solid #f44336;
+            background: #ffebee;
+            margin-bottom: 8px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .error-item .row-info {
+            font-weight: bold;
+            color: #d32f2f;
+        }
+        
+        .error-item .field-info {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* Column Groups */
+        .column-group {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .column-group h6 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .column-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        
+        .column-item {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            border-left: 3px solid #dee2e6;
+        }
+        
+        .required {
+            border-left-color: var(--danger-color);
+        }
+        
+        .optional {
+            border-left-color: var(--warning-color);
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 15px;
+            }
+            
+            .validation-stats {
+                flex-direction: column;
+            }
+            
+            .stat-card {
+                min-width: 100%;
+            }
+            
+            .column-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1><i class="fas fa-users"></i> Bulk Nominal Roll Upload</h1>
+                    <p class="mb-0">Upload multiple employee records at once using CSV format</p>
+                </div>
+                <a href="/nominal-roll" class="back-button">
+                    <i class="fas fa-arrow-left"></i> Back to Nominal Roll
                 </a>
             </div>
         </div>
-    </div>
 
-    <!-- Upload Stats -->
-    <div class="upload-stats">
-        <div class="stats-cards">
-            <div class="stat-card">
-                <div class="stat-icon bg-primary">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?php echo number_format($totalEmployees ?? 0); ?></h3>
-                    <p>Total Employees</p>
-                </div>
+        <!-- Messages -->
+        <?php if (isset($_SESSION['success_msg']) && $_SESSION['success_msg']): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success_msg']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon bg-success">
-                    <i class="fas fa-file-upload"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?php echo number_format($lastUploadCount ?? 0); ?></h3>
-                    <p>Last Upload</p>
-                </div>
+            <?php unset($_SESSION['success_msg']); ?>
+        <?php endif; ?>
+        
+        <?php if (isset($_SESSION['error_msg']) && $_SESSION['error_msg']): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($_SESSION['error_msg']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon bg-info">
-                    <i class="fas fa-history"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?php echo !empty($lastUploadDate) ? date('M d', strtotime($lastUploadDate)) : 'Never'; ?></h3>
-                    <p>Last Upload Date</p>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon bg-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <div class="stat-content">
-                    <h3><?php echo number_format($duplicateCount ?? 0); ?></h3>
-                    <p>Possible Duplicates</p>
-                </div>
-            </div>
-        </div>
-    </div>
+            <?php unset($_SESSION['error_msg']); ?>
+        <?php endif; ?>
 
-    <!-- Flash Messages -->
-    <?php if (!empty($flash_success)): ?>
-    <div class="alert alert-success">
-        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($flash_success); ?>
-    </div>
-    <?php endif; ?>
-    
-    <?php if (!empty($flash_error)): ?>
-    <div class="alert alert-danger">
-        <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($flash_error); ?>
-    </div>
-    <?php endif; ?>
-
-    <!-- Upload Section -->
-    <div class="upload-section">
-        <div class="upload-container">
-            <!-- Left: Upload Form -->
-            <div class="upload-form-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-cloud-upload-alt"></i> Upload File</h3>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="<?php echo $baseUrl; ?>/admin/nominal-roll/process-bulk-upload" enctype="multipart/form-data" id="uploadForm">
-                        <input type="hidden" name="_csrf_token" value="<?php echo $csrf_token; ?>">
-                        
+        <!-- Upload Section -->
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-cloud-upload-alt"></i> Upload CSV File</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Upload Area -->
                         <div class="upload-area" id="uploadArea">
                             <div class="upload-icon">
-                                <i class="fas fa-file-excel"></i>
+                                <i class="fas fa-file-upload"></i>
                             </div>
-                            <h4>Drag & drop your file here</h4>
-                            <p class="upload-subtitle">or click to browse</p>
-                            <input type="file" 
-                                   id="uploadFile" 
-                                   name="upload_file" 
-                                   accept=".csv,.xlsx,.xls"
-                                   class="file-input">
-                            <p class="file-types">Supported formats: CSV, Excel (.xlsx, .xls)</p>
-                            <p class="file-size">Max file size: 10MB</p>
-                        </div>
-                        
-                        <div class="selected-file" id="selectedFile" style="display: none;">
-                            <div class="file-info">
-                                <i class="fas fa-file-excel text-success"></i>
-                                <div class="file-details">
-                                    <span class="file-name" id="fileName">No file selected</span>
-                                    <span class="file-size" id="fileSize">0 KB</span>
+                            <h4>Drag & Drop your CSV file here</h4>
+                            <p class="text-muted">or click to browse files</p>
+                            <input type="file" class="d-none" id="csvFile" name="file" accept=".csv">
+                            <div class="file-info d-none" id="fileInfo">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong id="fileName">No file selected</strong>
+                                        <br>
+                                        <small id="fileSize">0 KB</small>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-danger" id="removeFile">
+                                        <i class="fas fa-times"></i> Remove
+                                    </button>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-outline" id="removeFile">
-                                    <i class="fas fa-times"></i>
-                                </button>
                             </div>
                         </div>
-                        
-                        <div class="upload-options">
-                            <div class="form-group">
-                                <label for="upload_mode">
-                                    <input type="checkbox" id="upload_mode" name="update_existing" value="1">
-                                    Update existing records
-                                </label>
-                                <small class="form-text">If checked, will update existing employees with matching employee numbers</small>
+
+                        <!-- Validation Stats (Hidden by default) -->
+                        <div class="validation-stats d-none" id="validationStats">
+                            <div class="stat-card total">
+                                <h5 id="statTotal">0</h5>
+                                <p>Total Records</p>
                             </div>
-                            
-                            <div class="form-group">
-                                <label for="skip_duplicates">
-                                    <input type="checkbox" id="skip_duplicates" name="skip_duplicates" value="1" checked>
-                                    Skip duplicates
-                                </label>
-                                <small class="form-text">Skip records with duplicate employee numbers</small>
+                            <div class="stat-card valid">
+                                <h5 id="statValid">0</h5>
+                                <p>Valid Records</p>
                             </div>
-                            
-                            <div class="form-group">
-                                <label for="send_notifications">
-                                    <input type="checkbox" id="send_notifications" name="send_notifications" value="1">
-                                    Send email notifications
-                                </label>
-                                <small class="form-text">Send email notifications for new employees (if email is provided)</small>
+                            <div class="stat-card errors">
+                                <h5 id="statErrors">0</h5>
+                                <p>Errors Found</p>
+                            </div>
+                            <div class="stat-card duplicates">
+                                <h5 id="statDuplicates">0</h5>
+                                <p>Duplicates</p>
                             </div>
                         </div>
-                        
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn" disabled>
-                                <i class="fas fa-upload"></i> Process Upload
+
+                        <!-- Progress Bar -->
+                        <div class="progress-container d-none" id="progressContainer">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <div class="progress-text">
+                                <span id="progressText">Validating...</span>
+                                <span id="progressPercent">0%</span>
+                            </div>
+                        </div>
+
+                        <!-- Error List -->
+                        <div class="error-list d-none" id="errorList">
+                            <!-- Errors will be populated here -->
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-warning" id="validateBtn" disabled>
+                                <i class="fas fa-search"></i> Validate File
                             </button>
-                            <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/download-template" class="btn btn-success btn-lg">
-                                <i class="fas fa-download"></i> Download Template
-                            </a>
+                            <button type="button" class="btn btn-primary" id="uploadBtn" disabled>
+                                <i class="fas fa-upload"></i> Confirm Upload
+                            </button>
                         </div>
-                    </form>
+                    </div>
+                </div>
+
+                <!-- CSV Format Info -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h4><i class="fas fa-info-circle"></i> CSV Format Requirements</h4>
+                    </div>
+                    <div class="card-body">
+                        <p>Your CSV file must include the following columns in this exact order:</p>
+                        
+                        <!-- Required Columns -->
+                        <div class="column-group">
+                            <h6><i class="fas fa-asterisk text-danger"></i> Required Fields</h6>
+                            <div class="column-list">
+                                <div class="column-item required">
+                                    <code>employee_number</code> - Employee Number (e.g., EMP20260001)
+                                </div>
+                                <div class="column-item required">
+                                    <code>surname</code> - Surname
+                                </div>
+                                <div class="column-item required">
+                                    <code>first_name</code> - First Name
+                                </div>
+                                <div class="column-item optional">
+                                    <code>middle_name</code> - Middle Name
+                                </div>
+                                <div class="column-item required">
+                                    <code>sex</code> - Sex (Male/Female)
+                                </div>
+                                <div class="column-item required">
+                                    <code>date_of_birth</code> - Date of Birth (YYYY-MM-DD)
+                                </div>
+                                <div class="column-item required">
+                                    <code>marital_status</code> - Marital Status
+                                </div>
+                                <div class="column-item required">
+                                    <code>rank</code> - Rank/Position
+                                </div>
+                                <div class="column-item required">
+                                    <code>department</code> - Department
+                                </div>
+                                <div class="column-item required">
+                                    <code>email</code> - Email Address
+                                </div>
+                                <div class="column-item required">
+                                    <code>telephone_number</code> - Telephone Number
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Employment Details -->
+                        <div class="column-group">
+                            <h6><i class="fas fa-briefcase text-info"></i> Employment Details</h6>
+                            <div class="column-list">
+                                <div class="column-item optional">
+                                    <code>grade_level</code> - Grade Level (GL)
+                                </div>
+                                <div class="column-item optional">
+                                    <code>step</code> - Step
+                                </div>
+                                <div class="column-item optional">
+                                    <code>cadre</code> - Cadre
+                                </div>
+                                <div class="column-item optional">
+                                    <code>staff_type</code> - Staff Type (Academic/Non-Academic)
+                                </div>
+                                <div class="column-item optional">
+                                    <code>employment_type</code> - Employment Type (Permanent/Contract)
+                                </div>
+                                <div class="column-item optional">
+                                    <code>appointment_type</code> - Appointment Type (Confirmed/Acting)
+                                </div>
+                                <div class="column-item optional">
+                                    <code>date_of_first_appointment</code> - Date of First Appointment
+                                </div>
+                                <div class="column-item optional">
+                                    <code>date_of_confirmation</code> - Date of Confirmation
+                                </div>
+                                <div class="column-item optional">
+                                    <code>rank_on_first_appointment</code> - Rank on First Appointment
+                                </div>
+                                <div class="column-item optional">
+                                    <code>date_of_present_appointment</code> - Date of Present Appointment
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Personal Details -->
+                        <div class="column-group">
+                            <h6><i class="fas fa-user text-primary"></i> Personal Details</h6>
+                            <div class="column-list">
+                                <div class="column-item optional">
+                                    <code>nationality</code> - Nationality
+                                </div>
+                                <div class="column-item optional">
+                                    <code>religion</code> - Religion
+                                </div>
+                                <div class="column-item optional">
+                                    <code>blood_group</code> - Blood Group
+                                </div>
+                                <div class="column-item optional">
+                                    <code>genotype</code> - Genotype
+                                </div>
+                                <div class="column-item optional">
+                                    <code>state</code> - State of Origin
+                                </div>
+                                <div class="column-item optional">
+                                    <code>local_govt_area</code> - Local Government Area
+                                </div>
+                                <div class="column-item optional">
+                                    <code>state_of_residence</code> - State of Residence
+                                </div>
+                                <div class="column-item optional">
+                                    <code>residential_address</code> - Residential Address
+                                </div>
+                                <div class="column-item optional">
+                                    <code>contact_address</code> - Contact Address
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Financial Details -->
+                        <div class="column-group">
+                            <h6><i class="fas fa-money-bill text-success"></i> Financial Details</h6>
+                            <div class="column-list">
+                                <div class="column-item optional">
+                                    <code>bank_name</code> - Bank Name
+                                </div>
+                                <div class="column-item optional">
+                                    <code>bank_branch</code> - Bank Branch
+                                </div>
+                                <div class="column-item optional">
+                                    <code>account_number</code> - Account Number
+                                </div>
+                                <div class="column-item optional">
+                                    <code>account_name</code> - Account Name
+                                </div>
+                                <div class="column-item optional">
+                                    <code>pf_number</code> - PF Number
+                                </div>
+                                <div class="column-item optional">
+                                    <code>nhf_number</code> - NHF Number
+                                </div>
+                                <div class="column-item optional">
+                                    <code>pension_fund_admin</code> - Pension Fund Admin
+                                </div>
+                                <div class="column-item optional">
+                                    <code>pension_number</code> - Pension Number
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Emergency Contact -->
+                        <div class="column-group">
+                            <h6><i class="fas fa-phone-alt text-warning"></i> Emergency & Next of Kin</h6>
+                            <div class="column-list">
+                                <div class="column-item optional">
+                                    <code>emergency_contact_name</code> - Emergency Contact Name
+                                </div>
+                                <div class="column-item optional">
+                                    <code>emergency_contact_phone</code> - Emergency Contact Phone
+                                </div>
+                                <div class="column-item optional">
+                                    <code>emergency_contact_relationship</code> - Relationship
+                                </div>
+                                <div class="column-item optional">
+                                    <code>next_of_kin_name</code> - Next of Kin Name
+                                </div>
+                                <div class="column-item optional">
+                                    <code>next_of_kin_phone</code> - Next of Kin Phone
+                                </div>
+                                <div class="column-item optional">
+                                    <code>next_of_kin_address</code> - Next of Kin Address
+                                </div>
+                                <div class="column-item optional">
+                                    <code>next_of_kin_relationship</code> - Relationship
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-4">
+                            <i class="fas fa-lightbulb"></i> <strong>Important Notes:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>First row must be column headers exactly as shown above</li>
+                                <li>Save file as UTF-8 encoded CSV</li>
+                                <li>Dates must be in YYYY-MM-DD format (e.g., 1995-12-24)</li>
+                                <li>JSON arrays for additional_qualifications should be valid JSON</li>
+                                <li>Employee numbers must be unique</li>
+                                <li>Text fields containing commas should be enclosed in double quotes</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Right: Instructions -->
-            <div class="instructions-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-info-circle"></i> Instructions</h3>
+
+            <!-- Right Sidebar -->
+            <div class="col-lg-4">
+                <!-- Download Template -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4><i class="fas fa-download"></i> Download Template</h4>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="mb-4">
+                            <i class="fas fa-file-csv fa-4x text-success mb-3"></i>
+                            <h5>CSV Template File</h5>
+                            <p class="text-muted">Use our pre-formatted template with sample data</p>
+                        </div>
+                        
+                        <button type="button" class="btn btn-success btn-lg w-100 mb-3" id="downloadTemplateBtn">
+                            <i class="fas fa-download"></i> Download Template
+                        </button>
+                        
+                        <div class="alert alert-light">
+                            <h6><i class="fas fa-lightbulb"></i> Quick Start Guide:</h6>
+                            <ol class="mb-0 ps-3">
+                                <li>Download the template</li>
+                                <li>Fill in your data</li>
+                                <li>Save as CSV file</li>
+                                <li>Upload and validate</li>
+                                <li>Confirm upload</li>
+                            </ol>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="instructions">
-                        <div class="instruction-step">
-                            <div class="step-number">1</div>
-                            <div class="step-content">
-                                <h5>Download Template</h5>
-                                <p>Download the Excel template to ensure correct formatting</p>
+
+                <!-- Upload Guidelines -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-clipboard-check"></i> Validation Rules</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Required Fields:</strong> Employee Number, Surname, First Name
                             </div>
-                        </div>
-                        
-                        <div class="instruction-step">
-                            <div class="step-number">2</div>
-                            <div class="step-content">
-                                <h5>Fill Data</h5>
-                                <p>Fill in employee data. Required fields are marked with *</p>
+                            <div class="list-group-item">
+                                <i class="fas fa-calendar-alt text-info me-2"></i>
+                                <strong>Date Format:</strong> Must be YYYY-MM-DD
                             </div>
-                        </div>
-                        
-                        <div class="instruction-step">
-                            <div class="step-number">3</div>
-                            <div class="step-content">
-                                <h5>Upload File</h5>
-                                <p>Upload the completed file. System will validate and process</p>
+                            <div class="list-group-item">
+                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                <strong>Duplicate Check:</strong> Employee numbers must be unique
                             </div>
-                        </div>
-                        
-                        <div class="instruction-step">
-                            <div class="step-number">4</div>
-                            <div class="step-content">
-                                <h5>Review Results</h5>
-                                <p>Check upload summary and fix any errors if needed</p>
+                            <div class="list-group-item">
+                                <i class="fas fa-envelope text-primary me-2"></i>
+                                <strong>Email Format:</strong> Must be valid email address
+                            </div>
+                            <div class="list-group-item">
+                                <i class="fas fa-phone text-secondary me-2"></i>
+                                <strong>Phone Numbers:</strong> Must be valid Nigerian format
+                            </div>
+                            <div class="list-group-item">
+                                <i class="fas fa-venus-mars text-danger me-2"></i>
+                                <strong>Gender:</strong> Must be "Male" or "Female"
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="required-fields">
-                        <h5>Required Fields (*)</h5>
-                        <div class="fields-list">
-                            <span class="badge badge-primary">employee_number</span>
-                            <span class="badge badge-primary">surname</span>
-                            <span class="badge badge-primary">first_name</span>
-                            <span class="badge badge-primary">sex</span>
-                            <span class="badge badge-primary">date_of_birth</span>
-                            <span class="badge badge-primary">marital_status</span>
-                            <span class="badge badge-primary">rank</span>
-                            <span class="badge badge-primary">grade_level</span>
-                            <span class="badge badge-primary">highest_qualification</span>
-                            <span class="badge badge-primary">year_of_highest_qualification</span>
-                            <span class="badge badge-primary">date_of_first_appointment</span>
-                            <span class="badge badge-primary">state</span>
-                            <span class="badge badge-primary">local_govt_area</span>
-                        </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h4><i class="fas fa-chart-bar"></i> Current Statistics</h4>
                     </div>
-                    
-                    <div class="tips">
-                        <h5><i class="fas fa-lightbulb"></i> Tips</h5>
-                        <ul>
-                            <li>Use YYYY-MM-DD format for dates</li>
-                            <li>Sex should be "Male" or "Female"</li>
-                            <li>Grade Level should be a number (1-17)</li>
-                            <li>For additional qualifications, separate with semicolons</li>
-                            <li>Save file as CSV for best compatibility</li>
-                        </ul>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-users fa-3x text-primary mb-2"></i>
+                            <h5>Total Employees</h5>
+                            <h3 class="text-primary">
+                                <?php 
+                                // You'll need to get this count from your controller
+                                // For now, display a placeholder
+                                echo "Loading...";
+                                ?>
+                            </h3>
+                        </div>
+                        <small class="text-muted">Last upload: 
+                            <?php 
+                            // Get last upload date
+                            echo date('Y-m-d');
+                            ?>
+                        </small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Upload History -->
-    <?php if (!empty($uploadHistory)): ?>
-    <div class="upload-history">
-        <div class="section-header">
-            <h3><i class="fas fa-history"></i> Recent Uploads</h3>
-        </div>
-        
-        <div class="history-table">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>File Name</th>
-                        <th>Records</th>
-                        <th>Success</th>
-                        <th>Errors</th>
-                        <th>Status</th>
-                        <th>Uploaded By</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($uploadHistory as $history): ?>
-                    <tr>
-                        <td><?php echo date('M d, Y H:i', strtotime($history['created_at'])); ?></td>
-                        <td><?php echo htmlspecialchars($history['file_name']); ?></td>
-                        <td><?php echo $history['total_records']; ?></td>
-                        <td>
-                            <span class="text-success">
-                                <i class="fas fa-check"></i> <?php echo $history['success_count']; ?>
-                            </span>
-                        </td>
-                        <td>
-                            <?php if ($history['error_count'] > 0): ?>
-                            <span class="text-danger">
-                                <i class="fas fa-times"></i> <?php echo $history['error_count']; ?>
-                            </span>
-                            <?php else: ?>
-                            <span class="text-success">0</span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <?php if ($history['status'] === 'completed'): ?>
-                            <span class="badge badge-success">Completed</span>
-                            <?php elseif ($history['status'] === 'processing'): ?>
-                            <span class="badge badge-info">Processing</span>
-                            <?php elseif ($history['status'] === 'failed'): ?>
-                            <span class="badge badge-danger">Failed</span>
-                            <?php else: ?>
-                            <span class="badge badge-warning"><?php echo ucfirst($history['status']); ?></span>
-                            <?php endif; ?>
-                        </td>
-                        <td><?php echo htmlspecialchars($history['user_name']); ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <?php endif; ?>
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Validation Results Modal -->
-    <div class="modal fade" id="validationModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Upload Validation Results</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div id="validationResults">
-                        <!-- Results will be displayed here -->
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="confirmUpload">Confirm Upload</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- JavaScript -->
-<script>
+    <!-- JavaScript -->
+    <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const uploadArea = document.getElementById('uploadArea');
-    const fileInput = document.getElementById('uploadFile');
-    const selectedFile = document.getElementById('selectedFile');
-    const fileName = document.getElementById('fileName');
-    const fileSize = document.getElementById('fileSize');
-    const removeFileBtn = document.getElementById('removeFile');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const uploadForm = document.getElementById('uploadForm');
+    console.log("[INIT] Starting bulk upload script...");
     
-    // File upload area click
-    uploadArea.addEventListener('click', function() {
-        fileInput.click();
-    });
+    var uploadArea = document.getElementById('uploadArea');
+    var fileInput = document.getElementById('csvFile');
+    var fileInfo = document.getElementById('fileInfo');
+    var fileName = document.getElementById('fileName');
+    var fileSize = document.getElementById('fileSize');
+    var removeFileBtn = document.getElementById('removeFile');
+    var validateBtn = document.getElementById('validateBtn');
+    var uploadBtn = document.getElementById('uploadBtn');
+    var validationStats = document.getElementById('validationStats');
+    var progressContainer = document.getElementById('progressContainer');
+    var progressFill = document.getElementById('progressFill');
+    var progressText = document.getElementById('progressText');
+    var progressPercent = document.getElementById('progressPercent');
+    var errorList = document.getElementById('errorList');
+    var downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
     
-    // Drag and drop functionality
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, preventDefaults, false);
-    });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, highlight, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, unhighlight, false);
-    });
-
-    function highlight() {
-        uploadArea.classList.add('highlight');
-    }
-
-    function unhighlight() {
-        uploadArea.classList.remove('highlight');
-    }
-
-    uploadArea.addEventListener('drop', handleDrop, false);
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        fileInput.files = files;
-        handleFileSelect(files[0]);
-    }
+    var statTotal = document.getElementById('statTotal');
+    var statValid = document.getElementById('statValid');
+    var statErrors = document.getElementById('statErrors');
+    var statDuplicates = document.getElementById('statDuplicates');
     
-    // File input change
-    fileInput.addEventListener('change', function() {
-        if (this.files && this.files[0]) {
-            handleFileSelect(this.files[0]);
+    var currentFile = null;
+    var validationResult = null;
+    
+    // Debug: Confirm elements exist
+    console.log("[INIT] uploadBtn found?", !!uploadBtn);
+    console.log("[INIT] validateBtn found?", !!validateBtn);
+    
+    // ====================== DEBUG: Test CSRF Token ======================
+    function testCsrfToken() {
+        console.log("=== CSRF TOKEN DIAGNOSTICS ===");
+        
+        // Check meta tag
+        const metaToken = document.querySelector('meta[name="csrf-token"]');
+        console.log("Meta tag exists:", !!metaToken);
+        console.log("Meta token content:", metaToken?.content || "EMPTY");
+        console.log("Meta token content length:", metaToken?.content?.length || 0);
+        
+        // Check hidden inputs
+        const hiddenInputs = document.querySelectorAll('input[type="hidden"]');
+        console.log("Total hidden inputs:", hiddenInputs.length);
+        
+        hiddenInputs.forEach((input, index) => {
+            console.log(`Hidden input ${index + 1}:`, {
+                name: input.name,
+                id: input.id,
+                valueLength: input.value.length,
+                valuePreview: input.value.substring(0, 20) + '...'
+            });
+        });
+        
+        // Check session data from PHP
+        console.log("PHP Session check (if embedded):");
+        try {
+            // Check if any PHP session data is embedded
+            const bodyHTML = document.body.innerHTML;
+            if (bodyHTML.includes('csrf') || bodyHTML.includes('CSRF')) {
+                console.log("Found 'csrf' in page HTML");
+            }
+        } catch(e) {
+            console.log("Could not search HTML:", e.message);
         }
-    });
+        
+        console.log("=== END DIAGNOSTICS ===");
+    }
     
-    function handleFileSelect(file) {
-        // Check file size (10MB max)
-        if (file.size > 10 * 1024 * 1024) {
-            alert('File size must be less than 10MB');
-            resetFileInput();
+    // Call diagnostics
+    setTimeout(testCsrfToken, 1000);
+    // ====================== END DEBUG ======================
+    
+    // ====================== FIX 2: Safe event listener attachment ======================
+    // Safe event listener attachment with retry
+    function attachUploadListener() {
+        if (!uploadBtn) {
+            console.error("[ATTACH FAIL] uploadBtn element still not found!");
             return;
         }
+
+        // Remove any old listeners to prevent duplicates
+        uploadBtn.removeEventListener('click', handleUploadClick);
         
-        // Check file type
-        const validTypes = [
-            'text/csv',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        ];
-        const validExtensions = ['.csv', '.xls', '.xlsx'];
-        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+        // Attach fresh listener
+        uploadBtn.addEventListener('click', handleUploadClick);
+        console.log("[ATTACH SUCCESS] Upload listener attached to button");
+    }
+
+    function handleUploadClick() {
+        console.log("╔════════════════════════════════════╗");
+        console.log("║ CONFIRM UPLOAD CLICKED ║");
+        console.log("╚════════════════════════════════════╝");
+        console.log("Time:", new Date().toISOString());
+        console.log("Button disabled?", uploadBtn.disabled);
+        console.log("currentFile:", currentFile ? currentFile.name : "MISSING");
+        console.log("validationResult:", validationResult ? "EXISTS" : "MISSING");
         
-        if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
-            alert('Only CSV and Excel files are allowed');
-            resetFileInput();
+        if (uploadBtn.disabled) {
+            console.warn("BLOCKED: Button is still disabled!");
+            showAlert('Upload button is disabled. Please validate first.', 'warning');
             return;
         }
+
+        if (!currentFile) {
+            console.error("BLOCKED: No file");
+            showAlert('No file selected.', 'warning');
+            return;
+        }
+
+        if (!validationResult) {
+            console.error("BLOCKED: No validationResult");
+            showAlert('Please validate the file again.', 'danger');
+            return;
+        }
+
+        if (validationResult.error_count > 0) {
+            console.warn("BLOCKED: Errors remain");
+            showAlert('Fix errors first.', 'danger');
+            return;
+        }
+
+        console.log("→ Proceeding to upload...");
         
-        // Update UI
-        fileName.textContent = file.name;
-        fileSize.textContent = formatFileSize(file.size);
-        selectedFile.style.display = 'block';
-        uploadBtn.disabled = false;
-    }
-    
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-    
-    // Remove file
-    removeFileBtn.addEventListener('click', function() {
-        resetFileInput();
-    });
-    
-    function resetFileInput() {
-        fileInput.value = '';
-        selectedFile.style.display = 'none';
+        // Confirm dialog
+        var confirmMessage = `Upload ${validationResult.valid_records} records?`;
+        if (!confirm(confirmMessage)) {
+            console.log("User cancelled upload");
+            return;
+        }
+
+        console.log("→ User confirmed. Building request...");
+        // ==============================
+        // FIX: Get CSRF token with multiple fallbacks
+        // ==============================
+        function getCsrfToken() {
+            // Try meta tag first
+            const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+            if (tokenMeta && tokenMeta.content) {
+                console.log("Got CSRF from meta tag");
+                return tokenMeta.content;
+            }
+            
+            // Try hidden input
+            const tokenInput = document.querySelector('input[name="csrf_token"]');
+            if (tokenInput && tokenInput.value) {
+                console.log("Got CSRF from input[name='csrf_token']");
+                return tokenInput.value;
+            }
+            
+            // Try by ID
+            const tokenById = document.querySelector('#csrf_token_hidden');
+            if (tokenById && tokenById.value) {
+                console.log("Got CSRF from #csrf_token_hidden");
+                return tokenById.value;
+            }
+            
+            // Try any input with csrf
+            const anyToken = document.querySelector('input[type="hidden"][name*="csrf"], input[type="hidden"][id*="csrf"]');
+            if (anyToken && anyToken.value) {
+                console.log("Got CSRF from any csrf input");
+                return anyToken.value;
+            }
+            
+            console.error("No CSRF token found!");
+            return '';
+        }
+        
+        const csrfToken = getCsrfToken();
+        console.log("CSRF Token length:", csrfToken.length);
+        console.log("CSRF Token first 20 chars:", csrfToken.substring(0, 20));
+        
+        if (!csrfToken) {
+            showAlert('Security token missing. Please refresh the page.', 'danger');
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('file', currentFile);  // consistent with validate
+        formData.append('csrf_token', csrfToken);
+
+        if (csrfToken) {
+            console.log("→ CSRF added");
+        } else {
+            console.error("→ CSRF MISSING!");
+        }
+
         uploadBtn.disabled = true;
-        fileName.textContent = 'No file selected';
-        fileSize.textContent = '0 KB';
-    }
-    
-    // Form submission with validation
-    uploadForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        if (!fileInput.files || !fileInput.files[0]) {
-            alert('Please select a file to upload');
-            return;
-        }
-        
-        // Show loading state
-        const originalText = uploadBtn.innerHTML;
-        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-        uploadBtn.disabled = true;
-        
-        // Create FormData for AJAX upload
-        const formData = new FormData(this);
-        
-        // Send AJAX request for validation
-        fetch('<?php echo $baseUrl; ?>/admin/nominal-roll/validate-bulk-upload', {
+        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+        console.log("→ Sending fetch to /admin/nominal-roll/bulk-upload-process");
+
+        // ==============================
+        // MAIN FIX: ADD DEBUG CHECK FOR SERVER RESPONSE
+        // ==============================
+        fetch('/admin/nominal-roll/bulk-upload-process', {
             method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+            body: formData
+        })
+        .then(response => {
+            console.log("→ Server responded - Status:", response.status);
+            console.log("→ Response headers:", Object.fromEntries(response.headers.entries()));
+            
+            if (!response.ok) {
+                console.error("→ Server returned error status:", response.status);
+                throw new Error(`Server error ${response.status}`);
+            }
+            
+            // DEBUG: Get raw text to see what server actually returned
+            return response.text().then(text => {
+                console.log("→ RAW SERVER RESPONSE (first 500 chars):", text.substring(0, 500));
+                
+                // Check if it's HTML
+                if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('<!doctype')) {
+                    console.error("❌ SERVER RETURNED HTML INSTEAD OF JSON!");
+                    
+                    // Try to extract any error message from HTML
+                    if (text.includes('Fatal error') || text.includes('Parse error')) {
+                        throw new Error('PHP error on server. Check server logs.');
+                    }
+                    
+                    if (text.includes('Admin Login') || text.includes('login')) {
+                        throw new Error('Session expired. Please refresh and login again.');
+                    }
+                    
+                    if (text.includes('Access denied') || text.includes('Permission denied')) {
+                        throw new Error('Access denied. You do not have permission.');
+                    }
+                    
+                    throw new Error('Server returned HTML instead of JSON. Check server error logs.');
+                }
+                
+                // Check if it's empty
+                if (text.trim() === '') {
+                    console.error("❌ SERVER RETURNED EMPTY RESPONSE!");
+                    throw new Error('Server returned empty response. Check server logs.');
+                }
+                
+                // Try to parse as JSON
+                try {
+                    const data = JSON.parse(text);
+                    console.log("✅ JSON parse successful:", data);
+                    return data;
+                } catch (e) {
+                    console.error("❌ JSON PARSE FAILED. Full raw response:");
+                    console.error("--- START RAW RESPONSE ---");
+                    console.error(text);
+                    console.error("--- END RAW RESPONSE ---");
+                    throw new Error('Invalid JSON from server: ' + text.substring(0, 200));
+                }
+            });
+        })
+        .then(data => {
+            console.log("→ Server JSON parsed successfully:", data);
+            if (data.success) {
+                showAlert('Upload successful! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = window.location.origin + '/admin/nominal-roll?upload_success=true&limit=5&page=1';
+                }, 2000);
+            } else {
+                console.error("→ Server reported failure:", data.error);
+                showAlert('Upload failed: ' + (data.error || 'Unknown error'), 'danger');
             }
         })
-        .then(response => response.json())
-        .then(data => {
-            // Reset button
-            uploadBtn.innerHTML = originalText;
+        .catch(err => {
+            console.error("→ Upload fetch failed:", err);
+            showAlert('Upload error: ' + err.message, 'danger');
+        })
+        .finally(() => {
             uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Confirm Upload';
+            console.log("→ Upload process finished (success or fail)");
+        });
+    }
+
+    // Attach listener immediately + retry after 1 second (handles late DOM)
+    attachUploadListener();
+    setTimeout(attachUploadListener, 1000);
+    // ====================== END FIX 2 ======================
+    
+    uploadArea.addEventListener('click', function(e) {
+        if (e.target !== removeFileBtn && !removeFileBtn.contains(e.target)) {
+            fileInput.click();
+        }
+    });
+    
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            handleFile(this.files[0]);
+        }
+    });
+    
+    function handleFile(file) {
+        console.log("[HANDLE FILE] Selected:", file.name);
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            showAlert('Please select a CSV file.', 'warning');
+            return;
+        }
+        
+        if (file.size > 10 * 1024 * 1024) {
+            showAlert('File size exceeds 10MB limit.', 'warning');
+            return;
+        }
+
+        currentFile = file;
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.classList.remove('d-none');
+        uploadArea.classList.add('active');
+        validateBtn.disabled = false;
+        uploadBtn.disabled = true;
+        clearValidation();
+
+        setTimeout(function() {
+            validateFile();
+        }, 500);
+    }
+    
+    removeFileBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        clearFile();
+    });
+    
+    function clearFile() {
+        currentFile = null;
+        fileInput.value = '';
+        fileInfo.classList.add('d-none');
+        uploadArea.classList.remove('active');
+        validateBtn.disabled = true;
+        uploadBtn.disabled = true;
+        clearValidation();
+    }
+    
+    validateBtn.addEventListener('click', validateFile);
+    
+    function validateFile() {
+        console.log("[VALIDATE CLICK] Starting validation...");
+        
+        if (!currentFile) {
+            showAlert('Please select a file first.', 'warning');
+            return;
+        }
+
+        // ==============================
+        // FIX: Get CSRF token with multiple fallbacks
+        // ==============================
+        function getCsrfToken() {
+            // Try meta tag first
+            const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+            if (tokenMeta && tokenMeta.content) {
+                console.log("Got CSRF from meta tag");
+                return tokenMeta.content;
+            }
+            
+            // Try hidden input
+            const tokenInput = document.querySelector('input[name="csrf_token"]');
+            if (tokenInput && tokenInput.value) {
+                console.log("Got CSRF from input[name='csrf_token']");
+                return tokenInput.value;
+            }
+            
+            // Try by ID
+            const tokenById = document.querySelector('#csrf_token_hidden');
+            if (tokenById && tokenById.value) {
+                console.log("Got CSRF from #csrf_token_hidden");
+                return tokenById.value;
+            }
+            
+            // Try any input with csrf
+            const anyToken = document.querySelector('input[type="hidden"][name*="csrf"], input[type="hidden"][id*="csrf"]');
+            if (anyToken && anyToken.value) {
+                console.log("Got CSRF from any csrf input");
+                return anyToken.value;
+            }
+            
+            console.error("No CSRF token found!");
+            return '';
+        }
+        
+        const csrfToken = getCsrfToken();
+        console.log("CSRF Token length:", csrfToken.length);
+        console.log("CSRF Token first 20 chars:", csrfToken.substring(0, 20));
+        
+        if (!csrfToken) {
+            showAlert('Security token missing. Please refresh the page.', 'danger');
+            return;
+        }
+
+        validationStats.classList.remove('d-none');
+        progressContainer.classList.remove('d-none');
+        errorList.classList.add('d-none');
+        updateProgress(10, 'Checking file format...');
+
+        var formData = new FormData();
+        formData.append('file', currentFile);
+        formData.append('csrf_token', csrfToken);
+
+        console.log("Sending validation request with CSRF token...");
+
+        var progressInterval = setInterval(function() {
+            var current = parseInt(progressFill.style.width) || 10;
+            if (current < 70) updateProgress(current + 10, 'Analyzing data...');
+        }, 500);
+
+        fetch('/admin/nominal-roll/validate-bulk-upload', {
+            method: 'POST',
+            body: formData,
+            headers: { 
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest' // Add this header
+            }
+        })
+        .then(response => {
+            clearInterval(progressInterval);
+            console.log('[VALIDATE] Status:', response.status);
+            console.log('[VALIDATE] Content-Type:', response.headers.get('content-type'));
+            
+            return response.text().then(text => {
+                console.log('[VALIDATE] Raw response (first 500 chars):', text.substring(0, 500));
+                
+                // Check if response is HTML (error page)
+                if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('<!doctype')) {
+                    console.error('❌ SERVER RETURNED HTML INSTEAD OF JSON!');
+                    
+                    if (text.includes('Admin Login') || text.includes('login')) {
+                        throw new Error('Session expired. Please refresh and login again.');
+                    }
+                    
+                    if (text.includes('Access denied') || text.includes('Permission denied')) {
+                        throw new Error('Access denied. You do not have permission.');
+                    }
+                    
+                    throw new Error('Server returned HTML instead of JSON. Check server logs.');
+                }
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                
+                return JSON.parse(text);
+            });
+        })
+        .then(data => {
+            console.log('[VALIDATE] Parsed data:', data);
             
             if (data.success) {
-                // Show validation results
-                showValidationResults(data);
+                validationResult = data;
+                updateProgress(100, 'Validation complete!');
+
+                statTotal.textContent = data.total_records || 0;
+                statValid.textContent = data.valid_records || 0;
+                statErrors.textContent = data.error_count || 0;
+                statDuplicates.textContent = data.duplicate_count || 0;
+
+                if (data.errors?.length > 0) showErrors(data.errors);
+
+                // ====================== FIX 1: Force re-check and enable button ======================
+                if (data.error_count === 0) {
+                    console.log("[VALIDATE SUCCESS] Enabling upload button - attempt 1");
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Confirm Upload';
+                    uploadBtn.classList.remove('btn-warning');
+                    uploadBtn.classList.add('btn-success');
+
+                    // Extra force-enable (timing fix)
+                    setTimeout(() => {
+                        if (uploadBtn) {
+                            uploadBtn.disabled = false;
+                            console.log("[VALIDATE FORCE] Button now enabled after delay");
+                            uploadBtn.style.pointerEvents = 'auto'; // extra CSS fix
+                            uploadBtn.style.opacity = '1';
+                        }
+                    }, 300);
+                } else {
+                    uploadBtn.disabled = true;
+                    uploadBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Fix Errors First';
+                    uploadBtn.classList.remove('btn-success');
+                    uploadBtn.classList.add('btn-warning');
+                }
+                // ====================== END FIX 1 ======================
+
+                // ====================== FIX 3: Final safety net ======================
+                // Final safety net: re-attach listener after validation
+                setTimeout(attachUploadListener, 500);
+                // ====================== END FIX 3 ======================
             } else {
-                alert(data.message || 'Validation failed');
+                updateProgress(0, 'Validation failed');
+                showAlert(data.error || 'Validation failed.', 'danger');
             }
         })
         .catch(error => {
-            // Reset button
-            uploadBtn.innerHTML = originalText;
-            uploadBtn.disabled = false;
-            console.error('Error:', error);
-            alert('An error occurred during validation');
+            clearInterval(progressInterval);
+            console.error('[VALIDATE ERROR]', error);
+            updateProgress(0, 'Validation error');
+            showAlert('Error validating file: ' + error.message, 'danger');
         });
-    });
+    }
     
-    function showValidationResults(data) {
-        const resultsContainer = document.getElementById('validationResults');
-        const modal = new bootstrap.Modal(document.getElementById('validationModal'));
+    function updateProgress(percent, text) {
+        progressFill.style.width = percent + '%';
+        progressText.textContent = text;
+        progressPercent.textContent = percent + '%';
+    }
+    
+    function showErrors(errors) {
+        errorList.classList.remove('d-none');
+        errorList.innerHTML = '';
         
-        let html = `
-            <div class="validation-summary">
-                <div class="summary-cards">
-                    <div class="summary-card total">
-                        <h4>${data.total_records}</h4>
-                        <p>Total Records</p>
-                    </div>
-                    <div class="summary-card valid">
-                        <h4>${data.valid_records}</h4>
-                        <p>Valid Records</p>
-                    </div>
-                    <div class="summary-card errors">
-                        <h4>${data.error_count}</h4>
-                        <p>Errors Found</p>
-                    </div>
-                </div>
-        `;
-        
-        if (data.errors && data.errors.length > 0) {
-            html += `
-                <div class="errors-list">
-                    <h5><i class="fas fa-exclamation-triangle text-danger"></i> Errors Found:</h5>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Row</th>
-                                    <th>Field</th>
-                                    <th>Error</th>
-                                    <th>Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-            `;
+        var displayErrors = errors.slice(0, 10);
+        for (var i = 0; i < displayErrors.length; i++) {
+            var error = displayErrors[i];
+            var errorDiv = document.createElement('div');
+            errorDiv.className = 'error-item';
             
-            data.errors.forEach(error => {
-                html += `
-                    <tr>
-                        <td>${error.row}</td>
-                        <td>${error.field}</td>
-                        <td><span class="text-danger">${error.message}</span></td>
-                        <td><code>${error.value || ''}</code></td>
-                    </tr>
-                `;
-            });
+            var rowInfo = document.createElement('div');
+            rowInfo.className = 'row-info';
+            rowInfo.textContent = 'Row ' + error.row + ': ' + error.message;
             
-            html += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
+            var fieldInfo = document.createElement('div');
+            fieldInfo.className = 'field-info';
+            fieldInfo.textContent = 'Field: ' + error.field + ' | Value: "' + (error.value || 'N/A') + '"';
+            
+            errorDiv.appendChild(rowInfo);
+            errorDiv.appendChild(fieldInfo);
+            errorList.appendChild(errorDiv);
         }
         
-        if (data.duplicates && data.duplicates.length > 0) {
-            html += `
-                <div class="duplicates-list">
-                    <h5><i class="fas fa-clone text-warning"></i> Possible Duplicates:</h5>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Employee Number</th>
-                                    <th>Name</th>
-                                    <th>Existing Record</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-            `;
-            
-            data.duplicates.forEach(dup => {
-                html += `
-                    <tr>
-                        <td>${dup.employee_number}</td>
-                        <td>${dup.name}</td>
-                        <td>${dup.exists ? 'Yes' : 'No'}</td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-        
-        if (data.error_count === 0) {
-            html += `
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i>
-                    All records are valid and ready for upload!
-                </div>
-            `;
-        } else {
-            html += `
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Found ${data.error_count} errors. Please fix them before proceeding.
-                </div>
-            `;
-        }
-        
-        html += `</div>`;
-        resultsContainer.innerHTML = html;
-        
-        // Show modal
-        modal.show();
-        
-        // Handle confirm upload button
-        const confirmBtn = document.getElementById('confirmUpload');
-        if (data.error_count === 0) {
-            confirmBtn.disabled = false;
-            confirmBtn.addEventListener('click', function() {
-                // Submit the form for real upload
-                uploadForm.removeEventListener('submit', arguments.callee);
-                uploadForm.submit();
-            });
-        } else {
-            confirmBtn.disabled = true;
-            confirmBtn.title = 'Fix errors before uploading';
+        if (errors.length > 10) {
+            var moreDiv = document.createElement('div');
+            moreDiv.className = 'text-center mt-2';
+            var moreText = document.createElement('small');
+            moreText.className = 'text-muted';
+            moreText.textContent = '... and ' + (errors.length - 10) + ' more errors';
+            moreDiv.appendChild(moreText);
+            errorList.appendChild(moreDiv);
         }
     }
     
-    // Initialize tooltips if Bootstrap is available
-    if (typeof bootstrap !== 'undefined') {
-        const tooltips = document.querySelectorAll('[data-toggle="tooltip"]');
-        tooltips.forEach(tooltip => {
-            new bootstrap.Tooltip(tooltip);
-        });
+    function clearValidation() {
+        validationResult = null;
+        validationStats.classList.add('d-none');
+        progressContainer.classList.add('d-none');
+        errorList.classList.add('d-none');
+        errorList.innerHTML = '';
+        
+        statTotal.textContent = '0';
+        statValid.textContent = '0';
+        statErrors.textContent = '0';
+        statDuplicates.textContent = '0';
+        
+        progressFill.style.width = '0%';
+        progressText.textContent = 'Validating...';
+        progressPercent.textContent = '0%';
+        
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Confirm Upload';
+        uploadBtn.classList.remove('btn-success', 'btn-warning');
+        uploadBtn.classList.add('btn-primary');
+    }
+    
+    downloadTemplateBtn.addEventListener('click', function() {
+        var headers = 'employee_number,surname,first_name,middle_name,sex,date_of_birth,marital_status,rank,grade_level,department,email,telephone_number,state,local_govt_area';
+        var row1 = 'EMP20260001,Doe,John,Michael,Male,1990-05-15,Married,Senior Lecturer,15,Anatomy,john.doe@example.com,08012345678,FCT,Gwagwalada';
+        var row2 = 'EMP20260002,Smith,Jane,,Female,1985-08-22,Single,Manager,14,HR,jane.smith@example.com,08023456789,Lagos,Ikeja';
+        var row3 = 'EMP20260003,Johnson,Robert,James,Male,1978-12-10,Married,Professor,16,Nursing,robert.j@example.com,08034567890,Rivers,Port-Harcourt';
+        
+        var templateContent = headers + '\n' + row1 + '\n' + row2 + '\n' + row3;
+        var blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' });
+        var link = document.createElement('a');
+        var url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'nominal_roll_template.csv');
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showAlert('Template downloaded successfully!', 'success');
+    });
+    
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        var k = 1024;
+        var sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        var i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    function showAlert(message, type) {
+        type = type || 'info';
+        
+        var existingAlerts = document.querySelectorAll('.alert:not(.alert-info):not(.alert-light)');
+        for (var i = 0; i < existingAlerts.length; i++) {
+            var alert = existingAlerts[i];
+            if (alert.parentNode) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }
+        }
+        
+        var iconClass = 'exclamation-circle';
+        if (type === 'success') {
+            iconClass = 'check-circle';
+        } else if (type === 'warning') {
+            iconClass = 'exclamation-triangle';
+        }
+        
+        var alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-' + type + ' alert-dismissible fade show';
+        
+        var icon = document.createElement('i');
+        icon.className = 'fas fa-' + iconClass;
+        
+        var messageText = document.createTextNode(' ' + message + ' ');
+        
+        var closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'btn-close';
+        closeBtn.setAttribute('data-bs-dismiss', 'alert');
+        
+        alertDiv.appendChild(icon);
+        alertDiv.appendChild(messageText);
+        alertDiv.appendChild(closeBtn);
+        
+        var pageHeader = document.querySelector('.page-header');
+        if (pageHeader && pageHeader.nextElementSibling) {
+            pageHeader.parentNode.insertBefore(alertDiv, pageHeader.nextElementSibling);
+        } else {
+            var mainContainer = document.querySelector('.main-container');
+            if (mainContainer) {
+                mainContainer.insertBefore(alertDiv, mainContainer.firstChild);
+            }
+        }
+        
+        setTimeout(function() {
+            if (alertDiv.parentNode) {
+                var bsAlert = new bootstrap.Alert(alertDiv);
+                bsAlert.close();
+            }
+        }, 5000);
     }
 });
 </script>
-
-<style>
-.bulk-upload-container {
-    padding: 20px;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
-/* Page Header */
-.page-header {
-    margin-bottom: 30px;
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 20px;
-}
-
-.header-title h1 {
-    font-size: 28px;
-    font-weight: 700;
-    color: #2d3748;
-    margin: 0 0 8px 0;
-}
-
-.header-title .subtitle {
-    color: #718096;
-    font-size: 16px;
-    margin: 0;
-}
-
-/* Upload Stats */
-.upload-stats {
-    margin-bottom: 30px;
-}
-
-.stats-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-}
-
-.stat-card {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    transition: transform 0.2s;
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-}
-
-.stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-}
-
-.stat-icon.bg-primary { background: #3490dc; }
-.stat-icon.bg-success { background: #38a169; }
-.stat-icon.bg-info { background: #4299e1; }
-.stat-icon.bg-warning { background: #d69e2e; }
-
-.stat-content h3 {
-    font-size: 28px;
-    font-weight: 700;
-    margin: 0 0 4px 0;
-    color: #2d3748;
-}
-
-.stat-content p {
-    font-size: 14px;
-    color: #718096;
-    margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* Upload Section */
-.upload-container {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 30px;
-    margin-bottom: 40px;
-}
-
-@media (max-width: 1024px) {
-    .upload-container {
-        grid-template-columns: 1fr;
-    }
-}
-
-.upload-form-card,
-.instructions-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    overflow: hidden;
-}
-
-.card-header {
-    padding: 20px 30px;
-    background: linear-gradient(135deg, #3490dc 0%, #2779bd 100%);
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.card-header h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: white;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.card-body {
-    padding: 30px;
-}
-
-/* Upload Area */
-.upload-area {
-    border: 3px dashed #cbd5e0;
-    border-radius: 12px;
-    padding: 40px 20px;
-    text-align: center;
-    background: #f8fafc;
-    cursor: pointer;
-    transition: all 0.3s;
-    margin-bottom: 20px;
-    position: relative;
-}
-
-.upload-area:hover {
-    border-color: #3490dc;
-    background: #edf2f7;
-}
-
-.upload-area.highlight {
-    border-color: #3490dc;
-    background: #e6fffa;
-}
-
-.upload-icon {
-    font-size: 48px;
-    color: #3490dc;
-    margin-bottom: 15px;
-}
-
-.upload-area h4 {
-    font-size: 18px;
-    color: #4a5568;
-    margin: 0 0 8px 0;
-}
-
-.upload-subtitle {
-    color: #718096;
-    font-size: 14px;
-    margin: 0 0 15px 0;
-}
-
-.file-types,
-.file-size {
-    font-size: 12px;
-    color: #a0aec0;
-    margin: 5px 0 0 0;
-}
-
-.file-input {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-}
-
-/* Selected File */
-.selected-file {
-    margin-bottom: 20px;
-}
-
-.file-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 15px;
-    background: #f0fff4;
-    border: 1px solid #9ae6b4;
-    border-radius: 8px;
-}
-
-.file-info i {
-    font-size: 24px;
-}
-
-.file-details {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.file-name {
-    font-weight: 600;
-    color: #22543d;
-}
-
-.file-size {
-    font-size: 12px;
-    color: #38a169;
-}
-
-/* Upload Options */
-.upload-options {
-    margin-bottom: 30px;
-}
-
-.upload-options .form-group {
-    margin-bottom: 15px;
-}
-
-.upload-options label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 500;
-    color: #4a5568;
-    cursor: pointer;
-    margin: 0;
-}
-
-.upload-options input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-}
-
-.upload-options .form-text {
-    margin-left: 26px;
-    font-size: 12px;
-    color: #718096;
-}
-
-/* Form Actions */
-.form-actions {
-    display: flex;
-    gap: 15px;
-}
-
-.form-actions .btn {
-    flex: 1;
-}
-
-/* Instructions */
-.instructions {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-.instruction-step {
-    display: flex;
-    gap: 15px;
-    align-items: flex-start;
-}
-
-.step-number {
-    width: 30px;
-    height: 30px;
-    background: #3490dc;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 14px;
-    flex-shrink: 0;
-}
-
-.step-content h5 {
-    margin: 0 0 5px 0;
-    font-size: 14px;
-    color: #2d3748;
-}
-
-.step-content p {
-    margin: 0;
-    font-size: 13px;
-    color: #718096;
-    line-height: 1.5;
-}
-
-.required-fields {
-    margin-bottom: 30px;
-}
-
-.required-fields h5 {
-    font-size: 14px;
-    color: #4a5568;
-    margin: 0 0 10px 0;
-}
-
-.fields-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.badge {
-    display: inline-block;
-    padding: 4px 8px;
-    font-size: 11px;
-    font-weight: 600;
-    border-radius: 4px;
-}
-
-.badge-primary {
-    background: #ebf8ff;
-    color: #2b6cb0;
-    border: 1px solid #bee3f8;
-}
-
-.tips h5 {
-    font-size: 14px;
-    color: #4a5568;
-    margin: 0 0 10px 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.tips h5 i {
-    color: #d69e2e;
-}
-
-.tips ul {
-    margin: 0;
-    padding-left: 20px;
-}
-
-.tips li {
-    font-size: 13px;
-    color: #718096;
-    margin-bottom: 5px;
-    line-height: 1.4;
-}
-
-/* Upload History */
-.upload-history {
-    margin-top: 40px;
-}
-
-.section-header {
-    margin-bottom: 20px;
-}
-
-.section-header h3 {
-    font-size: 20px;
-    color: #2d3748;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.history-table {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    overflow: hidden;
-}
-
-.history-table table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.history-table thead {
-    background: #f7fafc;
-}
-
-.history-table th {
-    padding: 15px 20px;
-    text-align: left;
-    font-weight: 600;
-    color: #4a5568;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 2px solid #e2e8f0;
-}
-
-.history-table td {
-    padding: 15px 20px;
-    border-bottom: 1px solid #e2e8f0;
-    font-size: 14px;
-    color: #4a5568;
-}
-
-.history-table tbody tr:hover {
-    background: #f8fafc;
-}
-
-/* Modal Styles */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1050;
-}
-
-.modal.show {
-    display: block;
-}
-
-.modal-dialog {
-    max-width: 800px;
-    margin: 30px auto;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-    padding: 20px 30px;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.modal-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #2d3748;
-}
-
-.modal-body {
-    padding: 30px;
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-.modal-footer {
-    padding: 20px 30px;
-    border-top: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-/* Validation Results */
-.validation-summary {
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-}
-
-.summary-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-}
-
-.summary-card {
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 20px;
-    text-align: center;
-    border-top: 4px solid #e2e8f0;
-}
-
-.summary-card.total {
-    border-top-color: #3490dc;
-}
-
-.summary-card.valid {
-    border-top-color: #38a169;
-}
-
-.summary-card.errors {
-    border-top-color: #e53e3e;
-}
-
-.summary-card h4 {
-    font-size: 32px;
-    font-weight: 700;
-    margin: 0 0 5px 0;
-}
-
-.summary-card.total h4 { color: #3490dc; }
-.summary-card.valid h4 { color: #38a169; }
-.summary-card.errors h4 { color: #e53e3e; }
-
-.summary-card p {
-    margin: 0;
-    font-size: 12px;
-    color: #718096;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.errors-list h5,
-.duplicates-list h5 {
-    font-size: 16px;
-    color: #4a5568;
-    margin: 0 0 15px 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.table-responsive {
-    overflow-x: auto;
-}
-
-.table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.table th {
-    padding: 10px 12px;
-    text-align: left;
-    font-weight: 600;
-    color: #4a5568;
-    font-size: 12px;
-    background: #f7fafc;
-    border-bottom: 2px solid #e2e8f0;
-}
-
-.table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid #e2e8f0;
-    font-size: 13px;
-}
-
-.table-sm th,
-.table-sm td {
-    padding: 8px 10px;
-}
-
-.table tbody tr:hover {
-    background: #f8fafc;
-}
-
-/* Buttons */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    text-decoration: none;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-}
-
-.btn-lg {
-    padding: 14px 28px;
-    font-size: 16px;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #3490dc 0%, #2779bd 100%);
-    color: white;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px rgba(52, 144, 220, 0.4);
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
-    color: white;
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-outline {
-    background: transparent;
-    color: #4a5568;
-    border: 2px solid #e2e8f0;
-}
-
-.btn-outline:hover {
-    background: #f8fafc;
-    border-color: #cbd5e0;
-}
-
-.btn-danger {
-    background: #e53e3e;
-    color: white;
-}
-
-.btn-sm {
-    padding: 6px 12px;
-    font-size: 14px;
-}
-
-/* Alerts */
-.alert {
-    padding: 15px 20px;
-    border-radius: 8px;
-    margin-bottom: 25px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.alert-success {
-    background: #f0fff4;
-    border: 2px solid #9ae6b4;
-    color: #22543d;
-}
-
-.alert-danger {
-    background: #fff5f5;
-    border: 2px solid #fed7d7;
-    color: #c53030;
-}
-
-.alert-warning {
-    background: #fffaf0;
-    border: 2px solid #feebc8;
-    color: #9c4221;
-}
-
-.alert i {
-    font-size: 18px;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .bulk-upload-container {
-        padding: 15px;
-    }
-    
-    .header-content {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .stats-cards {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .form-actions {
-        flex-direction: column;
-    }
-    
-    .form-actions .btn {
-        width: 100%;
-    }
-    
-    .summary-cards {
-        grid-template-columns: 1fr;
-    }
-    
-    .modal-dialog {
-        margin: 10px;
-    }
-}
-
-@media (max-width: 480px) {
-    .stats-cards {
-        grid-template-columns: 1fr;
-    }
-    
-    .header-title h1 {
-        font-size: 24px;
-    }
-    
-    .upload-area {
-        padding: 30px 15px;
-    }
-    
-    .upload-area h4 {
-        font-size: 16px;
-    }
-}
-</style>
+</body>
+</html>

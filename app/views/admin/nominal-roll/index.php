@@ -2068,7 +2068,7 @@ body {
                 });
             }
             
-            // Clear filters with confirmation
+            // Clear filters with confirmation - FIXED VERSION (Option 1)
             document.querySelector(".btn-clear-filters")?.addEventListener("click", function(e) {
                 e.preventDefault();
                 
@@ -2080,6 +2080,8 @@ body {
                     return;
                 }
                 
+                const buttonElement = this; // Capture the button element
+                
                 Swal.fire({
                     title: "Clear All Filters?",
                     text: "This will remove all applied filters and search terms.",
@@ -2089,9 +2091,9 @@ body {
                     cancelButtonText: "Cancel"
                 }).then(result => {
                     if (result.isConfirmed) {
-                        window.location.href = this.href;
+                        window.location.href = buttonElement.href; // Use captured reference
                     }
-                }.bind(this));
+                });
             });
             
             // Row click handling (view details)
@@ -2186,99 +2188,108 @@ body {
         
         // Global functions
         window.confirmDelete = function(form) {
-            const row = form.closest("tr");
-            const employeeName = row.querySelector(".employee-name strong").textContent;
-            const employeeNumber = row.querySelector(".employee-number strong").textContent;
-            
-            Swal.fire({
-                title: "Delete Employee?",
-                html: `<div class="text-left">
-                    <p><strong>Are you sure you want to delete this employee?</strong></p>
-                    <div style="background: #fffaf0; border: 1px solid #fed7d7; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
-                        <i class="fas fa-exclamation-triangle" style="color: #d69e2e; margin-right: 8px;"></i>
-                        This action cannot be undone!
-                    </div>
-                    <div style="background: #f8f9fa; padding: 12px; border-radius: 6px;">
-                        <p><strong>Name:</strong> ${employeeName}</p>
-                        <p><strong>Employee No:</strong> ${employeeNumber}</p>
-                    </div>
-                </div>`,
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonText: "Yes, Delete",
-                cancelButtonText: "Cancel",
-                confirmButtonColor: "#e53e3e",
-                cancelButtonColor: "#3182ce"
-            }).then(result => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: "Deleting...",
-                        text: "Please wait",
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-                    form.submit();
-                }
-            });
-            
-            return false;
-        };
+        const row = form.closest("tr");
+        const employeeName = row.querySelector(".employee-name strong").textContent;
+        const employeeNumber = row.querySelector(".employee-number strong").textContent;
+        
+        Swal.fire({
+            title: "Delete Employee?",
+            html: '<div class="text-left">' +
+                '<p><strong>Are you sure you want to delete this employee?</strong></p>' +
+                '<div style="background: #fffaf0; border: 1px solid #fed7d7; padding: 12px; border-radius: 6px; margin-bottom: 16px;">' +
+                '<i class="fas fa-exclamation-triangle" style="color: #d69e2e; margin-right: 8px;"></i>' +
+                'This action cannot be undone!' +
+                '</div>' +
+                '<div style="background: #f8f9fa; padding: 12px; border-radius: 6px;">' +
+                '<p><strong>Name:</strong> ' + employeeName + '</p>' +
+                '<p><strong>Employee No:</strong> ' + employeeNumber + '</p>' +
+                '</div>' +
+                '</div>',
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, Delete",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "#e53e3e",
+            cancelButtonColor: "#3182ce"
+        }).then(result => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: "Deleting...",
+                    text: "Please wait",
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                form.submit();
+            }
+        });
+        
+        return false;
+    };
         
         window.jumpToPage = function() {
-            const pageInput = document.getElementById("jumpToPage");
-            const pageNum = parseInt(pageInput.value);
-            const totalPages = <?php echo isset($pagination['total_pages']) ? $pagination['total_pages'] : 1; ?>;
-            
-            if (!pageNum || pageNum < 1 || pageNum > totalPages) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Invalid Page",
-                    text: `Please enter a page number between 1 and ${totalPages}`
-                });
-                return;
-            }
-            
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set("page", pageNum);
-            window.location.href = currentUrl.toString();
-        };
+        const pageInput = document.getElementById("jumpToPage");
+        const pageNum = parseInt(pageInput.value);
+        
+        // FIX 1: Get totalPages safely
+        let totalPages = 1;
+        try {
+            totalPages = parseInt("<?php echo isset($pagination['total_pages']) ? (int)$pagination['total_pages'] : 1; ?>");
+        } catch (e) {
+            totalPages = 1;
+        }
+        
+        if (!pageNum || pageNum < 1 || pageNum > totalPages) {
+            Swal.fire({
+                icon: "error",
+                title: "Invalid Page",
+                text: "Please enter a page number between 1 and " + totalPages
+            });
+            return;
+        }
+        
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set("page", pageNum);
+        window.location.href = currentUrl.toString();
+    };
         
         window.confirmLogout = function(event) {
-            event.preventDefault();
-            const logoutUrl = event.currentTarget.href;
-            
-            Swal.fire({
-                title: "Logout?",
-                text: "Are you sure you want to logout from the system?",
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonText: "Yes, Logout",
-                cancelButtonText: "Cancel",
-                confirmButtonColor: "#e53e3e",
-                cancelButtonColor: "#3182ce",
-                reverseButtons: true
-            }).then(result => {
-                if (result.isConfirmed) {
-                    // Add CSRF token to logout request
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = logoutUrl;
-                    
-                    const csrfInput = document.createElement('input');
-                    csrfInput.type = 'hidden';
-                    csrfInput.name = '_csrf_token';
-                    csrfInput.value = '<?php echo $csrf_token; ?>';
-                    
-                    form.appendChild(csrfInput);
-                    document.body.appendChild(form);
-                    form.submit();
-                }
-            });
-            
-            return false;
-        };
+        event.preventDefault();
+        const logoutUrl = event.currentTarget.href;
+        
+        Swal.fire({
+            title: "Logout?",
+            text: "Are you sure you want to logout from the system?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Yes, Logout",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "#e53e3e",
+            cancelButtonColor: "#3182ce",
+            reverseButtons: true
+        }).then(result => {
+            if (result.isConfirmed) {
+                // Add CSRF token to logout request
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = logoutUrl;
+                
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_csrf_token';
+                
+                // FIX: Use JSON encode to properly escape the token
+                csrfInput.value = <?php echo json_encode($csrf_token); ?>;
+                
+                form.appendChild(csrfInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+        
+        return false;
+    };
         
         // Session timeout warning (30 minutes)
         let idleTime = 0;

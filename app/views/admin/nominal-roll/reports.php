@@ -1100,10 +1100,11 @@
             <div class="config-panel">
                 <h2><i class="fas fa-sliders-h"></i> Report Configuration</h2>
                 
+                <!-- UPDATED FORM: Using the correct CSRF token variable -->
                 <form id="reportForm" method="POST" action="/admin/nominal-roll/generate-report" target="_blank">
-                    <!-- CSRF Token -->
-                    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
-                    <input type="hidden" name="csrf_token_time" value="<?php echo $_SESSION['csrf_token_time'] ?? ''; ?>">
+                    <!-- FIXED CSRF Token: Using $this->data['csrf_token'] -->
+                    <input type="hidden" name="csrf_token" value="<?php echo $this->data['csrf_token'] ?? ''; ?>">
+                    <!-- Removed csrf_token_time field as your system doesn't use it -->
                     
                     <!-- Field Selection -->
                     <div class="field-categories-container">
@@ -1298,6 +1299,38 @@
                         </select>
                     </div>
                     
+                    <!-- Preview Limit Selector -->
+                    <div class="mb-3">
+                        <label for="previewLimit" class="form-label">Preview Records Limit</label>
+                        <select name="preview_limit" id="previewLimit" class="form-select">
+                            <option value="10">10 records</option>
+                            <option value="20" selected>20 records</option>
+                            <option value="30">30 records</option>
+                            <option value="50">50 records</option>
+                            <option value="100">100 records</option>
+                            <option value="0">All records</option>
+                        </select>
+                        <small class="text-muted">Number of records to show in preview</small>
+                    </div>
+                    
+                    <!-- UPDATED: Simple Export Options -->
+                    <div class="mb-3">
+                        <h3><i class="fas fa-download"></i> Export Options</h3>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="auto_format" id="autoFormat" checked>
+                            <label class="form-check-label" for="autoFormat">
+                                Apply professional formatting
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="include_summary" id="includeSummary" checked>
+                            <label class="form-check-label" for="includeSummary">
+                                Include summary information
+                            </label>
+                        </div>
+                        <small class="text-muted">Exports will be formatted for Excel with proper styling</small>
+                    </div>
+                    
                     <!-- Action Buttons -->
                     <div class="action-buttons">
                         <button type="button" class="btn btn-primary" id="generateBtn" onclick="generatePreview()">
@@ -1325,6 +1358,9 @@
                             </button>
                             <button class="btn btn-sm btn-outline-primary" onclick="exportCSV()">
                                 <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="exportPDF()">
+                                <i class="fas fa-file-pdf me-1"></i> PDF
                             </button>
                             <button class="btn btn-sm btn-outline-primary" onclick="window.print()">
                                 <i class="fas fa-print me-1"></i> Print
@@ -1448,6 +1484,7 @@
     <div class="modal fade" id="saveReportModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
+                <!-- UPDATED: Using correct CSRF token variable -->
                 <form id="saveReportForm" method="POST" action="/admin/nominal-roll/save-report">
                     <div class="modal-header">
                         <h5 class="modal-title">
@@ -1456,12 +1493,12 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <!-- CSRF Token -->
-                        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
-                        <input type="hidden" name="csrf_token_time" value="<?php echo $_SESSION['csrf_token_time'] ?? ''; ?>">
+                        <!-- FIXED CSRF Token: Using $this->data['csrf_token'] -->
+                        <input type="hidden" name="csrf_token" value="<?php echo $this->data['csrf_token'] ?? ''; ?>">
                         <input type="hidden" name="selected_fields" id="saveSelectedFields">
                         <input type="hidden" name="filters" id="saveFilters">
                         <input type="hidden" name="sort_order" id="saveSortOrder">
+                        <input type="hidden" name="excel_options" id="saveExcelOptions">
                         
                         <div class="mb-3">
                             <label for="report_name" class="form-label">Report Name</label>
@@ -1476,7 +1513,7 @@
                         </div>
                         <div class="alert alert-light">
                             <i class="fas fa-info-circle text-primary me-2"></i>
-                            This saves your current field selection, filters, and sort order for future use.
+                            This saves your current field selection, filters, sort order, and Excel format options for future use.
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -1686,7 +1723,7 @@
             }
         }
         
-        // Optimize generatePreview with debouncing
+        // UPDATED generatePreview function with FormData fix
         async function generatePreview() {
             if (previewGenerationInProgress) {
                 showAlert('Please wait for the current preview to finish', 'info');
@@ -1702,32 +1739,39 @@
             
             previewGenerationInProgress = true;
             const submitBtn = document.getElementById('generateBtn');
-            const originalText = submitBtn.innerHTML;
+            const originalBtnText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Generating...';
             submitBtn.disabled = true;
             
             try {
-                // Collect data efficiently
-                const formData = new FormData(document.getElementById('reportForm'));
+                // Get the form element
+                const form = document.getElementById('reportForm');
+                
+                if (!form) {
+                    throw new Error('Report form not found');
+                }
+                
+                // Create FormData from the ACTUAL form (this includes all fields including CSRF token)
+                const formData = new FormData(form);
+                
+                // Debug: Show what's in formData
+                console.log('FormData entries:');
+                for (let pair of formData.entries()) {
+                    console.log(pair[0] + ': ' + pair[1]);
+                }
                 
                 // Show loading state
                 document.getElementById('previewPanel').classList.add('show');
                 document.getElementById('previewLoading').classList.add('show');
                 
-                // Use AbortController for timeout
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-                
+                // Send AJAX request
                 const response = await fetch('/admin/nominal-roll/generate-preview', {
                     method: 'POST',
+                    body: formData,
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: formData,
-                    signal: controller.signal
+                    }
                 });
-                
-                clearTimeout(timeoutId);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -1737,27 +1781,41 @@
                 
                 if (result.success) {
                     currentReportData = result;
-                    // Store preview data in localStorage
+                    
+                    // Store in localStorage for persistence
                     localStorage.setItem('lastPreviewData', JSON.stringify(result));
-                    localStorage.setItem('lastPreviewId', Date.now()); // Store timestamp as ID
+                    localStorage.setItem('lastPreviewId', Date.now());
                     
                     showPreviewWithData(result);
                     updatePreviewStats(result);
-                    showAlert(`Preview generated: Showing ${result.previewRecords || 0} of ${result.totalRecords || 0} records`, 'success');
+                    
+                    // Show success message with record count
+                    const totalRecords = result.totalRecords || 0;
+                    const previewRecords = result.previewRecords || 0;
+                    const previewLimit = result.previewLimit || 20;
+                    
+                    let message = `Preview generated: Showing ${previewRecords} of ${totalRecords} records`;
+                    if (totalRecords > previewLimit) {
+                        message += ` (First ${previewLimit} records shown)`;
+                    }
+                    showAlert(message, 'success');
                 } else {
                     throw new Error(result.error || 'Failed to generate preview');
                 }
                 
             } catch (error) {
                 console.error('Preview generation error:', error);
-                if (error.name === 'AbortError') {
-                    showAlert('Preview generation timed out. Please try with fewer filters.', 'warning');
+                
+                // More specific error messages
+                if (error.message.includes('CSRF')) {
+                    showAlert('CSRF token error. Please refresh the page and try again.', 'danger');
+                } else if (error.message.includes('Network') || error.message.includes('Failed to fetch')) {
+                    showAlert('Network error. Please check your connection.', 'danger');
                 } else {
                     showAlert('Error generating preview: ' + error.message, 'danger');
-                    fallbackToSampleData();
                 }
             } finally {
-                submitBtn.innerHTML = originalText;
+                submitBtn.innerHTML = originalBtnText;
                 submitBtn.disabled = false;
                 document.getElementById('previewLoading').classList.remove('show');
                 previewGenerationInProgress = false;
@@ -1847,9 +1905,14 @@
             showAlert('Showing sample data. Real data could not be loaded.', 'warning');
         }
         
-        // Show preview with data
+        // UPDATED showPreviewWithData function from Part B
         function showPreviewWithData(previewData) {
             const previewContent = document.getElementById('previewContent');
+            
+            // Calculate stats
+            const totalRecords = previewData.totalRecords || 0;
+            const previewRecords = previewData.previewRecords || 0;
+            const previewLimit = previewData.previewLimit || 20;
             
             // Create table HTML
             let tableHTML = `
@@ -1890,7 +1953,7 @@
                             }
                         }
                         
-                        // Format gender - ENHANCED for better visibility
+                        // Format gender
                         else if (field === 'sex') {
                             if (value === 'M' || value.toLowerCase() === 'male') {
                                 value = '<span class="badge badge-male badge-contrast"><i class="fas fa-mars me-1"></i>Male</span>';
@@ -1901,7 +1964,7 @@
                             }
                         }
                         
-                        // Format status - ENHANCED for better visibility
+                        // Format status
                         else if (field.includes('status')) {
                             if (value.toLowerCase() === 'active') {
                                 value = '<span class="badge badge-active badge-contrast"><i class="fas fa-check-circle me-1"></i>Active</span>';
@@ -1917,14 +1980,9 @@
                             value = `<strong class="text-primary">${value}</strong>`;
                         }
                         
-                        // Format grade level - ENHANCED for better visibility
+                        // Format grade level
                         else if (field === 'grade_level') {
                             value = `<span class="badge badge-grade badge-contrast">GL ${value}</span>`;
-                        }
-                        
-                        // Format rank
-                        else if (field === 'rank') {
-                            value = `<span class="fw-bold">${value}</span>`;
                         }
                         
                         // Truncate long text
@@ -1937,7 +1995,7 @@
                             value = '<span class="text-muted fw-bold">-</span>';
                         }
                         
-                        // Add CSS classes based on field type
+                        // Add CSS classes
                         let cellClass = '';
                         if (field === 'sex') cellClass = 'gender-cell';
                         if (field.includes('status')) cellClass = 'status-cell';
@@ -1964,20 +2022,20 @@
             
             tableHTML += `</tbody></table>`;
             
-            // Add summary with better visibility
+            // Add summary with correct preview limit info
             tableHTML += `
                 <div class="mt-4">
-                    <div class="alert ${previewData.totalRecords > 0 ? 'alert-info' : 'alert-warning'} border-0 shadow-sm">
+                    <div class="alert ${totalRecords > previewLimit ? 'alert-info' : 'alert-success'} border-0 shadow-sm">
                         <div class="d-flex justify-content-between align-items-center flex-wrap">
                             <div>
                                 <i class="fas fa-info-circle me-2"></i>
-                                <strong>Preview Summary:</strong> Showing ${previewData.previewRecords || 0} of ${previewData.totalRecords || 0} records.
-                                ${previewData.totalRecords > 10 ? 
-                                    '<span class="text-muted ms-2">(Showing first 10 records only)</span>' : 
+                                <strong>Preview Summary:</strong> Showing ${previewRecords} of ${totalRecords} records.
+                                ${totalRecords > previewLimit ? 
+                                    `<span class="text-muted ms-2">(First ${previewLimit} records shown)</span>` : 
                                     ''}
                             </div>
                             <div class="mt-2 mt-md-0">
-                                ${previewData.totalRecords > 10 ? 
+                                ${totalRecords > previewLimit ? 
                                     '<button class="btn btn-primary btn-sm" onclick="submitFullReport()">' +
                                     '<i class="fas fa-external-link-alt me-1"></i> Generate Full Report' +
                                     '</button>' : 
@@ -1990,7 +2048,7 @@
             
             previewContent.innerHTML = tableHTML;
             
-            // Show the preview panel if it's not already shown
+            // Show the preview panel
             document.getElementById('previewPanel').classList.add('show');
             
             // Scroll to preview panel on mobile
@@ -2058,14 +2116,21 @@
             
             // Get sort order
             document.getElementById('saveSortOrder').value = document.querySelector('[name="sort_order"]').value;
+            
+            // Get export options
+            const exportOptions = {
+                auto_format: document.getElementById('autoFormat').checked,
+                include_summary: document.getElementById('includeSummary').checked
+            };
+            document.getElementById('saveExcelOptions').value = JSON.stringify(exportOptions);
         }
         
-        // Export to Excel - UPDATED VERSION to use preview export routes
+        // UPDATED: Professional Excel Export using HTML method
         function exportExcel() {
             try {
                 const exportBtn = document.querySelector('[onclick="exportExcel()"]');
                 const originalBtnText = exportBtn.innerHTML;
-                exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+                exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Creating Report...';
                 exportBtn.disabled = true;
 
                 // Check if preview has been generated
@@ -2077,26 +2142,64 @@
                     return;
                 }
 
-                // Check if preview data exists
-                if (!checkPreviewDataExists()) {
-                    showAlert('No preview data available. Please generate a preview first.', 'warning');
-                    exportBtn.innerHTML = originalBtnText;
-                    exportBtn.disabled = false;
-                    return;
+                // Get format options
+                const autoFormat = document.getElementById('autoFormat').checked;
+                const includeSummary = document.getElementById('includeSummary').checked;
+                
+                // Get the form
+                const form = document.getElementById('reportForm');
+                if (!form) {
+                    throw new Error('Form not found');
                 }
-
-                // Simple redirect to export endpoint
-                window.location.href = '/admin/nominal-roll/export-preview-excel';
+                
+                // Create FormData
+                const formData = new FormData(form);
+                formData.append('export_type', 'excel');
+                formData.append('auto_format', autoFormat ? '1' : '0');
+                formData.append('include_summary', includeSummary ? '1' : '0');
+                
+                // Show preparing message
+                showAlert('Creating professionally formatted Excel report...', 'info');
+                
+                // Submit form to export endpoint
+                const exportForm = document.createElement('form');
+                exportForm.method = 'POST';
+                exportForm.action = '/admin/nominal-roll/export-excel';
+                exportForm.target = '_blank';
+                exportForm.style.display = 'none';
+                
+                // Add CSRF token
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = document.querySelector('input[name="csrf_token"]').value;
+                exportForm.appendChild(csrfInput);
+                
+                // Add other form data
+                for (let [key, value] of formData.entries()) {
+                    if (key !== 'csrf_token') {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = value;
+                        exportForm.appendChild(input);
+                    }
+                }
+                
+                document.body.appendChild(exportForm);
+                exportForm.submit();
+                document.body.removeChild(exportForm);
                 
                 // Reset button after delay
                 setTimeout(() => {
                     exportBtn.innerHTML = originalBtnText;
                     exportBtn.disabled = false;
-                }, 3000);
+                    showAlert('Excel report is being generated. It will open in a new tab.', 'success');
+                }, 2000);
 
             } catch (error) {
                 console.error('Excel export error:', error);
-                showAlert('Error exporting to Excel: ' + error.message, 'danger');
+                showAlert('Error creating Excel report: ' + error.message, 'danger');
                 
                 // Reset button
                 const exportBtn = document.querySelector('[onclick="exportExcel()"]');
@@ -2105,12 +2208,12 @@
             }
         }
 
-        // Export to CSV - UPDATED VERSION to use preview export routes
+        // UPDATED: CSV Export
         function exportCSV() {
             try {
                 const exportBtn = document.querySelector('[onclick="exportCSV()"]');
                 const originalBtnText = exportBtn.innerHTML;
-                exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+                exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Creating CSV...';
                 exportBtn.disabled = true;
 
                 // Check if preview has been generated
@@ -2122,32 +2225,65 @@
                     return;
                 }
 
-                // Check if preview data exists
-                if (!checkPreviewDataExists()) {
-                    showAlert('No preview data available. Please generate a preview first.', 'warning');
-                    exportBtn.innerHTML = originalBtnText;
-                    exportBtn.disabled = false;
-                    return;
+                // Get the form
+                const form = document.getElementById('reportForm');
+                if (!form) {
+                    throw new Error('Form not found');
                 }
-
-                // Simple redirect to export endpoint
-                window.location.href = '/admin/nominal-roll/export-preview-csv';
+                
+                // Create FormData
+                const formData = new FormData(form);
+                formData.append('export_type', 'csv');
+                
+                // Create and submit form
+                const exportForm = document.createElement('form');
+                exportForm.method = 'POST';
+                exportForm.action = '/admin/nominal-roll/export-csv';
+                exportForm.target = '_blank';
+                exportForm.style.display = 'none';
+                
+                // Add CSRF token
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = document.querySelector('input[name="csrf_token"]').value;
+                exportForm.appendChild(csrfInput);
+                
+                // Add other form data
+                for (let [key, value] of formData.entries()) {
+                    if (key !== 'csrf_token') {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = value;
+                        exportForm.appendChild(input);
+                    }
+                }
+                
+                document.body.appendChild(exportForm);
+                exportForm.submit();
+                document.body.removeChild(exportForm);
                 
                 // Reset button after delay
                 setTimeout(() => {
                     exportBtn.innerHTML = originalBtnText;
                     exportBtn.disabled = false;
-                }, 3000);
+                }, 2000);
 
             } catch (error) {
                 console.error('CSV export error:', error);
-                showAlert('Error exporting to CSV: ' + error.message, 'danger');
+                showAlert('Error creating CSV: ' + error.message, 'danger');
                 
                 // Reset button
                 const exportBtn = document.querySelector('[onclick="exportCSV()"]');
                 exportBtn.innerHTML = '<i class="fas fa-file-csv me-1"></i> CSV';
                 exportBtn.disabled = false;
             }
+        }
+
+        // UPDATED: PDF Export function
+        function exportPDF() {
+            showAlert('PDF export is currently unavailable. Please use Excel or CSV export.', 'info');
         }
         
         // Hide preview

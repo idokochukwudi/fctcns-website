@@ -156,7 +156,9 @@ class Router {
         $this->get('/admin/admission/manual-correction', 'AdmissionController@manualCorrection');
         $this->post('/admin/admission/manual-correction', 'AdmissionController@manualCorrection');
         
-        // Nominal Roll Routes
+        // ============================================
+        // NOMINAL ROLL ROUTES - VERIFIED AND FIXED
+        // ============================================
         $this->get('/admin/nominal-roll', 'NominalRollController@index');
         $this->get('/admin/nominal-roll/create', 'NominalRollController@create');
         $this->post('/admin/nominal-roll/store', 'NominalRollController@store');
@@ -165,7 +167,15 @@ class Router {
         $this->post('/admin/nominal-roll/update/{id}', 'NominalRollController@update');
         $this->post('/admin/nominal-roll/delete/{id}', 'NominalRollController@destroy');
         $this->get('/admin/nominal-roll/bulk-upload', 'NominalRollController@bulkUpload');
-        $this->post('/admin/nominal-roll/process-bulk-upload', 'NominalRollController@processBulkUpload');
+
+        // FIXED: Keep only these two admin routes for bulk upload (removed conflicting non-admin routes)
+        $this->post('/admin/nominal-roll/validate-bulk-upload', 'NominalRollController@validateBulkUpload');
+        $this->post('/admin/nominal-roll/bulk-upload-process', 'NominalRollController@processBulkUpload');
+        
+        // REMOVED: The following conflicting routes have been deleted as per instructions:
+        // $this->post('/nominal-roll/validate-bulk-upload', 'NominalRollController@validateBulkUpload');
+        // $this->post('/nominal-roll/bulk-upload-process', 'NominalRollController@processBulkUpload');
+        
         $this->get('/admin/nominal-roll/download-template', 'NominalRollController@downloadTemplate');
         $this->get('/admin/nominal-roll/export', 'NominalRollController@export');
         
@@ -183,6 +193,16 @@ class Router {
 
         // Print with options
         $this->get('/admin/nominal-roll/print/with-audit/{id}', 'NominalRollController@printWithAudit');
+        
+        // ============================================
+        // TEST DATABASE INSERT ROUTE - ADDED AS REQUESTED
+        // ============================================
+        $this->get('/admin/nominal-roll/test-db-insert', 'NominalRollController@testDatabaseInsert');
+
+        // ============================================
+        // TEST EXACT CSV ROUTE - ADDED
+        // ============================================
+        $this->get('/admin/nominal-roll/test-exact-csv', 'NominalRollController@testExactCSV');
         
         // ============================================
         // QR CODE VERIFICATION ROUTES - UPDATED AS REQUESTED
@@ -437,6 +457,51 @@ class Router {
             echo "</pre>";
         });
         
+        // Test route specifically for nominal roll validation
+        $this->get('/test-validate-route', function() {
+            echo "<h1>Test Validate Bulk Upload Route</h1>";
+            echo "<p>Checking if the POST route for validate-bulk-upload exists...</p>";
+            
+            $routes = $this->getRoutes();
+            $found = false;
+            
+            foreach ($routes as $route) {
+                // Now checking for the new fixed route
+                if ($route['path'] === '/admin/nominal-roll/validate-bulk-upload' && $route['method'] === 'POST') {
+                    $found = true;
+                    echo "<p style='color: green;'>✓ Route found: POST /admin/nominal-roll/validate-bulk-upload -> " . $route['handler'] . "</p>";
+                    break;
+                }
+            }
+            
+            if (!$found) {
+                echo "<p style='color: red;'>✗ Route NOT found: POST /admin/nominal-roll/validate-bulk-upload</p>";
+            }
+            
+            // Also check for the process-bulk-upload route
+            $foundProcess = false;
+            foreach ($routes as $route) {
+                if ($route['path'] === '/admin/nominal-roll/bulk-upload-process' && $route['method'] === 'POST') {
+                    $foundProcess = true;
+                    echo "<p style='color: green;'>✓ Route found: POST /admin/nominal-roll/bulk-upload-process -> " . $route['handler'] . "</p>";
+                    break;
+                }
+            }
+            
+            if (!$foundProcess) {
+                echo "<p style='color: red;'>✗ Route NOT found: POST /admin/nominal-roll/bulk-upload-process</p>";
+            }
+            
+            echo "<p>All nominal roll routes:</p>";
+            echo "<ul>";
+            foreach ($routes as $route) {
+                if (strpos($route['path'], 'nominal-roll') !== false) {
+                    echo "<li>{$route['method']} {$route['path']} -> {$route['handler']}</li>";
+                }
+            }
+            echo "</ul>";
+        });
+        
         // 404 route - should be last
         $this->get('/404', 'PageController@notFound');
         
@@ -447,6 +512,13 @@ class Router {
             error_log("Router:   POST /admin/login -> AdminController@processLogin");
             error_log("Router:   /admin/logout -> AdminController@logout");
             error_log("Router:   /admin/dashboard -> AdminController@dashboard");
+            error_log("Router: Nominal Roll routes FIXED - removed conflicting routes:");
+            error_log("Router:   ✓ POST /admin/nominal-roll/validate-bulk-upload -> NominalRollController@validateBulkUpload");
+            error_log("Router:   ✓ POST /admin/nominal-roll/bulk-upload-process -> NominalRollController@processBulkUpload");
+            error_log("Router:   ✗ DELETED: POST /nominal-roll/validate-bulk-upload (conflicting)");
+            error_log("Router:   ✗ DELETED: POST /nominal-roll/bulk-upload-process (conflicting)");
+            error_log("Router:   ✓ ADDED GET /admin/nominal-roll/test-db-insert -> NominalRollController@testDatabaseInsert");
+            error_log("Router:   ✓ ADDED GET /admin/nominal-roll/test-exact-csv -> NominalRollController@testExactCSV");
         }
     }
 

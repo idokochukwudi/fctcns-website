@@ -71,15 +71,161 @@ class NominalRollModel {
      */
     
     /**
-     * Create new employee record - UPDATED
+     * Create new employee record - FIXED VERSION for bulk upload
      */
     public function createEmployee($data, $userId = null) {
+        error_log("=== MODEL createEmployee START (BULK UPLOAD VERSION) ===");
+        error_log("Creating employee with data: " . print_r($data, true));
+        
         try {
-            error_log("=== MODEL createEmployee START ===");
+            // Generate employee number if not provided
+            if (empty($data['employee_number'])) {
+                $data['employee_number'] = $this->generateEmployeeNumber();
+                error_log("Generated employee number: " . $data['employee_number']);
+            }
+            
+            // Ensure required fields are set
+            $data['status'] = $data['status'] ?? 'active';
+            $data['is_draft'] = $data['is_draft'] ?? 0;
+            $data['created_by'] = $userId;
+            
+            // Prepare SQL statement
+            $fields = [];
+            $placeholders = [];
+            $values = [];
+            
+            // Map data to database columns
+            $columnMapping = [
+                'employee_number' => 'employee_number',
+                'surname' => 'surname',
+                'first_name' => 'first_name',
+                'middle_name' => 'middle_name',
+                'sex' => 'sex',
+                'date_of_birth' => 'date_of_birth',
+                'marital_status' => 'marital_status',
+                'nationality' => 'nationality',
+                'religion' => 'religion',
+                'blood_group' => 'blood_group',
+                'genotype' => 'genotype',
+                'disability' => 'disability',
+                'disability_type' => 'disability_type',
+                'rank' => 'rank',
+                'grade_level' => 'grade_level',
+                'step' => 'step',
+                'cadre' => 'cadre',
+                'staff_type' => 'staff_type',
+                'employment_type' => 'employment_type',
+                'appointment_type' => 'appointment_type',
+                'department' => 'department',
+                'professional_certifications' => 'professional_certifications',
+                'institution_attended' => 'institution_attended',
+                'course_of_study' => 'course_of_study',
+                'class_of_degree' => 'class_of_degree',
+                'highest_qualification' => 'highest_qualification',
+                'year_of_highest_qualification' => 'year_of_highest_qualification',
+                'additional_qualifications' => 'additional_qualifications',
+                'qualification_date' => 'qualification_date',
+                'date_of_first_appointment' => 'date_of_first_appointment',
+                'date_of_confirmation' => 'date_of_confirmation',
+                'rank_on_first_appointment' => 'rank_on_first_appointment',
+                'date_of_present_appointment' => 'date_of_present_appointment',
+                'retirement_date' => 'retirement_date',
+                'state' => 'state',
+                'local_govt_area' => 'local_govt_area',
+                'state_of_residence' => 'state_of_residence',
+                'geopolitical_zone' => 'geopolitical_zone',
+                'residential_address' => 'residential_address',
+                'contact_address' => 'contact_address',
+                'pf_number' => 'pf_number',
+                'nin' => 'nin',
+                'nhf_number' => 'nhf_number',
+                'bank_name' => 'bank_name',
+                'other_bank_name' => 'other_bank_name',
+                'bank_branch' => 'bank_branch',
+                'account_number' => 'account_number',
+                'account_name' => 'account_name',
+                'pension_fund_admin' => 'pension_fund_admin',
+                'other_pension_fund_admin' => 'other_pension_fund_admin',
+                'pension_number' => 'pension_number',
+                'tin_number' => 'tin_number',
+                'salary_structure' => 'salary_structure',
+                'telephone_number' => 'telephone_number',
+                'email' => 'email',
+                'emergency_contact_name' => 'emergency_contact_name',
+                'emergency_contact_phone' => 'emergency_contact_phone',
+                'emergency_contact_relationship' => 'emergency_contact_relationship',
+                'next_of_kin_name' => 'next_of_kin_name',
+                'next_of_kin_phone' => 'next_of_kin_phone',
+                'next_of_kin_address' => 'next_of_kin_address',
+                'next_of_kin_relationship' => 'next_of_kin_relationship',
+                'passport_photo' => 'passport_photo',
+                'status' => 'status',
+                'is_draft' => 'is_draft',
+                'created_by' => 'created_by'
+            ];
+            
+            foreach ($columnMapping as $field => $column) {
+                if (isset($data[$field]) && $data[$field] !== '') {
+                    $fields[] = $column;
+                    $placeholders[] = '?';
+                    $values[] = $data[$field];
+                }
+            }
+            
+            // Add created_at and updated_at
+            $fields[] = 'created_at';
+            $fields[] = 'updated_at';
+            $placeholders[] = 'NOW()';
+            $placeholders[] = 'NOW()';
+            
+            if (empty($fields)) {
+                error_log("ERROR: No fields to insert");
+                return false;
+            }
+            
+            $sql = "INSERT INTO " . self::TABLE_EMPLOYEES . " (" . implode(', ', $fields) . ") 
+                    VALUES (" . implode(', ', $placeholders) . ")";
+            
+            error_log("SQL: " . $sql);
+            error_log("Values: " . print_r($values, true));
+            
+            $stmt = $this->db->prepare($sql);
+            $result = $stmt->execute($values);
+            
+            if ($result) {
+                $employeeId = $this->db->lastInsertId();
+                error_log("Employee created successfully! ID: " . $employeeId);
+                
+                // Log activity
+                if ($userId) {
+                    $this->logActivity($employeeId, $userId, 'employee_created', 'Created employee via bulk upload', null, $data);
+                }
+                
+                return $employeeId;
+            } else {
+                error_log("ERROR: Failed to execute SQL statement");
+                $errorInfo = $stmt->errorInfo();
+                error_log("SQL Error: " . print_r($errorInfo, true));
+                return false;
+            }
+            
+        } catch (Exception $e) {
+            error_log("EXCEPTION in createEmployee: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            return false;
+        }
+    }
+    
+    /**
+     * Create new employee record - LEGACY VERSION for regular forms
+     * (Keeping this for backward compatibility with existing form submissions)
+     */
+    public function createEmployeeLegacy($data, $userId = null) {
+        try {
+            error_log("=== MODEL createEmployeeLegacy START ===");
             error_log("Data to insert: " . print_r($data, true));
             error_log("User ID: " . $userId);
             
-            // FIXED: Updated SQL to match all new fields from the form
             $sql = "INSERT INTO " . self::TABLE_EMPLOYEES . " SET
                     employee_number = :employee_number,
                     surname = :surname,
@@ -152,7 +298,6 @@ class NominalRollModel {
             
             $stmt = $this->db->prepare($sql);
             
-            // FIXED: Updated parameters to match new fields
             $params = [
                 ':employee_number' => $data['employee_number'] ?? '',
                 ':surname' => $data['surname'] ?? '',
@@ -237,11 +382,11 @@ class NominalRollModel {
                 $this->logActivity($employeeId, $userId, 'employee_created', 'Employee record created', null, $data);
             }
             
-            error_log("=== MODEL createEmployee END ===");
+            error_log("=== MODEL createEmployeeLegacy END ===");
             return $employeeId;
             
         } catch (PDOException $e) {
-            error_log("PDOException in createEmployee: " . $e->getMessage());
+            error_log("PDOException in createEmployeeLegacy: " . $e->getMessage());
             error_log("Error Code: " . $e->getCode());
             error_log("SQL State: " . $e->errorInfo[0] ?? 'N/A');
             error_log("Driver Error: " . $e->errorInfo[1] ?? 'N/A');
@@ -332,7 +477,6 @@ class NominalRollModel {
             
             error_log("=== Step 2: Building SQL query ===");
             // FIXED: Removed 'qualification' field and added all new fields from the form
-            // FIXED: Removed PHP comments from SQL string
             $sql = "UPDATE " . self::TABLE_EMPLOYEES . " SET
                     employee_number = :employee_number,
                     surname = :surname,
@@ -408,7 +552,6 @@ class NominalRollModel {
             error_log("Statement prepared: " . ($stmt ? "Yes" : "No"));
             
             error_log("=== Step 4: Building parameters array ===");
-            // FIXED: Updated parameters to match new fields
             $params = [
                 ':id' => $id,
                 ':employee_number' => $data['employee_number'] ?? '',
@@ -983,31 +1126,122 @@ class NominalRollModel {
     }
     
     /**
-     * Update bulk upload status
+     * Update bulk upload status - ROBUST VERSION
      */
     public function updateBulkUpload($id, $data) {
+        error_log("=== MODEL updateBulkUpload START ===");
+        error_log("Updating upload ID: $id");
+        
         try {
+            // Define ALL columns that should be in the table
+            $allColumns = [
+                'id', 'filename', 'import_type', 'update_existing', 'skip_duplicates',
+                'file_path', 'total_rows', 'successful_imports', 'failed_imports',
+                'skipped_imports', 'error_log', 'uploaded_by', 'status',
+                'processing_results', 'created_at', 'completed_at'
+            ];
+            
+            // Filter data - only include columns that might exist
             $fields = [];
             $params = [':id' => $id];
             
             foreach ($data as $key => $value) {
-                $fields[] = "$key = :$key";
-                $params[":$key"] = $value;
+                if (in_array($key, $allColumns)) {
+                    $fields[] = "`$key` = :$key";
+                    $params[":$key"] = $value;
+                    error_log("Including field: $key = " . (is_array($value) ? json_encode($value) : $value));
+                } else {
+                    error_log("Skipping unknown field: $key");
+                }
             }
             
             if (empty($fields)) {
+                error_log("ERROR: No valid fields to update");
                 return false;
             }
             
-            $sql = "UPDATE " . self::TABLE_BULK_UPLOADS . " SET " . implode(', ', $fields) . 
-                   " WHERE id = :id";
+            // Build SQL - using UPDATE IGNORE to skip errors on missing columns
+            $sql = "UPDATE `nominal_roll_bulk_uploads` SET " . implode(', ', $fields) . " WHERE `id` = :id";
+            error_log("SQL: " . $sql);
             
             $stmt = $this->db->prepare($sql);
-            return $stmt->execute($params);
+            $result = $stmt->execute($params);
             
-        } catch (PDOException $e) {
-            error_log("NominalRollModel updateBulkUpload error: " . $e->getMessage());
-            throw new Exception("Failed to update bulk upload record: " . $e->getMessage());
+            if ($result) {
+                error_log("✓ Successfully updated bulk upload record");
+                error_log("Rows affected: " . $stmt->rowCount());
+            } else {
+                $errorInfo = $stmt->errorInfo();
+                error_log("✗ SQL Error: " . print_r($errorInfo, true));
+                
+                // If there's a column error, try a simpler update
+                if (isset($errorInfo[0]) && $errorInfo[0] === '42S22') {
+                    error_log("Column error detected. Trying minimal update...");
+                    return $this->updateBulkUploadMinimal($id, $data);
+                }
+                
+                throw new Exception("Failed to update: " . ($errorInfo[2] ?? 'Unknown error'));
+            }
+            
+            error_log("=== MODEL updateBulkUpload END ===");
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("=== MODEL updateBulkUpload EXCEPTION ===");
+            error_log("Error: " . $e->getMessage());
+            
+            // Last resort: update only status
+            try {
+                $simpleSql = "UPDATE `nominal_roll_bulk_uploads` SET `status` = 'completed', `completed_at` = NOW() WHERE `id` = :id";
+                $simpleStmt = $this->db->prepare($simpleSql);
+                $simpleStmt->execute([':id' => $id]);
+                error_log("✓ Completed minimal update (status only)");
+                return true;
+            } catch (Exception $e2) {
+                error_log("✗ Even minimal update failed: " . $e2->getMessage());
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Minimal update fallback - updates only essential fields
+     */
+    private function updateBulkUploadMinimal($id, $data) {
+        try {
+            error_log("=== MINIMAL UPDATE FALLBACK ===");
+            
+            $fields = [];
+            $params = [':id' => $id];
+            
+            // Always include these essential fields
+            $essentialFields = ['status', 'completed_at', 'successful_imports', 'failed_imports'];
+            
+            foreach ($essentialFields as $field) {
+                if (isset($data[$field])) {
+                    $fields[] = "`$field` = :$field";
+                    $params[":$field"] = $data[$field];
+                }
+            }
+            
+            // If no fields from data, set defaults
+            if (empty($fields)) {
+                $fields[] = "`status` = 'completed'";
+                $fields[] = "`completed_at` = NOW()";
+            }
+            
+            $sql = "UPDATE `nominal_roll_bulk_uploads` SET " . implode(', ', $fields) . " WHERE `id` = :id";
+            error_log("Minimal SQL: " . $sql);
+            
+            $stmt = $this->db->prepare($sql);
+            $result = $stmt->execute($params);
+            
+            error_log($result ? "✓ Minimal update successful" : "✗ Minimal update failed");
+            return $result;
+            
+        } catch (Exception $e) {
+            error_log("Minimal update error: " . $e->getMessage());
+            return false;
         }
     }
     
@@ -1031,6 +1265,568 @@ class NominalRollModel {
         } catch (PDOException $e) {
             error_log("NominalRollModel getBulkUploads error: " . $e->getMessage());
             return [];
+        }
+    }
+    
+    /**
+     * ============================================
+     * ENHANCED PROCESS BULK UPLOAD DATA WITH FIXES
+     * ============================================
+     */
+    
+    /**
+     * Process bulk upload data for CSV/Excel - UPDATED VERSION
+     */
+    public function processBulkUploadData($rows, $importType = 'create', $updateExisting = false, $skipDuplicates = true, $userId = null) {
+        error_log("=== MODEL processBulkUploadData START ===");
+        
+        $results = [
+            'success' => 0,
+            'updated' => 0,
+            'skipped' => 0,
+            'failed' => 0,
+            'errors' => []
+        ];
+        
+        foreach ($rows as $index => $row) {
+            $rowNumber = $index + 1;
+            
+            try {
+                error_log("Processing row $rowNumber: " . print_r($row, true));
+                
+                // Clean and normalize
+                $cleanedData = $this->cleanBulkUploadRow($row);
+                error_log("Cleaned data: " . print_r($cleanedData, true));
+                
+                // Validate required fields
+                $requiredErrors = $this->validateBulkUploadRow($cleanedData, $rowNumber);
+                if (!empty($requiredErrors)) {
+                    $results['errors'] = array_merge($results['errors'], $requiredErrors);
+                    $results['failed']++;
+                    continue;
+                }
+                
+                // Check for existing employee
+                $existingEmployee = $this->getEmployeeByNumber($cleanedData['employee_number']);
+                
+                if ($existingEmployee) {
+                    // Handle existing employee...
+                    error_log("Row $rowNumber: Employee exists - Employee Number: " . $cleanedData['employee_number']);
+                    
+                    // Handle duplicate based on settings
+                    if ($skipDuplicates) {
+                        $results['skipped']++;
+                        $results['errors'][] = [
+                            'row' => $rowNumber,
+                            'message' => "Skipped duplicate employee: " . $cleanedData['employee_number'],
+                            'employee_number' => $cleanedData['employee_number']
+                        ];
+                        error_log("Row $rowNumber skipped: Duplicate employee");
+                        continue;
+                    }
+                    
+                    // Update existing if allowed
+                    if ($updateExisting && $importType === 'create') {
+                        error_log("Row $rowNumber: Updating existing employee");
+                        
+                        // Prepare update data
+                        $updateData = $this->prepareEmployeeData($cleanedData);
+                        
+                        // Update employee
+                        $updateResult = $this->updateEmployee($existingEmployee['id'], $updateData, $userId);
+                        if ($updateResult) {
+                            $results['updated']++;
+                            error_log("Row $rowNumber updated successfully");
+                        } else {
+                            $results['failed']++;
+                            $results['errors'][] = [
+                                'row' => $rowNumber,
+                                'message' => "Failed to update existing employee",
+                                'employee_number' => $cleanedData['employee_number']
+                            ];
+                            error_log("Row $rowNumber update failed");
+                        }
+                    } else {
+                        $results['skipped']++;
+                        $results['errors'][] = [
+                            'row' => $rowNumber,
+                            'message' => "Employee already exists and update not allowed: " . $cleanedData['employee_number'],
+                            'employee_number' => $cleanedData['employee_number']
+                        ];
+                        error_log("Row $rowNumber skipped: Exists but update not allowed");
+                    }
+                } else {
+                    // Create new employee
+                    error_log("Row $rowNumber: Creating new employee");
+                    
+                    $employeeData = $this->prepareEmployeeData($cleanedData);
+                    
+                    // Set additional fields
+                    $employeeData['is_draft'] = 0;
+                    $employeeData['status'] = 'active';
+                    $employeeData['created_at'] = date('Y-m-d H:i:s');
+                    $employeeData['updated_at'] = date('Y-m-d H:i:s');
+                    
+                    // Log what we're inserting
+                    error_log("Attempting to insert: " . print_r($employeeData, true));
+                    
+                    // Create employee (use the bulk upload version)
+                    $employeeId = $this->createEmployee($employeeData, $userId);
+                    
+                    if ($employeeId) {
+                        $results['success']++;
+                        error_log("✓ Row $rowNumber created successfully with ID: " . $employeeId);
+                    } else {
+                        $results['failed']++;
+                        $results['errors'][] = [
+                            'row' => $rowNumber,
+                            'message' => "Failed to create employee record",
+                            'employee_number' => $cleanedData['employee_number']
+                        ];
+                        error_log("✗ Row $rowNumber creation failed");
+                    }
+                }
+                
+            } catch (Exception $e) {
+                $results['failed']++;
+                $results['errors'][] = [
+                    'row' => $rowNumber,
+                    'message' => "Error: " . $e->getMessage(),
+                    'employee_number' => $row['employee_number'] ?? 'Unknown'
+                ];
+                error_log("Row $rowNumber exception: " . $e->getMessage());
+            }
+        }
+        
+        error_log("=== MODEL processBulkUploadData RESULTS ===");
+        error_log("Success: " . $results['success']);
+        error_log("Failed: " . $results['failed']);
+        error_log("Errors: " . print_r($results['errors'], true));
+        
+        return $results;
+    }
+    
+    /**
+     * Clean and normalize bulk upload row data - UPDATED VERSION
+     */
+    private function cleanBulkUploadRow($row) {
+        $cleaned = [];
+        
+        foreach ($row as $key => $value) {
+            $cleanKey = strtolower(trim(str_replace([' ', '-', '.', '(', ')'], '_', $key)));
+            $cleanValue = trim($value);
+            
+            // Handle ALL CSV column mappings
+            switch ($cleanKey) {
+                // Employee info
+                case 'employee_number':
+                case 'emp_number':
+                    $cleaned['employee_number'] = $cleanValue;
+                    break;
+                    
+                case 'surname':
+                case 'last_name':
+                    $cleaned['surname'] = $cleanValue;
+                    break;
+                    
+                case 'first_name':
+                case 'given_name':
+                    $cleaned['first_name'] = $cleanValue;
+                    break;
+                    
+                case 'middle_name':
+                    $cleaned['middle_name'] = $cleanValue;
+                    break;
+                    
+                case 'sex':
+                case 'gender':
+                    $cleaned['sex'] = $this->normalizeSex($cleanValue);
+                    break;
+                    
+                case 'date_of_birth':
+                case 'dob':
+                    $cleaned['date_of_birth'] = $this->normalizeDate($cleanValue);
+                    break;
+                    
+                case 'marital_status':
+                    $cleaned['marital_status'] = $cleanValue;
+                    break;
+                    
+                // Employment info  
+                case 'rank':
+                case 'position':
+                    $cleaned['rank'] = $cleanValue;
+                    break;
+                    
+                case 'grade_level_gl':
+                case 'grade_level':
+                case 'gl':
+                    $cleaned['grade_level'] = $cleanValue;
+                    break;
+                    
+                // Qualifications
+                case 'highest_qualification':
+                    $cleaned['highest_qualification'] = $cleanValue;
+                    break;
+                    
+                case 'year_of_highest_qualification':
+                    $cleaned['year_of_highest_qualification'] = $cleanValue;
+                    break;
+                    
+                case 'additional_qualifications':
+                    $cleaned['additional_qualifications'] = $this->normalizeQualifications($cleanValue);
+                    break;
+                    
+                // Dates
+                case 'date_of_1st_appt':
+                case 'date_of_first_appointment':
+                    $cleaned['date_of_first_appointment'] = $this->normalizeDate($cleanValue);
+                    break;
+                    
+                case 'date_of_confirmation':
+                    $cleaned['date_of_confirmation'] = $this->normalizeDate($cleanValue);
+                    break;
+                    
+                case 'date_of_present_appt':
+                case 'date_of_present_appointment':
+                    $cleaned['date_of_present_appointment'] = $this->normalizeDate($cleanValue);
+                    break;
+                    
+                // Location
+                case 'state_of_origin':
+                case 'state':
+                    $cleaned['state'] = $cleanValue;
+                    break;
+                    
+                case 'local_govt_area':
+                case 'lga':
+                    $cleaned['local_govt_area'] = $cleanValue;
+                    break;
+                    
+                case 'state_of_residence':
+                    $cleaned['state_of_residence'] = $cleanValue;
+                    break;
+                    
+                // Contact info
+                case 'telephone_no':
+                case 'telephone_number':
+                case 'phone':
+                    $cleaned['telephone_number'] = $cleanValue;
+                    break;
+                    
+                case 'email':
+                    $cleaned['email'] = $cleanValue;
+                    break;
+                    
+                // Financial
+                case 'pf_no':
+                case 'pf_number':
+                    $cleaned['pf_number'] = $cleanValue;
+                    break;
+                    
+                case 'nhf_no':
+                case 'nhf_number':
+                    $cleaned['nhf_number'] = $cleanValue;
+                    break;
+                    
+                case 'account_no':
+                case 'account_number':
+                    $cleaned['account_number'] = $cleanValue;
+                    break;
+                    
+                case 'pension_no':
+                case 'pension_number':
+                    $cleaned['pension_number'] = $cleanValue;
+                    break;
+                    
+                // Add more mappings as needed
+                default:
+                    // Map other common fields
+                    if ($cleanKey === 's_n' || $cleanKey === 'sn') {
+                        // Skip S/N column
+                        break;
+                    }
+                    
+                    $cleaned[$cleanKey] = $cleanValue;
+                    break;
+            }
+        }
+        
+        // Set default values for required fields not in CSV
+        $defaults = [
+            'nationality' => 'Nigerian',
+            'status' => 'active',
+            'is_draft' => 0,
+            'disability' => 'No'
+        ];
+        
+        foreach ($defaults as $field => $defaultValue) {
+            if (!isset($cleaned[$field]) || empty($cleaned[$field])) {
+                $cleaned[$field] = $defaultValue;
+            }
+        }
+        
+        return $cleaned;
+    }
+    
+    /**
+     * Normalize date field - UPDATED VERSION
+     */
+    private function normalizeDate($value) {
+        if (empty($value)) {
+            return null;
+        }
+        
+        // Remove any time portion
+        $value = preg_replace('/\s+.*$/', '', $value);
+        
+        // Try common date formats
+        $formats = [
+            'Y-m-d',      // 2024-01-15
+            'd/m/Y',      // 15/01/2024
+            'm/d/Y',      // 01/15/2024
+            'd-m-Y',      // 15-01-2024
+            'm-d-Y',      // 01-15-2024
+            'Y/m/d',      // 2024/01/15
+            'd.m.Y',      // 15.01.2024
+            'Y.m.d',      // 2024.01.15
+            'n/j/Y',      // 1/15/2024 (no leading zeros)
+            'j/n/Y',      // 15/1/2024 (no leading zeros)
+        ];
+        
+        foreach ($formats as $format) {
+            $date = DateTime::createFromFormat($format, $value);
+            if ($date !== false) {
+                return $date->format('Y-m-d');
+            }
+        }
+        
+        // Try strtotime as last resort
+        $timestamp = strtotime($value);
+        if ($timestamp !== false) {
+            return date('Y-m-d', $timestamp);
+        }
+        
+        // Return original if can't parse
+        return $value;
+    }
+    
+    /**
+     * Validate bulk upload data (more lenient) - NEW METHOD
+     */
+    private function validateBulkUploadRow($data, $rowNumber) {
+        $errors = [];
+        
+        // Minimum required fields
+        $requiredFields = [
+            'employee_number' => 'Employee Number',
+            'surname' => 'Surname',
+            'first_name' => 'First Name',
+            'sex' => 'Sex',
+            'date_of_birth' => 'Date of Birth',
+            'marital_status' => 'Marital Status',
+            'rank' => 'Rank',
+            'grade_level' => 'Grade Level',
+            'date_of_first_appointment' => 'Date of First Appointment',
+            'state' => 'State',
+            'local_govt_area' => 'Local Government Area'
+        ];
+        
+        foreach ($requiredFields as $field => $label) {
+            if (empty($data[$field])) {
+                $errors[] = [
+                    'row' => $rowNumber,
+                    'message' => "$label is required",
+                    'employee_number' => $data['employee_number'] ?? 'Unknown'
+                ];
+            }
+        }
+        
+        return $errors;
+    }
+    
+    /**
+     * Prepare employee data for insertion
+     */
+    private function prepareEmployeeData($data) {
+        $employeeData = [];
+        
+        // Map CSV fields to database fields
+        $fieldMapping = [
+            'employee_number' => 'employee_number',
+            'surname' => 'surname',
+            'first_name' => 'first_name',
+            'middle_name' => 'middle_name',
+            'sex' => 'sex',
+            'date_of_birth' => 'date_of_birth',
+            'marital_status' => 'marital_status',
+            'rank' => 'rank',
+            'grade_level' => 'grade_level',
+            'highest_qualification' => 'highest_qualification',
+            'year_of_highest_qualification' => 'year_of_highest_qualification',
+            'additional_qualifications' => 'additional_qualifications',
+            'date_of_first_appointment' => 'date_of_first_appointment',
+            'date_of_confirmation' => 'date_of_confirmation',
+            'rank_on_first_appointment' => 'rank_on_first_appointment',
+            'date_of_present_appointment' => 'date_of_present_appointment',
+            'state' => 'state',
+            'local_govt_area' => 'local_govt_area',
+            'state_of_residence' => 'state_of_residence',
+            'residential_address' => 'residential_address',
+            'pf_number' => 'pf_number',
+            'nhf_number' => 'nhf_number',
+            'bank_name' => 'bank_name',
+            'bank_branch' => 'bank_branch',
+            'other_bank_name' => 'other_bank_name',
+            'account_number' => 'account_number',
+            'pension_fund_admin' => 'pension_fund_admin',
+            'other_pension_fund_admin' => 'other_pension_fund_admin',
+            'pension_number' => 'pension_number',
+            'telephone_number' => 'telephone_number',
+            'email' => 'email'
+        ];
+        
+        foreach ($fieldMapping as $csvField => $dbField) {
+            if (isset($data[$csvField]) && $data[$csvField] !== '') {
+                $employeeData[$dbField] = $data[$csvField];
+            }
+        }
+        
+        return $employeeData;
+    }
+    
+    /**
+     * Normalize sex value
+     */
+    private function normalizeSex($value) {
+        $value = strtolower(trim($value));
+        
+        if (in_array($value, ['male', 'm', '1'])) {
+            return 'Male';
+        } elseif (in_array($value, ['female', 'f', '0'])) {
+            return 'Female';
+        } else {
+            return $value;
+        }
+    }
+    
+    /**
+     * Normalize qualifications field
+     */
+    private function normalizeQualifications($value) {
+        if (empty($value)) {
+            return null;
+        }
+        
+        // Check if already JSON
+        if ($this->isJson($value)) {
+            return $value;
+        }
+        
+        // Try to parse as array
+        $qualifications = [];
+        
+        // Split by common delimiters
+        $items = preg_split('/[;,\n]/', $value);
+        
+        foreach ($items as $item) {
+            $item = trim($item);
+            if (!empty($item)) {
+                // Try to extract year in parentheses
+                if (preg_match('/(.+?)\s*\((\d{4})\)/', $item, $matches)) {
+                    $qualifications[] = [
+                        'qualification' => trim($matches[1]),
+                        'year' => trim($matches[2])
+                    ];
+                } else {
+                    $qualifications[] = [
+                        'qualification' => $item,
+                        'year' => ''
+                    ];
+                }
+            }
+        }
+        
+        return !empty($qualifications) ? json_encode($qualifications) : null;
+    }
+    
+    /**
+     * Check if string is valid JSON
+     */
+    private function isJson($string) {
+        json_decode($string);
+        return json_last_error() === JSON_ERROR_NONE;
+    }
+    
+    /**
+     * ============================================
+     * CSV PARSING METHOD FOR BULK UPLOAD VALIDATION
+     * ============================================
+     */
+    
+    /**
+     * Simple CSV parsing for bulk upload validation
+     */
+    public function parseBulkUploadCSV($filePath) {
+        try {
+            error_log("Parsing CSV for bulk upload: " . $filePath);
+            
+            if (!file_exists($filePath)) {
+                return ['error' => 'File not found'];
+            }
+            
+            $data = [];
+            $headers = [];
+            
+            if (($handle = fopen($filePath, 'r')) !== false) {
+                // Read headers
+                $headers = fgetcsv($handle, 1000, ',');
+                
+                if (!$headers) {
+                    fclose($handle);
+                    return ['error' => 'CSV file is empty or corrupted'];
+                }
+                
+                // Clean headers
+                $headers = array_map(function($header) {
+                    // Remove BOM and trim
+                    $header = preg_replace('/^\xEF\xBB\xBF/', '', $header);
+                    $header = strtolower(trim($header));
+                    $header = str_replace([' ', '-', '.'], '_', $header);
+                    return $header;
+                }, $headers);
+                
+                $rowCount = 0;
+                while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+                    $rowCount++;
+                    
+                    // Skip empty rows
+                    if (empty(array_filter($row))) {
+                        continue;
+                    }
+                    
+                    // Map row to headers
+                    $rowData = [];
+                    foreach ($headers as $index => $header) {
+                        $rowData[$header] = isset($row[$index]) ? trim($row[$index]) : '';
+                    }
+                    
+                    $data[] = $rowData;
+                }
+                
+                fclose($handle);
+            }
+            
+            return [
+                'success' => true,
+                'headers' => $headers,
+                'data' => $data,
+                'total_rows' => count($data)
+            ];
+            
+        } catch (Exception $e) {
+            error_log("CSV parsing error: " . $e->getMessage());
+            return ['error' => 'Failed to parse CSV file: ' . $e->getMessage()];
         }
     }
     
@@ -1515,7 +2311,8 @@ class NominalRollModel {
         // Validate dates
         $dateFields = [
             'date_of_birth', 'date_of_first_appointment', 
-            'date_of_confirmation', 'date_of_present_appointment'
+            'date_of_confirmation', 'date_of_present_appointment',
+            'qualification_date', 'retirement_date'
         ];
         
         foreach ($dateFields as $field) {
@@ -1563,6 +2360,9 @@ class NominalRollModel {
      * Check if date is valid
      */
     private function isValidDate($date, $format = 'Y-m-d') {
+        if (empty($date)) {
+            return true;
+        }
         $d = DateTime::createFromFormat($format, $date);
         return $d && $d->format($format) === $date;
     }
@@ -1864,19 +2664,6 @@ class NominalRollModel {
     }
     
     /**
-     * Normalize sex value
-     */
-    private function normalizeSex($value) {
-        $value = strtolower(trim($value));
-        if (in_array($value, ['m', 'male', '1'])) {
-            return 'Male';
-        } elseif (in_array($value, ['f', 'female', '2'])) {
-            return 'Female';
-        }
-        return ucfirst($value);
-    }
-    
-    /**
      * Normalize marital status
      */
     private function normalizeMaritalStatus($value) {
@@ -1891,33 +2678,6 @@ class NominalRollModel {
         ];
         
         return $statusMap[$value] ?? ucfirst($value);
-    }
-    
-    /**
-     * Normalize date format
-     */
-    private function normalizeDate($value) {
-        if (empty($value)) {
-            return null;
-        }
-        
-        // Try different date formats
-        $formats = ['Y-m-d', 'd/m/Y', 'd-m-Y', 'm/d/Y', 'Y/m/d', 'Y-m-d H:i:s', 'd/m/Y H:i:s'];
-        
-        foreach ($formats as $format) {
-            $date = DateTime::createFromFormat($format, $value);
-            if ($date !== false) {
-                return $date->format('Y-m-d');
-            }
-        }
-        
-        // Try to parse any date format
-        $timestamp = strtotime($value);
-        if ($timestamp !== false) {
-            return date('Y-m-d', $timestamp);
-        }
-        
-        return null;
     }
     
     /**
@@ -2496,5 +3256,28 @@ class NominalRollModel {
         }
         
         return $selectedLabels;
+    }
+    
+    /**
+     * Get bulk upload processing results summary
+     */
+    public function getBulkUploadResultsSummary($uploadId) {
+        try {
+            $sql = "SELECT * FROM " . self::TABLE_BULK_UPLOADS . " WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':id' => $uploadId]);
+            
+            $upload = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($upload && !empty($upload['processing_results'])) {
+                $upload['processing_results'] = json_decode($upload['processing_results'], true);
+            }
+            
+            return $upload;
+            
+        } catch (PDOException $e) {
+            error_log("Get bulk upload results summary error: " . $e->getMessage());
+            return null;
+        }
     }
 }

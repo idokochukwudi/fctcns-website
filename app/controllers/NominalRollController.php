@@ -79,6 +79,345 @@ class NominalRollController extends Controller {
     
     /**
      * ============================================
+     * DEBUG METHODS
+     * ============================================
+     */
+    
+    /**
+     * Test database insertion - for debugging
+     */
+    public function testDatabaseInsert() {
+        header('Content-Type: application/json');
+        
+        try {
+            error_log("=== TEST DATABASE INSERT ===");
+            
+            // Test data
+            $testData = [
+                'employee_number' => 'TEST' . time(),
+                'surname' => 'Test',
+                'first_name' => 'User',
+                'sex' => 'Male',
+                'date_of_birth' => '1990-01-01',
+                'marital_status' => 'Single',
+                'rank' => 'Test Rank',
+                'grade_level' => '10',
+                'department' => 'Testing',
+                'email' => 'test@example.com',
+                'telephone_number' => '08000000000',
+                'status' => 'active',
+                'is_draft' => 0,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+            
+            error_log("Test data: " . print_r($testData, true));
+            
+            // Try to insert
+            $result = $this->model->createEmployee($testData, $_SESSION['user_id'] ?? null);
+            
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Test record inserted successfully',
+                    'employee_id' => $result
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to insert test record'
+                ]);
+            }
+            
+        } catch (Exception $e) {
+            error_log("Test error: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+        
+        exit;
+    }
+    
+    /**
+     * Test exact CSV format
+     */
+    public function testExactCSV() {
+        error_log("=== TEST EXACT CSV START ===");
+        
+        // Clear any output buffers FIRST
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // Set JSON header FIRST, before any output
+        header('Content-Type: application/json');
+        
+        try {
+            // Simulate your exact CSV row
+            $csvRow = [
+                'S/N' => '1',
+                'Employee Number' => 'EMP20240009',
+                'Surname' => 'Doe',
+                'First Name' => 'John',
+                'Middle Name' => 'Michael',
+                'Sex' => 'Male',
+                'Date of Birth' => '2/2/1990',
+                'Marital Status' => 'Married',
+                'Rank' => 'Senior Lecturer',
+                'Grade Level (GL)' => '15',
+                'Qualification' => 'B.Sc Nursing',
+                'Qualification Date' => '5/20/2010',
+                'Highest Qualification' => 'PhD in Nursing',
+                'Year of Highest Qualification' => '2020',
+                'Additional Qualifications' => '[{"qualification":"M.Sc Nursing","year":"2015"},{"qualification":"PGDE","year":"2016"}]',
+                'Date of 1st Appt.' => '3/1/2015',
+                'Date of Confirmation' => '3/1/2016',
+                'Rank on 1st Appt.' => 'Lecturer II',
+                'Date of Present. Appt.' => '1/15/2023',
+                'State of Origin' => 'FCT',
+                'Local Govt. Area' => 'Gwagwalada',
+                'State of Residence' => 'FCT',
+                'Residential Address' => 'Plot 123, Gwagwalada, Abuja',
+                'PF No' => 'PF123456',
+                'NHF No' => 'NHF789012',
+                'Bank Name' => 'First Bank',
+                'Bank Branch' => 'Gwagwalada',
+                'Other Bank Name' => '',
+                'Account No' => '1234567890',
+                'Pension Fund Admin' => 'PENCOM',
+                'Other Pension Fund Admin' => '',
+                'Pension No' => 'PEN123456',
+                'Telephone No' => '8012345678',
+                'Email' => 'john.doe@fcns.edu.ng'
+            ];
+            
+            error_log("Testing CSV row cleaning...");
+            
+            // FIXED: Check if the method exists and call it directly in the model
+            $cleanedData = [];
+            
+            // Try to call the method - it might be private, so let's handle it differently
+            // First, let's manually clean the data like the model would
+            error_log("Manually cleaning CSV row data...");
+            
+            // Basic cleaning - convert CSV headers to database fields
+            $cleanedData = $this->cleanCSVRowManually($csvRow);
+            error_log("Manually cleaned data: " . print_r($cleanedData, true));
+            
+            // Check what fields were extracted
+            $expectedFields = ['employee_number', 'surname', 'first_name', 'grade_level', 'state', 'local_govt_area'];
+            $missingFields = [];
+            
+            foreach ($expectedFields as $field) {
+                if (empty($cleanedData[$field])) {
+                    $missingFields[] = $field;
+                }
+            }
+            
+            if (!empty($missingFields)) {
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Missing fields after cleaning: ' . implode(', ', $missingFields),
+                    'cleaned_data' => $cleanedData
+                ]);
+                exit;
+            }
+            
+            // Try to insert
+            error_log("Attempting to insert cleaned data...");
+            
+            // Prepare data for insertion
+            $employeeData = [
+                'employee_number' => $cleanedData['employee_number'] ?? 'TEST' . time(),
+                'surname' => $cleanedData['surname'] ?? 'Test',
+                'first_name' => $cleanedData['first_name'] ?? 'User',
+                'middle_name' => $cleanedData['middle_name'] ?? '',
+                'sex' => $cleanedData['sex'] ?? 'Male',
+                'date_of_birth' => $cleanedData['date_of_birth'] ?? '1990-01-01',
+                'marital_status' => $cleanedData['marital_status'] ?? 'Single',
+                'rank' => $cleanedData['rank'] ?? 'Test Rank',
+                'grade_level' => $cleanedData['grade_level'] ?? '10',
+                'qualification' => $cleanedData['qualification'] ?? 'B.Sc Test',
+                'highest_qualification' => $cleanedData['highest_qualification'] ?? 'PhD Test',
+                'year_of_highest_qualification' => $cleanedData['year_of_highest_qualification'] ?? '2020',
+                'additional_qualifications' => $cleanedData['additional_qualifications'] ?? null,
+                'date_of_first_appointment' => $cleanedData['date_of_first_appointment'] ?? date('Y-m-d'),
+                'date_of_confirmation' => $cleanedData['date_of_confirmation'] ?? date('Y-m-d'),
+                'rank_on_first_appointment' => $cleanedData['rank_on_first_appointment'] ?? 'Lecturer I',
+                'date_of_present_appointment' => $cleanedData['date_of_present_appointment'] ?? date('Y-m-d'),
+                'state' => $cleanedData['state'] ?? 'FCT',
+                'local_govt_area' => $cleanedData['local_govt_area'] ?? 'Gwagwalada',
+                'state_of_residence' => $cleanedData['state_of_residence'] ?? 'FCT',
+                'residential_address' => $cleanedData['residential_address'] ?? 'Test Address',
+                'pf_number' => $cleanedData['pf_number'] ?? 'PF123456',
+                'nhf_number' => $cleanedData['nhf_number'] ?? 'NHF789012',
+                'bank_name' => $cleanedData['bank_name'] ?? 'First Bank',
+                'bank_branch' => $cleanedData['bank_branch'] ?? 'Test Branch',
+                'account_number' => $cleanedData['account_number'] ?? '1234567890',
+                'pension_fund_admin' => $cleanedData['pension_fund_admin'] ?? 'PENCOM',
+                'pension_number' => $cleanedData['pension_number'] ?? 'PEN123456',
+                'telephone_number' => $cleanedData['telephone_number'] ?? '08012345678',
+                'email' => $cleanedData['email'] ?? 'test@example.com',
+                'status' => 'active',
+                'is_draft' => 0,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+            
+            // Create employee using the model's public method
+            $employeeId = $this->model->createEmployee($employeeData, $_SESSION['user_id'] ?? 1);
+            
+            if ($employeeId) {
+                // Verify
+                $employee = $this->model->getEmployee($employeeId);
+                
+                echo json_encode([
+                    'success' => true,
+                    'employee_id' => $employeeId,
+                    'employee_number' => $employee['employee_number'] ?? null,
+                    'cleaned_data' => $cleanedData,
+                    'employee_data' => $employeeData,
+                    'employee' => $employee
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Failed to create employee',
+                    'cleaned_data' => $cleanedData,
+                    'employee_data' => $employeeData
+                ]);
+            }
+            
+        } catch (Exception $e) {
+            error_log("Test exact CSV error: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+        
+        error_log("=== TEST EXACT CSV END ===");
+        exit;
+    }
+    
+    /**
+     * Manually clean CSV row (since cleanBulkUploadRow might be private)
+     */
+    private function cleanCSVRowManually($csvRow) {
+        $cleanedData = [];
+        
+        // Map CSV headers to database fields
+        $fieldMappings = [
+            'S/N' => 'id',
+            'Employee Number' => 'employee_number',
+            'Surname' => 'surname',
+            'First Name' => 'first_name',
+            'Middle Name' => 'middle_name',
+            'Sex' => 'sex',
+            'Date of Birth' => 'date_of_birth',
+            'Marital Status' => 'marital_status',
+            'Rank' => 'rank',
+            'Grade Level (GL)' => 'grade_level',
+            'Qualification' => 'qualification',
+            'Qualification Date' => 'qualification_date',
+            'Highest Qualification' => 'highest_qualification',
+            'Year of Highest Qualification' => 'year_of_highest_qualification',
+            'Additional Qualifications' => 'additional_qualifications',
+            'Date of 1st Appt.' => 'date_of_first_appointment',
+            'Date of Confirmation' => 'date_of_confirmation',
+            'Rank on 1st Appt.' => 'rank_on_first_appointment',
+            'Date of Present. Appt.' => 'date_of_present_appointment',
+            'State of Origin' => 'state',
+            'Local Govt. Area' => 'local_govt_area',
+            'State of Residence' => 'state_of_residence',
+            'Residential Address' => 'residential_address',
+            'PF No' => 'pf_number',
+            'NHF No' => 'nhf_number',
+            'Bank Name' => 'bank_name',
+            'Bank Branch' => 'bank_branch',
+            'Other Bank Name' => 'other_bank_name',
+            'Account No' => 'account_number',
+            'Pension Fund Admin' => 'pension_fund_admin',
+            'Other Pension Fund Admin' => 'other_pension_fund_admin',
+            'Pension No' => 'pension_number',
+            'Telephone No' => 'telephone_number',
+            'Email' => 'email'
+        ];
+        
+        foreach ($csvRow as $csvHeader => $value) {
+            if (isset($fieldMappings[$csvHeader])) {
+                $dbField = $fieldMappings[$csvHeader];
+                
+                // Clean the value
+                $cleanedValue = trim($value);
+                
+                // Handle special cases
+                if (empty($cleanedValue)) {
+                    $cleanedData[$dbField] = null;
+                    continue;
+                }
+                
+                // Handle date fields
+                if (strpos($dbField, 'date') !== false || strpos($csvHeader, 'Date') !== false) {
+                    // Try to convert date format (m/d/Y to Y-m-d)
+                    try {
+                        $date = DateTime::createFromFormat('n/j/Y', $cleanedValue);
+                        if ($date) {
+                            $cleanedData[$dbField] = $date->format('Y-m-d');
+                        } else {
+                            // Try other date formats
+                            $date = strtotime($cleanedValue);
+                            if ($date !== false) {
+                                $cleanedData[$dbField] = date('Y-m-d', $date);
+                            } else {
+                                $cleanedData[$dbField] = $cleanedValue; // Keep original if can't parse
+                            }
+                        }
+                    } catch (Exception $e) {
+                        $cleanedData[$dbField] = $cleanedValue;
+                    }
+                } 
+                // Handle sex field
+                elseif ($dbField === 'sex') {
+                    $cleanedValue = strtolower($cleanedValue);
+                    if ($cleanedValue === 'm' || $cleanedValue === 'male') {
+                        $cleanedData[$dbField] = 'Male';
+                    } elseif ($cleanedValue === 'f' || $cleanedValue === 'female') {
+                        $cleanedData[$dbField] = 'Female';
+                    } else {
+                        $cleanedData[$dbField] = ucfirst($cleanedValue);
+                    }
+                }
+                // Handle JSON field
+                elseif ($dbField === 'additional_qualifications') {
+                    // Check if it's already JSON
+                    if (strpos($cleanedValue, '[') === 0) {
+                        // Try to decode to validate
+                        $json = json_decode($cleanedValue, true);
+                        if ($json !== null) {
+                            $cleanedData[$dbField] = $cleanedValue;
+                        } else {
+                            $cleanedData[$dbField] = null;
+                        }
+                    } else {
+                        $cleanedData[$dbField] = null;
+                    }
+                }
+                // Handle other fields
+                else {
+                    $cleanedData[$dbField] = $cleanedValue;
+                }
+            }
+        }
+        
+        return $cleanedData;
+    }
+    
+    /**
+     * ============================================
      * MAIN CRUD PAGES
      * ============================================
      */
@@ -113,15 +452,31 @@ class NominalRollController extends Controller {
             // Get statistics
             $stats = $this->model->getEmployeeStats();
             
-            // Set data for view
+            // ========================================
+            // FIX 5 APPLIED: Add error checking to pagination
+            // ========================================
+            // Make sure $pagination is always set with valid values
+            if (!isset($result['pagination']) || !is_array($result['pagination'])) {
+                $pagination = [];
+            } else {
+                $pagination = $result['pagination'];
+            }
+
+            // Ensure required keys exist with defaults
+            $pagination['page'] = isset($pagination['page']) ? (int)$pagination['page'] : 1;
+            $pagination['total_pages'] = isset($pagination['total_pages']) ? (int)$pagination['total_pages'] : 1;
+            $pagination['total'] = isset($pagination['total']) ? (int)$pagination['total'] : 0;
+            $pagination['limit'] = isset($pagination['limit']) ? (int)$pagination['limit'] : 5;
+
+            // Make sure total_pages is at least 1
+            if ($pagination['total_pages'] < 1) {
+                $pagination['total_pages'] = 1;
+            }
+            
+            // Now load your view with the validated pagination
             $this->data = array_merge($this->data, [
                 'employees' => $result['employees'],
-                'pagination' => [
-                    'total' => $result['total'],
-                    'page' => $result['page'],
-                    'limit' => $result['limit'],
-                    'total_pages' => $result['total_pages']
-                ],
+                'pagination' => $pagination, // Use validated pagination
                 'filters' => $filters,
                 'filterOptions' => $filterOptions,
                 'stats' => $stats,
@@ -135,7 +490,7 @@ class NominalRollController extends Controller {
             
         } catch (Exception $e) {
             error_log("NominalRollController index error: " . $e->getMessage());
-            $this->showError("Failed to load nominal roll data.");
+            $this->showNominalRollError("Failed to load nominal roll data.");
         }
     }
     
@@ -145,9 +500,8 @@ class NominalRollController extends Controller {
     public function create() {
         // Check if user has permission to create
         if (!$this->data['hasCreatePermission'] || (!$this->data['editingEnabled'] && !$this->data['isSuperAdmin'])) {
-            $this->flash('error', 'You do not have permission to create employee records.');
-            $this->redirect('/admin/nominal-roll');
-            return;
+            echo json_encode(['success' => false, 'error' => 'You do not have permission to create employee records.']);
+            exit;
         }
         
         try {
@@ -184,7 +538,7 @@ class NominalRollController extends Controller {
             
         } catch (Exception $e) {
             error_log("NominalRollController create error: " . $e->getMessage());
-            $this->showError("Failed to load create form.");
+            $this->showNominalRollError("Failed to load create form.");
         }
     }
     
@@ -374,7 +728,7 @@ class NominalRollController extends Controller {
             
         } catch (Exception $e) {
             error_log("NominalRollController view error: " . $e->getMessage());
-            $this->showError("Failed to load employee details.");
+            $this->showNominalRollError("Failed to load employee details.");
         }
     }
     
@@ -395,7 +749,7 @@ class NominalRollController extends Controller {
                     // Create a simple default image
                     header('Content-Type: image/svg+xml');
                     echo '<?xml version="1.0" encoding="UTF-8"?>
-                    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="200" height="200" xmlns="http://www.w3.org/TR/REC-html40">
                         <rect width="200" height="200" fill="#f0f0f0"/>
                         <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="14" fill="#666">No Photo</text>
                     </svg>';
@@ -414,7 +768,7 @@ class NominalRollController extends Controller {
                 } else {
                     header('Content-Type: image/svg+xml');
                     echo '<?xml version="1.0" encoding="UTF-8"?>
-                    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="200" height="200" xmlns="http://www.w3.org/TR/REC-html40">
                         <rect width="200" height="200" fill="#f0f0f0"/>
                         <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="14" fill="#666">Photo Missing</text>
                     </svg>';
@@ -438,7 +792,7 @@ class NominalRollController extends Controller {
             // Return a simple error image
             header('Content-Type: image/svg+xml');
             echo '<?xml version="1.0" encoding="UTF-8"?>
-            <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+            <svg width="200" height="200" xmlns="http://www.w3.org/TR/REC-html40">
                 <rect width="200" height="200" fill="#ffe6e6"/>
                 <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="12" fill="#cc0000">Error Loading Image</text>
             </svg>';
@@ -474,7 +828,7 @@ class NominalRollController extends Controller {
             
         } catch (Exception $e) {
             error_log("NominalRollController print error: " . $e->getMessage());
-            $this->showError("Failed to load print view.");
+            $this->showNominalRollError("Failed to load print view.");
         }
     }
     
@@ -714,7 +1068,7 @@ class NominalRollController extends Controller {
             
         } catch (Exception $e) {
             error_log("NominalRollController edit error: " . $e->getMessage());
-            $this->showError("Failed to load edit form.");
+            $this->showNominalRollError("Failed to load edit form.");
         }
     }
     
@@ -979,14 +1333,29 @@ class NominalRollController extends Controller {
             // Get filter options
             $filterOptions = $this->model->getFilterOptions();
             
+            // ========================================
+            // FIX 5 APPLIED: Add error checking to pagination for drafts too
+            // ========================================
+            if (!isset($result['pagination']) || !is_array($result['pagination'])) {
+                $pagination = [];
+            } else {
+                $pagination = $result['pagination'];
+            }
+
+            // Ensure required keys exist with defaults
+            $pagination['page'] = isset($pagination['page']) ? (int)$pagination['page'] : 1;
+            $pagination['total_pages'] = isset($pagination['total_pages']) ? (int)$pagination['total_pages'] : 1;
+            $pagination['total'] = isset($pagination['total']) ? (int)$pagination['total'] : 0;
+            $pagination['limit'] = isset($pagination['limit']) ? (int)$pagination['limit'] : 5;
+
+            // Make sure total_pages is at least 1
+            if ($pagination['total_pages'] < 1) {
+                $pagination['total_pages'] = 1;
+            }
+            
             $this->data = array_merge($this->data, [
                 'employees' => $result['employees'],
-                'pagination' => [
-                    'total' => $result['total'],
-                    'page' => $result['page'],
-                    'limit' => $result['limit'],
-                    'total_pages' => $result['total_pages']
-                ],
+                'pagination' => $pagination, // Use validated pagination
                 'filters' => $filters,
                 'filterOptions' => $filterOptions,
                 'currentLimit' => $limit, // ADDED: for the records per page selector
@@ -998,7 +1367,7 @@ class NominalRollController extends Controller {
             
         } catch (Exception $e) {
             error_log("NominalRollController drafts error: " . $e->getMessage());
-            $this->showError("Failed to load draft employees.");
+            $this->showNominalRollError("Failed to load draft employees.");
         }
     }
     
@@ -1054,17 +1423,22 @@ class NominalRollController extends Controller {
     public function bulkUpload() {
         // Check if user has permission
         if (!$this->data['hasBulkUploadPermission']) {
-            $this->flash('error', 'You do not have permission to upload bulk data.');
-            $this->redirect('/admin/nominal-roll');
-            return;
+            echo json_encode(['success' => false, 'error' => 'You do not have permission to upload bulk data.']);
+            exit;
         }
         
         try {
             // Get bulk upload history
             $uploadHistory = $this->model->getBulkUploads(10);
             
+            // ==============================
+            // FIX APPLIED: Generate CSRF token properly
+            // ==============================
+            $csrfToken = Session::generateCSRFTokenMulti();
+            
             $this->data = array_merge($this->data, [
                 'uploadHistory' => $uploadHistory,
+                'csrfToken' => $csrfToken, // Pass to view
                 'pageTitle' => 'Bulk Upload Employees - Nominal Roll',
                 'pageDescription' => 'Upload multiple employee records via CSV/Excel'
             ]);
@@ -1073,58 +1447,405 @@ class NominalRollController extends Controller {
             
         } catch (Exception $e) {
             error_log("NominalRollController bulkUpload error: " . $e->getMessage());
-            $this->showError("Failed to load bulk upload form.");
+            $this->showNominalRollError("Failed to load bulk upload form.");
         }
     }
     
     /**
-     * Process bulk upload
+     * Validate bulk upload file via AJAX - FIXED VERSION
      */
-    public function processBulkUpload() {
-        // Check if user has permission
-        if (!$this->data['hasBulkUploadPermission']) {
-            $this->jsonResponse(['error' => 'You do not have permission to upload bulk data.']);
-            return;
-        }
+    public function validateBulkUpload() {
+        error_log("=== VALIDATE BULK UPLOAD START ===");
         
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->jsonResponse(['error' => 'Invalid request method.']);
-            return;
-        }
+        // Set headers for JSON response
+        header('Content-Type: application/json');
         
         try {
+            // STEP 1: Get CSRF token from POST
+            $csrfToken = $_POST['csrf_token'] ?? null;
+            
+            error_log("CSRF token received: " . ($csrfToken ? substr($csrfToken, 0, 10) . "..." : "NULL"));
+            
+            if (!$csrfToken) {
+                error_log("ERROR: No CSRF token in POST data");
+                echo json_encode([
+                    'success' => false, 
+                    'error' => 'No CSRF token provided. Please refresh the page and try again.'
+                ]);
+                exit;
+            }
+            
+            // STEP 2: Validate the CSRF token
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
+                error_log("ERROR: CSRF token validation failed");
+                echo json_encode([
+                    'success' => false, 
+                    'error' => 'Invalid or expired CSRF token. Please refresh the page and try again.'
+                ]);
+                exit;
+            }
+            
+            error_log("CSRF token validation passed");
+            
+            // STEP 3: Check if file was uploaded
+            if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+                echo json_encode(['success' => false, 'error' => 'No file uploaded or upload error']);
+                exit;
+            }
+            $file = $_FILES['file'];
+            
+            // STEP 4: Check for upload errors
+            if ($file['error'] !== UPLOAD_ERR_OK) {
+                error_log("ERROR: Upload error code: " . $file['error']);
+                $errorMessages = [
+                    UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize',
+                    UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE',
+                    UPLOAD_ERR_PARTIAL => 'File only partially uploaded',
+                    UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+                    UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                    UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload'
+                ];
+                $errorMsg = $errorMessages[$file['error']] ?? 'Unknown upload error';
+                echo json_encode(['success' => false, 'error' => $errorMsg]);
+                exit;
+            }
+            
+            error_log("File upload successful. Name: " . $file['name'] . ", Size: " . $file['size']);
+            
+            // STEP 5: Validate file type
+            $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            error_log("File extension: " . $fileExt);
+            
+            if ($fileExt !== 'csv') {
+                echo json_encode(['success' => false, 'error' => 'Please upload CSV files only.']);
+                exit;
+            }
+            
+            // STEP 6: Validate file size (max 10MB)
+            $maxSize = 10 * 1024 * 1024;
+            if ($file['size'] > $maxSize) {
+                echo json_encode(['success' => false, 'error' => 'File size must be less than 10MB.']);
+                exit;
+            }
+            
+            error_log("File validation passed. Starting to parse CSV...");
+            
+            // STEP 7: Parse CSV file
+            $csvData = $this->parseCSVFile($file['tmp_name']);
+            
+            if (isset($csvData['error'])) {
+                echo json_encode(['success' => false, 'error' => $csvData['error']]);
+                exit;
+            }
+            
+            // STEP 8: Validate CSV content
+            $validationResult = $this->validateCSVData($csvData);
+            
+            // STEP 9: Prepare success response
+            $response = [
+                'success' => true,
+                'message' => 'Validation completed successfully',
+                'total_records' => $validationResult['total_records'],
+                'valid_records' => $validationResult['valid_records'],
+                'error_count' => count($validationResult['errors']),
+                'errors' => $validationResult['errors'],
+                'duplicate_count' => count($validationResult['duplicates']),
+                'duplicates' => $validationResult['duplicates'],
+                'file_name' => $file['name'],
+                'file_size' => $file['size']
+            ];
+            
+            error_log("=== VALIDATE BULK UPLOAD END ===");
+            error_log("Response: " . json_encode($response));
+            
+            echo json_encode($response);
+            exit;
+            
+        } catch (Exception $e) {
+            error_log("EXCEPTION in validateBulkUpload: " . $e->getMessage());
+            echo json_encode(['success' => false, 'error' => 'Server error: " . $e->getMessage()']);
+            exit;
+        }
+    }
+
+    /**
+     * Parse CSV file
+     */
+    private function parseCSVFile($filePath) {
+        error_log("Parsing CSV file: " . $filePath);
+        
+        if (!file_exists($filePath)) {
+            return ['error' => 'File not found'];
+        }
+        
+        $data = [];
+        
+        if (($handle = fopen($filePath, 'r')) !== false) {
+            // Read and validate headers
+            $headers = fgetcsv($handle, 1000, ',');
+            
+            if (!$headers || empty($headers[0])) {
+                fclose($handle);
+                return ['error' => 'CSV file has no headers or is empty'];
+            }
+            
+            // Clean headers
+            $headers = array_map(function($header) {
+                // Remove UTF-8 BOM if present
+                $header = preg_replace('/^\xEF\xBB\xBF/', '', $header);
+                // Convert to lowercase and replace spaces with underscores
+                $header = strtolower(trim($header));
+                $header = str_replace([' ', '-', '.'], '_', $header);
+                return $header;
+            }, $headers);
+            
+            error_log("Headers found: " . implode(', ', $headers));
+            
+            $rowCount = 0;
+            while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+                $rowCount++;
+                
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+                
+                // Map row data to headers
+                $rowData = [];
+                foreach ($headers as $index => $header) {
+                    if (isset($row[$index])) {
+                        $rowData[$header] = trim($row[$index]);
+                    } else {
+                        $rowData[$header] = '';
+                    }
+                }
+                
+                $data[] = $rowData;
+            }
+            
+            fclose($handle);
+            
+            error_log("Parsed " . count($data) . " rows from CSV");
+            
+            return [
+                'headers' => $headers,
+                'data' => $data,
+                'total_rows' => $rowCount
+            ];
+        }
+        
+        return ['error' => 'Failed to open CSV file'];
+    }
+
+    /**
+     * Validate CSV data
+     */
+    private function validateCSVData($csvData) {
+        $errors = [];
+        $duplicates = [];
+        $employeeNumbers = [];
+        $validCount = 0;
+        
+        foreach ($csvData['data'] as $index => $row) {
+            $rowNumber = $index + 2; // +2 for header row
+            
+            $rowErrors = [];
+            
+            // Check required fields
+            $requiredFields = [
+                'employee_number' => 'Employee Number',
+                'surname' => 'Surname', 
+                'first_name' => 'First Name',
+                'sex' => 'Sex',
+                'date_of_birth' => 'Date of Birth'
+            ];
+            
+            foreach ($requiredFields as $field => $label) {
+                if (empty($row[$field])) {
+                    $rowErrors[] = [
+                        'row' => $rowNumber,
+                        'field' => $field,
+                        'message' => "$label is required",
+                        'value' => $row[$field] ?? ''
+                    ];
+                }
+            }
+            
+            // Check duplicate employee numbers in file
+            if (!empty($row['employee_number'])) {
+                if (in_array($row['employee_number'], $employeeNumbers)) {
+                    $duplicates[] = [
+                        'employee_number' => $row['employee_number'],
+                        'name' => ($row['surname'] ?? '') . ', ' . ($row['first_name'] ?? ''),
+                        'exists' => false,
+                        'row' => $rowNumber
+                    ];
+                } else {
+                    $employeeNumbers[] = $row['employee_number'];
+                }
+            }
+            
+            // Validate email format
+            if (!empty($row['email']) && !filter_var($row['email'], FILTER_VALIDATE_EMAIL)) {
+                $rowErrors[] = [
+                    'row' => $rowNumber,
+                    'field' => 'email',
+                    'message' => 'Invalid email format',
+                    'value' => $row['email']
+                ];
+            }
+            
+            // Validate date format
+            if (!empty($row['date_of_birth']) && !$this->isValidDate($row['date_of_birth'])) {
+                $rowErrors[] = [
+                    'row' => $rowNumber,
+                    'field' => 'date_of_birth',
+                    'message' => 'Date must be in YYYY-MM-DD format',
+                    'value' => $row['date_of_birth']
+                ];
+            }
+            
+            // Validate sex
+            if (!empty($row['sex'])) {
+                $sex = strtolower($row['sex']);
+                if (!in_array($sex, ['male', 'female', 'm', 'f'])) {
+                    $rowErrors[] = [
+                        'row' => $rowNumber,
+                        'field' => 'sex',
+                        'message' => 'Sex must be Male or Female',
+                        'value' => $row['sex']
+                    ];
+                }
+            }
+            
+            if (empty($rowErrors)) {
+                $validCount++;
+            } else {
+                $errors = array_merge($errors, $rowErrors);
+            }
+        }
+        
+        return [
+            'total_records' => count($csvData['data']),
+            'valid_records' => $validCount,
+            'errors' => $errors,
+            'duplicates' => $duplicates
+        ];
+    }
+
+    /**
+     * Check if date is valid
+     */
+    private function isValidDate($date, $format = 'Y-m-d') {
+        $d = DateTime::createFromFormat($format, $date);
+        return $d && $d->format($format) === $date;
+    }
+    
+    /**
+     * Process bulk upload - COMPLETELY FIXED VERSION
+     */
+    public function processBulkUpload() {
+        // ========================================
+        // CRITICAL FIX 1: Start output buffering and set JSON header IMMEDIATELY
+        // ========================================
+        ob_start(); // Start output buffering to catch any stray output
+        
+        header('Content-Type: application/json; charset=utf-8');
+        
+        // Clear any existing output buffers
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // Start fresh output buffer
+        ob_start();
+        
+        // ========================================
+        // END CRITICAL FIX 1
+        // ========================================
+        
+        error_log("=== PROCESS BULK UPLOAD START ===");
+        
+        try {
+            // Check if user has permission
+            if (!$this->data['hasBulkUploadPermission']) {
+                error_log("Permission denied - user lacks bulk upload permission");
+                echo json_encode(['success' => false, 'error' => 'You do not have permission to upload bulk data.']);
+                ob_end_flush();
+                exit;
+            }
+            
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                error_log("Invalid request method: " . $_SERVER['REQUEST_METHOD']);
+                echo json_encode(['success' => false, 'error' => 'Invalid request method.']);
+                ob_end_flush();
+                exit;
+            }
+            
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
-                $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
-                return;
+            error_log("Checking CSRF token...");
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            if (!$this->validateCsrfToken($csrfToken)) {
+                error_log("CSRF token validation failed");
+                echo json_encode(['success' => false, 'error' => 'Invalid or expired CSRF token. Please try again.']);
+                ob_end_flush();
+                exit;
+            }
+            error_log("CSRF token validated");
+            
+            // Check for uploaded file
+            $file = null;
+            if (!empty($_FILES['file']['name']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES['file'];
+            } elseif (!empty($_FILES['bulk_file']['name']) && $_FILES['bulk_file']['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES['bulk_file'];
+            }
+
+            if (!$file) {
+                error_log("No file received in bulk upload. FILES = " . print_r($_FILES, true));
+                echo json_encode(['success' => false, 'error' => 'No valid CSV file received']);
+                ob_end_flush();
+                exit;
             }
             
-            // Check if file was uploaded
-            if (!isset($_FILES['bulk_file']) || $_FILES['bulk_file']['error'] !== UPLOAD_ERR_OK) {
-                throw new Exception("Please select a valid file to upload.");
-            }
-            
-            $file = $_FILES['bulk_file'];
+            error_log("File uploaded: " . $file['name'] . ", Size: " . $file['size'] . ", Error: " . $file['error']);
             
             // Validate file type
-            $allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/csv', 'text/x-csv', 'application/x-csv', 
-                           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            $allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/csv', 'text/x-csv', 'application/x-csv'];
             $fileType = mime_content_type($file['tmp_name']);
+            error_log("File type detected: " . $fileType . ", File type from FILES: " . $file['type']);
             
             if (!in_array($fileType, $allowedTypes) && !in_array($file['type'], $allowedTypes)) {
-                throw new Exception("Please upload a valid CSV or Excel file.");
+                $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+                if (strtolower($extension) !== 'csv') {
+                    error_log("Invalid file type or extension: " . $extension);
+                    echo json_encode(['success' => false, 'error' => 'Please upload a valid CSV file (.csv extension).']);
+                    ob_end_flush();
+                    exit;
+                }
+                error_log("Allowing CSV file despite mime type detection issue");
             }
             
             // Validate file size (max 10MB)
             $maxSize = 10 * 1024 * 1024; // 10MB
             if ($file['size'] > $maxSize) {
-                throw new Exception("File size must be less than 10MB.");
+                error_log("File size too large: " . $file['size'] . " bytes");
+                echo json_encode(['success' => false, 'error' => 'File size must be less than 10MB.']);
+                ob_end_flush();
+                exit;
             }
             
             // Create upload directory if not exists
             $uploadDir = ROOT_PATH . '/storage/uploads/nominal-roll/';
             if (!file_exists($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
+                error_log("Creating upload directory: " . $uploadDir);
+                if (!mkdir($uploadDir, 0755, true)) {
+                    error_log("Failed to create upload directory");
+                    echo json_encode(['success' => false, 'error' => 'Failed to create upload directory.']);
+                    ob_end_flush();
+                    exit;
+                }
             }
             
             // Generate unique filename
@@ -1134,20 +1855,33 @@ class NominalRollController extends Controller {
             
             // Move uploaded file
             if (!move_uploaded_file($file['tmp_name'], $filePath)) {
-                throw new Exception("Failed to save uploaded file.");
+                error_log("Failed to move uploaded file to: " . $filePath);
+                echo json_encode(['success' => false, 'error' => 'Failed to save uploaded file.']);
+                ob_end_flush();
+                exit;
             }
             
-            // Get import options
-            $importType = $this->input('import_type', 'create');
-            $updateExisting = $this->input('update_existing', 0);
-            $skipDuplicates = $this->input('skip_duplicates', 1);
+            error_log("File saved successfully to: " . $filePath);
             
-            // Parse file based on type
-            if ($fileExt === 'xlsx' || $fileExt === 'xls') {
-                $parseResult = $this->model->parseExcelFile($filePath);
-            } else {
-                $parseResult = $this->model->parseCSVFile($filePath);
+            // Get import options from POST
+            $importType = $_POST['import_type'] ?? 'create';
+            $updateExisting = isset($_POST['update_existing']) ? (int)$_POST['update_existing'] : 0;
+            $skipDuplicates = isset($_POST['skip_duplicates']) ? (int)$_POST['skip_duplicates'] : 1;
+            
+            error_log("Import options - Type: $importType, Update: $updateExisting, Skip Dupes: $skipDuplicates");
+            
+            // Parse the CSV file
+            error_log("Parsing CSV file...");
+            $parseResult = $this->parseCSVFileForUpload($filePath);
+            
+            if (isset($parseResult['error'])) {
+                error_log("CSV parsing error: " . $parseResult['error']);
+                echo json_encode(['success' => false, 'error' => 'Failed to parse CSV file: ' . $parseResult['error']]);
+                ob_end_flush();
+                exit;
             }
+            
+            error_log("CSV parsed successfully. Total rows: " . $parseResult['total_rows']);
             
             // Create bulk upload record
             $uploadId = $this->model->createBulkUpload(
@@ -1160,11 +1894,15 @@ class NominalRollController extends Controller {
                 $skipDuplicates
             );
             
-            // Process in background (for better performance with large files)
-            // For now, we'll process immediately
+            error_log("Bulk upload record created with ID: " . $uploadId);
+            
+            // Process data
             $processResult = $this->processBulkData($uploadId, $parseResult['data'], $importType, $updateExisting, $skipDuplicates);
             
-            $this->jsonResponse([
+            error_log("Processing complete: " . print_r($processResult, true));
+            
+            // Return success response
+            $response = [
                 'success' => true,
                 'message' => 'Bulk upload completed successfully!',
                 'data' => [
@@ -1174,100 +1912,180 @@ class NominalRollController extends Controller {
                     'successful' => $processResult['successful'],
                     'failed' => $processResult['failed'],
                     'skipped' => $processResult['skipped'],
-                    'error_count' => count($parseResult['errors']),
                     'upload_id' => $uploadId
                 ],
-                'errors' => array_merge($parseResult['errors'], $processResult['errors'])
-            ]);
+                'errors' => $processResult['errors']
+            ];
+            
+            error_log("=== PROCESS BULK UPLOAD END - SUCCESS ===");
+            echo json_encode($response);
             
         } catch (Exception $e) {
-            error_log("NominalRollController processBulkUpload error: " . $e->getMessage());
-            $this->jsonResponse(['error' => $e->getMessage()]);
-        }
-    }
-    
-    /**
-     * Process bulk data (import to database)
-     */
-    private function processBulkData($uploadId, $data, $importType, $updateExisting, $skipDuplicates) {
-        try {
-            $successful = 0;
-            $failed = 0;
-            $skipped = 0;
-            $errors = [];
+            error_log("=== PROCESS BULK UPLOAD END - ERROR ===");
+            error_log("Exception: " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
             
-            foreach ($data as $index => $employeeData) {
-                try {
-                    // Validate data
-                    $validationErrors = $this->model->validateEmployeeData($employeeData);
-                    
-                    if (!empty($validationErrors)) {
-                        throw new Exception(implode('; ', $validationErrors));
-                    }
-                    
-                    // Check if employee already exists
-                    $existing = $this->model->getEmployeeByNumber($employeeData['employee_number']);
-                    
-                    if ($existing) {
-                        if ($skipDuplicates && $importType === 'create') {
-                            $skipped++;
-                            continue;
-                        }
-                        
-                        if ($updateExisting) {
-                            // Update existing record
-                            $this->model->updateEmployee($existing['id'], $employeeData, $_SESSION['user_id'] ?? null);
-                            $successful++;
-                        } else {
-                            $skipped++;
-                        }
+            // Make sure we return valid JSON even on error
+            $errorResponse = json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
+            
+            if ($errorResponse === false) {
+                // If json_encode fails, send a simple error
+                echo '{"success":false,"error":"Unknown server error occurred"}';
+            } else {
+                echo $errorResponse;
+            }
+        }
+        
+        // ========================================
+        // CRITICAL FIX 2: Clean output and exit
+        // ========================================
+        $output = ob_get_contents();
+        ob_end_clean();
+        
+        // Only output if it's valid JSON, otherwise output error
+        if (strpos($output, '{') === 0) {
+            echo $output;
+        } else {
+            error_log("Invalid output detected (not JSON): " . substr($output, 0, 200));
+            echo json_encode(['success' => false, 'error' => 'Server returned invalid response format.']);
+        }
+        
+        exit;
+        // ========================================
+        // END CRITICAL FIX 2
+        // ========================================
+    }
+
+    /**
+     * Parse CSV file for upload processing
+     */
+    private function parseCSVFileForUpload($filePath) {
+        error_log("Parsing CSV file: " . $filePath);
+        
+        if (!file_exists($filePath)) {
+            return ['error' => 'File not found'];
+        }
+        
+        $data = [];
+        $validRows = 0;
+        $errors = [];
+        
+        if (($handle = fopen($filePath, 'r')) !== false) {
+            // Read and validate headers
+            $headers = fgetcsv($handle, 1000, ',');
+            
+            if (!$headers || empty($headers[0])) {
+                fclose($handle);
+                return ['error' => 'CSV file has no headers or is empty'];
+            }
+            
+            // Clean headers
+            $cleanedHeaders = [];
+            foreach ($headers as $header) {
+                // Remove UTF-8 BOM if present
+                $header = preg_replace('/^\xEF\xBB\xBF/', '', $header);
+                // Convert to lowercase and replace spaces with underscores
+                $header = strtolower(trim($header));
+                $header = str_replace([' ', '-', '.', '(', ')'], '_', $header);
+                // Remove multiple underscores
+                $header = preg_replace('/_+/', '_', $header);
+                // Remove trailing underscores
+                $header = rtrim($header, '_');
+                $cleanedHeaders[] = $header;
+            }
+            
+            error_log("Cleaned headers: " . implode(', ', $cleanedHeaders));
+            
+            $rowCount = 0;
+            while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+                $rowCount++;
+                
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+                
+                // Map row data to headers
+                $rowData = [];
+                foreach ($cleanedHeaders as $index => $header) {
+                    if (isset($row[$index])) {
+                        $rowData[$header] = trim($row[$index]);
                     } else {
-                        // Create new record
-                        $this->model->createEmployee($employeeData, $_SESSION['user_id'] ?? null);
-                        $successful++;
+                        $rowData[$header] = '';
                     }
-                    
-                } catch (Exception $e) {
-                    $failed++;
-                    $errors[] = "Row " . ($index + 1) . ": " . $e->getMessage();
+                }
+                
+                // Validate required fields
+                $requiredFields = ['employee_number', 'surname', 'first_name'];
+                $rowErrors = [];
+                
+                foreach ($requiredFields as $field) {
+                    if (empty($rowData[$field])) {
+                        $rowErrors[] = "Row $rowCount: Missing required field '$field'";
+                    }
+                }
+                
+                if (empty($rowErrors)) {
+                    $data[] = $rowData;
+                    $validRows++;
+                } else {
+                    $errors = array_merge($errors, $rowErrors);
                 }
             }
             
-            // Update bulk upload record
-            $this->model->updateBulkUpload($uploadId, [
-                'successful_imports' => $successful,
-                'failed_imports' => $failed,
-                'skipped_imports' => $skipped,
-                'error_log' => json_encode($errors),
-                'status' => 'completed',
-                'completed_at' => date('Y-m-d H:i:s')
-            ]);
+            fclose($handle);
+            
+            error_log("Parsed $rowCount rows, $validRows valid rows, " . count($errors) . " errors");
             
             return [
-                'processed' => count($data),
-                'successful' => $successful,
-                'failed' => $failed,
-                'skipped' => $skipped,
+                'headers' => $cleanedHeaders,
+                'data' => $data,
+                'total_rows' => $rowCount,
+                'valid_rows' => $validRows,
                 'errors' => $errors
             ];
-            
-        } catch (Exception $e) {
-            error_log("NominalRollController processBulkData error: " . $e->getMessage());
-            
-            // Update bulk upload record with error
-            $this->model->updateBulkUpload($uploadId, [
-                'status' => 'failed',
-                'error_log' => json_encode([$e->getMessage()])
-            ]);
-            
-            return [
-                'processed' => 0,
-                'successful' => 0,
-                'failed' => count($data),
-                'skipped' => 0,
-                'errors' => [$e->getMessage()]
-            ];
         }
+        
+        return ['error' => 'Failed to open CSV file'];
+    }
+
+    /**
+     * Process bulk data (import to database) - FIXED VERSION
+     */
+    private function processBulkData($uploadId, $data, $importType, $updateExisting, $skipDuplicates) {
+        error_log("Processing bulk data for upload ID: $uploadId");
+        
+        // Delegate ALL processing to the model (proper MVC)
+        $result = $this->model->processBulkUploadData(
+            $data,
+            $importType,
+            $updateExisting,
+            $skipDuplicates,
+            $_SESSION['user_id'] ?? null
+        );
+        
+        // Update bulk upload record with results
+        $updateData = [
+            'successful_imports' => $result['success'] + $result['updated'],
+            'failed_imports' => $result['failed'],
+            'skipped_imports' => $result['skipped'],
+            'status' => 'completed',
+            'completed_at' => date('Y-m-d H:i:s')
+        ];
+        
+        if (!empty($result['errors'])) {
+            $updateData['error_log'] = json_encode($result['errors']);
+        }
+        
+        $this->model->updateBulkUpload($uploadId, $updateData);
+        
+        return [
+            'processed' => count($data),
+            'successful' => $result['success'] + $result['updated'],
+            'failed' => $result['failed'],
+            'skipped' => $result['skipped'],
+            'errors' => $result['errors']
+        ];
     }
     
     /**
@@ -1529,26 +2347,56 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Generate report preview via AJAX - NEW METHOD WITH SESSION STORAGE FIX
+     * Generate report preview via AJAX - DEBUG VERSION
      */
     public function generatePreview() {
         header('Content-Type: application/json');
+        
+        error_log("=== GENERATE PREVIEW DEBUG ===");
+        error_log("POST data: " . print_r($_POST, true));
+        error_log("CSRF token in POST: " . ($_POST['csrf_token'] ?? 'NOT FOUND'));
+        error_log("Session tokens: " . print_r($_SESSION['csrf_tokens'] ?? [], true));
         
         try {
             // Check if it's an AJAX request
             if (empty($_SERVER['HTTP_X_REQUESTED_WITH']) || 
                 strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
+                error_log("ERROR: Not an AJAX request");
                 throw new Exception('Invalid request type');
             }
             
             // Get POST data
-            $postData = json_decode(file_get_contents('php://input'), true);
+            $postData = $_POST;
             
-            if (!$postData) {
-                $postData = $_POST;
+            // Get CSRF token
+            $csrfToken = $postData['csrf_token'] ?? '';
+            
+            if (empty($csrfToken)) {
+                error_log("ERROR: CSRF token empty in POST");
+                throw new Exception('No CSRF token provided. Please refresh the page and try again.');
             }
             
-            // Get selected fields
+            // Validate CSRF token using controller method
+            if (!$this->validateCsrfToken()) {
+                error_log("ERROR: CSRF token validation failed");
+                
+                // Try direct validation as fallback
+                if (isset($_SESSION['csrf_tokens'][$csrfToken])) {
+                    $tokenTime = $_SESSION['csrf_tokens'][$csrfToken];
+                    if (time() - $tokenTime <= 3600) {
+                        error_log("WARNING: Token found in session but controller validation failed");
+                        // Token exists and is not expired - maybe validation logic issue
+                    } else {
+                        error_log("ERROR: Token expired in session");
+                    }
+                }
+                
+                throw new Exception('Invalid or expired CSRF token. Please refresh the page and try again.');
+            }
+            
+            error_log("SUCCESS: CSRF token validated");
+            
+            // Rest of your code...
             $selectedFields = $postData['selected_fields'] ?? [];
             
             if (empty($selectedFields)) {
@@ -1568,7 +2416,7 @@ class NominalRollController extends Controller {
             
             $sortOrder = $postData['sort_order'] ?? 'surname_asc';
             
-            // Generate report data using REAL database data
+            // Generate report data
             $reportData = $this->model->generateReportData($selectedFields, $filters, $sortOrder);
             
             // Get field labels
@@ -1580,27 +2428,32 @@ class NominalRollController extends Controller {
                 }
             }
             
-            // Get statistics
-            $statistics = $this->model->getReportStatistics($reportData, $selectedFields);
+            // Get preview limit
+            $previewLimit = isset($postData['preview_limit']) ? (int)$postData['preview_limit'] : 20;
             
-            // Get limited preview (e.g., first 10 records)
-            $previewData = array_slice($reportData, 0, 10);
+            // Get preview data
+            if ($previewLimit <= 0 || $previewLimit > count($reportData)) {
+                $previewData = $reportData;
+            } else {
+                $previewData = array_slice($reportData, 0, $previewLimit);
+            }
             
-            // ============ CRITICAL FIX: Store data in session for export ============
+            // Store in session
             $_SESSION['current_report_data'] = [
-                'full_data' => $reportData,          // All data for export
-                'preview_data' => $previewData,      // Limited preview data
+                'full_data' => $reportData,
+                'preview_data' => $previewData,
                 'selected_fields' => $selectedFields,
                 'field_labels' => $fieldLabels,
                 'filters' => $filters,
                 'sort_order' => $sortOrder,
                 'total_records' => count($reportData),
                 'preview_records' => count($previewData),
-                'statistics' => $statistics,
+                'preview_limit' => $previewLimit,
+                'statistics' => $this->model->getReportStatistics($reportData, $selectedFields),
                 'generated_at' => date('Y-m-d H:i:s')
             ];
             
-            // ============ END FIX ============
+            error_log("=== GENERATE PREVIEW SUCCESS: " . count($previewData) . " preview records ===");
             
             echo json_encode([
                 'success' => true,
@@ -1610,7 +2463,7 @@ class NominalRollController extends Controller {
                 'fullData' => $reportData,
                 'totalRecords' => count($reportData),
                 'previewRecords' => count($previewData),
-                'statistics' => $statistics,
+                'previewLimit' => $previewLimit,
                 'config' => [
                     'selected_fields' => $selectedFields,
                     'sort_order' => $sortOrder,
@@ -1619,7 +2472,7 @@ class NominalRollController extends Controller {
             ]);
             
         } catch (Exception $e) {
-            error_log("Report preview error: " . $e->getMessage());
+            error_log("=== GENERATE PREVIEW ERROR: " . $e->getMessage() . " ===");
             echo json_encode([
                 'success' => false,
                 'error' => $e->getMessage()
@@ -1735,19 +2588,401 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Export to Excel with selected fields - UPDATED VERSION (FIXED)
+     * ============================================
+     * EXPORT EXCEL AND CSV METHODS - FIXED VERSION
+     * ============================================
      */
-    public function exportExcel() {
-        $this->handleExport('excel');
-    }
     
     /**
-     * Export to CSV with selected fields - UPDATED VERSION
+     * Export to Excel with selected fields - FIXED VERSION
      */
-    public function exportCsv() {
-        $this->handleExport('csv');
+    public function exportExcel() {
+        // Check if user has permission to export
+        if (!$this->data['hasExportPermission']) {
+            echo json_encode(['success' => false, 'error' => 'You do not have permission to export data.']);
+            exit;
+        }
+        
+        try {
+            // Validate CSRF token
+            if (!$this->validateCsrfToken()) {
+                $this->showNominalRollError('Invalid CSRF token');
+                return;
+            }
+            
+            // Get POST data directly from $_POST since $this->request doesn't exist
+            $autoFormat = isset($_POST['auto_format']) ? $_POST['auto_format'] == '1' : false;
+            $includeSummary = isset($_POST['include_summary']) ? $_POST['include_summary'] == '1' : false;
+            
+            // Get selected fields
+            $selectedFields = isset($_POST['selected_fields']) ? (array)$_POST['selected_fields'] : [];
+            
+            if (empty($selectedFields)) {
+                $this->showNominalRollError('Please select at least one field to export.');
+                return;
+            }
+            
+            // Get filters
+            $filters = [
+                'search' => isset($_POST['search']) ? $_POST['search'] : '',
+                'state' => isset($_POST['filter_state']) ? $_POST['filter_state'] : '',
+                'department' => isset($_POST['filter_department']) ? $_POST['filter_department'] : '',
+                'grade_level' => isset($_POST['filter_grade_level']) ? $_POST['filter_grade_level'] : '',
+                'sex' => isset($_POST['filter_sex']) ? $_POST['filter_sex'] : '',
+                'rank' => isset($_POST['filter_rank']) ? $_POST['filter_rank'] : '',
+                'status' => isset($_POST['filter_status']) ? $_POST['filter_status'] : 'active'
+            ];
+            
+            $sortOrder = isset($_POST['sort_order']) ? $_POST['sort_order'] : 'surname_asc';
+            
+            // Fetch data from database
+            $data = $this->fetchReportData($selectedFields, $filters, $sortOrder);
+            
+            if (empty($data)) {
+                $this->showNominalRollError('No records found with the current filters.');
+                return;
+            }
+            
+            // Get available fields for labels
+            $availableFields = $this->model->getAvailableReportFields();
+            $fieldLabels = [];
+            foreach ($availableFields as $category) {
+                foreach ($category['fields'] as $key => $label) {
+                    $fieldLabels[$key] = $label;
+                }
+            }
+            
+            // Generate Excel file
+            $this->generateExcelFile($data, $selectedFields, $fieldLabels, $filters, [
+                'auto_format' => $autoFormat,
+                'include_summary' => $includeSummary
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Export Excel error: " . $e->getMessage());
+            $this->showNominalRollError('Failed to export to Excel: ' . $e->getMessage());
+        }
     }
 
+    /**
+     * Export to CSV with selected fields - FIXED VERSION
+     */
+    public function exportCsv() {
+        // Check if user has permission to export
+        if (!$this->data['hasExportPermission']) {
+            echo json_encode(['success' => false, 'error' => 'You do not have permission to export data.']);
+            exit;
+        }
+        
+        try {
+            // Validate CSRF token
+            if (!$this->validateCsrfToken()) {
+                $this->showNominalRollError('Invalid CSRF token');
+                return;
+            }
+            
+            // Get POST data directly from $_POST
+            $selectedFields = isset($_POST['selected_fields']) ? (array)$_POST['selected_fields'] : [];
+            
+            if (empty($selectedFields)) {
+                $this->showNominalRollError('Please select at least one field to export.');
+                return;
+            }
+            
+            // Get filters
+            $filters = [
+                'search' => isset($_POST['search']) ? $_POST['search'] : '',
+                'state' => isset($_POST['filter_state']) ? $_POST['filter_state'] : '',
+                'department' => isset($_POST['filter_department']) ? $_POST['filter_department'] : '',
+                'grade_level' => isset($_POST['filter_grade_level']) ? $_POST['filter_grade_level'] : '',
+                'sex' => isset($_POST['filter_sex']) ? $_POST['filter_sex'] : '',
+                'rank' => isset($_POST['filter_rank']) ? $_POST['filter_rank'] : '',
+                'status' => isset($_POST['filter_status']) ? $_POST['filter_status'] : 'active'
+            ];
+            
+            $sortOrder = isset($_POST['sort_order']) ? $_POST['sort_order'] : 'surname_asc';
+            
+            // Fetch data from database
+            $data = $this->fetchReportData($selectedFields, $filters, $sortOrder);
+            
+            if (empty($data)) {
+                $this->showNominalRollError('No records found with the current filters.');
+                return;
+            }
+            
+            // Get available fields for labels
+            $availableFields = $this->model->getAvailableReportFields();
+            $fieldLabels = [];
+            foreach ($availableFields as $category) {
+                foreach ($category['fields'] as $key => $label) {
+                    $fieldLabels[$key] = $label;
+                }
+            }
+            
+            // Generate CSV file
+            $this->generateCsvFile($data, $selectedFields, $fieldLabels, $filters);
+            
+        } catch (Exception $e) {
+            error_log("Export CSV error: " . $e->getMessage());
+            $this->showNominalRollError('Failed to export to CSV: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Fetch report data from database
+     */
+    private function fetchReportData($selectedFields, $filters, $sortOrder)
+    {
+        // Generate report data using model
+        $reportData = $this->model->generateReportData($selectedFields, $filters, $sortOrder);
+        return $reportData;
+    }
+
+    /**
+     * Generate Excel file with HTML
+     */
+    private function generateExcelFile($data, $selectedFields, $fieldLabels, $filters, $options)
+    {
+        // Generate timestamp for filename
+        $timestamp = date('Y-m-d_H-i-s');
+        $filename = "Nominal_Roll_Report_{$timestamp}";
+        
+        // HTML that Excel can open
+        $html = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Nominal Roll Report</title>
+    <style>
+        body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
+        th { background-color: #2C5AA0; color: white; font-weight: bold; text-align: center; padding: 10px; border: 1px solid #1C3A6F; font-size: 12pt; }
+        td { padding: 8px; border: 1px solid #ddd; vertical-align: middle; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        .summary { margin-top: 40px; padding: 20px; border: 2px solid #2C5AA0; background-color: #E3F2FD; }
+        .summary-title { font-size: 14pt; font-weight: bold; color: #2C5AA0; margin-bottom: 15px; }
+        .number { text-align: center; font-weight: bold; }
+        .date { white-space: nowrap; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .bold { font-weight: bold; }
+    </style>
+</head>
+<body>';
+        
+        // Add report title
+        $html .= '<h1 style="color: #2C5AA0;">Nominal Roll Report</h1>';
+        $html .= '<p><strong>Generated:</strong> ' . date('F j, Y H:i:s') . '</p>';
+        
+        // Add filter info
+        $html .= '<div style="margin-bottom: 20px; padding: 10px; background-color: #f0f8ff; border-left: 4px solid #2C5AA0;">';
+        $html .= '<strong>Filter Criteria:</strong><br>';
+        
+        $activeFilters = [];
+        if (!empty($filters['search'])) $activeFilters[] = "Search: {$filters['search']}";
+        if (!empty($filters['state'])) $activeFilters[] = "State: {$filters['state']}";
+        if (!empty($filters['department'])) $activeFilters[] = "Department: {$filters['department']}";
+        if (!empty($filters['grade_level'])) $activeFilters[] = "Grade Level: {$filters['grade_level']}";
+        if (!empty($filters['sex'])) $activeFilters[] = "Gender: {$filters['sex']}";
+        if (!empty($filters['rank'])) $activeFilters[] = "Rank: {$filters['rank']}";
+        if (!empty($filters['status'])) $activeFilters[] = "Status: " . ucfirst($filters['status']);
+        
+        if (empty($activeFilters)) {
+            $html .= 'No filters applied (showing all records)';
+        } else {
+            $html .= implode(' | ', $activeFilters);
+        }
+        $html .= '</div>';
+        
+        // Create table
+        $html .= '<table>
+        <thead>
+            <tr>
+                <th width="50" class="text-center">S/N</th>';
+        
+        foreach ($selectedFields as $field) {
+            $label = $fieldLabels[$field] ?? ucfirst(str_replace('_', ' ', $field));
+            $html .= '<th>' . htmlspecialchars($label) . '</th>';
+        }
+        
+        $html .= '</tr>
+        </thead>
+        <tbody>';
+        
+        // Add data rows
+        $rowNumber = 1;
+        foreach ($data as $row) {
+            $html .= '<tr>
+            <td class="number">' . $rowNumber++ . '</td>';
+            
+            foreach ($selectedFields as $field) {
+                $value = $row[$field] ?? '';
+                $cellClass = '';
+                $formattedValue = htmlspecialchars($value);
+                
+                // Apply formatting based on field type
+                if (strpos($field, 'date') !== false && $value && $value !== '0000-00-00') {
+                    $cellClass = 'date';
+                    try {
+                        $date = date_create($value);
+                        if ($date) {
+                            $formattedValue = date_format($date, 'd/m/Y');
+                        }
+                    } catch (Exception $e) {
+                        // Keep original value
+                    }
+                } elseif (is_numeric($value) && ($field === 'grade_level' || $field === 'employee_number')) {
+                    $cellClass = 'number';
+                } elseif ($field === 'sex' || $field === 'gender') {
+                    $cellClass = 'text-center';
+                    if (strtolower($value) === 'male') {
+                        $formattedValue = '<span style="background-color: #d1ecf1; color: #0c5460; padding: 3px 8px; border-radius: 4px; font-weight: bold;">' . $formattedValue . '</span>';
+                    } elseif (strtolower($value) === 'female') {
+                        $formattedValue = '<span style="background-color: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-weight: bold;">' . $formattedValue . '</span>';
+                    }
+                } elseif ($field === 'status') {
+                    $cellClass = 'text-center';
+                    if (strtolower($value) === 'active') {
+                        $formattedValue = '<span style="background-color: #d4edda; color: #155724; padding: 3px 8px; border-radius: 4px; font-weight: bold;">' . $formattedValue . '</span>';
+                    } elseif (strtolower($value) === 'inactive') {
+                        $formattedValue = '<span style="background-color: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-weight: bold;">' . $formattedValue . '</span>';
+                    }
+                }
+                
+                $html .= '<td class="' . $cellClass . '">' . $formattedValue . '</td>';
+            }
+            
+            $html .= '</tr>';
+        }
+        
+        $html .= '</tbody>
+    </table>';
+        
+        // Add summary if requested
+        if ($options['include_summary']) {
+            $html .= '<div class="summary">
+            <div class="summary-title">Report Summary</div>
+            <table style="width: 100%; border: none;">
+                <tr>
+                    <td style="border: none; padding: 5px; width: 200px;"><strong>Report Name:</strong></td>
+                    <td style="border: none; padding: 5px;">Nominal Roll Report</td>
+                </tr>
+                <tr>
+                    <td style="border: none; padding: 5px;"><strong>Generated On:</strong></td>
+                    <td style="border: none; padding: 5px;">' . date('Y-m-d H:i:s') . '</td>
+                </tr>
+                <tr>
+                    <td style="border: none; padding: 5px;"><strong>Total Records:</strong></td>
+                    <td style="border: none; padding: 5px;">' . count($data) . '</td>
+                </tr>
+                <tr>
+                    <td style="border: none; padding: 5px;"><strong>Fields Included:</strong></td>
+                    <td style="border: none; padding: 5px;">' . count($selectedFields) . '</td>
+                </tr>
+                <tr>
+                    <td style="border: none; padding: 5px;"><strong>Generated By:</strong></td>
+                    <td style="border: none; padding: 5px;">' . htmlspecialchars($_SESSION['user_name'] ?? 'System') . '</td>
+                </tr>
+            </table>
+            
+            <div style="margin-top: 15px; font-weight: bold;">Included Fields:</div>
+            <ul>';
+            
+            foreach ($selectedFields as $field) {
+                $label = $fieldLabels[$field] ?? ucfirst(str_replace('_', ' ', $field));
+                $html .= '<li>' . htmlspecialchars($label) . '</li>';
+            }
+            
+            $html .= '</ul>
+        </div>';
+        }
+        
+        $html .= '</body>
+</html>';
+        
+        // Output as Excel file
+        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Disposition: attachment; filename="' . $filename . '.xls"');
+        header('Cache-Control: max-age=0');
+        
+        echo $html;
+        exit;
+    }
+
+    /**
+     * Generate CSV file
+     */
+    private function generateCsvFile($data, $selectedFields, $fieldLabels, $filters)
+    {
+        // Generate timestamp for filename
+        $timestamp = date('Y-m-d_H-i-s');
+        $filename = "Nominal_Roll_Report_{$timestamp}";
+        
+        // Start output
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '.csv"');
+        header('Cache-Control: max-age=0');
+        
+        // Open output stream
+        $output = fopen('php://output', 'w');
+        
+        // Add UTF-8 BOM for Excel
+        fwrite($output, "\xEF\xBB\xBF");
+        
+        // Add headers
+        $headers = ['S/N'];
+        foreach ($selectedFields as $field) {
+            $headers[] = $fieldLabels[$field] ?? ucfirst(str_replace('_', ' ', $field));
+        }
+        fputcsv($output, $headers);
+        
+        // Add data rows
+        $rowNumber = 1;
+        foreach ($data as $row) {
+            $row = [$rowNumber++];
+            foreach ($selectedFields as $field) {
+                $value = $row[$field] ?? '';
+                // Clean value for CSV
+                $value = strip_tags($value);
+                $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $row[] = $value;
+            }
+            fputcsv($output, $row);
+        }
+        
+        // Add summary section
+        fputcsv($output, []); // Empty row
+        fputcsv($output, ['==== REPORT SUMMARY ====']);
+        fputcsv($output, ['Generated On:', date('Y-m-d H:i:s')]);
+        fputcsv($output, ['Total Records:', count($data)]);
+        fputcsv($output, ['Fields Included:', count($selectedFields)]);
+        fputcsv($output, ['Generated By:', $_SESSION['user_name'] ?? 'System']);
+        
+        // Add filter info
+        fputcsv($output, []);
+        fputcsv($output, ['Filter Criteria:']);
+        
+        $filterRows = [];
+        if (!empty($filters['search'])) $filterRows[] = ['Search:', $filters['search']];
+        if (!empty($filters['state'])) $filterRows[] = ['State:', $filters['state']];
+        if (!empty($filters['department'])) $filterRows[] = ['Department:', $filters['department']];
+        if (!empty($filters['grade_level'])) $filterRows[] = ['Grade Level:', $filters['grade_level']];
+        if (!empty($filters['sex'])) $filterRows[] = ['Gender:', $filters['sex']];
+        if (!empty($filters['rank'])) $filterRows[] = ['Rank:', $filters['rank']];
+        if (!empty($filters['status'])) $filterRows[] = ['Status:', ucfirst($filters['status'])];
+        
+        if (empty($filterRows)) {
+            fputcsv($output, ['No filters applied (showing all records)']);
+        } else {
+            foreach ($filterRows as $filterRow) {
+                fputcsv($output, $filterRow);
+            }
+        }
+        
+        fclose($output);
+        exit;
+    }
+    
     /**
      * Handle export from preview
      */
@@ -1945,63 +3180,81 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Export to Excel from PREVIEW data - NEW METHOD
+     * Export to Excel from PREVIEW data - RELIABLE VERSION
      */
     public function exportExcelFromPreview() {
         try {
+            // Clear output buffers
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            
             // Check if preview data exists in session
             if (!isset($_SESSION['current_report_data'])) {
-                $this->flash('error', 'No preview data found. Please generate a preview first.');
-                $this->redirect('/admin/nominal-roll/reports');
-                return;
+                header('Content-Type: text/html');
+                echo "<h1>Error: No preview data found</h1>";
+                echo "<p>Please generate a preview first before exporting.</p>";
+                echo '<a href="/admin/nominal-roll/reports">Back to Reports</a>';
+                exit;
             }
             
             $reportData = $_SESSION['current_report_data'];
             
-            // Get data for export
-            $data = $reportData['full_data'];
-            $selectedFields = $reportData['selected_fields'];
-            $fieldLabels = $reportData['field_labels'];
+            // Validate we have data
+            if (empty($reportData['full_data'])) {
+                throw new Exception('No report data available for export');
+            }
             
             // Set headers for Excel download
             header('Content-Type: application/vnd.ms-excel');
             $filename = 'nominal_roll_report_' . date('Y-m-d_His') . '.xls';
             header('Content-Disposition: attachment; filename="' . $filename . '"');
             
-            echo '<html>';
+            // Start output
+            echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
             echo '<head>';
             echo '<meta charset="UTF-8">';
+            echo '<meta name=ProgId content=Excel.Sheet>';
+            echo '<meta name=Generator content="Microsoft Excel 11">';
             echo '<style>';
-            echo 'td { border: 1px solid #ddd; padding: 5px; }';
-            echo 'th { background-color: #f2f2f2; border: 1px solid #ddd; padding: 8px; font-weight: bold; }';
+            echo 'body { font-family: Arial, sans-serif; font-size: 11px; }';
+            echo 'table { border-collapse: collapse; width: 100%; }';
+            echo 'th { background-color: #f2f2f2; border: 1px solid #000; padding: 8px; font-weight: bold; text-align: left; }';
+            echo 'td { border: 1px solid #ccc; padding: 6px; }';
+            echo '.header { text-align: center; margin-bottom: 20px; }';
+            echo '.summary { margin: 20px 0; padding: 10px; background-color: #f9f9f9; border: 1px solid #ddd; }';
             echo '</style>';
             echo '</head>';
             echo '<body>';
             
-            // Report title
-            echo '<h2>Nominal Roll Report - FCT College of Nursing Sciences</h2>';
+            // Report header
+            echo '<div class="header">';
+            echo '<h2>NOMINAL ROLL REPORT</h2>';
+            echo '<h3>FCT College of Nursing Sciences</h3>';
             echo '<p>Generated: ' . date('d/m/Y H:i:s') . '</p>';
-            echo '<p>Total Records: ' . count($data) . '</p>';
+            echo '<p>Total Records: ' . count($reportData['full_data']) . '</p>';
             echo '<p>Generated By: ' . ($_SESSION['username'] ?? 'System') . '</p>';
             echo '<p>Preview Generated At: ' . ($reportData['generated_at'] ?? date('Y-m-d H:i:s')) . '</p>';
+            echo '</div>';
             
+            // Data table
             echo '<table>';
             
             // Headers
             echo '<tr>';
             echo '<th>S/N</th>';
-            foreach ($selectedFields as $field) {
-                $label = $fieldLabels[$field] ?? ucwords(str_replace('_', ' ', $field));
-                echo '<th>' . htmlspecialchars($label, ENT_COMPAT | ENT_HTML401, 'UTF-8', true) . '</th>';
+            foreach ($reportData['selected_fields'] as $field) {
+                $label = $reportData['field_labels'][$field] ?? ucwords(str_replace('_', ' ', $field));
+                echo '<th>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</th>';
             }
             echo '</tr>';
             
             // Data rows
             $rowNumber = 1;
-            foreach ($data as $row) {
+            foreach ($reportData['full_data'] as $row) {
                 echo '<tr>';
                 echo '<td>' . $rowNumber++ . '</td>';
-                foreach ($selectedFields as $field) {
+                foreach ($reportData['selected_fields'] as $field) {
                     $value = $row[$field] ?? '';
                     
                     // Format dates
@@ -2028,47 +3281,68 @@ class NominalRollController extends Controller {
                         $value = '-';
                     }
                     
-                    echo '<td>' . htmlspecialchars($value, ENT_COMPAT | ENT_HTML401, 'UTF-8', true) . '</td>';
+                    echo '<td>' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</td>';
                 }
                 echo '</tr>';
             }
             
             echo '</table>';
             
+            // Summary
+            echo '<div class="summary">';
+            echo '<p><strong>Export Summary:</strong></p>';
+            echo '<p>Total Records Exported: ' . count($reportData['full_data']) . '</p>';
+            echo '<p>Fields Exported: ' . count($reportData['selected_fields']) . '</p>';
+            echo '<p>Preview Records: ' . ($reportData['preview_records'] ?? 'N/A') . '</p>';
+            echo '<p>Preview Limit: ' . ($reportData['preview_limit'] ?? 'N/A') . '</p>';
+            echo '<p>Generated On: ' . date('d/m/Y H:i:s') . '</p>';
+            echo '</div>';
+            
             echo '</body></html>';
             exit;
             
         } catch (Exception $e) {
-            error_log("Export Excel from preview error: " . $e->getMessage());
-            $this->flash('error', 'Failed to export to Excel: ' . $e->getMessage());
-            $this->redirect('/admin/nominal-roll/reports');
+            // Clear any output
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            header('Content-Type: text/html');
+            echo "<h1>Export Error</h1>";
+            echo "<p>" . htmlspecialchars($e->getMessage()) . "</p>";
+            echo '<a href="/admin/nominal-roll/reports">Back to Reports</a>';
+            exit;
         }
     }
 
     /**
-     * Export to CSV from PREVIEW data - NEW METHOD
+     * Export to CSV from PREVIEW data - RELIABLE VERSION
      */
     public function exportCsvFromPreview() {
         try {
+            // Clear output buffers
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            
             // Check if preview data exists in session
             if (!isset($_SESSION['current_report_data'])) {
-                $this->flash('error', 'No preview data found. Please generate a preview first.');
-                $this->redirect('/admin/nominal-roll/reports');
-                return;
+                throw new Exception('No preview data found. Please generate a preview first.');
             }
             
             $reportData = $_SESSION['current_report_data'];
             
-            // Get data for export
-            $data = $reportData['full_data'];
-            $selectedFields = $reportData['selected_fields'];
-            $fieldLabels = $reportData['field_labels'];
+            // Validate we have data
+            if (empty($reportData['full_data'])) {
+                throw new Exception('No report data available for export');
+            }
             
             // Set headers for CSV download
             header('Content-Type: text/csv; charset=utf-8');
             $filename = 'nominal_roll_report_' . date('Y-m-d_His') . '.csv';
             header('Content-Disposition: attachment; filename="' . $filename . '"');
             
+            // Open output stream
             $output = fopen('php://output', 'w');
             
             // Add UTF-8 BOM for Excel compatibility
@@ -2076,16 +3350,16 @@ class NominalRollController extends Controller {
             
             // Headers
             $headers = ['S/N'];
-            foreach ($selectedFields as $field) {
-                $headers[] = $fieldLabels[$field] ?? ucwords(str_replace('_', ' ', $field));
+            foreach ($reportData['selected_fields'] as $field) {
+                $headers[] = $reportData['field_labels'][$field] ?? ucwords(str_replace('_', ' ', $field));
             }
             fputcsv($output, $headers);
-        
+            
             // Data rows
             $rowNumber = 1;
-            foreach ($data as $row) {
+            foreach ($reportData['full_data'] as $row) {
                 $csvRow = [$rowNumber++];
-                foreach ($selectedFields as $field) {
+                foreach ($reportData['selected_fields'] as $field) {
                     $value = $row[$field] ?? '';
                     
                     // Format dates
@@ -2120,7 +3394,8 @@ class NominalRollController extends Controller {
             // Add summary
             fputcsv($output, []); // Empty row
             fputcsv($output, ['EXPORT SUMMARY']);
-            fputcsv($output, ['Total Records:', count($data)]);
+            fputcsv($output, ['Total Records:', count($reportData['full_data'])]);
+            fputcsv($output, ['Fields Exported:', count($reportData['selected_fields'])]);
             fputcsv($output, ['Preview Generated At:', $reportData['generated_at'] ?? date('Y-m-d H:i:s')]);
             fputcsv($output, ['Exported On:', date('Y-m-d H:i:s')]);
             fputcsv($output, ['Exported By:', $_SESSION['username'] ?? 'System']);
@@ -2129,9 +3404,16 @@ class NominalRollController extends Controller {
             exit;
             
         } catch (Exception $e) {
-            error_log("Export CSV from preview error: " . $e->getMessage());
-            $this->flash('error', 'Failed to export to CSV: ' . $e->getMessage());
-            $this->redirect('/admin/nominal-roll/reports');
+            // Clear any output
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            header('Content-Type: text/html');
+            echo "<h1>CSV Export Error</h1>";
+            echo "<p>" . htmlspecialchars($e->getMessage()) . "</p>";
+            echo '<a href="/admin/nominal-roll/reports">Back to Reports</a>';
+            exit;
         }
     }
     
@@ -2257,9 +3539,8 @@ class NominalRollController extends Controller {
     public function settings() {
         // Check if user has permission (super admin OR has settings permission)
         if (!$this->data['isSuperAdmin'] && !$this->data['hasSettingsPermission']) {
-            $this->flash('error', 'You do not have permission to access settings.');
-            $this->redirect('/admin/nominal-roll');
-            return;
+            echo json_encode(['success' => false, 'error' => 'You do not have permission to access settings.']);
+            exit;
         }
         
         try {
@@ -2284,7 +3565,7 @@ class NominalRollController extends Controller {
             
         } catch (Exception $e) {
             error_log("NominalRollController settings error: " . $e->getMessage());
-            $this->showError("Failed to load settings.");
+            $this->showNominalRollError("Failed to load settings.");
         }
     }
     
@@ -3089,7 +4370,7 @@ class NominalRollController extends Controller {
             'jpg'  => 'image/jpeg',
             'jpeg' => 'image/jpeg',
             'png'  => 'image/png',
-            'gif'  => 'image/gif',
+            'gif' => 'image/gif',
             'svg'  => 'image/svg+xml',
             'webp' => 'image/webp',
             'bmp'  => 'image/bmp',
@@ -3517,9 +4798,9 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Show error message
+     * Show error message - RENAMED METHOD to avoid conflict with parent class
      */
-    private function showError($message) {
+    private function showNominalRollError($message) {
         $this->data = array_merge($this->data, [
             'error' => $message,
             'pageTitle' => 'Error - Nominal Roll',

@@ -81,10 +81,10 @@ try {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Admin Dashboard - FCT College of Nursing Sciences</title>
     <style>
-        /* Admin Dashboard Styles */
+        /* Admin Dashboard Styles - Enhanced for Responsiveness */
         :root {
             --admin-sidebar-width: 260px;
             --admin-header-height: 70px;
@@ -95,14 +95,21 @@ try {
             --admin-warning: #d69e2e;
             --admin-danger: #e53e3e;
             --admin-info: #3182ce;
+            --admin-purple: #9f7aea;
             --admin-gray-50: #f7fafc;
             --admin-gray-100: #edf2f7;
             --admin-gray-200: #e2e8f0;
             --admin-gray-300: #cbd5e0;
-            --admin-gray-600: #718096;
-            --admin-gray-700: #4a5568;
-            --admin-gray-800: #2d3748;
-            --admin-gray-900: #1a202c;
+            --admin-gray-400: #a0aec0;
+            --admin-gray-500: #718096;
+            --admin-gray-600: #4a5568;
+            --admin-gray-700: #2d3748;
+            --admin-gray-800: #1a202c;
+            --admin-gray-900: #171923;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
         
         * {
@@ -111,12 +118,19 @@ try {
             box-sizing: border-box;
         }
         
+        html {
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background-color: var(--admin-gray-100);
             color: var(--admin-gray-800);
             display: flex;
             min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.5;
         }
         
         /* Sidebar */
@@ -128,15 +142,22 @@ try {
             top: 0;
             left: 0;
             bottom: 0;
-            z-index: 100;
+            z-index: 1000;
             display: flex;
             flex-direction: column;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-xl);
+            transform: translateX(0);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
         }
         
         .sidebar-header {
-            padding: 1.5rem;
+            padding: 1.25rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            background: var(--admin-gray-900);
+            z-index: 10;
         }
         
         .sidebar-brand {
@@ -145,47 +166,75 @@ try {
             gap: 0.75rem;
             text-decoration: none;
             color: white;
+            transition: opacity 0.2s;
+        }
+        
+        .sidebar-brand:hover {
+            opacity: 0.9;
         }
         
         .sidebar-logo {
             width: 40px;
             height: 40px;
-            background: var(--admin-primary);
-            border-radius: 8px;
+            background: linear-gradient(135deg, var(--admin-primary), var(--admin-primary-dark));
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
             font-size: 1.25rem;
+            flex-shrink: 0;
         }
         
         .sidebar-title {
             font-size: 1.125rem;
-            font-weight: 600;
+            font-weight: 700;
             line-height: 1.2;
+            letter-spacing: -0.025em;
         }
         
         .sidebar-subtitle {
             font-size: 0.75rem;
             opacity: 0.7;
+            margin-top: 0.125rem;
         }
         
         .sidebar-nav {
             flex: 1;
-            padding: 1.5rem 0;
+            padding: 1.25rem 0;
             overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
         }
         
         .nav-section {
             margin-bottom: 1.5rem;
         }
         
+        .nav-section:last-child {
+            margin-bottom: 0;
+        }
+        
         .nav-section-title {
-            padding: 0 1.5rem 0.75rem;
-            font-size: 0.75rem;
+            padding: 0 1.25rem 0.5rem;
+            font-size: 0.6875rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: var(--admin-gray-500);
+            color: var(--admin-gray-400);
+            font-weight: 600;
         }
         
         .nav-links {
@@ -193,18 +242,36 @@ try {
         }
         
         .nav-item {
-            margin-bottom: 2px;
+            margin-bottom: 0.125rem;
         }
         
         .nav-link {
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            padding: 0.875rem 1.5rem;
+            padding: 0.75rem 1.25rem;
             color: var(--admin-gray-300);
             text-decoration: none;
             transition: all 0.2s;
             border-left: 3px solid transparent;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s;
+        }
+        
+        .nav-link:hover::before {
+            left: 100%;
         }
         
         .nav-link:hover {
@@ -224,9 +291,25 @@ try {
             flex-shrink: 0;
         }
         
+        .nav-badge {
+            margin-left: auto;
+            background: var(--admin-warning);
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+        }
+        
         .sidebar-footer {
-            padding: 1.5rem;
+            padding: 1.25rem;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            bottom: 0;
+            background: var(--admin-gray-900);
+            z-index: 10;
         }
         
         .user-profile {
@@ -238,24 +321,38 @@ try {
         .user-avatar {
             width: 40px;
             height: 40px;
-            background: var(--admin-primary);
+            background: linear-gradient(135deg, var(--admin-primary), var(--admin-primary-dark));
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
             color: white;
+            flex-shrink: 0;
+            font-size: 0.875rem;
+        }
+        
+        .user-info {
+            flex: 1;
+            min-width: 0;
         }
         
         .user-info h4 {
             font-size: 0.875rem;
             font-weight: 600;
             margin-bottom: 0.125rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .user-info span {
             font-size: 0.75rem;
             color: var(--admin-gray-400);
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         /* Main Content */
@@ -263,6 +360,9 @@ try {
             flex: 1;
             margin-left: var(--admin-sidebar-width);
             min-height: 100vh;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
         }
         
         .admin-header {
@@ -272,25 +372,27 @@ try {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 2rem;
+            padding: 0 1.5rem;
             position: sticky;
             top: 0;
-            z-index: 50;
+            z-index: 900;
+            box-shadow: var(--shadow-sm);
         }
         
         .header-title h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
+            font-size: 1.375rem;
+            font-weight: 700;
             color: var(--admin-gray-800);
+            letter-spacing: -0.025em;
         }
         
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
         }
         
-        .notification-btn, .logout-btn {
+        .notification-btn, .logout-btn, .mobile-menu-toggle {
             background: none;
             border: none;
             cursor: pointer;
@@ -298,22 +400,49 @@ try {
             border-radius: 8px;
             color: var(--admin-gray-600);
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
         }
         
-        .notification-btn:hover, .logout-btn:hover {
+        .notification-btn:hover, .logout-btn:hover, .mobile-menu-toggle:hover {
             background: var(--admin-gray-100);
             color: var(--admin-gray-800);
         }
         
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--admin-danger);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.6875rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .mobile-menu-toggle {
+            display: none;
+        }
+        
         .admin-content {
-            padding: 2rem;
+            padding: 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+            overscroll-behavior: contain;
         }
         
         /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.25rem;
             margin-bottom: 2rem;
         }
         
@@ -321,19 +450,37 @@ try {
             background: white;
             border-radius: 12px;
             padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border-left: 4px solid;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, currentColor, transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .stat-card:hover::before {
+            opacity: 1;
         }
         
         .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
         }
         
         .stat-header {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             margin-bottom: 1rem;
         }
@@ -345,31 +492,40 @@ try {
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
         }
         
         .stat-users .stat-icon { background: rgba(66, 153, 225, 0.1); color: var(--admin-primary-light); }
         .stat-applications .stat-icon { background: rgba(56, 161, 105, 0.1); color: var(--admin-success); }
-        .stat-research .stat-icon { background: rgba(159, 122, 234, 0.1); color: #9f7aea; }
+        .stat-research .stat-icon { background: rgba(159, 122, 234, 0.1); color: var(--admin-purple); }
         .stat-news .stat-icon { background: rgba(237, 137, 54, 0.1); color: var(--admin-warning); }
         
         .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 2.25rem;
+            font-weight: 800;
             margin-bottom: 0.25rem;
+            line-height: 1;
+            background: linear-gradient(135deg, currentColor, var(--admin-gray-800));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
         .stat-label {
             font-size: 0.875rem;
             color: var(--admin-gray-600);
+            font-weight: 500;
         }
         
         .stat-trend {
             font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
             display: inline-flex;
             align-items: center;
             gap: 0.25rem;
+            font-weight: 600;
+            margin-top: 0.75rem;
         }
         
         .trend-up { background: rgba(56, 161, 105, 0.1); color: var(--admin-success); }
@@ -378,7 +534,7 @@ try {
         /* Content Grid */
         .content-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
@@ -386,8 +542,14 @@ try {
         .content-card {
             background: white;
             border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-md);
             overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .content-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
         }
         
         .card-header {
@@ -396,26 +558,34 @@ try {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            background: var(--admin-gray-50);
         }
         
         .card-header h3 {
             font-size: 1.125rem;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--admin-gray-800);
+            letter-spacing: -0.025em;
         }
         
         .card-header a {
             font-size: 0.875rem;
             color: var(--admin-primary);
             text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
         }
         
         .card-header a:hover {
-            text-decoration: underline;
+            color: var(--admin-primary-dark);
+            background: var(--admin-gray-100);
         }
         
         .card-body {
             padding: 1.5rem;
+            overflow-x: auto;
         }
         
         /* Activity List */
@@ -424,10 +594,11 @@ try {
         }
         
         .activity-item {
-            padding: 0.875rem 0;
+            padding: 1rem 0;
             border-bottom: 1px solid var(--admin-gray-100);
             display: flex;
             gap: 0.75rem;
+            align-items: flex-start;
         }
         
         .activity-item:last-child {
@@ -435,57 +606,86 @@ try {
         }
         
         .activity-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            margin-top: 0.125rem;
+        }
+        
+        .activity-info {
+            flex: 1;
+            min-width: 0;
         }
         
         .activity-info h4 {
             font-size: 0.875rem;
-            font-weight: 500;
+            font-weight: 600;
             margin-bottom: 0.25rem;
+            color: var(--admin-gray-800);
+            line-height: 1.4;
         }
         
         .activity-info p {
-            font-size: 0.75rem;
+            font-size: 0.8125rem;
             color: var(--admin-gray-600);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
         }
         
-        /* Applications Table */
+        /* Tables */
         .applications-table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 600px;
         }
         
         .applications-table th {
             text-align: left;
-            padding: 0.75rem;
+            padding: 0.875rem 1rem;
             font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--admin-gray-600);
-            border-bottom: 1px solid var(--admin-gray-200);
+            background: var(--admin-gray-50);
+            border-bottom: 2px solid var(--admin-gray-200);
+            font-weight: 700;
+            position: sticky;
+            top: 0;
         }
         
         .applications-table td {
-            padding: 0.75rem;
+            padding: 1rem;
             border-bottom: 1px solid var(--admin-gray-100);
+            vertical-align: middle;
         }
         
-        .applications-table tr:hover {
+        .applications-table tbody tr {
+            transition: background-color 0.2s;
+        }
+        
+        .applications-table tbody tr:hover {
             background: var(--admin-gray-50);
         }
         
+        .applications-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
         .status-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 700;
             display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
         }
         
         .status-pending { background: rgba(214, 158, 46, 0.1); color: var(--admin-warning); }
@@ -495,49 +695,107 @@ try {
         /* Quick Actions */
         .quick-actions {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+            gap: 1.25rem;
             margin-top: 2rem;
         }
         
         .action-btn {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 1rem;
+            gap: 0.875rem;
+            padding: 1.25rem;
             background: white;
             border: 1px solid var(--admin-gray-200);
-            border-radius: 8px;
+            border-radius: 12px;
             text-decoration: none;
-            color: var(--admin-gray-700);
-            transition: all 0.2s;
+            color: var(--admin-gray-800);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent, rgba(66, 153, 225, 0.05), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .action-btn:hover::before {
+            opacity: 1;
         }
         
         .action-btn:hover {
             border-color: var(--admin-primary);
             background: var(--admin-gray-50);
-            transform: translateY(-2px);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
         }
         
         .action-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: rgba(66, 153, 225, 0.1);
             color: var(--admin-primary);
+            flex-shrink: 0;
+            transition: all 0.3s;
         }
         
-        /* Responsive */
-        @media (max-width: 1024px) {
+        .action-btn:hover .action-icon {
+            transform: scale(1.1);
+        }
+        
+        .action-btn h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--admin-gray-800);
+        }
+        
+        .action-btn p {
+            font-size: 0.8125rem;
+            color: var(--admin-gray-600);
+            line-height: 1.4;
+        }
+        
+        /* Enhanced Responsive Design */
+        @media (max-width: 1400px) {
+            .stats-grid {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            }
+        }
+        
+        @media (max-width: 1200px) {
             .admin-sidebar {
                 width: 240px;
             }
             
             .admin-main {
                 margin-left: 240px;
+            }
+        }
+        
+        @media (max-width: 1024px) {
+            .admin-sidebar {
+                width: 220px;
+            }
+            
+            .admin-main {
+                margin-left: 220px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             }
             
             .content-grid {
@@ -548,7 +806,7 @@ try {
         @media (max-width: 768px) {
             .admin-sidebar {
                 transform: translateX(-100%);
-                transition: transform 0.3s;
+                width: 280px;
             }
             
             .admin-sidebar.active {
@@ -561,6 +819,15 @@ try {
             
             .admin-header {
                 padding: 0 1rem;
+                height: 64px;
+            }
+            
+            .mobile-menu-toggle {
+                display: flex;
+            }
+            
+            .header-title h1 {
+                font-size: 1.25rem;
             }
             
             .admin-content {
@@ -569,15 +836,27 @@ try {
             
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
             }
             
-            .mobile-menu-toggle {
-                display: block;
-                background: none;
-                border: none;
-                color: var(--admin-gray-600);
-                cursor: pointer;
-                padding: 0.5rem;
+            .stat-card {
+                padding: 1.25rem;
+            }
+            
+            .stat-value {
+                font-size: 1.875rem;
+            }
+            
+            .content-card {
+                margin-bottom: 1rem;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .quick-actions {
+                grid-template-columns: 1fr;
             }
         }
         
@@ -586,516 +865,301 @@ try {
                 grid-template-columns: 1fr;
             }
             
-            .quick-actions {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        /* ============================================
-           USER MANAGEMENT STYLES (ADDED TO EXISTING CSS)
-           ============================================ */
-
-        /* Avatar Placeholder */
-        .avatar-placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .stat-card .stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
-
-        .stat-number {
-            font-size: 1.75rem;
-            font-weight: bold;
-            color: #4e73df;
-        }
-
-        .stat-label {
-            font-size: 0.875rem;
-            color: #6c757d;
-        }
-
-        /* Permission checkboxes */
-        .permission-group {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .permission-group h6 {
-            color: #4e73df;
-            border-bottom: 2px solid #4e73df;
-            padding-bottom: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        /* User status badges */
-        .badge-role-admin { background-color: #e74a3b; }
-        .badge-role-editor { background-color: #f6c23e; }
-        .badge-role-viewer { background-color: #36b9cc; }
-        
-        /* Additional User Management Styles */
-        .user-avatar-small {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: white;
-            font-size: 0.875rem;
-        }
-        
-        .user-status-active {
-            background: rgba(56, 161, 105, 0.1);
-            color: var(--admin-success);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        
-        .user-status-inactive {
-            background: rgba(229, 62, 62, 0.1);
-            color: var(--admin-danger);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        
-        .role-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: white;
-        }
-        
-        .role-admin { background: linear-gradient(135deg, #e74a3b, #dc3545); }
-        .role-editor { background: linear-gradient(135deg, #f6c23e, #e4a11b); }
-        .role-viewer { background: linear-gradient(135deg, #36b9cc, #17a2b8); }
-        
-        .user-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        .btn-action {
-            padding: 0.375rem 0.75rem;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.875rem;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-        
-        .btn-edit {
-            background: rgba(66, 153, 225, 0.1);
-            color: var(--admin-primary);
-        }
-        
-        .btn-edit:hover {
-            background: rgba(66, 153, 225, 0.2);
-        }
-        
-        .btn-delete {
-            background: rgba(229, 62, 62, 0.1);
-            color: var(--admin-danger);
-        }
-        
-        .btn-delete:hover {
-            background: rgba(229, 62, 62, 0.2);
-        }
-        
-        .btn-activate {
-            background: rgba(56, 161, 105, 0.1);
-            color: var(--admin-success);
-        }
-        
-        .btn-activate:hover {
-            background: rgba(56, 161, 105, 0.2);
-        }
-        
-        .user-filter {
-            background: white;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .filter-group {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-        
-        .filter-item {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            min-width: 200px;
-        }
-        
-        .filter-item label {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--admin-gray-700);
-        }
-        
-        .filter-item select,
-        .filter-item input {
-            padding: 0.5rem;
-            border: 1px solid var(--admin-gray-300);
-            border-radius: 4px;
-            font-size: 0.875rem;
-        }
-        
-        .user-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .user-table th {
-            background: var(--admin-gray-50);
-            padding: 0.75rem 1rem;
-            text-align: left;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--admin-gray-600);
-            border-bottom: 1px solid var(--admin-gray-200);
-        }
-        
-        .user-table td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--admin-gray-100);
-        }
-        
-        .user-table tr:hover {
-            background: var(--admin-gray-50);
-        }
-        
-        .user-table tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 1rem;
-            padding: 1rem;
-        }
-        
-        .page-link {
-            padding: 0.375rem 0.75rem;
-            border: 1px solid var(--admin-gray-300);
-            border-radius: 4px;
-            color: var(--admin-gray-700);
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-        
-        .page-link:hover {
-            background: var(--admin-gray-100);
-            border-color: var(--admin-gray-400);
-        }
-        
-        .page-link.active {
-            background: var(--admin-primary);
-            color: white;
-            border-color: var(--admin-primary);
-        }
-        
-        .user-detail-view {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .user-detail-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--admin-gray-200);
-        }
-        
-        .user-detail-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            font-weight: bold;
-            color: white;
-        }
-        
-        .user-detail-info h3 {
-            margin: 0;
-            font-size: 1.5rem;
-            color: var(--admin-gray-800);
-        }
-        
-        .user-detail-info p {
-            margin: 0.25rem 0 0 0;
-            color: var(--admin-gray-600);
-        }
-        
-        .user-detail-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-        
-        .user-detail-card {
-            background: var(--admin-gray-50);
-            border-radius: 8px;
-            padding: 1rem;
-        }
-        
-        .user-detail-card h4 {
-            margin: 0 0 1rem 0;
-            color: var(--admin-gray-700);
-            font-size: 1rem;
-        }
-        
-        .detail-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid var(--admin-gray-200);
-        }
-        
-        .detail-item:last-child {
-            border-bottom: none;
-        }
-        
-        .detail-label {
-            font-weight: 500;
-            color: var(--admin-gray-700);
-        }
-        
-        .detail-value {
-            color: var(--admin-gray-600);
-        }
-        
-        /* Login History Styles */
-        .login-history-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        
-        .login-history-table th {
-            background: var(--admin-gray-50);
-            padding: 0.75rem;
-            text-align: left;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            color: var(--admin-gray-600);
-            border-bottom: 1px solid var(--admin-gray-200);
-        }
-        
-        .login-history-table td {
-            padding: 0.75rem;
-            border-bottom: 1px solid var(--admin-gray-100);
-        }
-        
-        .login-success {
-            color: var(--admin-success);
-            font-weight: 600;
-        }
-        
-        .login-failed {
-            color: var(--admin-danger);
-            font-weight: 600;
-        }
-        
-        /* Activity Log Styles */
-        .activity-log-item {
-            padding: 1rem;
-            border-bottom: 1px solid var(--admin-gray-200);
-            display: flex;
-            gap: 1rem;
-        }
-        
-        .activity-log-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        
-        .activity-log-info {
-            flex: 1;
-        }
-        
-        .activity-log-title {
-            font-weight: 500;
-            color: var(--admin-gray-800);
-            margin-bottom: 0.25rem;
-        }
-        
-        .activity-log-meta {
-            display: flex;
-            gap: 1rem;
-            font-size: 0.75rem;
-            color: var(--admin-gray-600);
-        }
-        
-        /* Responsive adjustments for user management */
-        @media (max-width: 768px) {
-            .filter-group {
-                flex-direction: column;
+            .admin-header {
+                flex-wrap: wrap;
+                height: auto;
+                min-height: 64px;
+                padding: 0.75rem 1rem;
             }
             
-            .filter-item {
-                min-width: 100%;
+            .header-title {
+                width: 100%;
+                margin-bottom: 0.5rem;
             }
             
-            .user-table {
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .applications-table {
                 font-size: 0.875rem;
+                min-width: unset;
             }
             
-            .user-table th,
-            .user-table td {
-                padding: 0.5rem;
+            .applications-table th,
+            .applications-table td {
+                padding: 0.75rem 0.5rem;
             }
             
-            .user-actions {
+            .activity-item {
+                padding: 0.875rem 0;
+            }
+            
+            .activity-info p {
                 flex-direction: column;
+                align-items: flex-start;
                 gap: 0.25rem;
             }
-            
-            .btn-action {
+        }
+        
+        @media (max-width: 480px) {
+            .admin-sidebar {
                 width: 100%;
-                justify-content: center;
+                max-width: 280px;
             }
             
-            .user-detail-header {
+            .admin-content {
+                padding: 0.75rem;
+            }
+            
+            .stat-card {
+                padding: 1rem;
+            }
+            
+            .stat-header {
                 flex-direction: column;
-                text-align: center;
+                align-items: flex-start;
+                gap: 0.75rem;
             }
             
-            .user-detail-grid {
-                grid-template-columns: 1fr;
+            .stat-icon {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .stat-value {
+                font-size: 1.75rem;
+            }
+            
+            .action-btn {
+                padding: 1rem;
+            }
+            
+            .action-icon {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+            
+            .card-header a {
+                align-self: flex-start;
             }
         }
         
-        /* Form styles for user management */
-        .user-form {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        @media (max-width: 360px) {
+            html {
+                font-size: 14px;
+            }
+            
+            .stats-grid {
+                gap: 0.75rem;
+            }
+            
+            .content-grid {
+                gap: 1rem;
+            }
+            
+            .quick-actions {
+                gap: 1rem;
+            }
         }
         
-        .form-group {
+        /* Touch device optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            .stat-card:hover {
+                transform: none;
+            }
+            
+            .action-btn:hover {
+                transform: none;
+                box-shadow: var(--shadow-md);
+            }
+            
+            .nav-link {
+                padding: 1rem 1.25rem;
+            }
+            
+            .notification-btn,
+            .logout-btn,
+            .mobile-menu-toggle {
+                padding: 0.625rem;
+                min-width: 44px;
+                min-height: 44px;
+            }
+        }
+        
+        /* Print styles */
+        @media print {
+            .admin-sidebar,
+            .admin-header,
+            .action-btn,
+            .quick-actions,
+            .card-header a,
+            .stat-trend {
+                display: none !important;
+            }
+            
+            .admin-main {
+                margin-left: 0;
+            }
+            
+            .admin-content {
+                padding: 0;
+            }
+            
+            .stat-card,
+            .content-card {
+                box-shadow: none;
+                border: 1px solid var(--admin-gray-300);
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --admin-gray-50: #1a202c;
+                --admin-gray-100: #2d3748;
+                --admin-gray-200: #4a5568;
+                --admin-gray-300: #718096;
+                --admin-gray-600: #cbd5e0;
+                --admin-gray-700: #e2e8f0;
+                --admin-gray-800: #edf2f7;
+                --admin-gray-900: #171923;
+            }
+            
+            body {
+                background-color: #0f1419;
+            }
+            
+            .admin-header,
+            .stat-card,
+            .content-card,
+            .action-btn {
+                background: var(--admin-gray-900);
+                border-color: var(--admin-gray-800);
+            }
+            
+            .card-header {
+                background: var(--admin-gray-800);
+            }
+        }
+        
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .stat-card {
+                border: 2px solid;
+            }
+            
+            .action-btn {
+                border: 2px solid var(--admin-gray-300);
+            }
+            
+            .nav-link {
+                border-left-width: 4px;
+            }
+        }
+        
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+            
+            .stat-card:hover,
+            .action-btn:hover {
+                transform: none;
+            }
+        }
+        
+        /* Loading states */
+        .loading {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Empty states */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--admin-gray-500);
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
             margin-bottom: 1rem;
+            opacity: 0.5;
         }
         
-        .form-group label {
-            display: block;
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 600;
             margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: var(--admin-gray-700);
+            color: var(--admin-gray-600);
         }
         
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid var(--admin-gray-300);
-            border-radius: 4px;
+        .empty-state-description {
             font-size: 0.875rem;
+            max-width: 400px;
+            margin: 0 auto;
         }
         
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--admin-primary);
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        /* Focus styles for accessibility */
+        :focus-visible {
+            outline: 3px solid var(--admin-primary-light);
+            outline-offset: 2px;
         }
         
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-        }
-        
-        .form-actions {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--admin-gray-200);
-        }
-        
-        .btn-primary {
+        /* Skip to main content link for screen readers */
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
             background: var(--admin-primary);
             color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background 0.2s;
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            z-index: 9999;
+            transition: top 0.2s;
         }
         
-        .btn-primary:hover {
-            background: var(--admin-primary-dark);
-        }
-        
-        .btn-secondary {
-            background: var(--admin-gray-200);
-            color: var(--admin-gray-700);
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-        
-        .btn-secondary:hover {
-            background: var(--admin-gray-300);
+        .skip-to-content:focus {
+            top: 0;
         }
     </style>
 </head>
 <body>
+    <!-- Skip to content link for accessibility -->
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    
     <!-- Sidebar -->
     <aside class="admin-sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -1143,7 +1207,7 @@ try {
                             </svg>
                             <span>Applications</span>
                             <?php if ($stats['pending_applications'] > 0): ?>
-                            <span style="margin-left: auto; background: var(--admin-warning); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75rem;">
+                            <span class="nav-badge">
                                 <?php echo $stats['pending_applications']; ?>
                             </span>
                             <?php endif; ?>
@@ -1202,16 +1266,10 @@ try {
                             </svg>
                             <span>Contact Messages</span>
                             <?php 
-                            // Get pending contact count
-                            if (isset($stats['pending_contacts'])) {
-                                $pendingCount = $stats['pending_contacts'];
-                            } else {
-                                $pendingCount = 0;
-                            }
-                            
+                            $pendingCount = $stats['pending_contacts'] ?? 0;
                             if ($pendingCount > 0): 
                             ?>
-                            <span style="margin-left: auto; background: var(--admin-warning); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75rem;">
+                            <span class="nav-badge">
                                 <?php echo $pendingCount; ?>
                             </span>
                             <?php endif; ?>
@@ -1310,14 +1368,14 @@ try {
     </aside>
     
     <!-- Main Content -->
-    <main class="admin-main">
+    <main class="admin-main" id="main-content">
         <!-- Header -->
         <header class="admin-header">
             <div class="header-title">
                 <h1>Dashboard Overview</h1>
             </div>
             <div class="header-actions">
-                <button class="notification-btn" title="Notifications">
+                <button class="notification-btn" title="Notifications" id="notificationBtn">
                     <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
                     </svg>
@@ -1327,7 +1385,7 @@ try {
                         <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/>
                     </svg>
                 </a>
-                <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
                     <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
                     </svg>
@@ -1343,7 +1401,7 @@ try {
                 <div class="stat-card stat-users" style="border-left-color: var(--admin-primary);">
                     <div class="stat-header">
                         <div>
-                            <div class="stat-value"><?php echo $stats['total_users']; ?></div>
+                            <div class="stat-value"><?php echo number_format($stats['total_users']); ?></div>
                             <div class="stat-label">Total Users</div>
                         </div>
                         <div class="stat-icon">
@@ -1363,7 +1421,7 @@ try {
                 <div class="stat-card stat-applications" style="border-left-color: var(--admin-success);">
                     <div class="stat-header">
                         <div>
-                            <div class="stat-value"><?php echo $stats['total_applications']; ?></div>
+                            <div class="stat-value"><?php echo number_format($stats['total_applications']); ?></div>
                             <div class="stat-label">Applications</div>
                         </div>
                         <div class="stat-icon">
@@ -1380,10 +1438,10 @@ try {
                     </div>
                 </div>
                 
-                <div class="stat-card stat-research" style="border-left-color: #9f7aea;">
+                <div class="stat-card stat-research" style="border-left-color: var(--admin-purple);">
                     <div class="stat-header">
                         <div>
-                            <div class="stat-value"><?php echo $stats['total_research']; ?></div>
+                            <div class="stat-value"><?php echo number_format($stats['total_research']); ?></div>
                             <div class="stat-label">Research Papers</div>
                         </div>
                         <div class="stat-icon">
@@ -1403,7 +1461,7 @@ try {
                 <div class="stat-card stat-news" style="border-left-color: var(--admin-warning);">
                     <div class="stat-header">
                         <div>
-                            <div class="stat-value"><?php echo $stats['total_news']; ?></div>
+                            <div class="stat-value"><?php echo number_format($stats['total_news']); ?></div>
                             <div class="stat-label">News Articles</div>
                         </div>
                         <div class="stat-icon">
@@ -1425,7 +1483,7 @@ try {
                 <div class="stat-card" style="border-left-color: var(--admin-info);">
                     <div class="stat-header">
                         <div>
-                            <div class="stat-value"><?php echo $stats['total_contacts'] ?? 0; ?></div>
+                            <div class="stat-value"><?php echo number_format($stats['total_contacts'] ?? 0); ?></div>
                             <div class="stat-label">Contact Messages</div>
                         </div>
                         <div class="stat-icon" style="background: rgba(49, 130, 206, 0.1); color: var(--admin-info);">
@@ -1468,13 +1526,13 @@ try {
                 }
                 ?>
                 
-                <div class="stat-card" style="border-left-color: #9f7aea;">
+                <div class="stat-card" style="border-left-color: var(--admin-purple);">
                     <div class="stat-header">
                         <div>
-                            <div class="stat-value"><?php echo $nominalStats['total_records']; ?></div>
+                            <div class="stat-value"><?php echo number_format($nominalStats['total_records']); ?></div>
                             <div class="stat-label">Total Nominal Records</div>
                         </div>
-                        <div class="stat-icon" style="background: rgba(159, 122, 234, 0.1); color: #9f7aea;">
+                        <div class="stat-icon" style="background: rgba(159, 122, 234, 0.1); color: var(--admin-purple);">
                             <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
                             </svg>
@@ -1499,8 +1557,9 @@ try {
                         <a href="<?php echo BASE_URL; ?>/admin/activities">View All</a>
                     </div>
                     <div class="card-body">
+                        <?php if (!empty($recentActivities)): ?>
                         <ul class="activity-list">
-                            <?php foreach ($recentActivities as $activity): ?>
+                            <?php foreach (array_slice($recentActivities, 0, 5) as $activity): ?>
                             <li class="activity-item">
                                 <div class="activity-icon" style="background: rgba(66, 153, 225, 0.1); color: var(--admin-primary);">
                                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
@@ -1509,22 +1568,23 @@ try {
                                 </div>
                                 <div class="activity-info">
                                     <h4><?php echo htmlspecialchars($activity['action']); ?></h4>
-                                    <p><?php echo date('M d, Y H:i', strtotime($activity['created_at'])); ?>
-                                    <?php if (!empty($activity['user_name'])): ?>
-                                    <br><small>By: <?php echo htmlspecialchars($activity['user_name']); ?></small>
-                                    <?php endif; ?>
+                                    <p>
+                                        <?php echo date('M d, Y H:i', strtotime($activity['created_at'])); ?>
+                                        <?php if (!empty($activity['user_name'])): ?>
+                                        <span>• By: <?php echo htmlspecialchars($activity['user_name']); ?></span>
+                                        <?php endif; ?>
                                     </p>
                                 </div>
                             </li>
                             <?php endforeach; ?>
-                            <?php if (empty($recentActivities)): ?>
-                            <li class="activity-item">
-                                <div class="activity-info">
-                                    <p style="color: var(--admin-gray-600); font-style: italic;">No recent activities</p>
-                                </div>
-                            </li>
-                            <?php endif; ?>
                         </ul>
+                        <?php else: ?>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-title">No recent activities</div>
+                            <div class="empty-state-description">Activities will appear here as users interact with the system.</div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 
@@ -1535,6 +1595,7 @@ try {
                         <a href="<?php echo BASE_URL; ?>/admin/applications">View All</a>
                     </div>
                     <div class="card-body">
+                        <?php if (!empty($recentApplications)): ?>
                         <table class="applications-table">
                             <thead>
                                 <tr>
@@ -1570,58 +1631,56 @@ try {
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
-                                <?php if (empty($recentApplications)): ?>
-                                <tr>
-                                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--admin-gray-600); font-style: italic;">
-                                        No applications yet
-                                    </td>
-                                </tr>
-                                <?php endif; ?>
                             </tbody>
                         </table>
+                        <?php else: ?>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <div class="empty-state-title">No applications yet</div>
+                            <div class="empty-state-description">Applications will appear here when submitted by users.</div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 
                 <!-- Recent Contact Submissions -->
                 <div class="content-card">
                     <div class="card-header">
-                        <h3>📧 Recent Contact Messages</h3>
+                        <h3>Recent Contact Messages</h3>
                         <a href="<?php echo BASE_URL; ?>/admin/contact">View All</a>
                     </div>
                     <div class="card-body">
                         <?php if (!empty($recentContacts)): ?>
-                        <table style="width: 100%; border-collapse: collapse;">
+                        <table class="applications-table">
                             <thead>
                                 <tr>
-                                    <th style="text-align: left; padding: 8px; font-size: 0.75rem; color: var(--admin-gray-600);">Name</th>
-                                    <th style="text-align: left; padding: 8px; font-size: 0.75rem; color: var(--admin-gray-600);">Subject</th>
-                                    <th style="text-align: left; padding: 8px; font-size: 0.75rem; color: var(--admin-gray-600);">Status</th>
+                                    <th>Name</th>
+                                    <th>Subject</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($recentContacts as $contact): ?>
-                                <tr style="border-bottom: 1px solid var(--admin-gray-200);">
-                                    <td style="padding: 8px;">
+                                <tr>
+                                    <td>
                                         <a href="<?php echo BASE_URL; ?>/admin/contact/view/<?php echo $contact['id']; ?>" 
                                            style="color: var(--admin-primary); text-decoration: none; font-weight: 500;">
                                             <?php echo htmlspecialchars($contact['name']); ?>
                                         </a>
                                         <div style="font-size: 0.75rem; color: var(--admin-gray-600);">
-                                            <?php echo date('M d', strtotime($contact['created_at'])); ?>
+                                            <?php echo htmlspecialchars($contact['email'] ?? ''); ?>
                                         </div>
                                     </td>
-                                    <td style="padding: 8px; font-size: 0.875rem;">
-                                        <?php echo htmlspecialchars(substr($contact['subject'], 0, 30)); ?>...
+                                    <td>
+                                        <?php echo htmlspecialchars(mb_strlen($contact['subject']) > 30 ? substr($contact['subject'], 0, 30) . '...' : $contact['subject']); ?>
                                     </td>
-                                    <td style="padding: 8px;">
+                                    <td><?php echo date('M d', strtotime($contact['created_at'])); ?></td>
+                                    <td>
                                         <?php if ($contact['status'] === 'pending'): ?>
-                                        <span style="background: rgba(214, 158, 46, 0.1); color: var(--admin-warning); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">
-                                            Pending
-                                        </span>
+                                        <span class="status-badge status-pending">Pending</span>
                                         <?php else: ?>
-                                        <span style="background: rgba(56, 161, 105, 0.1); color: var(--admin-success); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">
-                                            Responded
-                                        </span>
+                                        <span class="status-badge status-approved">Responded</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -1629,9 +1688,11 @@ try {
                             </tbody>
                         </table>
                         <?php else: ?>
-                        <p style="color: var(--admin-gray-600); font-style: italic; text-align: center; padding: 20px;">
-                            No recent contact messages
-                        </p>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📧</div>
+                            <div class="empty-state-title">No contact messages</div>
+                            <div class="empty-state-description">Contact messages will appear here when users contact the site.</div>
+                        </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1646,18 +1707,23 @@ try {
                     </div>
                     <div class="card-body">
                         <div style="text-align: center; padding: 2rem;">
-                            <div style="font-size: 3rem; color: #9f7aea; margin-bottom: 1rem;">👥</div>
+                            <div style="font-size: 3rem; color: var(--admin-purple); margin-bottom: 1rem;">👥</div>
                             <h2 style="margin-bottom: 1rem; color: var(--admin-gray-800);">Nominal Roll Management</h2>
-                            <p style="color: var(--admin-gray-600); max-width: 600px; margin: 0 auto 2rem;">
+                            <p style="color: var(--admin-gray-600); max-width: 600px; margin: 0 auto 2rem; line-height: 1.6;">
                                 You have access to manage student records in the Nominal Roll system. 
                                 Click the button below or use the sidebar navigation to get started.
                             </p>
                             <a href="<?php echo BASE_URL; ?>/admin/nominal-roll" 
-                               style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: #9f7aea; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s;">
-                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
-                                </svg>
-                                Go to Nominal Roll
+                               class="action-btn" style="max-width: 300px; margin: 0 auto; text-align: left;">
+                                <div class="action-icon" style="background: rgba(159, 122, 234, 0.1); color: var(--admin-purple);">
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4>Go to Nominal Roll</h4>
+                                    <p>Manage student records</p>
+                                </div>
                             </a>
                         </div>
                     </div>
@@ -1669,43 +1735,40 @@ try {
                         <h3>Quick Actions</h3>
                     </div>
                     <div class="card-body">
-                        <div style="display: grid; gap: 1rem;">
-                            <a href="<?php echo BASE_URL; ?>/admin/nominal-roll/create" 
-                               style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: rgba(159, 122, 234, 0.1); border-radius: 8px; text-decoration: none; color: var(--admin-gray-800); transition: background 0.2s;">
-                                <div style="width: 40px; height: 40px; background: #9f7aea; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                        <div class="quick-actions" style="margin-top: 0;">
+                            <a href="<?php echo BASE_URL; ?>/admin/nominal-roll/create" class="action-btn">
+                                <div class="action-icon" style="background: rgba(56, 161, 105, 0.1); color: var(--admin-success);">
                                     <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
                                     </svg>
                                 </div>
                                 <div>
-                                    <h4 style="margin: 0; font-size: 1rem;">Add New Record</h4>
-                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; color: var(--admin-gray-600);">Create new student record</p>
+                                    <h4>Add New Record</h4>
+                                    <p>Create new student record</p>
                                 </div>
                             </a>
                             
-                            <a href="<?php echo BASE_URL; ?>/admin/nominal-roll/export" 
-                               style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: rgba(66, 153, 225, 0.1); border-radius: 8px; text-decoration: none; color: var(--admin-gray-800); transition: background 0.2s;">
-                                <div style="width: 40px; height: 40px; background: var(--admin-primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                            <a href="<?php echo BASE_URL; ?>/admin/nominal-roll/export" class="action-btn">
+                                <div class="action-icon" style="background: rgba(66, 153, 225, 0.1); color: var(--admin-primary);">
                                     <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
                                     </svg>
                                 </div>
                                 <div>
-                                    <h4 style="margin: 0; font-size: 1rem;">Export Data</h4>
-                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; color: var(--admin-gray-600);">Export records to Excel/CSV</p>
+                                    <h4>Export Data</h4>
+                                    <p>Export records to Excel/CSV</p>
                                 </div>
                             </a>
                             
-                            <a href="<?php echo BASE_URL; ?>/admin/nominal-roll/bulk-upload" 
-                               style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: rgba(56, 161, 105, 0.1); border-radius: 8px; text-decoration: none; color: var(--admin-gray-800); transition: background 0.2s;">
-                                <div style="width: 40px; height: 40px; background: var(--admin-success); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                            <a href="<?php echo BASE_URL; ?>/admin/nominal-roll/bulk-upload" class="action-btn">
+                                <div class="action-icon" style="background: rgba(214, 158, 46, 0.1); color: var(--admin-warning);">
                                     <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V15a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
                                     </svg>
                                 </div>
                                 <div>
-                                    <h4 style="margin: 0; font-size: 1rem;">Bulk Upload</h4>
-                                    <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; color: var(--admin-gray-600);">Upload multiple records at once</p>
+                                    <h4>Bulk Upload</h4>
+                                    <p>Upload multiple records at once</p>
                                 </div>
                             </a>
                         </div>
@@ -1740,26 +1803,29 @@ try {
                         <ul class="activity-list">
                             <?php foreach ($nominalActivities as $activity): ?>
                             <li class="activity-item">
-                                <div class="activity-icon" style="background: rgba(159, 122, 234, 0.1); color: #9f7aea;">
+                                <div class="activity-icon" style="background: rgba(159, 122, 234, 0.1); color: var(--admin-purple);">
                                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
                                     </svg>
                                 </div>
                                 <div class="activity-info">
                                     <h4><?php echo htmlspecialchars(str_replace('_', ' ', $activity['action'])); ?></h4>
-                                    <p><?php echo date('M d, Y H:i', strtotime($activity['created_at'])); ?>
-                                    <?php if (!empty($activity['user_name'])): ?>
-                                    <br><small>By: <?php echo htmlspecialchars($activity['user_name']); ?></small>
-                                    <?php endif; ?>
+                                    <p>
+                                        <?php echo date('M d, Y H:i', strtotime($activity['created_at'])); ?>
+                                        <?php if (!empty($activity['user_name'])): ?>
+                                        <span>• By: <?php echo htmlspecialchars($activity['user_name']); ?></span>
+                                        <?php endif; ?>
                                     </p>
                                 </div>
                             </li>
                             <?php endforeach; ?>
                         </ul>
                         <?php else: ?>
-                        <p style="color: var(--admin-gray-600); font-style: italic; text-align: center; padding: 20px;">
-                            No recent nominal roll activities
-                        </p>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <div class="empty-state-title">No recent activities</div>
+                            <div class="empty-state-description">Activities will appear here as you manage nominal roll records.</div>
+                        </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1778,7 +1844,7 @@ try {
                     </div>
                     <div>
                         <h4>New Application</h4>
-                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Add manual application</p>
+                        <p>Add manual application</p>
                     </div>
                 </a>
                 
@@ -1790,7 +1856,7 @@ try {
                     </div>
                     <div>
                         <h4>Add Research</h4>
-                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Upload new research paper</p>
+                        <p>Upload new research paper</p>
                     </div>
                 </a>
                 
@@ -1802,7 +1868,7 @@ try {
                     </div>
                     <div>
                         <h4>Create News</h4>
-                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Publish news article</p>
+                        <p>Publish news article</p>
                     </div>
                 </a>
                 
@@ -1815,7 +1881,7 @@ try {
                     </div>
                     <div>
                         <h4>Add Carousel Slide</h4>
-                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Create new homepage slide</p>
+                        <p>Create new homepage slide</p>
                     </div>
                 </a>
                 <?php endif; ?>
@@ -1830,7 +1896,7 @@ try {
                     </div>
                     <div>
                         <h4>User Management</h4>
-                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Manage user accounts</p>
+                        <p>Manage user accounts</p>
                     </div>
                 </a>
                 <?php endif; ?>
@@ -1843,7 +1909,7 @@ try {
                     </div>
                     <div>
                         <h4>Generate Report</h4>
-                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Create system report</p>
+                        <p>Create system report</p>
                     </div>
                 </a>
                 
@@ -1856,21 +1922,21 @@ try {
                     </div>
                     <div>
                         <h4>Manage Contacts</h4>
-                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">View and respond to messages</p>
+                        <p>View and respond to messages</p>
                     </div>
                 </a>
                 <?php endif; ?>
                 
                 <!-- Always show Nominal Roll quick action -->
                 <a href="<?php echo BASE_URL; ?>/admin/nominal-roll" class="action-btn">
-                    <div class="action-icon" style="background: rgba(159, 122, 234, 0.1); color: #9f7aea;">
+                    <div class="action-icon" style="background: rgba(159, 122, 234, 0.1); color: var(--admin-purple);">
                         <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
                         </svg>
                     </div>
                     <div>
                         <h4>Nominal Roll</h4>
-                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Manage student records</p>
+                        <p>Manage student records</p>
                     </div>
                 </a>
                 
@@ -1884,7 +1950,7 @@ try {
                     </div>
                     <div>
                         <h4>Add Student</h4>
-                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Create new student record</p>
+                        <p>Create new student record</p>
                     </div>
                 </a>
                 
@@ -1896,7 +1962,7 @@ try {
                     </div>
                     <div>
                         <h4>Export Data</h4>
-                        <p style="font-size: 0.75rem; color: var(--admin-gray-600);">Export to Excel/CSV</p>
+                        <p>Export to Excel/CSV</p>
                     </div>
                 </a>
                 <?php endif; ?>
@@ -1905,122 +1971,218 @@ try {
     </main>
     
     <script>
-        // Mobile menu toggle
-        document.getElementById('mobileMenuToggle').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
+        // Enhanced Mobile menu toggle with improved touch handling
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+        
+        mobileMenuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            sidebar.classList.toggle('active');
+            document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
         });
         
-        // Close mobile menu when clicking outside on mobile
+        // Close mobile menu when clicking outside
         document.addEventListener('click', function(event) {
-            const sidebar = document.getElementById('sidebar');
-            const toggle = document.getElementById('mobileMenuToggle');
-            
             if (window.innerWidth <= 768 && 
                 !sidebar.contains(event.target) && 
-                !toggle.contains(event.target) && 
+                !mobileMenuToggle.contains(event.target) && 
                 sidebar.classList.contains('active')) {
                 sidebar.classList.remove('active');
+                document.body.style.overflow = '';
             }
+        });
+        
+        // Close mobile menu on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+        
+        // Handle window resize
+        let resizeTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }, 250);
+        });
+        
+        // Handle orientation change
+        window.addEventListener('orientationchange', function() {
+            setTimeout(function() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }, 300);
         });
         
         // Auto-refresh dashboard stats every 5 minutes
-        setTimeout(function() {
+        let refreshInterval = setTimeout(function() {
             location.reload();
         }, 5 * 60 * 1000);
         
-        // Chart data (you would replace this with actual data from your system)
-        const chartData = {
-            applications: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [{
-                    label: 'Applications',
-                    data: [65, 59, 80, 81, 56, 55],
-                    backgroundColor: 'rgba(56, 161, 105, 0.2)',
-                    borderColor: 'rgba(56, 161, 105, 1)',
-                    borderWidth: 2,
-                    tension: 0.4
-                }]
-            }
-        };
+        // Reset refresh timer on user activity
+        document.addEventListener('mousemove', resetRefreshTimer);
+        document.addEventListener('keypress', resetRefreshTimer);
+        document.addEventListener('click', resetRefreshTimer);
+        document.addEventListener('touchstart', resetRefreshTimer);
         
-        // Initialize charts (requires Chart.js library - add this to your header)
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if Chart.js is available
-            if (typeof Chart !== 'undefined') {
-                const ctx = document.getElementById('applicationsChart');
-                if (ctx) {
-                    new Chart(ctx.getContext('2d'), {
-                        type: 'line',
-                        data: chartData.applications,
-                        options: {
-                            responsive: true,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    grid: {
-                                        color: 'rgba(0, 0, 0, 0.05)'
-                                    }
-                                },
-                                x: {
-                                    grid: {
-                                        display: false
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-        });
-        
-        // Real-time notifications (simulated)
-        function checkNotifications() {
-            fetch('/admin/api/notifications/unread')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.count > 0) {
-                        const notificationBtn = document.querySelector('.notification-btn');
-                        notificationBtn.innerHTML = `
-                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
-                            </svg>
-                            <span style="position: absolute; top: -5px; right: -5px; background: var(--admin-danger); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center;">
-                                ${data.count}
-                            </span>
-                        `;
-                    }
-                })
-                .catch(error => console.error('Notification error:', error));
+        function resetRefreshTimer() {
+            clearTimeout(refreshInterval);
+            refreshInterval = setTimeout(function() {
+                location.reload();
+            }, 5 * 60 * 1000);
         }
         
-        // Check notifications every 30 seconds
-        setInterval(checkNotifications, 30000);
-        checkNotifications(); // Initial check
+        // Fixed Notification System
+        let notificationCount = 0;
+        
+        function checkNotifications() {
+            // Instead of fetching from API endpoint that doesn't exist,
+            // we'll simulate notifications based on pending counts
+            const pendingApplications = <?php echo $stats['pending_applications']; ?>;
+            const pendingContacts = <?php echo $stats['pending_contacts'] ?? 0; ?>;
+            
+            notificationCount = pendingApplications + pendingContacts;
+            
+            const notificationBtn = document.getElementById('notificationBtn');
+            if (notificationCount > 0) {
+                // Remove existing badge if any
+                const existingBadge = notificationBtn.querySelector('.notification-badge');
+                if (existingBadge) existingBadge.remove();
+                
+                // Create new badge
+                const badge = document.createElement('span');
+                badge.className = 'notification-badge';
+                badge.textContent = notificationCount > 99 ? '99+' : notificationCount;
+                notificationBtn.appendChild(badge);
+                
+                // Add click handler to show notifications
+                notificationBtn.onclick = showNotifications;
+            } else {
+                notificationBtn.onclick = showNoNotifications;
+            }
+        }
+        
+        function showNotifications() {
+            const pendingApplications = <?php echo $stats['pending_applications']; ?>;
+            const pendingContacts = <?php echo $stats['pending_contacts'] ?? 0; ?>;
+            
+            const notificationHtml = `
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; border-radius: 12px; padding: 1.5rem; max-width: 400px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="margin: 0; color: var(--admin-gray-800);">Notifications</h3>
+                            <button onclick="closeNotifications()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--admin-gray-600);">&times;</button>
+                        </div>
+                        <div style="display: grid; gap: 0.75rem;">
+                            ${pendingApplications > 0 ? `
+                            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(214, 158, 46, 0.1); border-radius: 8px;">
+                                <div style="width: 32px; height: 32px; background: var(--admin-warning); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${pendingApplications}</div>
+                                <div>
+                                    <strong style="color: var(--admin-gray-800);">Pending Applications</strong>
+                                    <div style="font-size: 0.875rem; color: var(--admin-gray-600);">${pendingApplications} application${pendingApplications > 1 ? 's' : ''} need review</div>
+                                </div>
+                            </div>
+                            ` : ''}
+                            
+                            ${pendingContacts > 0 ? `
+                            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(49, 130, 206, 0.1); border-radius: 8px;">
+                                <div style="width: 32px; height: 32px; background: var(--admin-info); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${pendingContacts}</div>
+                                <div>
+                                    <strong style="color: var(--admin-gray-800);">Pending Contact Messages</strong>
+                                    <div style="font-size: 0.875rem; color: var(--admin-gray-600);">${pendingContacts} message${pendingContacts > 1 ? 's' : ''} awaiting response</div>
+                                </div>
+                            </div>
+                            ` : ''}
+                            
+                            ${notificationCount === 0 ? `
+                            <div style="text-align: center; padding: 2rem; color: var(--admin-gray-500);">
+                                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔔</div>
+                                <div>No new notifications</div>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ${notificationCount > 0 ? `
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            <a href="<?php echo BASE_URL; ?>/admin/applications" style="flex: 1; padding: 0.5rem; background: var(--admin-primary); color: white; text-align: center; border-radius: 6px; text-decoration: none; font-weight: 500;">View Applications</a>
+                            ${pendingContacts > 0 ? `<a href="<?php echo BASE_URL; ?>/admin/contact" style="flex: 1; padding: 0.5rem; background: var(--admin-info); color: white; text-align: center; border-radius: 6px; text-decoration: none; font-weight: 500;">View Messages</a>` : ''}
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            const notificationDiv = document.createElement('div');
+            notificationDiv.innerHTML = notificationHtml;
+            document.body.appendChild(notificationDiv);
+        }
+        
+        function showNoNotifications() {
+            const notificationHtml = `
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; border-radius: 12px; padding: 2rem; text-align: center; max-width: 300px; width: 90%;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🔔</div>
+                        <h3 style="margin: 0 0 0.5rem 0; color: var(--admin-gray-800);">No Notifications</h3>
+                        <p style="color: var(--admin-gray-600); margin-bottom: 1.5rem;">You're all caught up!</p>
+                        <button onclick="closeNotifications()" style="padding: 0.5rem 1.5rem; background: var(--admin-primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Close</button>
+                    </div>
+                </div>
+            `;
+            
+            const notificationDiv = document.createElement('div');
+            notificationDiv.innerHTML = notificationHtml;
+            document.body.appendChild(notificationDiv);
+        }
+        
+        function closeNotifications() {
+            const notificationModal = document.querySelector('div[style*="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5)"]');
+            if (notificationModal) {
+                notificationModal.remove();
+            }
+        }
+        
+        // Check notifications on page load
+        document.addEventListener('DOMContentLoaded', checkNotifications);
         
         // Auto logout warning after 30 minutes of inactivity
         let idleTime = 0;
-        const idleInterval = setInterval(timerIncrement, 60000); // 1 minute
+        let idleInterval;
+        let warningShown = false;
         
-        function timerIncrement() {
-            idleTime++;
-            if (idleTime > 29) { // 30 minutes
-                showLogoutWarning();
-            }
+        function startIdleTimer() {
+            idleInterval = setInterval(() => {
+                idleTime++;
+                if (idleTime > 29 && !warningShown) { // 30 minutes
+                    showLogoutWarning();
+                    warningShown = true;
+                }
+            }, 60000); // 1 minute
         }
         
         function resetIdleTime() {
             idleTime = 0;
+            if (warningShown) {
+                const warning = document.getElementById('logout-warning');
+                const overlay = document.querySelector('#logout-warning + div');
+                if (warning) warning.remove();
+                if (overlay) overlay.remove();
+                warningShown = false;
+            }
         }
         
         // Reset idle time on user activity
         document.addEventListener('mousemove', resetIdleTime);
         document.addEventListener('keypress', resetIdleTime);
         document.addEventListener('click', resetIdleTime);
+        document.addEventListener('touchstart', resetIdleTime);
         document.addEventListener('scroll', resetIdleTime);
         
         function showLogoutWarning() {
@@ -2045,13 +2207,13 @@ try {
                 warning.innerHTML = `
                     <h3 style="margin-bottom: 1rem; color: var(--admin-warning);">Session Expiring Soon</h3>
                     <p style="margin-bottom: 1.5rem; color: var(--admin-gray-700);">
-                        Your session will expire in 5 minutes due to inactivity.
+                        Your session will expire in 1 minute due to inactivity.
                     </p>
                     <div style="display: flex; gap: 1rem; justify-content: center;">
-                        <button onclick="extendSession()" style="padding: 0.5rem 1.5rem; background: var(--admin-primary); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                        <button onclick="extendSession()" style="padding: 0.5rem 1.5rem; background: var(--admin-primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
                             Stay Logged In
                         </button>
-                        <button onclick="logoutNow()" style="padding: 0.5rem 1.5rem; background: var(--admin-gray-200); color: var(--admin-gray-700); border: none; border-radius: 6px; cursor: pointer;">
+                        <button onclick="logoutNow()" style="padding: 0.5rem 1.5rem; background: var(--admin-gray-200); color: var(--admin-gray-700); border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
                             Logout Now
                         </button>
                     </div>
@@ -2071,13 +2233,29 @@ try {
                     z-index: 1999;
                 `;
                 document.body.appendChild(overlay);
+                
+                // Auto logout after 1 more minute
+                setTimeout(() => {
+                    if (warningShown) {
+                        logoutNow();
+                    }
+                }, 60000);
             }
         }
         
         function extendSession() {
-            fetch('/admin/api/session/extend', {
+            fetch('<?php echo BASE_URL; ?>/admin/api/session/extend', {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
             })
             .then(() => {
                 resetIdleTime();
@@ -2085,25 +2263,26 @@ try {
                 const overlay = document.querySelector('#logout-warning + div');
                 if (warning) warning.remove();
                 if (overlay) overlay.remove();
+                warningShown = false;
             })
-            .catch(error => console.error('Session extend error:', error));
+            .catch(error => {
+                console.error('Session extend error:', error);
+                // Even if API fails, reset the timer locally
+                resetIdleTime();
+                warningShown = false;
+            });
         }
         
         function logoutNow() {
-            window.location.href = '/admin/logout';
+            window.location.href = '<?php echo BASE_URL; ?>/admin/logout';
         }
         
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 768) {
-                const sidebar = document.getElementById('sidebar');
-                sidebar.classList.remove('active');
-            }
-        });
+        // Start idle timer
+        startIdleTimer();
         
         // Print functionality
         document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'p') {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
                 e.preventDefault();
                 window.print();
             }
@@ -2111,7 +2290,6 @@ try {
         
         // Enhanced dashboard for nominal_roll_user
         <?php if ($userRole === 'nominal_roll_user'): ?>
-        // Focus on nominal roll related features
         document.addEventListener('DOMContentLoaded', function() {
             // Highlight the Nominal Roll link in sidebar
             const nominalRollLink = document.querySelector('a[href*="nominal-roll"]');
@@ -2133,14 +2311,147 @@ try {
                     window.location.href = '<?php echo BASE_URL; ?>/admin/nominal-roll/export';
                 }
             });
+            
+            // Add touch gesture support for mobile
+            let touchStartX = 0;
+            let touchStartY = 0;
+            
+            document.addEventListener('touchstart', function(e) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true });
+            
+            document.addEventListener('touchend', function(e) {
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+                const diffX = touchStartX - touchEndX;
+                const diffY = touchStartY - touchEndY;
+                
+                // Swipe left to open sidebar on mobile
+                if (window.innerWidth <= 768 && diffX > 50 && Math.abs(diffY) < 50) {
+                    sidebar.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            }, { passive: true });
         });
         <?php endif; ?>
+        
+        // Performance optimization - lazy load images
+        document.addEventListener('DOMContentLoaded', function() {
+            const images = document.querySelectorAll('img[data-src]');
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                        observer.unobserve(img);
+                    }
+                });
+            });
+            
+            images.forEach(img => imageObserver.observe(img));
+        });
+        
+        // Add loading states for better UX
+        document.querySelectorAll('a.action-btn').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const originalText = this.querySelector('h4').textContent;
+                this.querySelector('h4').textContent = 'Loading...';
+                this.style.pointerEvents = 'none';
+                
+                setTimeout(() => {
+                    this.querySelector('h4').textContent = originalText;
+                    this.style.pointerEvents = 'auto';
+                }, 2000);
+            });
+        });
+        
+        // Handle offline/online status
+        window.addEventListener('online', function() {
+            showToast('You are back online', 'success');
+        });
+        
+        window.addEventListener('offline', function() {
+            showToast('You are offline. Some features may not work.', 'warning');
+        });
+        
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: ${type === 'success' ? 'var(--admin-success)' : 'var(--admin-warning)'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: var(--shadow-lg);
+                z-index: 9999;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Add CSS for animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Focus management for accessibility
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                // Ensure focus stays within modal when open
+                const modal = document.querySelector('div[style*="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5)"]');
+                if (modal) {
+                    const focusableElements = modal.querySelectorAll('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                    const firstElement = focusableElements[0];
+                    const lastElement = focusableElements[focusableElements.length - 1];
+                    
+                    if (e.shiftKey && document.activeElement === firstElement) {
+                        e.preventDefault();
+                        lastElement.focus();
+                    } else if (!e.shiftKey && document.activeElement === lastElement) {
+                        e.preventDefault();
+                        firstElement.focus();
+                    }
+                }
+            }
+        });
     </script>
     
-    <!-- Add Chart.js for graphs (optional) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- USER MANAGEMENT JS -->
-    <script src="<?php echo BASE_URL; ?>/assets/js/user-management.js"></script>
+    <!-- Optional: Add Chart.js for graphs (only load if needed) -->
+    <script>
+        if (typeof Chart !== 'undefined') {
+            // Initialize charts if needed
+            const charts = document.querySelectorAll('[data-chart]');
+            if (charts.length > 0) {
+                // Load Chart.js dynamically
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                script.onload = function() {
+                    // Initialize charts here
+                    console.log('Chart.js loaded successfully');
+                };
+                document.head.appendChild(script);
+            }
+        }
+    </script>
 </body>
 </html>
