@@ -25,9 +25,3 @@
 
 # Disable directory browsing
 Options -Indexes
-
-# PROTECT SENSITIVE FILES - ADD THIS SECTION ONLY
-<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|sql|bak|old)$">
-    Order Allow,Deny
-    Deny from all
-</FilesMatch>

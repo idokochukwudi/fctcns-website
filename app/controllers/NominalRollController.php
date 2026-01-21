@@ -1895,7 +1895,7 @@ class NominalRollController extends Controller {
             error_log("File uploaded: " . $file['name'] . ", Size: " . $file['size'] . ", Error: " . $file['error']);
             
             // ========================================
-            // FIXED: Use our new getMimeType() method instead of mime_content_type()
+            // FIXED: Use our getMimeType() method instead of mime_content_type()
             // ========================================
             $allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/csv', 'text/x-csv', 'application/x-csv'];
             $fileType = $this->getMimeType($file['tmp_name']);
@@ -4876,5 +4876,84 @@ class NominalRollController extends Controller {
         
         // Call parent render method
         parent::render($view, $data);
+    }
+    
+    /**
+     * Detect file MIME type - works on all servers (Windows/Linux, shared hosting)
+     * Added as requested - this method provides multiple fallback methods for MIME type detection
+     */
+    private function detectFileMimeType($filePath, $fileName) {
+        // Method 1: Check by file extension first (most reliable for CSV)
+        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        
+        // Common MIME type mapping
+        $mimeMap = [
+            'csv'  => 'text/csv',
+            'txt'  => 'text/plain',
+            'pdf'  => 'application/pdf',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'gif'  => 'image/gif',
+            'xls'  => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'doc'  => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
+        
+        // First priority: Check by extension for CSV
+        if (isset($mimeMap[$extension])) {
+            return $mimeMap[$extension];
+        }
+        
+        // Method 2: Try mime_content_type() if available (some servers have it)
+        if (function_exists('mime_content_type')) {
+            return mime_content_type($filePath);
+        }
+        
+        // Method 3: Try finfo functions if available
+        if (function_exists('finfo_open') && function_exists('finfo_file')) {
+            $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo) {
+                $mime = @finfo_file($finfo, $filePath);
+                finfo_close($finfo);
+                if ($mime && $mime !== 'application/octet-stream') {
+                    return $mime;
+                }
+            }
+        }
+        
+        // Method 4: Check file signature for common types
+        if (file_exists($filePath) && is_readable($filePath)) {
+            $handle = @fopen($filePath, 'rb');
+            if ($handle) {
+                $bytes = fread($handle, 12);
+                fclose($handle);
+                
+                // Check for common file signatures
+                if (strpos($bytes, "\xFF\xD8\xFF") === 0) {
+                    return 'image/jpeg';
+                } elseif (strpos($bytes, "\x89PNG\r\n\x1a\n") === 0) {
+                    return 'image/png';
+                } elseif (strpos($bytes, "GIF") === 0) {
+                    return 'image/gif';
+                } elseif (strpos($bytes, "\xEF\xBB\xBF") === 0) {
+                    return 'text/plain'; // UTF-8 BOM (common in CSV files)
+                }
+            }
+        }
+        
+        // Method 5: Return based on file type from $_FILES (least reliable but works)
+        if (!empty($_FILES['file']['type'])) {
+            return $_FILES['file']['type'];
+        }
+        
+        // Method 6: Default fallback based on extension
+        if ($extension === 'csv') {
+            return 'text/csv';
+        }
+        
+        // Final fallback
+        return 'application/octet-stream';
     }
 }
