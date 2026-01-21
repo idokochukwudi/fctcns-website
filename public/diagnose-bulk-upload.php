@@ -1,12 +1,16 @@
 <?php
 /**
  * Bulk Upload Diagnostic Tool
- * Place this file in your project root and access via browser
+ * Corrected for your shared hosting structure
  */
 
 // Enable all error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
+
+// Determine correct paths for your shared hosting
+$rootPath = dirname(__FILE__); // Should be /home2/fctcnsed/public_html
+$appPath = dirname($rootPath) . '/fctcns-app'; // Should be /home2/fctcnsed/fctcns-app
 
 echo "<!DOCTYPE html>
 <html>
@@ -25,9 +29,35 @@ echo "<!DOCTYPE html>
 <body>
     <h1>Bulk Upload Diagnostic Tool</h1>";
 
-// Load environment
-define('ROOT_PATH', dirname(__DIR__));
-require_once ROOT_PATH . '/app/core/Database.php';
+// ========== 0. PATH DETECTION ==========
+echo "<div class='section info'>
+        <h2>0. Path Detection</h2>";
+
+echo "<p><strong>Script Location:</strong> " . __FILE__ . "</p>";
+echo "<p><strong>Root Path:</strong> " . $rootPath . "</p>";
+echo "<p><strong>App Path:</strong> " . $appPath . "</p>";
+
+// Check if app directory exists
+if (file_exists($appPath)) {
+    echo "<p class='success'>✅ App directory exists</p>";
+    
+    // List important directories
+    $dirs = [
+        $appPath . '/app/core/' => 'Core Directory',
+        $appPath . '/storage/uploads/' => 'Storage Directory',
+        $appPath . '/storage/logs/' => 'Logs Directory',
+    ];
+    
+    foreach ($dirs as $path => $name) {
+        $exists = file_exists($path);
+        echo "<p>" . ($exists ? "✅" : "❌") . " $name: " . $path . "</p>";
+    }
+} else {
+    echo "<p class='error'>❌ App directory not found at: " . $appPath . "</p>";
+    echo "<p>Please check your directory structure and update the \$appPath variable.</p>";
+}
+
+echo "</div>";
 
 // ========== 1. PHP CONFIGURATION ==========
 echo "<div class='section info'>
@@ -94,11 +124,12 @@ echo "<div class='section info'>
         <table border='1' cellpadding='5'>
             <tr><th>Directory/File</th><th>Exists</th><th>Writable</th><th>Permissions</th></tr>";
 
+// Check important directories
 $dirChecks = [
-    ROOT_PATH . '/storage/uploads/nominal-roll/' => 'Upload Directory',
-    ROOT_PATH . '/storage/uploads/passports/' => 'Passport Photos',
-    ROOT_PATH . '/storage/logs/' => 'Logs Directory',
-    ROOT_PATH . '/app/core/' => 'Core Directory',
+    $appPath . '/storage/uploads/nominal-roll/' => 'Upload Directory',
+    $appPath . '/storage/uploads/passports/' => 'Passport Photos',
+    $appPath . '/storage/logs/' => 'Logs Directory',
+    $appPath . '/app/core/' => 'Core Directory',
 ];
 
 foreach ($dirChecks as $path => $name) {
@@ -120,68 +151,27 @@ echo "</table></div>";
 
 // ========== 4. DATABASE CONNECTION ==========
 echo "<div class='section info'>
-        <h2>4. Database Connection & Permissions</h2>";
+        <h2>4. Database Connection Test</h2>";
 
-try {
-    $db = Database::getInstance();
-    echo "<p class='success'>✅ Database connection successful</p>";
+// Try to load your database configuration
+$configPath = $appPath . '/app/config/database.php';
+if (file_exists($configPath)) {
+    echo "<p class='success'>✅ Database config found: " . $configPath . "</p>";
     
-    // Test table exists
-    $tables = ['nominal_roll_employees', 'nominal_roll_bulk_uploads', 'nominal_roll_activity_logs'];
-    echo "<table border='1' cellpadding='5'>
-            <tr><th>Table</th><th>Exists</th><th>Row Count</th></tr>";
-    
-    foreach ($tables as $table) {
-        $result = $db->query("SHOW TABLES LIKE '$table'");
-        $exists = $result->num_rows > 0;
+    // Try to include database file
+    $dbPath = $appPath . '/app/core/Database.php';
+    if (file_exists($dbPath)) {
+        echo "<p class='success'>✅ Database class found: " . $dbPath . "</p>";
         
-        if ($exists) {
-            $countResult = $db->query("SELECT COUNT(*) as count FROM $table");
-            $count = $countResult->fetch_assoc()['count'];
-            echo "<tr class='success'>
-                    <td>$table</td>
-                    <td>✅ Yes</td>
-                    <td>$count rows</td>
-                  </tr>";
-        } else {
-            echo "<tr class='error'>
-                    <td>$table</td>
-                    <td>❌ No</td>
-                    <td>N/A</td>
-                  </tr>";
-        }
-    }
-    
-    echo "</table>";
-    
-    // Test INSERT permission
-    echo "<h3>INSERT Permission Test</h3>";
-    $testData = [
-        'employee_number' => 'DIAG_' . time(),
-        'surname' => 'Diagnostic',
-        'first_name' => 'Test',
-        'sex' => 'Male',
-        'created_at' => date('Y-m-d H:i:s')
-    ];
-    
-    $columns = implode(', ', array_keys($testData));
-    $values = "'" . implode("', '", array_values($testData)) . "'";
-    
-    $insert = $db->query("INSERT INTO nominal_roll_employees ($columns) VALUES ($values)");
-    
-    if ($insert) {
-        $id = $db->insert_id;
-        echo "<p class='success'>✅ INSERT successful (ID: $id)</p>";
+        // We'll test database connection separately
+        echo "<p>To test database connection, please check your main application.</p>";
         
-        // Clean up
-        $db->query("DELETE FROM nominal_roll_employees WHERE id = $id");
-        echo "<p class='success'>✅ Cleanup successful</p>";
     } else {
-        echo "<p class='error'>❌ INSERT failed: " . $db->error . "</p>";
+        echo "<p class='error'>❌ Database class not found at: " . $dbPath . "</p>";
     }
-    
-} catch (Exception $e) {
-    echo "<p class='error'>❌ Database error: " . $e->getMessage() . "</p>";
+} else {
+    echo "<p class='warning'>⚠️ Database config not found at: " . $configPath . "</p>";
+    echo "<p>Please check if your application has a different config structure.</p>";
 }
 
 echo "</div>";
@@ -235,31 +225,104 @@ if (($handle = fopen($tempFile, 'r')) !== false) {
 unlink($tempFile);
 echo "</div>";
 
-// ========== 6. RECOMMENDATIONS ==========
+// ========== 6. BULK UPLOAD SPECIFIC CHECKS ==========
+echo "<div class='section info'>
+        <h2>6. Bulk Upload Specific Checks</h2>";
+
+// Check if NominalRollController exists
+$controllerPath = $appPath . '/app/controllers/NominalRollController.php';
+if (file_exists($controllerPath)) {
+    echo "<p class='success'>✅ NominalRollController found</p>";
+    
+    // Check file size
+    $controllerSize = filesize($controllerPath);
+    echo "<p>Controller file size: " . $controllerSize . " bytes</p>";
+} else {
+    echo "<p class='error'>❌ NominalRollController not found at: " . $controllerPath . "</p>";
+}
+
+// Check if there's a bulk upload route
+echo "<p><strong>Bulk Upload Route Test:</strong></p>";
+echo "<p>Your bulk upload should be accessible at: <code>/admin/nominal-roll/bulk-upload</code></p>";
+echo "<p>Make sure this route is defined in your routes configuration.</p>";
+
+echo "</div>";
+
+// ========== 7. RECOMMENDATIONS ==========
 echo "<div class='section'>
-        <h2>6. Recommendations & Next Steps</h2>
+        <h2>7. Recommendations & Next Steps</h2>
+        <h3>Issues Found:</h3>
+        <ul>";
+
+// Generate issue list
+$issues = [];
+
+// Check PHP limits
+foreach ($phpChecks as $key => $check) {
+    if (!$this->compareSize($check['current'], $check['min'])) {
+        $issues[] = "<li><strong>$key</strong> is too low: {$check['current']} (should be {$check['min']}+)</li>";
+    }
+}
+
+// Check missing functions
+foreach ($functionChecks as $func => $purpose) {
+    if (!function_exists($func)) {
+        $issues[] = "<li><strong>$func()</strong> is not available (required for: $purpose)</li>";
+    }
+}
+
+// Check directories
+foreach ($dirChecks as $path => $name) {
+    if (!file_exists($path)) {
+        $issues[] = "<li><strong>$name</strong> does not exist: $path</li>";
+    } elseif (!is_writable($path)) {
+        $issues[] = "<li><strong>$name</strong> is not writable: $path</li>";
+    }
+}
+
+if (empty($issues)) {
+    echo "<li class='success'>✅ No critical issues found!</li>";
+} else {
+    foreach ($issues as $issue) {
+        echo $issue;
+    }
+}
+
+echo "</ul>
+        <h3>Action Items:</h3>
         <ol>
-            <li><strong>If any ❌ errors appear above:</strong> Contact your hosting provider</li>
-            <li><strong>If file permissions are wrong:</strong> Run: <code>chmod -R 755 storage/</code></li>
-            <li><strong>If database tables missing:</strong> Run your database setup script</li>
-            <li><strong>If PHP limits are too low:</strong> Add to .htaccess:<br>
+            <li><strong>Fix any ❌ errors above</strong> before proceeding</li>
+            <li><strong>Update directory permissions:</strong><br>
+                SSH command: <code>chmod -R 755 " . $appPath . "/storage/</code></li>
+            <li><strong>Increase PHP limits</strong> in .htaccess:<br>
                 <pre>
 php_value upload_max_filesize 10M
 php_value post_max_size 10M
 php_value max_execution_time 300
-php_value max_input_time 300
                 </pre>
             </li>
+            <li><strong>Test bulk upload</strong> with a small CSV file (5 records)</li>
+            <li><strong>Check error logs</strong> after upload attempt: " . $appPath . "/storage/logs/</li>
         </ol>
     </div>";
 
 echo "</body></html>";
 
-// Helper function
+// Helper function to compare sizes (K, M, G)
 function compareSize($current, $min) {
-    $units = ['K' => 1, 'M' => 1024, 'G' => 1048576];
-    $currentVal = intval($current) * ($units[substr($current, -1)] ?? 1);
-    $minVal = intval($min) * ($units[substr($min, -1)] ?? 1);
-    return $currentVal >= $minVal;
+    // Convert to bytes
+    $units = ['K' => 1024, 'M' => 1048576, 'G' => 1073741824];
+    
+    // Parse current value
+    $currentNum = floatval($current);
+    $currentUnit = strtoupper(substr($current, -1));
+    $currentBytes = $currentNum * ($units[$currentUnit] ?? 1);
+    
+    // Parse min value
+    $minNum = floatval($min);
+    $minUnit = strtoupper(substr($min, -1));
+    $minBytes = $minNum * ($units[$minUnit] ?? 1);
+    
+    return $currentBytes >= $minBytes;
 }
 ?>
