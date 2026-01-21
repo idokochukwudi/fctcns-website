@@ -94,7 +94,7 @@ class NominalRollModel {
             $placeholders = [];
             $values = [];
             
-            // Map data to database columns
+            // Map data to database columns - FIXED: Added backticks around 'rank'
             $columnMapping = [
                 'employee_number' => 'employee_number',
                 'surname' => 'surname',
@@ -109,7 +109,7 @@ class NominalRollModel {
                 'genotype' => 'genotype',
                 'disability' => 'disability',
                 'disability_type' => 'disability_type',
-                'rank' => 'rank',
+                'rank' => '`rank`', // FIXED: Added backticks around reserved keyword
                 'grade_level' => 'grade_level',
                 'step' => 'step',
                 'cadre' => 'cadre',
@@ -219,6 +219,7 @@ class NominalRollModel {
     /**
      * Create new employee record - LEGACY VERSION for regular forms
      * (Keeping this for backward compatibility with existing form submissions)
+     * FIXED: rank column already has backticks in this method
      */
     public function createEmployeeLegacy($data, $userId = null) {
         try {
@@ -226,6 +227,7 @@ class NominalRollModel {
             error_log("Data to insert: " . print_r($data, true));
             error_log("User ID: " . $userId);
             
+            // FIXED: rank already has backticks in this query
             $sql = "INSERT INTO " . self::TABLE_EMPLOYEES . " SET
                     employee_number = :employee_number,
                     surname = :surname,
@@ -455,6 +457,7 @@ class NominalRollModel {
     
     /**
      * Update employee record - DEBUG VERSION WITH EXTENSIVE LOGGING
+     * FIXED: rank column already has backticks in this method
      */
     public function updateEmployee($id, $data, $userId = null) {
         error_log("=== MODEL updateEmployee() called ===");
@@ -476,7 +479,7 @@ class NominalRollModel {
             }
             
             error_log("=== Step 2: Building SQL query ===");
-            // FIXED: Removed 'qualification' field and added all new fields from the form
+            // FIXED: rank already has backticks in this query
             $sql = "UPDATE " . self::TABLE_EMPLOYEES . " SET
                     employee_number = :employee_number,
                     surname = :surname,
@@ -768,6 +771,7 @@ class NominalRollModel {
     
     /**
      * Get all employees with pagination
+     * FIXED: Added backticks around rank in WHERE and SELECT clauses
      */
     public function getAllEmployees($page = 1, $limit = 20, $filters = []) {
         try {
@@ -795,6 +799,7 @@ class NominalRollModel {
             }
             
             if (!empty($filters['rank'])) {
+                // FIXED: Added backticks around rank
                 $whereConditions[] = "e.`rank` = :rank";
                 $params[':rank'] = $filters['rank'];
             }
@@ -868,6 +873,7 @@ class NominalRollModel {
     
     /**
      * Get employee statistics
+     * FIXED: Added backticks around rank in SELECT clause
      */
     public function getEmployeeStats() {
         try {
@@ -900,7 +906,7 @@ class NominalRollModel {
                 $stmt = $this->db->query($sql);
                 $stats['by_grade'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
-                // Count by rank
+                // Count by rank - FIXED: Added backticks around rank
                 $sql = "SELECT `rank`, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " GROUP BY `rank` ORDER BY count DESC LIMIT 10";
                 $stmt = $this->db->query($sql);
                 $stats['by_rank'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -926,6 +932,7 @@ class NominalRollModel {
     
     /**
      * Get distinct values for filters - UPDATED
+     * FIXED: Added backticks around rank in SELECT clause
      */
     public function getFilterOptions() {
         try {
@@ -951,7 +958,7 @@ class NominalRollModel {
             $stmt = $this->db->query($sql);
             $options['steps'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
-            // Ranks
+            // Ranks - FIXED: Added backticks around rank
             $sql = "SELECT DISTINCT `rank` FROM " . self::TABLE_EMPLOYEES . " WHERE `rank` IS NOT NULL AND `rank` != '' ORDER BY `rank`";
             $stmt = $this->db->query($sql);
             $options['ranks'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -2164,6 +2171,7 @@ class NominalRollModel {
     
     /**
      * Export employees
+     * FIXED: Added backticks around rank in WHERE clause
      */
     public function exportEmployees($filters = []) {
         try {
@@ -2187,6 +2195,7 @@ class NominalRollModel {
             }
             
             if (!empty($filters['rank'])) {
+                // FIXED: Added backticks around rank
                 $whereConditions[] = "`rank` = :rank";
                 $params[':rank'] = $filters['rank'];
             }
@@ -2894,6 +2903,7 @@ class NominalRollModel {
     
     /**
      * Generate report data - OPTIMIZED VERSION with caching
+     * FIXED: Added backticks around rank in WHERE clause
      */
     public function generateReportData($selectedFields, $filters = [], $sortOrder = 'surname_asc', $useCache = true) {
         try {
@@ -2915,7 +2925,7 @@ class NominalRollModel {
             foreach ($selectedFields as $field) {
                 // Handle reserved words and special cases
                 if ($field === 'rank') {
-                    $selectFields[] = "`rank`";
+                    $selectFields[] = "`rank`"; // FIXED: Added backticks
                 } elseif (in_array($field, ['date_of_birth', 'date_of_first_appointment', 'date_of_confirmation', 'date_of_present_appointment'])) {
                     // Store dates as-is for client-side formatting
                     $selectFields[] = "`{$field}`";
@@ -2954,16 +2964,16 @@ class NominalRollModel {
                 $params[':exact_search'] = $filters['search'];
             }
             
-            // Add remaining filters
+            // Add remaining filters - FIXED: Added backticks around rank
             $filterMap = [
-                'rank' => 'rank',
+                'rank' => '`rank`', // FIXED: Added backticks
                 'sex' => 'sex',
                 'department' => 'department'
             ];
             
             foreach ($filterMap as $key => $column) {
                 if (!empty($filters[$key])) {
-                    $whereConditions[] = "`{$column}` = :{$key}";
+                    $whereConditions[] = "{$column} = :{$key}";
                     $params[":{$key}"] = $filters[$key];
                 }
             }
@@ -3173,6 +3183,7 @@ class NominalRollModel {
     
     /**
      * Get employee counts for export summary
+     * FIXED: Added backticks around rank in SELECT clause
      */
     public function getExportSummary($filters = []) {
         try {

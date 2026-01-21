@@ -334,7 +334,7 @@ $csrfToken = $this->data['csrfToken'] ??
                     <h1><i class="fas fa-users"></i> Bulk Nominal Roll Upload</h1>
                     <p class="mb-0">Upload multiple employee records at once using CSV format</p>
                 </div>
-                <a href="/nominal-roll" class="back-button">
+                <a href="/admin/nominal-roll" class="back-button">
                     <i class="fas fa-arrow-left"></i> Back to Nominal Roll
                 </a>
             </div>
