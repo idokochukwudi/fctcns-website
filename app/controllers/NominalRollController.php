@@ -79,6 +79,89 @@ class NominalRollController extends Controller {
     
     /**
      * ============================================
+     * UTILITY METHODS - MIME TYPE DETECTION
+     * ============================================
+     */
+    
+    /**
+     * Get MIME type using multiple methods for maximum compatibility
+     * Works on all PHP environments including shared hosting
+     */
+    private function getMimeType($filePath) {
+        // Method 1: Use finfo if available (PHP 5.3+, most reliable)
+        if (function_exists('finfo_open')) {
+            try {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                if ($finfo) {
+                    $mimeType = finfo_file($finfo, $filePath);
+                    finfo_close($finfo);
+                    if ($mimeType && $mimeType !== false && $mimeType !== 'application/octet-stream') {
+                        return $mimeType;
+                    }
+                }
+            } catch (Exception $e) {
+                error_log("finfo method failed: " . $e->getMessage());
+            }
+        }
+        
+        // Method 2: Try mime_content_type() if available
+        if (function_exists('mime_content_type')) {
+            try {
+                $mimeType = mime_content_type($filePath);
+                if ($mimeType && $mimeType !== false && $mimeType !== 'application/octet-stream') {
+                    return $mimeType;
+                }
+            } catch (Exception $e) {
+                error_log("mime_content_type method failed: " . $e->getMessage());
+            }
+        }
+        
+        // Method 3: Use file extension as fallback
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $mimeTypes = [
+            'csv' => 'text/csv',
+            'txt' => 'text/plain',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'ppt' => 'application/vnd.ms-powerpoint',
+            'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'zip' => 'application/zip',
+            'rar' => 'application/x-rar-compressed',
+            'tar' => 'application/x-tar',
+            'gz' => 'application/gzip',
+            '7z' => 'application/x-7z-compressed'
+        ];
+        
+        return isset($mimeTypes[$extension]) ? $mimeTypes[$extension] : 'application/octet-stream';
+    }
+    
+    /**
+     * Detect MIME type for images - enhanced version
+     */
+    private function detectMimeType($filePath) {
+        // Use our new getMimeType method
+        $mimeType = $this->getMimeType($filePath);
+        
+        // Special handling for images - verify with getimagesize if needed
+        if (strpos($mimeType, 'image/') === 0 && function_exists('getimagesize')) {
+            $imageInfo = @getimagesize($filePath);
+            if ($imageInfo !== false && isset($imageInfo['mime'])) {
+                return $imageInfo['mime'];
+            }
+        }
+        
+        return $mimeType;
+    }
+    
+    /**
+     * ============================================
      * DEBUG METHODS
      * ============================================
      */
@@ -749,7 +832,7 @@ class NominalRollController extends Controller {
                     // Create a simple default image
                     header('Content-Type: image/svg+xml');
                     echo '<?xml version="1.0" encoding="UTF-8"?>
-                    <svg width="200" height="200" xmlns="http://www.w3.org/TR/REC-html40">
+                    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
                         <rect width="200" height="200" fill="#f0f0f0"/>
                         <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="14" fill="#666">No Photo</text>
                     </svg>';
@@ -768,7 +851,7 @@ class NominalRollController extends Controller {
                 } else {
                     header('Content-Type: image/svg+xml');
                     echo '<?xml version="1.0" encoding="UTF-8"?>
-                    <svg width="200" height="200" xmlns="http://www.w3.org/TR/REC-html40">
+                    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
                         <rect width="200" height="200" fill="#f0f0f0"/>
                         <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="14" fill="#666">Photo Missing</text>
                     </svg>';
@@ -776,8 +859,8 @@ class NominalRollController extends Controller {
                 exit;
             }
             
-            // UNIVERSAL MIME TYPE DETECTION (works without mime_content_type)
-            $mimeType = $this->detectMimeType($photoPath);
+            // UNIVERSAL MIME TYPE DETECTION using our new method
+            $mimeType = $this->getMimeType($photoPath);
             
             // Output image
             header('Content-Type: ' . $mimeType);
@@ -792,7 +875,7 @@ class NominalRollController extends Controller {
             // Return a simple error image
             header('Content-Type: image/svg+xml');
             echo '<?xml version="1.0" encoding="UTF-8"?>
-            <svg width="200" height="200" xmlns="http://www.w3.org/TR/REC-html40">
+            <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
                 <rect width="200" height="200" fill="#ffe6e6"/>
                 <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="12" fill="#cc0000">Error Loading Image</text>
             </svg>';
@@ -1413,7 +1496,7 @@ class NominalRollController extends Controller {
     
     /**
      * ============================================
-     * BULK UPLOAD FUNCTIONALITY
+     * BULK UPLOAD FUNCTIONALITY - FIXED VERSION
      * ============================================
      */
     
@@ -1743,7 +1826,7 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Process bulk upload - COMPLETELY FIXED VERSION
+     * Process bulk upload - COMPLETELY FIXED VERSION WITH MIME TYPE FIX
      */
     public function processBulkUpload() {
         // ========================================
@@ -1811,12 +1894,22 @@ class NominalRollController extends Controller {
             
             error_log("File uploaded: " . $file['name'] . ", Size: " . $file['size'] . ", Error: " . $file['error']);
             
-            // Validate file type
+            // ========================================
+            // FIXED: Use our new getMimeType() method instead of mime_content_type()
+            // ========================================
             $allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/csv', 'text/x-csv', 'application/x-csv'];
-            $fileType = mime_content_type($file['tmp_name']);
-            error_log("File type detected: " . $fileType . ", File type from FILES: " . $file['type']);
+            $fileType = $this->getMimeType($file['tmp_name']);
+            error_log("File type detected using getMimeType(): " . $fileType . ", File type from FILES: " . $file['type']);
             
-            if (!in_array($fileType, $allowedTypes) && !in_array($file['type'], $allowedTypes)) {
+            // Validate file type
+            $isValidType = false;
+            if (in_array($fileType, $allowedTypes)) {
+                $isValidType = true;
+            } elseif (in_array($file['type'], $allowedTypes)) {
+                $isValidType = true;
+            }
+            
+            if (!$isValidType) {
                 $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
                 if (strtolower($extension) !== 'csv') {
                     error_log("Invalid file type or extension: " . $extension);
@@ -1824,7 +1917,7 @@ class NominalRollController extends Controller {
                     ob_end_flush();
                     exit;
                 }
-                error_log("Allowing CSV file despite mime type detection issue");
+                error_log("Allowing CSV file despite mime type detection issue - extension is .csv");
             }
             
             // Validate file size (max 10MB)
@@ -4137,33 +4230,33 @@ class NominalRollController extends Controller {
                 throw new Exception("Only " . implode(', ', $allowedExtensions) . " files are allowed");
             }
             
-            // 4. UNIVERSAL MIME TYPE VALIDATION (works on all servers)
+            // 4. UNIVERSAL MIME TYPE VALIDATION using our new method
             $isValidImage = false;
             
-            // Method 1: Try getimagesize() - ALWAYS AVAILABLE
-            $imageInfo = @getimagesize($file['tmp_name']);
-            if ($imageInfo !== false) {
-                error_log("Image validated via getimagesize. Type: " . $imageInfo[2]);
-                $validImageTypes = [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF];
-                if (in_array($imageInfo[2], $validImageTypes)) {
-                    $isValidImage = true;
-                }
+            // Method 1: Use our getMimeType method
+            $mimeType = $this->getMimeType($file['tmp_name']);
+            error_log("MIME type detected via getMimeType(): " . $mimeType);
+            
+            $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (in_array($mimeType, $allowedMimes)) {
+                $isValidImage = true;
             }
             
-            // Method 2: Try mime_content_type() if available
-            if (!$isValidImage && function_exists('mime_content_type')) {
-                $mimeType = mime_content_type($file['tmp_name']);
-                error_log("MIME type detected: " . $mimeType);
-                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-                if (in_array($mimeType, $allowedMimes)) {
-                    $isValidImage = true;
+            // Method 2: Try getimagesize() as fallback - ALWAYS AVAILABLE
+            if (!$isValidImage) {
+                $imageInfo = @getimagesize($file['tmp_name']);
+                if ($imageInfo !== false) {
+                    error_log("Image validated via getimagesize. Type: " . $imageInfo[2]);
+                    $validImageTypes = [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF];
+                    if (in_array($imageInfo[2], $validImageTypes)) {
+                        $isValidImage = true;
+                    }
                 }
             }
             
             // Method 3: Check file type from $_FILES (least reliable but works as fallback)
             if (!$isValidImage && !empty($file['type'])) {
                 error_log("Checking file type from FILES array: " . $file['type']);
-                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
                 if (in_array($file['type'], $allowedMimes)) {
                     $isValidImage = true;
                 }
@@ -4357,60 +4450,6 @@ class NominalRollController extends Controller {
             error_log("NominalRollController deleteFile error: " . $e->getMessage());
             return false;
         }
-    }
-    
-    /**
-     * Detect MIME type without mime_content_type()
-     */
-    private function detectMimeType($filePath) {
-        // Method 1: Try file extension detection
-        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-        
-        $mimeMap = [
-            'jpg'  => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'png'  => 'image/png',
-            'gif' => 'image/gif',
-            'svg'  => 'image/svg+xml',
-            'webp' => 'image/webp',
-            'bmp'  => 'image/bmp',
-            'ico'  => 'image/x-icon'
-        ];
-        
-        if (isset($mimeMap[$extension])) {
-            return $mimeMap[$extension];
-        }
-        
-        // Method 2: Try getimagesize() if available
-        if (function_exists('getimagesize')) {
-            $imageInfo = @getimagesize($filePath);
-            if ($imageInfo !== false && isset($imageInfo['mime'])) {
-                return $imageInfo['mime'];
-            }
-        }
-        
-        // Method 3: Try mime_content_type() if available (some servers have it)
-        if (function_exists('mime_content_type')) {
-            return mime_content_type($filePath);
-        }
-        
-        // Method 4: Check file signature (magic bytes)
-        $handle = fopen($filePath, 'rb');
-        if ($handle) {
-            $bytes = fread($handle, 12);
-            fclose($handle);
-            
-            if (strpos($bytes, "\xFF\xD8\xFF") === 0) {
-                return 'image/jpeg';
-            } elseif (strpos($bytes, "\x89PNG\r\n\x1a\n") === 0) {
-                return 'image/png';
-            } elseif (strpos($bytes, "GIF") === 0) {
-                return 'image/gif';
-            }
-        }
-        
-        // Default fallback
-        return 'application/octet-stream';
     }
     
     /**
