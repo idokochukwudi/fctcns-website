@@ -30,7 +30,9 @@ class Database {
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => true, // FIXED: Added this line to prevent MySQL parameter binding errors
                 PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4",
-                PDO::ATTR_STRINGIFY_FETCHES => false
+                PDO::ATTR_STRINGIFY_FETCHES => false,
+                // ADD THIS LINE to prevent connection buildup:
+                PDO::ATTR_PERSISTENT => false  // Set to false to prevent persistent connections
             ]);
             
             // Set additional PDO attributes for better error handling and security
@@ -75,6 +77,38 @@ class Database {
      */
     public function getConnection() {
         return $this->connection;
+    }
+    
+    /**
+     * Test and fix database connection
+     */
+    public static function testAndFixConnection()
+    {
+        try {
+            $db = self::getInstance();
+            $conn = $db->getConnection();
+            
+            // Test the connection
+            $stmt = $conn->query("SELECT 1");
+            if ($stmt) {
+                return true;
+            }
+        } catch (PDOException $e) {
+            error_log("Database test failed: " . $e->getMessage());
+            
+            // Close the broken connection
+            if (isset($db)) {
+                $db->close();
+            }
+            
+            // Clear the instance to force a new connection
+            self::$instance = null;
+            
+            // Wait a bit before retrying
+            sleep(2);
+            
+            return false;
+        }
     }
     
     /**
@@ -361,7 +395,9 @@ class Database {
      * Close the connection (not usually needed with PDO)
      */
     public function close() {
-        $this->connection = null;
+        if ($this->connection !== null) {
+            $this->connection = null;
+        }
         self::$instance = null;
     }
     

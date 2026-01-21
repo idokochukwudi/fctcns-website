@@ -282,13 +282,26 @@ class ResearchController extends Controller
     }
     
     /**
-     * ADMIN: Update publication
+     * ADMIN: Update publication - FIXED VERSION
      */
     public function update($id)
     {
         // Require authentication
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
+        
+        // TEST AND FIX DATABASE CONNECTION FIRST
+        try {
+            if (!$this->model->testConnection()) {
+                // If connection fails, wait and try again
+                sleep(3);
+                
+                // Clear the model to force reconnection
+                $this->model = new ResearchModel();
+            }
+        } catch (Exception $e) {
+            error_log("Database connection test failed: " . $e->getMessage());
+        }
         
         // Validate CSRF token using Session class
         $token = $this->input('csrf_token');
@@ -1080,7 +1093,7 @@ class ResearchController extends Controller
     }
     
     /**
-     * Generic file upload function
+     * Generic file upload function - FIXED VERSION (Simple)
      */
     private function uploadFile($file, $directory, $allowedTypes, $maxSize, $isImage = false)
     {
@@ -1104,16 +1117,62 @@ class ResearchController extends Controller
             return $result;
         }
         
-        // Check file type
-        $fileType = mime_content_type($file['tmp_name']);
+        // FIXED: Use multiple methods to get MIME type
+        $fileType = null;
+        
+        // Method 1: Use finfo if available (more reliable)
+        if (function_exists('finfo_open')) {
+            $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo) {
+                $fileType = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+            }
+        }
+        
+        // Method 2: Use mime_content_type if available
+        if (empty($fileType) && function_exists('mime_content_type')) {
+            $fileType = @mime_content_type($file['tmp_name']);
+        }
+        
+        // Method 3: Fallback to file extension
+        if (empty($fileType)) {
+            $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $mimeTypes = [
+                // Images
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                'bmp' => 'image/bmp',
+                
+                // Documents
+                'pdf' => 'application/pdf',
+                'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'xls' => 'application/vnd.ms-excel',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'ppt' => 'application/vnd.ms-powerpoint',
+                'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'txt' => 'text/plain',
+                'csv' => 'text/csv',
+            ];
+            
+            $fileType = $mimeTypes[$extension] ?? 'application/octet-stream';
+            
+            // Log the fallback for debugging
+            error_log("MIME type fallback used: Extension .$extension -> $fileType");
+        }
+        
+        // Validate the detected MIME type
         if (!in_array($fileType, $allowedTypes)) {
-            $result['error'] = 'Invalid file type. Allowed types: ' . implode(', ', $allowedTypes);
+            $result['error'] = "Invalid file type ($fileType). Allowed types: " . implode(', ', $allowedTypes);
             return $result;
         }
         
-        // For images, additional validation
+        // For images, do additional validation
         if ($isImage) {
-            $imageInfo = getimagesize($file['tmp_name']);
+            $imageInfo = @getimagesize($file['tmp_name']);
             if (!$imageInfo) {
                 $result['error'] = 'Uploaded file is not a valid image';
                 return $result;
@@ -1132,6 +1191,9 @@ class ResearchController extends Controller
             $result['file_path'] = $filePath;
             $result['file_size'] = $file['size'];
             $result['file_type'] = $fileType;
+            
+            // Set file permissions
+            @chmod($filePath, 0644);
         } else {
             $result['error'] = 'Failed to move uploaded file';
         }
