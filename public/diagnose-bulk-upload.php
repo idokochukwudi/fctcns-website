@@ -1,7 +1,7 @@
 <?php
 /**
  * Bulk Upload Diagnostic Tool
- * Corrected for your shared hosting structure
+ * Corrected for your shared hosting structure - FIXED VERSION
  */
 
 // Enable all error reporting
@@ -29,6 +29,24 @@ echo "<!DOCTYPE html>
 <body>
     <h1>Bulk Upload Diagnostic Tool</h1>";
 
+// Helper function to compare sizes (K, M, G)
+function compareSize($current, $min) {
+    // Convert to bytes
+    $units = ['K' => 1024, 'M' => 1048576, 'G' => 1073741824];
+    
+    // Parse current value
+    $currentNum = floatval($current);
+    $currentUnit = strtoupper(substr($current, -1));
+    $currentBytes = $currentNum * ($units[$currentUnit] ?? 1);
+    
+    // Parse min value
+    $minNum = floatval($min);
+    $minUnit = strtoupper(substr($min, -1));
+    $minBytes = $minNum * ($units[$minUnit] ?? 1);
+    
+    return $currentBytes >= $minBytes;
+}
+
 // ========== 0. PATH DETECTION ==========
 echo "<div class='section info'>
         <h2>0. Path Detection</h2>";
@@ -54,7 +72,6 @@ if (file_exists($appPath)) {
     }
 } else {
     echo "<p class='error'>❌ App directory not found at: " . $appPath . "</p>";
-    echo "<p>Please check your directory structure and update the \$appPath variable.</p>";
 }
 
 echo "</div>";
@@ -76,7 +93,7 @@ $phpChecks = [
 foreach ($phpChecks as $key => $check) {
     $current = $check['current'];
     $min = $check['min'];
-    $status = $this->compareSize($current, $min) ? '✅ OK' : '⚠️ LOW';
+    $status = compareSize($current, $min) ? '✅ OK' : '⚠️ LOW';
     $class = $status === '✅ OK' ? 'success' : 'warning';
     
     echo "<tr class='$class'>
@@ -149,36 +166,9 @@ foreach ($dirChecks as $path => $name) {
 
 echo "</table></div>";
 
-// ========== 4. DATABASE CONNECTION ==========
+// ========== 4. CSV PROCESSING TEST ==========
 echo "<div class='section info'>
-        <h2>4. Database Connection Test</h2>";
-
-// Try to load your database configuration
-$configPath = $appPath . '/app/config/database.php';
-if (file_exists($configPath)) {
-    echo "<p class='success'>✅ Database config found: " . $configPath . "</p>";
-    
-    // Try to include database file
-    $dbPath = $appPath . '/app/core/Database.php';
-    if (file_exists($dbPath)) {
-        echo "<p class='success'>✅ Database class found: " . $dbPath . "</p>";
-        
-        // We'll test database connection separately
-        echo "<p>To test database connection, please check your main application.</p>";
-        
-    } else {
-        echo "<p class='error'>❌ Database class not found at: " . $dbPath . "</p>";
-    }
-} else {
-    echo "<p class='warning'>⚠️ Database config not found at: " . $configPath . "</p>";
-    echo "<p>Please check if your application has a different config structure.</p>";
-}
-
-echo "</div>";
-
-// ========== 5. CSV PROCESSING TEST ==========
-echo "<div class='section info'>
-        <h2>5. CSV Processing Test</h2>";
+        <h2>4. CSV Processing Test</h2>";
 
 $testCSV = "S/N,Employee Number,Surname,First Name,Sex,Date of Birth
 1,TEST001,Doe,John,Male,1990-01-01
@@ -225,9 +215,9 @@ if (($handle = fopen($tempFile, 'r')) !== false) {
 unlink($tempFile);
 echo "</div>";
 
-// ========== 6. BULK UPLOAD SPECIFIC CHECKS ==========
+// ========== 5. BULK UPLOAD SPECIFIC CHECKS ==========
 echo "<div class='section info'>
-        <h2>6. Bulk Upload Specific Checks</h2>";
+        <h2>5. Bulk Upload Specific Checks</h2>";
 
 // Check if NominalRollController exists
 $controllerPath = $appPath . '/app/controllers/NominalRollController.php';
@@ -237,20 +227,23 @@ if (file_exists($controllerPath)) {
     // Check file size
     $controllerSize = filesize($controllerPath);
     echo "<p>Controller file size: " . $controllerSize . " bytes</p>";
+    
+    // Check if processBulkUpload method exists
+    $content = file_get_contents($controllerPath);
+    if (strpos($content, 'processBulkUpload') !== false) {
+        echo "<p class='success'>✅ processBulkUpload() method exists</p>";
+    } else {
+        echo "<p class='error'>❌ processBulkUpload() method not found</p>";
+    }
 } else {
     echo "<p class='error'>❌ NominalRollController not found at: " . $controllerPath . "</p>";
 }
 
-// Check if there's a bulk upload route
-echo "<p><strong>Bulk Upload Route Test:</strong></p>";
-echo "<p>Your bulk upload should be accessible at: <code>/admin/nominal-roll/bulk-upload</code></p>";
-echo "<p>Make sure this route is defined in your routes configuration.</p>";
-
 echo "</div>";
 
-// ========== 7. RECOMMENDATIONS ==========
+// ========== 6. RECOMMENDATIONS ==========
 echo "<div class='section'>
-        <h2>7. Recommendations & Next Steps</h2>
+        <h2>6. Recommendations & Next Steps</h2>
         <h3>Issues Found:</h3>
         <ul>";
 
@@ -259,7 +252,7 @@ $issues = [];
 
 // Check PHP limits
 foreach ($phpChecks as $key => $check) {
-    if (!$this->compareSize($check['current'], $check['min'])) {
+    if (!compareSize($check['current'], $check['min'])) {
         $issues[] = "<li><strong>$key</strong> is too low: {$check['current']} (should be {$check['min']}+)</li>";
     }
 }
@@ -307,22 +300,4 @@ php_value max_execution_time 300
     </div>";
 
 echo "</body></html>";
-
-// Helper function to compare sizes (K, M, G)
-function compareSize($current, $min) {
-    // Convert to bytes
-    $units = ['K' => 1024, 'M' => 1048576, 'G' => 1073741824];
-    
-    // Parse current value
-    $currentNum = floatval($current);
-    $currentUnit = strtoupper(substr($current, -1));
-    $currentBytes = $currentNum * ($units[$currentUnit] ?? 1);
-    
-    // Parse min value
-    $minNum = floatval($min);
-    $minUnit = strtoupper(substr($min, -1));
-    $minBytes = $minNum * ($units[$minUnit] ?? 1);
-    
-    return $currentBytes >= $minBytes;
-}
 ?>
