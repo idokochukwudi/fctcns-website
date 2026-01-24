@@ -25,23 +25,23 @@ if (empty($carouselSlides)) {
         [
             'image_path' => $baseUrl . '/assets/images/homepage/hero-campus-life.jpg',
             'title' => 'Welcome to FCT College of Nursing Sciences',
-            'subtitle' => 'NMCN & NBTE Accredited Nursing Education Since 1989 - Join a legacy of 5,000+ nurses trained in a 35-year tradition of academic rigor and community care.',
-            'button_text' => 'Discover Our Community',
-            'button_link' => $baseUrl . '/student-life'
+            'subtitle' => 'Empowering Future Healthcare Professionals Since 1989',
+            'button_text' => 'Apply Now',
+            'button_link' => $baseUrl . '/admissions'
         ],
         [
             'image_path' => $baseUrl . '/assets/images/homepage/hero-simulation-lab.jpg',
             'title' => 'Train in Advanced Simulation Environments',
             'subtitle' => 'Practice with high-fidelity manikins and virtual reality in labs designed for real-world preparedness.',
-            'button_text' => 'Explore Our Facilities',
-            'button_link' => $baseUrl . '/facilities'
+            'button_text' => 'Apply Now',
+            'button_link' => $baseUrl . '/admissions'
         ],
         [
             'image_path' => $baseUrl . '/assets/images/homepage/hero-graduation-celebration.jpg',
             'title' => 'Begin Your Journey to a Fulfilling Career',
             'subtitle' => 'Our graduates are highly sought-after for their skill, integrity, and readiness to lead in diverse healthcare settings.',
-            'button_text' => 'View Program Outcomes',
-            'button_link' => $baseUrl . '/alumni'
+            'button_text' => 'Apply Now',
+            'button_link' => $baseUrl . '/admissions'
         ]
     ];
 }
@@ -153,6 +153,7 @@ button, .btn,
     --color-accent: #D4A574;            /* Muted gold accent */
     --color-accent-dark: #BF8F5E;
     --color-accent-light: #E6C9A5;
+    --color-accent-very-light: #F2E4D4;
     
     /* Status Colors */
     --color-closed: #dc3545;
@@ -201,7 +202,7 @@ button, .btn,
     --radius-full: 999px;
     
     /* Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.3s ease;
 }
 
 /* ==========================================================================
@@ -264,76 +265,7 @@ button, .btn,
 }
 
 /* ==========================================================================
-   MAIN CONTENT STRUCTURE
-   ========================================================================== */
-.container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
-    box-sizing: border-box;
-}
-
-.section {
-    padding: var(--spacing-xl) 0;
-    width: 100%;
-    max-width: 100vw;
-    overflow-x: hidden;
-}
-
-.section-alt {
-    background: var(--color-off-white);
-    border-top: 1px solid var(--color-gray-100);
-    border-bottom: 1px solid var(--color-gray-100);
-}
-
-.section-header {
-    text-align: center;
-    margin-bottom: var(--spacing-xl);
-    max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 var(--spacing-md);
-}
-
-.section-title {
-    font-family: var(--font-heading);
-    font-size: clamp(1.5rem, 3.5vw, 2rem);
-    font-weight: 600;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-sm);
-    position: relative;
-    display: inline-block;
-}
-
-.section-title::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 50px;
-    height: 2px;
-    background: var(--color-accent);
-    border-radius: 1px;
-}
-
-.section-subtitle {
-    font-size: clamp(0.95rem, 2.5vw, 1.1rem);
-    color: var(--color-gray-800);
-    line-height: 1.6;
-    margin-top: var(--spacing-lg);
-    font-weight: 400;
-    padding: 0 var(--spacing-sm);
-    text-align: center;
-    font-family: var(--font-body);
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* ==========================================================================
-   HERO CAROUSEL - NO GAP AT TOP
+   SIMPLIFIED CAROUSEL DESIGN - NO UNNECESSARY ANIMATIONS
    ========================================================================== */
 .carousel-inner {
     position: relative;
@@ -349,7 +281,7 @@ button, .btn,
     height: 100%;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.8s ease, visibility 0.8s;
+    transition: opacity 0.6s ease, visibility 0.6s;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -372,6 +304,7 @@ button, .btn,
     background-repeat: no-repeat;
     z-index: 1;
     max-width: 100vw;
+    /* NO ZOOM ANIMATION */
 }
 
 .carousel-slide-bg::after {
@@ -382,153 +315,269 @@ button, .btn,
     width: 100%;
     height: 100%;
     background: linear-gradient(
-        to bottom,
+        to right,
         rgba(0, 0, 0, 0.7) 0%,
-        rgba(0, 0, 0, 0.5) 50%,
-        rgba(0, 0, 0, 0.3) 100%
+        rgba(0, 0, 0, 0.4) 50%,
+        rgba(0, 0, 0, 0.2) 100%
     );
 }
 
+/* Carousel Content - FIXED TO NOT BE HIDDEN */
 .carousel-slide-content {
     position: relative;
     z-index: 3;
     color: var(--color-white);
-    max-width: 900px;
+    max-width: 1200px;
     padding: var(--spacing-xl);
     margin: 0 auto;
-    text-align: center;
+    text-align: left;
     width: 95%;
-}
-
-.carousel-slide-badge {
-    display: inline-block;
-    background: var(--color-accent);
-    color: var(--color-gray-900);
-    padding: 0.5rem 1.5rem;
-    border-radius: var(--radius-full);
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--spacing-md);
-    text-transform: uppercase;
-    font-family: var(--font-heading);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    height: 100%;
+    /* Ensure content is above controls */
+    margin-bottom: 120px; /* Space for controls */
 }
 
 .carousel-slide-title {
     font-family: var(--font-heading);
-    font-size: clamp(1.75rem, 5vw, 3rem);
+    font-size: clamp(2rem, 5vw, 4rem);
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.1;
     margin-bottom: var(--spacing-sm);
     color: var(--color-white);
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
     width: 100%;
+    max-width: 800px;
     word-wrap: break-word;
     overflow-wrap: break-word;
-    text-align: center;
-    padding: 0 10px;
 }
 
 .carousel-slide-subtitle {
-    font-size: clamp(1rem, 3vw, 1.4rem);
+    font-size: clamp(1.1rem, 3vw, 1.5rem);
     font-weight: 400;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
     line-height: 1.5;
     color: rgba(255, 255, 255, 0.95);
     font-family: var(--font-body);
     max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    text-align: center;
-    width: 100%;
-    padding: 0 10px;
-}
-
-.carousel-slide-cta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-lg);
-    justify-content: center;
-    width: 100%;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 /* ==========================================================================
-   CAROUSEL NAVIGATION - VERY FAINT
+   SLIDER CONTROLS - SIMPLIFIED
    ========================================================================== */
-.carousel-nav {
+.slider-controls {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(255, 255, 255, 0.04); /* VERY FAINT */
-    border: 1px solid rgba(255, 255, 255, 0.08); /* VERY FAINT */
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: var(--transition-smooth);
+    bottom: var(--spacing-xl);
+    left: 0;
+    right: 0;
+    z-index: 4; /* Below content */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: 0 var(--spacing-xl);
+}
+
+/* Progress Bar */
+.slider-controls__progress {
+    width: 100%;
+    max-width: 900px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 1.5px;
+    overflow: hidden;
+    position: relative;
+}
+
+.slider-controls__progress-active {
+    height: 100%;
+    background: var(--color-accent);
+    width: 0%;
+    transition: width 0.1s linear;
+    position: relative;
+    z-index: 2;
+}
+
+/* Controls Container */
+.slider-controls__container {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.25); /* VERY FAINT */
-    font-size: 0.9rem;
-    z-index: 10;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    opacity: 0.5; /* Very low visibility */
+    width: 100%;
+    max-width: 900px;
+    gap: var(--spacing-md);
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.carousel-nav:hover {
-    background: rgba(255, 255, 255, 0.08); /* Still very faint on hover */
-    color: rgba(255, 255, 255, 0.35);
-    border-color: rgba(255, 255, 255, 0.12);
-    opacity: 0.7;
-}
-
-.carousel-nav-prev {
-    left: 1.5rem;
-}
-
-.carousel-nav-next {
-    right: 1.5rem;
-}
-
-.carousel-controls {
-    position: absolute;
-    bottom: var(--spacing-lg);
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
+/* Button Group */
+.slider-controls__button-group {
     display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: nowrap;
 }
 
-.carousel-indicator {
+/* Arrow Buttons - Simplified */
+.slider-controls__arrows {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.slider-controls__arrow {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-white);
+    font-size: 1.1rem;
+    transition: var(--transition-smooth);
+    position: relative;
+}
+
+.slider-controls__arrow.left::after,
+.slider-controls__arrow.right::after {
+    content: '';
+    position: relative;
     width: 8px;
     height: 8px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15); /* Faint */
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    cursor: pointer;
-    transition: var(--transition-smooth);
-    padding: 0;
+    border-style: solid;
+    border-color: var(--color-white);
 }
 
-.carousel-indicator.active {
-    background: rgba(255, 255, 255, 0.4); /* Still faint when active */
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
+.slider-controls__arrow.left::after {
+    border-width: 2px 0 0 2px;
+    transform: rotate(-45deg) translate(1px, 1px);
+    margin-right: 2px;
 }
 
-.carousel-indicator:hover {
-    background: rgba(255, 255, 255, 0.25);
+.slider-controls__arrow.right::after {
+    border-width: 2px 2px 0 0;
+    transform: rotate(45deg) translate(-1px, 1px);
+    margin-left: 2px;
+}
+
+.slider-controls__arrow:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 /* ==========================================================================
-   APPLICATION STATUS BANNER - PROPERLY CENTERED ON ALL SCREENS
+   SIMPLIFIED BUTTON DESIGNS - NO UNNECESSARY ANIMATIONS
+   ========================================================================== */
+
+/* White Variant Button */
+.button.white-variant {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: transparent;
+    color: var(--color-white);
+    border: 2px solid var(--color-white);
+    padding: 0.9rem 2rem;
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    text-decoration: none;
+    min-height: 48px;
+    white-space: nowrap;
+}
+
+.button.white-variant:hover {
+    background: var(--color-white);
+    color: var(--color-primary-dark);
+    transform: translateY(-1px);
+}
+
+.button.white-variant .button__icon-wrapper {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.button.white-variant .button__icon-wrapper::after {
+    content: '›';
+    font-size: 1.4rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.button.white-variant:hover .button__icon-wrapper::after {
+    color: var(--color-primary-dark);
+}
+
+/* Gold Accent Button */
+.button.gold-accent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: var(--color-accent);
+    color: var(--color-gray-900);
+    border: 2px solid var(--color-accent);
+    padding: 0.9rem 2rem;
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    text-decoration: none;
+    min-height: 48px;
+    white-space: nowrap;
+}
+
+.button.gold-accent:hover {
+    background: var(--color-accent-dark);
+    border-color: var(--color-accent-dark);
+    transform: translateY(-1px);
+}
+
+.button.gold-accent .button__icon-wrapper {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.button.gold-accent .button__icon-wrapper::after {
+    content: '›';
+    font-size: 1.4rem;
+    font-weight: bold;
+    line-height: 1;
+    color: var(--color-gray-900);
+}
+
+.button.gold-accent:hover .button__icon-wrapper::after {
+    color: var(--color-gray-900);
+}
+
+/* ==========================================================================
+   APPLICATION STATUS BANNER
    ========================================================================== */
 .application-status-banner {
     background: linear-gradient(135deg, var(--color-closed-light), var(--color-white));
@@ -688,7 +737,7 @@ button, .btn,
 }
 
 /* ==========================================================================
-   ACCREDITATION SECTION - FIXED FOR NO OVERFLOW
+   ACCREDITATION SECTION
    ========================================================================== */
 .accreditation-section {
     background: var(--color-off-white);
@@ -734,7 +783,6 @@ button, .btn,
     font-family: var(--font-body);
 }
 
-/* FIXED ACCREDITATION BADGES - NO OVERFLOW */
 .accreditation-badges {
     display: flex;
     flex-direction: column;
@@ -785,7 +833,7 @@ button, .btn,
     display: flex;
     flex-direction: column;
     flex: 1;
-    min-width: 0; /* CRITICAL: Allows text to shrink */
+    min-width: 0;
     overflow: hidden;
 }
 
@@ -977,8 +1025,6 @@ button, .btn,
     font-size: 0.85rem;
     text-align: center;
     font-family: var(--font-body);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
 }
 
 .environment-content {
@@ -1009,7 +1055,7 @@ button, .btn,
 }
 
 /* ==========================================================================
-   CTA SECTION - FIXED FONT COLOR & NO SPACE AT BOTTOM
+   CTA SECTION
    ========================================================================== */
 .cta-section {
     background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
@@ -1029,15 +1075,14 @@ button, .btn,
     padding: 0 var(--spacing-md);
 }
 
-/* FIXED: CTA Title Color - High Contrast White */
 .cta-title {
     font-family: var(--font-heading);
     font-size: clamp(1.75rem, 4vw, 2.5rem);
     font-weight: 700;
     margin-bottom: var(--spacing-md);
     line-height: 1.2;
-    color: var(--color-white) !important; /* High contrast white */
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); /* Stronger shadow for better readability */
+    color: var(--color-white) !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .cta-description {
@@ -1045,7 +1090,7 @@ button, .btn,
     margin-bottom: var(--spacing-xl);
     line-height: 1.6;
     font-weight: 400;
-    color: rgba(255, 255, 255, 0.95); /* High contrast with slight transparency */
+    color: rgba(255, 255, 255, 0.95);
     font-family: var(--font-body);
     max-width: 600px;
     margin-left: auto;
@@ -1062,21 +1107,19 @@ button, .btn,
 
 .cta-section .btn-primary {
     background: var(--color-accent);
-    color: var(--color-gray-900);
+    color: var(--color-gray-900) !important;
     border-color: var(--color-accent);
 }
 
 .cta-section .btn-primary:hover {
     background: var(--color-accent-dark);
-    color: var(--color-gray-900);
+    color: var(--color-gray-900) !important;
 }
 
 .cta-section .btn-secondary {
     background: rgba(255, 255, 255, 0.15);
     color: var(--color-white);
     border-color: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
 }
 
 .cta-section .btn-secondary:hover {
@@ -1085,7 +1128,7 @@ button, .btn,
 }
 
 /* ==========================================================================
-   RESPONSIVE DESIGN FOR ALL SCREEN SIZES
+   RESPONSIVE DESIGN
    ========================================================================== */
 
 /* Tablet and larger (768px+) */
@@ -1105,6 +1148,11 @@ button, .btn,
     .hero-carousel {
         height: 90vh;
         min-height: 600px;
+    }
+    
+    /* Fixed: Text content has space above controls */
+    .carousel-slide-content {
+        margin-bottom: 140px;
     }
     
     .application-status-banner {
@@ -1129,7 +1177,6 @@ button, .btn,
         padding: var(--spacing-xl);
     }
     
-    /* FIXED: Accreditation badges for tablet */
     .accreditation-badges {
         flex-direction: row;
         justify-content: center;
@@ -1139,7 +1186,7 @@ button, .btn,
     
     .accreditation-badge {
         flex: 1;
-        min-width: 0; /* Allow shrinking */
+        min-width: 0;
         max-width: 400px;
     }
     
@@ -1162,31 +1209,44 @@ button, .btn,
     }
     
     .carousel-slide-title {
-        font-size: clamp(2rem, 5vw, 3.5rem);
+        font-size: clamp(2rem, 5vw, 4rem);
     }
     
     .carousel-slide-subtitle {
         font-size: clamp(1.1rem, 3vw, 1.5rem);
     }
     
-    /* Make carousel nav even fainter on larger screens */
-    .carousel-nav {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-        opacity: 0.4;
-    }
-    
-    .carousel-nav-prev {
-        left: 3rem;
-    }
-    
-    .carousel-nav-next {
-        right: 3rem;
-    }
-    
-    .carousel-controls {
+    .slider-controls {
+        padding: 0 var(--spacing-xl);
         bottom: var(--spacing-xl);
+        gap: var(--spacing-md);
+    }
+    
+    .slider-controls__progress {
+        max-width: 800px;
+        height: 4px;
+    }
+    
+    .slider-controls__container {
+        max-width: 800px;
+        padding: var(--spacing-md);
+        gap: var(--spacing-md);
+    }
+    
+    .slider-controls__button-group {
+        gap: 0.75rem;
+    }
+    
+    .button.white-variant,
+    .button.gold-accent {
+        padding: 0.85rem 1.75rem;
+        font-size: 0.9rem;
+        min-height: 46px;
+    }
+    
+    .slider-controls__arrow {
+        width: 42px;
+        height: 42px;
     }
 }
 
@@ -1194,6 +1254,7 @@ button, .btn,
 @media (min-width: 1024px) {
     .carousel-slide-content {
         padding: var(--spacing-xxl);
+        margin-bottom: 160px;
     }
     
     .programs-grid {
@@ -1208,7 +1269,6 @@ button, .btn,
         max-height: 850px;
     }
     
-    /* FIXED: Accreditation badges for desktop */
     .accreditation-badges {
         max-width: 1100px;
         gap: var(--spacing-xl);
@@ -1226,13 +1286,34 @@ button, .btn,
         font-size: 0.95rem;
     }
     
-    /* Very faint navigation on desktop */
-    .carousel-nav {
-        opacity: 0.3;
+    .slider-controls {
+        bottom: var(--spacing-xxl);
     }
     
-    .carousel-nav:hover {
-        opacity: 0.5;
+    .slider-controls__progress {
+        max-width: 900px;
+        height: 4px;
+    }
+    
+    .slider-controls__container {
+        max-width: 900px;
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+    
+    .slider-controls__button-group {
+        gap: 1rem;
+    }
+    
+    .button.white-variant,
+    .button.gold-accent {
+        padding: 1rem 2rem;
+        font-size: 0.95rem;
+        min-height: 50px;
+    }
+    
+    .slider-controls__arrow {
+        width: 44px;
+        height: 44px;
     }
 }
 
@@ -1256,50 +1337,72 @@ button, .btn,
     
     .carousel-slide-content {
         padding: var(--spacing-lg);
+        text-align: center;
+        align-items: center;
+        margin-bottom: 160px; /* More space for stacked controls */
     }
     
     .carousel-slide-title {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
         line-height: 1.2;
+        text-align: center;
     }
     
     .carousel-slide-subtitle {
         font-size: 1rem;
         line-height: 1.4;
+        text-align: center;
     }
     
-    .carousel-slide-cta {
+    /* Mobile controls - Stacked layout */
+    .slider-controls {
+        bottom: var(--spacing-lg);
+        padding: 0 var(--spacing-md);
+        gap: var(--spacing-md);
+    }
+    
+    .slider-controls__container {
         flex-direction: column;
-        align-items: center;
+        gap: var(--spacing-md);
+        align-items: stretch;
+        padding: var(--spacing-md);
     }
     
-    .carousel-slide-cta .btn {
+    .slider-controls__button-group {
+        order: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
         width: 100%;
-        max-width: 280px;
     }
     
-    .carousel-nav {
-        width: 32px;
-        height: 32px;
-        font-size: 0.8rem;
-        opacity: 0.4;
+    .slider-controls__arrows {
+        order: 1;
+        justify-content: center;
+        padding: 0.5rem;
+        margin-bottom: var(--spacing-sm);
     }
     
-    .carousel-nav-prev {
-        left: 1rem;
+    .slider-controls__progress {
+        order: 3;
+        margin-top: var(--spacing-sm);
+        max-width: 100%;
+        height: 3px;
     }
     
-    .carousel-nav-next {
-        right: 1rem;
+    .button.white-variant,
+    .button.gold-accent {
+        width: 100%;
+        justify-content: center;
+        padding: 0.85rem 1.5rem;
+        font-size: 0.9rem;
+        min-height: 46px;
     }
     
-    .carousel-controls {
-        bottom: var(--spacing-md);
-    }
-    
-    .carousel-indicator {
-        width: 6px;
-        height: 6px;
+    .slider-controls__arrow {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
     }
     
     .section {
@@ -1319,7 +1422,6 @@ button, .btn,
         width: calc(100% - 1.5rem);
     }
     
-    /* FIXED: Accreditation badges for mobile */
     .accreditation-badge {
         flex-direction: column;
         text-align: center;
@@ -1354,27 +1456,49 @@ button, .btn,
     }
     
     .carousel-slide-title {
-        font-size: 1.3rem;
+        font-size: 1.5rem;
     }
     
     .carousel-slide-subtitle {
         font-size: 0.95rem;
     }
     
-    .carousel-controls {
-        bottom: var(--spacing-md);
+    .carousel-slide-content {
+        margin-bottom: 180px; /* Even more space for very small screens */
     }
     
-    .carousel-indicator {
-        width: 6px;
-        height: 6px;
+    .slider-controls {
+        bottom: var(--spacing-md);
+        padding: 0 var(--spacing-sm);
+        gap: var(--spacing-sm);
+    }
+    
+    .slider-controls__container {
+        padding: var(--spacing-sm);
+        gap: var(--spacing-sm);
+    }
+    
+    .button.white-variant,
+    .button.gold-accent {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.85rem;
+        min-height: 42px;
+    }
+    
+    .slider-controls__arrow {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+    }
+    
+    .slider-controls__progress {
+        height: 2px;
     }
     
     .stat-item {
         padding: var(--spacing-md);
     }
     
-    /* FIXED: Accreditation badges for small mobile */
     .accreditation-badge {
         padding: var(--spacing-sm);
     }
@@ -1420,7 +1544,6 @@ button, .btn,
         line-height: 1.4;
     }
     
-    /* FIXED: CTA text for small mobile */
     .cta-title {
         font-size: 1.5rem;
         text-shadow: 0 1px 5px rgba(0, 0, 0, 0.6);
@@ -1446,7 +1569,10 @@ button, .btn,
         max-height: 900px;
     }
     
-    /* FIXED: Accreditation badges for large desktop */
+    .carousel-slide-content {
+        margin-bottom: 180px;
+    }
+    
     .accreditation-badges {
         max-width: 1200px;
     }
@@ -1461,6 +1587,71 @@ button, .btn,
     
     .badge-text span {
         font-size: 1rem;
+    }
+    
+    .slider-controls {
+        bottom: var(--spacing-xxl);
+    }
+    
+    .slider-controls__progress {
+        max-width: 1000px;
+        height: 4px;
+    }
+    
+    .slider-controls__container {
+        max-width: 1000px;
+    }
+    
+    .slider-controls__button-group {
+        gap: 1.25rem;
+    }
+    
+    .button.white-variant,
+    .button.gold-accent {
+        padding: 1.1rem 2.25rem;
+        font-size: 1rem;
+        min-height: 54px;
+    }
+    
+    .slider-controls__arrow {
+        width: 46px;
+        height: 46px;
+    }
+}
+
+/* Landscape Orientation */
+@media (max-height: 600px) and (orientation: landscape) {
+    .hero-carousel {
+        height: 100vh;
+        min-height: 400px;
+    }
+    
+    .carousel-slide-title {
+        font-size: clamp(1.5rem, 3vw, 2.5rem);
+    }
+    
+    .carousel-slide-subtitle {
+        font-size: clamp(0.9rem, 2vw, 1.2rem);
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .carousel-slide-content {
+        margin-bottom: 140px;
+    }
+    
+    .slider-controls {
+        bottom: var(--spacing-md);
+        gap: var(--spacing-sm);
+    }
+    
+    .slider-controls__container {
+        padding: var(--spacing-sm);
+    }
+    
+    .button.white-variant,
+    .button.gold-accent {
+        padding: 0.7rem 1.5rem;
+        min-height: 40px;
     }
 }
 
@@ -1485,22 +1676,11 @@ button, .btn,
     border-radius: var(--radius-sm);
 }
 
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-}
-
 /* Print styles */
 @media print {
     .hero-carousel,
     .carousel-nav,
-    .carousel-controls,
+    .slider-controls,
     .btn {
         display: none !important;
     }
@@ -1516,7 +1696,7 @@ button, .btn,
 <!-- Homepage Content -->
 <main id="main-content" class="homepage-content" role="main">
     
-    <!-- ========== HERO CAROUSEL - NO CONTAINER WRAPPER ========== -->
+    <!-- ========== SIMPLIFIED HERO CAROUSEL ========== -->
     <section class="hero-section" aria-label="Featured content carousel">
         <?php if (empty($carouselSlides)): ?>
             <!-- Fallback carousel -->
@@ -1528,14 +1708,14 @@ button, .btn,
                         <a href="<?php echo $baseUrl; ?>/programs" class="btn btn-primary">
                             <i class="fas fa-book-open" aria-hidden="true"></i> Explore Programs
                         </a>
-                        <a href="<?php echo $baseUrl; ?>/student-life" class="btn btn-secondary">
-                            <i class="fas fa-users" aria-hidden="true"></i> Discover Community
+                        <a href="<?php echo $baseUrl; ?>/admissions" class="btn btn-secondary">
+                            <i class="fas fa-file-alt" aria-hidden="true"></i> Apply Now
                         </a>
                     </div>
                 </div>
             </div>
         <?php else: ?>
-            <!-- Dynamic Carousel -->
+            <!-- Simplified Carousel -->
             <div id="heroCarousel" class="hero-carousel" role="region" aria-label="Featured slides" tabindex="0">
                 <div class="carousel-inner">
                     <?php foreach ($carouselSlides as $index => $slide): ?>
@@ -1550,61 +1730,68 @@ button, .btn,
                              aria-label="<?php echo e($slide['title']); ?>">
                         </div>
                         <div class="carousel-slide-content">
-                            <span class="carousel-slide-badge">Featured</span>
                             <h1 class="carousel-slide-title">
                                 <?php echo e($slide['title']); ?>
                             </h1>
                             <p class="carousel-slide-subtitle">
                                 <?php echo e($slide['subtitle']); ?>
                             </p>
-                            <div class="carousel-slide-cta">
-                                <?php if (!empty($slide['button_text']) && !empty($slide['button_link'])): ?>
-                                <a href="<?php echo e($slide['button_link']); ?>" 
-                                   class="btn btn-primary"
-                                   aria-label="<?php echo e($slide['button_text']); ?> - <?php echo e($slide['title']); ?>">
-                                    <i class="fas fa-arrow-right" aria-hidden="true"></i> <?php echo e($slide['button_text']); ?>
-                                </a>
-                                <?php endif; ?>
-                                <a href="<?php echo $baseUrl; ?>/programs" class="btn btn-secondary">
-                                    <i class="fas fa-book" aria-hidden="true"></i> All Programs
-                                </a>
-                            </div>
+                            
+                            <!-- CTA Button from slide -->
+                            <?php if (!empty($slide['button_text']) && !empty($slide['button_link'])): ?>
+                            <a href="<?php echo e($slide['button_link']); ?>" 
+                               class="button gold-accent"
+                               aria-label="<?php echo e($slide['button_text']); ?> - <?php echo e($slide['title']); ?>">
+                                <div><?php echo e($slide['button_text']); ?></div>
+                                <div class="button__icon-wrapper"></div>
+                            </a>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <?php endforeach; ?>
                 </div>
                 
-                <!-- VERY FAINT Navigation Arrows -->
-                <button class="carousel-nav carousel-nav-prev" 
-                        aria-label="Previous slide"
-                        onclick="carouselController.prev()">
-                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
-                    <span class="sr-only">Previous Slide</span>
-                </button>
-                <button class="carousel-nav carousel-nav-next" 
-                        aria-label="Next slide"
-                        onclick="carouselController.next()">
-                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                    <span class="sr-only">Next Slide</span>
-                </button>
-                
-                <!-- Faint Indicators -->
-                <div class="carousel-controls">
-                    <?php foreach ($carouselSlides as $index => $slide): ?>
-                    <button class="carousel-indicator <?php echo $index === 0 ? 'active' : ''; ?>"
-                            data-slide="<?php echo $index; ?>"
-                            aria-label="Go to slide <?php echo $index + 1; ?>"
-                            onclick="carouselController.goToSlide(<?php echo $index; ?>)"
-                            aria-current="<?php echo $index === 0 ? 'true' : 'false'; ?>">
-                        <span class="sr-only">Slide <?php echo $index + 1; ?></span>
-                    </button>
-                    <?php endforeach; ?>
+                <!-- Simplified Controls -->
+                <div class="slider-controls">
+                    <!-- Progress Bar -->
+                    <div class="slider-controls__progress">
+                        <div class="slider-controls__progress-active" id="carouselProgress"></div>
+                    </div>
+                    
+                    <!-- Controls Container -->
+                    <div class="slider-controls__container">
+                        <!-- Arrows -->
+                        <div class="slider-controls__arrows">
+                            <div class="slider-controls__arrow left" 
+                                 onclick="carouselController.prev()"
+                                 aria-label="Previous slide"
+                                 role="button"
+                                 tabindex="0"></div>
+                            <div class="slider-controls__arrow right" 
+                                 onclick="carouselController.next()"
+                                 aria-label="Next slide"
+                                 role="button"
+                                 tabindex="0"></div>
+                        </div>
+                        
+                        <!-- Button Group -->
+                        <div class="slider-controls__button-group">
+                            <a href="<?php echo $baseUrl; ?>/programs" class="button white-variant">
+                                <div>Explore Programs</div>
+                                <div class="button__icon-wrapper"></div>
+                            </a>
+                            <a href="<?php echo $baseUrl; ?>/admissions" class="button gold-accent">
+                                <div>Apply Now</div>
+                                <div class="button__icon-wrapper"></div>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         <?php endif; ?>
     </section>
 
-    <!-- ========== APPLICATION STATUS BANNER - HAS CONTAINER ========== -->
+    <!-- ========== APPLICATION STATUS BANNER ========== -->
     <div class="container">
         <div class="application-status-banner">
             <h3><i class="fas fa-times-circle"></i> 2025/2026 Admissions Status</h3>
@@ -1613,7 +1800,7 @@ button, .btn,
         </div>
     </div>
 
-    <!-- ========== STATISTICS SECTION - HAS CONTAINER ========== -->
+    <!-- ========== STATISTICS SECTION ========== -->
     <section class="stats-section" aria-label="College statistics">
         <div class="container">
             <div class="section-header">
@@ -1653,7 +1840,7 @@ button, .btn,
         </div>
     </section>
 
-    <!-- ========== ACCREDITATION SECTION - FIXED ========== -->
+    <!-- ========== ACCREDITATION SECTION ========== -->
     <section class="accreditation-section" aria-label="Accreditation badges">
         <div class="container">
             <div class="section-header">
@@ -1815,7 +2002,7 @@ button, .btn,
         </div>
     </section>
 
-    <!-- ========== FINAL CALL TO ACTION - FIXED ========== -->
+    <!-- ========== FINAL CALL TO ACTION ========== -->
     <section class="cta-section" aria-label="Call to action">
         <div class="container">
             <div class="cta-content">
@@ -1842,7 +2029,7 @@ button, .btn,
     </section>
 </main>
 
-<!-- ========== CAROUSEL JAVASCRIPT ========== -->
+<!-- ========== SIMPLIFIED CAROUSEL JAVASCRIPT ========== -->
 <script>
 (function() {
     'use strict';
@@ -1851,8 +2038,12 @@ button, .btn,
         currentSlide: 0,
         totalSlides: 0,
         autoPlayInterval: null,
-        autoPlayDelay: 6000,
+        autoPlayDelay: 5000,
+        progressInterval: null,
+        progressDelay: 50,
         isTransitioning: false,
+        progressBar: null,
+        progressStartTime: null,
         
         init() {
             const carousel = document.getElementById('heroCarousel');
@@ -1863,23 +2054,23 @@ button, .btn,
             
             if (this.totalSlides === 0) return;
             
+            this.progressBar = document.getElementById('carouselProgress');
+            
             // Initialize first slide
             slides[0].classList.add('active');
             slides[0].setAttribute('aria-hidden', 'false');
             
-            // Initialize indicators
-            const indicators = carousel.querySelectorAll('.carousel-indicator');
-            if (indicators.length > 0) {
-                indicators[0].classList.add('active');
-                indicators[0].setAttribute('aria-current', 'true');
-            }
-            
-            // Start auto-play
+            // Start auto-play with progress
             this.startAutoPlay();
             
             // Pause on interaction
-            carousel.addEventListener('mouseenter', () => this.stopAutoPlay());
-            carousel.addEventListener('mouseleave', () => this.startAutoPlay());
+            carousel.addEventListener('mouseenter', () => {
+                this.stopAutoPlay();
+                this.stopProgress();
+            });
+            carousel.addEventListener('mouseleave', () => {
+                this.startAutoPlay();
+            });
             
             // Touch support
             this.addTouchSupport(carousel);
@@ -1894,6 +2085,9 @@ button, .btn,
                     this.next();
                 }
             });
+            
+            // Initialize progress
+            this.resetProgress();
         },
         
         goToSlide(index) {
@@ -1902,27 +2096,19 @@ button, .btn,
             this.isTransitioning = true;
             
             const slides = document.querySelectorAll('.carousel-slide');
-            const indicators = document.querySelectorAll('.carousel-indicator');
             
             // Hide current slide
             slides[this.currentSlide].classList.remove('active');
             slides[this.currentSlide].setAttribute('aria-hidden', 'true');
             
-            if (indicators[this.currentSlide]) {
-                indicators[this.currentSlide].classList.remove('active');
-                indicators[this.currentSlide].setAttribute('aria-current', 'false');
-            }
-            
             // Show new slide
             slides[index].classList.add('active');
             slides[index].setAttribute('aria-hidden', 'false');
             
-            if (indicators[index]) {
-                indicators[index].classList.add('active');
-                indicators[index].setAttribute('aria-current', 'true');
-            }
-            
             this.currentSlide = index;
+            
+            // Reset progress
+            this.resetProgress();
             
             setTimeout(() => {
                 this.isTransitioning = false;
@@ -1949,12 +2135,54 @@ button, .btn,
                     this.next();
                 }
             }, this.autoPlayDelay);
+            
+            this.startProgress();
         },
         
         stopAutoPlay() {
             if (this.autoPlayInterval) {
                 clearInterval(this.autoPlayInterval);
                 this.autoPlayInterval = null;
+            }
+            this.stopProgress();
+        },
+        
+        resetProgress() {
+            if (this.progressBar) {
+                this.progressBar.style.width = '0%';
+            }
+            this.progressStartTime = Date.now();
+            this.stopProgress();
+            this.startProgress();
+        },
+        
+        startProgress() {
+            if (this.progressInterval) {
+                clearInterval(this.progressInterval);
+            }
+            
+            if (!this.progressBar || !this.progressStartTime) {
+                this.progressStartTime = Date.now();
+            }
+            
+            this.progressInterval = setInterval(() => {
+                if (this.isTransitioning || !this.progressBar) return;
+                
+                const elapsed = Date.now() - this.progressStartTime;
+                const progress = Math.min((elapsed / this.autoPlayDelay) * 100, 100);
+                
+                this.progressBar.style.width = progress + '%';
+                
+                if (progress >= 100) {
+                    this.stopProgress();
+                }
+            }, this.progressDelay);
+        },
+        
+        stopProgress() {
+            if (this.progressInterval) {
+                clearInterval(this.progressInterval);
+                this.progressInterval = null;
             }
         },
         
@@ -1980,7 +2208,9 @@ button, .btn,
                     this.prev();
                 }
                 
-                setTimeout(() => this.startAutoPlay(), 3000);
+                setTimeout(() => {
+                    this.startAutoPlay();
+                }, 3000);
             }, { passive: true });
         }
     };
@@ -1993,6 +2223,15 @@ button, .btn,
     } else {
         carouselController.init();
     }
+    
+    // Handle visibility change
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            carouselController.stopAutoPlay();
+        } else {
+            carouselController.startAutoPlay();
+        }
+    });
 })();
 </script>
 

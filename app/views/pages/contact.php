@@ -161,9 +161,6 @@ main.contact-page {
     --radius-md: 10px;
     --radius-lg: 14px;
     --radius-full: 999px;
-    
-    /* Transitions - Simple and fast */
-    --transition-fast: all 0.2s ease;
 }
 
 * { 
@@ -325,13 +322,11 @@ body {
     min-height: 52px;
     cursor: pointer;
     box-shadow: var(--shadow-soft);
-    transition: var(--transition-fast);
 }
 
 .btn-primary:hover {
     background: linear-gradient(135deg, var(--color-accent-dark), var(--color-accent));
     box-shadow: var(--shadow-elevated);
-    transform: translateY(-2px);
 }
 
 .btn-secondary {
@@ -352,13 +347,11 @@ body {
     min-height: 52px;
     cursor: pointer;
     box-shadow: var(--shadow-soft);
-    transition: var(--transition-fast);
 }
 
 .btn-secondary:hover {
     background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
     box-shadow: var(--shadow-elevated);
-    transform: translateY(-2px);
 }
 
 /* Professional Call Now button - Simplified */
@@ -381,13 +374,11 @@ body {
     cursor: pointer;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    transition: var(--transition-fast);
 }
 
 .btn-call:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.6);
-    transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
@@ -461,7 +452,6 @@ body {
     text-align: center;
     height: 100%;
     position: relative;
-    transition: var(--transition-fast);
 }
 
 .card::before {
@@ -478,7 +468,6 @@ body {
 .card:hover { 
     box-shadow: var(--shadow-elevated); 
     border-color: var(--color-primary-light);
-    transform: translateY(-4px);
 }
 
 .card-body { 
@@ -504,11 +493,9 @@ body {
     height: 70px;
     background: var(--color-primary-very-light);
     border-radius: 50%;
-    transition: var(--transition-fast);
 }
 
 .card:hover .contact-icon {
-    transform: scale(1.05);
     background: var(--color-accent-very-light);
     color: var(--color-accent-dark);
 }
@@ -582,7 +569,6 @@ body {
     box-shadow: var(--shadow-subtle);
     overflow: hidden;
     border: 1px solid var(--color-gray-100);
-    transition: var(--transition-fast);
 }
 
 .faq-item:hover {
@@ -602,19 +588,12 @@ body {
     font-family: var(--font-heading);
     font-size: 1rem;
     position: relative;
-    transition: var(--transition-fast);
-}
-
-.faq-question:hover { 
-    background: var(--color-primary-very-light); 
-    padding-left: calc(var(--spacing-lg) + 8px);
 }
 
 .faq-answer {
     padding: 0 var(--spacing-lg);
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease;
 }
 
 .faq-answer.open {
@@ -626,11 +605,9 @@ body {
     font-size: 1.25rem; 
     color: var(--color-primary);
     font-weight: 300;
-    transition: transform 0.3s ease;
 }
 
 .faq-toggle.open { 
-    transform: rotate(45deg); 
     color: var(--color-accent);
 }
 
@@ -694,7 +671,6 @@ body {
     font-family: var(--font-body);
     font-size: 1rem;
     background: var(--color-white);
-    transition: var(--transition-fast);
 }
 
 .form-input:focus, .form-textarea:focus, .form-select:focus {
@@ -931,27 +907,16 @@ body {
     }
 }
 
-/* Loading state to prevent flashing - Simplified */
-.contact-hero.loading {
-    background: #2D3748 !important;
-}
-
-.contact-hero.loaded {
-    background: #2D3748 url('<?php echo $heroImagePath; ?>') no-repeat center center !important;
-    background-size: cover !important;
-}
-
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        transition: none !important;
+/* Print styles */
+@media print {
+    .contact-hero,
+    .btn-call,
+    .hero-cta {
+        display: none !important;
     }
     
-    .card:hover,
-    .btn-primary:hover,
-    .btn-secondary:hover,
-    .btn-call:hover {
-        transform: none !important;
+    .section {
+        page-break-inside: avoid;
     }
 }
 </style>
@@ -960,7 +925,7 @@ body {
 
 <main class="contact-page">
     <!-- Hero Section - With Transparent Background Wrapper -->
-    <section class="contact-hero loading" id="contactHero">
+    <section class="contact-hero" id="contactHero">
         <div class="container">
             <div class="hero-text-overlay">
                 <div class="hero-text-wrapper">
@@ -1170,21 +1135,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const heroImagePath = '<?php echo $heroImagePath; ?>';
     
     if (heroSection) {
-        // Set initial dark background
-        heroSection.style.background = '#2D3748';
-        
         const img = new Image();
         img.src = heroImagePath;
         
         img.onload = function() {
-            heroSection.classList.remove('loading');
-            heroSection.classList.add('loaded');
             heroSection.style.background = '#2D3748 url("' + heroImagePath + '") no-repeat center center';
             heroSection.style.backgroundSize = 'cover';
         };
         
         img.onerror = function() {
-            heroSection.classList.remove('loading');
             heroSection.style.background = '#2D3748';
         };
     }
@@ -1221,23 +1180,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    // Smooth scrolling for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            const targetId = this.getAttribute('href');
-            if (targetId === '#') return;
-            
-            const targetElement = document.querySelector(targetId);
-            if (targetElement) {
-                e.preventDefault();
-                window.scrollTo({
-                    top: targetElement.offsetTop - 80,
-                    behavior: 'smooth'
-                });
-            }
-        });
-    });
 });
 </script>
 

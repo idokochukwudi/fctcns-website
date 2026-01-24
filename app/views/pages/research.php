@@ -3,7 +3,7 @@
  * Research Publications Page - Professional Redesign (Mature Light Purple Theme)
  * Mobile-Optimized Version - FULL WIDTH
  * Complete Redesign with Professional Sections
- * Updated: Fixed image path, added transparent background, reduced font size
+ * Updated: Fixed image path, added transparent background, reduced font size, removed animations
  * 
  * @package FCTCNS
  * @version 4.5
@@ -186,9 +186,6 @@ button, .btn,
     --radius-md: 10px;
     --radius-lg: 14px;
     --radius-full: 999px;
-    
-    /* Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ==========================================================================
@@ -368,7 +365,7 @@ button, .btn,
 }
 
 /* ==========================================================================
-   BUTTONS
+   BUTTONS - NO ANIMATIONS
    ========================================================================== */
 .btn {
     display: inline-flex;
@@ -380,7 +377,6 @@ button, .btn,
     font-weight: 600;
     text-decoration: none;
     border-radius: var(--radius-md);
-    transition: var(--transition-smooth);
     border: 2px solid transparent;
     cursor: pointer;
     min-height: 44px;
@@ -399,7 +395,6 @@ button, .btn,
 .btn-primary:focus {
     background: linear-gradient(135deg, var(--color-accent-dark), var(--color-accent));
     color: var(--color-gray-900);
-    transform: translateY(-2px);
     box-shadow: var(--shadow-soft);
 }
 
@@ -413,7 +408,6 @@ button, .btn,
 .btn-secondary:focus {
     background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
     color: var(--color-white);
-    transform: translateY(-2px);
     box-shadow: var(--shadow-soft);
 }
 
@@ -429,7 +423,6 @@ button, .btn,
 .btn-outline-light:focus {
     background: rgba(255, 255, 255, 0.15);
     color: var(--color-white);
-    transform: translateY(-2px);
     box-shadow: var(--shadow-soft);
     border-color: rgba(255, 255, 255, 0.6);
 }
@@ -470,7 +463,6 @@ button, .btn,
     border: 1px solid var(--color-gray-200);
     border-radius: var(--radius-md);
     overflow: hidden;
-    transition: var(--transition-smooth);
 }
 
 .search-input-group:focus-within {
@@ -520,7 +512,6 @@ button, .btn,
     color: var(--color-gray-900);
     background: var(--color-white);
     cursor: pointer;
-    transition: var(--transition-smooth);
     width: 100%;
 }
 
@@ -562,18 +553,11 @@ button, .btn,
     background: var(--color-white);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-subtle);
-    transition: var(--transition-smooth);
     border: 1px solid var(--color-gray-100);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-}
-
-.research-stat-item:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-soft);
-    border-color: var(--color-primary-light);
 }
 
 .research-stat-icon {
@@ -628,17 +612,10 @@ button, .btn,
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: var(--shadow-soft);
-    transition: var(--transition-smooth);
     border: 1px solid var(--color-gray-100);
     height: 100%;
     display: flex;
     flex-direction: column;
-}
-
-.featured-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-elevated);
-    border-color: var(--color-accent);
 }
 
 .featured-header {
@@ -693,7 +670,6 @@ button, .btn,
 .featured-title a {
     color: inherit;
     text-decoration: none;
-    transition: var(--transition-smooth);
 }
 
 .featured-title a:hover {
@@ -806,19 +782,11 @@ button, .btn,
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: var(--shadow-subtle);
-    transition: var(--transition-smooth);
     border: 1px solid var(--color-gray-100);
     height: 100%;
     display: flex;
     flex-direction: column;
     text-decoration: none;
-    color: inherit;
-}
-
-.category-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-soft);
-    border-color: var(--color-primary-light);
     color: inherit;
 }
 
@@ -879,13 +847,6 @@ button, .btn,
     font-size: 0.9rem;
     font-weight: 600;
     border: 1px solid var(--color-gray-100);
-    transition: var(--transition-smooth);
-}
-
-.category-card:hover .category-count {
-    background: var(--color-primary);
-    color: var(--color-white);
-    border-color: var(--color-primary);
 }
 
 /* ==========================================================================
@@ -962,13 +923,6 @@ button, .btn,
     margin-bottom: var(--spacing-md);
     padding: var(--spacing-lg);
     border: 1px solid var(--color-gray-100);
-    transition: var(--transition-smooth);
-}
-
-.publication-item:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-soft);
-    border-color: var(--color-primary-light);
 }
 
 .publication-main {
@@ -1025,7 +979,6 @@ button, .btn,
 .publication-title a {
     color: inherit;
     text-decoration: none;
-    transition: var(--transition-smooth);
 }
 
 .publication-title a:hover {
@@ -1178,7 +1131,6 @@ button, .btn,
     font-weight: 500;
     text-decoration: none;
     border-radius: var(--radius-md);
-    transition: var(--transition-smooth);
     font-family: var(--font-heading);
 }
 
@@ -1186,7 +1138,6 @@ button, .btn,
     background: var(--color-primary-very-light);
     color: var(--color-primary);
     border-color: var(--color-primary-light);
-    transform: translateY(-1px);
 }
 
 .page-item.active .page-link {
@@ -1200,7 +1151,6 @@ button, .btn,
     color: var(--color-gray-400);
     border-color: var(--color-gray-200);
     cursor: not-allowed;
-    transform: none;
 }
 
 /* ==========================================================================
@@ -1471,17 +1421,6 @@ button, .btn,
     border-radius: var(--radius-sm);
 }
 
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-}
-
 /* Print styles */
 @media print {
     .research-hero,
@@ -1500,15 +1439,6 @@ button, .btn,
     }
 }
 
-/* Loading state to prevent flashing */
-.research-hero.loading {
-    background: #2D3748 !important;
-}
-
-.research-hero.loaded {
-    background: #2D3748 url('<?php echo $heroImagePath; ?>') no-repeat center center !important;
-    background-size: cover !important;
-}
 </style>
 </head>
 <body>
@@ -1517,7 +1447,7 @@ button, .btn,
 <main id="main-content" class="research-content" role="main">
     
     <!-- ========== HERO SECTION WITH IMAGE ========== -->
-    <section class="research-hero loading" id="researchHero" aria-label="Research publications hero">
+    <section class="research-hero" id="researchHero" aria-label="Research publications hero">
         <div class="hero-container">
             <div class="hero-content">
                 <div class="hero-text-wrapper">
@@ -1882,22 +1812,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load hero background image with fallback
     if (heroSection) {
-        // Set initial dark background
-        heroSection.style.background = '#2D3748';
-        
         const heroImage = new Image();
         
         heroImage.onload = function() {
             // Apply image to the hero section
-            heroSection.classList.remove('loading');
-            heroSection.classList.add('loaded');
             heroSection.style.background = '#2D3748 url("' + heroImagePath + '") no-repeat center center';
             heroSection.style.backgroundSize = 'cover';
         };
         
         heroImage.onerror = function() {
             // Keep the existing gradient background if image fails
-            heroSection.classList.remove('loading');
             heroSection.style.background = '#2D3748';
         };
         
@@ -1927,23 +1851,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el.style.color = 'var(--color-white)';
             el.style.borderColor = color;
         }
-    });
-    
-    // Add smooth scrolling for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            const targetId = this.getAttribute('href');
-            if (targetId === '#') return;
-            
-            const targetElement = document.querySelector(targetId);
-            if (targetElement) {
-                e.preventDefault();
-                window.scrollTo({
-                    top: targetElement.offsetTop - 80,
-                    behavior: 'smooth'
-                });
-            }
-        });
     });
     
     // Search form enhancement
