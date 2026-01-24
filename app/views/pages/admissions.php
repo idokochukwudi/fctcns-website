@@ -574,18 +574,6 @@ body {
     font-size: 1.5rem;
 }
 
-.process-step-list li a {
-    color: var(--color-primary);
-    text-decoration: none;
-    font-weight: 600;
-    transition: var(--transition-smooth);
-}
-
-.process-step-list li a:hover {
-    color: var(--color-primary-dark);
-    text-decoration: underline;
-}
-
 /* Process Flowchart */
 .process-flowchart {
     background: var(--color-white);
@@ -754,6 +742,33 @@ body {
     opacity: 0.8;
 }
 
+.btn-portal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: var(--color-primary-light);
+    color: var(--color-white);
+    padding: 0.8rem 1.8rem;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition-smooth);
+    border: 2px solid var(--color-primary-light);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    letter-spacing: 0.2px;
+    margin-top: 0.5rem;
+}
+
+.btn-portal:hover { 
+    background: var(--color-primary-dark); 
+    color: var(--color-white);
+    transform: translateY(-2px); 
+    box-shadow: var(--shadow-soft); 
+    border-color: var(--color-primary-dark);
+}
+
 /* ==========================================================================
    CTA SECTION
    ========================================================================== */
@@ -776,6 +791,10 @@ body {
 .text-accent { color: var(--color-accent); }
 .font-bold { font-weight: 600; }
 .text-muted { color: var(--color-gray-600); }
+.portal-button-container {
+    display: inline-block;
+    margin-left: 0.5rem;
+}
 
 /* ==========================================================================
    RESPONSIVE DESIGN
@@ -1180,7 +1199,13 @@ body {
                             <span class="process-step-number">01</span>
                             <h3 class="process-step-title">Account Creation & Registration</h3>
                             <ul class="process-step-list">
-                                <li>Visit the official portal: <a href="<?php echo $applicationPortal; ?>" target="_blank"><?php echo $applicationPortal; ?></a></li>
+                                <li>Visit the official portal: 
+                                    <div class="portal-button-container">
+                                        <a href="<?php echo $applicationPortal; ?>" target="_blank" class="btn-portal" title="Go to Application Portal">
+                                            <i class="fas fa-external-link-alt"></i> Visit Portal
+                                        </a>
+                                    </div>
+                                </li>
                                 <li>Read and agree to the terms and conditions</li>
                                 <li>Enter your 2025 JAMB registration number for validation</li>
                                 <li>Provide valid email address, phone number, and create a secure password</li>
@@ -1275,7 +1300,13 @@ body {
                     <h3>Email & Online</h3>
                     <p><strong>Email:</strong> support.consap@fcthhss.abj.gov.ng</p>
                     <p><strong>Live Chat:</strong> Available on the portal</p>
-                    <p><strong>Telegram:</strong> <a href="https://t.me/+SWH5opeTcTXs34Ko" target="_blank" class="text-primary">Official Channel</a></p>
+                    <p><strong>Telegram:</strong> 
+                        <div class="portal-button-container">
+                            <a href="https://t.me/+SWH5opeTcTXs34Ko" target="_blank" class="btn-portal" title="Join Telegram Channel">
+                                <i class="fab fa-telegram-plane"></i> Join Channel
+                            </a>
+                        </div>
+                    </p>
                 </div>
                 
                 <div class="contact-card">
