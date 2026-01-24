@@ -1372,7 +1372,7 @@ if (class_exists('Session')) {
         
         <!-- Quick Actions in Mobile Menu -->
         <div class="mobile-quick-actions">
-            <a href="<?php echo $baseUrl; ?>/admissions/apply" class="mobile-action-btn">
+            <a href="<?php echo $baseUrl; ?>/admissions" class="mobile-action-btn">
                 <i class="fas fa-file-import"></i>
                 Apply Now
             </a>
