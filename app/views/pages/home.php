@@ -416,14 +416,6 @@ button, .btn,
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Button Group */
-.slider-controls__button-group {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: nowrap;
-}
-
 /* Arrow Buttons - Simplified */
 .slider-controls__arrows {
     display: flex;
@@ -1128,6 +1120,85 @@ button, .btn,
 }
 
 /* ==========================================================================
+   ENHANCEMENT: CENTRALIZE ALL CONTENT EXCEPT CAROUSEL
+   ========================================================================== */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+    box-sizing: border-box;
+}
+
+/* Center all section headers */
+.section-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 var(--spacing-md);
+}
+
+.section-title {
+    font-family: var(--font-heading);
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 700;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-primary);
+    text-align: center;
+    line-height: 1.2;
+}
+
+.section-subtitle {
+    font-size: 1.1rem;
+    color: var(--color-gray-600);
+    line-height: 1.5;
+    font-weight: 400;
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    font-family: var(--font-body);
+}
+
+/* Center all text content */
+.accreditation-text,
+.program-content,
+.environment-content,
+.cta-content,
+.application-status-banner,
+.stat-item {
+    text-align: center;
+}
+
+/* Center button groups */
+.cta-buttons,
+.program-content .btn,
+.environment-content .btn {
+    justify-content: center;
+}
+
+/* Center program features list */
+.program-features {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Ensure badges are centered on mobile */
+@media (max-width: 767px) {
+    .accreditation-badge {
+        text-align: center;
+        align-items: center;
+        flex-direction: column;
+    }
+    
+    .badge-text {
+        align-items: center;
+        text-align: center;
+    }
+}
+
+/* ==========================================================================
    RESPONSIVE DESIGN
    ========================================================================== */
 
@@ -1233,7 +1304,7 @@ button, .btn,
         gap: var(--spacing-md);
     }
     
-    .slider-controls__button-group {
+    .slider-controls__arrows {
         gap: 0.75rem;
     }
     
@@ -1247,6 +1318,15 @@ button, .btn,
     .slider-controls__arrow {
         width: 42px;
         height: 42px;
+    }
+    
+    /* Center content for tablet */
+    .section-header {
+        max-width: 800px;
+    }
+    
+    .program-features {
+        max-width: 280px;
     }
 }
 
@@ -1300,7 +1380,7 @@ button, .btn,
         padding: var(--spacing-md) var(--spacing-lg);
     }
     
-    .slider-controls__button-group {
+    .slider-controls__arrows {
         gap: 1rem;
     }
     
@@ -1314,6 +1394,19 @@ button, .btn,
     .slider-controls__arrow {
         width: 44px;
         height: 44px;
+    }
+    
+    /* Center content for desktop */
+    .container {
+        max-width: 1200px;
+    }
+    
+    .section-header {
+        max-width: 900px;
+    }
+    
+    .program-features {
+        max-width: 300px;
     }
 }
 
@@ -1339,7 +1432,7 @@ button, .btn,
         padding: var(--spacing-lg);
         text-align: center;
         align-items: center;
-        margin-bottom: 160px; /* More space for stacked controls */
+        margin-bottom: 140px; /* Adjusted for simpler controls */
     }
     
     .carousel-slide-title {
@@ -1354,55 +1447,39 @@ button, .btn,
         text-align: center;
     }
     
-    /* Mobile controls - Stacked layout */
+    /* Mobile controls - Simplified layout */
     .slider-controls {
-        bottom: var(--spacing-lg);
+        bottom: var(--spacing-md);
         padding: 0 var(--spacing-md);
-        gap: var(--spacing-md);
+        gap: var(--spacing-sm);
     }
     
     .slider-controls__container {
-        flex-direction: column;
+        flex-direction: row;
+        justify-content: center;
         gap: var(--spacing-md);
-        align-items: stretch;
-        padding: var(--spacing-md);
+        padding: var(--spacing-sm);
     }
     
-    .slider-controls__button-group {
+    .slider-controls__progress {
+        margin-top: var(--spacing-xs);
+        max-width: 100%;
+        height: 2px;
         order: 2;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        width: 100%;
     }
     
     .slider-controls__arrows {
         order: 1;
-        justify-content: center;
-        padding: 0.5rem;
-        margin-bottom: var(--spacing-sm);
     }
     
-    .slider-controls__progress {
-        order: 3;
-        margin-top: var(--spacing-sm);
-        max-width: 100%;
-        height: 3px;
-    }
-    
-    .button.white-variant,
-    .button.gold-accent {
-        width: 100%;
-        justify-content: center;
-        padding: 0.85rem 1.5rem;
-        font-size: 0.9rem;
-        min-height: 46px;
+    /* Remove button group completely */
+    .slider-controls__button-group {
+        display: none !important;
     }
     
     .slider-controls__arrow {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
+        width: 36px;
+        height: 36px;
     }
     
     .section {
@@ -1437,6 +1514,27 @@ button, .btn,
         align-items: center;
         text-align: center;
     }
+    
+    /* Center content for mobile */
+    .container {
+        padding: 0 var(--spacing-md);
+    }
+    
+    .section-header {
+        padding: 0 var(--spacing-sm);
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+    }
+    
+    .section-subtitle {
+        font-size: 1rem;
+    }
+    
+    .program-features {
+        max-width: 250px;
+    }
 }
 
 /* Small mobile (480px and below) */
@@ -1464,30 +1562,23 @@ button, .btn,
     }
     
     .carousel-slide-content {
-        margin-bottom: 180px; /* Even more space for very small screens */
+        margin-bottom: 120px; /* Adjusted for simpler controls */
     }
     
     .slider-controls {
-        bottom: var(--spacing-md);
+        bottom: var(--spacing-sm);
         padding: 0 var(--spacing-sm);
-        gap: var(--spacing-sm);
+        gap: var(--spacing-xs);
     }
     
     .slider-controls__container {
-        padding: var(--spacing-sm);
+        padding: var(--spacing-xs);
         gap: var(--spacing-sm);
     }
     
-    .button.white-variant,
-    .button.gold-accent {
-        padding: 0.75rem 1.25rem;
-        font-size: 0.85rem;
-        min-height: 42px;
-    }
-    
     .slider-controls__arrow {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         font-size: 0.9rem;
     }
     
@@ -1553,6 +1644,23 @@ button, .btn,
         font-size: 0.95rem;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
     }
+    
+    /* Center content for small mobile */
+    .container {
+        padding: 0 var(--spacing-sm);
+    }
+    
+    .section-title {
+        font-size: 1.3rem;
+    }
+    
+    .section-subtitle {
+        font-size: 0.9rem;
+    }
+    
+    .program-features {
+        max-width: 220px;
+    }
 }
 
 /* Large desktop (1400px+) */
@@ -1602,7 +1710,7 @@ button, .btn,
         max-width: 1000px;
     }
     
-    .slider-controls__button-group {
+    .slider-controls__arrows {
         gap: 1.25rem;
     }
     
@@ -1616,6 +1724,15 @@ button, .btn,
     .slider-controls__arrow {
         width: 46px;
         height: 46px;
+    }
+    
+    /* Center content for large desktop */
+    .section-header {
+        max-width: 1000px;
+    }
+    
+    .program-features {
+        max-width: 320px;
     }
 }
 
@@ -1646,12 +1763,6 @@ button, .btn,
     
     .slider-controls__container {
         padding: var(--spacing-sm);
-    }
-    
-    .button.white-variant,
-    .button.gold-accent {
-        padding: 0.7rem 1.5rem;
-        min-height: 40px;
     }
 }
 
@@ -1704,14 +1815,6 @@ button, .btn,
                 <div class="carousel-fallback-content">
                     <h1>Welcome to FCT College of Nursing Sciences</h1>
                     <p>NMCN & NBTE Accredited Nursing Education Since 1989</p>
-                    <div class="cta-buttons" style="margin-top: 1.5rem;">
-                        <a href="<?php echo $baseUrl; ?>/programs" class="btn btn-primary">
-                            <i class="fas fa-book-open" aria-hidden="true"></i> Explore Programs
-                        </a>
-                        <a href="<?php echo $baseUrl; ?>/admissions" class="btn btn-secondary">
-                            <i class="fas fa-file-alt" aria-hidden="true"></i> Apply Now
-                        </a>
-                    </div>
                 </div>
             </div>
         <?php else: ?>
@@ -1751,16 +1854,16 @@ button, .btn,
                     <?php endforeach; ?>
                 </div>
                 
-                <!-- Simplified Controls -->
+                <!-- Simplified Controls - WITHOUT REDUNDANT BUTTONS -->
                 <div class="slider-controls">
                     <!-- Progress Bar -->
                     <div class="slider-controls__progress">
                         <div class="slider-controls__progress-active" id="carouselProgress"></div>
                     </div>
                     
-                    <!-- Controls Container -->
+                    <!-- Controls Container - ONLY ARROWS, NO BUTTONS -->
                     <div class="slider-controls__container">
-                        <!-- Arrows -->
+                        <!-- Arrows Only -->
                         <div class="slider-controls__arrows">
                             <div class="slider-controls__arrow left" 
                                  onclick="carouselController.prev()"
@@ -1772,18 +1875,6 @@ button, .btn,
                                  aria-label="Next slide"
                                  role="button"
                                  tabindex="0"></div>
-                        </div>
-                        
-                        <!-- Button Group -->
-                        <div class="slider-controls__button-group">
-                            <a href="<?php echo $baseUrl; ?>/programs" class="button white-variant">
-                                <div>Explore Programs</div>
-                                <div class="button__icon-wrapper"></div>
-                            </a>
-                            <a href="<?php echo $baseUrl; ?>/admissions" class="button gold-accent">
-                                <div>Apply Now</div>
-                                <div class="button__icon-wrapper"></div>
-                            </a>
                         </div>
                     </div>
                 </div>
