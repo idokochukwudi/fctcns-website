@@ -3,11 +3,10 @@
  * Research Publications Page - Professional Redesign (Mature Light Purple Theme)
  * Mobile-Optimized Version - FULL WIDTH
  * Complete Redesign with Professional Sections
- * Updated: Fixed image path with missing forward slash
- * Enhanced: Removed overlay, adjusted fonts, improved professional design
+ * Updated: Fixed image path, added transparent background, reduced font size
  * 
  * @package FCTCNS
- * @version 4.4
+ * @version 4.5
  */
 
 extract($data ?? []);
@@ -29,9 +28,10 @@ $totalPublications = count($publications);
 // FIXED: Add forward slash between domain and path
 $heroImagePath = rtrim($baseUrl, '/') . '/assets/images/research/research-hero.jpg';
 
-// Alternative: Use direct path based on your programs page structure
-// $heroImagePath = '/fctcns-website/assets/images/research/research-hero.jpg';
-// $heroImagePath = $baseUrl . 'assets/images/research/research-hero.jpg'; // If $baseUrl already has trailing slash
+// Preload the hero image
+if (file_exists($_SERVER['DOCUMENT_ROOT'] . $heroImagePath)) {
+    echo '<link rel="preload" href="' . $heroImagePath . '" as="image">';
+}
 ?>
 
 <!DOCTYPE html>
@@ -265,15 +265,13 @@ button, .btn,
 }
 
 /* ==========================================================================
-   HERO SECTION - ENHANCED WITHOUT OVERLAY
+   HERO SECTION - WITH TRANSPARENT BACKGROUND WRAPPER
    ========================================================================== */
 .research-hero {
     position: relative;
     width: 100%;
-    background: linear-gradient(135deg, rgba(93, 74, 138, 0.85), rgba(74, 58, 111, 0.85));
+    background: #2D3748 url('<?php echo $heroImagePath; ?>') no-repeat center center;
     background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
     color: var(--color-white);
     padding: var(--spacing-xxl) 0;
     margin: 0;
@@ -284,7 +282,6 @@ button, .btn,
     align-items: center;
 }
 
-/* Removed overlay - using only gradient background for better text visibility */
 .hero-container {
     position: relative;
     z-index: 3;
@@ -301,9 +298,20 @@ button, .btn,
     padding: var(--spacing-xl) 0;
 }
 
+/* Transparent background wrapper for better readability */
+.hero-text-wrapper {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
 .hero-badge {
     display: inline-block;
-    background: var(--color-accent);
+    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
     color: var(--color-gray-900);
     padding: 0.6rem 1.75rem;
     border-radius: var(--radius-full);
@@ -318,31 +326,29 @@ button, .btn,
     z-index: 2;
 }
 
-/* Enhanced font sizes and spacing for better readability */
+/* REDUCED FONT SIZE: From 3.75rem to 2.75rem max */
 .hero-title {
     font-family: var(--font-heading);
-    font-size: clamp(2.25rem, 6.5vw, 3.75rem); /* Increased font size */
+    font-size: clamp(2rem, 5vw, 2.75rem); /* Reduced from 3.75rem */
     font-weight: 700;
-    line-height: 1.15; /* Adjusted for better readability */
+    line-height: 1.2; /* Adjusted for better readability */
     margin-bottom: var(--spacing-md);
     color: var(--color-white);
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); /* Stronger shadow for contrast */
     position: relative;
     z-index: 2;
-    letter-spacing: -0.5px; /* Slight letter spacing for professional look */
+    letter-spacing: -0.25px;
 }
 
 .hero-description {
-    font-size: clamp(1.25rem, 3.5vw, 1.65rem); /* Increased font size */
+    font-size: clamp(1rem, 2.5vw, 1.25rem); /* Reduced from 1.65rem */
     font-weight: 400;
     margin-bottom: var(--spacing-xl);
     line-height: 1.5;
     color: rgba(255, 255, 255, 0.95);
     font-family: var(--font-body);
-    max-width: 800px; /* Increased max-width */
+    max-width: 800px;
     margin-left: auto;
     margin-right: auto;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4); /* Stronger shadow */
     position: relative;
     z-index: 2;
     padding: 0 var(--spacing-md);
@@ -351,24 +357,14 @@ button, .btn,
 .hero-cta {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-md); /* Increased gap */
+    gap: var(--spacing-md);
     justify-content: center;
     width: 100%;
     position: relative;
     z-index: 2;
-    margin-top: var(--spacing-lg);
-}
-
-.hero-icon {
-    font-size: clamp(4rem, 10vw, 6rem);
-    color: rgba(255, 255, 255, 0.25);
     margin-top: var(--spacing-xl);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    position: relative;
-    z-index: 2;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* ==========================================================================
@@ -394,28 +390,28 @@ button, .btn,
 }
 
 .btn-primary {
-    background: var(--color-accent);
+    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
     color: var(--color-gray-900);
     border-color: var(--color-accent);
 }
 
 .btn-primary:hover,
 .btn-primary:focus {
-    background: var(--color-accent-dark);
+    background: linear-gradient(135deg, var(--color-accent-dark), var(--color-accent));
     color: var(--color-gray-900);
     transform: translateY(-2px);
     box-shadow: var(--shadow-soft);
 }
 
 .btn-secondary {
-    background: var(--color-primary);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     color: var(--color-white);
     border-color: var(--color-primary);
 }
 
 .btn-secondary:hover,
 .btn-secondary:focus {
-    background: var(--color-primary-dark);
+    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
     color: var(--color-white);
     transform: translateY(-2px);
     box-shadow: var(--shadow-soft);
@@ -435,6 +431,7 @@ button, .btn,
     color: var(--color-white);
     transform: translateY(-2px);
     box-shadow: var(--shadow-soft);
+    border-color: rgba(255, 255, 255, 0.6);
 }
 
 .btn-sm {
@@ -1016,10 +1013,9 @@ button, .btn,
     gap: 0.25rem;
 }
 
-/* Enhanced publication title font size */
 .publication-title {
     font-family: var(--font-heading);
-    font-size: 1.4rem; /* Increased from 1.3rem */
+    font-size: 1.4rem;
     font-weight: 600;
     color: var(--color-primary);
     line-height: 1.3;
@@ -1229,6 +1225,12 @@ button, .btn,
         min-height: 600px;
     }
     
+    .hero-text-wrapper {
+        padding: var(--spacing-xl);
+        margin: 0 auto;
+        max-width: 800px;
+    }
+    
     .search-form {
         grid-template-columns: 1fr auto auto;
         gap: var(--spacing-md);
@@ -1272,35 +1274,31 @@ button, .btn,
 @media (min-width: 1024px) {
     .hero-content {
         text-align: left;
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: var(--spacing-xl);
-        align-items: center;
+        max-width: 1200px;
+        padding: var(--spacing-xxl) 0;
     }
     
-    .hero-text {
+    .hero-text-wrapper {
         text-align: left;
+        max-width: 700px;
+        margin: 0;
     }
     
     .hero-title {
         text-align: left;
-        font-size: clamp(2.5rem, 7vw, 4rem); /* Adjusted for desktop */
+        font-size: 2.5rem;
     }
     
     .hero-description {
         text-align: left;
         margin-left: 0;
         margin-right: 0;
-        font-size: clamp(1.35rem, 4vw, 1.75rem); /* Adjusted for desktop */
+        font-size: 1.375rem;
+        max-width: 650px;
     }
     
     .hero-cta {
         justify-content: flex-start;
-    }
-    
-    .hero-icon {
-        justify-content: flex-end;
-        margin-top: 0;
     }
     
     .featured-grid {
@@ -1326,16 +1324,21 @@ button, .btn,
 @media (max-width: 767px) {
     .research-hero {
         padding: var(--spacing-xl) 0;
-        min-height: 400px;
+        min-height: 450px;
+    }
+    
+    .hero-text-wrapper {
+        padding: var(--spacing-lg);
+        margin: 0 var(--spacing-sm);
     }
     
     .hero-title {
-        font-size: 2rem; /* Increased for mobile */
+        font-size: 1.75rem;
         line-height: 1.2;
     }
     
     .hero-description {
-        font-size: 1.15rem; /* Increased for mobile */
+        font-size: 1.125rem;
         line-height: 1.4;
     }
     
@@ -1377,17 +1380,28 @@ button, .btn,
 @media (max-width: 480px) {
     .research-hero {
         padding: var(--spacing-lg) 0;
-        min-height: 350px;
+        min-height: 400px;
+    }
+    
+    .hero-text-wrapper {
+        padding: var(--spacing-md);
+    }
+    
+    .hero-badge {
+        padding: 0.4rem 1.25rem;
+        font-size: 0.75rem;
+        margin-bottom: var(--spacing-md);
     }
     
     .hero-title {
-        font-size: 1.75rem; /* Increased for small mobile */
+        font-size: 1.5rem;
         line-height: 1.2;
     }
     
     .hero-description {
-        font-size: 1.05rem; /* Increased for small mobile */
+        font-size: 1rem;
         line-height: 1.4;
+        padding: 0;
     }
     
     .search-filters {
@@ -1405,7 +1419,7 @@ button, .btn,
     }
     
     .publication-title {
-        font-size: 1.2rem; /* Adjusted for mobile */
+        font-size: 1.2rem;
     }
     
     .publication-meta {
@@ -1428,11 +1442,11 @@ button, .btn,
     }
     
     .hero-title {
-        font-size: 4.25rem; /* Larger for big screens */
+        font-size: 2.75rem;
     }
     
     .hero-description {
-        font-size: 1.85rem; /* Larger for big screens */
+        font-size: 1.5rem;
     }
 }
 
@@ -1485,6 +1499,16 @@ button, .btn,
         margin-bottom: 1rem;
     }
 }
+
+/* Loading state to prevent flashing */
+.research-hero.loading {
+    background: #2D3748 !important;
+}
+
+.research-hero.loaded {
+    background: #2D3748 url('<?php echo $heroImagePath; ?>') no-repeat center center !important;
+    background-size: cover !important;
+}
 </style>
 </head>
 <body>
@@ -1493,10 +1517,10 @@ button, .btn,
 <main id="main-content" class="research-content" role="main">
     
     <!-- ========== HERO SECTION WITH IMAGE ========== -->
-    <section class="research-hero" aria-label="Research publications hero">
+    <section class="research-hero loading" id="researchHero" aria-label="Research publications hero">
         <div class="hero-container">
             <div class="hero-content">
-                <div class="hero-text">
+                <div class="hero-text-wrapper">
                     <span class="hero-badge">Academic Research</span>
                     <h1 class="hero-title">Research Publications</h1>
                     <p class="hero-description">
@@ -1510,9 +1534,6 @@ button, .btn,
                             <i class="fas fa-folder" aria-hidden="true"></i> Research Areas
                         </a>
                     </div>
-                </div>
-                <div class="hero-icon" aria-hidden="true">
-                    <i class="fas fa-microscope"></i>
                 </div>
             </div>
         </div>
@@ -1852,43 +1873,34 @@ button, .btn,
 
 <!-- ========== JAVASCRIPT ENHANCEMENTS ========== -->
 <script>
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
     'use strict';
     
     // FIXED: Correct image path for hero section
     const heroImagePath = '<?php echo $heroImagePath; ?>';
-    const heroSection = document.querySelector('.research-hero');
+    const heroSection = document.getElementById('researchHero');
     
     // Load hero background image with fallback
     if (heroSection) {
+        // Set initial dark background
+        heroSection.style.background = '#2D3748';
+        
         const heroImage = new Image();
         
         heroImage.onload = function() {
-            console.log('Research hero image loaded successfully:', heroImagePath);
-            // Apply image to the hero section WITHOUT overlay (removed overlay gradient)
-            heroSection.style.background = 'url("' + heroImagePath + '")';
+            // Apply image to the hero section
+            heroSection.classList.remove('loading');
+            heroSection.classList.add('loaded');
+            heroSection.style.background = '#2D3748 url("' + heroImagePath + '") no-repeat center center';
             heroSection.style.backgroundSize = 'cover';
-            heroSection.style.backgroundPosition = 'center';
-            heroSection.style.backgroundRepeat = 'no-repeat';
         };
         
         heroImage.onerror = function() {
-            console.warn('Research hero image failed to load:', heroImagePath);
-            console.log('Using fallback gradient background only');
             // Keep the existing gradient background if image fails
-            heroSection.style.background = 'linear-gradient(135deg, rgba(93, 74, 138, 0.9), rgba(74, 58, 111, 0.9))';
-            
-            // Debug: Try alternative paths
-            const alternativePaths = [
-                '/assets/images/research/research-hero.jpg',
-                '/fctcns-website/assets/images/research/research-hero.jpg',
-                'assets/images/research/research-hero.jpg'
-            ];
-            
-            console.log('Trying alternative paths:', alternativePaths);
+            heroSection.classList.remove('loading');
+            heroSection.style.background = '#2D3748';
         };
         
-        console.log('Attempting to load image from:', heroImagePath);
         heroImage.src = heroImagePath;
     }
     
@@ -1902,69 +1914,67 @@ button, .btn,
     };
     
     // Apply publication type colors
-    document.addEventListener('DOMContentLoaded', function() {
-        const typeElements = document.querySelectorAll('.featured-type, .publication-type');
+    const typeElements = document.querySelectorAll('.featured-type, .publication-type');
+    
+    typeElements.forEach(el => {
+        const type = el.classList.contains('featured-type') 
+            ? el.classList[1] 
+            : el.textContent.toLowerCase().trim();
         
-        typeElements.forEach(el => {
-            const type = el.classList.contains('featured-type') 
-                ? el.classList[1] 
-                : el.textContent.toLowerCase().trim();
-            
-            const color = typeColors[type];
-            if (color) {
-                el.style.backgroundColor = color;
-                el.style.color = 'var(--color-white)';
-                el.style.borderColor = color;
-            }
-        });
-        
-        // Add smooth scrolling for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                const targetId = this.getAttribute('href');
-                if (targetId === '#') return;
-                
-                const targetElement = document.querySelector(targetId);
-                if (targetElement) {
-                    e.preventDefault();
-                    window.scrollTo({
-                        top: targetElement.offsetTop - 80,
-                        behavior: 'smooth'
-                    });
-                }
-            });
-        });
-        
-        // Search form enhancement - REMOVED AUTO-FOCUS
-        const searchForm = document.querySelector('.search-form');
-        if (searchForm) {
-            const searchInput = searchForm.querySelector('input[name="search"]');
-            
-            // Clear search button
-            if (searchInput.value) {
-                const clearButton = document.createElement('button');
-                clearButton.type = 'button';
-                clearButton.className = 'search-clear';
-                clearButton.innerHTML = '<i class="fas fa-times"></i>';
-                clearButton.setAttribute('aria-label', 'Clear search');
-                clearButton.style.cssText = `
-                    background: none;
-                    border: none;
-                    color: var(--color-gray-600);
-                    padding: 0 var(--spacing-sm);
-                    cursor: pointer;
-                    font-size: 1rem;
-                `;
-                
-                clearButton.addEventListener('click', function() {
-                    searchInput.value = '';
-                    searchForm.submit();
-                });
-                
-                searchInput.parentNode.appendChild(clearButton);
-            }
+        const color = typeColors[type];
+        if (color) {
+            el.style.backgroundColor = color;
+            el.style.color = 'var(--color-white)';
+            el.style.borderColor = color;
         }
     });
+    
+    // Add smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+            
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                e.preventDefault();
+                window.scrollTo({
+                    top: targetElement.offsetTop - 80,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+    
+    // Search form enhancement
+    const searchForm = document.querySelector('.search-form');
+    if (searchForm) {
+        const searchInput = searchForm.querySelector('input[name="search"]');
+        
+        // Clear search button
+        if (searchInput.value) {
+            const clearButton = document.createElement('button');
+            clearButton.type = 'button';
+            clearButton.className = 'search-clear';
+            clearButton.innerHTML = '<i class="fas fa-times"></i>';
+            clearButton.setAttribute('aria-label', 'Clear search');
+            clearButton.style.cssText = `
+                background: none;
+                border: none;
+                color: var(--color-gray-600);
+                padding: 0 var(--spacing-sm);
+                cursor: pointer;
+                font-size: 1rem;
+            `;
+            
+            clearButton.addEventListener('click', function() {
+                searchInput.value = '';
+                searchForm.submit();
+            });
+            
+            searchInput.parentNode.appendChild(clearButton);
+        }
+    }
     
     // Keyboard navigation for publication cards
     document.addEventListener('keydown', function(e) {
@@ -1972,7 +1982,7 @@ button, .btn,
             e.target.click();
         }
     });
-})();
+});
 </script>
 
 </body>

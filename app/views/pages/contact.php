@@ -162,7 +162,7 @@ main.contact-page {
     --radius-lg: 14px;
     --radius-full: 999px;
     
-    /* Transitions - Removed animations that cause delay */
+    /* Transitions - Simple and fast */
     --transition-fast: all 0.2s ease;
 }
 
@@ -188,7 +188,7 @@ body {
 }
 
 /* ==========================================================================
-   HERO SECTION - CLEAN DESIGN WITHOUT ANIMATIONS
+   HERO SECTION - WITH TRANSPARENT BACKGROUND FOR TEXT READABILITY
    ========================================================================== */
 .contact-hero {
     position: relative;
@@ -205,24 +205,6 @@ body {
     align-items: center;
 }
 
-/* Professional subtle overlay for text readability */
-.contact-hero::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.4) 0%,
-        rgba(0, 0, 0, 0.2) 50%,
-        rgba(0, 0, 0, 0.1) 100%
-    );
-    z-index: 1;
-    pointer-events: none;
-}
-
 .hero-text-overlay {
     position: relative;
     z-index: 3;
@@ -230,6 +212,17 @@ body {
     margin: 0 auto;
     padding: var(--spacing-xl) var(--spacing-lg);
     text-align: center;
+}
+
+/* Transparent background wrapper for better readability */
+.hero-text-wrapper {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 .hero-badge {
@@ -261,12 +254,15 @@ body {
     position: relative;
     z-index: 2;
     letter-spacing: -0.25px;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
 }
 
 .hero-title span {
     color: var(--color-accent);
     font-weight: 700;
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    background: rgba(212, 165, 116, 0.2);
+    border-radius: var(--radius-sm);
 }
 
 .hero-description {
@@ -281,8 +277,7 @@ body {
     margin-right: auto;
     position: relative;
     z-index: 2;
-    padding: 0 var(--spacing-md);
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+    padding: var(--spacing-sm) 0;
 }
 
 .hero-cta {
@@ -294,6 +289,8 @@ body {
     position: relative;
     z-index: 2;
     margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .hero-icon {
@@ -328,11 +325,13 @@ body {
     min-height: 52px;
     cursor: pointer;
     box-shadow: var(--shadow-soft);
+    transition: var(--transition-fast);
 }
 
 .btn-primary:hover {
     background: linear-gradient(135deg, var(--color-accent-dark), var(--color-accent));
     box-shadow: var(--shadow-elevated);
+    transform: translateY(-2px);
 }
 
 .btn-secondary {
@@ -353,11 +352,13 @@ body {
     min-height: 52px;
     cursor: pointer;
     box-shadow: var(--shadow-soft);
+    transition: var(--transition-fast);
 }
 
 .btn-secondary:hover {
     background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
     box-shadow: var(--shadow-elevated);
+    transform: translateY(-2px);
 }
 
 /* Professional Call Now button - Simplified */
@@ -366,23 +367,28 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
-    background: transparent;
+    background: rgba(255, 255, 255, 0.1);
     color: var(--color-white);
     padding: 0.875rem 2rem;
     border-radius: var(--radius-md);
     text-decoration: none;
     font-weight: 600;
-    border: 2px solid rgba(255, 255, 255, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     font-family: var(--font-heading);
     font-size: 1rem;
     letter-spacing: 0.3px;
     min-height: 52px;
     cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: var(--transition-fast);
 }
 
 .btn-call:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 /* ==========================================================================
@@ -455,6 +461,7 @@ body {
     text-align: center;
     height: 100%;
     position: relative;
+    transition: var(--transition-fast);
 }
 
 .card::before {
@@ -471,6 +478,7 @@ body {
 .card:hover { 
     box-shadow: var(--shadow-elevated); 
     border-color: var(--color-primary-light);
+    transform: translateY(-4px);
 }
 
 .card-body { 
@@ -496,6 +504,13 @@ body {
     height: 70px;
     background: var(--color-primary-very-light);
     border-radius: 50%;
+    transition: var(--transition-fast);
+}
+
+.card:hover .contact-icon {
+    transform: scale(1.05);
+    background: var(--color-accent-very-light);
+    color: var(--color-accent-dark);
 }
 
 /* ==========================================================================
@@ -567,6 +582,7 @@ body {
     box-shadow: var(--shadow-subtle);
     overflow: hidden;
     border: 1px solid var(--color-gray-100);
+    transition: var(--transition-fast);
 }
 
 .faq-item:hover {
@@ -586,16 +602,19 @@ body {
     font-family: var(--font-heading);
     font-size: 1rem;
     position: relative;
+    transition: var(--transition-fast);
 }
 
 .faq-question:hover { 
     background: var(--color-primary-very-light); 
+    padding-left: calc(var(--spacing-lg) + 8px);
 }
 
 .faq-answer {
     padding: 0 var(--spacing-lg);
     max-height: 0;
     overflow: hidden;
+    transition: max-height 0.3s ease;
 }
 
 .faq-answer.open {
@@ -607,6 +626,7 @@ body {
     font-size: 1.25rem; 
     color: var(--color-primary);
     font-weight: 300;
+    transition: transform 0.3s ease;
 }
 
 .faq-toggle.open { 
@@ -674,6 +694,7 @@ body {
     font-family: var(--font-body);
     font-size: 1rem;
     background: var(--color-white);
+    transition: var(--transition-fast);
 }
 
 .form-input:focus, .form-textarea:focus, .form-select:focus {
@@ -731,8 +752,9 @@ body {
         padding: var(--spacing-xl) 0;
     }
     
-    .hero-text-overlay {
+    .hero-text-wrapper {
         padding: var(--spacing-lg);
+        margin: 0 var(--spacing-sm);
     }
     
     .hero-badge {
@@ -806,6 +828,10 @@ body {
         padding: var(--spacing-lg) 0;
     }
     
+    .hero-text-wrapper {
+        padding: var(--spacing-md);
+    }
+    
     .hero-badge {
         padding: 0.4rem 1.25rem;
         font-size: 0.75rem;
@@ -820,7 +846,7 @@ body {
     .hero-description {
         font-size: 1rem;
         line-height: 1.4;
-        padding: 0;
+        padding: var(--spacing-xs) 0;
     }
     
     .section-title {
@@ -872,6 +898,11 @@ body {
         padding: var(--spacing-xxl) var(--spacing-lg);
     }
     
+    .hero-text-wrapper {
+        max-width: 700px;
+        margin: 0;
+    }
+    
     .hero-title {
         font-size: 2.5rem;
         text-align: left;
@@ -882,7 +913,7 @@ body {
         margin-left: 0;
         margin-right: 0;
         font-size: 1.375rem;
-        max-width: 650px;
+        max-width: 100%;
     }
     
     .hero-cta {
@@ -915,31 +946,40 @@ body {
     * {
         transition: none !important;
     }
+    
+    .card:hover,
+    .btn-primary:hover,
+    .btn-secondary:hover,
+    .btn-call:hover {
+        transform: none !important;
+    }
 }
 </style>
 </head>
 <body>
 
 <main class="contact-page">
-    <!-- Hero Section - Clean Design -->
+    <!-- Hero Section - With Transparent Background Wrapper -->
     <section class="contact-hero loading" id="contactHero">
         <div class="container">
             <div class="hero-text-overlay">
-                <span class="hero-badge">Get in Touch</span>
-                <h1 class="hero-title">
-                    Contact <span>Our Team</span>
-                </h1>
-                <p class="hero-description">
-                    We're here to assist you with admissions, program inquiries, and general information. 
-                    Our dedicated team is committed to providing timely and helpful responses.
-                </p>
-                <div class="hero-cta">
-                    <a href="#contact-form" class="btn-primary">
-                        <i class="fas fa-envelope"></i> Send Message
-                    </a>
-                    <a href="tel:<?php echo e($settings['phone'] ?? '+234XXX'); ?>" class="btn-call">
-                        <i class="fas fa-phone-alt"></i> Call Now
-                    </a>
+                <div class="hero-text-wrapper">
+                    <span class="hero-badge">Get in Touch</span>
+                    <h1 class="hero-title">
+                        Contact <span>Our Team</span>
+                    </h1>
+                    <p class="hero-description">
+                        We're here to assist you with admissions, program inquiries, and general information. 
+                        Our dedicated team is committed to providing timely and helpful responses.
+                    </p>
+                    <div class="hero-cta">
+                        <a href="#contact-form" class="btn-primary">
+                            <i class="fas fa-envelope"></i> Send Message
+                        </a>
+                        <a href="tel:<?php echo e($settings['phone'] ?? '+234XXX'); ?>" class="btn-call">
+                            <i class="fas fa-phone-alt"></i> Call Now
+                        </a>
+                    </div>
                 </div>
                 <div class="hero-icon" aria-hidden="true">
                     <i class="fas fa-headset"></i>
