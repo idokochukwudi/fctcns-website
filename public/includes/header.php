@@ -4,6 +4,7 @@
  * Desktop: Show navigation tabs
  * Mobile: Collapse into menu with "MENU" label
  * FULL WIDTH VERSION - Fixed padding issues
+ * Enhanced: Better logo scaling and search icon design
  * 
  * @package FCT_CNS
  */
@@ -84,6 +85,7 @@ if (class_exists('Session')) {
         /* ==============================================
            PROFESSIONAL HEADER REDESIGN - CLEAN & STRUCTURED
            FULL WIDTH VERSION - FIXED PADDING
+           ENHANCED: Better logo scaling and icon design
            ============================================== */
         
         :root {
@@ -221,7 +223,7 @@ if (class_exists('Session')) {
         }
         
         /* ==============================================
-           BRAND STYLES - Elegant & Clear
+           ENHANCED BRAND STYLES - Better Logo Scaling
            ============================================== */
         .brand {
             display: flex;
@@ -230,11 +232,13 @@ if (class_exists('Session')) {
             text-decoration: none;
             color: inherit;
             min-width: 0;
+            flex-shrink: 0;
         }
         
+        /* ENHANCED: Better logo container with responsive scaling */
         .brand-logo {
-            width: 60px;
-            height: 60px;
+            width: 65px; /* Increased from 60px */
+            height: 65px; /* Increased from 60px */
             flex-shrink: 0;
             display: flex;
             align-items: center;
@@ -243,14 +247,22 @@ if (class_exists('Session')) {
             overflow: hidden;
             background: var(--color-primary);
             border: 1px solid var(--color-gray-200);
+            transition: all var(--transition-smooth);
         }
         
+        /* ENHANCED: Logo image scaling */
         .brand-logo img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            padding: 8px;
+            padding: 6px; /* Reduced padding to show more logo */
             display: block;
+            transition: transform var(--transition-smooth);
+        }
+        
+        /* Hover effect for logo */
+        .brand:hover .brand-logo img {
+            transform: scale(1.05);
         }
         
         .brand-logo .logo-fallback {
@@ -263,7 +275,7 @@ if (class_exists('Session')) {
             color: var(--color-white);
             font-family: var(--font-display);
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 1.1rem; /* Increased font size */
             border-radius: 8px;
         }
         
@@ -281,9 +293,9 @@ if (class_exists('Session')) {
             flex-direction: column;
         }
         
-        /* FIXED: "FCT College of" - Clear and visible */
+        /* ENHANCED: Better font sizing and spacing */
         .brand-line-1 {
-            font-size: 0.85rem;
+            font-size: 0.9rem; /* Increased from 0.85rem */
             font-weight: 600;
             color: var(--color-primary);
             letter-spacing: 1px;
@@ -294,108 +306,123 @@ if (class_exists('Session')) {
             font-family: var(--font-heading);
         }
         
-        /* FIXED: "Nursing Sciences" - Better font and color */
+        /* ENHANCED: Improved typography for main name */
         .brand-line-2 {
-            font-size: 1.8rem;
+            font-size: 2rem; /* Increased from 1.8rem for better visibility */
             font-weight: 700;
             color: var(--color-primary-dark);
             letter-spacing: -0.3px;
             font-style: normal;
             position: relative;
             font-family: var(--font-display);
+            line-height: 1.2;
         }
         
         .brand-line-2:after {
             content: '';
             position: absolute;
-            bottom: -3px;
+            bottom: -4px; /* Adjusted position */
             left: 0;
-            width: 50px;
-            height: 2px;
+            width: 55px; /* Slightly longer underline */
+            height: 3px; /* Thicker underline */
             background: var(--color-accent);
-            border-radius: 1px;
+            border-radius: 2px;
         }
         
         /* ==============================================
-           HEADER ACTIONS - Clean & Functional
+           ENHANCED HEADER ACTIONS - Better Search & Icons
            ============================================== */
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 0.8rem;
+            gap: 1rem; /* Increased gap for better spacing */
         }
         
-        /* Search Button */
+        /* ENHANCED: Search Button - Improved design */
         .search-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 8px;
+            width: 46px; /* Slightly larger */
+            height: 46px; /* Slightly larger */
+            border-radius: 10px; /* More rounded */
             border: 1px solid var(--color-gray-300);
             background: var(--color-white);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all var(--transition-fast);
+            transition: all var(--transition-smooth);
             color: var(--color-gray-600);
-            font-size: 1rem;
+            font-size: 1.1rem; /* Slightly larger icon */
+            position: relative;
+            overflow: hidden;
         }
         
+        /* Search button hover animation */
         .search-btn:hover {
             background: var(--color-primary);
             color: var(--color-white);
             border-color: var(--color-primary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(10, 44, 94, 0.15);
         }
         
-        /* Apply Button - Fixed font visibility */
+        /* Search button active effect */
+        .search-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* ENHANCED: Apply Button - Better visibility */
         .apply-btn {
-            padding: 0.6rem 1.5rem;
+            padding: 0.7rem 1.6rem; /* Slightly larger padding */
             background: var(--color-accent);
             color: var(--color-white);
             border: none;
-            border-radius: 8px;
-            font-size: 0.9rem;
+            border-radius: 10px; /* More rounded */
+            font-size: 0.95rem; /* Slightly larger font */
             font-weight: 600;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.6rem; /* Increased gap */
             cursor: pointer;
-            transition: all var(--transition-fast);
+            transition: all var(--transition-smooth);
             white-space: nowrap;
             font-family: var(--font-heading);
+            letter-spacing: 0.3px;
         }
         
         .apply-btn:hover {
             background: var(--color-accent-dark);
             color: var(--color-white);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(193, 154, 14, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(193, 154, 14, 0.25);
         }
         
-        /* User Button */
+        /* ENHANCED: User Button - Better design */
         .user-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 8px;
-            background: var(--color-primary);
+            width: 46px; /* Slightly larger */
+            height: 46px; /* Slightly larger */
+            border-radius: 10px; /* More rounded */
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
             color: var(--color-white);
             border: none;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 1.1rem; /* Slightly larger font */
             cursor: pointer;
-            transition: all var(--transition-fast);
+            transition: all var(--transition-smooth);
+            box-shadow: 0 2px 8px rgba(10, 44, 94, 0.1);
         }
         
         .user-btn:hover {
-            background: var(--color-primary-dark);
+            background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(10, 44, 94, 0.15);
         }
         
         /* ==============================================
-           MOBILE MENU TOGGLE - Simple & Clear
+           MOBILE MENU TOGGLE - Enhanced Design
            ============================================== */
         .mobile-menu-toggle-wrapper {
             display: flex;
@@ -406,9 +433,9 @@ if (class_exists('Session')) {
         }
         
         .mobile-menu-toggle {
-            width: 44px;
-            height: 44px;
-            border-radius: 8px;
+            width: 46px; /* Slightly larger */
+            height: 46px; /* Slightly larger */
+            border-radius: 10px; /* More rounded */
             border: 1px solid var(--color-gray-300);
             background: var(--color-white);
             display: flex;
@@ -417,17 +444,18 @@ if (class_exists('Session')) {
             justify-content: center;
             gap: 4px;
             cursor: pointer;
-            transition: all var(--transition-fast);
+            transition: all var(--transition-smooth);
         }
         
         .mobile-menu-toggle:hover {
             border-color: var(--color-primary);
             background: var(--color-gray-50);
+            transform: translateY(-1px);
         }
         
         .mobile-menu-toggle span {
             display: block;
-            width: 20px;
+            width: 22px; /* Slightly wider */
             height: 2px;
             background: var(--color-gray-700);
             transition: all var(--transition-smooth);
@@ -455,13 +483,13 @@ if (class_exists('Session')) {
             transform: rotate(-45deg) translate(5px, -5px);
         }
         
-        /* MENU Label */
+        /* ENHANCED: MENU Label */
         .menu-label {
-            font-size: 0.7rem;
+            font-size: 0.75rem; /* Slightly larger */
             font-weight: 600;
             color: var(--color-gray-600);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px; /* Increased letter spacing */
         }
         
         /* ==============================================
@@ -564,13 +592,15 @@ if (class_exists('Session')) {
             display: none;
         }
         
-        /* SPECIAL CONTACT TAB - Simple design */
+        /* SPECIAL CONTACT TAB - Enhanced design */
         .desktop-nav-item.contact-tab .desktop-nav-link {
             color: var(--color-contact);
             background: rgba(185, 28, 28, 0.05);
             border-left: 1px solid rgba(185, 28, 28, 0.1);
             border-right: 1px solid rgba(185, 28, 28, 0.1);
             font-weight: 600;
+            position: relative;
+            overflow: hidden;
         }
         
         .desktop-nav-item.contact-tab .desktop-nav-link:before {
@@ -594,8 +624,8 @@ if (class_exists('Session')) {
             top: 100%;
             left: 0;
             background: var(--color-white);
-            min-width: 220px;
-            border-radius: 0 0 8px 8px;
+            min-width: 240px; /* Increased width */
+            border-radius: 0 0 10px 10px; /* More rounded */
             box-shadow: var(--shadow-elevated);
             opacity: 0;
             visibility: hidden;
@@ -604,6 +634,7 @@ if (class_exists('Session')) {
             z-index: 100;
             border: 1px solid var(--color-gray-200);
             border-top: none;
+            padding: 0.5rem 0; /* Added padding */
         }
         
         .has-dropdown:hover .dropdown-menu {
@@ -621,17 +652,19 @@ if (class_exists('Session')) {
             font-size: 0.9rem;
             transition: all var(--transition-fast);
             border-left: 3px solid transparent;
+            margin: 0 0.5rem; /* Added margin */
+            border-radius: 6px; /* Rounded corners */
         }
         
         .dropdown-link:hover {
-            background: rgba(10, 44, 94, 0.05);
+            background: rgba(10, 44, 94, 0.08); /* Stronger hover */
             color: var(--color-primary);
             border-left-color: var(--color-accent);
             padding-left: 1.75rem;
         }
         
         /* ==============================================
-           MOBILE NAVIGATION OVERLAY
+           MOBILE NAVIGATION OVERLAY - Enhanced
            ============================================== */
         .mobile-nav-overlay {
             position: fixed;
@@ -666,7 +699,7 @@ if (class_exists('Session')) {
             margin: 0 auto;
         }
         
-        /* Search in Mobile Menu */
+        /* ENHANCED: Search in Mobile Menu */
         .mobile-search-container {
             margin-bottom: 1.5rem;
             position: relative;
@@ -674,19 +707,20 @@ if (class_exists('Session')) {
         
         .mobile-search {
             width: 100%;
-            padding: 1rem 1rem 1rem 3rem;
+            padding: 1rem 1rem 1rem 3.2rem; /* Adjusted padding */
             border: 2px solid var(--color-gray-300);
-            border-radius: 8px;
+            border-radius: 10px; /* More rounded */
             font-size: 1rem;
             font-family: var(--font-body);
             background: var(--color-white);
-            transition: all var(--transition-fast);
+            transition: all var(--transition-smooth);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
         
         .mobile-search:focus {
             outline: none;
             border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(10, 44, 94, 0.1);
+            box-shadow: 0 0 0 3px rgba(10, 44, 94, 0.1), 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         
         .mobile-search-icon {
@@ -695,7 +729,7 @@ if (class_exists('Session')) {
             top: 50%;
             transform: translateY(-50%);
             color: var(--color-gray-500);
-            font-size: 1.1rem;
+            font-size: 1.2rem; /* Slightly larger */
         }
         
         /* Mobile Navigation Menu */
@@ -712,17 +746,17 @@ if (class_exists('Session')) {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 0;
+            padding: 1.1rem 0; /* Increased padding */
             color: var(--color-gray-700);
             text-decoration: none;
             font-weight: 500;
-            font-size: 1rem;
+            font-size: 1.05rem; /* Slightly larger */
             transition: all var(--transition-fast);
         }
         
         .mobile-nav-link:hover {
             color: var(--color-primary);
-            padding-left: 0.5rem;
+            padding-left: 0.75rem; /* Increased shift */
         }
         
         .mobile-nav-link.active {
@@ -730,48 +764,53 @@ if (class_exists('Session')) {
             font-weight: 600;
         }
         
-        /* Special Mobile Contact Tab */
+        /* Enhanced Mobile Contact Tab */
         .mobile-nav-item.contact-tab .mobile-nav-link {
             color: var(--color-contact);
             font-weight: 600;
             background: rgba(185, 28, 28, 0.05);
-            padding: 1rem;
+            padding: 1.1rem 1rem; /* Increased padding */
             margin: 0.5rem 0;
-            border-radius: 8px;
-            border: 1px solid rgba(185, 28, 28, 0.1);
+            border-radius: 10px; /* More rounded */
+            border: 2px solid rgba(185, 28, 28, 0.1); /* Thicker border */
         }
         
         .mobile-nav-item.contact-tab .mobile-nav-link:hover {
             color: var(--color-white);
             background: var(--color-contact);
             border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(185, 28, 28, 0.2);
         }
         
         /* Quick Actions in Mobile Menu */
         .mobile-quick-actions {
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 0.85rem; /* Increased gap */
             margin-bottom: 1.5rem;
         }
         
         .mobile-action-btn {
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
+            padding: 1.1rem 1.5rem; /* Increased padding */
+            border-radius: 10px; /* More rounded */
             background: var(--color-primary);
             color: var(--color-white);
             text-decoration: none;
             display: flex;
             align-items: center;
             gap: 1rem;
-            transition: all var(--transition-fast);
+            transition: all var(--transition-smooth);
             font-weight: 500;
             justify-content: center;
             text-align: center;
+            box-shadow: 0 2px 8px rgba(10, 44, 94, 0.1);
         }
         
         .mobile-action-btn:hover {
             background: var(--color-primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(10, 44, 94, 0.15);
         }
         
         .mobile-action-btn.accent {
@@ -781,6 +820,8 @@ if (class_exists('Session')) {
         
         .mobile-action-btn.accent:hover {
             background: var(--color-accent-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(193, 154, 14, 0.2);
         }
         
         /* Contact Info in Mobile Menu */
@@ -802,18 +843,20 @@ if (class_exists('Session')) {
             color: var(--color-gray-600);
             text-decoration: none;
             font-size: 0.9rem;
-            padding: 0.75rem;
-            border-radius: 8px;
+            padding: 0.85rem; /* Increased padding */
+            border-radius: 10px; /* More rounded */
             transition: all var(--transition-fast);
+            border: 1px solid transparent;
         }
         
         .mobile-contact-item:hover {
             background: var(--color-gray-100);
             color: var(--color-primary);
+            border-color: var(--color-gray-200);
         }
         
         /* ==============================================
-           SEARCH MODAL
+           ENHANCED SEARCH MODAL
            ============================================== */
         .search-modal {
             position: fixed;
@@ -828,6 +871,12 @@ if (class_exists('Session')) {
             align-items: center;
             justify-content: center;
             padding: 1rem;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         
         .search-modal.active {
@@ -837,34 +886,63 @@ if (class_exists('Session')) {
         .search-modal-content {
             background: var(--color-white);
             width: 100%;
-            max-width: 600px;
+            max-width: 650px; /* Slightly wider */
             border-radius: 12px;
-            padding: 2rem;
+            padding: 2.5rem; /* Increased padding */
             position: relative;
             box-shadow: var(--shadow-elevated);
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
         
         .search-modal-close {
             position: absolute;
             top: 1.5rem;
             right: 1.5rem;
-            background: none;
+            background: var(--color-gray-100);
             border: none;
             font-size: 1.5rem;
-            color: var(--color-gray-500);
+            color: var(--color-gray-600);
             cursor: pointer;
-            width: 36px;
-            height: 36px;
+            width: 40px; /* Larger close button */
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            transition: all var(--transition-fast);
+            transition: all var(--transition-smooth);
         }
         
         .search-modal-close:hover {
-            background: var(--color-gray-100);
-            color: var(--color-gray-700);
+            background: var(--color-gray-200);
+            color: var(--color-gray-800);
+            transform: rotate(90deg);
+        }
+        
+        /* Enhanced search form in modal */
+        .search-modal .search-form {
+            position: relative;
+        }
+        
+        .search-modal .mobile-search-icon {
+            left: 1rem;
+            font-size: 1.3rem;
+        }
+        
+        .search-modal .mobile-search {
+            padding: 1.2rem 1rem 1.2rem 3.5rem;
+            font-size: 1.1rem;
+            border-radius: 12px;
         }
         
         /* ==============================================
@@ -937,9 +1015,96 @@ if (class_exists('Session')) {
         }
         
         /* ==============================================
-           RESPONSIVE BREAKPOINTS
+           RESPONSIVE BREAKPOINTS - ENHANCED LOGO SCALING
            ============================================== */
-        /* Mobile (default) - Hide desktop nav, show mobile toggle */
+        /* Extra Small Mobile (320px - 480px) */
+        @media (max-width: 480px) {
+            .header-container {
+                padding: 0 1rem; /* Reduced padding */
+            }
+            
+            .brand {
+                gap: 0.8rem; /* Reduced gap */
+            }
+            
+            .brand-logo {
+                width: 50px; /* Responsive scaling */
+                height: 50px;
+            }
+            
+            .brand-line-1 {
+                font-size: 0.7rem; /* Smaller font */
+            }
+            
+            .brand-line-2 {
+                font-size: 1.2rem; /* Smaller but still readable */
+            }
+            
+            .search-btn,
+            .user-btn,
+            .mobile-menu-toggle {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .mobile-nav-overlay {
+                padding: 1rem; /* Reduced padding */
+            }
+        }
+        
+        /* Small Mobile (481px - 639px) */
+        @media (min-width: 481px) and (max-width: 639px) {
+            .brand-logo {
+                width: 55px;
+                height: 55px;
+            }
+            
+            .brand-line-1 {
+                font-size: 0.75rem;
+            }
+            
+            .brand-line-2 {
+                font-size: 1.3rem;
+            }
+        }
+        
+        /* Medium Mobile/Tablet (640px - 767px) */
+        @media (min-width: 640px) and (max-width: 767px) {
+            .brand-logo {
+                width: 58px;
+                height: 58px;
+            }
+            
+            .brand-line-1 {
+                font-size: 0.8rem;
+            }
+            
+            .brand-line-2 {
+                font-size: 1.5rem;
+            }
+        }
+        
+        /* Tablet (768px - 1023px) */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .brand-logo {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .brand-line-1 {
+                font-size: 0.85rem;
+            }
+            
+            .brand-line-2 {
+                font-size: 1.6rem;
+            }
+            
+            .apply-btn {
+                display: none; /* Hide on tablet to save space */
+            }
+        }
+        
+        /* Mobile (default up to 1023px) - Hide desktop nav, show mobile toggle */
         @media (max-width: 1023px) {
             .desktop-nav-container {
                 display: none !important;
@@ -955,19 +1120,6 @@ if (class_exists('Session')) {
             
             .apply-btn {
                 display: none;
-            }
-            
-            .brand-line-1 {
-                font-size: 0.75rem;
-            }
-            
-            .brand-line-2 {
-                font-size: 1.4rem;
-            }
-            
-            .brand-logo {
-                width: 52px;
-                height: 52px;
             }
             
             .main-content-wrapper {
@@ -1011,17 +1163,17 @@ if (class_exists('Session')) {
                 display: none;
             }
             
+            .brand-logo {
+                width: 65px; /* Desktop size */
+                height: 65px;
+            }
+            
             .brand-line-1 {
-                font-size: 0.85rem;
+                font-size: 0.9rem;
             }
             
             .brand-line-2 {
-                font-size: 1.8rem;
-            }
-            
-            .brand-logo {
-                width: 60px;
-                height: 60px;
+                font-size: 2rem;
             }
             
             .main-content-wrapper {
@@ -1044,6 +1196,54 @@ if (class_exists('Session')) {
             .main-content:has(.homepage-content) {
                 padding: 0 !important;
                 max-width: 100vw !important;
+            }
+        }
+        
+        /* Large Desktop (1200px and up) */
+        @media (min-width: 1200px) {
+            .brand-logo {
+                width: 70px; /* Larger on big screens */
+                height: 70px;
+            }
+            
+            .brand-line-1 {
+                font-size: 1rem;
+            }
+            
+            .brand-line-2 {
+                font-size: 2.2rem;
+            }
+            
+            .header-container {
+                padding: 0 3rem; /* More padding on large screens */
+            }
+            
+            .desktop-nav-menu {
+                padding: 0 3rem;
+            }
+        }
+        
+        /* Extra Large Desktop (1400px and up) */
+        @media (min-width: 1400px) {
+            .brand-logo {
+                width: 75px;
+                height: 75px;
+            }
+            
+            .brand-line-1 {
+                font-size: 1.1rem;
+            }
+            
+            .brand-line-2 {
+                font-size: 2.4rem;
+            }
+            
+            .header-container {
+                padding: 0 4rem;
+            }
+            
+            .desktop-nav-menu {
+                padding: 0 4rem;
             }
         }
         
@@ -1121,7 +1321,8 @@ if (class_exists('Session')) {
                        name="q" 
                        class="mobile-search" 
                        placeholder="Search courses, faculty, research..."
-                       aria-label="Search the website">
+                       aria-label="Search the website"
+                       autocomplete="off">
             </div>
         </form>
     </div>
@@ -1130,13 +1331,14 @@ if (class_exists('Session')) {
 <!-- Fixed Header -->
 <header class="site-header" role="banner">
     <div class="header-container">
-        <!-- Professional Brand -->
+        <!-- Enhanced Professional Brand -->
         <a href="<?php echo $baseUrl; ?>/" class="brand">
             <div class="brand-logo">
                 <?php
                 $logoPath = $baseUrl . '/assets/images/logo/logo.png';
                 echo '<img src="' . $logoPath . '" 
                      alt="FCT College of Nursing Sciences" 
+                     loading="eager"
                      onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">';
                 ?>
                 <div class="logo-fallback" style="display: none;">
@@ -1151,27 +1353,27 @@ if (class_exists('Session')) {
             </div>
         </a>
         
-        <!-- Header Actions -->
+        <!-- Enhanced Header Actions -->
         <div class="header-actions">
-            <!-- Search Button -->
-            <button class="search-btn" aria-label="Open search" onclick="openSearch()">
+            <!-- Enhanced Search Button -->
+            <button class="search-btn" aria-label="Open search" onclick="openSearch()" title="Search">
                 <i class="fas fa-search"></i>
             </button>
             
-            <!-- Apply Now Button (Desktop only) -->
+            <!-- Enhanced Apply Now Button (Desktop only) -->
             <a href="<?php echo $baseUrl; ?>/admissions" class="apply-btn">
                 <i class="fas fa-file-alt"></i>
                 <span>Apply Now</span>
             </a>
             
-            <!-- User Button (only when logged in) -->
+            <!-- Enhanced User Button (only when logged in) -->
             <?php if ($isLoggedIn): ?>
-            <a href="<?php echo $baseUrl; ?>/student/dashboard" class="user-btn" aria-label="User dashboard">
+            <a href="<?php echo $baseUrl; ?>/student/dashboard" class="user-btn" aria-label="User dashboard" title="Dashboard">
                 <?php echo strtoupper(substr($username, 0, 1)); ?>
             </a>
             <?php endif; ?>
             
-            <!-- Mobile Menu Toggle -->
+            <!-- Enhanced Mobile Menu Toggle -->
             <div class="mobile-menu-toggle-wrapper" onclick="toggleMobileMenu()">
                 <button class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false">
                     <span></span>
@@ -1253,10 +1455,11 @@ if (class_exists('Session')) {
                     News & Events
                 </a>
             </li>
-            <!-- SPECIAL CONTACT TAB -->
+            <!-- ENHANCED SPECIAL CONTACT TAB -->
             <li class="desktop-nav-item contact-tab">
                 <a href="<?php echo $baseUrl; ?>/contact" 
                    class="desktop-nav-link <?php echo $currentPage == 'contact' ? 'active' : ''; ?>">
+                    <i class="fas fa-phone-alt" style="margin-right: 8px;"></i>
                     Contact Us
                 </a>
             </li>
@@ -1267,95 +1470,96 @@ if (class_exists('Session')) {
 <!-- Mobile Navigation Overlay -->
 <div class="mobile-nav-overlay" id="mobileNav">
     <div class="mobile-nav-content">
-        <!-- Search in Mobile Menu -->
+        <!-- Enhanced Search in Mobile Menu -->
         <div class="mobile-search-container">
             <div style="position: relative;">
                 <i class="fas fa-search mobile-search-icon"></i>
                 <input type="search" 
                        class="mobile-search" 
-                       placeholder="Search the website..."
+                       placeholder="Search courses, faculty, research..."
                        id="mobileMenuSearch"
-                       aria-label="Search in mobile menu">
+                       aria-label="Search in mobile menu"
+                       autocomplete="off">
             </div>
         </div>
         
-        <!-- Mobile Navigation Menu -->
+        <!-- Enhanced Mobile Navigation Menu -->
         <ul class="mobile-nav-menu">
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/" 
                    class="mobile-nav-link <?php echo ($currentPage == 'home' || $currentPage == '') ? 'active' : ''; ?>">
-                    <span>Home</span>
+                    <span><i class="fas fa-home" style="margin-right: 12px; width: 20px;"></i>Home</span>
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/about" 
                    class="mobile-nav-link <?php echo $currentPage == 'about' ? 'active' : ''; ?>">
-                    <span>About Us</span>
+                    <span><i class="fas fa-info-circle" style="margin-right: 12px; width: 20px;"></i>About Us</span>
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/programs" 
                    class="mobile-nav-link <?php echo $currentPage == 'programs' ? 'active' : ''; ?>">
-                    <span>Academic Programs</span>
+                    <span><i class="fas fa-graduation-cap" style="margin-right: 12px; width: 20px;"></i>Academic Programs</span>
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/admissions" 
                    class="mobile-nav-link <?php echo $currentPage == 'admissions' ? 'active' : ''; ?>">
-                    <span>Admissions</span>
+                    <span><i class="fas fa-sign-in-alt" style="margin-right: 12px; width: 20px;"></i>Admissions</span>
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/research" 
                    class="mobile-nav-link <?php echo $currentPage == 'research' ? 'active' : ''; ?>">
-                    <span>Research</span>
+                    <span><i class="fas fa-flask" style="margin-right: 12px; width: 20px;"></i>Research</span>
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/student-life" 
                    class="mobile-nav-link <?php echo $currentPage == 'student-life' ? 'active' : ''; ?>">
-                    <span>Student Life</span>
+                    <span><i class="fas fa-users" style="margin-right: 12px; width: 20px;"></i>Student Life</span>
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/faculty" 
                    class="mobile-nav-link <?php echo $currentPage == 'faculty' ? 'active' : ''; ?>">
-                    <span>Faculty</span>
+                    <span><i class="fas fa-chalkboard-teacher" style="margin-right: 12px; width: 20px;"></i>Faculty</span>
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/news" 
                    class="mobile-nav-link <?php echo $currentPage == 'news' ? 'active' : ''; ?>">
-                    <span>News & Events</span>
+                    <span><i class="fas fa-newspaper" style="margin-right: 12px; width: 20px;"></i>News & Events</span>
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>
-            <!-- SPECIAL MOBILE CONTACT TAB -->
+            <!-- Enhanced Mobile Contact Tab -->
             <li class="mobile-nav-item contact-tab">
                 <a href="<?php echo $baseUrl; ?>/contact" 
                    class="mobile-nav-link <?php echo $currentPage == 'contact' ? 'active' : ''; ?>">
-                    <span>Contact Us</span>
+                    <span><i class="fas fa-phone-alt" style="margin-right: 12px;"></i>Contact Us</span>
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>
             <?php if ($isLoggedIn): ?>
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/student/dashboard" class="mobile-nav-link">
-                    <span>Student Dashboard</span>
-                    <i class="fas fa-tachometer-alt"></i>
+                    <span><i class="fas fa-tachometer-alt" style="margin-right: 12px; width: 20px;"></i>Student Dashboard</span>
+                    <i class="fas fa-external-link-alt"></i>
                 </a>
             </li>
             <?php endif; ?>
         </ul>
         
-        <!-- Quick Actions in Mobile Menu -->
+        <!-- Enhanced Quick Actions in Mobile Menu -->
         <div class="mobile-quick-actions">
             <a href="<?php echo $baseUrl; ?>/admissions/apply" class="mobile-action-btn">
                 <i class="fas fa-file-import"></i>
@@ -1366,26 +1570,26 @@ if (class_exists('Session')) {
                 Student Portal
             </a>
             <?php if ($isLoggedIn): ?>
-            <a href="<?php echo $baseUrl; ?>/student/logout" class="mobile-action-btn" style="background: #dc2626;">
+            <a href="<?php echo $baseUrl; ?>/student/logout" class="mobile-action-btn" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">
                 <i class="fas fa-sign-out-alt"></i>
                 Logout
             </a>
             <?php endif; ?>
         </div>
         
-        <!-- Contact Info in Mobile Menu -->
+        <!-- Enhanced Contact Info in Mobile Menu -->
         <div class="mobile-contact-info">
             <div class="mobile-contact-grid">
                 <a href="tel:+2348082775076" class="mobile-contact-item">
-                    <i class="fas fa-phone"></i>
+                    <i class="fas fa-phone" style="color: #0a2c5e;"></i>
                     <span>+234 808 277 5076</span>
                 </a>
                 <a href="mailto:info@fctcns.edu.ng" class="mobile-contact-item">
-                    <i class="fas fa-envelope"></i>
+                    <i class="fas fa-envelope" style="color: #0a2c5e;"></i>
                     <span>info@fctcns.edu.ng</span>
                 </a>
                 <a href="<?php echo $baseUrl; ?>/visit" class="mobile-contact-item">
-                    <i class="fas fa-map-marker-alt"></i>
+                    <i class="fas fa-map-marker-alt" style="color: #0a2c5e;"></i>
                     <span>Visit Campus</span>
                 </a>
             </div>
@@ -1399,7 +1603,7 @@ if (class_exists('Session')) {
 
 <script>
 // ==============================================
-// CLEAN & SIMPLE FUNCTIONALITY
+// ENHANCED CLEAN & SIMPLE FUNCTIONALITY
 // ==============================================
 
 // Toggle Mobile Menu
@@ -1416,6 +1620,7 @@ function toggleMobileMenu() {
     
     if (isExpanded) {
         body.style.overflow = 'hidden';
+        document.getElementById('mobileMenuSearch').focus();
     } else {
         body.style.overflow = '';
     }
@@ -1427,7 +1632,10 @@ function openSearch() {
     const searchInput = searchModal.querySelector('input[type="search"]');
     
     searchModal.classList.add('active');
-    setTimeout(() => searchInput.focus(), 100);
+    setTimeout(() => {
+        searchInput.focus();
+        searchInput.select();
+    }, 100);
     
     document.addEventListener('keydown', function closeOnEscape(e) {
         if (e.key === 'Escape') {
@@ -1435,11 +1643,15 @@ function openSearch() {
             document.removeEventListener('keydown', closeOnEscape);
         }
     });
+    
+    // Prevent body scroll when search is open
+    document.body.style.overflow = 'hidden';
 }
 
 function closeSearch() {
     const searchModal = document.getElementById('searchModal');
     searchModal.classList.remove('active');
+    document.body.style.overflow = '';
 }
 
 // Close Mobile Menu When Clicking Outside
@@ -1525,42 +1737,51 @@ document.addEventListener('DOMContentLoaded', function() {
         menuToggle.setAttribute('aria-expanded', 'false');
     }
     
-    // Handle logo fallback
+    // Handle logo fallback with enhanced detection
     const logoImg = document.querySelector('.brand-logo img');
     const logoFallback = document.querySelector('.logo-fallback');
     
     if (logoImg && logoFallback) {
+        // Create an image object to check if logo exists
+        const testImage = new Image();
+        testImage.src = logoImg.src;
+        
+        testImage.onload = function() {
+            // Logo exists, ensure it's visible
+            logoImg.style.display = 'block';
+            logoFallback.style.display = 'none';
+        };
+        
+        testImage.onerror = function() {
+            // Logo doesn't exist, show fallback
+            logoImg.style.display = 'none';
+            logoFallback.style.display = 'flex';
+        };
+        
+        // Also keep the original error handler
         logoImg.addEventListener('error', function() {
             this.style.display = 'none';
             logoFallback.style.display = 'flex';
         });
-        
-        logoImg.addEventListener('load', function() {
-            logoFallback.style.display = 'none';
-        });
-        
-        // Check if image loaded
-        if (!logoImg.complete || logoImg.naturalWidth === 0) {
-            logoImg.style.display = 'none';
-            logoFallback.style.display = 'flex';
-        }
     }
     
-    // Handle desktop dropdown hover
+    // Handle desktop dropdown hover with enhanced effects
     document.querySelectorAll('.has-dropdown').forEach(item => {
         item.addEventListener('mouseenter', function() {
             if (window.innerWidth >= 1024) {
-                this.querySelector('.dropdown-menu').style.opacity = '1';
-                this.querySelector('.dropdown-menu').style.visibility = 'visible';
-                this.querySelector('.dropdown-menu').style.transform = 'translateY(0)';
+                const dropdown = this.querySelector('.dropdown-menu');
+                dropdown.style.opacity = '1';
+                dropdown.style.visibility = 'visible';
+                dropdown.style.transform = 'translateY(0)';
             }
         });
         
         item.addEventListener('mouseleave', function() {
             if (window.innerWidth >= 1024) {
-                this.querySelector('.dropdown-menu').style.opacity = '0';
-                this.querySelector('.dropdown-menu').style.visibility = 'hidden';
-                this.querySelector('.dropdown-menu').style.transform = 'translateY(-10px)';
+                const dropdown = this.querySelector('.dropdown-menu');
+                dropdown.style.opacity = '0';
+                dropdown.style.visibility = 'hidden';
+                dropdown.style.transform = 'translateY(-10px)';
             }
         });
     });
@@ -1580,7 +1801,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Handle navigation scroll on desktop
+    // Handle navigation scroll on desktop with enhanced UX
     const desktopNavMenu = document.querySelector('.desktop-nav-menu');
     if (desktopNavMenu) {
         let isDown = false;
@@ -1611,10 +1832,28 @@ document.addEventListener('DOMContentLoaded', function() {
             const walk = (x - startX) * 2;
             desktopNavMenu.scrollLeft = scrollLeft - walk;
         });
+        
+        // Add touch support for mobile devices
+        desktopNavMenu.addEventListener('touchstart', (e) => {
+            isDown = true;
+            startX = e.touches[0].pageX - desktopNavMenu.offsetLeft;
+            scrollLeft = desktopNavMenu.scrollLeft;
+        }, { passive: true });
+        
+        desktopNavMenu.addEventListener('touchend', () => {
+            isDown = false;
+        });
+        
+        desktopNavMenu.addEventListener('touchmove', (e) => {
+            if (!isDown) return;
+            const x = e.touches[0].pageX - desktopNavMenu.offsetLeft;
+            const walk = (x - startX) * 2;
+            desktopNavMenu.scrollLeft = scrollLeft - walk;
+        }, { passive: true });
     }
     
     // ==============================================
-    // CRITICAL: Force full width on hero section
+    // ENHANCED: Force full width on hero section
     // ==============================================
     const heroSection = document.querySelector('.hero-section');
     const mainContent = document.querySelector('.main-content');
@@ -1625,58 +1864,135 @@ document.addEventListener('DOMContentLoaded', function() {
         if (mainContent) {
             mainContent.style.padding = '0';
             mainContent.style.maxWidth = '100vw';
+            mainContent.style.width = '100%';
         }
         
-        // Force hero to full width
+        // Force hero to full width with enhanced positioning
         heroSection.style.width = '100vw';
         heroSection.style.maxWidth = '100vw';
         heroSection.style.marginLeft = '0';
         heroSection.style.marginRight = '0';
-        heroSection.style.left = '50%';
-        heroSection.style.right = '50%';
-        heroSection.style.transform = 'translateX(-50%)';
+        heroSection.style.left = '0';
+        heroSection.style.right = '0';
         heroSection.style.position = 'relative';
+        heroSection.style.overflow = 'hidden';
     }
+    
+    // Enhanced search input UX
+    const searchInputs = document.querySelectorAll('input[type="search"]');
+    searchInputs.forEach(input => {
+        // Clear button functionality
+        input.addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.style.paddingRight = '40px';
+                // Add clear button if not exists
+                if (!this.nextElementSibling || !this.nextElementSibling.classList.contains('clear-search')) {
+                    const clearBtn = document.createElement('button');
+                    clearBtn.type = 'button';
+                    clearBtn.className = 'clear-search';
+                    clearBtn.innerHTML = '×';
+                    clearBtn.style.position = 'absolute';
+                    clearBtn.style.right = '10px';
+                    clearBtn.style.top = '50%';
+                    clearBtn.style.transform = 'translateY(-50%)';
+                    clearBtn.style.background = 'transparent';
+                    clearBtn.style.border = 'none';
+                    clearBtn.style.fontSize = '1.5rem';
+                    clearBtn.style.color = '#6b7280';
+                    clearBtn.style.cursor = 'pointer';
+                    clearBtn.style.padding = '0';
+                    clearBtn.style.width = '30px';
+                    clearBtn.style.height = '30px';
+                    clearBtn.style.display = 'flex';
+                    clearBtn.style.alignItems = 'center';
+                    clearBtn.style.justifyContent = 'center';
+                    
+                    clearBtn.addEventListener('click', function() {
+                        input.value = '';
+                        input.focus();
+                        this.style.display = 'none';
+                        input.style.paddingRight = '';
+                    });
+                    
+                    input.parentNode.style.position = 'relative';
+                    input.parentNode.appendChild(clearBtn);
+                }
+                input.nextElementSibling.style.display = 'flex';
+            } else if (input.nextElementSibling && input.nextElementSibling.classList.contains('clear-search')) {
+                input.nextElementSibling.style.display = 'none';
+                input.style.paddingRight = '';
+            }
+        });
+    });
 });
 
-// Update content padding on resize
+// Update content padding on resize with debouncing
+let resizeTimeout;
 window.addEventListener('resize', function() {
-    const header = document.querySelector('.site-header');
-    const navContainer = document.querySelector('.desktop-nav-container');
-    const mainContentWrapper = document.querySelector('.main-content-wrapper');
-    
-    if (mainContentWrapper) {
-        if (window.innerWidth >= 1024 && navContainer) {
-            const totalHeight = header.offsetHeight + navContainer.offsetHeight;
-            mainContentWrapper.style.paddingTop = totalHeight + 'px';
-        } else {
-            mainContentWrapper.style.paddingTop = header.offsetHeight + 'px';
-        }
-    }
-    
-    // Re-apply full width fixes on resize
-    const heroSection = document.querySelector('.hero-section');
-    const mainContent = document.querySelector('.main-content');
-    const homepageContent = document.querySelector('.homepage-content');
-    
-    if (heroSection && homepageContent) {
-        if (mainContent) {
-            mainContent.style.padding = '0';
-            mainContent.style.maxWidth = '100vw';
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+        const header = document.querySelector('.site-header');
+        const navContainer = document.querySelector('.desktop-nav-container');
+        const mainContentWrapper = document.querySelector('.main-content-wrapper');
+        
+        if (mainContentWrapper) {
+            if (window.innerWidth >= 1024 && navContainer) {
+                const totalHeight = header.offsetHeight + navContainer.offsetHeight;
+                mainContentWrapper.style.paddingTop = totalHeight + 'px';
+            } else {
+                mainContentWrapper.style.paddingTop = header.offsetHeight + 'px';
+            }
         }
         
-        heroSection.style.width = '100vw';
-        heroSection.style.maxWidth = '100vw';
-        heroSection.style.marginLeft = '0';
-        heroSection.style.marginRight = '0';
-        heroSection.style.left = '50%';
-        heroSection.style.right = '50%';
-        heroSection.style.transform = 'translateX(-50%)';
-        heroSection.style.position = 'relative';
-    }
+        // Re-apply full width fixes on resize
+        const heroSection = document.querySelector('.hero-section');
+        const mainContent = document.querySelector('.main-content');
+        const homepageContent = document.querySelector('.homepage-content');
+        
+        if (heroSection && homepageContent) {
+            if (mainContent) {
+                mainContent.style.padding = '0';
+                mainContent.style.maxWidth = '100vw';
+                mainContent.style.width = '100%';
+            }
+            
+            heroSection.style.width = '100vw';
+            heroSection.style.maxWidth = '100vw';
+            heroSection.style.marginLeft = '0';
+            heroSection.style.marginRight = '0';
+            heroSection.style.left = '0';
+            heroSection.style.right = '0';
+            heroSection.style.position = 'relative';
+            heroSection.style.overflow = 'hidden';
+        }
+        
+        // Update logo size based on viewport
+        const brandLogo = document.querySelector('.brand-logo');
+        if (brandLogo) {
+            if (window.innerWidth < 480) {
+                brandLogo.style.width = '50px';
+                brandLogo.style.height = '50px';
+            } else if (window.innerWidth < 768) {
+                brandLogo.style.width = '55px';
+                brandLogo.style.height = '55px';
+            } else if (window.innerWidth < 1024) {
+                brandLogo.style.width = '60px';
+                brandLogo.style.height = '60px';
+            } else if (window.innerWidth < 1200) {
+                brandLogo.style.width = '65px';
+                brandLogo.style.height = '65px';
+            } else if (window.innerWidth < 1400) {
+                brandLogo.style.width = '70px';
+                brandLogo.style.height = '70px';
+            } else {
+                brandLogo.style.width = '75px';
+                brandLogo.style.height = '75px';
+            }
+        }
+    }, 100);
 });
 
-// Set initial content padding
+// Set initial content padding on load
 window.addEventListener('load', function() {
     const header = document.querySelector('.site-header');
     const navContainer = document.querySelector('.desktop-nav-container');
@@ -1700,20 +2016,45 @@ window.addEventListener('load', function() {
         if (mainContent) {
             mainContent.style.padding = '0';
             mainContent.style.maxWidth = '100vw';
+            mainContent.style.width = '100%';
         }
         
         heroSection.style.width = '100vw';
         heroSection.style.maxWidth = '100vw';
         heroSection.style.marginLeft = '0';
         heroSection.style.marginRight = '0';
-        heroSection.style.left = '50%';
-        heroSection.style.right = '50%';
-        heroSection.style.transform = 'translateX(-50%)';
+        heroSection.style.left = '0';
+        heroSection.style.right = '0';
         heroSection.style.position = 'relative';
+        heroSection.style.overflow = 'hidden';
+    }
+    
+    // Initial logo size setup
+    const brandLogo = document.querySelector('.brand-logo');
+    if (brandLogo) {
+        if (window.innerWidth < 480) {
+            brandLogo.style.width = '50px';
+            brandLogo.style.height = '50px';
+        } else if (window.innerWidth < 768) {
+            brandLogo.style.width = '55px';
+            brandLogo.style.height = '55px';
+        } else if (window.innerWidth < 1024) {
+            brandLogo.style.width = '60px';
+            brandLogo.style.height = '60px';
+        } else if (window.innerWidth < 1200) {
+            brandLogo.style.width = '65px';
+            brandLogo.style.height = '65px';
+        } else if (window.innerWidth < 1400) {
+            brandLogo.style.width = '70px';
+            brandLogo.style.height = '70px';
+        } else {
+            brandLogo.style.width = '75px';
+            brandLogo.style.height = '75px';
+        }
     }
 });
 
-// Ensure header stays at top and full width
+// Enhanced header positioning
 document.addEventListener('DOMContentLoaded', function() {
     const header = document.querySelector('.site-header');
     const navContainer = document.querySelector('.desktop-nav-container');
@@ -1758,18 +2099,54 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Fix for horizontal scroll issues
+// Fix for horizontal scroll issues with enhanced detection
 window.addEventListener('load', function() {
     // Prevent horizontal scroll
     document.documentElement.style.overflowX = 'hidden';
     document.body.style.overflowX = 'hidden';
     
-    // Fix any overflowing elements
-    document.querySelectorAll('*').forEach(element => {
-        const rect = element.getBoundingClientRect();
-        if (rect.right > window.innerWidth) {
-            element.style.maxWidth = '100%';
-            element.style.overflowX = 'hidden';
+    // Fix any overflowing elements with better detection
+    function checkOverflow() {
+        document.querySelectorAll('*').forEach(element => {
+            const rect = element.getBoundingClientRect();
+            if (rect.right > window.innerWidth + 5 || rect.left < -5) { // Small tolerance
+                element.style.maxWidth = '100%';
+                element.style.overflowX = 'hidden';
+                
+                // Special handling for specific elements
+                if (element.classList.contains('desktop-nav-menu')) {
+                    element.style.overflowX = 'auto';
+                }
+            }
+        });
+    }
+    
+    checkOverflow();
+    
+    // Re-check on resize
+    window.addEventListener('resize', checkOverflow);
+});
+
+// Smooth scrolling for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        
+        const targetId = this.getAttribute('href');
+        if (targetId === '#') return;
+        
+        const targetElement = document.querySelector(targetId);
+        if (targetElement) {
+            // Close mobile menu if open
+            const mobileNav = document.getElementById('mobileNav');
+            if (mobileNav.classList.contains('active')) {
+                toggleMobileMenu();
+            }
+            
+            window.scrollTo({
+                top: targetElement.offsetTop - 100,
+                behavior: 'smooth'
+            });
         }
     });
 });
