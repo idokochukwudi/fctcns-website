@@ -1084,7 +1084,7 @@ body {
             <div class="alert-important">
                 <h3><i class="fas fa-exclamation-triangle"></i> Important Notice</h3>
                 <p><strong>No extension</strong> of the application deadline. The College has <strong>NO AGENTS</strong>. Beware of fraudulent websites and deal only through official channels.</p>
-                <p style="margin-top: var(--spacing-sm);">All applications must be submitted through the official portal only.</p>
+                <p style="margin-top: var(--spacing-sm);">All applications must be submitted through the application portal only.</p>
             </div>
         </div>
     </section>
@@ -1199,7 +1199,7 @@ body {
                             <span class="process-step-number">01</span>
                             <h3 class="process-step-title">Account Creation & Registration</h3>
                             <ul class="process-step-list">
-                                <li>Visit the official portal: 
+                                <li>Visit the application portal: 
                                     <div class="portal-button-container">
                                         <a href="<?php echo $applicationPortal; ?>" target="_blank" class="btn-portal" title="Go to Application Portal">
                                             <i class="fas fa-external-link-alt"></i> Visit Portal

@@ -322,28 +322,68 @@ button, .btn,
     );
 }
 
-/* Carousel Content - FIXED TO NOT BE HIDDEN */
-.carousel-slide-content {
+/* ==========================================================================
+   CAROUSEL CONTENT CONTAINER - VERY LIGHT TRANSPARENT BACKGROUND
+   ========================================================================== */
+.carousel-content-container {
     position: relative;
     z-index: 3;
-    color: var(--color-white);
     max-width: 1200px;
-    padding: var(--spacing-xl);
-    margin: 0 auto;
-    text-align: left;
     width: 95%;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
     height: 100%;
-    /* Ensure content is above controls */
     margin-bottom: 120px; /* Space for controls */
+}
+
+.carousel-content-wrapper {
+    background: rgba(0, 0, 0, 0.15); /* VERY LIGHT TRANSPARENT - was 0.25 */
+    backdrop-filter: blur(4px); /* Minimal blur */
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    border: 1px solid rgba(255, 255, 255, 0.05); /* Very subtle border */
+    box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.1), /* Very light shadow */
+        0 1px 4px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.02); /* Minimal inner shadow */
+    max-width: 800px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Optional: Add a subtle gradient border effect */
+.carousel-content-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.08) 20%, /* Very light gradient */
+        rgba(255, 255, 255, 0.08) 80%, 
+        transparent 100%
+    );
+}
+
+/* Carousel Content - Inside the transparent container */
+.carousel-slide-content {
+    position: relative;
+    color: var(--color-white);
+    text-align: left;
+    width: 100%;
 }
 
 .carousel-slide-title {
     font-family: var(--font-heading);
-    font-size: clamp(2rem, 5vw, 4rem);
+    font-size: clamp(2rem, 5vw, 3.5rem);
     font-weight: 700;
     line-height: 1.1;
     margin-bottom: var(--spacing-sm);
@@ -356,7 +396,7 @@ button, .btn,
 }
 
 .carousel-slide-subtitle {
-    font-size: clamp(1.1rem, 3vw, 1.5rem);
+    font-size: clamp(1.1rem, 3vw, 1.4rem);
     font-weight: 400;
     margin-bottom: var(--spacing-xl);
     line-height: 1.5;
@@ -387,7 +427,7 @@ button, .btn,
     width: 100%;
     max-width: 900px;
     height: 3px;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.1); /* Lighter */
     border-radius: 1.5px;
     overflow: hidden;
     position: relative;
@@ -410,10 +450,12 @@ button, .btn,
     width: 100%;
     max-width: 900px;
     gap: var(--spacing-md);
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.2); /* More transparent */
     border-radius: var(--radius-lg);
     padding: var(--spacing-sm) var(--spacing-lg);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05); /* Lighter border */
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
 }
 
 /* Arrow Buttons - Simplified */
@@ -427,8 +469,8 @@ button, .btn,
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06); /* More transparent */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Lighter border */
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -462,7 +504,7 @@ button, .btn,
 }
 
 .slider-controls__arrow:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.12); /* Lighter hover */
 }
 
 /* ==========================================================================
@@ -729,7 +771,7 @@ button, .btn,
 }
 
 /* ==========================================================================
-   ACCREDITATION SECTION
+   ACCREDITATION SECTION - FIXED CENTERING
    ========================================================================== */
 .accreditation-section {
     background: var(--color-off-white);
@@ -755,6 +797,11 @@ button, .btn,
     max-width: 800px;
     width: 100%;
     padding: 0 var(--spacing-md);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .accreditation-text h3 {
@@ -764,6 +811,8 @@ button, .btn,
     margin-bottom: var(--spacing-sm);
     color: var(--color-primary);
     line-height: 1.3;
+    text-align: center;
+    width: 100%;
 }
 
 .accreditation-text p {
@@ -773,6 +822,11 @@ button, .btn,
     font-weight: 400;
     margin-bottom: var(--spacing-lg);
     font-family: var(--font-body);
+    text-align: center;
+    width: 100%;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .accreditation-badges {
@@ -906,6 +960,8 @@ button, .btn,
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 .program-content h3 {
@@ -915,6 +971,8 @@ button, .btn,
     margin-bottom: var(--spacing-sm);
     color: var(--color-primary);
     line-height: 1.3;
+    text-align: center;
+    width: 100%;
 }
 
 .program-content p {
@@ -925,6 +983,8 @@ button, .btn,
     font-weight: 400;
     flex-grow: 1;
     font-family: var(--font-body);
+    text-align: center;
+    width: 100%;
 }
 
 .program-features {
@@ -1025,6 +1085,8 @@ button, .btn,
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 .environment-content h3 {
@@ -1034,6 +1096,8 @@ button, .btn,
     margin-bottom: var(--spacing-sm);
     color: var(--color-primary);
     line-height: 1.3;
+    text-align: center;
+    width: 100%;
 }
 
 .environment-content p {
@@ -1044,6 +1108,8 @@ button, .btn,
     font-weight: 400;
     flex-grow: 1;
     font-family: var(--font-body);
+    text-align: center;
+    width: 100%;
 }
 
 /* ==========================================================================
@@ -1148,6 +1214,7 @@ button, .btn,
     color: var(--color-primary);
     text-align: center;
     line-height: 1.2;
+    width: 100%;
 }
 
 .section-subtitle {
@@ -1159,6 +1226,7 @@ button, .btn,
     max-width: 600px;
     margin: 0 auto;
     font-family: var(--font-body);
+    width: 100%;
 }
 
 /* Center all text content */
@@ -1199,7 +1267,7 @@ button, .btn,
 }
 
 /* ==========================================================================
-   RESPONSIVE DESIGN
+   RESPONSIVE DESIGN - CAROUSEL ENHANCEMENTS
    ========================================================================== */
 
 /* Tablet and larger (768px+) */
@@ -1221,9 +1289,16 @@ button, .btn,
         min-height: 600px;
     }
     
-    /* Fixed: Text content has space above controls */
-    .carousel-slide-content {
+    /* Carousel content container */
+    .carousel-content-container {
         margin-bottom: 140px;
+    }
+    
+    .carousel-content-wrapper {
+        padding: var(--spacing-xl) var(--spacing-xxl);
+        background: rgba(0, 0, 0, 0.12); /* Even lighter */
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
     }
     
     .application-status-banner {
@@ -1280,11 +1355,11 @@ button, .btn,
     }
     
     .carousel-slide-title {
-        font-size: clamp(2rem, 5vw, 4rem);
+        font-size: clamp(2rem, 5vw, 3.5rem);
     }
     
     .carousel-slide-subtitle {
-        font-size: clamp(1.1rem, 3vw, 1.5rem);
+        font-size: clamp(1.1rem, 3vw, 1.4rem);
     }
     
     .slider-controls {
@@ -1302,6 +1377,9 @@ button, .btn,
         max-width: 800px;
         padding: var(--spacing-md);
         gap: var(--spacing-md);
+        background: rgba(0, 0, 0, 0.15); /* Lighter */
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
     }
     
     .slider-controls__arrows {
@@ -1332,9 +1410,16 @@ button, .btn,
 
 /* Desktop (1024px+) */
 @media (min-width: 1024px) {
-    .carousel-slide-content {
-        padding: var(--spacing-xxl);
+    .carousel-content-container {
         margin-bottom: 160px;
+    }
+    
+    .carousel-content-wrapper {
+        padding: var(--spacing-xxl);
+        max-width: 850px;
+        background: rgba(0, 0, 0, 0.1); /* Even lighter */
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
     }
     
     .programs-grid {
@@ -1378,6 +1463,9 @@ button, .btn,
     .slider-controls__container {
         max-width: 900px;
         padding: var(--spacing-md) var(--spacing-lg);
+        background: rgba(0, 0, 0, 0.12); /* Lighter */
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
     }
     
     .slider-controls__arrows {
@@ -1428,11 +1516,25 @@ button, .btn,
         transform: translateX(-50%) !important;
     }
     
-    .carousel-slide-content {
+    /* Carousel content container - mobile */
+    .carousel-content-container {
+        padding: var(--spacing-md);
+        margin-bottom: 140px;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .carousel-content-wrapper {
         padding: var(--spacing-lg);
+        background: rgba(0, 0, 0, 0.12); /* Lighter */
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        text-align: center;
+    }
+    
+    .carousel-slide-content {
         text-align: center;
         align-items: center;
-        margin-bottom: 140px; /* Adjusted for simpler controls */
     }
     
     .carousel-slide-title {
@@ -1459,6 +1561,9 @@ button, .btn,
         justify-content: center;
         gap: var(--spacing-md);
         padding: var(--spacing-sm);
+        background: rgba(0, 0, 0, 0.15); /* Lighter */
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
     }
     
     .slider-controls__progress {
@@ -1553,16 +1658,25 @@ button, .btn,
         transform: translateX(-50%) !important;
     }
     
+    /* Carousel content container - small mobile */
+    .carousel-content-container {
+        padding: var(--spacing-sm);
+        margin-bottom: 120px;
+    }
+    
+    .carousel-content-wrapper {
+        padding: var(--spacing-md);
+        background: rgba(0, 0, 0, 0.1); /* Lighter */
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+    }
+    
     .carousel-slide-title {
         font-size: 1.5rem;
     }
     
     .carousel-slide-subtitle {
         font-size: 0.95rem;
-    }
-    
-    .carousel-slide-content {
-        margin-bottom: 120px; /* Adjusted for simpler controls */
     }
     
     .slider-controls {
@@ -1574,6 +1688,9 @@ button, .btn,
     .slider-controls__container {
         padding: var(--spacing-xs);
         gap: var(--spacing-sm);
+        background: rgba(0, 0, 0, 0.12); /* Lighter */
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
     }
     
     .slider-controls__arrow {
@@ -1677,8 +1794,15 @@ button, .btn,
         max-height: 900px;
     }
     
-    .carousel-slide-content {
+    .carousel-content-container {
         margin-bottom: 180px;
+    }
+    
+    .carousel-content-wrapper {
+        max-width: 900px;
+        background: rgba(0, 0, 0, 0.08); /* Lightest on large screens */
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
     }
     
     .accreditation-badges {
@@ -1708,6 +1832,9 @@ button, .btn,
     
     .slider-controls__container {
         max-width: 1000px;
+        background: rgba(0, 0, 0, 0.1); /* Lighter */
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
     }
     
     .slider-controls__arrows {
@@ -1743,6 +1870,17 @@ button, .btn,
         min-height: 400px;
     }
     
+    .carousel-content-container {
+        margin-bottom: 140px;
+    }
+    
+    .carousel-content-wrapper {
+        padding: var(--spacing-lg);
+        background: rgba(0, 0, 0, 0.1); /* Lighter */
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+    
     .carousel-slide-title {
         font-size: clamp(1.5rem, 3vw, 2.5rem);
     }
@@ -1752,10 +1890,6 @@ button, .btn,
         margin-bottom: var(--spacing-md);
     }
     
-    .carousel-slide-content {
-        margin-bottom: 140px;
-    }
-    
     .slider-controls {
         bottom: var(--spacing-md);
         gap: var(--spacing-sm);
@@ -1763,6 +1897,9 @@ button, .btn,
     
     .slider-controls__container {
         padding: var(--spacing-sm);
+        background: rgba(0, 0, 0, 0.12); /* Lighter */
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
     }
 }
 
@@ -1832,23 +1969,27 @@ button, .btn,
                              role="img"
                              aria-label="<?php echo e($slide['title']); ?>">
                         </div>
-                        <div class="carousel-slide-content">
-                            <h1 class="carousel-slide-title">
-                                <?php echo e($slide['title']); ?>
-                            </h1>
-                            <p class="carousel-slide-subtitle">
-                                <?php echo e($slide['subtitle']); ?>
-                            </p>
-                            
-                            <!-- CTA Button from slide -->
-                            <?php if (!empty($slide['button_text']) && !empty($slide['button_link'])): ?>
-                            <a href="<?php echo e($slide['button_link']); ?>" 
-                               class="button gold-accent"
-                               aria-label="<?php echo e($slide['button_text']); ?> - <?php echo e($slide['title']); ?>">
-                                <div><?php echo e($slide['button_text']); ?></div>
-                                <div class="button__icon-wrapper"></div>
-                            </a>
-                            <?php endif; ?>
+                        <div class="carousel-content-container">
+                            <div class="carousel-content-wrapper">
+                                <div class="carousel-slide-content">
+                                    <h1 class="carousel-slide-title">
+                                        <?php echo e($slide['title']); ?>
+                                    </h1>
+                                    <p class="carousel-slide-subtitle">
+                                        <?php echo e($slide['subtitle']); ?>
+                                    </p>
+                                    
+                                    <!-- CTA Button from slide -->
+                                    <?php if (!empty($slide['button_text']) && !empty($slide['button_link'])): ?>
+                                    <a href="<?php echo e($slide['button_link']); ?>" 
+                                       class="button gold-accent"
+                                       aria-label="<?php echo e($slide['button_text']); ?> - <?php echo e($slide['title']); ?>">
+                                        <div><?php echo e($slide['button_text']); ?></div>
+                                        <div class="button__icon-wrapper"></div>
+                                    </a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <?php endforeach; ?>
