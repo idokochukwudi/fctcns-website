@@ -4,7 +4,7 @@
  * Desktop: Show navigation tabs
  * Mobile: Collapse into menu with "MENU" label
  * FULL WIDTH VERSION - Fixed padding issues
- * Enhanced: Better logo scaling and search icon design
+ * No search functionality
  * 
  * @package FCT_CNS
  */
@@ -85,7 +85,7 @@ if (class_exists('Session')) {
         /* ==============================================
            PROFESSIONAL HEADER REDESIGN - CLEAN & STRUCTURED
            FULL WIDTH VERSION - FIXED PADDING
-           ENHANCED: Better logo scaling and icon design
+           NO SEARCH FUNCTIONALITY
            ============================================== */
         
         :root {
@@ -330,44 +330,12 @@ if (class_exists('Session')) {
         }
         
         /* ==============================================
-           ENHANCED HEADER ACTIONS - Better Search & Icons
+           HEADER ACTIONS - Search Icon Removed
            ============================================== */
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 1rem; /* Increased gap for better spacing */
-        }
-        
-        /* ENHANCED: Search Button - Improved design */
-        .search-btn {
-            width: 46px; /* Slightly larger */
-            height: 46px; /* Slightly larger */
-            border-radius: 10px; /* More rounded */
-            border: 1px solid var(--color-gray-300);
-            background: var(--color-white);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all var(--transition-smooth);
-            color: var(--color-gray-600);
-            font-size: 1.1rem; /* Slightly larger icon */
-            position: relative;
-            overflow: hidden;
-        }
-        
-        /* Search button hover animation */
-        .search-btn:hover {
-            background: var(--color-primary);
-            color: var(--color-white);
-            border-color: var(--color-primary);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(10, 44, 94, 0.15);
-        }
-        
-        /* Search button active effect */
-        .search-btn:active {
-            transform: translateY(0);
+            gap: 1rem; /* Reduced gap since search is removed */
         }
         
         /* ENHANCED: Apply Button - Better visibility */
@@ -664,7 +632,7 @@ if (class_exists('Session')) {
         }
         
         /* ==============================================
-           MOBILE NAVIGATION OVERLAY - Enhanced
+           MOBILE NAVIGATION OVERLAY - Enhanced (No Search)
            ============================================== */
         .mobile-nav-overlay {
             position: fixed;
@@ -697,39 +665,6 @@ if (class_exists('Session')) {
         .mobile-nav-content {
             width: 100%;
             margin: 0 auto;
-        }
-        
-        /* ENHANCED: Search in Mobile Menu */
-        .mobile-search-container {
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-        
-        .mobile-search {
-            width: 100%;
-            padding: 1rem 1rem 1rem 3.2rem; /* Adjusted padding */
-            border: 2px solid var(--color-gray-300);
-            border-radius: 10px; /* More rounded */
-            font-size: 1rem;
-            font-family: var(--font-body);
-            background: var(--color-white);
-            transition: all var(--transition-smooth);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-        
-        .mobile-search:focus {
-            outline: none;
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(10, 44, 94, 0.1), 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        
-        .mobile-search-icon {
-            position: absolute;
-            left: 1.25rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--color-gray-500);
-            font-size: 1.2rem; /* Slightly larger */
         }
         
         /* Mobile Navigation Menu */
@@ -856,96 +791,6 @@ if (class_exists('Session')) {
         }
         
         /* ==============================================
-           ENHANCED SEARCH MODAL
-           ============================================== */
-        .search-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            z-index: 1100;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .search-modal.active {
-            display: flex;
-        }
-        
-        .search-modal-content {
-            background: var(--color-white);
-            width: 100%;
-            max-width: 650px; /* Slightly wider */
-            border-radius: 12px;
-            padding: 2.5rem; /* Increased padding */
-            position: relative;
-            box-shadow: var(--shadow-elevated);
-            animation: slideUp 0.3s ease;
-        }
-        
-        @keyframes slideUp {
-            from {
-                transform: translateY(20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        
-        .search-modal-close {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            background: var(--color-gray-100);
-            border: none;
-            font-size: 1.5rem;
-            color: var(--color-gray-600);
-            cursor: pointer;
-            width: 40px; /* Larger close button */
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: all var(--transition-smooth);
-        }
-        
-        .search-modal-close:hover {
-            background: var(--color-gray-200);
-            color: var(--color-gray-800);
-            transform: rotate(90deg);
-        }
-        
-        /* Enhanced search form in modal */
-        .search-modal .search-form {
-            position: relative;
-        }
-        
-        .search-modal .mobile-search-icon {
-            left: 1rem;
-            font-size: 1.3rem;
-        }
-        
-        .search-modal .mobile-search {
-            padding: 1.2rem 1rem 1.2rem 3.5rem;
-            font-size: 1.1rem;
-            border-radius: 12px;
-        }
-        
-        /* ==============================================
            FLASH MESSAGES
            ============================================== */
         .flash-messages {
@@ -1040,7 +885,6 @@ if (class_exists('Session')) {
                 font-size: 1.2rem; /* Smaller but still readable */
             }
             
-            .search-btn,
             .user-btn,
             .mobile-menu-toggle {
                 width: 40px;
@@ -1049,6 +893,11 @@ if (class_exists('Session')) {
             
             .mobile-nav-overlay {
                 padding: 1rem; /* Reduced padding */
+            }
+            
+            .apply-btn {
+                padding: 0.6rem 1rem; /* Smaller on mobile */
+                font-size: 0.85rem;
             }
         }
         
@@ -1308,26 +1157,6 @@ if (class_exists('Session')) {
     ?>
 </div>
 
-<!-- Search Modal -->
-<div class="search-modal" id="searchModal">
-    <div class="search-modal-content">
-        <button class="search-modal-close" aria-label="Close search" onclick="closeSearch()">
-            &times;
-        </button>
-        <form action="<?php echo $baseUrl; ?>/search" method="GET" class="search-form">
-            <div style="position: relative;">
-                <i class="fas fa-search mobile-search-icon"></i>
-                <input type="search" 
-                       name="q" 
-                       class="mobile-search" 
-                       placeholder="Search courses, faculty, research..."
-                       aria-label="Search the website"
-                       autocomplete="off">
-            </div>
-        </form>
-    </div>
-</div>
-
 <!-- Fixed Header -->
 <header class="site-header" role="banner">
     <div class="header-container">
@@ -1353,27 +1182,22 @@ if (class_exists('Session')) {
             </div>
         </a>
         
-        <!-- Enhanced Header Actions -->
+        <!-- Header Actions - Search Removed -->
         <div class="header-actions">
-            <!-- Enhanced Search Button -->
-            <button class="search-btn" aria-label="Open search" onclick="openSearch()" title="Search">
-                <i class="fas fa-search"></i>
-            </button>
-            
-            <!-- Enhanced Apply Now Button (Desktop only) -->
+            <!-- Apply Now Button (Desktop only) -->
             <a href="<?php echo $baseUrl; ?>/admissions" class="apply-btn">
                 <i class="fas fa-file-alt"></i>
                 <span>Apply Now</span>
             </a>
             
-            <!-- Enhanced User Button (only when logged in) -->
+            <!-- User Button (only when logged in) -->
             <?php if ($isLoggedIn): ?>
             <a href="<?php echo $baseUrl; ?>/student/dashboard" class="user-btn" aria-label="User dashboard" title="Dashboard">
                 <?php echo strtoupper(substr($username, 0, 1)); ?>
             </a>
             <?php endif; ?>
             
-            <!-- Enhanced Mobile Menu Toggle -->
+            <!-- Mobile Menu Toggle -->
             <div class="mobile-menu-toggle-wrapper" onclick="toggleMobileMenu()">
                 <button class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false">
                     <span></span>
@@ -1455,7 +1279,7 @@ if (class_exists('Session')) {
                     News & Events
                 </a>
             </li>
-            <!-- ENHANCED SPECIAL CONTACT TAB -->
+            <!-- SPECIAL CONTACT TAB -->
             <li class="desktop-nav-item contact-tab">
                 <a href="<?php echo $baseUrl; ?>/contact" 
                    class="desktop-nav-link <?php echo $currentPage == 'contact' ? 'active' : ''; ?>">
@@ -1470,20 +1294,7 @@ if (class_exists('Session')) {
 <!-- Mobile Navigation Overlay -->
 <div class="mobile-nav-overlay" id="mobileNav">
     <div class="mobile-nav-content">
-        <!-- Enhanced Search in Mobile Menu -->
-        <div class="mobile-search-container">
-            <div style="position: relative;">
-                <i class="fas fa-search mobile-search-icon"></i>
-                <input type="search" 
-                       class="mobile-search" 
-                       placeholder="Search courses, faculty, research..."
-                       id="mobileMenuSearch"
-                       aria-label="Search in mobile menu"
-                       autocomplete="off">
-            </div>
-        </div>
-        
-        <!-- Enhanced Mobile Navigation Menu -->
+        <!-- Mobile Navigation Menu -->
         <ul class="mobile-nav-menu">
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/" 
@@ -1559,7 +1370,7 @@ if (class_exists('Session')) {
             <?php endif; ?>
         </ul>
         
-        <!-- Enhanced Quick Actions in Mobile Menu -->
+        <!-- Quick Actions in Mobile Menu -->
         <div class="mobile-quick-actions">
             <a href="<?php echo $baseUrl; ?>/admissions/apply" class="mobile-action-btn">
                 <i class="fas fa-file-import"></i>
@@ -1577,7 +1388,7 @@ if (class_exists('Session')) {
             <?php endif; ?>
         </div>
         
-        <!-- Enhanced Contact Info in Mobile Menu -->
+        <!-- Contact Info in Mobile Menu -->
         <div class="mobile-contact-info">
             <div class="mobile-contact-grid">
                 <a href="tel:+2348082775076" class="mobile-contact-item">
@@ -1603,7 +1414,7 @@ if (class_exists('Session')) {
 
 <script>
 // ==============================================
-// ENHANCED CLEAN & SIMPLE FUNCTIONALITY
+// CLEAN FUNCTIONALITY - NO SEARCH
 // ==============================================
 
 // Toggle Mobile Menu
@@ -1620,55 +1431,20 @@ function toggleMobileMenu() {
     
     if (isExpanded) {
         body.style.overflow = 'hidden';
-        document.getElementById('mobileMenuSearch').focus();
     } else {
         body.style.overflow = '';
     }
-}
-
-// Search Functions
-function openSearch() {
-    const searchModal = document.getElementById('searchModal');
-    const searchInput = searchModal.querySelector('input[type="search"]');
-    
-    searchModal.classList.add('active');
-    setTimeout(() => {
-        searchInput.focus();
-        searchInput.select();
-    }, 100);
-    
-    document.addEventListener('keydown', function closeOnEscape(e) {
-        if (e.key === 'Escape') {
-            closeSearch();
-            document.removeEventListener('keydown', closeOnEscape);
-        }
-    });
-    
-    // Prevent body scroll when search is open
-    document.body.style.overflow = 'hidden';
-}
-
-function closeSearch() {
-    const searchModal = document.getElementById('searchModal');
-    searchModal.classList.remove('active');
-    document.body.style.overflow = '';
 }
 
 // Close Mobile Menu When Clicking Outside
 document.addEventListener('click', function(event) {
     const menuToggle = document.querySelector('.mobile-menu-toggle-wrapper');
     const mobileNav = document.getElementById('mobileNav');
-    const searchModal = document.getElementById('searchModal');
     
     if (mobileNav.classList.contains('active') && 
         !menuToggle.contains(event.target) && 
         !mobileNav.contains(event.target)) {
         toggleMobileMenu();
-    }
-    
-    if (searchModal.classList.contains('active') && 
-        event.target === searchModal) {
-        closeSearch();
     }
 });
 
@@ -1679,36 +1455,8 @@ document.addEventListener('keydown', function(e) {
         if (mobileNav.classList.contains('active')) {
             toggleMobileMenu();
         }
-        closeSearch();
     }
 });
-
-// Handle Mobile Menu Search
-const mobileMenuSearch = document.getElementById('mobileMenuSearch');
-if (mobileMenuSearch) {
-    mobileMenuSearch.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const searchTerm = this.value.trim();
-            if (searchTerm) {
-                window.location.href = `<?php echo $baseUrl; ?>/search?q=${encodeURIComponent(searchTerm)}`;
-                toggleMobileMenu();
-            }
-        }
-    });
-}
-
-// Handle Search Modal Submission
-const searchModalForm = document.querySelector('.search-modal .search-form');
-if (searchModalForm) {
-    searchModalForm.addEventListener('submit', function(e) {
-        const input = this.querySelector('input[type="search"]');
-        if (!input.value.trim()) {
-            e.preventDefault();
-            input.focus();
-        }
-    });
-}
 
 // Initialize on DOM Load
 document.addEventListener('DOMContentLoaded', function() {
@@ -1852,9 +1600,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, { passive: true });
     }
     
-    // ==============================================
-    // ENHANCED: Force full width on hero section
-    // ==============================================
+    // Force full width on hero section
     const heroSection = document.querySelector('.hero-section');
     const mainContent = document.querySelector('.main-content');
     const homepageContent = document.querySelector('.homepage-content');
@@ -1877,53 +1623,6 @@ document.addEventListener('DOMContentLoaded', function() {
         heroSection.style.position = 'relative';
         heroSection.style.overflow = 'hidden';
     }
-    
-    // Enhanced search input UX
-    const searchInputs = document.querySelectorAll('input[type="search"]');
-    searchInputs.forEach(input => {
-        // Clear button functionality
-        input.addEventListener('input', function() {
-            if (this.value.trim()) {
-                this.style.paddingRight = '40px';
-                // Add clear button if not exists
-                if (!this.nextElementSibling || !this.nextElementSibling.classList.contains('clear-search')) {
-                    const clearBtn = document.createElement('button');
-                    clearBtn.type = 'button';
-                    clearBtn.className = 'clear-search';
-                    clearBtn.innerHTML = '×';
-                    clearBtn.style.position = 'absolute';
-                    clearBtn.style.right = '10px';
-                    clearBtn.style.top = '50%';
-                    clearBtn.style.transform = 'translateY(-50%)';
-                    clearBtn.style.background = 'transparent';
-                    clearBtn.style.border = 'none';
-                    clearBtn.style.fontSize = '1.5rem';
-                    clearBtn.style.color = '#6b7280';
-                    clearBtn.style.cursor = 'pointer';
-                    clearBtn.style.padding = '0';
-                    clearBtn.style.width = '30px';
-                    clearBtn.style.height = '30px';
-                    clearBtn.style.display = 'flex';
-                    clearBtn.style.alignItems = 'center';
-                    clearBtn.style.justifyContent = 'center';
-                    
-                    clearBtn.addEventListener('click', function() {
-                        input.value = '';
-                        input.focus();
-                        this.style.display = 'none';
-                        input.style.paddingRight = '';
-                    });
-                    
-                    input.parentNode.style.position = 'relative';
-                    input.parentNode.appendChild(clearBtn);
-                }
-                input.nextElementSibling.style.display = 'flex';
-            } else if (input.nextElementSibling && input.nextElementSibling.classList.contains('clear-search')) {
-                input.nextElementSibling.style.display = 'none';
-                input.style.paddingRight = '';
-            }
-        });
-    });
 });
 
 // Update content padding on resize with debouncing
