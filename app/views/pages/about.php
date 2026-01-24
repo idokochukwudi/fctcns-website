@@ -33,6 +33,22 @@ $page_description = $page_description ?? 'Learn about our history, mission, visi
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
+    /* EMERGENCY FULL WIDTH OVERRIDE */
+body .main-content {
+    padding: 0 !important;
+    max-width: 100vw !important;
+}
+
+.hero-section {
+    width: 100vw !important;
+    position: relative !important;
+    left: 50% !important;
+    right: 50% !important;
+    margin-left: -50vw !important;
+    margin-right: -50vw !important;
+}
+    </style>
+<style>
 /* ==========================================================================
    CRITICAL FIX: No gap between header and content
    ========================================================================== */
@@ -1045,13 +1061,13 @@ body {
                 <div class="card">
                     <div class="card-body">
                         <h3 class="card-title">Our Mission</h3>
-                        <p class="card-text">To deliver exceptional nursing education through innovative teaching, research, and community engagement, developing competent and compassionate nursing professionals who demonstrate excellence in clinical practice, leadership, and ethical conduct.</p>
+                        <p class="card-text">To prepare competent and polyvalent nurses that will use problem-solving skills in providing safe, acceptable, effective health services to meet the health needs of individuals, families and the communities at all levels of care.</p>
                     </div>
                 </div>
                 <div class="card">
                     <div class="card-body">
                         <h3 class="card-title">Our Vision</h3>
-                        <p class="card-text">To be Africa's leading institution for nursing education and research, recognized for producing healthcare professionals who transform communities through innovative practice, ethical leadership, and compassionate, evidence-based care.</p>
+                        <p class="card-text">To be one of the best college of Nursing Sciences in Nigeria especially in the are of imparting knowledge into prospective nurses as well as providing solutions to the much needed health services as required by the people of the FCT in particular and Nigeria at large.</p>
                     </div>
                 </div>
                 <div class="card">

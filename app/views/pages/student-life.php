@@ -38,7 +38,22 @@ $launchDate = date('Y-m-d H:i:s', strtotime('+30 days'));
     
     <!-- Animate.css for subtle animations -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<style>
+    /* EMERGENCY FULL WIDTH OVERRIDE */
+body .main-content {
+    padding: 0 !important;
+    max-width: 100vw !important;
+}
 
+.hero-section {
+    width: 100vw !important;
+    position: relative !important;
+    left: 50% !important;
+    right: 50% !important;
+    margin-left: -50vw !important;
+    margin-right: -50vw !important;
+}
+    </style>
 <style>
 /* ==========================================================================
    CRITICAL FIXES - Ensure all content is visible

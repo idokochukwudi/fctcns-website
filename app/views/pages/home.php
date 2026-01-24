@@ -71,6 +71,7 @@ html, body {
     margin: 0 !important;
     padding: 0 !important;
     width: 100%;
+    max-width: 100vw;
     overflow-x: hidden;
 }
 
@@ -85,6 +86,13 @@ body > *:first-child {
 .homepage-content {
     margin: 0 !important;
     padding: 0 !important;
+    width: 100%;
+    max-width: 100vw;
+}
+
+/* Box sizing for all elements */
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
 /* ==========================================================================
@@ -94,7 +102,6 @@ body > *:first-child {
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
@@ -107,7 +114,10 @@ body {
     line-height: 1.6;
     color: #2D3748;
     width: 100%;
-    max-width: 100%;
+    max-width: 100vw;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
 }
 
 /* Font family inheritance for all elements */
@@ -195,25 +205,80 @@ button, .btn,
 }
 
 /* ==========================================================================
-   MAIN CONTENT STRUCTURE
+   CRITICAL: FORCE HERO FULL WIDTH - OVERRIDE ALL CONSTRAINTS
    ========================================================================== */
+.hero-section {
+    position: relative;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    left: 50% !important;
+    right: 50% !important;
+    transform: translateX(-50%) !important;
+    background: linear-gradient(135deg, #4A3A6F, #5D4A8A);
+    overflow: hidden;
+    padding: 0;
+    border: none;
+}
+
+/* Ensure carousel is also full width */
+.hero-carousel {
+    position: relative;
+    width: 100% !important;
+    max-width: 100vw !important;
+    height: 85vh;
+    min-height: 550px;
+    max-height: 800px;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    left: 0 !important;
+    right: 0 !important;
+}
+
+/* Force homepage content to have no constraints */
 .homepage-content {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    width: 100%;
+    width: 100% !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden;
 }
 
+/* Ensure main content doesn't constrain hero */
+#main-content {
+    width: 100% !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden;
+}
+
+/* Remove any padding from main-content-wrapper for home page */
+.main-content-wrapper .homepage-content {
+    padding: 0 !important;
+}
+
+/* ==========================================================================
+   MAIN CONTENT STRUCTURE
+   ========================================================================== */
 .container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 var(--spacing-md);
+    box-sizing: border-box;
 }
 
 .section {
     padding: var(--spacing-xl) 0;
     width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
 }
 
 .section-alt {
@@ -270,25 +335,6 @@ button, .btn,
 /* ==========================================================================
    HERO CAROUSEL - NO GAP AT TOP
    ========================================================================== */
-.hero-section {
-    position: relative;
-    width: 100%;
-    background: linear-gradient(135deg, #4A3A6F, #5D4A8A);
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-    border: none;
-}
-
-.hero-carousel {
-    position: relative;
-    width: 100%;
-    height: 85vh;
-    min-height: 550px;
-    max-height: 800px;
-    overflow: hidden;
-}
-
 .carousel-inner {
     position: relative;
     width: 100%;
@@ -325,6 +371,7 @@ button, .btn,
     background-position: center;
     background-repeat: no-repeat;
     z-index: 1;
+    max-width: 100vw;
 }
 
 .carousel-slide-bg::after {
@@ -492,9 +539,10 @@ button, .btn,
     max-width: 800px;
     text-align: center;
     box-shadow: var(--shadow-soft);
-    width: 95%;
+    width: calc(100% - 2rem);
     position: relative;
     z-index: 5;
+    box-sizing: border-box;
 }
 
 .application-status-banner h3 {
@@ -575,6 +623,9 @@ button, .btn,
 .stats-section {
     background: var(--color-white);
     padding: var(--spacing-xl) 0;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
 }
 
 .stats-grid {
@@ -644,7 +695,8 @@ button, .btn,
     padding: var(--spacing-xl) 0;
     border-top: 1px solid var(--color-gray-100);
     width: 100%;
-    overflow: hidden;
+    max-width: 100vw;
+    overflow-x: hidden;
 }
 
 .accreditation-content {
@@ -691,6 +743,7 @@ button, .btn,
     max-width: 900px;
     margin: 0 auto;
     padding: 0 var(--spacing-md);
+    box-sizing: border-box;
 }
 
 .accreditation-badge {
@@ -705,6 +758,7 @@ button, .btn,
     width: 100%;
     max-width: 100%;
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 .accreditation-badge:hover {
@@ -964,6 +1018,9 @@ button, .btn,
     color: var(--color-white);
     margin-bottom: 0 !important;
     border-bottom: none !important;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
 }
 
 .cta-content {
@@ -1184,6 +1241,17 @@ button, .btn,
     .hero-carousel {
         height: 80vh;
         min-height: 500px;
+        width: 100vw;
+        max-width: 100vw;
+    }
+    
+    .hero-section {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
     }
     
     .carousel-slide-content {
@@ -1225,17 +1293,30 @@ button, .btn,
         right: 1rem;
     }
     
+    .carousel-controls {
+        bottom: var(--spacing-md);
+    }
+    
+    .carousel-indicator {
+        width: 6px;
+        height: 6px;
+    }
+    
     .section {
         padding: var(--spacing-lg) 0;
+        width: 100%;
+        max-width: 100vw;
     }
     
     .cta-section {
         padding: var(--spacing-xl) 0;
+        width: 100%;
+        max-width: 100vw;
     }
     
     .application-status-banner {
         margin: var(--spacing-md) auto;
-        width: 92%;
+        width: calc(100% - 1.5rem);
     }
     
     /* FIXED: Accreditation badges for mobile */
@@ -1261,6 +1342,15 @@ button, .btn,
     .hero-carousel {
         height: 75vh;
         min-height: 450px;
+        width: 100vw;
+        max-width: 100vw;
+    }
+    
+    .hero-section {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
     }
     
     .carousel-slide-title {
@@ -1318,7 +1408,7 @@ button, .btn,
     .application-status-banner {
         padding: var(--spacing-sm);
         margin: var(--spacing-md) auto;
-        width: 94%;
+        width: calc(100% - 1rem);
     }
     
     .application-status-banner h3 {
@@ -1426,7 +1516,7 @@ button, .btn,
 <!-- Homepage Content -->
 <main id="main-content" class="homepage-content" role="main">
     
-    <!-- ========== HERO CAROUSEL ========== -->
+    <!-- ========== HERO CAROUSEL - NO CONTAINER WRAPPER ========== -->
     <section class="hero-section" aria-label="Featured content carousel">
         <?php if (empty($carouselSlides)): ?>
             <!-- Fallback carousel -->
@@ -1514,7 +1604,7 @@ button, .btn,
         <?php endif; ?>
     </section>
 
-    <!-- ========== APPLICATION STATUS BANNER ========== -->
+    <!-- ========== APPLICATION STATUS BANNER - HAS CONTAINER ========== -->
     <div class="container">
         <div class="application-status-banner">
             <h3><i class="fas fa-times-circle"></i> 2025/2026 Admissions Status</h3>
@@ -1523,7 +1613,7 @@ button, .btn,
         </div>
     </div>
 
-    <!-- ========== STATISTICS SECTION ========== -->
+    <!-- ========== STATISTICS SECTION - HAS CONTAINER ========== -->
     <section class="stats-section" aria-label="College statistics">
         <div class="container">
             <div class="section-header">
