@@ -3,9 +3,11 @@
  * Research Publications Page - Professional Redesign (Mature Light Purple Theme)
  * Mobile-Optimized Version - FULL WIDTH
  * Complete Redesign with Professional Sections
+ * Updated: Fixed image path with missing forward slash
+ * Enhanced: Removed overlay, adjusted fonts, improved professional design
  * 
  * @package FCTCNS
- * @version 4.0
+ * @version 4.4
  */
 
 extract($data ?? []);
@@ -23,6 +25,13 @@ $categories = $categories ?? [];
 $searchTerm = $searchTerm ?? '';
 $currentCategory = $currentCategory ?? '';
 $totalPublications = count($publications);
+
+// FIXED: Add forward slash between domain and path
+$heroImagePath = rtrim($baseUrl, '/') . '/assets/images/research/research-hero.jpg';
+
+// Alternative: Use direct path based on your programs page structure
+// $heroImagePath = '/fctcns-website/assets/images/research/research-hero.jpg';
+// $heroImagePath = $baseUrl . 'assets/images/research/research-hero.jpg'; // If $baseUrl already has trailing slash
 ?>
 
 <!DOCTYPE html>
@@ -256,43 +265,40 @@ button, .btn,
 }
 
 /* ==========================================================================
-   HERO SECTION - NO GAP AT TOP
+   HERO SECTION - ENHANCED WITHOUT OVERLAY
    ========================================================================== */
 .research-hero {
     position: relative;
     width: 100%;
-    background: linear-gradient(135deg, #4A3A6F, #5D4A8A);
+    background: linear-gradient(135deg, rgba(93, 74, 138, 0.85), rgba(74, 58, 111, 0.85));
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     color: var(--color-white);
     padding: var(--spacing-xxl) 0;
     margin: 0;
     border: none;
     overflow: hidden;
+    min-height: 500px;
+    display: flex;
+    align-items: center;
 }
 
-.research-hero::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: url('<?php echo $baseUrl; ?>/assets/images/research/research-hero-bg.jpg') center/cover no-repeat;
-    opacity: 0.15;
-    z-index: 1;
-}
-
+/* Removed overlay - using only gradient background for better text visibility */
 .hero-container {
     position: relative;
-    z-index: 2;
+    z-index: 3;
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 var(--spacing-md);
+    width: 100%;
 }
 
 .hero-content {
     text-align: center;
     max-width: 900px;
     margin: 0 auto;
+    padding: var(--spacing-xl) 0;
 }
 
 .hero-badge {
@@ -307,46 +313,62 @@ button, .btn,
     margin-bottom: var(--spacing-md);
     text-transform: uppercase;
     font-family: var(--font-heading);
+    box-shadow: var(--shadow-soft);
+    position: relative;
+    z-index: 2;
 }
 
+/* Enhanced font sizes and spacing for better readability */
 .hero-title {
     font-family: var(--font-heading);
-    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-size: clamp(2.25rem, 6.5vw, 3.75rem); /* Increased font size */
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.15; /* Adjusted for better readability */
     margin-bottom: var(--spacing-md);
     color: var(--color-white);
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); /* Stronger shadow for contrast */
+    position: relative;
+    z-index: 2;
+    letter-spacing: -0.5px; /* Slight letter spacing for professional look */
 }
 
 .hero-description {
-    font-size: clamp(1.1rem, 3vw, 1.5rem);
+    font-size: clamp(1.25rem, 3.5vw, 1.65rem); /* Increased font size */
     font-weight: 400;
     margin-bottom: var(--spacing-xl);
     line-height: 1.5;
     color: rgba(255, 255, 255, 0.95);
     font-family: var(--font-body);
-    max-width: 700px;
+    max-width: 800px; /* Increased max-width */
     margin-left: auto;
     margin-right: auto;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4); /* Stronger shadow */
+    position: relative;
+    z-index: 2;
+    padding: 0 var(--spacing-md);
 }
 
 .hero-cta {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md); /* Increased gap */
     justify-content: center;
     width: 100%;
+    position: relative;
+    z-index: 2;
+    margin-top: var(--spacing-lg);
 }
 
 .hero-icon {
     font-size: clamp(4rem, 10vw, 6rem);
-    color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.25);
     margin-top: var(--spacing-xl);
     display: flex;
     align-items: center;
     justify-content: center;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 2;
 }
 
 /* ==========================================================================
@@ -994,9 +1016,10 @@ button, .btn,
     gap: 0.25rem;
 }
 
+/* Enhanced publication title font size */
 .publication-title {
     font-family: var(--font-heading);
-    font-size: 1.3rem;
+    font-size: 1.4rem; /* Increased from 1.3rem */
     font-weight: 600;
     color: var(--color-primary);
     line-height: 1.3;
@@ -1202,6 +1225,10 @@ button, .btn,
         padding: 0 var(--spacing-lg);
     }
     
+    .research-hero {
+        min-height: 600px;
+    }
+    
     .search-form {
         grid-template-columns: 1fr auto auto;
         gap: var(--spacing-md);
@@ -1257,12 +1284,14 @@ button, .btn,
     
     .hero-title {
         text-align: left;
+        font-size: clamp(2.5rem, 7vw, 4rem); /* Adjusted for desktop */
     }
     
     .hero-description {
         text-align: left;
         margin-left: 0;
         margin-right: 0;
+        font-size: clamp(1.35rem, 4vw, 1.75rem); /* Adjusted for desktop */
     }
     
     .hero-cta {
@@ -1287,20 +1316,27 @@ button, .btn,
         justify-content: space-between;
         align-items: center;
     }
+    
+    .research-hero {
+        min-height: 700px;
+    }
 }
 
 /* Mobile (767px and below) */
 @media (max-width: 767px) {
     .research-hero {
         padding: var(--spacing-xl) 0;
+        min-height: 400px;
     }
     
     .hero-title {
-        font-size: 1.75rem;
+        font-size: 2rem; /* Increased for mobile */
+        line-height: 1.2;
     }
     
     .hero-description {
-        font-size: 1.1rem;
+        font-size: 1.15rem; /* Increased for mobile */
+        line-height: 1.4;
     }
     
     .hero-cta {
@@ -1341,15 +1377,16 @@ button, .btn,
 @media (max-width: 480px) {
     .research-hero {
         padding: var(--spacing-lg) 0;
+        min-height: 350px;
     }
     
     .hero-title {
-        font-size: 1.5rem;
+        font-size: 1.75rem; /* Increased for small mobile */
         line-height: 1.2;
     }
     
     .hero-description {
-        font-size: 1rem;
+        font-size: 1.05rem; /* Increased for small mobile */
         line-height: 1.4;
     }
     
@@ -1368,7 +1405,7 @@ button, .btn,
     }
     
     .publication-title {
-        font-size: 1.1rem;
+        font-size: 1.2rem; /* Adjusted for mobile */
     }
     
     .publication-meta {
@@ -1388,6 +1425,14 @@ button, .btn,
 @media (min-width: 1400px) {
     .container {
         max-width: 1300px;
+    }
+    
+    .hero-title {
+        font-size: 4.25rem; /* Larger for big screens */
+    }
+    
+    .hero-description {
+        font-size: 1.85rem; /* Larger for big screens */
     }
 }
 
@@ -1447,7 +1492,7 @@ button, .btn,
 <!-- Research Content -->
 <main id="main-content" class="research-content" role="main">
     
-    <!-- ========== HERO SECTION ========== -->
+    <!-- ========== HERO SECTION WITH IMAGE ========== -->
     <section class="research-hero" aria-label="Research publications hero">
         <div class="hero-container">
             <div class="hero-content">
@@ -1810,6 +1855,43 @@ button, .btn,
 (function() {
     'use strict';
     
+    // FIXED: Correct image path for hero section
+    const heroImagePath = '<?php echo $heroImagePath; ?>';
+    const heroSection = document.querySelector('.research-hero');
+    
+    // Load hero background image with fallback
+    if (heroSection) {
+        const heroImage = new Image();
+        
+        heroImage.onload = function() {
+            console.log('Research hero image loaded successfully:', heroImagePath);
+            // Apply image to the hero section WITHOUT overlay (removed overlay gradient)
+            heroSection.style.background = 'url("' + heroImagePath + '")';
+            heroSection.style.backgroundSize = 'cover';
+            heroSection.style.backgroundPosition = 'center';
+            heroSection.style.backgroundRepeat = 'no-repeat';
+        };
+        
+        heroImage.onerror = function() {
+            console.warn('Research hero image failed to load:', heroImagePath);
+            console.log('Using fallback gradient background only');
+            // Keep the existing gradient background if image fails
+            heroSection.style.background = 'linear-gradient(135deg, rgba(93, 74, 138, 0.9), rgba(74, 58, 111, 0.9))';
+            
+            // Debug: Try alternative paths
+            const alternativePaths = [
+                '/assets/images/research/research-hero.jpg',
+                '/fctcns-website/assets/images/research/research-hero.jpg',
+                'assets/images/research/research-hero.jpg'
+            ];
+            
+            console.log('Trying alternative paths:', alternativePaths);
+        };
+        
+        console.log('Attempting to load image from:', heroImagePath);
+        heroImage.src = heroImagePath;
+    }
+    
     // Publication type color mapping
     const typeColors = {
         'journal': 'var(--color-journal)',
@@ -1853,16 +1935,10 @@ button, .btn,
             });
         });
         
-        // Search form enhancement
+        // Search form enhancement - REMOVED AUTO-FOCUS
         const searchForm = document.querySelector('.search-form');
         if (searchForm) {
             const searchInput = searchForm.querySelector('input[name="search"]');
-            const categorySelect = searchForm.querySelector('select[name="category"]');
-            
-            // Auto-focus search on page load if empty
-            if (!searchInput.value) {
-                searchInput.focus();
-            }
             
             // Clear search button
             if (searchInput.value) {
@@ -1882,7 +1958,6 @@ button, .btn,
                 
                 clearButton.addEventListener('click', function() {
                     searchInput.value = '';
-                    searchInput.focus();
                     searchForm.submit();
                 });
                 

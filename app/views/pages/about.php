@@ -1,9 +1,10 @@
 <?php
 /**
  * About Page View Template - Enhanced for Responsiveness
+ * Updated: Removed overlay, enhanced fonts, professional design
  * 
  * @package FCTCNS
- * @version 4.8
+ * @version 4.9
  */
 
 extract($data ?? []);
@@ -144,7 +145,7 @@ body {
 }
 
 /* ==========================================================================
-   HERO SECTION - Enhanced for Responsiveness
+   HERO SECTION - ENHANCED WITHOUT OVERLAY
    ========================================================================== */
 .about-hero {
     position: relative;
@@ -153,6 +154,9 @@ body {
     max-height: none;
     overflow: hidden;
     background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     display: flex;
     align-items: center;
     padding: var(--spacing-xl) 0;
@@ -167,37 +171,22 @@ body {
     background-size: cover; 
     background-position: center;
     background-image: url('<?php echo $baseUrl; ?>/assets/images/about/campus-building.jpg');
-    opacity: 0.6;
     z-index: 1;
 }
 
-.about-hero-bg::after {
-    content: ''; 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%;
-    background: linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.6) 0%,
-        rgba(0, 0, 0, 0.4) 50%,
-        rgba(0, 0, 0, 0.2) 100%
-    );
-}
-
+/* Removed overlay gradient for better image visibility */
 .about-hero-content {
     position: relative;
     z-index: 3;
     color: var(--color-white);
-    max-width: 800px;
+    max-width: 900px;
     padding: var(--spacing-xl);
     margin: 0 auto;
     text-align: center;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(5px);
     border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     width: 90%;
 }
 
@@ -205,34 +194,37 @@ body {
     display: inline-block;
     background: var(--color-accent); 
     color: var(--color-gray-900); 
-    padding: 0.5rem 1.5rem; 
+    padding: 0.6rem 1.75rem; 
     border-radius: var(--radius-full); 
-    font-size: 0.85rem; 
+    font-size: 0.9rem; 
     font-weight: 600; 
     margin-bottom: var(--spacing-md);
     letter-spacing: 0.5px;
     text-transform: uppercase;
     font-family: var(--font-heading);
+    box-shadow: var(--shadow-soft);
 }
 
+/* Enhanced font sizes for hero section */
 .about-hero-title { 
     font-family: var(--font-heading); 
-    font-size: clamp(2rem, 5vw, 3rem); 
+    font-size: clamp(2.25rem, 5.5vw, 3.5rem); /* Increased font size */
     font-weight: 700; 
     color: var(--color-white); 
-    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-    line-height: 1.2;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.6); /* Enhanced shadow for better contrast */
+    line-height: 1.15; /* Improved line height */
     margin-bottom: var(--spacing-md);
     letter-spacing: -0.5px;
 }
 
 .about-hero-subtitle { 
-    font-size: clamp(1rem, 3vw, 1.4rem); 
+    font-size: clamp(1.15rem, 3.5vw, 1.6rem); /* Increased font size */
     color: rgba(255,255,255,0.95);
-    line-height: 1.6;
-    max-width: 700px;
+    line-height: 1.5;
+    max-width: 800px; /* Increased max width */
     margin: 0 auto;
     font-weight: 400;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4); /* Enhanced shadow */
 }
 
 /* ==========================================================================
@@ -251,7 +243,7 @@ body {
 .section-header { 
     text-align: center; 
     margin-bottom: var(--spacing-xl); 
-    max-width: 800px; 
+    max-width: 900px; 
     margin-left: auto; 
     margin-right: auto; 
     padding: 0 var(--spacing-md);
@@ -259,7 +251,7 @@ body {
 
 .section-title { 
     font-family: var(--font-heading); 
-    font-size: clamp(1.75rem, 4vw, 2.25rem); 
+    font-size: clamp(1.75rem, 4vw, 2.5rem); /* Increased font size */
     font-weight: 600; 
     color: var(--color-primary); 
     position: relative; 
@@ -280,18 +272,18 @@ body {
 }
 
 .section-subtitle { 
-    font-size: clamp(1rem, 2.5vw, 1.2rem); 
+    font-size: clamp(1.05rem, 2.5vw, 1.3rem); /* Increased font size */
     color: var(--color-gray-800); 
     line-height: 1.6; 
     font-weight: 400;
-    max-width: 700px;
+    max-width: 800px;
     margin: 0 auto;
     margin-top: var(--spacing-md);
 }
 
 .grid { 
     display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); 
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); 
     gap: var(--spacing-lg); 
     margin-top: var(--spacing-lg);
 }
@@ -330,7 +322,7 @@ body {
 
 .card-title { 
     font-family: var(--font-heading); 
-    font-size: clamp(1.2rem, 3vw, 1.5rem); 
+    font-size: clamp(1.3rem, 3vw, 1.6rem); /* Increased font size */
     font-weight: 600; 
     color: var(--color-primary); 
     margin-bottom: var(--spacing-md); 
@@ -341,7 +333,7 @@ body {
     color: var(--color-gray-800); 
     line-height: 1.6;
     flex-grow: 1;
-    font-size: 0.95rem;
+    font-size: 1rem; /* Increased from 0.95rem */
 }
 
 .badge-card { 
@@ -354,14 +346,14 @@ body {
 }
 
 .badge-icon { 
-    font-size: 3rem; 
+    font-size: 3.5rem; /* Increased from 3rem */
     color: var(--color-primary); 
     margin-bottom: var(--spacing-md); 
 }
 
 .badge-title { 
     font-family: var(--font-heading); 
-    font-size: 1.4rem; 
+    font-size: 1.6rem; /* Increased from 1.4rem */
     color: var(--color-primary);
     margin-bottom: var(--spacing-sm);
 }
@@ -376,12 +368,12 @@ body {
 }
 
 .values-list li { 
-    padding: 0.75rem 0; 
+    padding: 0.875rem 0; /* Increased padding */
     position: relative; 
-    padding-left: 2rem; 
+    padding-left: 2.25rem; /* Increased padding */
     color: var(--color-gray-800);
     line-height: 1.5;
-    font-size: 0.95rem;
+    font-size: 1rem; /* Increased from 0.95rem */
 }
 
 .values-list li::before { 
@@ -390,7 +382,7 @@ body {
     left: 0; 
     color: var(--color-accent); 
     font-weight: bold; 
-    font-size: 1.2rem; 
+    font-size: 1.3rem; /* Increased from 1.2rem */
 }
 
 /* ==========================================================================
@@ -398,7 +390,7 @@ body {
    ========================================================================== */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
     gap: var(--spacing-lg);
     margin-top: var(--spacing-lg);
 }
@@ -414,7 +406,7 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: 150px;
+    min-height: 160px; /* Increased from 150px */
 }
 
 .stat-card:hover {
@@ -425,7 +417,7 @@ body {
 
 .stat-number {
     font-family: var(--font-heading);
-    font-size: clamp(2rem, 5vw, 2.8rem);
+    font-size: clamp(2.2rem, 5vw, 3rem); /* Increased font size */
     font-weight: 700;
     color: var(--color-primary);
     margin-bottom: var(--spacing-sm);
@@ -434,7 +426,7 @@ body {
 
 .stat-label {
     color: var(--color-gray-800);
-    font-size: 1rem;
+    font-size: 1.1rem; /* Increased from 1rem */
     font-weight: 500;
 }
 
@@ -501,7 +493,7 @@ body {
 
 .gallery-caption h3 {
     font-family: var(--font-heading);
-    font-size: 1.8rem;
+    font-size: 1.9rem; /* Increased from 1.8rem */
     font-weight: 700;
     margin-bottom: var(--spacing-md);
     color: var(--color-white);
@@ -509,7 +501,7 @@ body {
 }
 
 .gallery-caption p {
-    font-size: 1.05rem;
+    font-size: 1.1rem; /* Increased from 1.05rem */
     color: rgba(255,255,255,0.95);
     line-height: 1.6;
     margin: 0;
@@ -564,7 +556,7 @@ body {
     transition: var(--transition-smooth);
     border: 2px solid var(--color-accent);
     font-family: var(--font-heading);
-    font-size: 1rem;
+    font-size: 1.05rem; /* Increased from 1rem */
     letter-spacing: 0.3px;
     min-height: 50px;
     width: 100%;
@@ -593,7 +585,7 @@ body {
     transition: var(--transition-smooth);
     border: 2px solid var(--color-primary);
     font-family: var(--font-heading);
-    font-size: 1rem;
+    font-size: 1.05rem; /* Increased from 1rem */
     letter-spacing: 0.3px;
     min-height: 50px;
     width: 100%;
@@ -651,11 +643,11 @@ body {
     }
     
     .gallery-caption h3 {
-        font-size: 1.6rem;
+        font-size: 1.7rem; /* Adjusted for tablet */
     }
     
     .gallery-caption p {
-        font-size: 1rem;
+        font-size: 1.05rem; /* Adjusted for tablet */
     }
 }
 
@@ -683,12 +675,12 @@ body {
     }
     
     .about-hero-title {
-        font-size: clamp(1.8rem, 6vw, 2.5rem);
+        font-size: clamp(2rem, 6vw, 2.8rem); /* Adjusted for mobile */
         margin-bottom: var(--spacing-sm);
     }
     
     .about-hero-subtitle {
-        font-size: clamp(1rem, 4vw, 1.2rem);
+        font-size: clamp(1.15rem, 4vw, 1.4rem); /* Adjusted for mobile */
         line-height: 1.5;
     }
     
@@ -718,12 +710,12 @@ body {
     }
     
     .gallery-caption h3 {
-        font-size: 1.4rem;
+        font-size: 1.5rem; /* Adjusted for mobile */
         margin-bottom: var(--spacing-xs);
     }
     
     .gallery-caption p {
-        font-size: 0.95rem;
+        font-size: 1rem; /* Adjusted for mobile */
         line-height: 1.4;
     }
     
@@ -769,19 +761,19 @@ body {
     }
     
     .about-hero-badge {
-        padding: 0.4rem 1rem;
-        font-size: 0.75rem;
+        padding: 0.5rem 1.25rem;
+        font-size: 0.8rem;
         margin-bottom: var(--spacing-sm);
     }
     
     .about-hero-title {
-        font-size: 1.6rem;
+        font-size: 1.8rem; /* Adjusted for small mobile */
         line-height: 1.3;
         margin-bottom: var(--spacing-xs);
     }
     
     .about-hero-subtitle {
-        font-size: 1rem;
+        font-size: 1.1rem; /* Adjusted for small mobile */
         line-height: 1.4;
     }
     
@@ -794,11 +786,11 @@ body {
     }
     
     .section-title {
-        font-size: 1.5rem;
+        font-size: 1.6rem; /* Adjusted for small mobile */
     }
     
     .section-subtitle {
-        font-size: 1rem;
+        font-size: 1.05rem; /* Adjusted for small mobile */
         margin-top: var(--spacing-sm);
     }
     
@@ -812,12 +804,12 @@ body {
     }
     
     .gallery-caption h3 {
-        font-size: 1.2rem;
+        font-size: 1.3rem; /* Adjusted for small mobile */
         margin-bottom: 0.5rem;
     }
     
     .gallery-caption p {
-        font-size: 0.85rem;
+        font-size: 0.9rem; /* Adjusted for small mobile */
         line-height: 1.3;
     }
     
@@ -842,11 +834,11 @@ body {
     }
     
     .stat-number {
-        font-size: 2rem;
+        font-size: 2.2rem; /* Adjusted for small mobile */
     }
     
     .card-title {
-        font-size: 1.2rem;
+        font-size: 1.3rem; /* Adjusted for small mobile */
     }
     
     .card-body {
@@ -860,14 +852,14 @@ body {
     .btn-primary,
     .btn-secondary {
         padding: 0.875rem 1.5rem;
-        font-size: 0.95rem;
+        font-size: 1rem; /* Adjusted for small mobile */
         min-height: 44px;
     }
     
     .values-list li {
-        padding: 0.5rem 0;
-        padding-left: 1.5rem;
-        font-size: 0.9rem;
+        padding: 0.75rem 0;
+        padding-left: 1.75rem;
+        font-size: 0.95rem; /* Adjusted for small mobile */
     }
     
     .badge-card {
@@ -875,7 +867,7 @@ body {
     }
     
     .badge-icon {
-        font-size: 2.5rem;
+        font-size: 2.8rem; /* Adjusted for small mobile */
     }
 }
 
@@ -886,11 +878,11 @@ body {
     }
     
     .about-hero-title {
-        font-size: 1.4rem;
+        font-size: 1.6rem; /* Adjusted for very small mobile */
     }
     
     .about-hero-subtitle {
-        font-size: 0.9rem;
+        font-size: 1rem; /* Adjusted for very small mobile */
     }
     
     .gallery-carousel {
@@ -902,11 +894,11 @@ body {
     }
     
     .gallery-caption h3 {
-        font-size: 1rem;
+        font-size: 1.15rem; /* Adjusted for very small mobile */
     }
     
     .gallery-caption p {
-        font-size: 0.8rem;
+        font-size: 0.85rem; /* Adjusted for very small mobile */
     }
     
     .container {
@@ -927,12 +919,12 @@ body {
     }
     
     .about-hero-title {
-        font-size: 1.8rem;
+        font-size: 2rem; /* Adjusted for landscape */
         margin-bottom: var(--spacing-xs);
     }
     
     .about-hero-subtitle {
-        font-size: 1rem;
+        font-size: 1.1rem; /* Adjusted for landscape */
         line-height: 1.4;
     }
 }
@@ -945,6 +937,14 @@ body {
     
     .about-hero {
         min-height: 90vh;
+    }
+    
+    .about-hero-title {
+        font-size: 4rem; /* Larger for big screens */
+    }
+    
+    .about-hero-subtitle {
+        font-size: 1.8rem; /* Larger for big screens */
     }
     
     .gallery-carousel {
@@ -1402,6 +1402,24 @@ if ('IntersectionObserver' in window) {
         imageObserver.observe(img);
     });
 }
+
+// Enhanced hero section image loading
+document.addEventListener('DOMContentLoaded', function() {
+    const heroBg = document.querySelector('.about-hero-bg');
+    if (heroBg) {
+        // Ensure background image loads properly
+        const bgImage = new Image();
+        bgImage.onload = function() {
+            heroBg.style.backgroundImage = 'url("<?php echo $baseUrl; ?>/assets/images/about/campus-building.jpg")';
+            heroBg.style.opacity = '0.8'; // Slightly increased opacity for better visibility
+        };
+        bgImage.onerror = function() {
+            // Fallback if image doesn't load
+            heroBg.style.background = 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))';
+        };
+        bgImage.src = '<?php echo $baseUrl; ?>/assets/images/about/campus-building.jpg';
+    }
+});
 </script>
 
 </body>

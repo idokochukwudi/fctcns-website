@@ -55,6 +55,9 @@ $faqs = [
         'answer' => 'Yes, merit-based and need-based scholarships are available. Contact the admissions office for current opportunities.'
     ]
 ];
+
+// Fixed: Add forward slash between domain and path
+$heroImagePath = rtrim($baseUrl, '/') . '/assets/images/contact/contact.jpg';
 ?>
 
 <!DOCTYPE html>
@@ -66,10 +69,14 @@ $faqs = [
     <title><?php echo e($page_title); ?></title>
     
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Preload hero image to prevent flashing -->
+    <link rel="preload" href="<?php echo $heroImagePath; ?>" as="image">
+    
 <style>
     /* EMERGENCY FULL WIDTH OVERRIDE */
 body .main-content {
@@ -93,6 +100,7 @@ body .main-content {
 body { 
     margin: 0 !important; 
     padding: 0 !important; 
+    background: var(--color-white);
 }
 main.contact-page { 
     margin-top: 0 !important; 
@@ -117,6 +125,7 @@ main.contact-page {
     --color-accent: #D4A574;            /* Muted gold accent */
     --color-accent-dark: #BF8F5E;
     --color-accent-light: #E6C9A5;
+    --color-accent-very-light: rgba(212, 165, 116, 0.1);
     
     /* Neutral Colors - Professional */
     --color-white: #FFFFFF;
@@ -130,9 +139,9 @@ main.contact-page {
     --color-gray-900: #1A202C;
     --color-black: #000000;
     
-    /* Typography - Consistent with Admissions Page */
-    --font-heading: 'Montserrat', sans-serif;
-    --font-body: 'Open Sans', sans-serif;
+    /* Typography - Professional and readable */
+    --font-heading: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-body: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     
     /* Spacing */
     --spacing-xs: 0.5rem;
@@ -153,8 +162,8 @@ main.contact-page {
     --radius-lg: 14px;
     --radius-full: 999px;
     
-    /* Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Transitions - Removed animations that cause delay */
+    --transition-fast: all 0.2s ease;
 }
 
 * { 
@@ -165,7 +174,7 @@ main.contact-page {
 
 body { 
     font-family: var(--font-body); 
-    font-size: 15px; 
+    font-size: 16px; 
     line-height: 1.6; 
     color: var(--color-gray-800); 
     background: var(--color-white); 
@@ -179,93 +188,205 @@ body {
 }
 
 /* ==========================================================================
-   HERO SECTION - Consistent with Admissions Page
+   HERO SECTION - CLEAN DESIGN WITHOUT ANIMATIONS
    ========================================================================== */
 .contact-hero {
     position: relative;
-    height: 75vh;
-    max-height: 650px;
-    min-height: 500px;
+    width: 100%;
+    background: #2D3748 url('<?php echo $heroImagePath; ?>') no-repeat center center;
+    background-size: cover;
+    color: var(--color-white);
+    padding: var(--spacing-xxl) 0;
+    margin: 0;
+    border: none;
     overflow: hidden;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    min-height: 500px;
+    display: flex;
+    align-items: center;
 }
 
-.contact-hero-bg {
+/* Professional subtle overlay for text readability */
+.contact-hero::before {
+    content: '';
     position: absolute;
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%;
-    background-size: cover; 
-    background-position: center;
-    background-image: url('<?php echo $baseUrl; ?>/assets/images/contact/hero-placeholder.jpg');
-    opacity: 0.6;
-}
-
-.contact-hero-bg::after {
-    content: ''; 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: linear-gradient(
         to bottom,
         rgba(0, 0, 0, 0.4) 0%,
-        rgba(0, 0, 0, 0.25) 50%,
-        rgba(0, 0, 0, 0.15) 100%
+        rgba(0, 0, 0, 0.2) 50%,
+        rgba(0, 0, 0, 0.1) 100%
     );
+    z-index: 1;
+    pointer-events: none;
 }
 
-.contact-hero-content {
+.hero-text-overlay {
     position: relative;
     z-index: 3;
-    color: var(--color-white);
-    max-width: 700px;
-    padding: var(--spacing-xl);
+    max-width: 800px;
     margin: 0 auto;
+    padding: var(--spacing-xl) var(--spacing-lg);
     text-align: center;
-    margin-top: 15vh;
-    background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(8px);
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.contact-hero-badge { 
+.hero-badge {
     display: inline-block;
-    background: var(--color-accent); 
-    color: var(--color-gray-900); 
-    padding: 0.5rem 1.5rem; 
-    border-radius: var(--radius-full); 
-    font-size: 0.85rem; 
-    font-weight: 600; 
-    margin-bottom: var(--spacing-md);
+    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
+    color: var(--color-gray-900);
+    padding: 0.6rem 1.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 600;
     letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-lg);
     text-transform: uppercase;
     font-family: var(--font-heading);
+    box-shadow: var(--shadow-soft);
+    position: relative;
+    z-index: 2;
+    border: none;
 }
 
-.contact-hero-title { 
-    font-family: var(--font-heading); 
-    font-size: clamp(1.8rem, 4vw, 2.8rem); 
-    font-weight: 700; 
-    color: var(--color-white); 
-    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+/* Professional font sizes and styling */
+.hero-title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 700;
     line-height: 1.2;
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    color: var(--color-white);
+    position: relative;
+    z-index: 2;
+    letter-spacing: -0.25px;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
 }
 
-.contact-hero-subtitle { 
-    font-size: clamp(1rem, 2.5vw, 1.3rem); 
-    color: rgba(255,255,255,0.95);
+.hero-title span {
+    color: var(--color-accent);
+    font-weight: 700;
+}
+
+.hero-description {
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    font-weight: 400;
+    margin-bottom: var(--spacing-xl);
     line-height: 1.6;
-    max-width: 600px;
-    margin: 0 auto;
+    color: rgba(255, 255, 255, 0.95);
+    font-family: var(--font-body);
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+    z-index: 2;
+    padding: 0 var(--spacing-md);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+
+.hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    justify-content: center;
+    width: 100%;
+    position: relative;
+    z-index: 2;
+    margin-top: var(--spacing-xl);
+}
+
+.hero-icon {
+    font-size: clamp(3rem, 8vw, 5rem);
+    color: rgba(255, 255, 255, 0.08);
+    margin-top: var(--spacing-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
 }
 
 /* ==========================================================================
-   SECTIONS & CARDS - Consistent Styling
+   PROFESSIONAL BUTTON DESIGNS - SIMPLIFIED
+   ========================================================================== */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
+    color: var(--color-gray-900);
+    padding: 0.875rem 2rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    border: none;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    min-height: 52px;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--color-accent-dark), var(--color-accent));
+    box-shadow: var(--shadow-elevated);
+}
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: var(--color-white);
+    padding: 0.875rem 2rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    border: none;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    min-height: 52px;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+    box-shadow: var(--shadow-elevated);
+}
+
+/* Professional Call Now button - Simplified */
+.btn-call {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: transparent;
+    color: var(--color-white);
+    padding: 0.875rem 2rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    min-height: 52px;
+    cursor: pointer;
+}
+
+.btn-call:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.8);
+}
+
+/* ==========================================================================
+   SECTIONS & CARDS - SIMPLIFIED DESIGN
    ========================================================================== */
 .section { 
     padding: var(--spacing-xl) 0; 
@@ -308,18 +429,19 @@ body {
 }
 
 .section-subtitle { 
-    font-size: 1.1rem; 
+    font-size: 1.125rem; 
     color: var(--color-gray-800); 
     line-height: 1.6; 
     font-weight: 400;
     max-width: 700px;
     margin: 0 auto;
     margin-top: var(--spacing-md);
+    font-family: var(--font-body);
 }
 
 .grid { 
     display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
     gap: var(--spacing-lg); 
     margin-top: var(--spacing-lg);
 }
@@ -328,15 +450,25 @@ body {
     background: var(--color-white);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-subtle);
-    transition: var(--transition-smooth);
     border: 1px solid var(--color-gray-100);
     overflow: hidden;
     text-align: center;
     height: 100%;
+    position: relative;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .card:hover { 
-    transform: translateY(-8px); 
     box-shadow: var(--shadow-elevated); 
     border-color: var(--color-primary-light);
 }
@@ -347,20 +479,27 @@ body {
 
 .card-title { 
     font-family: var(--font-heading); 
-    font-size: 1.4rem; 
+    font-size: 1.25rem; 
     font-weight: 600; 
     color: var(--color-primary); 
     margin-bottom: var(--spacing-md); 
 }
 
 .contact-icon { 
-    font-size: 3rem; 
+    font-size: 2.5rem; 
     color: var(--color-primary); 
     margin-bottom: var(--spacing-md); 
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 70px;
+    background: var(--color-primary-very-light);
+    border-radius: 50%;
 }
 
 /* ==========================================================================
-   SUCCESS/ERROR MESSAGES - Enhanced
+   SUCCESS/ERROR MESSAGES
    ========================================================================== */
 .success-message, .error-message {
     background: var(--color-white);
@@ -371,6 +510,18 @@ body {
     margin: var(--spacing-xl) auto;
     max-width: 800px;
     border-left: 6px solid;
+    position: relative;
+    overflow: hidden;
+}
+
+.success-message::before, .error-message::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-accent), transparent);
 }
 
 .success-message {
@@ -379,7 +530,7 @@ body {
 
 .success-message i { 
     color: var(--color-accent); 
-    font-size: 4rem; 
+    font-size: 3.5rem; 
     margin-bottom: var(--spacing-lg); 
     display: block; 
 }
@@ -388,22 +539,26 @@ body {
     border-left-color: #dc3545;
 }
 
+.error-message::before {
+    background: linear-gradient(90deg, #dc3545, transparent);
+}
+
 .error-message i { 
     color: #dc3545; 
-    font-size: 4rem; 
+    font-size: 3.5rem; 
     margin-bottom: var(--spacing-lg); 
     display: block; 
 }
 
 .success-message h3, .error-message h3 { 
     font-family: var(--font-heading); 
-    font-size: 1.8rem; 
+    font-size: 1.5rem; 
     margin-bottom: var(--spacing-md); 
     color: var(--color-primary); 
 }
 
 /* ==========================================================================
-   FAQ - Enhanced
+   FAQ - SIMPLIFIED
    ========================================================================== */
 .faq-item {
     background: var(--color-white);
@@ -411,11 +566,12 @@ body {
     margin-bottom: var(--spacing-md);
     box-shadow: var(--shadow-subtle);
     overflow: hidden;
-    transition: var(--transition-smooth);
+    border: 1px solid var(--color-gray-100);
 }
 
 .faq-item:hover {
     box-shadow: var(--shadow-soft);
+    border-color: var(--color-primary-light);
 }
 
 .faq-question {
@@ -427,7 +583,9 @@ body {
     align-items: center;
     font-weight: 600;
     color: var(--color-primary);
-    transition: var(--transition-smooth);
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    position: relative;
 }
 
 .faq-question:hover { 
@@ -438,7 +596,6 @@ body {
     padding: 0 var(--spacing-lg);
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.4s ease, padding 0.4s ease;
 }
 
 .faq-answer.open {
@@ -447,9 +604,9 @@ body {
 }
 
 .faq-toggle { 
-    font-size: 1.5rem; 
-    transition: transform 0.3s ease; 
+    font-size: 1.25rem; 
     color: var(--color-primary);
+    font-weight: 300;
 }
 
 .faq-toggle.open { 
@@ -458,7 +615,7 @@ body {
 }
 
 /* ==========================================================================
-   CONTACT FORM - Enhanced
+   CONTACT FORM - SIMPLIFIED
    ========================================================================== */
 .contact-form {
     background: var(--color-white);
@@ -468,6 +625,18 @@ body {
     border: 1px solid var(--color-gray-100);
     max-width: 800px;
     margin: 0 auto;
+    position: relative;
+}
+
+.contact-form::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .form-row { 
@@ -485,6 +654,7 @@ body {
 
 .form-group { 
     margin-bottom: var(--spacing-lg); 
+    position: relative;
 }
 
 .form-label { 
@@ -492,16 +662,18 @@ body {
     margin-bottom: var(--spacing-sm); 
     font-weight: 600; 
     color: var(--color-primary); 
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
 }
 
 .form-input, .form-textarea, .form-select {
     width: 100%;
-    padding: var(--spacing-sm);
+    padding: 0.875rem;
     border: 1px solid var(--color-gray-200);
     border-radius: var(--radius-md);
     font-family: var(--font-body);
     font-size: 1rem;
-    transition: var(--transition-smooth);
+    background: var(--color-white);
 }
 
 .form-input:focus, .form-textarea:focus, .form-select:focus {
@@ -511,70 +683,12 @@ body {
 }
 
 .form-textarea { 
-    min-height: 150px; 
+    min-height: 140px; 
     resize: vertical; 
 }
 
 /* ==========================================================================
-   BUTTONS - Consistent with Admissions Page
-   ========================================================================== */
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    background: var(--color-accent);
-    color: var(--color-gray-900);
-    padding: 0.9rem 2rem;
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    font-weight: 600;
-    transition: var(--transition-smooth);
-    border: 2px solid var(--color-accent);
-    font-family: var(--font-heading);
-    font-size: 1rem;
-    letter-spacing: 0.3px;
-    min-height: 50px;
-    cursor: pointer;
-    border: none;
-}
-
-.btn-primary:hover { 
-    background: var(--color-accent-dark); 
-    color: var(--color-gray-900);
-    transform: translateY(-3px); 
-    box-shadow: var(--shadow-soft); 
-}
-
-.btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    background: var(--color-primary);
-    color: var(--color-white);
-    padding: 0.9rem 2rem;
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    font-weight: 600;
-    transition: var(--transition-smooth);
-    border: 2px solid var(--color-primary);
-    font-family: var(--font-heading);
-    font-size: 1rem;
-    letter-spacing: 0.3px;
-    min-height: 50px;
-}
-
-.btn-secondary:hover { 
-    background: var(--color-primary-dark); 
-    color: var(--color-white);
-    transform: translateY(-3px); 
-    box-shadow: var(--shadow-soft); 
-    border-color: var(--color-primary-dark);
-}
-
-/* ==========================================================================
-   CTA SECTION - Consistent with Admissions Page
+   CTA SECTION - SIMPLIFIED
    ========================================================================== */
 .cta-section { 
     background: linear-gradient(135deg, var(--color-gray-50), var(--color-white));
@@ -582,6 +696,17 @@ body {
     padding: var(--spacing-xxl) 0; 
     border-top: 1px solid var(--color-gray-100);
     border-bottom: 1px solid var(--color-gray-100);
+    position: relative;
+}
+
+.cta-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
 }
 
 .cta-section .section-title {
@@ -602,15 +727,27 @@ body {
     }
     
     .contact-hero {
-        height: 60vh;
-        min-height: 400px;
+        min-height: 450px;
+        padding: var(--spacing-xl) 0;
     }
     
-    .contact-hero-content {
-        margin-top: 10vh;
+    .hero-text-overlay {
         padding: var(--spacing-lg);
-        margin-left: var(--spacing-md);
-        margin-right: var(--spacing-md);
+    }
+    
+    .hero-badge {
+        padding: 0.5rem 1.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .hero-title {
+        font-size: 1.75rem;
+        line-height: 1.2;
+    }
+    
+    .hero-description {
+        font-size: 1.125rem;
+        line-height: 1.4;
     }
     
     .grid {
@@ -624,6 +761,7 @@ body {
     
     .faq-question {
         padding: var(--spacing-md);
+        font-size: 0.95rem;
     }
     
     .faq-answer.open {
@@ -631,10 +769,11 @@ body {
     }
     
     .btn-primary,
-    .btn-secondary {
+    .btn-secondary,
+    .btn-call {
         padding: 0.75rem 1.5rem;
         font-size: 0.95rem;
-        min-height: 44px;
+        min-height: 46px;
     }
     
     .success-message,
@@ -645,39 +784,57 @@ body {
     
     .success-message h3,
     .error-message h3 {
-        font-size: 1.5rem;
+        font-size: 1.375rem;
+    }
+    
+    .hero-cta {
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+    
+    .hero-cta .btn-primary,
+    .hero-cta .btn-call {
+        width: 100%;
+        max-width: 280px;
     }
 }
 
 @media (max-width: 480px) {
     .contact-hero {
-        height: 55vh;
-        min-height: 350px;
+        min-height: 400px;
+        padding: var(--spacing-lg) 0;
     }
     
-    .contact-hero-badge {
-        padding: 0.4rem 1rem;
+    .hero-badge {
+        padding: 0.4rem 1.25rem;
         font-size: 0.75rem;
+        margin-bottom: var(--spacing-md);
     }
     
-    .contact-hero-title {
-        font-size: 1.6rem;
+    .hero-title {
+        font-size: 1.5rem;
+        line-height: 1.2;
     }
     
-    .contact-hero-subtitle {
+    .hero-description {
         font-size: 1rem;
+        line-height: 1.4;
+        padding: 0;
     }
     
     .section-title {
-        font-size: 1.4rem;
+        font-size: 1.375rem;
     }
     
     .card-title {
-        font-size: 1.2rem;
+        font-size: 1.125rem;
     }
     
     .contact-icon {
-        font-size: 2.5rem;
+        font-size: 2.25rem;
+        width: 60px;
+        height: 60px;
     }
     
     .form-row {
@@ -687,79 +844,106 @@ body {
     .form-group {
         margin-bottom: var(--spacing-md);
     }
+    
+    .faq-question {
+        padding: var(--spacing-sm);
+        font-size: 0.9rem;
+    }
+    
+    .faq-answer.open {
+        padding: var(--spacing-sm);
+    }
+    
+    .hero-cta .btn-primary,
+    .hero-cta .btn-call {
+        max-width: 100%;
+    }
 }
 
-/* Print Styles */
-@media print {
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
     .contact-hero {
-        height: auto;
-        min-height: auto;
-        background: var(--color-white);
-        color: var(--color-black);
+        min-height: 550px;
     }
     
-    .contact-hero-bg {
-        display: none;
+    .hero-text-overlay {
+        text-align: left;
+        max-width: 1200px;
+        padding: var(--spacing-xxl) var(--spacing-lg);
     }
     
-    .contact-hero-content {
-        color: var(--color-black);
-        background: transparent;
-        backdrop-filter: none;
-        border: none;
+    .hero-title {
+        font-size: 2.5rem;
+        text-align: left;
     }
     
-    .btn-primary,
-    .btn-secondary {
-        display: none;
+    .hero-description {
+        text-align: left;
+        margin-left: 0;
+        margin-right: 0;
+        font-size: 1.375rem;
+        max-width: 650px;
     }
     
-    .card {
-        box-shadow: none;
-        border: 1px solid var(--color-gray-300);
+    .hero-cta {
+        justify-content: flex-start;
     }
     
-    .contact-form {
-        box-shadow: none;
-        border: 1px solid var(--color-gray-300);
+    .hero-icon {
+        position: absolute;
+        right: 5%;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: clamp(4rem, 10vw, 6rem);
+        z-index: 1;
+        opacity: 0.08;
     }
+}
+
+/* Loading state to prevent flashing - Simplified */
+.contact-hero.loading {
+    background: #2D3748 !important;
+}
+
+.contact-hero.loaded {
+    background: #2D3748 url('<?php echo $heroImagePath; ?>') no-repeat center center !important;
+    background-size: cover !important;
 }
 
 /* Accessibility */
 @media (prefers-reduced-motion: reduce) {
     * {
         transition: none !important;
-        animation: none !important;
     }
-    
-    .card:hover,
-    .btn-primary:hover,
-    .btn-secondary:hover,
-    .faq-item:hover {
-        transform: none !important;
-    }
-}
-
-:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
 }
 </style>
 </head>
 <body>
 
 <main class="contact-page">
-    <!-- Hero Section -->
-    <section class="contact-hero">
-        <div class="contact-hero-bg"></div>
+    <!-- Hero Section - Clean Design -->
+    <section class="contact-hero loading" id="contactHero">
         <div class="container">
-            <div class="contact-hero-content">
-                <span class="contact-hero-badge">Get in Touch</span>
-                <h1 class="contact-hero-title">Contact Us</h1>
-                <p class="contact-hero-subtitle">
-                    We're here to assist you with any questions or inquiries.
+            <div class="hero-text-overlay">
+                <span class="hero-badge">Get in Touch</span>
+                <h1 class="hero-title">
+                    Contact <span>Our Team</span>
+                </h1>
+                <p class="hero-description">
+                    We're here to assist you with admissions, program inquiries, and general information. 
+                    Our dedicated team is committed to providing timely and helpful responses.
                 </p>
+                <div class="hero-cta">
+                    <a href="#contact-form" class="btn-primary">
+                        <i class="fas fa-envelope"></i> Send Message
+                    </a>
+                    <a href="tel:<?php echo e($settings['phone'] ?? '+234XXX'); ?>" class="btn-call">
+                        <i class="fas fa-phone-alt"></i> Call Now
+                    </a>
+                </div>
+                <div class="hero-icon" aria-hidden="true">
+                    <i class="fas fa-headset"></i>
+                </div>
             </div>
         </div>
     </section>
@@ -793,6 +977,7 @@ body {
         <div class="container">
             <div class="section-header">
                 <h2 class="section-title">Contact Information</h2>
+                <p class="section-subtitle">Multiple ways to reach our team</p>
             </div>
 
             <div class="grid">
@@ -835,7 +1020,7 @@ body {
 
     <!-- Contact Form - Only shown if NO success message -->
     <?php if (empty($flash_success)): ?>
-    <section class="section">
+    <section class="section" id="contact-form">
         <div class="container">
             <div class="section-header">
                 <h2 class="section-title">Send us a Message</h2>
@@ -881,7 +1066,7 @@ body {
 
                     <div class="form-group">
                         <label class="form-label">Message *</label>
-                        <textarea name="message" class="form-textarea" rows="8" required><?php echo e($_POST['message'] ?? ''); ?></textarea>
+                        <textarea name="message" class="form-textarea" rows="6" required><?php echo e($_POST['message'] ?? ''); ?></textarea>
                     </div>
 
                     <div class="form-group">
@@ -929,7 +1114,7 @@ body {
         <div class="container">
             <h2 class="section-title">Visit Our Campus</h2>
             <p class="section-subtitle" style="max-width:700px; margin:0 auto var(--spacing-xl);">
-                We welcome visitors and prospective students.
+                We welcome visitors and prospective students to tour our facilities and learn more about our programs.
             </p>
             <a href="<?php echo $baseUrl; ?>/admissions" class="btn-secondary">
                 <i class="fas fa-calendar-alt"></i> Schedule a Visit
@@ -940,6 +1125,30 @@ body {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Fix for background flashing - simple load
+    const heroSection = document.getElementById('contactHero');
+    const heroImagePath = '<?php echo $heroImagePath; ?>';
+    
+    if (heroSection) {
+        // Set initial dark background
+        heroSection.style.background = '#2D3748';
+        
+        const img = new Image();
+        img.src = heroImagePath;
+        
+        img.onload = function() {
+            heroSection.classList.remove('loading');
+            heroSection.classList.add('loaded');
+            heroSection.style.background = '#2D3748 url("' + heroImagePath + '") no-repeat center center';
+            heroSection.style.backgroundSize = 'cover';
+        };
+        
+        img.onerror = function() {
+            heroSection.classList.remove('loading');
+            heroSection.style.background = '#2D3748';
+        };
+    }
+    
     // Ensure all FAQ answers are closed on load
     document.querySelectorAll('.faq-answer').forEach(answer => {
         answer.classList.remove('open');
@@ -948,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', function() {
         toggle.classList.remove('open');
     });
     
-    // Form validation enhancement
+    // Form validation
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
         contactForm.addEventListener('submit', function(e) {
@@ -959,8 +1168,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!field.value.trim()) {
                     isValid = false;
                     field.style.borderColor = '#dc3545';
+                    field.style.boxShadow = '0 0 0 2px rgba(220, 53, 69, 0.2)';
                 } else {
                     field.style.borderColor = '';
+                    field.style.boxShadow = '';
                 }
             });
             
@@ -970,6 +1181,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+            
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                e.preventDefault();
+                window.scrollTo({
+                    top: targetElement.offsetTop - 80,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
 });
 </script>
 
