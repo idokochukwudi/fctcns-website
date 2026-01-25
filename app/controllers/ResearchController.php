@@ -609,22 +609,23 @@ class ResearchController extends Controller
     // ============================================================================
     
     /**
-     * PUBLIC: Display research page - FIXED SEARCH VERSION
+     * PUBLIC: Display research page - FIXED VERSION
      */
     public function publicIndex()
     {
         // Switch to main layout for public pages
         $this->layout = 'main';
         
-        // Get filter parameters
-        $category = $this->query('category');
-        $search = trim($this->query('search'));
+        // Get filter parameters - FIXED: Add null coalescing to prevent trim() on null
+        $category = $this->query('category') ?? '';
+        $search = $this->query('search') ?? '';
+        $search = trim($search);
         
         // FIXED: Use proper search method instead of getAll()
-        if ($search) {
+        if (!empty($search)) {
             // If we have a search term, use the dedicated search method
             $publications = $this->model->searchPublications($search, $category, 50);
-        } elseif ($category) {
+        } elseif (!empty($category)) {
             // If only category filter
             $publications = $this->model->getByCategory($category, 50, $search);
         } else {
@@ -655,14 +656,37 @@ class ResearchController extends Controller
             }
         }
         
+        // FIXED: Get flash messages - Check if Session class exists first
+        $flash_success = null;
+        $flash_error = null;
+        $flash_errors = null;
+        
+        if (class_exists('Session')) {
+            // Use Session class if available
+            $flash_success = Session::has('success') ? Session::flash('success') : null;
+            $flash_error = Session::has('error') ? Session::flash('error') : null;
+            $flash_errors = Session::has('errors') ? Session::flash('errors') : null;
+        } else {
+            // Fallback: Use parent Controller's flash methods if available
+            if (method_exists($this, 'getFlash')) {
+                $flash_success = $this->getFlash('success');
+                $flash_error = $this->getFlash('error');
+                $flash_errors = $this->getFlash('errors');
+            }
+        }
+        
         $data = [
             'publications' => $publications,
             'categories' => $this->model->getCategories(),
             'featured' => $featured,
             'currentCategory' => $category,
             'searchTerm' => $search,
-            'pageTitle' => $search ? 'Search: ' . htmlspecialchars($search) . ' - Research Publications' : 'Research Publications - FCT College of Nursing Sciences',
-            'currentPage' => 'research'
+            'pageTitle' => !empty($search) ? 'Search: ' . htmlspecialchars($search) . ' - Research Publications' : 'Research Publications - FCT College of Nursing Sciences',
+            'currentPage' => 'research',
+            // ADD FLASH MESSAGES TO DATA
+            'flash_success' => $flash_success,
+            'flash_error' => $flash_error,
+            'flash_errors' => $flash_errors
         ];
         
         $this->render('pages/research', $data);
@@ -748,6 +772,7 @@ class ResearchController extends Controller
         $publication = $this->model->getById($id);
         
         if (!$publication || !$publication['is_published'] || empty($publication['file_path'])) {
+            // Set flash message
             $this->flash('error', 'File not available for download');
             $this->redirect('/research');
         }

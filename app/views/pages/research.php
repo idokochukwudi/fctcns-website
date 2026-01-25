@@ -6,9 +6,10 @@
  * Updated: Fixed image path, added transparent background, reduced font size, removed animations
  * FIXED: Enhanced search display with better results header
  * ENHANCED: Search form scrolls to publications section
+ * FIXED: No gap between header and research body + flash messages display
  * 
  * @package FCTCNS
- * @version 4.5
+ * @version 4.6
  */
 
 extract($data ?? []);
@@ -26,6 +27,11 @@ $categories = $categories ?? [];
 $searchTerm = $searchTerm ?? '';
 $currentCategory = $currentCategory ?? '';
 $totalPublications = count($publications);
+
+// Flash messages
+$flash_success = $flash_success ?? null;
+$flash_error = $flash_error ?? null;
+$flash_errors = $flash_errors ?? null;
 
 // FIXED: Add forward slash between domain and path
 $heroImagePath = rtrim($baseUrl, '/') . '/assets/images/research/research-hero.jpg';
@@ -56,55 +62,20 @@ if (file_exists($_SERVER['DOCUMENT_ROOT'] . $heroImagePath)) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-    /* EMERGENCY FULL WIDTH OVERRIDE */
-body .main-content {
-    padding: 0 !important;
-    max-width: 100vw !important;
+/* ==========================================================================
+   CRITICAL: REMOVE ALL GAPS BETWEEN HEADER AND RESEARCH BODY
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-.hero-section {
-    width: 100vw !important;
-    position: relative !important;
-    left: 50% !important;
-    right: 50% !important;
-    margin-left: -50vw !important;
-    margin-right: -50vw !important;
-}
-    </style>
-<style>
-/* ==========================================================================
-   CRITICAL: NO GAP BETWEEN BODY AND CONTENT
-   ========================================================================== */
 html, body {
     margin: 0 !important;
     padding: 0 !important;
     width: 100%;
     overflow-x: hidden;
-}
-
-/* Remove ALL top spacing from body content */
-body > *:first-child {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-/* Remove spacing from main wrapper */
-#main-content,
-.research-content {
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* ==========================================================================
-   CRITICAL MOBILE ENHANCEMENTS & FIXES
-   ========================================================================== */
-* {
-    -webkit-tap-highlight-color: transparent;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
 }
 
 body {
@@ -118,20 +89,131 @@ body {
     max-width: 100%;
 }
 
-/* Font family inheritance for all elements */
-h1, h2, h3, h4, h5, h6,
-button, .btn,
-.section-title,
-.publication-card h3,
-.category-card h3,
-.search-container h3,
-.research-stat-item h3,
-.featured-badge {
-    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+/* Remove ALL spacing from body and header */
+body > header,
+body > .header,
+body > nav,
+body > .navbar {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Remove spacing from main wrapper */
+#main-content,
+.research-content,
+main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+}
+
+/* Make sure hero section starts at top */
+.research-hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: none !important;
 }
 
 /* ==========================================================================
-   CSS RESET & GLOBAL VARIABLES - PROFESSIONAL MATURE DESIGN
+   FLASH MESSAGES STYLES - ADDED
+   ========================================================================== */
+.flash-messages-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+    width: 90%;
+}
+
+.flash-message {
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideInRight 0.3s ease-out;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.flash-message.success {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.95), rgba(56, 142, 60, 0.95));
+    color: white;
+}
+
+.flash-message.error {
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.95), rgba(198, 40, 40, 0.95));
+    color: white;
+}
+
+.flash-message.warning {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.95), rgba(245, 124, 0, 0.95));
+    color: white;
+}
+
+.flash-message .icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.flash-message .content {
+    flex: 1;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.flash-message .close-btn {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.flash-message .close-btn:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile flash messages */
+@media (max-width: 768px) {
+    .flash-messages-container {
+        top: 70px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        width: auto;
+    }
+}
+
+/* ==========================================================================
+   GLOBAL VARIABLES - PROFESSIONAL MATURE DESIGN
    ========================================================================== */
 :root {
     /* Professional Color Palette - Muted Elegance */
@@ -194,13 +276,13 @@ button, .btn,
 }
 
 /* ==========================================================================
-   MAIN CONTENT STRUCTURE
+   MAIN CONTENT STRUCTURE - NO GAPS
    ========================================================================== */
 .research-content {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+    display: block;
     width: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 .container {
@@ -267,7 +349,7 @@ button, .btn,
 }
 
 /* ==========================================================================
-   HERO SECTION - WITH TRANSPARENT BACKGROUND WRAPPER
+   HERO SECTION - NO TOP GAP
    ========================================================================== */
 .research-hero {
     position: relative;
@@ -1511,6 +1593,53 @@ mark {
 </head>
 <body>
 
+<!-- Flash Messages Container - ADDED -->
+<div class="flash-messages-container">
+    <?php if (!empty($flash_success)): ?>
+    <div class="flash-message success">
+        <div class="icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="content">
+            <?php echo e($flash_success); ?>
+        </div>
+        <button class="close-btn" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <?php endif; ?>
+    
+    <?php if (!empty($flash_error)): ?>
+    <div class="flash-message error">
+        <div class="icon">
+            <i class="fas fa-exclamation-circle"></i>
+        </div>
+        <div class="content">
+            <?php echo e($flash_error); ?>
+        </div>
+        <button class="close-btn" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <?php endif; ?>
+    
+    <?php if (!empty($flash_errors) && is_array($flash_errors)): ?>
+        <?php foreach ($flash_errors as $error): ?>
+        <div class="flash-message error">
+            <div class="icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="content">
+                <?php echo e($error); ?>
+            </div>
+            <button class="close-btn" onclick="this.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</div>
+
 <!-- Research Content -->
 <main id="main-content" class="research-content" role="main">
     
@@ -1940,6 +2069,33 @@ mark {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
+    
+    // Auto-remove flash messages after 5 seconds
+    setTimeout(function() {
+        document.querySelectorAll('.flash-message').forEach(function(msg) {
+            msg.style.opacity = '0';
+            msg.style.transform = 'translateX(100%)';
+            setTimeout(function() {
+                if (msg.parentNode) {
+                    msg.parentNode.removeChild(msg);
+                }
+            }, 300);
+        });
+    }, 5000);
+    
+    // Manual close for flash messages
+    document.querySelectorAll('.flash-message .close-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const msg = this.closest('.flash-message');
+            msg.style.opacity = '0';
+            msg.style.transform = 'translateX(100%)';
+            setTimeout(function() {
+                if (msg.parentNode) {
+                    msg.parentNode.removeChild(msg);
+                }
+            }, 300);
+        });
+    });
     
     // FIXED: Correct image path for hero section
     const heroImagePath = '<?php echo $heroImagePath; ?>';

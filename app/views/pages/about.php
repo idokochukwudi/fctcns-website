@@ -1067,7 +1067,7 @@ body {
                 <div class="card">
                     <div class="card-body">
                         <h3 class="card-title">Our Vision</h3>
-                        <p class="card-text">To be one of the best college of Nursing Sciences in Nigeria especially in the are of imparting knowledge into prospective nurses as well as providing solutions to the much needed health services as required by the people of the FCT in particular and Nigeria at large.</p>
+                        <p class="card-text">To be one of the best college of Nursing Sciences in Nigeria especially in the area of imparting knowledge into prospective nurses as well as providing solutions to the much needed health services as required by the people of the FCT in particular and Nigeria at large.</p>
                     </div>
                 </div>
                 <div class="card">
