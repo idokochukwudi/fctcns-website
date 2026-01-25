@@ -609,7 +609,7 @@ class ResearchController extends Controller
     // ============================================================================
     
     /**
-     * PUBLIC: Display research page
+     * PUBLIC: Display research page - FIXED SEARCH VERSION
      */
     public function publicIndex()
     {
@@ -618,18 +618,18 @@ class ResearchController extends Controller
         
         // Get filter parameters
         $category = $this->query('category');
-        $search = $this->query('search');
+        $search = trim($this->query('search'));
         
-        if ($category) {
-            $publications = $this->model->getByCategory($category, 50);
-        } elseif ($search) {
-            $publications = $this->model->getAll([
-                'search' => $search,
-                'is_published' => 1,
-                'limit' => 50
-            ]);
+        // FIXED: Use proper search method instead of getAll()
+        if ($search) {
+            // If we have a search term, use the dedicated search method
+            $publications = $this->model->searchPublications($search, $category, 50);
+        } elseif ($category) {
+            // If only category filter
+            $publications = $this->model->getByCategory($category, 50, $search);
         } else {
-            $publications = $this->model->getPublished(20);
+            // Default: get published publications (with search if provided)
+            $publications = $this->model->getPublished(50, 0, $search);
         }
         
         // Convert file paths to public URLs
@@ -640,15 +640,28 @@ class ResearchController extends Controller
             if (!empty($pub['thumbnail_path'])) {
                 $pub['thumbnail_url'] = $this->getPublicFilePath($pub['thumbnail_path']);
             }
+            
+            // FIXED: Ensure all required fields exist
+            $pub['views_count'] = $pub['views_count'] ?? 0;
+            $pub['downloads_count'] = $pub['downloads_count'] ?? 0;
+            $pub['category_name'] = $pub['category_name'] ?? ($pub['research_area'] ?? '');
+        }
+        
+        // Get featured publications (exclude current search results)
+        $featured = $this->model->getFeatured(5);
+        foreach ($featured as &$feat) {
+            if (!empty($feat['thumbnail_path'])) {
+                $feat['thumbnail_url'] = $this->getPublicFilePath($feat['thumbnail_path']);
+            }
         }
         
         $data = [
             'publications' => $publications,
             'categories' => $this->model->getCategories(),
-            'featured' => $this->model->getFeatured(5),
+            'featured' => $featured,
             'currentCategory' => $category,
             'searchTerm' => $search,
-            'pageTitle' => 'Research Publications - FCT College of Nursing Sciences',
+            'pageTitle' => $search ? 'Search: ' . htmlspecialchars($search) . ' - Research Publications' : 'Research Publications - FCT College of Nursing Sciences',
             'currentPage' => 'research'
         ];
         

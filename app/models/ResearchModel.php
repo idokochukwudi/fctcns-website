@@ -37,6 +37,7 @@ class ResearchModel
     
     /**
      * Get all publications with optional filters
+     * FIXED: Enhanced search to include abstract field and improved search logic
      */
     public function getAll($filters = [])
     {
@@ -51,29 +52,43 @@ class ResearchModel
         if (isset($filters['is_published']) && $filters['is_published'] !== '') {
             $query .= " AND p.is_published = ?";
             $params[] = $filters['is_published'];
+        } else {
+            // Default to published only if not specified (for public access)
+            if (!isset($filters['is_published'])) {
+                $query .= " AND p.is_published = 1";
+            }
         }
         
+        // Category filter
         if (!empty($filters['research_area'])) {
             $query .= " AND p.research_area = ?";
             $params[] = $filters['research_area'];
         }
         
+        // Type filter
         if (!empty($filters['publication_type'])) {
             $query .= " AND p.publication_type = ?";
             $params[] = $filters['publication_type'];
         }
         
+        // Year filter
         if (!empty($filters['year'])) {
             $query .= " AND YEAR(p.publication_date) = ?";
             $params[] = $filters['year'];
         }
         
+        // FIXED: Enhanced search functionality
         if (!empty($filters['search'])) {
-            $query .= " AND (p.title LIKE ? OR p.authors LIKE ? OR p.keywords LIKE ?)";
+            $query .= " AND (p.title LIKE ? 
+                           OR p.authors LIKE ? 
+                           OR p.abstract LIKE ? 
+                           OR p.keywords LIKE ?)";
             $searchTerm = "%{$filters['search']}%";
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
+            // Add search term for each field being searched
+            $params[] = $searchTerm;  // title
+            $params[] = $searchTerm;  // authors
+            $params[] = $searchTerm;  // abstract
+            $params[] = $searchTerm;  // keywords
         }
         
         // Ordering
@@ -360,37 +375,71 @@ class ResearchModel
     
     /**
      * Get publications for public display
+     * FIXED: Added search parameter
      */
-    public function getPublished($limit = 20, $offset = 0)
+    public function getPublished($limit = 20, $offset = 0, $search = null)
     {
         $query = "SELECT p.*, c.name as category_name 
                   FROM {$this->tablePublications} p
                   LEFT JOIN {$this->tableCategories} c ON p.research_area = c.slug
                   WHERE p.is_published = 1 
-                  AND (c.is_active = 1 OR c.id IS NULL)
-                  ORDER BY p.publication_date DESC, p.created_at DESC
-                  LIMIT $limit OFFSET $offset";
+                  AND (c.is_active = 1 OR c.id IS NULL)";
+        
+        $params = [];
+        
+        // Add search if provided
+        if (!empty($search)) {
+            $query .= " AND (p.title LIKE ? 
+                           OR p.authors LIKE ? 
+                           OR p.abstract LIKE ? 
+                           OR p.keywords LIKE ?)";
+            $searchTerm = "%{$search}%";
+            $params[] = $searchTerm;  // title
+            $params[] = $searchTerm;  // authors
+            $params[] = $searchTerm;  // abstract
+            $params[] = $searchTerm;  // keywords
+        }
+        
+        $query .= " ORDER BY p.publication_date DESC, p.created_at DESC
+                    LIMIT $limit OFFSET $offset";
         
         $db = $this->getDb();
-        return $db->fetchAll($query);
+        return $db->fetchAll($query, $params);
     }
     
     /**
      * Get publications by category for public display
+     * FIXED: Added search parameter
      */
-    public function getByCategory($categorySlug, $limit = 20)
+    public function getByCategory($categorySlug, $limit = 20, $search = null)
     {
         $query = "SELECT p.*, c.name as category_name 
                   FROM {$this->tablePublications} p
                   JOIN {$this->tableCategories} c ON p.research_area = c.slug
                   WHERE p.is_published = 1 
                   AND c.is_active = 1
-                  AND c.slug = ?
-                  ORDER BY p.publication_date DESC
-                  LIMIT $limit";
+                  AND c.slug = ?";
+        
+        $params = [$categorySlug];
+        
+        // Add search if provided
+        if (!empty($search)) {
+            $query .= " AND (p.title LIKE ? 
+                           OR p.authors LIKE ? 
+                           OR p.abstract LIKE ? 
+                           OR p.keywords LIKE ?)";
+            $searchTerm = "%{$search}%";
+            $params[] = $searchTerm;  // title
+            $params[] = $searchTerm;  // authors
+            $params[] = $searchTerm;  // abstract
+            $params[] = $searchTerm;  // keywords
+        }
+        
+        $query .= " ORDER BY p.publication_date DESC
+                    LIMIT $limit";
         
         $db = $this->getDb();
-        return $db->fetchAll($query, [$categorySlug]);
+        return $db->fetchAll($query, $params);
     }
     
     /**
@@ -409,6 +458,38 @@ class ResearchModel
         
         $db = $this->getDb();
         return $db->fetchAll($query);
+    }
+    
+    /**
+     * Dedicated search method for comprehensive searching
+     * FIXED: New method for advanced search functionality
+     */
+    public function searchPublications($searchTerm, $category = null, $limit = 50)
+    {
+        $query = "SELECT p.*, c.name as category_name 
+                  FROM {$this->tablePublications} p
+                  LEFT JOIN {$this->tableCategories} c ON p.research_area = c.slug
+                  WHERE p.is_published = 1 
+                  AND (c.is_active = 1 OR c.id IS NULL)
+                  AND (p.title LIKE ? 
+                       OR p.authors LIKE ? 
+                       OR p.abstract LIKE ? 
+                       OR p.keywords LIKE ?)";
+        
+        $params = [];
+        $searchParam = "%{$searchTerm}%";
+        $params = [$searchParam, $searchParam, $searchParam, $searchParam];
+        
+        if ($category) {
+            $query .= " AND p.research_area = ?";
+            $params[] = $category;
+        }
+        
+        $query .= " ORDER BY p.publication_date DESC 
+                    LIMIT $limit";
+        
+        $db = $this->getDb();
+        return $db->fetchAll($query, $params);
     }
     
     /**

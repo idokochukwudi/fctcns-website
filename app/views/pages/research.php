@@ -4,6 +4,8 @@
  * Mobile-Optimized Version - FULL WIDTH
  * Complete Redesign with Professional Sections
  * Updated: Fixed image path, added transparent background, reduced font size, removed animations
+ * FIXED: Enhanced search display with better results header
+ * ENHANCED: Search form scrolls to publications section
  * 
  * @package FCTCNS
  * @version 4.5
@@ -28,6 +30,9 @@ $totalPublications = count($publications);
 // FIXED: Add forward slash between domain and path
 $heroImagePath = rtrim($baseUrl, '/') . '/assets/images/research/research-hero.jpg';
 
+// Check for scroll parameter
+$scrollToPublications = isset($_GET['scroll']) && $_GET['scroll'] === 'publications';
+
 // Preload the hero image
 if (file_exists($_SERVER['DOCUMENT_ROOT'] . $heroImagePath)) {
     echo '<link rel="preload" href="' . $heroImagePath . '" as="image">';
@@ -40,7 +45,7 @@ if (file_exists($_SERVER['DOCUMENT_ROOT'] . $heroImagePath)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <meta name="description" content="<?php echo e($page_description ?? 'FCT College of Nursing Sciences - Research Publications & Academic Research'); ?>">
-    <title><?php echo e($page_title ?? 'Research Publications - FCT College of Nursing Sciences'); ?></title>
+    <title><?php echo e($pageTitle ?? 'Research Publications - FCT College of Nursing Sciences'); ?></title>
     
     <!-- Professional Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -433,6 +438,18 @@ button, .btn,
     min-height: 36px;
 }
 
+.btn-outline-primary {
+    background: transparent;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+    background: var(--color-primary);
+    color: var(--color-white);
+}
+
 /* ==========================================================================
    SEARCH SECTION
    ========================================================================== */
@@ -447,6 +464,21 @@ button, .btn,
     max-width: 1000px;
     margin: 0 auto;
     padding: 0 var(--spacing-md);
+}
+
+/* Enhanced search results header */
+.search-results-header {
+    background: var(--color-primary-very-light);
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--color-gray-200);
+}
+
+.search-results-header h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--color-primary);
+    font-size: 1.2rem;
 }
 
 .search-form {
@@ -528,6 +560,20 @@ button, .btn,
 
 .search-button .btn {
     width: 100%;
+}
+
+.search-clear {
+    background: none;
+    border: none;
+    color: var(--color-gray-600);
+    padding: 0 1rem;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.clear-button {
+    display: flex;
+    align-items: center;
 }
 
 /* ==========================================================================
@@ -1186,6 +1232,10 @@ button, .btn,
         gap: var(--spacing-md);
     }
     
+    .search-filters {
+        grid-template-columns: 1fr auto auto;
+    }
+    
     .research-stats-grid {
         grid-template-columns: repeat(4, 1fr);
         gap: var(--spacing-lg);
@@ -1324,6 +1374,18 @@ button, .btn,
     .pagination {
         flex-wrap: wrap;
     }
+    
+    .search-results-header > div {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .search-results-header > div > div:last-child {
+        margin-left: 0;
+        width: 100%;
+        justify-content: space-between;
+    }
 }
 
 /* Small mobile (480px and below) */
@@ -1421,6 +1483,12 @@ button, .btn,
     border-radius: var(--radius-sm);
 }
 
+mark {
+    background: var(--color-accent-light);
+    padding: 0 0.1em;
+    border-radius: 2px;
+}
+
 /* Print styles */
 @media print {
     .research-hero,
@@ -1472,7 +1540,60 @@ button, .btn,
     <!-- ========== SEARCH SECTION ========== -->
     <section class="search-section" aria-label="Search publications">
         <div class="search-container">
-            <form method="GET" class="search-form">
+            <?php if ($searchTerm || $currentCategory): ?>
+            <div class="search-results-header" style="background: var(--color-primary-very-light); padding: 1.5rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; border: 1px solid var(--color-gray-200);">
+                <h3 style="margin: 0 0 0.5rem 0; color: var(--color-primary); font-size: 1.2rem;">
+                    <i class="fas fa-search" style="margin-right: 0.5rem;"></i>Search Results
+                </h3>
+                
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+                    <?php if ($searchTerm): ?>
+                    <div style="background: var(--color-white); padding: 0.5rem 1rem; border-radius: var(--radius-full); border: 1px solid var(--color-gray-300); display: flex; align-items: center;">
+                        <strong style="margin-right: 0.5rem; color: var(--color-gray-700);">Keywords:</strong>
+                        <span style="color: var(--color-primary);">"<?php echo e($searchTerm); ?>"</span>
+                        <a href="?<?php echo $currentCategory ? 'category=' . urlencode($currentCategory) : ''; ?>" 
+                           style="margin-left: 0.75rem; color: var(--color-gray-600); text-decoration: none;">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <?php if ($currentCategory): ?>
+                    <?php 
+                    // Get category name
+                    $categoryName = '';
+                    foreach ($categories as $cat) {
+                        if ($cat['slug'] == $currentCategory) {
+                            $categoryName = $cat['name'];
+                            break;
+                        }
+                    }
+                    ?>
+                    <div style="background: var(--color-primary); color: white; padding: 0.5rem 1rem; border-radius: var(--radius-full); display: flex; align-items: center;">
+                        <i class="fas fa-folder" style="margin-right: 0.5rem;"></i>
+                        <span><?php echo e($categoryName ?: $currentCategory); ?></span>
+                        <a href="?<?php echo $searchTerm ? 'search=' . urlencode($searchTerm) : ''; ?>" 
+                           style="margin-left: 0.75rem; color: rgba(255,255,255,0.8); text-decoration: none;">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <div style="margin-left: auto; font-weight: 500; color: var(--color-gray-700);">
+                        Found <?php echo count($publications); ?> publication<?php echo count($publications) !== 1 ? 's' : ''; ?>
+                    </div>
+                    
+                    <?php if ($searchTerm || $currentCategory): ?>
+                    <a href="/research" style="display: inline-flex; align-items: center; color: var(--color-primary); text-decoration: none; font-weight: 500;">
+                        <i class="fas fa-undo-alt" style="margin-right: 0.5rem;"></i>
+                        Clear all filters
+                    </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+            <form method="GET" action="/research" class="search-form">
                 <div class="search-input-group">
                     <div class="search-icon">
                         <i class="fas fa-search" aria-hidden="true"></i>
@@ -1480,13 +1601,19 @@ button, .btn,
                     <input type="text" 
                            name="search" 
                            class="search-input" 
-                           placeholder="Search publications by title, authors, or keywords..."
+                           placeholder="Search publications by title, authors, abstract, or keywords..."
                            value="<?php echo e($searchTerm); ?>"
-                           aria-label="Search publications">
+                           aria-label="Search publications"
+                           id="searchInput">
+                    <?php if ($searchTerm): ?>
+                    <button type="button" class="search-clear" aria-label="Clear search" style="background: none; border: none; color: var(--color-gray-600); padding: 0 1rem; cursor: pointer; font-size: 1rem;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <?php endif; ?>
                 </div>
                 
                 <div class="search-filters">
-                    <select name="category" class="filter-select" aria-label="Filter by research area">
+                    <select name="category" class="filter-select" aria-label="Filter by research area" id="categorySelect">
                         <option value="">All Research Areas</option>
                         <?php foreach ($categories as $category): ?>
                             <option value="<?php echo e($category['slug']); ?>" 
@@ -1501,6 +1628,14 @@ button, .btn,
                             <i class="fas fa-search" aria-hidden="true"></i> Search
                         </button>
                     </div>
+                    
+                    <?php if ($searchTerm || $currentCategory): ?>
+                    <div class="clear-button">
+                        <a href="/research" class="btn btn-outline-primary">
+                            <i class="fas fa-times" aria-hidden="true"></i> Clear All
+                        </a>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </form>
         </div>
@@ -1632,7 +1767,7 @@ button, .btn,
             
             <div class="categories-grid">
                 <?php foreach ($categories as $category): ?>
-                <a href="/research?category=<?php echo e($category['slug']); ?>" class="category-card">
+                <a href="/research?category=<?php echo e($category['slug']); ?>&scroll=publications" class="category-card">
                     <div class="category-icon">
                         <i class="fas fa-folder-open" aria-hidden="true"></i>
                     </div>
@@ -1853,33 +1988,123 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Search form enhancement
+    // Enhanced search functionality
     const searchForm = document.querySelector('.search-form');
     if (searchForm) {
-        const searchInput = searchForm.querySelector('input[name="search"]');
+        const searchInput = document.getElementById('searchInput');
+        const categorySelect = document.getElementById('categorySelect');
+        const clearButtons = document.querySelectorAll('.search-clear, .clear-button a');
         
-        // Clear search button
-        if (searchInput.value) {
-            const clearButton = document.createElement('button');
-            clearButton.type = 'button';
-            clearButton.className = 'search-clear';
-            clearButton.innerHTML = '<i class="fas fa-times"></i>';
-            clearButton.setAttribute('aria-label', 'Clear search');
-            clearButton.style.cssText = `
-                background: none;
-                border: none;
-                color: var(--color-gray-600);
-                padding: 0 var(--spacing-sm);
-                cursor: pointer;
-                font-size: 1rem;
-            `;
-            
-            clearButton.addEventListener('click', function() {
-                searchInput.value = '';
-                searchForm.submit();
+        // Clear search input button
+        clearButtons.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (this.classList.contains('search-clear')) {
+                    e.preventDefault();
+                    searchInput.value = '';
+                    searchInput.focus();
+                    
+                    // If category is selected, submit with just category
+                    if (categorySelect.value) {
+                        // Add scroll parameter
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('scroll', 'publications');
+                        searchForm.action = url.pathname + url.search;
+                        searchForm.submit();
+                    }
+                }
+                // For clear all button, it will navigate to /research
             });
+        });
+        
+        // Auto-submit when category changes if there's a search term
+        if (categorySelect) {
+            categorySelect.addEventListener('change', function() {
+                // Only auto-submit if there's a search term
+                if (searchInput.value.trim()) {
+                    // Add scroll parameter to URL
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('scroll', 'publications');
+                    searchForm.action = url.pathname + url.search;
+                    searchForm.submit();
+                }
+            });
+        }
+        
+        // Prevent empty search submissions
+        searchForm.addEventListener('submit', function(e) {
+            // If both search and category are empty, prevent submission
+            if (!searchInput.value.trim() && !categorySelect.value) {
+                e.preventDefault();
+                return false;
+            }
             
-            searchInput.parentNode.appendChild(clearButton);
+            // If only whitespace in search, clear it
+            if (searchInput.value.trim() === '') {
+                searchInput.value = '';
+            }
+            
+            // Add scroll parameter to URL to scroll to publications after search
+            const url = new URL(window.location.href);
+            url.searchParams.set('scroll', 'publications');
+            searchForm.action = url.pathname + url.search;
+            
+            // For immediate visual feedback, scroll after a small delay
+            // but before the page reloads
+            setTimeout(() => {
+                if (searchInput.value.trim() || categorySelect.value) {
+                    const publicationsSection = document.getElementById('publications');
+                    if (publicationsSection) {
+                        publicationsSection.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'start' 
+                        });
+                    }
+                }
+            }, 100);
+        });
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Focus search on Ctrl/Cmd + K
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            
+            // Clear search on Escape when focused
+            if (e.key === 'Escape' && document.activeElement === searchInput) {
+                searchInput.value = '';
+            }
+        });
+    }
+    
+    // Highlight search terms in results
+    const searchTerm = '<?php echo e(addslashes($searchTerm)); ?>';
+    if (searchTerm.trim()) {
+        const searchTerms = searchTerm.toLowerCase().split(' ').filter(term => term.length > 2);
+        
+        if (searchTerms.length > 0) {
+            // Function to highlight text
+            const highlightText = (element) => {
+                const html = element.innerHTML;
+                let newHtml = html;
+                
+                searchTerms.forEach(term => {
+                    if (term.length > 2) {
+                        const regex = new RegExp(`(${term})`, 'gi');
+                        newHtml = newHtml.replace(regex, '<mark style="background: var(--color-accent-light); padding: 0 0.1em; border-radius: 2px;">$1</mark>');
+                    }
+                });
+                
+                if (newHtml !== html) {
+                    element.innerHTML = newHtml;
+                }
+            };
+            
+            // Highlight in titles and abstracts
+            document.querySelectorAll('.featured-title, .publication-title, .featured-abstract, .publication-abstract, .featured-authors, .publication-authors').forEach(el => {
+                highlightText(el);
+            });
         }
     }
     
@@ -1889,6 +2114,19 @@ document.addEventListener('DOMContentLoaded', function() {
             e.target.click();
         }
     });
+    
+    // Scroll to publications section if scroll parameter is present
+    <?php if ($scrollToPublications): ?>
+    setTimeout(function() {
+        const publicationsSection = document.getElementById('publications');
+        if (publicationsSection) {
+            publicationsSection.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }
+    }, 300); // Small delay to ensure page is fully loaded
+    <?php endif; ?>
 });
 </script>
 
