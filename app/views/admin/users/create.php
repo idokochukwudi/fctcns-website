@@ -372,8 +372,16 @@
                         
                         <div class="row">
                             <?php 
-                            // Group permissions
+                            // Group permissions - UPDATED TO INCLUDE RESEARCH MANAGEMENT GROUP
                             $groupedPermissions = [
+                                // ADDED NEW GROUP AT THE TOP:
+                                'Research Management' => [
+                                    'research_view' => 'View Research Publications',
+                                    'research_create' => 'Create Publications',
+                                    'research_edit' => 'Edit Publications',
+                                    'research_delete' => 'Delete Publications',
+                                    'research_publish' => 'Publish/Unpublish'
+                                ],
                                 'Nominal Roll' => [
                                     'nominal_roll_view' => 'View Nominal Roll',
                                     'nominal_roll_create' => 'Create Nominal Roll',
@@ -459,13 +467,17 @@
             alert('Generated password: ' + password);
         }
         
-        // Role-based permission presets
+        // Role-based permission presets - UPDATED TO INCLUDE RESEARCH PERMISSIONS
         document.getElementById('role').addEventListener('change', function() {
             const role = this.value;
             const presets = {
                 'admin': [
+                    // Existing nominal roll permissions
                     'nominal_roll_view', 'nominal_roll_create', 'nominal_roll_edit', 'nominal_roll_delete',
                     'nominal_roll_bulk_upload', 'nominal_roll_export', 'nominal_roll_settings', 'nominal_roll_approve',
+                    // ADDED RESEARCH PERMISSIONS
+                    'research_view', 'research_create', 'research_edit', 'research_delete', 'research_publish',
+                    // Other permissions
                     'user_view', 'user_create', 'user_edit', 'user_delete',
                     'application_view', 'application_edit', 'application_delete',
                     'system_settings', 'system_backup', 'system_reports'
@@ -483,6 +495,11 @@
                 'supervisor': [
                     'nominal_roll_view', 'nominal_roll_create', 'nominal_roll_edit',
                     'application_view', 'system_reports'
+                ],
+                // ADDED NEW ROLE: research_manager
+                'research_manager': [
+                    'research_view', 'research_create', 'research_edit', 'research_publish'
+                    // Note: No research_delete for safety
                 ]
             };
             

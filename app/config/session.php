@@ -514,6 +514,88 @@ class Session {
     public static function hasKey($key) {
         return isset($_SESSION[$key]);
     }
+
+    /**
+     * Check if user has specific permission
+     */
+    public static function hasPermission($permission) {
+        // Check session security first
+        if (!self::checkSessionSecurity()) {
+            return false;
+        }
+        
+        // Admin always has all permissions
+        $userRole = self::getUserRole();
+        if (in_array($userRole, ['admin', 'super_admin'])) {
+            return true;
+        }
+        
+        // Check if permissions are cached in session
+        if (!isset($_SESSION['user_permissions'])) {
+            self::loadUserPermissions();
+        }
+        
+        return isset($_SESSION['user_permissions'][$permission]) && $_SESSION['user_permissions'][$permission];
+    }
+
+    /**
+     * Get all user permissions
+     */
+    public static function getUserPermissions() {
+        if (!self::checkSessionSecurity()) {
+            return [];
+        }
+        
+        if (!isset($_SESSION['user_permissions'])) {
+            self::loadUserPermissions();
+        }
+        
+        return $_SESSION['user_permissions'] ?? [];
+    }
+
+    /**
+     * Load user permissions from database into session
+     */
+    public static function loadUserPermissions($userId = null) {
+        if ($userId === null) {
+            $userId = self::getUserId();
+        }
+        
+        if (!$userId) {
+            $_SESSION['user_permissions'] = [];
+            return;
+        }
+        
+        try {
+            require_once APP_PATH . '/config/database.php';
+            $database = Database::getInstance();
+            $db = $database->getConnection();
+            
+            $stmt = $db->prepare("
+                SELECT permission, is_allowed 
+                FROM user_permissions 
+                WHERE user_id = ?
+            ");
+            $stmt->execute([$userId]);
+            $permissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $_SESSION['user_permissions'] = [];
+            foreach ($permissions as $perm) {
+                $_SESSION['user_permissions'][$perm['permission']] = (bool)$perm['is_allowed'];
+            }
+            
+        } catch (Exception $e) {
+            error_log("Failed to load user permissions: " . $e->getMessage());
+            $_SESSION['user_permissions'] = [];
+        }
+    }
+
+    /**
+     * Clear user permissions from session
+     */
+    public static function clearUserPermissions() {
+        unset($_SESSION['user_permissions']);
+    }
 }
 
 // Initialize CSRF token for forms if not exists (legacy single token)

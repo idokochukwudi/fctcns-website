@@ -1,0 +1,120 @@
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("publicationForm");
+  const progressIndicator = document.getElementById("progressIndicator");
+  const abstractTextarea = document.getElementById("abstract");
+  const abstractCount = document.getElementById("abstractCount");
+  const publicationType = document.getElementById("publication_type");
+  const journalDetails = document.getElementById("journalDetails");
+  const publicationDate = document.getElementById("publication_date");
+
+  // Abstract character count
+  function updateAbstractCount() {
+    abstractCount.textContent = abstractTextarea.value.length;
+  }
+
+  abstractTextarea.addEventListener("input", updateAbstractCount);
+  updateAbstractCount(); // Initial count
+
+  // Show/hide journal details based on publication type
+  function toggleJournalDetails() {
+    if (
+      publicationType.value === "journal" ||
+      publicationType.value === "conference"
+    ) {
+      journalDetails.style.display = "block";
+    } else {
+      journalDetails.style.display = "none";
+    }
+  }
+
+  publicationType.addEventListener("change", toggleJournalDetails);
+  toggleJournalDetails(); // Initial state
+
+  // Auto-fill date to today if empty
+  if (!publicationDate.value) {
+    const today = new Date().toISOString().split("T")[0];
+    publicationDate.value = today;
+  }
+
+  // Form validation and submission
+  form.addEventListener("submit", function (e) {
+    // Client-side validation
+    let isValid = true;
+
+    // Required fields
+    const requiredFields = [
+      "title",
+      "authors",
+      "abstract",
+      "research_area",
+      "publication_date",
+    ];
+    requiredFields.forEach((fieldName) => {
+      const field = form.elements[fieldName];
+      if (!field.value.trim()) {
+        field.classList.add("is-invalid");
+        isValid = false;
+      }
+    });
+
+    // Abstract minimum length
+    if (abstractTextarea.value.length < 200) {
+      abstractTextarea.classList.add("is-invalid");
+      isValid = false;
+    }
+
+    if (!isValid) {
+      e.preventDefault();
+      alert("Please fill in all required fields correctly.");
+      return;
+    }
+
+    // Show progress indicator
+    progressIndicator.classList.add("show");
+
+    // Disable submit buttons to prevent double submission
+    const submitButtons = form.querySelectorAll('button[type="submit"]');
+    submitButtons.forEach((btn) => {
+      btn.disabled = true;
+      btn.innerHTML =
+        '<svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20" style="animation: spin 1s linear infinite;"><path d="M4 10a6 6 0 1112 0 6 6 0 01-12 0z" fill="none" stroke="currentColor" stroke-width="2"/></svg> Saving...';
+    });
+  });
+
+  // File upload preview
+  const researchFileInput = document.getElementById("research_file");
+  const thumbnailInput = document.getElementById("thumbnail");
+
+  researchFileInput.addEventListener("change", function () {
+    const label = this.previousElementSibling;
+    if (this.files.length > 0) {
+      label.innerHTML = `
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span>${this.files[0].name}</span>
+                <span style="font-size: 0.75rem;">(${(this.files[0].size / 1024 / 1024).toFixed(2)} MB)</span>
+            `;
+    }
+  });
+
+  thumbnailInput.addEventListener("change", function () {
+    const label = this.previousElementSibling;
+    if (this.files.length > 0) {
+      label.innerHTML = `
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span>${this.files[0].name}</span>
+                <span style="font-size: 0.75rem;">(${(this.files[0].size / 1024 / 1024).toFixed(2)} MB)</span>
+            `;
+    }
+  });
+
+  // Remove error styling on input
+  form.querySelectorAll(".form-control").forEach((input) => {
+    input.addEventListener("input", function () {
+      this.classList.remove("is-invalid");
+    });
+  });
+});

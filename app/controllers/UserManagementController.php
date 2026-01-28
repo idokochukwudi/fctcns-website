@@ -1300,6 +1300,7 @@ class UserManagementController extends Controller {
             'moderator_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'moderator'",
             'supervisor_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'supervisor'",
             'nominal_roll_user_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'nominal_roll_user'",
+            'research_manager_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'research_manager'", // ADDED
             'today_logins' => "SELECT COUNT(*) as count FROM users WHERE DATE(last_login) = CURDATE()",
             'must_change_password' => "SELECT COUNT(*) as count FROM users WHERE must_change_password = 1"
         ];
@@ -1313,7 +1314,7 @@ class UserManagementController extends Controller {
     }
     
     /**
-     * Get available roles - UPDATED TO INCLUDE 'nominal_roll_user'
+     * Get available roles - UPDATED TO INCLUDE 'research_manager'
      */
     private function getAvailableRoles() {
         return [
@@ -1322,12 +1323,13 @@ class UserManagementController extends Controller {
             'viewer' => 'Viewer',
             'moderator' => 'Moderator',
             'supervisor' => 'Supervisor',
-            'nominal_roll_user' => 'Nominal Roll User' // ADDED
+            'nominal_roll_user' => 'Nominal Roll User',
+            'research_manager' => 'Research Manager' // ADDED
         ];
     }
     
     /**
-     * Get available permissions
+     * Get available permissions - UPDATED TO INCLUDE RESEARCH PERMISSIONS
      */
     private function getAvailablePermissions() {
         return [
@@ -1340,6 +1342,13 @@ class UserManagementController extends Controller {
             'nominal_roll_export' => 'Export Data',
             'nominal_roll_settings' => 'Manage Settings',
             'nominal_roll_approve' => 'Approve Drafts',
+            
+            // ADDED RESEARCH PERMISSIONS
+            'research_view' => 'View Research Publications',
+            'research_create' => 'Create Research Publications',
+            'research_edit' => 'Edit Research Publications',
+            'research_delete' => 'Delete Research Publications',
+            'research_publish' => 'Publish/Unpublish Research',
             
             // User management permissions
             'user_view' => 'View Users',
@@ -1445,13 +1454,15 @@ class UserManagementController extends Controller {
     }
     
     /**
-     * Get default permissions for role - UPDATED TO INCLUDE 'nominal_roll_user' ROLE
+     * Get default permissions for role - UPDATED TO INCLUDE 'research_manager' ROLE
      */
     private function getDefaultPermissionsForRole($role) {
         $defaults = [
             'admin' => [
                 'nominal_roll_view', 'nominal_roll_create', 'nominal_roll_edit', 'nominal_roll_delete',
                 'nominal_roll_bulk_upload', 'nominal_roll_export', 'nominal_roll_settings', 'nominal_roll_approve',
+                // ADDED RESEARCH PERMISSIONS FOR ADMIN
+                'research_view', 'research_create', 'research_edit', 'research_delete', 'research_publish',
                 'user_view', 'user_create', 'user_edit', 'user_delete',
                 'application_view', 'application_edit', 'application_delete',
                 'system_settings', 'system_backup', 'system_reports'
@@ -1473,12 +1484,20 @@ class UserManagementController extends Controller {
                 'nominal_roll_view', 'nominal_roll_create', 'nominal_roll_edit',
                 'application_view', 'system_reports'
             ],
-            // NEW ROLE: Nominal Roll Only User
+            // Nominal Roll Only User
             'nominal_roll_user' => [
                 'nominal_roll_view',
                 'nominal_roll_create',
                 'nominal_roll_edit',
                 'nominal_roll_export'
+            ],
+            // ADDED NEW ROLE: Research Manager
+            'research_manager' => [
+                'research_view',
+                'research_create',
+                'research_edit',
+                'research_publish'
+                // Note: No research_delete for safety
             ]
         ];
         

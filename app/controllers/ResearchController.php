@@ -27,9 +27,6 @@ class ResearchController extends Controller
         
         // Create upload directories if they don't exist
         $this->ensureDirectories();
-        
-        // Set admin layout for admin methods
-        $this->layout = 'admin';
     }
     
     /**
@@ -55,12 +52,22 @@ class ResearchController extends Controller
      */
     public function index()
     {
-        // Require authentication
+        // Require authentication AND permission
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
+        AuthMiddleware::requirePermission('research_view');
+        
+        // USE THE RESEARCH ADMIN LAYOUT
+        $this->layout = 'research_admin';
+        
+        // Add this code to prevent research_manager from accessing dashboard
+        $userRole = Session::getUserRole();
+        if ($userRole === 'research_manager' && strpos($_SERVER['REQUEST_URI'], '/admin/dashboard') !== false) {
+            header('Location: /admin/research');
+            exit;
+        }
         
         // Get user info from session
-        $userRole = Session::getUserRole();
         $username = Session::getUsername();
         $userId = Session::getUserId();
         
@@ -98,14 +105,18 @@ class ResearchController extends Controller
      */
     public function create()
     {
-        // Require authentication
+        // Require authentication AND permission
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
+        AuthMiddleware::requirePermission('research_create');
+        
+        // USE THE RESEARCH ADMIN LAYOUT
+        $this->layout = 'research_admin';
         
         // Get user info from session
-        $userRole = Session::getUserRole();
         $username = Session::getUsername();
         $userId = Session::getUserId();
+        $userRole = Session::getUserRole();
         
         // Generate CSRF token using same method as view (Session class if available)
         $csrf_token = $this->getCSRFTokenForView();
@@ -117,7 +128,7 @@ class ResearchController extends Controller
             'username' => $username,
             'userId' => $userId,
             'pageTitle' => 'Add New Research Publication',
-            'currentPage' => 'research',
+            'currentPage' => 'research_create',
             'csrf_token' => $csrf_token
         ];
         
@@ -129,9 +140,13 @@ class ResearchController extends Controller
      */
     public function store()
     {
-        // Require authentication
+        // Require authentication AND permission
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
+        AuthMiddleware::requirePermission('research_create');
+        
+        // DON'T USE LAYOUT for POST actions (they redirect)
+        $this->layout = false;
         
         // Validate CSRF token using Session class
         $token = $this->input('csrf_token');
@@ -199,9 +214,13 @@ class ResearchController extends Controller
      */
     public function edit($id)
     {
-        // Require authentication
+        // Require authentication AND permission
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
+        AuthMiddleware::requirePermission('research_edit');
+        
+        // USE THE RESEARCH ADMIN LAYOUT
+        $this->layout = 'research_admin';
         
         $publication = $this->model->getById($id);
         
@@ -251,9 +270,9 @@ class ResearchController extends Controller
         $currentThumbnail = !empty($publication['thumbnail_path']) ? $this->getPublicFilePath($publication['thumbnail_path']) : '';
         
         // Get user info from session
-        $userRole = Session::getUserRole();
         $username = Session::getUsername();
         $userId = Session::getUserId();
+        $userRole = Session::getUserRole();
         
         // Generate CSRF token using same method as view
         $csrf_token = $this->getCSRFTokenForView();
@@ -286,9 +305,13 @@ class ResearchController extends Controller
      */
     public function update($id)
     {
-        // Require authentication
+        // Require authentication AND permission
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
+        AuthMiddleware::requirePermission('research_edit');
+        
+        // DON'T USE LAYOUT for POST actions (they redirect)
+        $this->layout = false;
         
         // TEST AND FIX DATABASE CONNECTION FIRST
         try {
@@ -383,14 +406,18 @@ class ResearchController extends Controller
      */
     public function show($id)
     {
-        // Require authentication
+        // Require authentication AND permission
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
+        AuthMiddleware::requirePermission('research_view');
+        
+        // USE THE RESEARCH ADMIN LAYOUT
+        $this->layout = 'research_admin';
         
         // Get user info from session
-        $userRole = Session::getUserRole();
         $username = Session::getUsername();
         $userId = Session::getUserId();
+        $userRole = Session::getUserRole();
         
         $publication = $this->model->getById($id);
         
@@ -457,9 +484,13 @@ class ResearchController extends Controller
      */
     public function destroy($id)
     {
-        // Require authentication
+        // Require authentication AND permission
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
+        AuthMiddleware::requirePermission('research_delete');
+        
+        // DON'T USE LAYOUT for POST actions (they redirect)
+        $this->layout = false;
         
         // Validate CSRF token using Session class - FIXED: Use validateCSRFToken()
         $token = $this->input('csrf_token');
@@ -497,9 +528,13 @@ class ResearchController extends Controller
      */
     public function toggleStatus($id)
     {
-        // Require authentication
+        // Require authentication AND permission
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
+        AuthMiddleware::requirePermission('research_publish');
+        
+        // DON'T USE LAYOUT for AJAX/JSON actions
+        $this->layout = false;
         
         // Validate CSRF token using Session class - FIXED: Use validateCSRFToken()
         $token = $this->input('csrf_token');
@@ -530,9 +565,13 @@ class ResearchController extends Controller
      */
     public function bulkAction()
     {
-        // Require authentication
+        // Require authentication AND any of the required permissions
         require_once __DIR__ . '/../middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
+        AuthMiddleware::requireAnyPermission(['research_edit', 'research_delete', 'research_publish']);
+        
+        // DON'T USE LAYOUT for POST actions (they redirect)
+        $this->layout = false;
         
         // Validate CSRF token using Session class - FIXED: Use validateCSRFToken()
         $token = $this->input('csrf_token');

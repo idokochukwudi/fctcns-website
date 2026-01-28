@@ -25,7 +25,7 @@ class AdminController extends Controller {
             // Use RoleRedirectMiddleware for proper redirection
             require_once APP_PATH . '/middleware/RoleRedirectMiddleware.php';
             $redirectUrl = RoleRedirectMiddleware::redirect();
-            header("Location: $redirectUrl");
+            header("Location: " . $redirectUrl);  // FIXED: removed BASE_URL .
             exit;
         }
 
@@ -88,6 +88,9 @@ class AdminController extends Controller {
             $db = Database::getInstance();
             $conn = $db->getConnection();
 
+            // === ADD DEBUG LOGGING ===
+            error_log("LOGIN ATTEMPT: Username: $username, IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+            
             // Get user with password check
             $stmt = $conn->prepare("
                 SELECT id, username, email, password_hash, full_name, role, is_active
@@ -97,43 +100,73 @@ class AdminController extends Controller {
             $stmt->execute([$username, $username]);
             $user = $stmt->fetch();
 
-            if ($user && password_verify($password, $user['password_hash'])) {
-                if ($user['is_active']) {
-                    // Update last login
-                    $stmt = $conn->prepare("
-                        UPDATE users 
-                        SET last_login = NOW(),
-                            last_login_ip = ?,
-                            login_count = login_count + 1
-                        WHERE id = ?
-                    ");
-                    $stmt->execute([$_SERVER['REMOTE_ADDR'] ?? '127.0.0.1', $user['id']]);
+            if ($user) {
+                error_log("USER FOUND: ID: {$user['id']}, Username: {$user['username']}, Role: {$user['role']}, Active: {$user['is_active']}");
+                
+                if (password_verify($password, $user['password_hash'])) {
+                    error_log("PASSWORD VERIFIED for user: {$user['username']}");
                     
-                    // CRITICAL FIX: Set session BEFORE redirect
-                    Session::loginUser($user['id'], $user['username'], $user['role']);
-                    
-                    // Set additional session variables for compatibility
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['username'] = $user['username'];
-                    $_SESSION['user_role'] = $user['role'];
-                    $_SESSION['user_email'] = $user['email'];
-                    
-                    // Debug: Check session
-                    error_log("DEBUG: User logged in - ID: {$user['id']}, Role: {$user['role']}");
-                    
-                    // STEP 1 FIX: Redirect based on role
-                    if ($user['role'] === 'nominal_roll_user') {
-                        header('Location: /admin/nominal-roll');  // Goes to nominal roll
+                    if ($user['is_active']) {
+                        // Update last login
+                        $stmt = $conn->prepare("
+                            UPDATE users 
+                            SET last_login = NOW(),
+                                last_login_ip = ?,
+                                login_count = login_count + 1
+                            WHERE id = ?
+                        ");
+                        $stmt->execute([$_SERVER['REMOTE_ADDR'] ?? '127.0.0.1', $user['id']]);
+                        
+                        // Login user
+                        Session::loginUser($user['id'], $user['username'], $user['role']);
+                        
+                        // STEP H1: Load user permissions
+                        Session::loadUserPermissions($user['id']);
+                        
+                        // Set additional session variables for compatibility
+                        $_SESSION['user_id'] = $user['id'];
+                        $_SESSION['username'] = $user['username'];
+                        $_SESSION['user_role'] = $user['role'];
+                        $_SESSION['user_email'] = $user['email'];
+                        
+                        // Debug: Check session and permissions
+                        error_log("DEBUG: User logged in - ID: {$user['id']}, Role: {$user['role']}");
+                        error_log("DEBUG: Session user_role: " . ($_SESSION['user_role'] ?? 'NOT SET'));
+                        
+                        // Log successful login activity
+                        try {
+                            $stmt = $conn->prepare("
+                                INSERT INTO user_login_history (user_id, ip_address, user_agent, success, login_time)
+                                VALUES (?, ?, ?, 1, NOW())
+                            ");
+                            $ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+                            $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+                            $stmt->execute([$user['id'], $ip_address, $user_agent]);
+                        } catch (Exception $e) {
+                            error_log("Failed to log login history: " . $e->getMessage());
+                        }
+                        
+                        // STEP H1: Redirect based on role using RoleRedirectMiddleware
+                        require_once APP_PATH . '/middleware/RoleRedirectMiddleware.php';
+                        $redirectUrl = RoleRedirectMiddleware::redirect();
+                        error_log("DEBUG: Redirecting to: $redirectUrl");
+                        
+                        header('Location: ' . $redirectUrl);  // FIXED: removed BASE_URL .
+                        exit;
                     } else {
-                        header('Location: /admin/dashboard');     // Goes to dashboard
+                        error_log("ACCOUNT INACTIVE for user: {$user['username']}");
+                        Session::setFlash('error', 'Account is deactivated');
+                        header('Location: /admin/login');
+                        exit;
                     }
-                    exit;
                 } else {
-                    Session::setFlash('error', 'Account is deactivated');
+                    error_log("INVALID PASSWORD for user: {$user['username']}");
+                    Session::setFlash('error', 'Invalid username or password');
                     header('Location: /admin/login');
                     exit;
                 }
             } else {
+                error_log("USER NOT FOUND: $username");
                 Session::setFlash('error', 'Invalid username or password');
                 header('Location: /admin/login');
                 exit;
@@ -150,9 +183,15 @@ class AdminController extends Controller {
      * Show dashboard
      */
     public function dashboard() {
+        // STEP: BLOCK research_manager from accessing dashboard
+        if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'research_manager') {
+            header('Location: /admin/research');  // FIXED: removed BASE_URL .
+            exit;
+        }
+        
         // STEP 2 FIX: BLOCK nominal_roll_user from dashboard
         if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'nominal_roll_user') {
-            header('Location: /admin/nominal-roll');
+            header('Location: /admin/nominal-roll');  // FIXED: removed BASE_URL .
             exit;
         }
         
@@ -300,7 +339,7 @@ class AdminController extends Controller {
                     background: linear-gradient(135deg, #6B4E9B, #7FB285);
                     color: white;
                     border: none;
-                    border-radius: 10px;
+                    border-radius: 1010px;
                     font-size: 1rem;
                     font-weight: 600;
                     cursor: pointer;

@@ -61,5 +61,50 @@ class AuthMiddleware {
             die('<h1>403 - Forbidden</h1><p>You do not have permission to access this page.</p>');
         }
     }
+    
+    /**
+     * Check if user has specific permission
+     */
+    public static function requirePermission($permission) {
+        self::authenticate();
+        
+        if (!Session::hasPermission($permission)) {
+            Session::setFlash('error', 'Access denied. You do not have the required permission.');
+            header('Location: ' . BASE_URL . '/admin/dashboard');
+            exit;
+        }
+    }
+    
+    /**
+     * Check if user has any of the specified permissions
+     */
+    public static function requireAnyPermission($permissions) {
+        self::authenticate();
+        
+        $permissions = is_array($permissions) ? $permissions : [$permissions];
+        
+        foreach ($permissions as $permission) {
+            if (Session::hasPermission($permission)) {
+                return; // User has at least one permission
+            }
+        }
+        
+        Session::setFlash('error', 'Access denied. You do not have the required permissions.');
+        header('Location: ' . BASE_URL . '/admin/dashboard');
+        exit;
+    }
+    
+    /**
+     * Check route access based on user role
+     * Returns true if allowed, false otherwise
+     */
+    public static function checkRouteAccess($allowedRoles) {
+        self::authenticate();
+        
+        $userRole = Session::getUserRole();
+        $allowedRoles = is_array($allowedRoles) ? $allowedRoles : [$allowedRoles];
+        
+        return in_array($userRole, $allowedRoles);
+    }
 }
 ?>

@@ -701,6 +701,28 @@ class Router {
             return;
         }
 
+        // STEP I1: ADD THIS SECTION - Route Access Control
+        if (isset($_SESSION['user_role'])) {
+            require_once APP_PATH . '/middleware/RoleRedirectMiddleware.php';
+            
+            $currentRoute = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            
+            // Check if route is allowed for user's role
+            if (!RoleRedirectMiddleware::isAllowedRoute($currentRoute)) {
+                // Get user's proper landing page
+                $redirectUrl = RoleRedirectMiddleware::redirect();
+                
+                // Set flash message
+                require_once APP_PATH . '/config/session.php';
+                Session::setFlash('error', 'Access denied. You don\'t have permission to access that page.');
+                
+                // Redirect to their allowed landing page
+                header('Location: ' . $redirectUrl);
+                exit;
+            }
+        }
+        // END OF ROUTE ACCESS CONTROL
+
         $handler = $match['handler'];
         $params = $match['params'] ?? [];
 
