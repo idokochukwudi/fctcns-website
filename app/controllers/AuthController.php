@@ -3,6 +3,18 @@
 
 class AuthController extends Controller
 {
+    /**
+     * Constructor - ensures Session class is loaded
+     */
+    public function __construct() {
+        parent::__construct();
+        
+        // Load Session class for all methods
+        if (!class_exists('Session')) {
+            require_once APP_PATH . '/config/session.php';
+        }
+    }
+    
     public function login()
     {
         // If already logged in, redirect using RoleRedirectMiddleware
@@ -56,7 +68,7 @@ class AuthController extends Controller
             echo '<div class="error">' . htmlspecialchars(Session::flash('error')) . '</div>';
         }
         
-        echo '<form method="POST" action="/login">
+        echo '<form method="POST" action="/admin/login">  <!-- FIXED: Changed from /login to /admin/login -->
                     <input type="text" name="username" placeholder="Username" required>
                     <input type="password" name="password" placeholder="Password" required>
                     <button type="submit">Login</button>
@@ -75,7 +87,7 @@ class AuthController extends Controller
         // Simple validation
         if (empty($username) || empty($password)) {
             Session::flash('error', 'Please enter both username and password');
-            header('Location: /login');
+            header('Location: /admin/login'); // FIXED: Changed from /login to /admin/login
             exit;
         }
         
@@ -92,21 +104,21 @@ class AuthController extends Controller
             
             if (!$user) {
                 Session::flash('error', 'Invalid username or password');
-                header('Location: /login');
+                header('Location: /admin/login'); // FIXED: Changed from /login to /admin/login
                 exit;
             }
             
             // Verify password
             if (!password_verify($password, $user['password_hash'])) {
                 Session::flash('error', 'Invalid username or password');
-                header('Location: /login');
+                header('Location: /admin/login'); // FIXED: Changed from /login to /admin/login
                 exit;
             }
             
             // Check if user is active
             if (!$user['is_active']) {
                 Session::flash('error', 'Account is deactivated. Please contact administrator.');
-                header('Location: /login');
+                header('Location: /admin/login'); // FIXED: Changed from /login to /admin/login
                 exit;
             }
             
@@ -186,15 +198,30 @@ class AuthController extends Controller
             echo "</div>";
             
             Session::flash('error', 'Login failed. Please try again.');
-            header('Location: /login');
+            header('Location: /admin/login'); // FIXED: Changed from /login to /admin/login
             exit;
         }
     }
     
     public function logout()
     {
+        // Double-check Session class is loaded
+        if (!class_exists('Session')) {
+            require_once APP_PATH . '/config/session.php';
+        }
+        
+        // Perform logout
         Session::logout();
-        header('Location: /login');
+        
+        // Use BASE_URL for consistency if defined
+        if (defined('BASE_URL')) {
+            $redirectUrl = BASE_URL . '/admin/login';
+        } else {
+            $redirectUrl = '/admin/login';
+        }
+        
+        // Redirect to admin login page
+        header('Location: ' . $redirectUrl); // FIXED: Changed from /login to /admin/login
         exit;
     }
 }

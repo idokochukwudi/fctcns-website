@@ -913,8 +913,12 @@ class UserManagementController extends Controller {
                 return;
             }
             
+            // Ensure CSRF token is generated and passed to view
+            $csrfToken = $this->csrfToken(); // Get token from parent Controller
+            
             $this->data = array_merge($this->data, [
                 'user' => $user,
+                'csrf_token' => $csrfToken, // Explicitly pass CSRF token
                 'pageTitle' => 'My Profile',
                 'pageDescription' => 'Update your profile information'
             ]);
@@ -1057,6 +1061,113 @@ class UserManagementController extends Controller {
             ]);
             
             $this->render('admin/users/profile');
+        }
+    }
+    
+    /**
+     * Change password form (standalone)
+     */
+    public function changePassword() {
+        try {
+            $userId = $_SESSION['user_id'];
+            $user = $this->getUserById($userId);
+            
+            if (!$user) {
+                $this->flash('error', 'User not found.');
+                $this->redirect('/admin/dashboard');
+                return;
+            }
+            
+            // Ensure CSRF token is generated and passed to view
+            $csrfToken = $this->csrfToken(); // Get token from parent Controller
+            
+            $this->data = array_merge($this->data, [
+                'user' => $user,
+                'csrf_token' => $csrfToken, // Explicitly pass CSRF token
+                'pageTitle' => 'Change Password',
+                'pageDescription' => 'Change your account password'
+            ]);
+            
+            $this->render('admin/users/change-password');
+            
+        } catch (Exception $e) {
+            error_log("UserManagementController changePassword error: " . $e->getMessage());
+            $this->showError($e->getMessage());
+        }
+    }
+    
+    /**
+     * Process password change
+     */
+    public function processPasswordChange() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/users/change-password');
+            return;
+        }
+
+        try {
+            $this->validateCsrf();
+            
+            $userId = $_SESSION['user_id'];
+            $data = [
+                'current_password' => $this->input('current_password', ''),
+                'new_password' => $this->input('new_password', ''),
+                'confirm_password' => $this->input('confirm_password', '')
+            ];
+            
+            // Validate
+            if (empty($data['current_password'])) {
+                throw new Exception("Current password is required.");
+            }
+            
+            if (empty($data['new_password'])) {
+                throw new Exception("New password is required.");
+            }
+            
+            if ($data['new_password'] !== $data['confirm_password']) {
+                throw new Exception("New passwords do not match.");
+            }
+            
+            if (strlen($data['new_password']) < 6) {
+                throw new Exception("New password must be at least 6 characters.");
+            }
+            
+            $user = $this->getUserById($userId);
+            
+            // Verify current password
+            if (!password_verify($data['current_password'], $user['password_hash'])) {
+                throw new Exception("Current password is incorrect.");
+            }
+            
+            // Update password
+            $password_hash = password_hash($data['new_password'], PASSWORD_DEFAULT);
+            
+            $stmt = $this->db->prepare("
+                UPDATE users 
+                SET password_hash = ?, password_changed_at = NOW(), updated_at = NOW()
+                WHERE id = ?
+            ");
+            $stmt->execute([$password_hash, $userId]);
+            
+            // Log activity
+            $this->logActivity('password_changed', "User changed password", $userId);
+            
+            $this->flash('success', 'Password changed successfully!');
+            $this->redirect('/admin/users/profile');
+            
+        } catch (Exception $e) {
+            error_log("UserManagementController processPasswordChange error: " . $e->getMessage());
+            
+            $user = $this->getUserById($_SESSION['user_id']);
+            
+            $this->data = array_merge($this->data, [
+                'user' => $user,
+                'error' => $e->getMessage(),
+                'pageTitle' => 'Change Password',
+                'pageDescription' => 'Change your account password'
+            ]);
+            
+            $this->render('admin/users/change-password');
         }
     }
     

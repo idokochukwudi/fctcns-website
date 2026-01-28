@@ -327,7 +327,7 @@
             <h1>FCT CNS</h1>
         </div>
         <div class="header-actions">
-            <a href="<?php echo $baseUrl ?? BASE_URL; ?>/dashboard" class="btn btn-secondary">
+            <a href="<?php echo BASE_URL; ?>/admin/dashboard" class="btn btn-secondary">
                 Dashboard
             </a>
             <div class="user-menu" id="userMenu">
@@ -372,9 +372,9 @@
                 <h3>Personal Information</h3>
             </div>
             <div class="card-body">
-                <form method="POST" action="<?php echo $baseUrl ?? BASE_URL; ?>/profile/update" 
+                <form method="POST" action="<?php echo BASE_URL; ?>/admin/users/update-profile" 
                       enctype="multipart/form-data">
-                    <input type="hidden" name="_csrf_token" value="<?php echo $csrf_token ?? ''; ?>">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token ?? ''); ?>">
                     
                     <div class="avatar-section">
                         <div class="avatar-preview" id="avatarPreview">
@@ -448,8 +448,8 @@
                 <h3>Security</h3>
             </div>
             <div class="card-body">
-                <form method="POST" action="<?php echo $baseUrl ?? BASE_URL; ?>/profile/change-password">
-                    <input type="hidden" name="_csrf_token" value="<?php echo $csrf_token ?? ''; ?>">
+                <form method="POST" action="<?php echo BASE_URL; ?>/admin/users/change-password">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token ?? ''); ?>">
                     
                     <div class="row">
                         <div class="form-group">
@@ -528,7 +528,7 @@
                 </div>
                 
                 <div style="margin-top: 1.5rem; text-align: center;">
-                    <a href="<?php echo $baseUrl ?? BASE_URL; ?>/logout" class="logout-btn">
+                    <a href="<?php echo BASE_URL; ?>/logout" class="logout-btn">
                         Logout
                     </a>
                 </div>
@@ -568,7 +568,7 @@
         
         // User menu functionality
         document.getElementById('userMenu').addEventListener('click', function() {
-            window.location.href = '<?php echo $baseUrl ?? BASE_URL; ?>/profile';
+            window.location.href = '<?php echo BASE_URL; ?>/admin/users/profile';
         });
     </script>
 </body>

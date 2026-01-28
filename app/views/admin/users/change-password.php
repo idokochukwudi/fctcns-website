@@ -207,8 +207,8 @@
                 <div class="alert alert-success"><?php echo $success; ?></div>
                 <?php endif; ?>
 
-                <form method="POST" action="<?php echo $baseUrl ?? BASE_URL; ?>/change-password">
-                    <input type="hidden" name="_csrf_token" value="<?php echo $csrf_token ?? ''; ?>">
+                <form method="POST" action="<?php echo BASE_URL; ?>/admin/users/change-password">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token ?? ''); ?>">
                     
                     <div class="form-group">
                         <label for="current_password" class="form-label">Current Password *</label>
@@ -241,7 +241,7 @@
                     <button type="submit" class="btn btn-primary">Change Password</button>
                     
                     <?php if (!isset($force_change)): ?>
-                    <a href="<?php echo $baseUrl ?? BASE_URL; ?>/dashboard" class="btn btn-secondary">
+                    <a href="<?php echo BASE_URL; ?>/admin/dashboard" class="btn btn-secondary">
                         Cancel and Return to Dashboard
                     </a>
                     <?php endif; ?>

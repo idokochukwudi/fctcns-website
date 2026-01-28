@@ -262,7 +262,9 @@ class Router {
         // ============================================
         $this->post('/admin/nominal-roll/generate-preview', 'NominalRollController@generatePreview');
         
-        // User Management Routes - ADDED
+        // ============================================
+        // USER MANAGEMENT ROUTES - ADDED WITH PASSWORD CHANGE
+        // ============================================
         $this->get('/admin/users', 'UserManagementController@index');
         $this->get('/admin/users/create', 'UserManagementController@create');
         $this->post('/admin/users/store', 'UserManagementController@store');
@@ -272,6 +274,13 @@ class Router {
         $this->post('/admin/users/delete/{id}', 'UserManagementController@destroy');
         $this->post('/admin/users/toggle-status/{id}', 'UserManagementController@toggleStatus');
         $this->post('/admin/users/reset-password/{id}', 'UserManagementController@resetPassword');
+        
+        // ============================================
+        // PASSWORD CHANGE ROUTES - ADDED AS REQUESTED
+        // ============================================
+        $this->get('/admin/users/change-password', 'UserManagementController@changePassword');
+        $this->post('/admin/users/change-password', 'UserManagementController@processPasswordChange');
+        
         $this->get('/admin/users/export', 'UserManagementController@export');
         $this->get('/admin/users/profile', 'UserManagementController@profile');
         $this->post('/admin/users/update-profile', 'UserManagementController@updateProfile');
@@ -320,6 +329,20 @@ class Router {
                     echo '<p style="color: red;">✗ index() method NOT found</p>';
                 }
                 
+                // Check if changePassword method exists
+                if (method_exists($controller, 'changePassword')) {
+                    echo '<p style="color: green;">✓ changePassword() method exists</p>';
+                } else {
+                    echo '<p style="color: red;">✗ changePassword() method NOT found</p>';
+                }
+                
+                // Check if processPasswordChange method exists
+                if (method_exists($controller, 'processPasswordChange')) {
+                    echo '<p style="color: green;">✓ processPasswordChange() method exists</p>';
+                } else {
+                    echo '<p style="color: red;">✗ processPasswordChange() method NOT found</p>';
+                }
+                
             } catch (Exception $e) {
                 echo '<p style="color: red;">✗ Error: ' . $e->getMessage() . '</p>';
                 echo '<pre>' . $e->getTraceAsString() . '</pre>';
@@ -351,6 +374,23 @@ class Router {
                         echo '<p>' . $route['method'] . ' ' . $route['path'] . ' -> ' . $route['handler'] . '</p>';
                     }
                 }
+            }
+            
+            // Check if password change routes exist
+            $passwordChangeRoutes = [];
+            foreach ($routes as $route) {
+                if (strpos($route['path'], 'change-password') !== false) {
+                    $passwordChangeRoutes[] = $route;
+                }
+            }
+            
+            if (count($passwordChangeRoutes) > 0) {
+                echo '<p style="color: green;">✓ Found password change routes:</p>';
+                foreach ($passwordChangeRoutes as $route) {
+                    echo '<p>' . $route['method'] . ' ' . $route['path'] . ' -> ' . $route['handler'] . '</p>';
+                }
+            } else {
+                echo '<p style="color: red;">✗ No password change routes found!</p>';
             }
             
             // Also check if there are multiple /admin/users routes causing conflict
@@ -519,6 +559,8 @@ class Router {
             error_log("Router:   ✗ DELETED: POST /nominal-roll/bulk-upload-process (conflicting)");
             error_log("Router:   ✓ ADDED GET /admin/nominal-roll/test-db-insert -> NominalRollController@testDatabaseInsert");
             error_log("Router:   ✓ ADDED GET /admin/nominal-roll/test-exact-csv -> NominalRollController@testExactCSV");
+            error_log("Router:   ✓ ADDED GET /admin/users/change-password -> UserManagementController@changePassword");
+            error_log("Router:   ✓ ADDED POST /admin/users/change-password -> UserManagementController@processPasswordChange");
         }
     }
 
