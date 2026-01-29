@@ -1228,9 +1228,10 @@ body {
                 </div>
             </div>
             
+            <!-- FIXED LOGOUT BUTTON - Simple version with confirmation -->
             <a href="<?php echo BASE_URL; ?>/admin/logout" 
                class="logout-btn" 
-               onclick="return confirmLogout(event)"
+               onclick="return confirm('Are you sure you want to logout?')"
                aria-label="Logout from system">
                 <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
                 <span class="logout-text">Logout</span>
@@ -2254,42 +2255,18 @@ body {
         window.location.href = currentUrl.toString();
     };
         
+        // FIXED: Simple logout function with regular confirmation dialog
         window.confirmLogout = function(event) {
-        event.preventDefault();
-        const logoutUrl = event.currentTarget.href;
-        
-        Swal.fire({
-            title: "Logout?",
-            text: "Are you sure you want to logout from the system?",
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonText: "Yes, Logout",
-            cancelButtonText: "Cancel",
-            confirmButtonColor: "#e53e3e",
-            cancelButtonColor: "#3182ce",
-            reverseButtons: true
-        }).then(result => {
-            if (result.isConfirmed) {
-                // Add CSRF token to logout request
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = logoutUrl;
-                
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '_csrf_token';
-                
-                // FIX: Use JSON encode to properly escape the token
-                csrfInput.value = <?php echo json_encode($csrf_token); ?>;
-                
-                form.appendChild(csrfInput);
-                document.body.appendChild(form);
-                form.submit();
+            event.preventDefault();
+            
+            // Simple confirmation - no complex form creation
+            if (confirm("Are you sure you want to logout?")) {
+                // Direct redirect to logout URL
+                window.location.href = '<?php echo BASE_URL; ?>/admin/logout';
             }
-        });
-        
-        return false;
-    };
+            
+            return false;
+        };
         
         // Session timeout warning (30 minutes)
         let idleTime = 0;
