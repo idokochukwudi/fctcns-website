@@ -17,15 +17,42 @@ class UserManagementController extends Controller {
         require_once APP_PATH . '/middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
         
+        // DEBUG: Log session info
+        error_log("UserManagementController: User ID = " . ($_SESSION['user_id'] ?? 'none'));
+        error_log("UserManagementController: User Role = " . ($_SESSION['user_role'] ?? 'none'));
+        error_log("UserManagementController: Username = " . ($_SESSION['username'] ?? 'none'));
+        
         // Check if user has permission to manage users
-        if (!$this->checkPermissionWithAdmin('user_view') && !$this->checkPermissionWithAdmin('user_create')) {
-            $this->flash('error', 'Access denied. You do not have permission to manage users.');
-            $this->redirect('/admin/dashboard');
-            exit;
+        // First, check if user is admin (admins have all permissions)
+        $userRole = $_SESSION['user_role'] ?? '';
+        $isAdmin = in_array($userRole, ['admin', 'super_admin']);
+        
+        if ($isAdmin) {
+            error_log("UserManagementController: User is admin, allowing access");
+            // Admin users automatically have access, continue
+        } else {
+            // Non-admin users: check specific permissions
+            error_log("UserManagementController: Non-admin user, checking permissions");
+            
+            // Check if user has EITHER user_view OR user_create permission
+            $hasUserView = $this->checkPermission('user_view');
+            $hasUserCreate = $this->checkPermission('user_create');
+            
+            error_log("UserManagementController: user_view permission = " . ($hasUserView ? 'true' : 'false'));
+            error_log("UserManagementController: user_create permission = " . ($hasUserCreate ? 'true' : 'false'));
+            
+            // If user has neither user_view nor user_create permission, deny access
+            if (!$hasUserView && !$hasUserCreate) {
+                error_log("UserManagementController: User has no user management permissions, redirecting to dashboard");
+                $this->flash('error', 'Access denied. You do not have permission to manage users.');
+                $this->redirect('/admin/dashboard');
+                exit;
+            }
+            
+            error_log("UserManagementController: User has required permissions, allowing access");
         }
         
         // Load model
-        // In constructor, replace model loading with:
         require_once __DIR__ . '/../models/UserModel.php';
         $this->model = new UserModel();
         
@@ -52,7 +79,7 @@ class UserManagementController extends Controller {
     public function index() {
         try {
             // Check if user has permission to view users
-            if (!$this->checkPermission('user_view')) {
+            if (!$this->checkPermissionWithAdmin('user_view')) {
                 $this->flash('error', 'Access denied. You do not have permission to view users.');
                 $this->redirect('/admin/dashboard');
                 return;
@@ -166,7 +193,7 @@ class UserManagementController extends Controller {
     public function view($id) {
         try {
             // Check if user has permission to view users
-            if (!$this->checkPermission('user_view')) {
+            if (!$this->checkPermissionWithAdmin('user_view')) {
                 $this->flash('error', 'Access denied. You do not have permission to view user details.');
                 $this->redirect('/admin/users');
                 return;
@@ -246,7 +273,7 @@ class UserManagementController extends Controller {
      */
     public function create() {
         // Check if user has permission to create users
-        if (!$this->checkPermission('user_create')) {
+        if (!$this->checkPermissionWithAdmin('user_create')) {
             $this->flash('error', 'Access denied. You do not have permission to create users.');
             $this->redirect('/admin/users');
             return;
@@ -278,7 +305,7 @@ class UserManagementController extends Controller {
 
         try {
             // Check if user has permission to create users
-            if (!$this->checkPermission('user_create')) {
+            if (!$this->checkPermissionWithAdmin('user_create')) {
                 $this->flash('error', 'Access denied. You do not have permission to create users.');
                 $this->redirect('/admin/users');
                 return;
@@ -379,7 +406,7 @@ class UserManagementController extends Controller {
     public function edit($id) {
         try {
             // Check if user has permission to edit users
-            if (!$this->checkPermission('user_edit')) {
+            if (!$this->checkPermissionWithAdmin('user_edit')) {
                 $this->flash('error', 'Access denied. You do not have permission to edit users.');
                 $this->redirect('/admin/users');
                 return;
@@ -444,7 +471,7 @@ class UserManagementController extends Controller {
 
         try {
             // Check if user has permission to edit users
-            if (!$this->checkPermission('user_edit')) {
+            if (!$this->checkPermissionWithAdmin('user_edit')) {
                 $this->flash('error', 'Access denied. You do not have permission to edit users.');
                 $this->redirect('/admin/users');
                 return;
@@ -634,7 +661,7 @@ class UserManagementController extends Controller {
 
         try {
             // Check if user has permission to delete users
-            if (!$this->checkPermission('user_delete')) {
+            if (!$this->checkPermissionWithAdmin('user_delete')) {
                 $this->flash('error', 'Access denied. You do not have permission to delete users.');
                 $this->redirect('/admin/users');
                 return;
@@ -714,7 +741,7 @@ class UserManagementController extends Controller {
 
         try {
             // Check if user has permission to edit users (status change is an edit)
-            if (!$this->checkPermission('user_edit')) {
+            if (!$this->checkPermissionWithAdmin('user_edit')) {
                 $this->flash('error', 'Access denied. You do not have permission to change user status.');
                 $this->redirect('/admin/users');
                 return;
@@ -760,7 +787,7 @@ class UserManagementController extends Controller {
 
         try {
             // Check if user has permission to edit users (password reset is an edit)
-            if (!$this->checkPermission('user_edit')) {
+            if (!$this->checkPermissionWithAdmin('user_edit')) {
                 $this->flash('error', 'Access denied. You do not have permission to reset passwords.');
                 $this->redirect('/admin/users');
                 return;
@@ -805,7 +832,7 @@ class UserManagementController extends Controller {
     public function export() {
         try {
             // Check if user has permission to view users (export is a view operation)
-            if (!$this->checkPermission('user_view')) {
+            if (!$this->checkPermissionWithAdmin('user_view')) {
                 $this->flash('error', 'Access denied. You do not have permission to export users.');
                 $this->redirect('/admin/users');
                 return;
@@ -1188,7 +1215,7 @@ class UserManagementController extends Controller {
             // Check permissions for removing other users' profile pictures
             if ($userId != $_SESSION['user_id']) {
                 // Check if user has permission to edit users
-                if (!$this->checkPermission('user_edit')) {
+                if (!$this->checkPermissionWithAdmin('user_edit')) {
                     throw new Exception("You don't have permission to remove other users' profile pictures.");
                 }
             }

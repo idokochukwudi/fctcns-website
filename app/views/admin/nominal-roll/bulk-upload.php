@@ -729,285 +729,223 @@ $csrfToken = $this->data['csrfToken'] ??
     <!-- JavaScript -->
     <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("[INIT] Starting bulk upload script...");
+    console.log("=== BULK UPLOAD INIT ===");
     
-    var uploadArea = document.getElementById('uploadArea');
-    var fileInput = document.getElementById('csvFile');
-    var fileInfo = document.getElementById('fileInfo');
-    var fileName = document.getElementById('fileName');
-    var fileSize = document.getElementById('fileSize');
-    var removeFileBtn = document.getElementById('removeFile');
-    var validateBtn = document.getElementById('validateBtn');
-    var uploadBtn = document.getElementById('uploadBtn');
-    var validationStats = document.getElementById('validationStats');
-    var progressContainer = document.getElementById('progressContainer');
-    var progressFill = document.getElementById('progressFill');
-    var progressText = document.getElementById('progressText');
-    var progressPercent = document.getElementById('progressPercent');
-    var errorList = document.getElementById('errorList');
-    var downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+    // Elements
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('csvFile');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const removeFileBtn = document.getElementById('removeFile');
+    const validateBtn = document.getElementById('validateBtn');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const validationStats = document.getElementById('validationStats');
+    const errorList = document.getElementById('errorList');
     
-    var statTotal = document.getElementById('statTotal');
-    var statValid = document.getElementById('statValid');
-    var statErrors = document.getElementById('statErrors');
-    var statDuplicates = document.getElementById('statDuplicates');
+    let currentFile = null;
+    let validationResult = null;
     
-    var currentFile = null;
-    var validationResult = null;
-    
-    // Debug: Confirm elements exist
-    console.log("[INIT] uploadBtn found?", !!uploadBtn);
-    console.log("[INIT] validateBtn found?", !!validateBtn);
-    
-    // ====================== DEBUG: Test CSRF Token ======================
-    function testCsrfToken() {
-        console.log("=== CSRF TOKEN DIAGNOSTICS ===");
-        
-        // Check meta tag
-        const metaToken = document.querySelector('meta[name="csrf-token"]');
-        console.log("Meta tag exists:", !!metaToken);
-        console.log("Meta token content:", metaToken?.content || "EMPTY");
-        console.log("Meta token content length:", metaToken?.content?.length || 0);
-        
-        // Check hidden inputs
-        const hiddenInputs = document.querySelectorAll('input[type="hidden"]');
-        console.log("Total hidden inputs:", hiddenInputs.length);
-        
-        hiddenInputs.forEach((input, index) => {
-            console.log(`Hidden input ${index + 1}:`, {
-                name: input.name,
-                id: input.id,
-                valueLength: input.value.length,
-                valuePreview: input.value.substring(0, 20) + '...'
-            });
-        });
-        
-        // Check session data from PHP
-        console.log("PHP Session check (if embedded):");
-        try {
-            // Check if any PHP session data is embedded
-            const bodyHTML = document.body.innerHTML;
-            if (bodyHTML.includes('csrf') || bodyHTML.includes('CSRF')) {
-                console.log("Found 'csrf' in page HTML");
-            }
-        } catch(e) {
-            console.log("Could not search HTML:", e.message);
-        }
-        
-        console.log("=== END DIAGNOSTICS ===");
-    }
-    
-    // Call diagnostics
-    setTimeout(testCsrfToken, 1000);
-    // ====================== END DEBUG ======================
-    
-    // ====================== FIX 2: Safe event listener attachment ======================
-    // Safe event listener attachment with retry
-    function attachUploadListener() {
-        if (!uploadBtn) {
-            console.error("[ATTACH FAIL] uploadBtn element still not found!");
-            return;
-        }
-
-        // Remove any old listeners to prevent duplicates
-        uploadBtn.removeEventListener('click', handleUploadClick);
-        
-        // Attach fresh listener
-        uploadBtn.addEventListener('click', handleUploadClick);
-        console.log("[ATTACH SUCCESS] Upload listener attached to button");
-    }
-
+    // ======================
+    // UPLOAD HANDLER
+    // ======================
     function handleUploadClick() {
-        console.log("╔════════════════════════════════════╗");
-        console.log("║ CONFIRM UPLOAD CLICKED ║");
-        console.log("╚════════════════════════════════════╝");
-        console.log("Time:", new Date().toISOString());
-        console.log("Button disabled?", uploadBtn.disabled);
-        console.log("currentFile:", currentFile ? currentFile.name : "MISSING");
-        console.log("validationResult:", validationResult ? "EXISTS" : "MISSING");
+        console.log("Upload button clicked");
         
-        if (uploadBtn.disabled) {
-            console.warn("BLOCKED: Button is still disabled!");
-            showAlert('Upload button is disabled. Please validate first.', 'warning');
-            return;
-        }
-
+        // Basic validation
         if (!currentFile) {
-            console.error("BLOCKED: No file");
-            showAlert('No file selected.', 'warning');
+            alert('Please select a file first.');
             return;
-        }
-
-        if (!validationResult) {
-            console.error("BLOCKED: No validationResult");
-            showAlert('Please validate the file again.', 'danger');
-            return;
-        }
-
-        if (validationResult.error_count > 0) {
-            console.warn("BLOCKED: Errors remain");
-            showAlert('Fix errors first.', 'danger');
-            return;
-        }
-
-        console.log("→ Proceeding to upload...");
-        
-        // Confirm dialog
-        var confirmMessage = `Upload ${validationResult.valid_records} records?`;
-        if (!confirm(confirmMessage)) {
-            console.log("User cancelled upload");
-            return;
-        }
-
-        console.log("→ User confirmed. Building request...");
-        // ==============================
-        // FIX: Get CSRF token with multiple fallbacks
-        // ==============================
-        function getCsrfToken() {
-            // Try meta tag first
-            const tokenMeta = document.querySelector('meta[name="csrf-token"]');
-            if (tokenMeta && tokenMeta.content) {
-                console.log("Got CSRF from meta tag");
-                return tokenMeta.content;
-            }
-            
-            // Try hidden input
-            const tokenInput = document.querySelector('input[name="csrf_token"]');
-            if (tokenInput && tokenInput.value) {
-                console.log("Got CSRF from input[name='csrf_token']");
-                return tokenInput.value;
-            }
-            
-            // Try by ID
-            const tokenById = document.querySelector('#csrf_token_hidden');
-            if (tokenById && tokenById.value) {
-                console.log("Got CSRF from #csrf_token_hidden");
-                return tokenById.value;
-            }
-            
-            // Try any input with csrf
-            const anyToken = document.querySelector('input[type="hidden"][name*="csrf"], input[type="hidden"][id*="csrf"]');
-            if (anyToken && anyToken.value) {
-                console.log("Got CSRF from any csrf input");
-                return anyToken.value;
-            }
-            
-            console.error("No CSRF token found!");
-            return '';
         }
         
-        const csrfToken = getCsrfToken();
-        console.log("CSRF Token length:", csrfToken.length);
-        console.log("CSRF Token first 20 chars:", csrfToken.substring(0, 20));
+        if (!validationResult || validationResult.error_count > 0 || validationResult.duplicate_count > 0) {
+            alert('Please validate the file and fix all errors and duplicates first.');
+            return;
+        }
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('#csrf_token_hidden')?.value || 
+                         document.querySelector('meta[name="csrf-token"]')?.content;
         
         if (!csrfToken) {
-            showAlert('Security token missing. Please refresh the page.', 'danger');
+            alert('Security token missing. Please refresh the page.');
             return;
         }
-
-        var formData = new FormData();
-        formData.append('file', currentFile);  // consistent with validate
-        formData.append('csrf_token', csrfToken);
-
-        if (csrfToken) {
-            console.log("→ CSRF added");
-        } else {
-            console.error("→ CSRF MISSING!");
+        
+        // Confirm
+        if (!confirm(`Upload ${validationResult.valid_records} records?`)) {
+            return;
         }
-
+        
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('file', currentFile);
+        formData.append('csrf_token', csrfToken);
+        
+        // Update UI
         uploadBtn.disabled = true;
         uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
-
-        console.log("→ Sending fetch to /admin/nominal-roll/bulk-upload-process");
-
-        // ==============================
-        // MAIN FIX: ADD DEBUG CHECK FOR SERVER RESPONSE
-        // ==============================
+        
+        // Send request
         fetch('/admin/nominal-roll/bulk-upload-process', {
             method: 'POST',
             body: formData
         })
-        .then(response => {
-            console.log("→ Server responded - Status:", response.status);
-            console.log("→ Response headers:", Object.fromEntries(response.headers.entries()));
-            
-            if (!response.ok) {
-                console.error("→ Server returned error status:", response.status);
-                throw new Error(`Server error ${response.status}`);
-            }
-            
-            // DEBUG: Get raw text to see what server actually returned
-            return response.text().then(text => {
-                console.log("→ RAW SERVER RESPONSE (first 500 chars):", text.substring(0, 500));
-                
-                // Check if it's HTML
-                if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('<!doctype')) {
-                    console.error("❌ SERVER RETURNED HTML INSTEAD OF JSON!");
-                    
-                    // Try to extract any error message from HTML
-                    if (text.includes('Fatal error') || text.includes('Parse error')) {
-                        throw new Error('PHP error on server. Check server logs.');
-                    }
-                    
-                    if (text.includes('Admin Login') || text.includes('login')) {
-                        throw new Error('Session expired. Please refresh and login again.');
-                    }
-                    
-                    if (text.includes('Access denied') || text.includes('Permission denied')) {
-                        throw new Error('Access denied. You do not have permission.');
-                    }
-                    
-                    throw new Error('Server returned HTML instead of JSON. Check server error logs.');
-                }
-                
-                // Check if it's empty
-                if (text.trim() === '') {
-                    console.error("❌ SERVER RETURNED EMPTY RESPONSE!");
-                    throw new Error('Server returned empty response. Check server logs.');
-                }
-                
-                // Try to parse as JSON
-                try {
-                    const data = JSON.parse(text);
-                    console.log("✅ JSON parse successful:", data);
-                    return data;
-                } catch (e) {
-                    console.error("❌ JSON PARSE FAILED. Full raw response:");
-                    console.error("--- START RAW RESPONSE ---");
-                    console.error(text);
-                    console.error("--- END RAW RESPONSE ---");
-                    throw new Error('Invalid JSON from server: ' + text.substring(0, 200));
-                }
-            });
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log("→ Server JSON parsed successfully:", data);
+            console.log("Upload response:", data);
             if (data.success) {
-                showAlert('Upload successful! Redirecting...', 'success');
-                setTimeout(() => {
-                    window.location.href = window.location.origin + '/admin/nominal-roll?upload_success=true&limit=5&page=1';
-                }, 2000);
+                alert('Upload successful!');
+                window.location.href = '/admin/nominal-roll?upload_success=true';
             } else {
-                console.error("→ Server reported failure:", data.error);
-                showAlert('Upload failed: ' + (data.error || 'Unknown error'), 'danger');
+                alert('Upload failed: ' + (data.error || 'Unknown error'));
             }
         })
-        .catch(err => {
-            console.error("→ Upload fetch failed:", err);
-            showAlert('Upload error: ' + err.message, 'danger');
+        .catch(error => {
+            console.error("Upload error:", error);
+            alert('Upload error: ' + error.message);
         })
         .finally(() => {
             uploadBtn.disabled = false;
             uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Confirm Upload';
-            console.log("→ Upload process finished (success or fail)");
         });
     }
-
-    // Attach listener immediately + retry after 1 second (handles late DOM)
-    attachUploadListener();
-    setTimeout(attachUploadListener, 1000);
-    // ====================== END FIX 2 ======================
     
+    // ======================
+    // FILE HANDLING
+    // ======================
+    function handleFile(file) {
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            alert('Please select a CSV file.');
+            return;
+        }
+        
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File size exceeds 10MB limit.');
+            return;
+        }
+        
+        currentFile = file;
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.classList.remove('d-none');
+        uploadArea.classList.add('active');
+        validateBtn.disabled = false;
+        uploadBtn.disabled = true;
+        
+        // Clear previous validation
+        clearValidation();
+    }
+    
+    function clearFile() {
+        currentFile = null;
+        fileInput.value = '';
+        fileInfo.classList.add('d-none');
+        uploadArea.classList.remove('active');
+        validateBtn.disabled = true;
+        uploadBtn.disabled = true;
+        clearValidation();
+    }
+    
+    // ======================
+    // VALIDATION FUNCTION
+    // ======================
+    function validateFile() {
+        if (!currentFile) {
+            alert('Please select a file first.');
+            return;
+        }
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('#csrf_token_hidden')?.value || 
+                         document.querySelector('meta[name="csrf-token"]')?.content;
+        
+        if (!csrfToken) {
+            alert('Security token missing. Please refresh the page.');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', currentFile);
+        formData.append('csrf_token', csrfToken);
+        formData.append('validate_duplicates', 'true');
+        
+        // Update UI
+        validateBtn.disabled = true;
+        validateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validating...';
+        
+        fetch('/admin/nominal-roll/validate-bulk-upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Validation response:", data);
+            
+            if (data.success) {
+                validationResult = data;
+                
+                // Update stats
+                document.getElementById('statTotal').textContent = data.total_records || 0;
+                document.getElementById('statValid').textContent = data.valid_records || 0;
+                document.getElementById('statErrors').textContent = data.error_count || 0;
+                document.getElementById('statDuplicates').textContent = data.duplicate_count || 0;
+                
+                // Show stats
+                document.getElementById('validationStats').classList.remove('d-none');
+                
+                // Show errors if any
+                if (data.errors && data.errors.length > 0) {
+                    errorList.innerHTML = '';
+                    data.errors.forEach(error => {
+                        errorList.innerHTML += `
+                            <div class="error-item">
+                                <div class="row-info">Row ${error.row}: ${error.message}</div>
+                                <div class="field-info">Field: ${error.field}, Value: ${error.value}</div>
+                            </div>
+                        `;
+                    });
+                    errorList.classList.remove('d-none');
+                } else {
+                    errorList.classList.add('d-none');
+                }
+                
+                // Enable upload if no errors and no duplicates
+                if (data.error_count === 0 && data.duplicate_count === 0) {
+                    uploadBtn.disabled = false;
+                    uploadBtn.classList.remove('btn-warning');
+                    uploadBtn.classList.add('btn-success');
+                    alert('Validation complete: ' + data.valid_records + ' valid records found.');
+                } else {
+                    uploadBtn.disabled = true;
+                    alert('Validation complete with ' + data.error_count + ' errors and ' + data.duplicate_count + ' duplicates.');
+                }
+            } else {
+                alert('Validation failed: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error("Validation error:", error);
+            alert('Validation error: ' + error.message);
+        })
+        .finally(() => {
+            validateBtn.disabled = false;
+            validateBtn.innerHTML = '<i class="fas fa-search"></i> Validate File';
+        });
+    }
+    
+    function clearValidation() {
+        validationResult = null;
+        document.getElementById('validationStats').classList.add('d-none');
+        errorList.classList.add('d-none');
+        uploadBtn.disabled = true;
+        uploadBtn.classList.remove('btn-success');
+        uploadBtn.classList.add('btn-primary');
+    }
+    
+    // ======================
+    // EVENT LISTENERS
+    // ======================
     uploadArea.addEventListener('click', function(e) {
         if (e.target !== removeFileBtn && !removeFileBtn.contains(e.target)) {
             fileInput.click();
@@ -1020,358 +958,55 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    function handleFile(file) {
-        console.log("[HANDLE FILE] Selected:", file.name);
-        if (!file.name.toLowerCase().endsWith('.csv')) {
-            showAlert('Please select a CSV file.', 'warning');
-            return;
-        }
-        
-        if (file.size > 10 * 1024 * 1024) {
-            showAlert('File size exceeds 10MB limit.', 'warning');
-            return;
-        }
-
-        currentFile = file;
-        fileName.textContent = file.name;
-        fileSize.textContent = formatFileSize(file.size);
-        fileInfo.classList.remove('d-none');
-        uploadArea.classList.add('active');
-        validateBtn.disabled = false;
-        uploadBtn.disabled = true;
-        clearValidation();
-
-        setTimeout(function() {
-            validateFile();
-        }, 500);
-    }
-    
     removeFileBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         clearFile();
     });
     
-    function clearFile() {
-        currentFile = null;
-        fileInput.value = '';
-        fileInfo.classList.add('d-none');
-        uploadArea.classList.remove('active');
-        validateBtn.disabled = true;
-        uploadBtn.disabled = true;
-        clearValidation();
-    }
-    
     validateBtn.addEventListener('click', validateFile);
+    uploadBtn.addEventListener('click', handleUploadClick);
     
-    function validateFile() {
-        console.log("[VALIDATE CLICK] Starting validation...");
+    // Template download handler
+    document.getElementById('downloadTemplateBtn').addEventListener('click', function() {
+        // Complete template with ALL columns in the exact order
+        const headers = 'employee_number,surname,first_name,middle_name,sex,date_of_birth,marital_status,rank,grade_level,step,cadre,staff_type,employment_type,appointment_type,date_of_first_appointment,date_of_confirmation,rank_on_first_appointment,date_of_present_appointment,department,email,telephone_number,nationality,religion,blood_group,genotype,state,local_govt_area,state_of_residence,residential_address,contact_address,bank_name,bank_branch,account_number,account_name,pf_number,nhf_number,pension_fund_admin,pension_number,emergency_contact_name,emergency_contact_phone,emergency_contact_relationship,next_of_kin_name,next_of_kin_phone,next_of_kin_address,next_of_kin_relationship';
         
-        if (!currentFile) {
-            showAlert('Please select a file first.', 'warning');
-            return;
-        }
-
-        // ==============================
-        // FIX: Get CSRF token with multiple fallbacks
-        // ==============================
-        function getCsrfToken() {
-            // Try meta tag first
-            const tokenMeta = document.querySelector('meta[name="csrf-token"]');
-            if (tokenMeta && tokenMeta.content) {
-                console.log("Got CSRF from meta tag");
-                return tokenMeta.content;
-            }
-            
-            // Try hidden input
-            const tokenInput = document.querySelector('input[name="csrf_token"]');
-            if (tokenInput && tokenInput.value) {
-                console.log("Got CSRF from input[name='csrf_token']");
-                return tokenInput.value;
-            }
-            
-            // Try by ID
-            const tokenById = document.querySelector('#csrf_token_hidden');
-            if (tokenById && tokenById.value) {
-                console.log("Got CSRF from #csrf_token_hidden");
-                return tokenById.value;
-            }
-            
-            // Try any input with csrf
-            const anyToken = document.querySelector('input[type="hidden"][name*="csrf"], input[type="hidden"][id*="csrf"]');
-            if (anyToken && anyToken.value) {
-                console.log("Got CSRF from any csrf input");
-                return anyToken.value;
-            }
-            
-            console.error("No CSRF token found!");
-            return '';
-        }
+        // Sample data rows
+        const row1 = 'EMP20260001,Doe,John,Michael,Male,1990-05-15,Married,Senior Lecturer,15,5,Academic,Academic,Permanent,Confirmed,2015-06-01,2017-06-01,Lecturer I,2023-01-15,Anatomy,john.doe@example.com,08012345678,Nigerian,Christian,O+,AA,FCT,Gwagwalada,FCT,123 Main Street Gwagwalada,Same,First Bank,Gwagwalada,1234567890,John Doe,PF00123,NHF00123,PENCOM,PEN123456,James Doe,08012345678,Brother,Mary Doe,08023456789,456 Family Street Abuja,Wife';
         
-        const csrfToken = getCsrfToken();
-        console.log("CSRF Token length:", csrfToken.length);
-        console.log("CSRF Token first 20 chars:", csrfToken.substring(0, 20));
+        const row2 = 'EMP20260002,Smith,Jane,,Female,1985-08-22,Single,Manager,14,4,Non-Academic,Non-Academic,Permanent,Acting,2018-03-15,,Manager,2022-08-20,HR,jane.smith@example.com,08023456789,Nigerian,Christian,O+,AS,Lagos,Ikeja,Lagos,456 Oak Avenue Ikeja,Same,Zenith Bank,Ikeja,0987654321,Jane Smith,PF00234,NHF00234,PENCOM,PEN234567,Peter Smith,08023456789,Father,Robert Smith,08034567890,789 Kin Street Lagos,Father';
         
-        if (!csrfToken) {
-            showAlert('Security token missing. Please refresh the page.', 'danger');
-            return;
-        }
-
-        validationStats.classList.remove('d-none');
-        progressContainer.classList.remove('d-none');
-        errorList.classList.add('d-none');
-        updateProgress(10, 'Checking file format...');
-
-        var formData = new FormData();
-        formData.append('file', currentFile);
-        formData.append('csrf_token', csrfToken);
-
-        console.log("Sending validation request with CSRF token...");
-
-        var progressInterval = setInterval(function() {
-            var current = parseInt(progressFill.style.width) || 10;
-            if (current < 70) updateProgress(current + 10, 'Analyzing data...');
-        }, 500);
-
-        fetch('/admin/nominal-roll/validate-bulk-upload', {
-            method: 'POST',
-            body: formData,
-            headers: { 
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest' // Add this header
-            }
-        })
-        .then(response => {
-            clearInterval(progressInterval);
-            console.log('[VALIDATE] Status:', response.status);
-            console.log('[VALIDATE] Content-Type:', response.headers.get('content-type'));
-            
-            return response.text().then(text => {
-                console.log('[VALIDATE] Raw response (first 500 chars):', text.substring(0, 500));
-                
-                // Check if response is HTML (error page)
-                if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('<!doctype')) {
-                    console.error('❌ SERVER RETURNED HTML INSTEAD OF JSON!');
-                    
-                    if (text.includes('Admin Login') || text.includes('login')) {
-                        throw new Error('Session expired. Please refresh and login again.');
-                    }
-                    
-                    if (text.includes('Access denied') || text.includes('Permission denied')) {
-                        throw new Error('Access denied. You do not have permission.');
-                    }
-                    
-                    throw new Error('Server returned HTML instead of JSON. Check server logs.');
-                }
-                
-                if (!response.ok) {
-                    throw new Error('HTTP ' + response.status);
-                }
-                
-                return JSON.parse(text);
-            });
-        })
-        .then(data => {
-            console.log('[VALIDATE] Parsed data:', data);
-            
-            if (data.success) {
-                validationResult = data;
-                updateProgress(100, 'Validation complete!');
-
-                statTotal.textContent = data.total_records || 0;
-                statValid.textContent = data.valid_records || 0;
-                statErrors.textContent = data.error_count || 0;
-                statDuplicates.textContent = data.duplicate_count || 0;
-
-                if (data.errors?.length > 0) showErrors(data.errors);
-
-                // ====================== FIX 1: Force re-check and enable button ======================
-                if (data.error_count === 0) {
-                    console.log("[VALIDATE SUCCESS] Enabling upload button - attempt 1");
-                    uploadBtn.disabled = false;
-                    uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Confirm Upload';
-                    uploadBtn.classList.remove('btn-warning');
-                    uploadBtn.classList.add('btn-success');
-
-                    // Extra force-enable (timing fix)
-                    setTimeout(() => {
-                        if (uploadBtn) {
-                            uploadBtn.disabled = false;
-                            console.log("[VALIDATE FORCE] Button now enabled after delay");
-                            uploadBtn.style.pointerEvents = 'auto'; // extra CSS fix
-                            uploadBtn.style.opacity = '1';
-                        }
-                    }, 300);
-                } else {
-                    uploadBtn.disabled = true;
-                    uploadBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Fix Errors First';
-                    uploadBtn.classList.remove('btn-success');
-                    uploadBtn.classList.add('btn-warning');
-                }
-                // ====================== END FIX 1 ======================
-
-                // ====================== FIX 3: Final safety net ======================
-                // Final safety net: re-attach listener after validation
-                setTimeout(attachUploadListener, 500);
-                // ====================== END FIX 3 ======================
-            } else {
-                updateProgress(0, 'Validation failed');
-                showAlert(data.error || 'Validation failed.', 'danger');
-            }
-        })
-        .catch(error => {
-            clearInterval(progressInterval);
-            console.error('[VALIDATE ERROR]', error);
-            updateProgress(0, 'Validation error');
-            showAlert('Error validating file: ' + error.message, 'danger');
-        });
-    }
-    
-    function updateProgress(percent, text) {
-        progressFill.style.width = percent + '%';
-        progressText.textContent = text;
-        progressPercent.textContent = percent + '%';
-    }
-    
-    function showErrors(errors) {
-        errorList.classList.remove('d-none');
-        errorList.innerHTML = '';
+        const row3 = 'EMP20260003,Johnson,Robert,James,Male,1978-12-10,Married,Professor,16,7,Academic,Academic,Permanent,Confirmed,2005-09-01,2007-09-01,Lecturer II,2021-07-10,Nursing,robert.j@example.com,08034567890,Nigerian,Christian,B+,AS,Rivers,Port-Harcourt,Rivers,789 River Road Port Harcourt,Same,UBA,Port-Harcourt,5678901234,Robert Johnson,PF00345,NHF00345,PENCOM,PEN345678,Sarah Johnson,08034567890,Wife,David Johnson,08045678901,123 Next Street Port Harcourt,Son';
         
-        var displayErrors = errors.slice(0, 10);
-        for (var i = 0; i < displayErrors.length; i++) {
-            var error = displayErrors[i];
-            var errorDiv = document.createElement('div');
-            errorDiv.className = 'error-item';
-            
-            var rowInfo = document.createElement('div');
-            rowInfo.className = 'row-info';
-            rowInfo.textContent = 'Row ' + error.row + ': ' + error.message;
-            
-            var fieldInfo = document.createElement('div');
-            fieldInfo.className = 'field-info';
-            fieldInfo.textContent = 'Field: ' + error.field + ' | Value: "' + (error.value || 'N/A') + '"';
-            
-            errorDiv.appendChild(rowInfo);
-            errorDiv.appendChild(fieldInfo);
-            errorList.appendChild(errorDiv);
-        }
-        
-        if (errors.length > 10) {
-            var moreDiv = document.createElement('div');
-            moreDiv.className = 'text-center mt-2';
-            var moreText = document.createElement('small');
-            moreText.className = 'text-muted';
-            moreText.textContent = '... and ' + (errors.length - 10) + ' more errors';
-            moreDiv.appendChild(moreText);
-            errorList.appendChild(moreDiv);
-        }
-    }
-    
-    function clearValidation() {
-        validationResult = null;
-        validationStats.classList.add('d-none');
-        progressContainer.classList.add('d-none');
-        errorList.classList.add('d-none');
-        errorList.innerHTML = '';
-        
-        statTotal.textContent = '0';
-        statValid.textContent = '0';
-        statErrors.textContent = '0';
-        statDuplicates.textContent = '0';
-        
-        progressFill.style.width = '0%';
-        progressText.textContent = 'Validating...';
-        progressPercent.textContent = '0%';
-        
-        uploadBtn.disabled = true;
-        uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Confirm Upload';
-        uploadBtn.classList.remove('btn-success', 'btn-warning');
-        uploadBtn.classList.add('btn-primary');
-    }
-    
-    downloadTemplateBtn.addEventListener('click', function() {
-        var headers = 'employee_number,surname,first_name,middle_name,sex,date_of_birth,marital_status,rank,grade_level,department,email,telephone_number,state,local_govt_area';
-        var row1 = 'EMP20260001,Doe,John,Michael,Male,1990-05-15,Married,Senior Lecturer,15,Anatomy,john.doe@example.com,08012345678,FCT,Gwagwalada';
-        var row2 = 'EMP20260002,Smith,Jane,,Female,1985-08-22,Single,Manager,14,HR,jane.smith@example.com,08023456789,Lagos,Ikeja';
-        var row3 = 'EMP20260003,Johnson,Robert,James,Male,1978-12-10,Married,Professor,16,Nursing,robert.j@example.com,08034567890,Rivers,Port-Harcourt';
-        
-        var templateContent = headers + '\n' + row1 + '\n' + row2 + '\n' + row3;
-        var blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' });
-        var link = document.createElement('a');
-        var url = URL.createObjectURL(blob);
+        const templateContent = headers + '\n' + row1 + '\n' + row2 + '\n' + row3;
+        const blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
         
         link.setAttribute('href', url);
-        link.setAttribute('download', 'nominal_roll_template.csv');
+        link.setAttribute('download', 'nominal_roll_complete_template.csv');
         link.style.visibility = 'hidden';
         
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
-        showAlert('Template downloaded successfully!', 'success');
+        alert('Complete template downloaded successfully! The file includes all 44 columns with sample data.');
     });
     
+    // ======================
+    // HELPER FUNCTIONS
+    // ======================
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
-        var k = 1024;
-        var sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        var i = Math.floor(Math.log(bytes) / Math.log(k));
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
     
-    function showAlert(message, type) {
-        type = type || 'info';
-        
-        var existingAlerts = document.querySelectorAll('.alert:not(.alert-info):not(.alert-light)');
-        for (var i = 0; i < existingAlerts.length; i++) {
-            var alert = existingAlerts[i];
-            if (alert.parentNode) {
-                var bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
-            }
-        }
-        
-        var iconClass = 'exclamation-circle';
-        if (type === 'success') {
-            iconClass = 'check-circle';
-        } else if (type === 'warning') {
-            iconClass = 'exclamation-triangle';
-        }
-        
-        var alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-' + type + ' alert-dismissible fade show';
-        
-        var icon = document.createElement('i');
-        icon.className = 'fas fa-' + iconClass;
-        
-        var messageText = document.createTextNode(' ' + message + ' ');
-        
-        var closeBtn = document.createElement('button');
-        closeBtn.type = 'button';
-        closeBtn.className = 'btn-close';
-        closeBtn.setAttribute('data-bs-dismiss', 'alert');
-        
-        alertDiv.appendChild(icon);
-        alertDiv.appendChild(messageText);
-        alertDiv.appendChild(closeBtn);
-        
-        var pageHeader = document.querySelector('.page-header');
-        if (pageHeader && pageHeader.nextElementSibling) {
-            pageHeader.parentNode.insertBefore(alertDiv, pageHeader.nextElementSibling);
-        } else {
-            var mainContainer = document.querySelector('.main-container');
-            if (mainContainer) {
-                mainContainer.insertBefore(alertDiv, mainContainer.firstChild);
-            }
-        }
-        
-        setTimeout(function() {
-            if (alertDiv.parentNode) {
-                var bsAlert = new bootstrap.Alert(alertDiv);
-                bsAlert.close();
-            }
-        }, 5000);
-    }
+    console.log("=== BULK UPLOAD INIT COMPLETE ===");
 });
-</script>
+    </script>
 </body>
 </html>

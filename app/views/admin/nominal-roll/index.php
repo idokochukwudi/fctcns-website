@@ -38,6 +38,10 @@ $hasSettingsPermission = isset($hasSettingsPermission) ? $hasSettingsPermission 
 // Editing enabled flag
 $editingEnabled = isset($editingEnabled) ? $editingEnabled : true;
 
+// Get current sort parameters
+$currentSortBy = isset($_GET['sort_by']) ? $_GET['sort_by'] : 'employee_number';
+$currentSortOrder = isset($_GET['sort_order']) ? $_GET['sort_order'] : 'asc';
+
 // Generate CSRF token for logout
 $csrf_token = bin2hex(random_bytes(32));
 $_SESSION['csrf_token'] = $csrf_token;
@@ -1392,7 +1396,7 @@ body {
                         <span class="badge" id="activeFiltersCount" aria-hidden="true">
                             <?php 
                             if (isset($filters)) {
-                                $activeFilters = array_filter($filters, fn($v, $k) => !empty($v) && !in_array($k, ['search', 'page', 'filtered']), ARRAY_FILTER_USE_BOTH);
+                                $activeFilters = array_filter($filters, fn($v, $k) => !empty($v) && !in_array($k, ['search', 'page', 'filtered', 'sort_by', 'sort_order']), ARRAY_FILTER_USE_BOTH);
                                 echo count($activeFilters) > 0 ? count($activeFilters) : '';
                             }
                             ?>
@@ -1503,6 +1507,7 @@ body {
                         </div>
                         <div class="active-filters-tags">
                             <?php foreach ($activeFilters as $key => $value): ?>
+                                <?php if (!in_array($key, ['sort_by', 'sort_order'])): ?>
                                 <span class="filter-tag">
                                     <?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $key))); ?>: 
                                     <strong><?php echo htmlspecialchars($value); ?></strong>
@@ -1511,6 +1516,7 @@ body {
                                         <i class="fas fa-times" aria-hidden="true"></i>
                                     </a>
                                 </span>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         </div>
                     </div>
@@ -1612,13 +1618,79 @@ body {
                     <thead>
                         <tr>
                             <th class="serial-column">S/N</th>
-                            <th class="employee-number">Employee No.</th>
-                            <th class="name-column">Name</th>
+                            <th class="employee-number">
+                                <?php $sortOrder = ($currentSortBy == 'employee_number' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
+                                <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'employee_number', 'sort_order' => $sortOrder])); ?>" 
+                                   style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 4px;">
+                                    Employee No.
+                                    <?php if ($currentSortBy == 'employee_number'): ?>
+                                    <i class="fas fa-sort-<?php echo $currentSortOrder == 'asc' ? 'up' : 'down'; ?>"></i>
+                                    <?php else: ?>
+                                    <i class="fas fa-sort" style="opacity: 0.3;"></i>
+                                    <?php endif; ?>
+                                </a>
+                            </th>
+                            <th class="name-column">
+                                <?php $sortOrder = ($currentSortBy == 'surname' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
+                                <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'surname', 'sort_order' => $sortOrder])); ?>" 
+                                   style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 4px;">
+                                    Name
+                                    <?php if ($currentSortBy == 'surname'): ?>
+                                    <i class="fas fa-sort-<?php echo $currentSortOrder == 'asc' ? 'up' : 'down'; ?>"></i>
+                                    <?php else: ?>
+                                    <i class="fas fa-sort" style="opacity: 0.3;"></i>
+                                    <?php endif; ?>
+                                </a>
+                            </th>
                             <th class="sex-column">Sex</th>
-                            <th class="rank-column">Rank</th>
-                            <th class="grade-column">Grade Level</th>
-                            <th class="state-column">State</th>
-                            <th class="date-column">Date of 1st Appt.</th>
+                            <th class="rank-column">
+                                <?php $sortOrder = ($currentSortBy == 'rank' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
+                                <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'rank', 'sort_order' => $sortOrder])); ?>" 
+                                   style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 4px;">
+                                    Rank
+                                    <?php if ($currentSortBy == 'rank'): ?>
+                                    <i class="fas fa-sort-<?php echo $currentSortOrder == 'asc' ? 'up' : 'down'; ?>"></i>
+                                    <?php else: ?>
+                                    <i class="fas fa-sort" style="opacity: 0.3;"></i>
+                                    <?php endif; ?>
+                                </a>
+                            </th>
+                            <th class="grade-column">
+                                <?php $sortOrder = ($currentSortBy == 'grade_level' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
+                                <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'grade_level', 'sort_order' => $sortOrder])); ?>" 
+                                   style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 4px;">
+                                    Grade Level
+                                    <?php if ($currentSortBy == 'grade_level'): ?>
+                                    <i class="fas fa-sort-<?php echo $currentSortOrder == 'asc' ? 'up' : 'down'; ?>"></i>
+                                    <?php else: ?>
+                                    <i class="fas fa-sort" style="opacity: 0.3;"></i>
+                                    <?php endif; ?>
+                                </a>
+                            </th>
+                            <th class="state-column">
+                                <?php $sortOrder = ($currentSortBy == 'state' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
+                                <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'state', 'sort_order' => $sortOrder])); ?>" 
+                                   style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 4px;">
+                                    State
+                                    <?php if ($currentSortBy == 'state'): ?>
+                                    <i class="fas fa-sort-<?php echo $currentSortOrder == 'asc' ? 'up' : 'down'; ?>"></i>
+                                    <?php else: ?>
+                                    <i class="fas fa-sort" style="opacity: 0.3;"></i>
+                                    <?php endif; ?>
+                                </a>
+                            </th>
+                            <th class="date-column">
+                                <?php $sortOrder = ($currentSortBy == 'date_of_first_appointment' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
+                                <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'date_of_first_appointment', 'sort_order' => $sortOrder])); ?>" 
+                                   style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 4px;">
+                                    Date of 1st Appt.
+                                    <?php if ($currentSortBy == 'date_of_first_appointment'): ?>
+                                    <i class="fas fa-sort-<?php echo $currentSortOrder == 'asc' ? 'up' : 'down'; ?>"></i>
+                                    <?php else: ?>
+                                    <i class="fas fa-sort" style="opacity: 0.3;"></i>
+                                    <?php endif; ?>
+                                </a>
+                            </th>
                             <th class="actions-column">Actions</th>
                         </tr>
                     </thead>
@@ -1863,7 +1935,7 @@ body {
                     let count = 0;
                     
                     for (let [key, value] of formData.entries()) {
-                        if (key !== "search" && key !== "page" && key !== "filtered" && value.trim() !== "") {
+                        if (key !== "search" && key !== "page" && key !== "filtered" && key !== "sort_by" && key !== "sort_order" && value.trim() !== "") {
                             count++;
                         }
                     }

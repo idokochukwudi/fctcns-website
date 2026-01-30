@@ -523,7 +523,10 @@ class NominalRollController extends Controller {
                 'rank' => $this->input('rank', ''),
                 'sex' => $this->input('sex', ''),
                 'status' => $this->input('status', 'active'),
-                'is_draft' => $this->input('is_draft', '')
+                'is_draft' => $this->input('is_draft', ''),
+                'department' => $this->input('department', ''),
+                'sort_by' => $this->input('sort_by', 'surname'),
+                'sort_order' => $this->input('sort_order', 'asc')
             ];
             
             // Get employees with pagination
@@ -556,7 +559,7 @@ class NominalRollController extends Controller {
                 $pagination['total_pages'] = 1;
             }
             
-            // Now load your view with the validated pagination
+            // Add sorting parameters to data
             $this->data = array_merge($this->data, [
                 'employees' => $result['employees'],
                 'pagination' => $pagination, // Use validated pagination
@@ -564,6 +567,8 @@ class NominalRollController extends Controller {
                 'filterOptions' => $filterOptions,
                 'stats' => $stats,
                 'currentLimit' => $limit, // ADDED: for the records per page selector
+                'currentSortBy' => $filters['sort_by'],
+                'currentSortOrder' => $filters['sort_order'],
                 'pageTitle' => 'Nominal Roll Management - FCT College of Nursing Sciences',
                 'pageDescription' => 'Manage employee records and details'
             ]);
@@ -1329,64 +1334,120 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Delete employee record
+     * Delete employee record - FIXED CSRF VALIDATION
      */
     public function destroy($id) {
-        // Check if user has permission (only users with delete permission can delete)
-        if (!$this->data['hasDeletePermission']) {
+        // DEBUG: Log permission information
+        error_log("=== DELETE REQUEST START ===");
+        error_log("Request Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET'));
+        error_log("Request URI: " . ($_SERVER['REQUEST_URI'] ?? 'NOT SET'));
+        error_log("Is POST Request: " . (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' ? 'YES' : 'NO'));
+        
+        // IMPORTANT: Check both CSRF token systems
+        error_log("Checking CSRF tokens...");
+        error_log("POST Token: " . ($_POST['_csrf_token'] ?? 'NOT SET'));
+        error_log("Session Single Token: " . ($_SESSION['csrf_token'] ?? 'NOT SET'));
+        
+        // Log multi-token system
+        $tokenCount = isset($_SESSION['csrf_tokens']) ? count($_SESSION['csrf_tokens']) : 0;
+        error_log("Multi-token count: " . $tokenCount);
+        if (isset($_SESSION['csrf_tokens']) && !empty($_SESSION['csrf_tokens'])) {
+            $firstToken = key($_SESSION['csrf_tokens']);
+            error_log("First multi-token: " . substr($firstToken, 0, 10) . "...");
+        }
+        
+        // Check if this is a POST request
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            error_log("ERROR: Not a POST request. Method was: " . ($_SERVER['REQUEST_METHOD'] ?? 'NULL'));
+            error_log("Redirecting to view page...");
+            $this->flash('error', 'Invalid request method. Please use the delete button.');
+            $this->redirect('/admin/nominal-roll/view/' . $id);
+            return;
+        }
+        
+        // Check permissions
+        $canDelete = (isset($this->data['hasDeletePermission']) && $this->data['hasDeletePermission']) || 
+                    (isset($this->data['isSuperAdmin']) && $this->data['isSuperAdmin']);
+        error_log("Can Delete: " . ($canDelete ? 'YES' : 'NO'));
+        
+        if (!$canDelete) {
+            error_log("PERMISSION DENIED: User cannot delete");
             $this->flash('error', 'You do not have permission to delete employee records.');
             $this->redirect('/admin/nominal-roll/view/' . $id);
             return;
         }
         
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/nominal-roll/view/' . $id);
-            return;
-        }
-        
         try {
-            // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            // Validate CSRF token - FIXED: Use the Session class method
+            require_once APP_PATH . '/config/session.php';
+            
+            $csrfToken = $_POST['_csrf_token'] ?? '';
+            error_log("Validating CSRF token: " . substr($csrfToken, 0, 10) . "...");
+            
+            // Try the multi-token validation first (preferred)
+            if (Session::validateCSRFTokenMulti($csrfToken)) {
+                error_log("CSRF token validated successfully using multi-token system");
+                // Remove token after successful validation (prevents replay attacks)
+                Session::removeCSRFToken($csrfToken);
+            }
+            // Fallback to single token validation (legacy)
+            elseif (Session::validateCSRFToken($csrfToken)) {
+                error_log("CSRF token validated successfully using single-token system (legacy)");
+                Session::clearCSRFToken();
+            }
+            else {
+                error_log("CSRF VALIDATION FAILED");
                 $this->flash('error', 'Security error: Invalid or expired CSRF token.');
                 $this->redirect('/admin/nominal-roll/view/' . $id);
                 return;
             }
             
             // Check if employee exists
+            error_log("Checking if employee exists...");
             $employee = $this->model->getEmployee($id);
             if (!$employee) {
+                error_log("ERROR: Employee not found with ID: " . $id);
                 throw new Exception("Employee not found.");
             }
+            error_log("Employee found: " . ($employee['surname'] ?? '') . ', ' . ($employee['first_name'] ?? ''));
             
             // Get user ID
             $userId = $_SESSION['user_id'] ?? null;
+            error_log("Deleting user ID: " . $userId);
             
             // Delete passport photo if exists
             if (!empty($employee['passport_photo'])) {
+                error_log("Deleting passport photo: " . $employee['passport_photo']);
                 $this->deleteFile($employee['passport_photo']);
             }
             
             // Delete employee
+            error_log("Calling model to delete employee...");
             $result = $this->model->deleteEmployee($id, $userId);
             
             if ($result) {
+                error_log("SUCCESS: Employee deleted successfully");
                 $_SESSION['flash_success'] = 'Employee record deleted successfully!';
                 $this->redirect('/admin/nominal-roll');
             } else {
+                error_log("ERROR: Model deleteEmployee returned false");
                 throw new Exception("Failed to delete employee record.");
             }
             
         } catch (Exception $e) {
-            error_log("NominalRollController destroy error: " . $e->getMessage());
+            error_log("EXCEPTION in destroy method: " . $e->getMessage());
+            error_log("Exception trace: " . $e->getTraceAsString());
             
             // Check if it's a CSRF error
             if (strpos($e->getMessage(), 'CSRF') !== false) {
-                $this->flash('error', 'Security error: " . $e->getMessage() . "');
+                $this->flash('error', 'Security error: ' . $e->getMessage());
             } else {
-                $this->flash('error', 'Failed to delete employee: " . $e->getMessage() . "');
+                $this->flash('error', 'Failed to delete employee: ' . $e->getMessage());
             }
             
             $this->redirect('/admin/nominal-roll/view/' . $id);
+        } finally {
+            error_log("=== DELETE REQUEST END ===");
         }
     }
     
@@ -1722,7 +1783,7 @@ class NominalRollController extends Controller {
     }
 
     /**
-     * Validate CSV data
+     * Validate CSV data - UPDATED VERSION WITH DATABASE DUPLICATE CHECK
      */
     private function validateCSVData($csvData) {
         $errors = [];
@@ -1766,6 +1827,16 @@ class NominalRollController extends Controller {
                     ];
                 } else {
                     $employeeNumbers[] = $row['employee_number'];
+                    
+                    // NEW: Check if employee number exists in database
+                    if ($this->model->employeeNumberExists($row['employee_number'])) {
+                        $rowErrors[] = [
+                            'row' => $rowNumber,
+                            'field' => 'employee_number',
+                            'message' => 'Employee number already exists in database',
+                            'value' => $row['employee_number']
+                        ];
+                    }
                 }
             }
             

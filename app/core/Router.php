@@ -541,6 +541,41 @@ class Router {
             }
             echo "</ul>";
         });
+
+        // ============================================
+        // DEBUG ROUTE FOR BULK UPLOAD - ADD THIS
+        // ============================================
+        $this->get('/debug-bulk-upload-test', function() {
+            echo "<!DOCTYPE html><html><head><title>Bulk Upload Test</title></head><body>";
+            echo "<h1>Bulk Upload Route Debug</h1>";
+            
+            echo "<h3>Testing CSRF Token Generation:</h3>";
+            if (!isset($_SESSION['csrf_tokens'])) {
+                $_SESSION['csrf_tokens'] = [];
+            }
+            $testToken = bin2hex(random_bytes(32));
+            $_SESSION['csrf_tokens'][$testToken] = time();
+            echo "<p>Generated CSRF Token: " . substr($testToken, 0, 20) . "...</p>";
+            echo "<p>Total tokens in session: " . count($_SESSION['csrf_tokens']) . "</p>";
+            
+            echo "<h3>Test Forms:</h3>";
+            echo "<h4>1. Test Validation Route:</h4>";
+            echo "<form action='/admin/nominal-roll/validate-bulk-upload' method='POST' enctype='multipart/form-data'>";
+            echo "<input type='hidden' name='csrf_token' value='{$testToken}'>";
+            echo "<input type='file' name='file'><br>";
+            echo "<input type='submit' value='Test Validation'>";
+            echo "</form>";
+            
+            echo "<h4>2. Test Bulk Upload Route:</h4>";
+            echo "<form action='/admin/nominal-roll/bulk-upload-process' method='POST' enctype='multipart/form-data'>";
+            echo "<input type='hidden' name='csrf_token' value='{$testToken}'>";
+            echo "<input type='file' name='file'><br>";
+            echo "<input type='submit' value='Test Bulk Upload'>";
+            echo "</form>";
+            
+            echo "</body></html>";
+            exit;
+        });
         
         // 404 route - should be last
         $this->get('/404', 'PageController@notFound');
@@ -561,6 +596,7 @@ class Router {
             error_log("Router:   ✓ ADDED GET /admin/nominal-roll/test-exact-csv -> NominalRollController@testExactCSV");
             error_log("Router:   ✓ ADDED GET /admin/users/change-password -> UserManagementController@changePassword");
             error_log("Router:   ✓ ADDED POST /admin/users/change-password -> UserManagementController@processPasswordChange");
+            error_log("Router:   ✓ ADDED GET /debug-bulk-upload-test -> Debug route for bulk upload testing");
         }
     }
 

@@ -399,6 +399,30 @@ class NominalRollModel {
     }
     
     /**
+     * Check if employee number exists
+     */
+    public function employeeNumberExists($employeeNumber, $excludeId = null) {
+        try {
+            $sql = "SELECT COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " WHERE employee_number = ?";
+            $params = [$employeeNumber];
+            
+            if ($excludeId) {
+                $sql .= " AND id != ?";
+                $params[] = $excludeId;
+            }
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result['count'] > 0;
+        } catch (Exception $e) {
+            error_log("employeeNumberExists error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
      * Get employee by ID
      */
     public function getEmployee($id) {
@@ -770,8 +794,8 @@ class NominalRollModel {
     }
     
     /**
-     * Get all employees with pagination
-     * FIXED: Added backticks around rank in WHERE and SELECT clauses
+     * Get all employees with pagination and sorting - UPDATED VERSION
+     * FIXED: Added backticks around rank and supports sorting
      */
     public function getAllEmployees($page = 1, $limit = 20, $filters = []) {
         try {
@@ -814,12 +838,35 @@ class NominalRollModel {
                 $params[':status'] = $filters['status'];
             }
             
+            if (!empty($filters['department'])) {
+                $whereConditions[] = "e.department = :department";
+                $params[':department'] = $filters['department'];
+            }
+            
             if (isset($filters['is_draft']) && $filters['is_draft'] !== '') {
                 $whereConditions[] = "e.is_draft = :is_draft";
                 $params[':is_draft'] = $filters['is_draft'];
             }
             
             $whereClause = $whereConditions ? "WHERE " . implode(" AND ", $whereConditions) : "";
+            
+            // Build ORDER BY clause
+            $orderBy = "ORDER BY ";
+            $validSortColumns = [
+                'employee_number', 'surname', 'first_name', 'rank', 
+                'grade_level', 'state', 'date_of_first_appointment', 'created_at'
+            ];
+            $sortBy = isset($filters['sort_by']) && in_array($filters['sort_by'], $validSortColumns) ? $filters['sort_by'] : 'surname';
+            $sortOrder = isset($filters['sort_order']) && strtoupper($filters['sort_order']) === 'DESC' ? 'DESC' : 'ASC';
+            
+            // Handle special case for name sorting
+            if ($sortBy === 'name') {
+                $orderBy .= "e.surname $sortOrder, e.first_name $sortOrder";
+            } elseif ($sortBy === 'rank') {
+                $orderBy .= "e.`rank` $sortOrder"; // FIXED: Added backticks around rank
+            } else {
+                $orderBy .= "e.$sortBy $sortOrder";
+            }
             
             // Count total records
             $countSql = "SELECT COUNT(*) as total FROM " . self::TABLE_EMPLOYEES . " e $whereClause";
@@ -835,7 +882,7 @@ class NominalRollModel {
                     LEFT JOIN users u1 ON e.created_by = u1.id
                     LEFT JOIN users u2 ON e.updated_by = u2.id
                     $whereClause
-                    ORDER BY e.surname, e.first_name
+                    $orderBy
                     LIMIT :limit OFFSET :offset";
             
             $stmt = $this->db->prepare($sql);
@@ -867,7 +914,138 @@ class NominalRollModel {
             
         } catch (PDOException $e) {
             error_log("NominalRollModel getAllEmployees error: " . $e->getMessage());
-            throw new Exception("Failed to retrieve employees: " . $e->getMessage());
+            // Return empty result instead of throwing to prevent page crash
+            return [
+                'employees' => [],
+                'total' => 0,
+                'page' => $page,
+                'limit' => $limit,
+                'total_pages' => 1
+            ];
+        }
+    }
+    
+    /**
+     * Get all employees with pagination and sorting - ALTERNATIVE VERSION
+     * This version uses the exact code you provided
+     */
+    public function getAllEmployeesWithSorting($page = 1, $limit = 5, $filters = []) {
+        try {
+            $offset = ($page - 1) * $limit;
+            
+            // Build WHERE clause
+            $whereClause = " WHERE 1=1";
+            $params = [];
+            
+            if (!empty($filters['search'])) {
+                $searchTerm = "%{$filters['search']}%";
+                $whereClause .= " AND (
+                    employee_number LIKE ? OR 
+                    CONCAT(surname, ' ', first_name) LIKE ? OR 
+                    surname LIKE ? OR 
+                    first_name LIKE ? OR 
+                    state LIKE ? OR 
+                    department LIKE ?
+                )";
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+            }
+            
+            if (!empty($filters['state'])) {
+                $whereClause .= " AND state = ?";
+                $params[] = $filters['state'];
+            }
+            
+            if (!empty($filters['grade_level'])) {
+                $whereClause .= " AND grade_level = ?";
+                $params[] = $filters['grade_level'];
+            }
+            
+            if (!empty($filters['rank'])) {
+                $whereClause .= " AND `rank` = ?"; // FIXED: Added backticks around rank
+                $params[] = $filters['rank'];
+            }
+            
+            if (!empty($filters['sex'])) {
+                $whereClause .= " AND sex = ?";
+                $params[] = $filters['sex'];
+            }
+            
+            if (!empty($filters['status'])) {
+                $whereClause .= " AND status = ?";
+                $params[] = $filters['status'];
+            }
+            
+            if (isset($filters['is_draft']) && $filters['is_draft'] !== '') {
+                $whereClause .= " AND is_draft = ?";
+                $params[] = $filters['is_draft'];
+            }
+            
+            if (!empty($filters['department'])) {
+                $whereClause .= " AND department = ?";
+                $params[] = $filters['department'];
+            }
+            
+            // Build ORDER BY clause
+            $orderBy = " ORDER BY ";
+            $validSortColumns = ['employee_number', 'surname', 'first_name', 'rank', 'grade_level', 'state', 'date_of_first_appointment', 'created_at'];
+            $sortBy = in_array($filters['sort_by'] ?? '', $validSortColumns) ? $filters['sort_by'] : 'surname';
+            $sortOrder = strtoupper($filters['sort_order'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
+            
+            if ($sortBy === 'name') {
+                $orderBy .= "surname $sortOrder, first_name $sortOrder";
+            } else {
+                $orderBy .= "`$sortBy` $sortOrder"; // FIXED: Added backticks around sort column
+            }
+            
+            // Get total count
+            $countSql = "SELECT COUNT(*) as total FROM " . self::TABLE_EMPLOYEES . $whereClause;
+            $countStmt = $this->db->prepare($countSql);
+            $countStmt->execute($params);
+            $totalResult = $countStmt->fetch(PDO::FETCH_ASSOC);
+            $total = $totalResult['total'] ?? 0;
+            $totalPages = ceil($total / $limit);
+            
+            // Get paginated data
+            $dataSql = "SELECT * FROM " . self::TABLE_EMPLOYEES . $whereClause . $orderBy . " LIMIT ? OFFSET ?";
+            $dataParams = array_merge($params, [$limit, $offset]);
+            
+            $dataStmt = $this->db->prepare($dataSql);
+            $dataStmt->execute($dataParams);
+            $employees = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Parse additional qualifications JSON for each employee
+            foreach ($employees as &$employee) {
+                if (!empty($employee['additional_qualifications'])) {
+                    $employee['additional_qualifications'] = json_decode($employee['additional_qualifications'], true);
+                }
+            }
+            
+            return [
+                'employees' => $employees,
+                'pagination' => [
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total' => $total,
+                    'total_pages' => $totalPages
+                ]
+            ];
+            
+        } catch (Exception $e) {
+            error_log("getAllEmployeesWithSorting error: " . $e->getMessage());
+            return [
+                'employees' => [], 
+                'pagination' => [
+                    'page' => 1, 
+                    'limit' => $limit, 
+                    'total' => 0, 
+                    'total_pages' => 1
+                ]
+            ];
         }
     }
     
@@ -978,6 +1156,11 @@ class NominalRollModel {
             $stmt = $this->db->query($sql);
             $options['highest_qualifications'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
+            // Departments
+            $sql = "SELECT DISTINCT department FROM " . self::TABLE_EMPLOYEES . " WHERE department IS NOT NULL AND department != '' ORDER BY department";
+            $stmt = $this->db->query($sql);
+            $options['departments'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
             // Sex options
             $options['sex_options'] = ['Male', 'Female'];
             
@@ -991,7 +1174,7 @@ class NominalRollModel {
             $options['religion_options'] = ['Christianity', 'Islam', 'Traditional', 'Other'];
             
             // Status options
-            $options['status_options'] = ['active', 'draft', 'inactive'];
+            $options['status_options'] = ['active', 'inactive', 'retired'];
             
             // Bank names
             $sql = "SELECT DISTINCT bank_name FROM " . self::TABLE_EMPLOYEES . " WHERE bank_name IS NOT NULL AND bank_name != '' ORDER BY bank_name";

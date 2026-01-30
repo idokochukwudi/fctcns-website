@@ -4,19 +4,23 @@
  * Display complete employee information
  * 
  * FIXES APPLIED:
- * 1. Fixed delete modal functionality
- * 2. Improved image error handling
- * 3. Enhanced responsive design
- * 4. Fixed tab functionality
+ * 1. Fixed CSRF token generation
+ * 2. Fixed delete modal functionality
+ * 3. Simplified and fixed delete modal functionality
+ * 4. Fixed form submission with proper POST request
+ * 5. Removed unnecessary complexity
  */
+
+// First, include the session class to generate proper token
+require_once APP_PATH . '/config/session.php';
 
 // Get user info from session
 $userRole = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : 'viewer';
 $isEditor = in_array($userRole, ['admin', 'editor']);
 $isSuperAdmin = $userRole === 'admin';
 
-// Generate CSRF token for delete
-$csrf_token = isset($_SESSION['csrf_token']) ? $_SESSION['csrf_token'] : bin2hex(random_bytes(32));
+// Generate CSRF token - IMPORTANT: Use the multi-token system
+$csrf_token = Session::generateCSRFTokenMulti();
 
 // Get base URL
 $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
@@ -28,7 +32,6 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Details - <?php echo htmlspecialchars(($employee['surname'] ?? '') . ', ' . ($employee['first_name'] ?? '')); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <style>
         :root {
             --primary: #2c5282;
@@ -388,7 +391,7 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
             color: var(--gray-400);
         }
 
-        /* Tab Functionality - FIXED */
+        /* Tab Functionality */
         .details-tabs {
             margin-bottom: 30px;
         }
@@ -703,73 +706,88 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
             flex-wrap: wrap;
         }
 
-        /* Modal Styles - FIXED */
-        .modal {
+        /* Modal Styles */
+        .modal-overlay {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 1050;
-            overflow: hidden;
-            outline: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal.show {
-            display: flex;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
             align-items: center;
             justify-content: center;
         }
 
-        .modal-dialog {
-            position: relative;
-            width: auto;
-            margin: 0.5rem;
-            pointer-events: none;
-            max-width: 500px;
-            width: 100%;
+        .modal-overlay.active {
+            display: flex;
         }
 
         .modal-content {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            pointer-events: auto;
-            background-color: #fff;
-            background-clip: padding-box;
-            border: 1px solid rgba(0, 0, 0, 0.2);
-            border-radius: 0.3rem;
-            outline: 0;
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--gray-200);
             display: flex;
-            align-items: flex-start;
             justify-content: space-between;
-            padding: 1rem 1rem;
-            border-bottom: 1px solid #dee2e6;
-            border-top-left-radius: calc(0.3rem - 1px);
-            border-top-right-radius: calc(0.3rem - 1px);
+            align-items: center;
+        }
+
+        .modal-header h5 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--gray-800);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--gray-500);
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .modal-close:hover {
+            background: var(--gray-100);
+            color: var(--gray-700);
         }
 
         .modal-body {
-            position: relative;
-            flex: 1 1 auto;
-            padding: 1rem;
+            padding: 20px;
         }
 
         .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--gray-200);
             display: flex;
-            flex-wrap: wrap;
-            align-items: center;
             justify-content: flex-end;
-            padding: 0.75rem;
-            border-top: 1px solid #dee2e6;
-            border-bottom-right-radius: calc(0.3rem - 1px);
-            border-bottom-left-radius: calc(0.3rem - 1px);
+            gap: 10px;
         }
 
         /* Alert styles */
@@ -803,82 +821,6 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
         .employee-delete-info p {
             margin: 5px 0;
             color: var(--gray-700);
-        }
-
-        /* Print Styles */
-        @media print {
-            .view-employee-container {
-                padding: 0;
-                max-width: none;
-            }
-            
-            .header-actions,
-            .action-buttons,
-            .btn,
-            .tabs-header,
-            .modal,
-            .no-print {
-                display: none !important;
-            }
-            
-            .profile-card,
-            .tab-card {
-                box-shadow: none !important;
-                border: 1px solid #ddd !important;
-                page-break-inside: avoid;
-                margin-bottom: 20px !important;
-            }
-            
-            .profile-header {
-                display: flex;
-                align-items: flex-start;
-                padding: 20px;
-            }
-            
-            .pf-number-display {
-                background: none !important;
-                border: 2px solid #000 !important;
-                padding: 10px;
-                margin: 10px 0;
-            }
-            
-            .pf-number-value {
-                background: none !important;
-                border: none !important;
-                font-size: 16px !important;
-            }
-            
-            .tab-pane {
-                display: block !important;
-                opacity: 1 !important;
-                page-break-inside: avoid;
-            }
-            
-            .info-grid {
-                grid-template-columns: repeat(2, 1fr) !important;
-            }
-            
-            /* Print-specific spacing */
-            .page-header {
-                margin-bottom: 20px !important;
-            }
-            
-            .header-title h1 {
-                font-size: 24px !important;
-            }
-            
-            .header-title .subtitle {
-                font-size: 14px !important;
-            }
-            
-            /* Ensure proper page breaks */
-            .section-title {
-                page-break-after: avoid;
-            }
-            
-            .info-item {
-                page-break-inside: avoid;
-            }
         }
 
         /* Responsive Design */
@@ -917,10 +859,6 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
             .action-buttons .btn {
                 width: 100%;
                 justify-content: center;
-            }
-            
-            .modal-dialog {
-                margin: 10px;
             }
             
             .pf-number-display {
@@ -963,6 +901,11 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
             .btn {
                 padding: 8px 16px;
                 font-size: 14px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 10px;
             }
         }
     </style>
@@ -1434,7 +1377,7 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
                         <?php endif; ?>
 
                         <div class="record-info">
-                            <h4>Record Information</div>
+                            <h4>Record Information</h4>
                             <div class="info-grid">
                                 <div class="info-item">
                                     <label>Created At</label>
@@ -1502,58 +1445,69 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
             </a>
             
             <?php if ($isSuperAdmin): ?>
-            <button type="button" 
-                    class="btn btn-danger" 
-                    onclick="openDeleteModal()">
+            <button type="button" class="btn btn-danger" id="deleteButton">
                 <i class="fas fa-trash"></i> Delete Record
             </button>
             <?php endif; ?>
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal - FIXED -->
+    <!-- Delete Confirmation Modal - SIMPLIFIED -->
     <?php if ($isSuperAdmin): ?>
-    <div class="modal" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
-                    <button type="button" class="btn-close" onclick="closeDeleteModal()" aria-label="Close">
-                        <i class="fas fa-times"></i>
-                    </button>
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5>Confirm Delete</h5>
+                <button type="button" class="modal-close" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Warning!</strong> This action cannot be undone.
                 </div>
-                <div class="modal-body">
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Warning!</strong> This action cannot be undone.
-                    </div>
-                    <p>Are you sure you want to delete the employee record for:</p>
-                    <div class="employee-delete-info">
-                        <h4><?php echo htmlspecialchars(($employee['surname'] ?? '') . ', ' . ($employee['first_name'] ?? '')); ?></h4>
-                        <p>Employee No: <strong><?php echo htmlspecialchars($employee['employee_number'] ?? 'N/A'); ?></strong></p>
-                        <p>Rank: <strong><?php echo htmlspecialchars($employee['rank'] ?? 'N/A'); ?></strong></p>
-                    </div>
-                    <p class="text-danger">All associated data will be permanently deleted from the system.</p>
+                <p>Are you sure you want to delete the employee record for:</p>
+                <div class="employee-delete-info">
+                    <h4><?php echo htmlspecialchars(($employee['surname'] ?? '') . ', ' . ($employee['first_name'] ?? '')); ?></h4>
+                    <p>Employee No: <strong><?php echo htmlspecialchars($employee['employee_number'] ?? 'N/A'); ?></strong></p>
+                    <p>Rank: <strong><?php echo htmlspecialchars($employee['rank'] ?? 'N/A'); ?></strong></p>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
-                    <form method="POST" action="<?php echo $baseUrl; ?>/admin/nominal-roll/delete/<?php echo $employee['id']; ?>" id="deleteForm" style="display: inline;">
-                        <input type="hidden" name="_csrf_token" value="<?php echo $csrf_token; ?>">
-                        <button type="submit" class="btn btn-danger">Delete Permanently</button>
-                    </form>
+                <p class="text-danger">All associated data will be permanently deleted from the system.</p>
+                
+                <!-- Debug info - remove in production -->
+                <div style="background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 12px;">
+                    <strong>Debug Info:</strong><br>
+                    CSRF Token Length: <?php echo strlen($csrf_token); ?><br>
+                    Multi-tokens in session: <?php echo isset($_SESSION['csrf_tokens']) ? count($_SESSION['csrf_tokens']) : 0; ?>
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <!-- SIMPLIFIED FORM - no JavaScript interference -->
+                <form method="POST" action="<?php echo $baseUrl; ?>/admin/nominal-roll/delete/<?php echo $employee['id']; ?>" 
+                      id="deleteForm" 
+                      onsubmit="return confirmDelete()">
+                    <input type="hidden" name="_csrf_token" value="<?php echo $csrf_token; ?>">
+                    <button type="submit" class="btn btn-danger">Delete Permanently</button>
+                </form>
             </div>
         </div>
     </div>
+
+    <script>
+    function confirmDelete() {
+        return confirm("Are you absolutely sure you want to delete this employee record? This action cannot be undone.");
+    }
+    </script>
     <?php endif; ?>
 
-    <!-- JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Simplified JavaScript -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded - initializing view page');
             
-            // FIX FOR TAB FUNCTIONALITY
+            // Tab functionality
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabPanes = document.querySelectorAll('.tab-pane');
             
@@ -1579,85 +1533,52 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
                 tabButtons[0]?.click();
             }
             
-            // Delete Modal functionality
-            const deleteButtons = document.querySelectorAll('[onclick*="openDeleteModal"]');
-            deleteButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
+            // Delete functionality
+            const deleteButton = document.getElementById('deleteButton');
+            const deleteModal = document.getElementById('deleteModal');
+            const deleteForm = document.getElementById('deleteForm');
+            
+            if (deleteButton && deleteModal) {
+                deleteButton.addEventListener('click', function(e) {
                     e.preventDefault();
                     openDeleteModal();
                 });
-            });
-
-            // Ensure modal is hidden on page load
-            const deleteModal = document.getElementById('deleteModal');
-            if (deleteModal) {
-                deleteModal.style.display = 'none';
-                deleteModal.classList.remove('show');
-                deleteModal.setAttribute('aria-hidden', 'true');
-            }
-
-            // Copy employee number to clipboard
-            const copyEmployeeNumber = function() {
-                const employeeNumber = '<?php echo $employee["employee_number"] ?? ""; ?>';
-                if (employeeNumber) {
-                    navigator.clipboard.writeText(employeeNumber).then(() => {
-                        alert('Employee number copied to clipboard: ' + employeeNumber);
-                    }).catch(err => {
-                        console.error('Failed to copy: ', err);
-                    });
-                }
-            };
-
-            // Add copy button for employee number
-            const employeeNumberElement = document.querySelector('.employee-badge .badge-primary');
-            if (employeeNumberElement) {
-                employeeNumberElement.style.cursor = 'pointer';
-                employeeNumberElement.title = 'Click to copy';
-                employeeNumberElement.addEventListener('click', copyEmployeeNumber);
             }
             
-            // Handle image errors - fixed version
+            // Handle form submission
+            if (deleteForm) {
+                deleteForm.addEventListener('submit', function(e) {
+                    console.log('Delete form submitted');
+                    console.log('Form action:', this.action);
+                    console.log('Form method:', this.method);
+                    console.log('CSRF token present:', this.querySelector('input[name="_csrf_token"]') ? 'YES' : 'NO');
+                    
+                    // Show loading state
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                        submitBtn.disabled = true;
+                    }
+                });
+            }
+            
+            // Handle image errors
             const images = document.querySelectorAll('img');
             images.forEach(img => {
                 img.addEventListener('error', function() {
                     console.log('Image failed to load:', this.src);
-                    // Check if this is a passport photo
                     if (this.classList.contains('passport-photo')) {
-                        // Check if we already have a data URI (from the inline onerror handler)
-                        if (this.src && this.src.startsWith('data:')) {
-                            console.log('Image already has data URI, not changing');
-                            return;
-                        }
-                        // Use default avatar
                         this.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150"><rect width="100%" height="100%" fill="%23f0f0f0"/><text x="50%" y="50%" font-family="Arial" font-size="14" fill="%23666" text-anchor="middle" dominant-baseline="middle">Photo Missing</text></svg>';
                     }
                 });
-                
-                img.addEventListener('load', function() {
-                    console.log('Image loaded successfully:', this.src);
-                });
             });
             
-            // Handle delete form submission
-            const deleteForm = document.getElementById('deleteForm');
-            if (deleteForm) {
-                deleteForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    Swal.fire({
-                        title: "Deleting...",
-                        text: "Please wait while we delete the record",
-                        allowOutsideClick: false,
-                        showConfirmButton: false,
-                        willOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-                    
-                    // Submit the form after a short delay to show loading
-                    setTimeout(() => {
-                        this.submit();
-                    }, 500);
+            // Close modal when clicking outside
+            if (deleteModal) {
+                deleteModal.addEventListener('click', function(e) {
+                    if (e.target === deleteModal) {
+                        closeDeleteModal();
+                    }
                 });
             }
         });
@@ -1666,9 +1587,7 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
         function openDeleteModal() {
             const modal = document.getElementById('deleteModal');
             if (modal) {
-                modal.style.display = 'flex';
-                modal.classList.add('show');
-                modal.setAttribute('aria-hidden', 'false');
+                modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
             }
         }
@@ -1677,31 +1596,24 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
         function closeDeleteModal() {
             const modal = document.getElementById('deleteModal');
             if (modal) {
-                modal.style.display = 'none';
-                modal.classList.remove('show');
-                modal.setAttribute('aria-hidden', 'true');
+                modal.classList.remove('active');
                 document.body.style.overflow = 'auto';
+                
+                // Reset delete button state
+                const submitBtn = document.querySelector('#deleteForm button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = 'Delete Permanently';
+                    submitBtn.disabled = false;
+                }
             }
         }
 
-        // Close modal when clicking outside or with Escape key
-        document.addEventListener('click', function(event) {
-            const modal = document.getElementById('deleteModal');
-            if (modal && modal.classList.contains('show') && event.target === modal) {
-                closeDeleteModal();
-            }
-        });
-
+        // Close modal with Escape key
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 closeDeleteModal();
             }
         });
-
-        // Print functionality
-        window.printRecord = function() {
-            window.print();
-        };
     </script>
 </body>
 </html>
