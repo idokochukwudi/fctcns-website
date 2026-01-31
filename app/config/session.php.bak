@@ -598,13 +598,12 @@ class Session {
     }
 }
 
-// REMOVED the legacy single-token initialization:
 // Initialize CSRF token for forms if not exists (legacy single token)
-// if (!isset($_SESSION['csrf_token'])) {
-//     Session::generateCSRFToken();
-// }
+if (!isset($_SESSION['csrf_token'])) {
+    Session::generateCSRFToken();
+}
 
-// Keep only the multi-token initialization:
+// Initialize CSRF tokens array if not exists (multi-token version)
 if (!isset($_SESSION['csrf_tokens'])) {
     $_SESSION['csrf_tokens'] = [];
 }

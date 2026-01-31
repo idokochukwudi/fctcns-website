@@ -24,6 +24,13 @@ class NominalRollController extends Controller {
     public function __construct() {
         parent::__construct();
         
+        // ============================================
+        // FIX 4: Debug logging for permissions
+        // ============================================
+        error_log("=== NOMINAL ROLL CONTROLLER CONSTRUCTOR ===");
+        error_log("User Role: " . ($_SESSION['user_role'] ?? 'none'));
+        error_log("User ID: " . ($_SESSION['user_id'] ?? 'none'));
+        
         // Set admin layout
         $this->layout = 'admin';
         
@@ -42,6 +49,13 @@ class NominalRollController extends Controller {
         require_once __DIR__ . '/../models/NominalRollModel.php';
         $this->model = new NominalRollModel();
         
+        // ============================================
+        // FIX: Update CSRF token generation to use multi-token system
+        // ============================================
+        require_once APP_PATH . '/config/session.php';
+        $csrf_token = Session::generateCSRFTokenMulti();
+        // DON'T store in $_SESSION['csrf_token'] - let Session class handle it
+        
         // Check permissions using base controller method
         $userId = $_SESSION['user_id'] ?? 0;
         $hasCreatePermission = $this->checkPermission('nominal_roll_create', $userId);
@@ -52,6 +66,21 @@ class NominalRollController extends Controller {
         $hasDeletePermission = $this->checkPermission('nominal_roll_delete', $userId);
         $hasSettingsPermission = $this->checkPermission('nominal_roll_settings', $userId);
         $hasApprovePermission = $this->checkPermission('nominal_roll_approve', $userId);
+        
+        // ============================================
+        // FIX 4: Log permission results
+        // ============================================
+        error_log("Permission Results:");
+        error_log("  hasBulkUploadPermission: " . ($hasBulkUploadPermission ? 'YES' : 'NO'));
+        error_log("  isSuperAdmin: " . (($_SESSION['user_role'] ?? '') === 'admin' ? 'YES' : 'NO'));
+        error_log("  hasCreatePermission: " . ($hasCreatePermission ? 'YES' : 'NO'));
+        error_log("  hasEditPermission: " . ($hasEditPermission ? 'YES' : 'NO'));
+        error_log("  hasViewPermission: " . ($hasViewPermission ? 'YES' : 'NO'));
+        error_log("  hasExportPermission: " . ($hasExportPermission ? 'YES' : 'NO'));
+        error_log("  hasDeletePermission: " . ($hasDeletePermission ? 'YES' : 'NO'));
+        error_log("  hasSettingsPermission: " . ($hasSettingsPermission ? 'YES' : 'NO'));
+        error_log("  hasApprovePermission: " . ($hasApprovePermission ? 'YES' : 'NO'));
+        error_log("=== END CONSTRUCTOR ===");
         
         // Initialize common data
         $this->data = array_merge($this->data, [
@@ -75,6 +104,53 @@ class NominalRollController extends Controller {
             'isViewer' => ($_SESSION['user_role'] ?? '') === 'viewer',
             'editingEnabled' => $this->model->isEditingEnabled()
         ]);
+    }
+    
+    /**
+     * ============================================
+     * FIX 2: Add Debug Method to Controller for Testing
+     * ============================================
+     */
+    
+    /**
+     * Test model filters - for debugging only
+     */
+    public function testFilters() {
+        // Only allow super admin
+        if (!$this->data['isSuperAdmin']) {
+            echo "Access denied";
+            exit;
+        }
+        
+        echo "<h1>Testing Model Filters</h1>";
+        
+        // Test 1: Search filter
+        echo "<h2>Test 1: Search for 'John'</h2>";
+        $result1 = $this->model->getAllEmployees(1, 5, ['search' => 'John']);
+        echo "Found: " . count($result1['employees']) . " employees<br>";
+        echo "Total pages: " . $result1['pagination']['total_pages'] . "<br>";
+        echo "Pagination structure: " . print_r($result1['pagination'], true) . "<br>";
+        
+        // Test 2: State filter
+        echo "<h2>Test 2: Filter by State 'FCT'</h2>";
+        $result2 = $this->model->getAllEmployees(1, 5, ['state' => 'FCT']);
+        echo "Found: " . count($result2['employees']) . " employees<br>";
+        
+        // Test 3: No filters (should show active employees)
+        echo "<h2>Test 3: No filters (active only)</h2>";
+        $result3 = $this->model->getAllEmployees(1, 5, []);
+        echo "Found: " . count($result3['employees']) . " employees<br>";
+        
+        // Test 4: Multiple filters
+        echo "<h2>Test 4: Multiple filters (State + Grade)</h2>";
+        $result4 = $this->model->getAllEmployees(1, 5, ['state' => 'FCT', 'grade_level' => '15']);
+        echo "Found: " . count($result4['employees']) . " employees<br>";
+        
+        // Show SQL structure
+        echo "<h2>Model Structure</h2>";
+        echo "Method exists? " . (method_exists($this->model, 'getAllEmployees') ? 'YES' : 'NO') . "<br>";
+        
+        exit;
     }
     
     /**
@@ -506,71 +582,97 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * Display all employees with pagination
+     * Display all employees with pagination - UPDATED WITH FIXES
      */
     public function index() {
         try {
-            // Get current page
-            $page = $this->input('page', 1);
-            // Changed default from 20 to 5, but allow user to override via GET parameter
-            $limit = $this->input('limit', $this->model->getSetting('records_per_page', 5));
+            error_log("=== CONTROLLER INDEX START ===");
             
-            // Get filters - search will query: employee_number, name, ID, state, department
-            $filters = [
-                'search' => $this->input('search', ''), // Searches: employee_number, name, id, state, department
-                'state' => $this->input('state', ''),
-                'grade_level' => $this->input('grade_level', ''),
-                'rank' => $this->input('rank', ''),
-                'sex' => $this->input('sex', ''),
-                'status' => $this->input('status', 'active'),
-                'is_draft' => $this->input('is_draft', ''),
-                'department' => $this->input('department', ''),
-                'sort_by' => $this->input('sort_by', 'surname'),
-                'sort_order' => $this->input('sort_order', 'asc')
-            ];
+            // ============================================
+            // FIX: READ parameters from URL query string
+            // ============================================
+            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+            $limit = isset($_GET['limit']) ? max(5, min(100, (int)$_GET['limit'])) : 10;
             
-            // Get employees with pagination
+            // ============================================
+            // FIX: Build filters from URL query string
+            // ============================================
+            $filters = [];
+            if (!empty($_GET['search'])) $filters['search'] = trim($_GET['search']);
+            if (!empty($_GET['state'])) $filters['state'] = trim($_GET['state']);
+            if (!empty($_GET['grade_level'])) $filters['grade_level'] = trim($_GET['grade_level']);
+            if (!empty($_GET['rank'])) $filters['rank'] = trim($_GET['rank']);
+            if (!empty($_GET['gender'])) $filters['gender'] = trim($_GET['gender']);
+            if (!empty($_GET['department'])) $filters['department'] = trim($_GET['department']);
+            if (!empty($_GET['status'])) $filters['status'] = trim($_GET['status']);
+            
+            // ============================================
+            // FIX: Add debug logging
+            // ============================================
+            error_log("Page: $page, Limit: $limit, Filters: " . json_encode($filters));
+            
+            // Get data from model
             $result = $this->model->getAllEmployees($page, $limit, $filters);
             
-            // Get filter options
+            // Rest of existing index method code...
+            error_log("NominalRollController::index() - Page: $page, Limit: $limit");
+            error_log("Filters: " . print_r($filters, true));
+            
+            // Ensure result has expected structure
+            if (!isset($result['employees']) || !isset($result['pagination'])) {
+                throw new Exception("Invalid response from model");
+            }
+            
+            // Get filter options for dropdowns
             $filterOptions = $this->model->getFilterOptions();
             
             // Get statistics
             $stats = $this->model->getEmployeeStats();
             
-            // ========================================
-            // FIX 5 APPLIED: Add error checking to pagination
-            // ========================================
-            // Make sure $pagination is always set with valid values
-            if (!isset($result['pagination']) || !is_array($result['pagination'])) {
-                $pagination = [];
+            // Prepare pagination data for view
+            $pagination = $result['pagination'];
+            $pagination['page'] = $page;
+            $pagination['limit'] = $limit;
+            
+            // Calculate total pages
+            if ($pagination['total'] > 0 && $limit > 0) {
+                $pagination['total_pages'] = ceil($pagination['total'] / $limit);
             } else {
-                $pagination = $result['pagination'];
-            }
-
-            // Ensure required keys exist with defaults
-            $pagination['page'] = isset($pagination['page']) ? (int)$pagination['page'] : 1;
-            $pagination['total_pages'] = isset($pagination['total_pages']) ? (int)$pagination['total_pages'] : 1;
-            $pagination['total'] = isset($pagination['total']) ? (int)$pagination['total'] : 0;
-            $pagination['limit'] = isset($pagination['limit']) ? (int)$pagination['limit'] : 5;
-
-            // Make sure total_pages is at least 1
-            if ($pagination['total_pages'] < 1) {
                 $pagination['total_pages'] = 1;
             }
             
-            // Add sorting parameters to data
+            // Ensure page doesn't exceed total pages
+            if ($page > $pagination['total_pages'] && $pagination['total_pages'] > 0) {
+                $page = $pagination['total_pages'];
+                // Re-fetch with corrected page
+                $result = $this->model->getAllEmployees($page, $limit, $filters);
+                $pagination = $result['pagination'];
+                $pagination['page'] = $page;
+                $pagination['limit'] = $limit;
+                $pagination['total_pages'] = ceil($pagination['total'] / $limit);
+            }
+            
+            // Calculate display range
+            $startRecord = (($page - 1) * $limit) + 1;
+            $endRecord = min($page * $limit, $pagination['total']);
+            
+            error_log("Final pagination: " . print_r($pagination, true));
+            error_log("=== CONTROLLER INDEX END ===");
+            
+            // Merge data
             $this->data = array_merge($this->data, [
                 'employees' => $result['employees'],
-                'pagination' => $pagination, // Use validated pagination
+                'pagination' => $pagination,
                 'filters' => $filters,
                 'filterOptions' => $filterOptions,
                 'stats' => $stats,
-                'currentLimit' => $limit, // ADDED: for the records per page selector
-                'currentSortBy' => $filters['sort_by'],
-                'currentSortOrder' => $filters['sort_order'],
+                'currentLimit' => $limit,
+                'currentSortBy' => $filters['sort_by'] ?? 'surname',
+                'currentSortOrder' => $filters['sort_order'] ?? 'asc',
                 'pageTitle' => 'Nominal Roll Management - FCT College of Nursing Sciences',
-                'pageDescription' => 'Manage employee records and details'
+                'pageDescription' => 'Manage employee records and details',
+                'startRecord' => $startRecord,
+                'endRecord' => $endRecord
             ]);
             
             // Render view
@@ -578,6 +680,7 @@ class NominalRollController extends Controller {
             
         } catch (Exception $e) {
             error_log("NominalRollController index error: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             $this->showNominalRollError("Failed to load nominal roll data.");
         }
     }
@@ -652,11 +755,14 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->flash('error', 'Invalid or expired CSRF token. Please try again.');
                 $this->redirect('/admin/nominal-roll/create');
                 return;
             }
+            // After successful validation, remove token:
+            Session::removeCSRFToken($csrfToken);
             
             error_log("CSRF validation passed");
             
@@ -1180,11 +1286,14 @@ class NominalRollController extends Controller {
             error_log("=== UPDATE METHOD START FOR EMPLOYEE ID: $id ===");
             
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->flash('error', 'Invalid or expired CSRF token. Please try again.');
                 $this->redirect('/admin/nominal-roll/edit/' . $id);
                 return;
             }
+            // After successful validation, remove token:
+            Session::removeCSRFToken($csrfToken);
             
             // Check if employee exists
             $employee = $this->model->getEmployee($id);
@@ -1384,22 +1493,20 @@ class NominalRollController extends Controller {
             $csrfToken = $_POST['_csrf_token'] ?? '';
             error_log("Validating CSRF token: " . substr($csrfToken, 0, 10) . "...");
             
-            // Try the multi-token validation first (preferred)
-            if (Session::validateCSRFTokenMulti($csrfToken)) {
-                error_log("CSRF token validated successfully using multi-token system");
-                // Remove token after successful validation (prevents replay attacks)
-                Session::removeCSRFToken($csrfToken);
-            }
-            // Fallback to single token validation (legacy)
-            elseif (Session::validateCSRFToken($csrfToken)) {
-                error_log("CSRF token validated successfully using single-token system (legacy)");
-                Session::clearCSRFToken();
-            }
-            else {
-                error_log("CSRF VALIDATION FAILED");
-                $this->flash('error', 'Security error: Invalid or expired CSRF token.');
-                $this->redirect('/admin/nominal-roll/view/' . $id);
-                return;
+            // ============================================
+            // FIXED: Updated CSRF validation in destroy() method
+            // ============================================
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
+                // Also try legacy validation for backward compatibility
+                if (!Session::validateCSRFToken($csrfToken)) {
+                    error_log("CSRF VALIDATION FAILED");
+                    $this->flash('error', 'Security error: Invalid or expired CSRF token.');
+                    $this->redirect('/admin/nominal-roll/view/' . $id);
+                    return;
+                }
+                Session::clearCSRFToken(); // Clear legacy token
+            } else {
+                Session::removeCSRFToken($csrfToken); // Remove multi-token
             }
             
             // Check if employee exists
@@ -1562,13 +1669,22 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * Display bulk upload form
+     * Display bulk upload form - FIXED VERSION
      */
     public function bulkUpload() {
         // Check if user has permission
         if (!$this->data['hasBulkUploadPermission']) {
-            echo json_encode(['success' => false, 'error' => 'You do not have permission to upload bulk data.']);
-            exit;
+            // If it's an AJAX request, return JSON
+            if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                echo json_encode(['success' => false, 'error' => 'You do not have permission to upload bulk data.']);
+                exit;
+            } else {
+                // Regular page request - redirect with flash message
+                $this->flash('error', 'You do not have permission to upload bulk data.');
+                $this->redirect('/admin/nominal-roll');
+                return;
+            }
         }
         
         try {
@@ -1578,6 +1694,7 @@ class NominalRollController extends Controller {
             // ==============================
             // FIX APPLIED: Generate CSRF token properly
             // ==============================
+            require_once APP_PATH . '/config/session.php';
             $csrfToken = Session::generateCSRFTokenMulti();
             
             $this->data = array_merge($this->data, [
@@ -1620,6 +1737,7 @@ class NominalRollController extends Controller {
             }
             
             // STEP 2: Validate the CSRF token
+            require_once APP_PATH . '/config/session.php';
             if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 error_log("ERROR: CSRF token validation failed");
                 echo json_encode([
@@ -1940,12 +2058,16 @@ class NominalRollController extends Controller {
             // Validate CSRF token
             error_log("Checking CSRF token...");
             $csrfToken = $_POST['csrf_token'] ?? '';
-            if (!$this->validateCsrfToken($csrfToken)) {
+            require_once APP_PATH . '/config/session.php';
+            
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 error_log("CSRF token validation failed");
                 echo json_encode(['success' => false, 'error' => 'Invalid or expired CSRF token. Please try again.']);
                 ob_end_flush();
                 exit;
             }
+            // Remove token after successful validation
+            Session::removeCSRFToken($csrfToken);
             error_log("CSRF token validated");
             
             // Check for uploaded file
@@ -2540,21 +2662,10 @@ class NominalRollController extends Controller {
                 throw new Exception('No CSRF token provided. Please refresh the page and try again.');
             }
             
-            // Validate CSRF token using controller method
-            if (!$this->validateCsrfToken()) {
+            // Validate CSRF token using Session class
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 error_log("ERROR: CSRF token validation failed");
-                
-                // Try direct validation as fallback
-                if (isset($_SESSION['csrf_tokens'][$csrfToken])) {
-                    $tokenTime = $_SESSION['csrf_tokens'][$csrfToken];
-                    if (time() - $tokenTime <= 3600) {
-                        error_log("WARNING: Token found in session but controller validation failed");
-                        // Token exists and is not expired - maybe validation logic issue
-                    } else {
-                        error_log("ERROR: Token expired in session");
-                    }
-                }
-                
                 throw new Exception('Invalid or expired CSRF token. Please refresh the page and try again.');
             }
             
@@ -2657,11 +2768,15 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->flash('error', 'Invalid or expired CSRF token. Please try again.');
                 $this->redirect('/admin/nominal-roll/reports');
                 return;
             }
+            // Remove token after validation
+            Session::removeCSRFToken($csrfToken);
             
             $selectedFields = $_POST['selected_fields'] ?? [];
             
@@ -2769,10 +2884,14 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->showNominalRollError('Invalid CSRF token');
                 return;
             }
+            // Remove token after validation
+            Session::removeCSRFToken($csrfToken);
             
             // Get POST data directly from $_POST since $this->request doesn't exist
             $autoFormat = isset($_POST['auto_format']) ? $_POST['auto_format'] == '1' : false;
@@ -2840,10 +2959,14 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->showNominalRollError('Invalid CSRF token');
                 return;
             }
+            // Remove token after validation
+            Session::removeCSRFToken($csrfToken);
             
             // Get POST data directly from $_POST
             $selectedFields = isset($_POST['selected_fields']) ? (array)$_POST['selected_fields'] : [];
@@ -3158,9 +3281,13 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 throw new Exception('Invalid CSRF token');
             }
+            // Remove token after validation
+            Session::removeCSRFToken($csrfToken);
             
             // Get selected fields from POST
             $selectedFields = $_POST['selected_fields'] ?? [];
@@ -3592,11 +3719,15 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->flash('error', 'Invalid or expired CSRF token. Please try again.');
                 $this->redirect('/admin/nominal-roll/reports');
                 return;
             }
+            // Remove token after validation
+            Session::removeCSRFToken($csrfToken);
             
             $reportId = $this->model->saveReportConfig([
                 'report_name' => $_POST['report_name'],
@@ -3750,10 +3881,14 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
                 return;
             }
+            // Remove token after validation
+            Session::removeCSRFToken($csrfToken);
             
             $key = $this->input('key', '');
             $value = $this->input('value', '');
@@ -3800,10 +3935,14 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
                 return;
             }
+            // Remove token after validation
+            Session::removeCSRFToken($csrfToken);
             
             $settings = $this->input('settings', []);
             
@@ -3849,10 +3988,14 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
                 return;
             }
+            // Remove token after validation
+            Session::removeCSRFToken($csrfToken);
             
             // Get current setting
             $currentValue = $this->model->getSetting('editing_enabled', '1');
@@ -3898,10 +4041,14 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
                 return;
             }
+            // Remove token after validation
+            Session::removeCSRFToken($csrfToken);
             
             $backupType = $this->input('type', 'manual');
             $backupResult = $this->model->createBackup($backupType, $_SESSION['user_id'] ?? null);
@@ -4004,10 +4151,14 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
                 return;
             }
+            // Remove token after validation
+            Session::removeCSRFToken($csrfToken);
             
             // Clear logs older than 90 days
             $result = $this->model->clearOldActivityLogs(90);
@@ -4045,10 +4196,14 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
                 return;
             }
+            // Remove token after validation
+            Session::removeCSRFToken($csrfToken);
             
             $result = $this->model->deleteBackup($id);
             
@@ -4084,10 +4239,14 @@ class NominalRollController extends Controller {
         
         try {
             // Validate CSRF token
-            if (!$this->validateCsrfToken()) {
+            $csrfToken = $_POST['csrf_token'] ?? '';
+            require_once APP_PATH . '/config/session.php';
+            if (!Session::validateCSRFTokenMulti($csrfToken)) {
                 $this->jsonResponse(['error' => 'Invalid or expired CSRF token. Please try again.']);
                 return;
             }
+            // Remove token after validation
+            Session::removeCSRFToken($csrfToken);
             
             $result = $this->model->resetAllSettings($_SESSION['user_id'] ?? null);
             
@@ -4935,8 +5094,9 @@ class NominalRollController extends Controller {
      * Override render method
      */
     protected function render($view = null, $data = []) {
-        // Generate new CSRF token for each form
-        $data['csrf_token'] = $this->csrfToken();
+        // Generate new CSRF token for each form using multi-token system
+        require_once APP_PATH . '/config/session.php';
+        $data['csrf_token'] = Session::generateCSRFTokenMulti();
         
         // Add flash messages
         $data['flash_success'] = $this->getFlash('success');

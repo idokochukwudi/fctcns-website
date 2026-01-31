@@ -794,7 +794,12 @@ class NominalRollModel {
     }
     
     /**
-     * Get all employees with pagination and filters - UPDATED VERSION
+     * Get all employees with pagination and filters - FIXED VERSION
+     * 
+     * @param int $page Current page
+     * @param int $limit Records per page
+     * @param array $filters Search filters
+     * @return array Employees and pagination data
      */
     public function getAllEmployees($page = 1, $limit = 5, $filters = []) {
         try {
@@ -803,8 +808,9 @@ class NominalRollModel {
             $limit = max(1, (int)$limit);
             $offset = ($page - 1) * $limit;
             
-            error_log("=== MODEL getAllEmployees DEBUG ===");
+            error_log("=== MODEL getAllEmployees ===");
             error_log("Page: $page, Limit: $limit, Offset: $offset");
+            error_log("Filters: " . print_r($filters, true));
             
             // Build WHERE clause
             $whereConditions = [];
@@ -813,20 +819,15 @@ class NominalRollModel {
             // Search filter
             if (!empty($filters['search'])) {
                 $searchTerm = '%' . $filters['search'] . '%';
-                $whereConditions[] = "(e.employee_number LIKE :search1 OR 
-                                    e.surname LIKE :search2 OR 
-                                    e.first_name LIKE :search3 OR 
-                                    e.state LIKE :search4 OR 
-                                    e.department LIKE :search5 OR
-                                    e.email LIKE :search6 OR
-                                    e.telephone_number LIKE :search7)";
-                $params[':search1'] = $searchTerm;
-                $params[':search2'] = $searchTerm;
-                $params[':search3'] = $searchTerm;
-                $params[':search4'] = $searchTerm;
-                $params[':search5'] = $searchTerm;
-                $params[':search6'] = $searchTerm;
-                $params[':search7'] = $searchTerm;
+                $whereConditions[] = "(e.employee_number LIKE :search OR 
+                                    CONCAT(e.surname, ' ', e.first_name) LIKE :search OR 
+                                    e.surname LIKE :search OR 
+                                    e.first_name LIKE :search OR 
+                                    e.state LIKE :search OR 
+                                    e.department LIKE :search OR
+                                    e.email LIKE :search OR
+                                    e.telephone_number LIKE :search)";
+                $params[':search'] = $searchTerm;
             }
             
             // State filter
@@ -874,13 +875,14 @@ class NominalRollModel {
             $whereClause = $whereConditions ? "WHERE " . implode(" AND ", $whereConditions) : "";
             
             // Sort order
-            $sortBy = isset($filters['sort_by']) ? $filters['sort_by'] : 'surname';
-            $sortOrder = isset($filters['sort_order']) ? strtoupper($filters['sort_order']) : 'ASC';
-            
+            $orderBy = "ORDER BY ";
             $validSortColumns = [
                 'employee_number', 'surname', 'first_name', 'rank', 
                 'grade_level', 'state', 'date_of_first_appointment', 'created_at'
             ];
+            
+            $sortBy = isset($filters['sort_by']) ? $filters['sort_by'] : 'surname';
+            $sortOrder = isset($filters['sort_order']) ? strtoupper($filters['sort_order']) : 'ASC';
             
             if (!in_array($sortBy, $validSortColumns)) {
                 $sortBy = 'surname';
@@ -889,7 +891,13 @@ class NominalRollModel {
                 $sortOrder = 'ASC';
             }
             
-            $orderBy = "ORDER BY e.`$sortBy` $sortOrder";
+            if ($sortBy === 'rank') {
+                $orderBy .= "e.`rank` $sortOrder";
+            } elseif ($sortBy === 'name') {
+                $orderBy .= "e.surname $sortOrder, e.first_name $sortOrder";
+            } else {
+                $orderBy .= "e.$sortBy $sortOrder";
+            }
             
             // Get total count
             $countSql = "SELECT COUNT(*) as total FROM " . self::TABLE_EMPLOYEES . " e $whereClause";
@@ -904,7 +912,7 @@ class NominalRollModel {
             
             error_log("Total records: $total, Total pages: $totalPages");
             
-            // Get paginated data - CRITICAL: Named placeholders for LIMIT/OFFSET
+            // Get paginated data - CRITICAL: Use PDO::PARAM_INT for LIMIT and OFFSET
             $dataSql = "SELECT e.*, 
                         u1.username as created_by_name,
                         u2.username as updated_by_name
@@ -916,19 +924,18 @@ class NominalRollModel {
                         LIMIT :limit OFFSET :offset";
             
             error_log("Data SQL: " . $dataSql);
+            error_log("Limit: $limit, Offset: $offset");
             
             $dataStmt = $this->db->prepare($dataSql);
             
-            // Bind filter parameters first
+            // Bind filter parameters
             foreach ($params as $key => $value) {
                 $dataStmt->bindValue($key, $value);
             }
             
-            // CRITICAL: Bind LIMIT and OFFSET as integers with NAMED PLACEHOLDERS
+            // CRITICAL: Bind LIMIT and OFFSET as integers
             $dataStmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $dataStmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-            
-            error_log("Binding LIMIT: $limit, OFFSET: $offset");
             
             $dataStmt->execute();
             $employees = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -955,7 +962,7 @@ class NominalRollModel {
             ];
             
             error_log("Returning result with " . count($employees) . " employees");
-            error_log("=== END getAllEmployees DEBUG ===");
+            error_log("Pagination: " . print_r($result['pagination'], true));
             
             return $result;
             

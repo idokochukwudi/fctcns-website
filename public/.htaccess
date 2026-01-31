@@ -7,14 +7,14 @@
     
     # If the request is for a valid FILE, serve it directly
     RewriteCond %{REQUEST_FILENAME} -f
-    RewriteRule ^ - [L]
+    RewriteRule ^ - [QSA,L]
     
     # If the request is for a valid DIRECTORY, serve it directly
     RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
+    RewriteRule ^ - [QSA,L]
     
     # Otherwise, route everything through index.php
-    RewriteRule ^ index.php [L]
+    RewriteRule ^ index.php [QSA,L]
 </IfModule>
 
 # Security Headers (Optional but good)
