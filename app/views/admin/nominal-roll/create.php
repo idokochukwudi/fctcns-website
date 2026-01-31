@@ -469,7 +469,7 @@
 
     <!-- Employee Form -->
     <form method="POST" action="<?php echo $baseUrl; ?>/admin/nominal-roll/store" enctype="multipart/form-data" class="employee-form" id="employeeForm">
-        <input type="hidden" name="_csrf_token" value="<?php echo $csrf_token; ?>">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token ?? '', ENT_QUOTES, 'UTF-8'); ?>">
         
         <!-- ============================================
         TRUE TABBED INTERFACE

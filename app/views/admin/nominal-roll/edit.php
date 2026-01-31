@@ -49,7 +49,7 @@
 
     <!-- Employee Form -->
     <form method="POST" action="<?php echo $baseUrl; ?>/admin/nominal-roll/update/<?php echo $employee['id']; ?>" enctype="multipart/form-data" class="employee-form" id="employeeForm">
-        <input type="hidden" name="_csrf_token" value="<?php echo $csrf_token; ?>">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token ?? '', ENT_QUOTES, 'UTF-8'); ?>">
         <input type="hidden" name="_method" value="PUT">
         
         <!-- Row 1: Basic Information -->
@@ -1047,7 +1047,7 @@
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
             <form method="POST" action="<?php echo $baseUrl; ?>/admin/nominal-roll/delete/<?php echo $employee['id']; ?>" style="display: inline;">
-                <input type="hidden" name="_csrf_token" value="<?php echo $csrf_token; ?>">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                 <button type="submit" class="btn btn-danger">Delete Permanently</button>
             </form>
         </div>
