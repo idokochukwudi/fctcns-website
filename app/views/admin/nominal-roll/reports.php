@@ -1174,7 +1174,7 @@
                         </div>
                     </div>
                     
-                    <!-- Filters Section -->
+                    <!-- Filters Section - UPDATED WITH STATUS FILTER -->
                     <div class="filters-section">
                         <h3><i class="fas fa-filter"></i> Filter Results</h3>
                         
@@ -1268,14 +1268,26 @@
                                 </div>
                             </div>
                             
-                            <!-- Status -->
+                            <!-- UPDATED: Status Filter -->
                             <div class="col-md-6">
                                 <div class="filter-group">
                                     <label for="filter_status" class="form-label">Status</label>
                                     <select name="filter_status" id="filter_status" class="form-select filter-select" onchange="updateFilterCount()">
-                                        <option value="active">Active Only</option>
-                                        <option value="inactive">Inactive Only</option>
                                         <option value="">All Status</option>
+                                        <?php if (isset($filterOptions['status_options']) && is_array($filterOptions['status_options'])): ?>
+                                            <?php foreach ($filterOptions['status_options'] as $status_option): ?>
+                                                <option value="<?= htmlspecialchars($status_option) ?>" 
+                                                    <?= (isset($_POST['filter_status']) && $_POST['filter_status'] == $status_option) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars(ucfirst($status_option)) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <!-- Fallback options if status_options is not available -->
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="retired">Retired</option>
+                                        <?php endif; ?>
                                     </select>
                                 </div>
                             </div>
@@ -1847,7 +1859,7 @@
                 grade_level: document.querySelector('[name="filter_grade_level"]').value,
                 sex: document.querySelector('[name="filter_sex"]').value,
                 rank: document.querySelector('[name="filter_rank"]').value,
-                status: document.querySelector('[name="filter_status"]').value || 'active'
+                status: document.querySelector('[name="filter_status"]').value || ''
             };
             
             const sortOrder = document.querySelector('[name="sort_order"]').value || 'surname_asc';
@@ -1865,7 +1877,9 @@
                     } else if (field === 'employee_number') {
                         row[field] = 'EMP' + (20240000 + i);
                     } else if (field.includes('status')) {
-                        row[field] = i % 3 === 0 ? 'Active' : (i % 3 === 1 ? 'Inactive' : 'Pending');
+                        // Use the status filter or default to active
+                        const statusFilter = filters.status || 'active';
+                        row[field] = statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1);
                     } else if (field === 'grade_level') {
                         row[field] = Math.floor(Math.random() * 17) + 1;
                     } else if (field === 'rank') {
@@ -1972,6 +1986,10 @@
                                 value = '<span class="badge badge-inactive badge-contrast"><i class="fas fa-times-circle me-1"></i>Inactive</span>';
                             } else if (value.toLowerCase() === 'pending') {
                                 value = '<span class="badge badge-warning badge-contrast"><i class="fas fa-clock me-1"></i>Pending</span>';
+                            } else if (value.toLowerCase() === 'retired') {
+                                value = '<span class="badge badge-secondary badge-contrast"><i class="fas fa-user-clock me-1"></i>Retired</span>';
+                            } else {
+                                value = '<span class="text-muted fw-bold">' + value + '</span>';
                             }
                         }
                         

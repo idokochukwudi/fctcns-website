@@ -138,6 +138,24 @@
                             </select>
                         </div>
 
+                        <!-- Status Field - ADDED HERE -->
+                        <div class="form-group required">
+                            <label for="status">Status <span class="text-danger">*</span></label>
+                            <select id="status" name="status" class="form-control" required>
+                                <option value="">Select Status</option>
+                                <?php 
+                                $statusOptions = isset($filterOptions['status_options']) ? $filterOptions['status_options'] : 
+                                                ['active', 'inactive', 'retired', 'transferred', 'deceased', 'suspended'];
+                                foreach ($statusOptions as $status_option): 
+                                ?>
+                                    <option value="<?php echo htmlspecialchars($status_option); ?>" 
+                                        <?php echo (isset($formData['status']) ? $formData['status'] : (isset($employee['status']) ? $employee['status'] : '')) == $status_option ? 'selected' : ''; ?>>
+                                        <?php echo ucfirst(htmlspecialchars($status_option)); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
                         <!-- Nationality -->
                         <div class="form-group required">
                             <label for="nationality">Nationality *</label>

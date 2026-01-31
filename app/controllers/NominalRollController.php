@@ -582,7 +582,7 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * Display all employees with pagination - UPDATED WITH FIXES
+     * Display all employees with pagination - UPDATED WITH FIXES AND STATUS FILTER
      */
     public function index() {
         try {
@@ -604,7 +604,13 @@ class NominalRollController extends Controller {
             if (!empty($_GET['rank'])) $filters['rank'] = trim($_GET['rank']);
             if (!empty($_GET['gender'])) $filters['gender'] = trim($_GET['gender']);
             if (!empty($_GET['department'])) $filters['department'] = trim($_GET['department']);
-            if (!empty($_GET['status'])) $filters['status'] = trim($_GET['status']);
+            
+            // ============================================
+            // STEP 3.1: ADD STATUS FILTER
+            // ============================================
+            if (!empty($_GET['status'])) {
+                $filters['status'] = trim($_GET['status']);
+            }
             
             // ============================================
             // FIX: Add debug logging
@@ -686,7 +692,7 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Display create employee form
+     * Display create employee form - UPDATED WITH STATUS FIELD
      */
     public function create() {
         // Check if user has permission to create
@@ -1229,7 +1235,7 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Display edit employee form
+     * Display edit employee form - UPDATED WITH STATUS FIELD
      */
     public function edit($id) {
         // Check if user has permission to edit
@@ -1283,6 +1289,12 @@ class NominalRollController extends Controller {
         }
         
         try {
+            // === ADDED DEBUG LINES ===
+            error_log("=== DEBUG: Update method called ===");
+            error_log("POST status value: " . ($_POST['status'] ?? 'NOT SET'));
+            error_log("save_as_draft checkbox: " . ($_POST['save_as_draft'] ?? 'NOT CHECKED'));
+            // =========================
+            
             error_log("=== UPDATE METHOD START FOR EMPLOYEE ID: $id ===");
             
             // Validate CSRF token
@@ -1314,8 +1326,14 @@ class NominalRollController extends Controller {
             error_log("Form data received (before photo handling):");
             error_log("Additional qualifications JSON: " . ($data['additional_qualifications'] ?? 'NULL'));
             
-            // Handle draft status
+            // === ENHANCED DEBUG: Log the save_as_draft and status logic ===
             $isDraft = $this->input('save_as_draft', 0);
+            error_log("DEBUG: isDraft calculated as: " . ($isDraft ? 'TRUE' : 'FALSE'));
+            error_log("DEBUG: Original POST save_as_draft: " . ($_POST['save_as_draft'] ?? 'NULL'));
+            error_log("DEBUG: Original POST status field: " . ($_POST['status'] ?? 'NULL'));
+            // ==============================================================
+            
+            // Handle draft status
             $data['is_draft'] = $isDraft ? 1 : 0;
             $data['status'] = $isDraft ? 'draft' : 'active';
             
@@ -1401,6 +1419,8 @@ class NominalRollController extends Controller {
             
             // Update employee
             error_log("Calling model->updateEmployee with data...");
+            error_log("DEBUG: Data being sent to updateEmployee - is_draft: " . ($data['is_draft'] ?? 'NULL') . ", status: " . ($data['status'] ?? 'NULL'));
+            
             $result = $this->model->updateEmployee($id, $data, $userId);
             
             if ($result) {
@@ -2375,14 +2395,15 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Download bulk upload template
+     * Download bulk upload template - UPDATED WITH STATUS FIELD (STEP 5.1)
      */
     public function downloadTemplate() {
         try {
-            // CSV template headers (updated with new fields)
+            // CSV template headers (updated with new fields including status)
             $headers = [
-                'S/N', 'Employee Number', 'Surname', 'First Name', 'Middle Name', 'Sex', 'Date of Birth',
-                'Marital Status', 'Rank', 'Grade Level (GL)', 'Qualification', 'Qualification Date',
+                'S/N', 'Employee Number', 'Surname', 'First Name', 'Middle Name', 
+                'Sex', 'Date of Birth', 'Marital Status', 'Status', // ← ADDED STATUS HERE
+                'Rank', 'Grade Level (GL)', 'Qualification', 'Qualification Date',
                 'Highest Qualification', 'Year of Highest Qualification', 'Additional Qualifications',
                 'Date of 1st Appt.', 'Date of Confirmation', 'Rank on 1st Appt.',
                 'Date of Present. Appt.', 'State of Origin', 'Local Govt. Area', 'State of Residence',
@@ -2395,7 +2416,8 @@ class NominalRollController extends Controller {
             $sampleData = [
                 [
                     '1', 'EMP20240001', 'Doe', 'John', 'Michael', 'Male', '1990-05-15',
-                    'Married', 'Senior Lecturer', '15', 'B.Sc Nursing', '2010-05-20',
+                    'Married', 'active', // ← ADDED STATUS VALUE HERE
+                    'Senior Lecturer', '15', 'B.Sc Nursing', '2010-05-20',
                     'PhD in Nursing', '2020', '[{"qualification":"M.Sc Nursing","year":"2015"},{"qualification":"PGDE","year":"2016"}]',
                     '2015-03-01', '2016-03-01', 'Lecturer II',
                     '2023-01-15', 'FCT', 'Gwagwalada', 'FCT', 'Plot 123, Gwagwalada, Abuja',
@@ -2520,7 +2542,7 @@ class NominalRollController extends Controller {
             // Default fields if not configured
             $csvHeaders = [
                 'Employee Number', 'Surname', 'First Name', 'Middle Name', 'Sex', 'Date of Birth',
-                'Marital Status', 'Rank', 'Grade Level', 'Qualification', 'Qualification Date',
+                'Marital Status', 'Status', 'Rank', 'Grade Level', 'Qualification', 'Qualification Date',
                 'Highest Qualification', 'Year of Highest Qualification', 'Additional Qualifications',
                 'Date of 1st Appointment', 'Date of Confirmation', 'Rank on 1st Appointment',
                 'Date of Present Appointment', 'State of Origin', 'Local Govt. Area', 'State of Residence',
@@ -2573,7 +2595,7 @@ class NominalRollController extends Controller {
         echo '<tr>';
         $headers = [
             'Employee Number', 'Surname', 'First Name', 'Middle Name', 'Sex', 'Date of Birth',
-            'Marital Status', 'Rank', 'Grade Level', 'Qualification', 'Qualification Date',
+            'Marital Status', 'Status', 'Rank', 'Grade Level', 'Qualification', 'Qualification Date',
             'Highest Qualification', 'Year of Highest Qualification',
             'Date of 1st Appointment', 'Date of Confirmation',
             'State of Origin', 'Local Govt. Area', 'State of Residence',
@@ -2607,7 +2629,7 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * Display reports page
+     * Display reports page - UPDATED WITH STATUS FILTER (STEP 3.5)
      */
     public function reports() {
         try {
@@ -2615,13 +2637,20 @@ class NominalRollController extends Controller {
             $defaultFields = $this->model->getDefaultReportFields();
             $savedReports = $this->model->getSavedReports($_SESSION['user_id'] ?? null);
             
+            // Get filter options for status dropdown
+            $filterOptions = $this->model->getFilterOptions();
+            
             $this->data = [
                 'availableFields' => $availableFields,
                 'defaultFields' => $defaultFields,
                 'savedReports' => $savedReports,
+                'filterOptions' => $filterOptions, // Contains status_options
                 'pageTitle' => 'Nominal Roll Reports',
                 'pageDescription' => 'Generate custom reports'
             ];
+            
+            // Merge with controller data
+            $this->data = array_merge($this->data, $this->data);
             
             $this->render('admin/nominal-roll/reports');
             
@@ -2758,7 +2787,7 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Generate report - UPDATED VERSION (redirects to reportPreview)
+     * Generate report - UPDATED VERSION WITH STATUS FILTER (STEP 3.6)
      */
     public function generateReport() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -2784,6 +2813,7 @@ class NominalRollController extends Controller {
                 throw new Exception('Please select at least one field');
             }
             
+            // Get filters - ADD STATUS FILTER (STEP 3.6)
             $filters = [
                 'search' => $_POST['search'] ?? '',
                 'state' => $_POST['filter_state'] ?? '',
@@ -2791,7 +2821,7 @@ class NominalRollController extends Controller {
                 'grade_level' => $_POST['filter_grade_level'] ?? '',
                 'sex' => $_POST['filter_sex'] ?? '',
                 'rank' => $_POST['filter_rank'] ?? '',
-                'status' => $_POST['filter_status'] ?? 'active'
+                'status' => $_POST['filter_status'] ?? '' // ADD THIS LINE
             ];
             
             $sortOrder = $_POST['sort_order'] ?? 'surname_asc';
@@ -3133,6 +3163,8 @@ class NominalRollController extends Controller {
                         $formattedValue = '<span style="background-color: #d4edda; color: #155724; padding: 3px 8px; border-radius: 4px; font-weight: bold;">' . $formattedValue . '</span>';
                     } elseif (strtolower($value) === 'inactive') {
                         $formattedValue = '<span style="background-color: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-weight: bold;">' . $formattedValue . '</span>';
+                    } elseif (strtolower($value) === 'draft') {
+                        $formattedValue = '<span style="background-color: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 4px; font-weight: bold;">' . $formattedValue . '</span>';
                     }
                 }
                 
@@ -3567,6 +3599,17 @@ class NominalRollController extends Controller {
                         }
                     }
                     
+                    // Format status
+                    if ($field === 'status') {
+                        if (strtolower($value) === 'active') {
+                            $value = 'Active';
+                        } elseif (strtolower($value) === 'inactive') {
+                            $value = 'Inactive';
+                        } elseif (strtolower($value) === 'draft') {
+                            $value = 'Draft';
+                        }
+                    }
+                    
                     // Format empty values
                     if (empty($value)) {
                         $value = '-';
@@ -3669,6 +3712,17 @@ class NominalRollController extends Controller {
                             $value = 'Male';
                         } else if ($value === 'F' || strtolower($value) === 'female') {
                             $value = 'Female';
+                        }
+                    }
+                    
+                    // Format status
+                    if ($field === 'status') {
+                        if (strtolower($value) === 'active') {
+                            $value = 'Active';
+                        } elseif (strtolower($value) === 'inactive') {
+                            $value = 'Inactive';
+                        } elseif (strtolower($value) === 'draft') {
+                            $value = 'Draft';
                         }
                     }
                     
@@ -4272,7 +4326,7 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * Get form data from POST - CORRECTED VERSION for additional qualifications
+     * Get form data from POST - CORRECTED VERSION for additional qualifications WITH STATUS FIELD (STEP 3.4)
      */
     private function getFormData($sanitize = false) {
         // Get all form fields
@@ -4336,6 +4390,10 @@ class NominalRollController extends Controller {
             'next_of_kin_phone' => $this->input('next_of_kin_phone', ''),
             'next_of_kin_address' => $this->input('next_of_kin_address', ''),
             'next_of_kin_relationship' => $this->input('next_of_kin_relationship', ''),
+            // ========================================
+            // STEP 3.4: ADD STATUS FIELD
+            // ========================================
+            'status' => $this->input('status', 'active'),
         ];
         
         // ========================================
@@ -4397,9 +4455,15 @@ class NominalRollController extends Controller {
             $data['other_pension_fund_admin'] = null;
         }
         
-        // Handle draft status
-        $data['is_draft'] = $this->input('save_as_draft', 0) ? 1 : 0;
-        $data['status'] = $data['is_draft'] ? 'draft' : 'active';
+        // Handle draft status - override if draft is selected
+        $isDraft = $this->input('save_as_draft', 0);
+        if ($isDraft) {
+            $data['is_draft'] = 1;
+            $data['status'] = 'draft';
+        } else {
+            $data['is_draft'] = 0;
+            // Status is already set from the form input above
+        }
         
         if ($sanitize) {
             foreach ($data as $key => $value) {
@@ -4762,6 +4826,10 @@ class NominalRollController extends Controller {
                             <div class="info-value"><?php echo htmlspecialchars($employee['marital_status'] ?? 'N/A', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
                         <div class="info-row">
+                            <div class="info-label">Status:</div>
+                            <div class="info-value"><?php echo htmlspecialchars(ucfirst($employee['status'] ?? 'active'), ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
+                        </div>
+                        <div class="info-row">
                             <div class="info-label">Telephone:</div>
                             <div class="info-value"><?php echo htmlspecialchars($employee['telephone_number'] ?? 'N/A', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></div>
                         </div>
@@ -4925,6 +4993,7 @@ class NominalRollController extends Controller {
                             <th>Rank</th>
                             <th>GL</th>
                             <th>State</th>
+                            <th>Status</th>
                             <th>DOB</th>
                             <th>1st Appt.</th>
                             <th>Qualification</th>
@@ -4943,6 +5012,7 @@ class NominalRollController extends Controller {
                             <td><?php echo htmlspecialchars($emp['rank'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
                             <td><?php echo htmlspecialchars($emp['grade_level'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
                             <td><?php echo htmlspecialchars($emp['state'], ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
+                            <td><?php echo htmlspecialchars(ucfirst($emp['status'] ?? 'active'), ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>
                             <td><?php echo !empty($emp['date_of_birth']) ? date('d/m/Y', strtotime($emp['date_of_birth'])) : '-'; ?></td>
                             <td><?php echo !empty($emp['date_of_first_appointment']) ? date('d/m/Y', strtotime($emp['date_of_first_appointment'])) : '-'; ?></td>
                             <td><?php echo htmlspecialchars($emp['highest_qualification'] ?? '-', ENT_COMPAT | ENT_HTML401, 'UTF-8', true); ?></td>

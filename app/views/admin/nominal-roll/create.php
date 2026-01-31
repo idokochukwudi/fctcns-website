@@ -601,6 +601,33 @@
                             <option value="Other" <?php echo ($formData['religion'] ?? '') === 'Other' ? 'selected' : ''; ?>>Other</option>
                         </select>
                     </div>
+
+                    <!-- ADD STATUS FIELD -->
+                    <div class="form-group required">
+                        <label for="status">Status <span class="text-danger">*</span></label>
+                        <select id="status" name="status" class="form-select" required>
+                            <option value="">Select Status</option>
+                            <?php 
+                            // Define status options - same as in index.php
+                            $statusOptions = ['active', 'inactive', 'retired', 'draft'];
+                            foreach ($statusOptions as $status_option): ?>
+                                <option value="<?php echo $status_option; ?>" 
+                                    <?php 
+                                    // Pre-select 'active' by default, or use formData if available
+                                    if (isset($formData['status'])) {
+                                        echo $formData['status'] == $status_option ? 'selected' : '';
+                                    } else {
+                                        echo $status_option == 'active' ? 'selected' : '';
+                                    }
+                                    ?>>
+                                    <?php echo ucfirst($status_option); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php if (isset($formErrors['status'])): ?>
+                            <div class="text-danger small"><?php echo $formErrors['status']; ?></div>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 
                 <!-- Tab Navigation Buttons -->

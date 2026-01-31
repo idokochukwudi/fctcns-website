@@ -853,7 +853,7 @@ class NominalRollModel {
                 $params[':sex'] = $filters['sex'];
             }
             
-            // Status filter
+            // Status filter - UPDATED: Added 'draft' option
             if (!empty($filters['status'])) {
                 $whereConditions[] = "e.status = :status";
                 $params[':status'] = $filters['status'];
@@ -1101,8 +1101,8 @@ class NominalRollModel {
             // Religion options
             $options['religion_options'] = ['Christianity', 'Islam', 'Traditional', 'Other'];
             
-            // Status options
-            $options['status_options'] = ['active', 'inactive', 'retired'];
+            // Status options - UPDATED: Added 'draft' option
+            $options['status_options'] = ['active', 'inactive', 'retired', 'draft'];
             
             // Bank names
             $sql = "SELECT DISTINCT bank_name FROM " . self::TABLE_EMPLOYEES . " WHERE bank_name IS NOT NULL AND bank_name != '' ORDER BY bank_name";
@@ -1657,6 +1657,13 @@ class NominalRollModel {
                     $cleaned['pension_number'] = $cleanValue;
                     break;
                     
+                // Status - ADDED: Handle status field in bulk upload
+                case 'status':
+                    $cleaned['status'] = in_array(strtolower($cleanValue), ['active', 'inactive', 'retired', 'draft']) 
+                        ? strtolower($cleanValue) 
+                        : 'active';
+                    break;
+                    
                 // Add more mappings as needed
                 default:
                     // Map other common fields
@@ -1801,7 +1808,8 @@ class NominalRollModel {
             'other_pension_fund_admin' => 'other_pension_fund_admin',
             'pension_number' => 'pension_number',
             'telephone_number' => 'telephone_number',
-            'email' => 'email'
+            'email' => 'email',
+            'status' => 'status'  // ADDED: Include status field
         ];
         
         foreach ($fieldMapping as $csvField => $dbField) {
@@ -2473,6 +2481,11 @@ class NominalRollModel {
             $errors[] = "NIN must be 11 digits";
         }
         
+        // Add status validation - UPDATED: Added 'draft' option
+        if (!empty($data['status']) && !in_array($data['status'], ['active', 'inactive', 'retired', 'draft'])) {
+            $errors[] = "Invalid status selected";
+        }
+        
         return $errors;
     }
     
@@ -2807,7 +2820,7 @@ class NominalRollModel {
      */
     
     /**
-     * Get all available fields for reporting with categories
+     * Get all available fields for reporting with categories - UPDATED
      */
     public function getAvailableReportFields() {
         return [
@@ -2822,7 +2835,8 @@ class NominalRollModel {
                     'date_of_birth' => 'Date of Birth',
                     'marital_status' => 'Marital Status',
                     'nationality' => 'Nationality',
-                    'religion' => 'Religion'
+                    'religion' => 'Religion',
+                    'status' => 'Status' // ← ADDED THIS NEW LINE
                 ]
             ],
             'employment' => [

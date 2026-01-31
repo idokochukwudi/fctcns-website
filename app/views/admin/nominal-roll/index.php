@@ -10,6 +10,7 @@
  * - Self-contained with all necessary CSS/JS
  * - User profile display in header
  * - Enhanced security with CSRF protection for logout
+ * - Status filter and column added (active, inactive, retired, draft)
  * 
  * Enhancements:
  * - Latency: Optimized PHP loops, removed redundant checks, minified inline CSS/JS where possible.
@@ -48,6 +49,9 @@ $_SESSION['csrf_token'] = $csrf_token;
 
 // Get current limit from query or default
 $currentLimit = isset($_GET['limit']) ? intval($_GET['limit']) : 5;
+
+// Define status options
+$statusOptions = ['active', 'inactive', 'retired', 'draft'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -748,6 +752,22 @@ body {
     font-weight: 500;
 }
 
+/* Status Badges */
+.badge-success {
+    background: var(--success);
+    color: white;
+}
+
+.badge-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.badge-dark {
+    background: var(--gray-800);
+    color: white;
+}
+
 /* Action Buttons */
 .action-buttons {
     display: flex;
@@ -1151,6 +1171,7 @@ body {
 .rank-column { width: 150px; }
 .grade-column { width: 120px; }
 .state-column { width: 150px; }
+.status-column { width: 100px; }
 .date-column { width: 150px; }
 .actions-column { width: 300px; }
 
@@ -1477,13 +1498,17 @@ body {
                             </select>
                         </div>
                         
+                        <!-- ADD STATUS FILTER -->
                         <div class="form-group">
-                            <label for="status">Status</label>
-                            <select name="status" id="status" class="form-control filter-select" aria-label="Filter by Status">
+                            <label for="filter_status" class="form-label">Status</label>
+                            <select name="status" id="filter_status" class="form-control filter-select" aria-label="Filter by Status">
                                 <option value="">All Status</option>
-                                <option value="active" <?php echo (isset($filters['status']) && $filters['status'] === 'active') ? 'selected' : ''; ?>>Active</option>
-                                <option value="inactive" <?php echo (isset($filters['status']) && $filters['status'] === 'inactive') ? 'selected' : ''; ?>>Inactive</option>
-                                <option value="retired" <?php echo (isset($filters['status']) && $filters['status'] === 'retired') ? 'selected' : ''; ?>>Retired</option>
+                                <?php foreach ($statusOptions as $status_option): ?>
+                                    <option value="<?php echo $status_option; ?>" 
+                                        <?php echo (isset($filters['status']) && $filters['status'] == $status_option) ? 'selected' : ''; ?>>
+                                        <?php echo ucfirst($status_option); ?>
+                                    </option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
@@ -1580,7 +1605,7 @@ body {
                         <div class="dropdown-menu" id="columnsDropdown" style="display: none;">
                             <div class="dropdown-header">Show/Hide Columns</div>
                             <?php 
-                            $visibleColumns = ['employee_number', 'name', 'sex', 'rank', 'grade_level', 'state', 'date_of_first_appointment'];
+                            $visibleColumns = ['employee_number', 'name', 'sex', 'rank', 'grade_level', 'state', 'status', 'date_of_first_appointment'];
                             $columnLabels = [
                                 'employee_number' => 'Employee No.',
                                 'name' => 'Name',
@@ -1588,6 +1613,7 @@ body {
                                 'rank' => 'Rank',
                                 'grade_level' => 'Grade Level',
                                 'state' => 'State',
+                                'status' => 'Status',
                                 'date_of_first_appointment' => 'Date of 1st Appt.'
                             ];
                             foreach ($visibleColumns as $col): ?>
@@ -1679,6 +1705,8 @@ body {
                                     <?php endif; ?>
                                 </a>
                             </th>
+                            <!-- ADD STATUS COLUMN HEADER -->
+                            <th class="status-column">Status</th>
                             <th class="date-column">
                                 <?php $sortOrder = ($currentSortBy == 'date_of_first_appointment' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
                                 <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'date_of_first_appointment', 'sort_order' => $sortOrder])); ?>" 
@@ -1742,6 +1770,24 @@ body {
                                     </div>
                                     <?php endif; ?>
                                 </div>
+                            </td>
+                            <!-- ADD STATUS COLUMN DATA -->
+                            <td class="status-column">
+                                <?php
+                                // Define badge classes for different statuses
+                                $badge_classes = [
+                                    'active' => 'badge-success',
+                                    'inactive' => 'badge-warning',
+                                    'retired' => 'badge-dark',
+                                    'draft' => 'badge-light'
+                                ];
+                                
+                                $status = $employee['status'] ?? 'active';
+                                $badge_class = $badge_classes[$status] ?? 'badge-light';
+                                ?>
+                                <span class="badge <?php echo $badge_class; ?>">
+                                    <?php echo ucfirst($status); ?>
+                                </span>
                             </td>
                             <td class="date-column">
                                 <?php if (!empty($employee['date_of_first_appointment'])): ?>
