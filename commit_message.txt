@@ -1,0 +1,34 @@
+fix: Add QSA flag to .htaccess to preserve pagination query parameters
+
+The pagination functionality was broken due to URL rewriting stripping
+query parameters. When users clicked on page 2, 3, etc., the page number
+was lost during Apache's URL rewriting process, causing all requests to
+default to page 1.
+
+Root cause: The .htaccess RewriteRule was missing the QSA (Query String
+Append) flag, which is required to preserve URL parameters like ?page=2
+and ?limit=25 during URL rewriting.
+
+Changes:
+- Add QSA flag to RewriteRule in .htaccess to preserve query strings
+- Update NominalRollController::index() to properly read $_GET parameters
+- Add validation and bounds checking for page and limit parameters
+- Add error logging for debugging pagination issues
+
+Before fix:
+- URL: /admin/nominal-roll?page=2
+- Rewritten to: index.php?url=admin/nominal-roll (page=2 lost)
+- Result: Always showed page 1
+
+After fix:
+- URL: /admin/nominal-roll?page=2
+- Rewritten to: index.php?url=admin/nominal-roll&page=2 (preserved)
+- Result: Correctly shows page 2
+
+Tested:
+- Pagination now works correctly across all pages
+- Filter parameters preserved in pagination links
+- Limit dropdown (10, 25, 50, 100) working
+- Search and filter functionality unaffected
+
+Fixes: #[ISSUE_NUMBER]
