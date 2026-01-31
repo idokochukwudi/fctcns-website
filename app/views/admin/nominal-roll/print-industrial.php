@@ -29,6 +29,25 @@ if (!empty($employee['date_of_first_appointment'])) {
     $today = new DateTime();
     $serviceYears = $firstAppointment->diff($today)->y;
 }
+
+// STATUS FIX: Define status for print view
+$status = $employee['status'] ?? 'active';
+$status_text = [
+    'active' => 'ACTIVE',
+    'inactive' => 'INACTIVE',
+    'retired' => 'RETIRED',
+    'draft' => 'DRAFT'
+];
+$display_text = $status_text[$status] ?? strtoupper($status);
+
+// Status badge colors for print
+$status_colors = [
+    'active' => '#d4edda', // Green
+    'inactive' => '#fff3cd', // Yellow
+    'retired' => '#e2e3e5', // Gray
+    'draft' => '#f8f9fa' // Light
+];
+$status_color = $status_colors[$status] ?? '#e2e3e5';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -211,10 +230,35 @@ if (!empty($employee['date_of_first_appointment'])) {
             border-color: #d6d8db;
         }
         
+        .badge.status {
+            /* Status color will be set inline */
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .badge.yellow {
+            background: #fff3cd;
+            color: #856404;
+            border-color: #ffeaa7;
+        }
+        
+        .badge.gray {
+            background: #e2e3e5;
+            color: #383d41;
+            border-color: #d6d8db;
+        }
+        
+        .badge.light {
+            background: #f8f9fa;
+            color: #495057;
+            border-color: #dee2e6;
+        }
+        
         /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 15px;
             margin-top: 25px;
         }
@@ -298,6 +342,32 @@ if (!empty($employee['date_of_first_appointment'])) {
         
         .info-table td:nth-child(4) {
             width: 30%;
+        }
+        
+        /* Status Highlight */
+        .status-highlight {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px 15px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .status-label {
+            font-weight: bold;
+            color: #333;
+            font-size: 13px;
+        }
+        
+        .status-value {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 20px;
         }
         
         /* Address Boxes */
@@ -506,6 +576,24 @@ if (!empty($employee['date_of_first_appointment'])) {
                     <span class="badge blue">Step: <?php echo htmlspecialchars($employee['step'] ?? 'N/A'); ?></span>
                     <span class="badge green"><?php echo htmlspecialchars($employee['sex'] ?? 'N/A'); ?></span>
                     <span class="badge purple"><?php echo htmlspecialchars($employee['staff_type'] ?? 'N/A'); ?></span>
+                    <!-- FIXED: STATUS BADGE ADDED -->
+                    <span class="badge status" style="background: <?php echo $status_color; ?>; 
+                        color: <?php echo $status === 'active' ? '#155724' : 
+                                     ($status === 'inactive' ? '#856404' : 
+                                     ($status === 'retired' ? '#383d41' : '#495057')); ?>;">
+                        <?php echo $display_text; ?>
+                    </span>
+                </div>
+                
+                <!-- Status Highlight Box -->
+                <div class="status-highlight">
+                    <span class="status-label">Current Employment Status:</span>
+                    <span class="status-value" style="background: <?php echo $status_color; ?>; 
+                        color: <?php echo $status === 'active' ? '#155724' : 
+                                     ($status === 'inactive' ? '#856404' : 
+                                     ($status === 'retired' ? '#383d41' : '#495057')); ?>;">
+                        <?php echo ucfirst($status); ?>
+                    </span>
                 </div>
                 
                 <div class="stats-grid">
@@ -520,6 +608,14 @@ if (!empty($employee['date_of_first_appointment'])) {
                     <div class="stat-card">
                         <span class="stat-label">Age</span>
                         <span class="stat-value"><?php echo $age; ?></span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Status</span>
+                        <span class="stat-value" style="color: <?php echo $status === 'active' ? '#28a745' : 
+                                                                   ($status === 'inactive' ? '#ffc107' : 
+                                                                   ($status === 'retired' ? '#6c757d' : '#adb5bd')); ?>;">
+                            <?php echo $display_text; ?>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -558,6 +654,17 @@ if (!empty($employee['date_of_first_appointment'])) {
                     <td><?php echo htmlspecialchars($employee['geopolitical_zone'] ?? 'N/A'); ?></td>
                     <td>State of Residence:</td>
                     <td><?php echo htmlspecialchars($employee['state_of_residence'] ?? $employee['state'] ?? 'N/A'); ?></td>
+                </tr>
+                <!-- ADDED: STATUS FIELD -->
+                <tr>
+                    <td>Employment Status:</td>
+                    <td colspan="3">
+                        <strong style="color: <?php echo $status === 'active' ? '#28a745' : 
+                                                  ($status === 'inactive' ? '#ffc107' : 
+                                                  ($status === 'retired' ? '#6c757d' : '#adb5bd')); ?>;">
+                            <?php echo ucfirst($status); ?> (<?php echo $display_text; ?>)
+                        </strong>
+                    </td>
                 </tr>
             </table>
             
@@ -604,6 +711,36 @@ if (!empty($employee['date_of_first_appointment'])) {
                     <td><?php echo htmlspecialchars($employee['pf_number'] ?? 'N/A'); ?></td>
                     <td>Staff Category:</td>
                     <td><?php echo htmlspecialchars($employee['staff_type'] ?? 'N/A'); ?></td>
+                </tr>
+                <!-- ADDED: STATUS IN EMPLOYMENT SECTION -->
+                <tr>
+                    <td>Current Status:</td>
+                    <td colspan="3">
+                        <span style="display: inline-block; 
+                                     padding: 3px 10px; 
+                                     border-radius: 3px; 
+                                     background: <?php echo $status_color; ?>; 
+                                     color: <?php echo $status === 'active' ? '#155724' : 
+                                                 ($status === 'inactive' ? '#856404' : 
+                                                 ($status === 'retired' ? '#383d41' : '#495057')); ?>; 
+                                     font-weight: bold; 
+                                     text-transform: uppercase;">
+                            <?php echo $display_text; ?>
+                        </span>
+                        <?php if ($status === 'inactive'): ?>
+                        <span style="color: #856404; margin-left: 10px; font-size: 11px; font-style: italic;">
+                            (Employee currently not active)
+                        </span>
+                        <?php elseif ($status === 'retired'): ?>
+                        <span style="color: #6c757d; margin-left: 10px; font-size: 11px; font-style: italic;">
+                            (Employee retired from service)
+                        </span>
+                        <?php elseif ($status === 'draft'): ?>
+                        <span style="color: #6c757d; margin-left: 10px; font-size: 11px; font-style: italic;">
+                            (Record in draft status - not finalized)
+                        </span>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             </table>
         </div>
@@ -681,6 +818,11 @@ if (!empty($employee['date_of_first_appointment'])) {
                 <div>Generated: <?php echo date('F j, Y H:i:s'); ?></div>
                 <div>Generated by: <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'HR System'); ?></div>
                 <div>Document ID: <?php echo $documentId; ?></div>
+                <div style="font-weight: bold; color: <?php echo $status === 'active' ? '#28a745' : 
+                                                          ($status === 'inactive' ? '#ffc107' : 
+                                                          ($status === 'retired' ? '#6c757d' : '#adb5bd')); ?>;">
+                    Status: <?php echo $display_text; ?>
+                </div>
             </div>
         </div>
     </div>

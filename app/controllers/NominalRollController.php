@@ -740,7 +740,7 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Save new employee - FIXED VERSION
+     * Save new employee - FIXED VERSION WITH CONSISTENT STATUS LOGIC (STEP 4)
      */
     public function store() {
         error_log("=== NOMINAL ROLL STORE METHOD CALLED ===");
@@ -776,11 +776,23 @@ class NominalRollController extends Controller {
             $data = $this->getFormData();
             error_log("Form data parsed: " . print_r($data, true));
             
-            // Handle draft status
+            // ============================================
+            // STEP 4: FIXED STATUS LOGIC FOR STORE METHOD
+            // ============================================
             $isDraft = $this->input('save_as_draft', 0);
             $data['is_draft'] = $isDraft ? 1 : 0;
-            $data['status'] = $isDraft ? 'draft' : 'active';
-            error_log("Draft status: " . ($isDraft ? 'Draft' : 'Active'));
+            
+            // For new records, use 'active' as default unless saving as draft
+            // OR use the status from dropdown if your create form has status selection
+            if ($isDraft) {
+                $data['status'] = 'draft';
+                error_log("Creating new employee: Setting status to 'draft' (save_as_draft checked)");
+            } else {
+                // Check if status is passed from form (if you add status dropdown to create form)
+                $selectedStatus = $this->input('status', 'active');
+                $data['status'] = $selectedStatus;
+                error_log("Creating new employee: Using status from dropdown: " . $selectedStatus);
+            }
             
             // Auto-approve if enabled
             if (!$isDraft && $this->model->getSetting('auto_approve_new', '1') === '1') {
@@ -1273,7 +1285,7 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Update employee record - UPDATED VERSION WITH CONSISTENT QUALIFICATIONS PROCESSING
+     * Update employee record - FIXED VERSION WITH STATUS LOGIC (STEP 2, 5 & 7)
      */
     public function update($id) {
         // Check if user has permission
@@ -1322,6 +1334,20 @@ class NominalRollController extends Controller {
             // Get form data (uses getFormData() which processes qualifications consistently)
             $data = $this->getFormData();
             
+            // ============================================
+            // STEP 5: ADD VALIDATION LOGIC
+            // ============================================
+            error_log("DEBUG update(): Status from getFormData(): " . ($data['status'] ?? 'NOT FOUND'));
+            error_log("DEBUG update(): POST status: " . ($_POST['status'] ?? 'NOT SET'));
+            
+            // Validate status
+            $validStatuses = ['active', 'inactive', 'retired', 'draft'];
+            if (!in_array($data['status'], $validStatuses)) {
+                error_log("ERROR: Invalid status detected: " . $data['status']);
+                $data['status'] = 'active'; // Safe default
+            }
+            // ============================================
+            
             // Log what data we have
             error_log("Form data received (before photo handling):");
             error_log("Additional qualifications JSON: " . ($data['additional_qualifications'] ?? 'NULL'));
@@ -1333,9 +1359,30 @@ class NominalRollController extends Controller {
             error_log("DEBUG: Original POST status field: " . ($_POST['status'] ?? 'NULL'));
             // ==============================================================
             
-            // Handle draft status
+            // ============================================
+            // STEP 2 & 7: FIXED STATUS LOGIC FOR UPDATE METHOD
+            // ============================================
+            $isDraft = $this->input('save_as_draft', 0);
+            error_log("save_as_draft checkbox value: " . ($isDraft ? 'checked' : 'not checked'));
+            
+            // Set is_draft flag
             $data['is_draft'] = $isDraft ? 1 : 0;
-            $data['status'] = $isDraft ? 'draft' : 'active';
+            
+            // Handle status logic according to MVC standards:
+            // 1. If user checks "Save as Draft", status should be 'draft'
+            // 2. If user doesn't check "Save as Draft", use the status from dropdown
+            if ($isDraft) {
+                $data['status'] = 'draft';
+                error_log("Setting status to 'draft' (save_as_draft checked)");
+            } else {
+                // Ensure we have a valid status
+                if (empty($data['status']) || !in_array($data['status'], ['active', 'inactive', 'retired', 'draft'])) {
+                    $data['status'] = 'active'; // Safe default
+                    error_log("Invalid or empty status, defaulting to 'active'");
+                }
+                error_log("Using dropdown status: " . $data['status']);
+            }
+            // === FIXED STATUS LOGIC END ===
             
             // FIX: Updated validation call with proper logic
             $validationData = $data;
@@ -3248,14 +3295,14 @@ class NominalRollController extends Controller {
         // Add UTF-8 BOM for Excel
         fwrite($output, "\xEF\xBB\xBF");
         
-        // Add headers
+        // Headers
         $headers = ['S/N'];
         foreach ($selectedFields as $field) {
             $headers[] = $fieldLabels[$field] ?? ucfirst(str_replace('_', ' ', $field));
         }
         fputcsv($output, $headers);
         
-        // Add data rows
+        // Data rows
         $rowNumber = 1;
         foreach ($data as $row) {
             $row = [$rowNumber++];
@@ -4326,7 +4373,7 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * Get form data from POST - CORRECTED VERSION for additional qualifications WITH STATUS FIELD (STEP 3.4)
+     * Get form data from POST - CORRECTED VERSION with STEP 3 enhancements
      */
     private function getFormData($sanitize = false) {
         // Get all form fields
@@ -4397,6 +4444,23 @@ class NominalRollController extends Controller {
         ];
         
         // ========================================
+        // STEP 3: ENHANCED DEBUGGING FOR DRAFT LOGIC
+        // ========================================
+        $isDraft = $this->input('save_as_draft', 0);
+        error_log("getFormData(): save_as_draft = " . ($isDraft ? 'YES' : 'NO'));
+        
+        if ($isDraft) {
+            $data['is_draft'] = 1;
+            $data['status'] = 'draft';
+            error_log("getFormData(): Setting status to 'draft' because save_as_draft is checked");
+        } else {
+            $data['is_draft'] = 0;
+            // Status is already set from the form input above (line: $data['status'] = $this->input('status', 'active');)
+            $selectedStatus = $this->input('status', 'active');
+            error_log("getFormData(): Using dropdown status: " . $selectedStatus);
+        }
+        
+        // ========================================
         // CORRECTED: Process additional qualifications - BOTH CREATE AND UPDATE USE THIS SAME LOGIC
         // ========================================
         $additionalQualifications = [];
@@ -4453,16 +4517,6 @@ class NominalRollController extends Controller {
         // Handle other PFA visibility
         if ($data['pension_fund_admin'] !== 'Other') {
             $data['other_pension_fund_admin'] = null;
-        }
-        
-        // Handle draft status - override if draft is selected
-        $isDraft = $this->input('save_as_draft', 0);
-        if ($isDraft) {
-            $data['is_draft'] = 1;
-            $data['status'] = 'draft';
-        } else {
-            $data['is_draft'] = 0;
-            // Status is already set from the form input above
         }
         
         if ($sanitize) {

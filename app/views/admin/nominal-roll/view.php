@@ -9,6 +9,7 @@
  * 3. Simplified and fixed delete modal functionality
  * 4. Fixed form submission with proper POST request
  * 5. Removed unnecessary complexity
+ * 6. FIXED STATUS BADGES - Now shows all statuses (active, inactive, retired, draft) from database
  */
 
 // First, include the session class to generate proper token
@@ -24,6 +25,23 @@ $csrf_token = Session::generateCSRFTokenMulti();
 
 // Get base URL
 $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
+
+// STATUS FIX: Define status badge logic once to use throughout the file
+$status = $employee['status'] ?? 'active';
+$status_badge_class = [
+    'active' => 'badge-success',
+    'inactive' => 'badge-warning',
+    'retired' => 'badge-secondary',
+    'draft' => 'badge-light'
+];
+$status_text = [
+    'active' => 'ACTIVE',
+    'inactive' => 'INACTIVE',
+    'retired' => 'RETIRED',
+    'draft' => 'DRAFT'
+];
+$badge_class = $status_badge_class[$status] ?? 'badge-light';
+$display_text = $status_text[$status] ?? strtoupper($status);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -911,6 +929,13 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
     </style>
 </head>
 <body>
+    <!-- Debug: Check if status is in employee data -->
+    <?php
+    error_log("View Debug - Employee ID: " . ($employee['id'] ?? 'N/A'));
+    error_log("View Debug - Employee Status: " . ($employee['status'] ?? 'NOT SET'));
+    error_log("View Debug - Full Employee Array: " . print_r($employee, true));
+    ?>
+
     <div class="view-employee-container">
         <!-- Page Header -->
         <div class="page-header">
@@ -929,8 +954,10 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
                             <i class="fas fa-id-badge"></i> PF: <?php echo htmlspecialchars($employee['pf_number']); ?>
                         </span>
                         <?php endif; ?>
-                        <span class="badge badge-light">
-                            <?php echo !empty($employee['status']) && $employee['status'] === 'draft' ? 'DRAFT' : 'ACTIVE'; ?>
+                        
+                        <!-- FIXED STATUS BADGE -->
+                        <span class="badge <?php echo $badge_class; ?>">
+                            <i class="fas fa-circle"></i> <?php echo $display_text; ?>
                         </span>
                     </div>
                 </div>
@@ -1009,6 +1036,15 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
                         <span><i class="fas fa-venus-mars"></i> <?php echo htmlspecialchars($employee['sex'] ?? 'N/A'); ?></span>
                         <span><i class="fas fa-birthday-cake"></i> <?php echo !empty($employee['date_of_birth']) ? date('M d, Y', strtotime($employee['date_of_birth'])) : 'N/A'; ?></span>
                         <span><i class="fas fa-ring"></i> <?php echo htmlspecialchars($employee['marital_status'] ?? 'N/A'); ?></span>
+                        <!-- ADDED STATUS HERE -->
+                        <span>
+                            <i class="fas fa-circle <?php 
+                                echo $status === 'active' ? 'text-success' : 
+                                     ($status === 'inactive' ? 'text-warning' : 
+                                     ($status === 'retired' ? 'text-secondary' : 'text-muted')); 
+                            ?>"></i> 
+                            <?php echo ucfirst($status); ?>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -1103,6 +1139,15 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
                             <div class="info-item">
                                 <label>Religion</label>
                                 <p class="value"><?php echo htmlspecialchars($employee['religion'] ?? 'N/A'); ?></p>
+                            </div>
+                            <!-- ADDED STATUS FIELD -->
+                            <div class="info-item">
+                                <label>Status</label>
+                                <p class="value">
+                                    <span class="badge <?php echo $badge_class; ?>">
+                                        <?php echo $display_text; ?>
+                                    </span>
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -1357,7 +1402,24 @@ $baseUrl = isset($baseUrl) ? $baseUrl : BASE_URL;
                                         </div>
                                         <div class="timeline-body">
                                             <?php if (!empty($audit['description'])): ?>
-                                            <p class="details"><?php echo htmlspecialchars($audit['description']); ?></p>
+                                            <p class="details">
+                                                <?php if (($audit['action'] ?? '') === 'status_updated' && !empty($audit['description'])): ?>
+                                                <i class="fas fa-exchange-alt"></i> 
+                                                Status changed: 
+                                                <?php 
+                                                // Extract status change from description
+                                                if (preg_match('/from (\w+) to (\w+)/i', $audit['description'], $matches)) {
+                                                    echo '<span class="badge badge-light">' . htmlspecialchars(ucfirst($matches[1])) . '</span> ';
+                                                    echo '<i class="fas fa-arrow-right text-muted"></i> ';
+                                                    echo '<span class="badge badge-primary">' . htmlspecialchars(ucfirst($matches[2])) . '</span>';
+                                                } else {
+                                                    echo htmlspecialchars($audit['description']);
+                                                }
+                                                ?>
+                                                <?php else: ?>
+                                                <?php echo htmlspecialchars($audit['description']); ?>
+                                                <?php endif; ?>
+                                            </p>
                                             <?php endif; ?>
                                             <?php if (!empty($audit['ip_address'])): ?>
                                             <small class="text-muted">IP: <?php echo htmlspecialchars($audit['ip_address']); ?></small>
