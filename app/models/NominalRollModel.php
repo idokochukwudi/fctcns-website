@@ -511,6 +511,26 @@ class NominalRollModel {
      * FIXED: rank column already has backticks in this method
      */
     public function updateEmployee($id, $data, $userId = null) {
+        error_log("=== STEP 1: SIMPLE DEBUG ===");
+    
+        // 1. What database are we connected to?
+        try {
+            $dbName = $this->db->query("SELECT DATABASE()")->fetchColumn();
+            error_log("Connected to database: " . $dbName);
+        } catch (Exception $e) {
+            error_log("Cannot get database name: " . $e->getMessage());
+        }
+        
+        // 2. What table are we trying to update?
+        error_log("Table constant value: " . self::TABLE_EMPLOYEES);
+        
+        // 3. Does ippis_number exist in our $data array?
+        if (isset($data['ippis_number'])) {
+            error_log("✓ ippis_number IS in data array. Value: '" . $data['ippis_number'] . "'");
+        } else {
+            error_log("✗ ippis_number is NOT in data array");
+            error_log("Data array keys: " . implode(', ', array_keys($data)));
+        }
         error_log("=== MODEL updateEmployee() called ===");
         error_log("Employee ID: $id");
         error_log("Data to update: " . print_r($data, true));
