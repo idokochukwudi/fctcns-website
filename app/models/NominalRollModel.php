@@ -507,50 +507,16 @@ class NominalRollModel {
     }
     
     /**
-     * Update employee record - DEBUG VERSION WITH EXTENSIVE LOGGING
-     * FIXED: rank column already has backticks in this method
+     * Update employee record
      */
     public function updateEmployee($id, $data, $userId = null) {
-        error_log("=== STEP 1: SIMPLE DEBUG ===");
-    
-        // 1. What database are we connected to?
         try {
-            $dbName = $this->db->query("SELECT DATABASE()")->fetchColumn();
-            error_log("Connected to database: " . $dbName);
-        } catch (Exception $e) {
-            error_log("Cannot get database name: " . $e->getMessage());
-        }
-        
-        // 2. What table are we trying to update?
-        error_log("Table constant value: " . self::TABLE_EMPLOYEES);
-        
-        // 3. Does ippis_number exist in our $data array?
-        if (isset($data['ippis_number'])) {
-            error_log("✓ ippis_number IS in data array. Value: '" . $data['ippis_number'] . "'");
-        } else {
-            error_log("✗ ippis_number is NOT in data array");
-            error_log("Data array keys: " . implode(', ', array_keys($data)));
-        }
-        error_log("=== MODEL updateEmployee() called ===");
-        error_log("Employee ID: $id");
-        error_log("Data to update: " . print_r($data, true));
-        error_log("User ID: " . $userId);
-        
-        try {
-            error_log("=== Step 1: Getting old data for logging ===");
             // First, get the old data for logging
             $oldData = $this->getEmployee($id);
-            error_log("Old data retrieved: " . ($oldData ? "Yes" : "No"));
-            if ($oldData) {
-                error_log("Old employee number: " . ($oldData['employee_number'] ?? 'N/A'));
-                error_log("Old surname: " . ($oldData['surname'] ?? 'N/A'));
-            } else {
-                error_log("ERROR: Could not find employee with ID: $id");
+            if (!$oldData) {
                 throw new Exception("Employee not found with ID: $id");
             }
             
-            error_log("=== Step 2: Building SQL query ===");
-            // FIXED: rank already has backticks in this query
             $sql = "UPDATE " . self::TABLE_EMPLOYEES . " SET
                     employee_number = :employee_number,
                     ippis_number = :ippis_number,
@@ -628,13 +594,8 @@ class NominalRollModel {
                     updated_at = NOW()
                     WHERE id = :id";
             
-            error_log("SQL Query: " . $sql);
-            
-            error_log("=== Step 3: Preparing SQL statement ===");
             $stmt = $this->db->prepare($sql);
-            error_log("Statement prepared: " . ($stmt ? "Yes" : "No"));
             
-            error_log("=== Step 4: Building parameters array ===");
             $params = [
                 ':id' => $id,
                 ':employee_number' => $data['employee_number'] ?? '',
@@ -712,94 +673,25 @@ class NominalRollModel {
                 ':updated_by' => $userId
             ];
             
-            error_log("Parameters count: " . count($params));
-            error_log("Key parameters:");
-            error_log("  - Employee Number: " . ($params[':employee_number'] ?? 'NULL'));
-            error_log("  - Surname: " . ($params[':surname'] ?? 'NULL'));
-            error_log("  - First Name: " . ($params[':first_name'] ?? 'NULL'));
-            error_log("  - Rank: " . ($params[':rank'] ?? 'NULL'));
-            error_log("  - Passport Photo: " . ($params[':passport_photo'] ?? 'NULL'));
-            error_log("  - Additional Qualifications: " . ($params[':additional_qualifications'] ?? 'NULL'));
-            error_log("  - IPPIS Number: " . ($params[':ippis_number'] ?? 'NULL'));
-            error_log("  - NMCN License: " . ($params[':nmcn_license_number'] ?? 'NULL'));
-            error_log("  - TRCN License: " . ($params[':trcn_license_number'] ?? 'NULL'));
-            
-            error_log("=== Step 5: Executing update ===");
             $result = $stmt->execute($params);
-            error_log("Execute result: " . ($result ? 'Success' : 'Failed'));
             
             if (!$result) {
-                error_log("=== SQL ERROR DETAILS ===");
-                error_log("PDO Error Info: " . print_r($stmt->errorInfo(), true));
-                error_log("PDO Error Code: " . $stmt->errorCode());
-                
-                // Try to get more specific error
                 $errorInfo = $stmt->errorInfo();
-                if (isset($errorInfo[2])) {
-                    error_log("SQL Error Message: " . $errorInfo[2]);
-                }
-                
-                // Check for specific common errors
-                if (strpos($errorInfo[2] ?? '', 'Column not found') !== false) {
-                    error_log("ERROR TYPE: Column does not exist in database");
-                } elseif (strpos($errorInfo[2] ?? '', 'Duplicate entry') !== false) {
-                    error_log("ERROR TYPE: Duplicate entry (unique constraint violation)");
-                } elseif (strpos($errorInfo[2] ?? '', 'Data too long') !== false) {
-                    error_log("ERROR TYPE: Data too long for column");
-                }
-                
                 throw new Exception("SQL Update failed: " . ($errorInfo[2] ?? 'Unknown error'));
             }
             
-            error_log("=== Step 6: Getting updated data ===");
-            // Get the new data for logging
             $newData = $this->getEmployee($id);
-            error_log("New data retrieved: " . ($newData ? "Yes" : "No"));
             
-            error_log("=== Step 7: Logging activity ===");
-            // Log the activity
             if ($result) {
                 $this->logActivity($id, $userId, 'employee_updated', 'Employee record updated', $oldData, $newData);
-                error_log("Activity logged successfully");
-            } else {
-                error_log("Warning: Activity not logged (update failed)");
             }
-            
-            error_log("=== Step 8: Return result ===");
-            error_log("Returning result: " . ($result ? 'TRUE' : 'FALSE'));
-            error_log("=== MODEL updateEmployee() COMPLETE ===");
             
             return $result;
             
         } catch (PDOException $e) {
-            error_log("=== MODEL updateEmployee PDOException ===");
-            error_log("PDOException Message: " . $e->getMessage());
-            error_log("PDOException Code: " . $e->getCode());
-            error_log("PDOException File: " . $e->getFile() . ":" . $e->getLine());
-            error_log("PDOException Trace: " . $e->getTraceAsString());
-            
-            if (isset($e->errorInfo)) {
-                error_log("PDO Error Info: " . print_r($e->errorInfo, true));
-                error_log("SQLSTATE: " . ($e->errorInfo[0] ?? 'N/A'));
-                error_log("Driver Error Code: " . ($e->errorInfo[1] ?? 'N/A'));
-                error_log("Driver Error Message: " . ($e->errorInfo[2] ?? 'N/A'));
-            }
-            
-            // Re-throw with more context
             throw new Exception("Database error in updateEmployee: " . $e->getMessage());
-            
-        } catch (Exception $e) {
-            error_log("=== MODEL updateEmployee General Exception ===");
-            error_log("Exception Message: " . $e->getMessage());
-            error_log("Exception Code: " . $e->getCode());
-            error_log("Exception File: " . $e->getFile() . ":" . $e->getLine());
-            error_log("Exception Trace: " . $e->getTraceAsString());
-            
-            // Re-throw
-            throw $e;
         }
     }
-    
     /**
      * Update employee status
      */
