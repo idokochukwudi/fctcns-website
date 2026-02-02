@@ -34,7 +34,7 @@ class VerificationController extends Controller {
     }
     
     /**
-     * Verify employee via QR code - PUBLIC ACCESS
+     * FIXED: Verify employee via QR code - PUBLIC ACCESS
      */
     public function verifyEmployee($id) {
         try {
@@ -51,12 +51,32 @@ class VerificationController extends Controller {
             $verifierName = $_GET['name'] ?? '';
             $verifierNotes = $_GET['notes'] ?? '';
             
+            // FIXED: Updated validation for FCTCNS0001 format
+            $isValid = false;
+            $employeeNumber = $employee['employee_number'] ?? '';
+            
+            if (!empty($documentRef) && !empty($employeeNumber)) {
+                // Check if document reference starts with employee number
+                if (strpos($documentRef, $employeeNumber) === 0) {
+                    $isValid = true;
+                }
+                // Also accept just the employee number
+                elseif ($documentRef === $employeeNumber) {
+                    $isValid = true;
+                }
+                // For backward compatibility, also check EMP- format
+                elseif (strpos($documentRef, 'EMP-' . $employee['id']) === 0) {
+                    $isValid = true;
+                }
+            }
+            
             // Prepare verification data
             $verificationData = [
                 'employee' => $employee,
                 'documentRef' => $documentRef,
-                'expectedRef' => 'EMP-' . $employee['id'] . '-' . date('Ymd', strtotime($employee['updated_at'] ?? 'now')),
-                'isValid' => strpos($documentRef, 'EMP-' . $employee['id']) === 0,
+                'expectedRef' => $employeeNumber . '-' . 
+                    date('Ymd', strtotime($employee['updated_at'] ?? 'now')),
+                'isValid' => $isValid,
                 'verificationDate' => date('Y-m-d H:i:s'),
                 'verificationId' => uniqid('VER-'),
                 'ipAddress' => $_SERVER['REMOTE_ADDR'],
@@ -79,20 +99,36 @@ class VerificationController extends Controller {
     }
     
     /**
-     * Verify document by reference
+     * FIXED: Verify document by reference
      */
     public function verifyDocument($ref) {
         try {
-            // Extract employee ID from document reference
-            $parts = explode('-', $ref);
-            $employeeId = isset($parts[1]) ? $parts[1] : null;
+            // Try to extract employee ID from different formats
             
-            if (!$employeeId) {
-                return $this->renderVerificationError('Invalid document reference format.');
+            // Format 1: FCTCNS0001-20260202
+            if (preg_match('/^FCTCNS\d+/', $ref)) {
+                $parts = explode('-', $ref);
+                $employeePrefix = $parts[0]; // FCTCNS0001
+                
+                // Find employee by employee_number
+                $employee = $this->model->getEmployeeByNumber($employeePrefix);
+                
+                if ($employee) {
+                    // Redirect to employee verification
+                    $this->redirect('/verify/employee/' . $employee['id'] . '?ref=' . urlencode($ref));
+                    return;
+                }
             }
             
-            // Redirect to employee verification
-            $this->redirect('/verify/employee/' . $employeeId . '?ref=' . urlencode($ref));
+            // Format 2: EMP-45-20260202 (old format)
+            $parts = explode('-', $ref);
+            if (count($parts) >= 2 && $parts[0] === 'EMP') {
+                $employeeId = $parts[1];
+                $this->redirect('/verify/employee/' . $employeeId . '?ref=' . urlencode($ref));
+                return;
+            }
+            
+            return $this->renderVerificationError('Invalid document reference format.');
             
         } catch (Exception $e) {
             error_log("Document verification error: " . $e->getMessage());
