@@ -1648,7 +1648,7 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * Verify employee via QR code - Shows nice confirmation
+     * DEBUG VERSION: Verify employee via QR code
      */
     public function verifyEmployee($id) {
         try {
@@ -1656,7 +1656,6 @@ class NominalRollController extends Controller {
             $employee = $this->model->getEmployee($id);
             
             if (!$employee) {
-                // Show error page
                 $this->renderVerificationError('Employee record not found or has been deleted.');
                 return;
             }
@@ -1666,13 +1665,45 @@ class NominalRollController extends Controller {
             $verifierName = $_GET['name'] ?? '';
             $verifierNotes = $_GET['notes'] ?? '';
             
-            // Prepare verification data with license status
+            // DEBUG: Log everything
+            error_log("=== VERIFICATION DEBUG START ===");
+            error_log("Employee ID: " . $id);
+            error_log("Employee Number: " . ($employee['employee_number'] ?? 'NULL'));
+            error_log("Document Ref from URL: " . $documentRef);
+            error_log("Employee Status: " . ($employee['status'] ?? 'NULL'));
+            error_log("is_draft: " . ($employee['is_draft'] ?? 'NULL'));
+            
+            // Check 1: Basic validation
+            $check1 = false;
+            if (!empty($documentRef) && !empty($employee['employee_number'])) {
+                $check1 = strpos($documentRef, $employee['employee_number']) === 0;
+                error_log("Check 1 (strpos): " . ($check1 ? 'PASS' : 'FAIL'));
+                error_log("strpos position: " . strpos($documentRef, $employee['employee_number']));
+                error_log("DocumentRef: " . $documentRef);
+                error_log("Employee Number: " . $employee['employee_number']);
+            } else {
+                error_log("Check 1: Empty documentRef or employee_number");
+            }
+            
+            // Check 2: Employee status
+            $check2 = ($employee['status'] ?? '') === 'active';
+            error_log("Check 2 (status active): " . ($check2 ? 'PASS' : 'FAIL'));
+            
+            // Check 3: Not draft
+            $check3 = ($employee['is_draft'] ?? 0) == 0;
+            error_log("Check 3 (not draft): " . ($check3 ? 'PASS' : 'FAIL'));
+            
+            $isValid = $check1 && $check2 && $check3;
+            error_log("Final isValid: " . ($isValid ? 'TRUE' : 'FALSE'));
+            error_log("=== VERIFICATION DEBUG END ===");
+            
+            // Prepare verification data
             $verificationData = [
                 'employee' => $employee,
                 'documentRef' => $documentRef,
                 'expectedRef' => $employee['employee_number'] . '-' . 
                     date('Ymd', strtotime($employee['updated_at'] ?? 'now')),
-                'isValid' => strpos($documentRef, $employee['employee_number']) === 0,
+                'isValid' => $isValid,
                 'verificationDate' => date('Y-m-d H:i:s'),
                 'verificationId' => uniqid('VER-'),
                 'ipAddress' => $_SERVER['REMOTE_ADDR'],
@@ -1680,7 +1711,6 @@ class NominalRollController extends Controller {
                 'verifierName' => $verifierName,
                 'verifierNotes' => $verifierNotes,
                 'baseUrl' => $this->data['baseUrl'] ?? BASE_URL,
-                // Add license status data
                 'licenseStatus' => $this->getLicenseStatus($employee)
             ];
             
@@ -1695,7 +1725,231 @@ class NominalRollController extends Controller {
             $this->renderVerificationError('An error occurred during verification.');
         }
     }
+    /**
+     * Step 1: Debug QR code verification
+     * Add this method to your NominalRollController class
+     */
+    public function debugVerification() {
+        // Only allow access to admins for security
+        if (($_SESSION['user_role'] ?? '') !== 'admin') {
+            echo "Access denied. Admin only.";
+            exit;
+        }
+        
+        // Get employee ID from GET or use a default
+        $employeeId = $_GET['employee_id'] ?? 45; // Default to ID 45 (FCTCNS0001)
+        
+        // Get employee data
+        $employee = $this->model->getEmployee($employeeId);
+        
+        if (!$employee) {
+            echo "<h2>Error: Employee not found with ID {$employeeId}</h2>";
+            exit;
+        }
+        
+        echo "<!DOCTYPE html>
+        <html>
+        <head>
+            <title>QR Verification Debug</title>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                .debug-box { background: #f8f9fa; padding: 15px; margin: 15px 0; border-left: 4px solid #007bff; }
+                .test-link { display: block; padding: 10px; margin: 5px 0; background: #e9ecef; border: 1px solid #ddd; text-decoration: none; color: #0066cc; }
+                .test-link:hover { background: #d1ecf1; }
+                .success { color: #28a745; }
+                .error { color: #dc3545; }
+                pre { background: #f4f4f4; padding: 10px; border: 1px solid #ddd; }
+            </style>
+        </head>
+        <body>
+            <h1>QR Verification Debug Tool</h1>";
+        
+        echo "<div class='debug-box'>
+                <h3>Employee Information</h3>
+                <p><strong>ID:</strong> " . htmlspecialchars($employee['id']) . "</p>
+                <p><strong>Employee Number:</strong> " . htmlspecialchars($employee['employee_number']) . "</p>
+                <p><strong>Name:</strong> " . htmlspecialchars($employee['surname'] . ', ' . $employee['first_name']) . "</p>
+                <p><strong>Updated At:</strong> " . htmlspecialchars($employee['updated_at']) . "</p>
+                <p><strong>Status:</strong> " . htmlspecialchars($employee['status']) . "</p>
+            </div>";
+        
+        // Generate test URLs
+        $baseUrl = $this->data['baseUrl'] ?? BASE_URL;
+        
+        // Format 1: Current format from print view
+        $docId = $employee['employee_number'] . '-' . date('Ymd', strtotime($employee['updated_at'] ?? 'now'));
+        $url1 = $baseUrl . "/verify/employee/{$employeeId}?ref=" . urlencode($docId);
+        
+        // Format 2: Just employee number
+        $url2 = $baseUrl . "/verify/employee/{$employeeId}?ref=" . urlencode($employee['employee_number']);
+        
+        // Format 3: Employee number + today's date
+        $url3 = $baseUrl . "/verify/employee/{$employeeId}?ref=" . urlencode($employee['employee_number'] . '-' . date('Ymd'));
+        
+        echo "<div class='debug-box'>
+                <h3>Test Links (Click to test)</h3>
+                <p>Click each link to see if verification passes.</p>
+                
+                <a href='{$url1}' class='test-link' target='_blank'>
+                    <strong>Test 1:</strong> Current format from print view<br>
+                    <small>Reference: {$docId}</small>
+                </a>
+                
+                <a href='{$url2}' class='test-link' target='_blank'>
+                    <strong>Test 2:</strong> Just employee number<br>
+                    <small>Reference: " . htmlspecialchars($employee['employee_number']) . "</small>
+                </a>
+                
+                <a href='{$url3}' class='test-link' target='_blank'>
+                    <strong>Test 3:</strong> Employee number + today's date<br>
+                    <small>Reference: " . htmlspecialchars($employee['employee_number'] . '-' . date('Ymd')) . "</small>
+                </a>
+            </div>";
+        
+        // Show what verification expects
+        echo "<div class='debug-box'>
+                <h3>What Verification System Expects</h3>
+                <p><strong>Verification logic check:</strong> <code>strpos(\$documentRef, \$employee['employee_number']) === 0</code></p>
+                <p>This means the document reference must START with: <strong>" . htmlspecialchars($employee['employee_number']) . "</strong></p>
+                <p><strong>Expected result:</strong> Position 0 (true) if it starts with employee number, false otherwise.</p>
+            </div>";
+        
+        // Debug verification logic
+        echo "<div class='debug-box'>
+                <h3>Manual Verification Test</h3>
+                <p>Try different references to see what passes:</p>
+                
+                <form method='get' action='" . $baseUrl . "/verify/employee/{$employeeId}' target='_blank'>
+                    <label>Enter document reference to test:</label><br>
+                    <input type='text' name='ref' value='{$docId}' style='width: 300px; padding: 5px;'>
+                    <button type='submit'>Test This Reference</button>
+                </form>
+                
+                <p><small>Examples to try: 
+                    <code>" . htmlspecialchars($employee['employee_number']) . "-20240203</code>, 
+                    <code>" . htmlspecialchars($employee['employee_number']) . "</code>, 
+                    <code>EMP-{$employeeId}</code>
+                </small></p>
+            </div>";
+        
+        // Display current print view variables
+        echo "<div class='debug-box'>
+                <h3>Current Print View Variables</h3>
+                <pre>";
+        echo "Employee ID: " . $employee['id'] . "\n";
+        echo "Employee Number: " . $employee['employee_number'] . "\n";
+        echo "Updated At: " . $employee['updated_at'] . "\n";
+        echo "Generated Document ID: " . $docId . "\n";
+        echo "Date from updated_at: " . date('Ymd', strtotime($employee['updated_at'])) . "\n";
+        echo "Today's date: " . date('Ymd') . "\n";
+        echo "Verification URL: " . htmlspecialchars($url1) . "\n";
+        echo "</pre>
+            </div>";
+        
+        echo "<div class='debug-box'>
+                <h3>Instructions</h3>
+                <ol>
+                    <li>Click on each test link above</li>
+                    <li>Note which ones show 'Verified Successfully' vs 'Verification Failed'</li>
+                    <li>Compare with what QR codes on your printed documents contain</li>
+                    <li>Report back with which formats work</li>
+                </ol>
+            </div>";
+        
+        echo "</body></html>";
+        exit;
+    }
 
+    /**
+     * Debug verification with detailed output
+     * Add this method to your NominalRollController
+     */
+    public function debugVerificationDetailed() {
+        // Allow only admin
+        if (($_SESSION['user_role'] ?? '') !== 'admin') {
+            echo "Access denied";
+            exit;
+        }
+        
+        $employeeId = $_GET['employee_id'] ?? 45;
+        $employee = $this->model->getEmployee($employeeId);
+        
+        if (!$employee) {
+            echo "Employee not found";
+            exit;
+        }
+        
+        echo "<!DOCTYPE html>
+        <html>
+        <head>
+            <title>Verification Logic Debug</title>
+            <style>
+                body { font-family: monospace; font-size: 14px; }
+                pre { background: #f4f4f4; padding: 10px; margin: 10px 0; border: 1px solid #ddd; }
+                .pass { color: green; font-weight: bold; }
+                .fail { color: red; font-weight: bold; }
+            </style>
+        </head>
+        <body>
+            <h1>Verification Logic Debug</h1>";
+        
+        // Simulate the verification logic
+        $documentRef = $employee['employee_number'] . '-20260202'; // Today's date
+        $expectedRef = $employee['employee_number'] . '-' . date('Ymd', strtotime($employee['updated_at'] ?? 'now'));
+        
+        echo "<pre>";
+        echo "=== VERIFICATION LOGIC TEST ===\n";
+        echo "Employee Number: " . ($employee['employee_number'] ?? 'NULL') . "\n";
+        echo "Document Reference: " . $documentRef . "\n";
+        echo "Expected Reference: " . $expectedRef . "\n";
+        echo "Updated At: " . ($employee['updated_at'] ?? 'NULL') . "\n";
+        echo "\n";
+        echo "=== VALIDATION CHECKS ===\n";
+        
+        // Check 1: strpos test
+        $check1 = strpos($documentRef, $employee['employee_number']) === 0;
+        echo "Check 1 - strpos(\$documentRef, \$employee['employee_number']) === 0\n";
+        echo "  Result: " . ($check1 ? "PASS" : "FAIL") . "\n";
+        echo "  strpos position: " . strpos($documentRef, $employee['employee_number']) . "\n";
+        echo "\n";
+        
+        // Check 2: Employee status
+        $check2 = ($employee['status'] ?? '') === 'active';
+        echo "Check 2 - \$employee['status'] === 'active'\n";
+        echo "  Result: " . ($check2 ? "PASS" : "FAIL") . "\n";
+        echo "  Status: " . ($employee['status'] ?? 'NULL') . "\n";
+        echo "\n";
+        
+        // Check 3: Employee exists and not draft
+        $check3 = !empty($employee) && ($employee['is_draft'] ?? 0) == 0;
+        echo "Check 3 - Employee exists and not draft\n";
+        echo "  Result: " . ($check3 ? "PASS" : "FAIL") . "\n";
+        echo "  is_draft: " . ($employee['is_draft'] ?? 'NULL') . "\n";
+        echo "\n";
+        
+        // Final result
+        $finalResult = $check1 && $check2 && $check3;
+        echo "=== FINAL RESULT ===\n";
+        echo "All checks must pass: " . ($finalResult ? "<span class='pass'>VERIFICATION PASSES</span>" : "<span class='fail'>VERIFICATION FAILS</span>") . "\n";
+        echo "Failing checks: ";
+        if (!$check1) echo "[Check 1] ";
+        if (!$check2) echo "[Check 2] ";
+        if (!$check3) echo "[Check 3] ";
+        echo "\n";
+        
+        echo "\n=== RAW EMPLOYEE DATA ===\n";
+        print_r($employee);
+        
+        echo "</pre>";
+        
+        // Test the actual verification
+        echo "<h2>Actual Verification Test</h2>";
+        $testUrl = ($this->data['baseUrl'] ?? BASE_URL) . "/verify/employee/{$employeeId}?ref=" . urlencode($documentRef);
+        echo "<iframe src='{$testUrl}' width='100%' height='500' style='border: 1px solid #ccc;'></iframe>";
+        
+        echo "</body></html>";
+        exit;
+    }
     /**
      * Verify document by reference
      */

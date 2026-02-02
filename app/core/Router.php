@@ -183,7 +183,9 @@ class Router {
         // PDF Export Routes - ADDED
         $this->get('/admin/nominal-roll/export/pdf/(:num)', 'NominalRollController@exportPdf/$1');
         $this->get('/admin/nominal-roll/export/pdf', 'NominalRollController@exportPdf');
-        
+        // Add this line to your admin routes
+        $this->get('/admin/nominal-roll/debug-verification', 'NominalRollController@debugVerification');
+        $this->get('/admin/nominal-roll/debug-verification-detailed', 'NominalRollController@debugVerificationDetailed');
         // PRINT ROUTES - ADDED
         // Standard print routes
         $this->get('/admin/nominal-roll/print/{id}', 'NominalRollController@printView');
