@@ -97,6 +97,7 @@ class NominalRollModel {
             // Map data to database columns - FIXED: Added backticks around 'rank'
             $columnMapping = [
                 'employee_number' => 'employee_number',
+                'ippis_number' => 'ippis_number',
                 'surname' => 'surname',
                 'first_name' => 'first_name',
                 'middle_name' => 'middle_name',
@@ -158,6 +159,14 @@ class NominalRollModel {
                 'next_of_kin_phone' => 'next_of_kin_phone',
                 'next_of_kin_address' => 'next_of_kin_address',
                 'next_of_kin_relationship' => 'next_of_kin_relationship',
+                'nmcn_license_number' => 'nmcn_license_number',
+                'nmcn_issued_date' => 'nmcn_issued_date',
+                'nmcn_expiry_date' => 'nmcn_expiry_date',
+                'nmcn_status' => 'nmcn_status',
+                'trcn_license_number' => 'trcn_license_number',
+                'trcn_issued_date' => 'trcn_issued_date',
+                'trcn_expiry_date' => 'trcn_expiry_date',
+                'trcn_status' => 'trcn_status',
                 'passport_photo' => 'passport_photo',
                 'status' => 'status',
                 'is_draft' => 'is_draft',
@@ -230,6 +239,7 @@ class NominalRollModel {
             // FIXED: rank already has backticks in this query
             $sql = "INSERT INTO " . self::TABLE_EMPLOYEES . " SET
                     employee_number = :employee_number,
+                    ippis_number = :ippis_number,
                     surname = :surname,
                     first_name = :first_name,
                     middle_name = :middle_name,
@@ -289,6 +299,14 @@ class NominalRollModel {
                     next_of_kin_phone = :next_of_kin_phone,
                     next_of_kin_relationship = :next_of_kin_relationship,
                     next_of_kin_address = :next_of_kin_address,
+                    nmcn_license_number = :nmcn_license_number,
+                    nmcn_issued_date = :nmcn_issued_date,
+                    nmcn_expiry_date = :nmcn_expiry_date,
+                    nmcn_status = :nmcn_status,
+                    trcn_license_number = :trcn_license_number,
+                    trcn_issued_date = :trcn_issued_date,
+                    trcn_expiry_date = :trcn_expiry_date,
+                    trcn_status = :trcn_status,
                     passport_photo = :passport_photo,
                     is_draft = :is_draft,
                     status = :status,
@@ -302,6 +320,7 @@ class NominalRollModel {
             
             $params = [
                 ':employee_number' => $data['employee_number'] ?? '',
+                ':ippis_number' => $data['ippis_number'] ?? null,
                 ':surname' => $data['surname'] ?? '',
                 ':first_name' => $data['first_name'] ?? '',
                 ':middle_name' => $data['middle_name'] ?? null,
@@ -361,6 +380,14 @@ class NominalRollModel {
                 ':next_of_kin_phone' => $data['next_of_kin_phone'] ?? null,
                 ':next_of_kin_relationship' => $data['next_of_kin_relationship'] ?? null,
                 ':next_of_kin_address' => $data['next_of_kin_address'] ?? null,
+                ':nmcn_license_number' => $data['nmcn_license_number'] ?? null,
+                ':nmcn_issued_date' => !empty($data['nmcn_issued_date']) ? $data['nmcn_issued_date'] : null,
+                ':nmcn_expiry_date' => !empty($data['nmcn_expiry_date']) ? $data['nmcn_expiry_date'] : null,
+                ':nmcn_status' => $data['nmcn_status'] ?? null,
+                ':trcn_license_number' => $data['trcn_license_number'] ?? null,
+                ':trcn_issued_date' => !empty($data['trcn_issued_date']) ? $data['trcn_issued_date'] : null,
+                ':trcn_expiry_date' => !empty($data['trcn_expiry_date']) ? $data['trcn_expiry_date'] : null,
+                ':trcn_status' => $data['trcn_status'] ?? null,
                 ':passport_photo' => $data['passport_photo'] ?? null,
                 ':is_draft' => $data['is_draft'] ?? 0,
                 ':status' => $data['status'] ?? 'active',
@@ -506,6 +533,7 @@ class NominalRollModel {
             // FIXED: rank already has backticks in this query
             $sql = "UPDATE " . self::TABLE_EMPLOYEES . " SET
                     employee_number = :employee_number,
+                    ippis_number = :ippis_number,
                     surname = :surname,
                     first_name = :first_name,
                     middle_name = :middle_name,
@@ -565,6 +593,14 @@ class NominalRollModel {
                     next_of_kin_phone = :next_of_kin_phone,
                     next_of_kin_relationship = :next_of_kin_relationship,
                     next_of_kin_address = :next_of_kin_address,
+                    nmcn_license_number = :nmcn_license_number,
+                    nmcn_issued_date = :nmcn_issued_date,
+                    nmcn_expiry_date = :nmcn_expiry_date,
+                    nmcn_status = :nmcn_status,
+                    trcn_license_number = :trcn_license_number,
+                    trcn_issued_date = :trcn_issued_date,
+                    trcn_expiry_date = :trcn_expiry_date,
+                    trcn_status = :trcn_status,
                     passport_photo = :passport_photo,
                     is_draft = :is_draft,
                     status = :status,
@@ -582,6 +618,7 @@ class NominalRollModel {
             $params = [
                 ':id' => $id,
                 ':employee_number' => $data['employee_number'] ?? '',
+                ':ippis_number' => $data['ippis_number'] ?? null,
                 ':surname' => $data['surname'] ?? '',
                 ':first_name' => $data['first_name'] ?? '',
                 ':middle_name' => $data['middle_name'] ?? null,
@@ -641,6 +678,14 @@ class NominalRollModel {
                 ':next_of_kin_phone' => $data['next_of_kin_phone'] ?? null,
                 ':next_of_kin_relationship' => $data['next_of_kin_relationship'] ?? null,
                 ':next_of_kin_address' => $data['next_of_kin_address'] ?? null,
+                ':nmcn_license_number' => $data['nmcn_license_number'] ?? null,
+                ':nmcn_issued_date' => !empty($data['nmcn_issued_date']) ? $data['nmcn_issued_date'] : null,
+                ':nmcn_expiry_date' => !empty($data['nmcn_expiry_date']) ? $data['nmcn_expiry_date'] : null,
+                ':nmcn_status' => $data['nmcn_status'] ?? null,
+                ':trcn_license_number' => $data['trcn_license_number'] ?? null,
+                ':trcn_issued_date' => !empty($data['trcn_issued_date']) ? $data['trcn_issued_date'] : null,
+                ':trcn_expiry_date' => !empty($data['trcn_expiry_date']) ? $data['trcn_expiry_date'] : null,
+                ':trcn_status' => $data['trcn_status'] ?? null,
                 ':passport_photo' => $data['passport_photo'] ?? null,
                 ':is_draft' => $data['is_draft'] ?? 0,
                 ':status' => $data['status'] ?? 'active',
@@ -655,6 +700,9 @@ class NominalRollModel {
             error_log("  - Rank: " . ($params[':rank'] ?? 'NULL'));
             error_log("  - Passport Photo: " . ($params[':passport_photo'] ?? 'NULL'));
             error_log("  - Additional Qualifications: " . ($params[':additional_qualifications'] ?? 'NULL'));
+            error_log("  - IPPIS Number: " . ($params[':ippis_number'] ?? 'NULL'));
+            error_log("  - NMCN License: " . ($params[':nmcn_license_number'] ?? 'NULL'));
+            error_log("  - TRCN License: " . ($params[':trcn_license_number'] ?? 'NULL'));
             
             error_log("=== Step 5: Executing update ===");
             $result = $stmt->execute($params);
@@ -819,7 +867,10 @@ class NominalRollModel {
                                     e.state LIKE :search4 OR 
                                     e.department LIKE :search5 OR
                                     e.email LIKE :search6 OR
-                                    e.telephone_number LIKE :search7)";
+                                    e.telephone_number LIKE :search7 OR
+                                    e.ippis_number LIKE :search8 OR
+                                    e.nmcn_license_number LIKE :search9 OR
+                                    e.trcn_license_number LIKE :search10)";
                 $params[':search1'] = $searchTerm;
                 $params[':search2'] = $searchTerm;
                 $params[':search3'] = $searchTerm;
@@ -827,6 +878,9 @@ class NominalRollModel {
                 $params[':search5'] = $searchTerm;
                 $params[':search6'] = $searchTerm;
                 $params[':search7'] = $searchTerm;
+                $params[':search8'] = $searchTerm;
+                $params[':search9'] = $searchTerm;
+                $params[':search10'] = $searchTerm;
             }
             
             // State filter
@@ -871,6 +925,18 @@ class NominalRollModel {
                 $params[':is_draft'] = $filters['is_draft'];
             }
             
+            // NMCN Status filter
+            if (!empty($filters['nmcn_status'])) {
+                $whereConditions[] = "e.nmcn_status = :nmcn_status";
+                $params[':nmcn_status'] = $filters['nmcn_status'];
+            }
+            
+            // TRCN Status filter
+            if (!empty($filters['trcn_status'])) {
+                $whereConditions[] = "e.trcn_status = :trcn_status";
+                $params[':trcn_status'] = $filters['trcn_status'];
+            }
+            
             $whereClause = $whereConditions ? "WHERE " . implode(" AND ", $whereConditions) : "";
             
             // Sort order
@@ -879,7 +945,8 @@ class NominalRollModel {
             
             $validSortColumns = [
                 'employee_number', 'surname', 'first_name', 'rank', 
-                'grade_level', 'state', 'date_of_first_appointment', 'created_at'
+                'grade_level', 'state', 'date_of_first_appointment', 'created_at',
+                'ippis_number', 'nmcn_license_number', 'trcn_license_number'
             ];
             
             if (!in_array($sortBy, $validSortColumns)) {
@@ -978,6 +1045,143 @@ class NominalRollModel {
     }
     
     /**
+     * Get filtered employees - NEW METHOD
+     */
+    public function getFilteredEmployees($filters = []) {
+        try {
+            $sql = "SELECT * FROM " . self::TABLE_EMPLOYEES . " WHERE 1=1";
+            $params = [];
+            
+            // Apply search filter
+            if (!empty($filters['search']) && !empty($filters['search_fields'])) {
+                $searchConditions = [];
+                foreach ($filters['search_fields'] as $field) {
+                    $searchConditions[] = "{$field} LIKE :search";
+                }
+                if (!empty($searchConditions)) {
+                    $sql .= " AND (" . implode(' OR ', $searchConditions) . ")";
+                    $params[':search'] = '%' . $filters['search'] . '%';
+                }
+            }
+            
+            // Apply IPPIS filter
+            if (!empty($filters['ippis_number'])) {
+                $sql .= " AND ippis_number LIKE :ippis_number";
+                $params[':ippis_number'] = '%' . $filters['ippis_number'] . '%';
+            }
+            
+            // Apply NMCN status filter
+            if (!empty($filters['nmcn_status'])) {
+                $sql .= " AND nmcn_status = :nmcn_status";
+                $params[':nmcn_status'] = $filters['nmcn_status'];
+            }
+            
+            // Apply TRCN status filter
+            if (!empty($filters['trcn_status'])) {
+                $sql .= " AND trcn_status = :trcn_status";
+                $params[':trcn_status'] = $filters['trcn_status'];
+            }
+            
+            // Apply department filter
+            if (!empty($filters['department'])) {
+                $sql .= " AND department = :department";
+                $params[':department'] = $filters['department'];
+            }
+            
+            // Apply cadre filter
+            if (!empty($filters['cadre'])) {
+                $sql .= " AND cadre = :cadre";
+                $params[':cadre'] = $filters['cadre'];
+            }
+            
+            // Apply status filter
+            if (!empty($filters['status'])) {
+                $sql .= " AND status = :status";
+                $params[':status'] = $filters['status'];
+            }
+            
+            // Exclude draft records
+            $sql .= " AND is_draft = 0";
+            
+            // Order by most recent
+            $sql .= " ORDER BY updated_at DESC, created_at DESC";
+            
+            $stmt = $this->db->prepare($sql);
+            
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("NominalRollModel getFilteredEmployees error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Add method to get employees with expiring licenses - NEW METHOD
+     */
+    public function getEmployeesWithExpiringLicenses($daysThreshold = 30) {
+        try {
+            $currentDate = date('Y-m-d');
+            $thresholdDate = date('Y-m-d', strtotime("+{$daysThreshold} days"));
+            
+            $sql = "SELECT * FROM " . self::TABLE_EMPLOYEES . " 
+                    WHERE (nmcn_expiry_date BETWEEN :current_date AND :threshold_date 
+                           OR trcn_expiry_date BETWEEN :current_date AND :threshold_date)
+                    AND is_draft = 0
+                    ORDER BY 
+                        CASE 
+                            WHEN nmcn_expiry_date BETWEEN :current_date AND :threshold_date THEN nmcn_expiry_date
+                            ELSE trcn_expiry_date
+                        END ASC";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':current_date', $currentDate);
+            $stmt->bindValue(':threshold_date', $thresholdDate);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("NominalRollModel getEmployeesWithExpiringLicenses error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Add method to get employees with expired licenses - NEW METHOD
+     */
+    public function getEmployeesWithExpiredLicenses() {
+        try {
+            $currentDate = date('Y-m-d');
+            
+            $sql = "SELECT * FROM " . self::TABLE_EMPLOYEES . " 
+                    WHERE (nmcn_expiry_date < :current_date AND nmcn_expiry_date != '0000-00-00')
+                           OR (trcn_expiry_date < :current_date AND trcn_expiry_date != '0000-00-00')
+                    AND is_draft = 0
+                    ORDER BY 
+                        CASE 
+                            WHEN nmcn_expiry_date < :current_date THEN nmcn_expiry_date
+                            ELSE trcn_expiry_date
+                        END ASC";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':current_date', $currentDate);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("NominalRollModel getEmployeesWithExpiredLicenses error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
      * Get employee statistics
      * FIXED: Added backticks around rank in SELECT clause
      */
@@ -1017,6 +1221,16 @@ class NominalRollModel {
                 $stmt = $this->db->query($sql);
                 $stats['by_rank'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
+                // Count by NMCN status
+                $sql = "SELECT nmcn_status, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " WHERE nmcn_status IS NOT NULL GROUP BY nmcn_status ORDER BY count DESC";
+                $stmt = $this->db->query($sql);
+                $stats['by_nmcn_status'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Count by TRCN status
+                $sql = "SELECT trcn_status, COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " WHERE trcn_status IS NOT NULL GROUP BY trcn_status ORDER BY count DESC";
+                $stmt = $this->db->query($sql);
+                $stats['by_trcn_status'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
                 // Draft count
                 $sql = "SELECT COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " WHERE is_draft = 1";
                 $stmt = $this->db->query($sql);
@@ -1026,6 +1240,11 @@ class NominalRollModel {
                 $sql = "SELECT COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " WHERE passport_photo IS NOT NULL";
                 $stmt = $this->db->query($sql);
                 $stats['photos_count'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+                
+                // IPPIS count
+                $sql = "SELECT COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " WHERE ippis_number IS NOT NULL";
+                $stmt = $this->db->query($sql);
+                $stats['ippis_count'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
             }
             
             return $stats;
@@ -1114,10 +1333,58 @@ class NominalRollModel {
             $stmt = $this->db->query($sql);
             $options['pension_fund_admins'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
+            // NMCN Status options
+            $options['nmcn_status_options'] = ['Active', 'Expired', 'Pending'];
+            
+            // TRCN Status options
+            $options['trcn_status_options'] = ['Active', 'Expired', 'Pending'];
+            
             return $options;
             
         } catch (PDOException $e) {
             error_log("NominalRollModel getFilterOptions error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Update the getUniqueValues() method to include new fields if needed - NEW METHOD
+     */
+    public function getUniqueValues($column) {
+        try {
+            // Validate column name to prevent SQL injection
+            $allowedColumns = [
+                'department', 'cadre', 'status', 'nmcn_status', 'trcn_status',
+                'bank_name', 'pension_fund_admin', 'rank', 'staff_type'
+            ];
+            
+            if (!in_array($column, $allowedColumns)) {
+                return [];
+            }
+            
+            // Handle reserved keyword 'rank'
+            if ($column === 'rank') {
+                $sql = "SELECT DISTINCT `rank` FROM " . self::TABLE_EMPLOYEES . " 
+                        WHERE `rank` IS NOT NULL 
+                        AND `rank` != '' 
+                        AND is_draft = 0
+                        ORDER BY `rank` ASC";
+            } else {
+                $sql = "SELECT DISTINCT {$column} FROM " . self::TABLE_EMPLOYEES . " 
+                        WHERE {$column} IS NOT NULL 
+                        AND {$column} != '' 
+                        AND is_draft = 0
+                        ORDER BY {$column} ASC";
+            }
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            
+            $values = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            return array_filter($values);
+            
+        } catch (Exception $e) {
+            error_log("NominalRollModel getUniqueValues error for {$column}: " . $e->getMessage());
             return [];
         }
     }
@@ -1542,6 +1809,11 @@ class NominalRollModel {
                     $cleaned['employee_number'] = $cleanValue;
                     break;
                     
+                case 'ippis_number':
+                case 'ippis':
+                    $cleaned['ippis_number'] = $cleanValue;
+                    break;
+                    
                 case 'surname':
                 case 'last_name':
                     $cleaned['surname'] = $cleanValue;
@@ -1593,6 +1865,42 @@ class NominalRollModel {
                     
                 case 'additional_qualifications':
                     $cleaned['additional_qualifications'] = $this->normalizeQualifications($cleanValue);
+                    break;
+                    
+                // NMCN License fields
+                case 'nmcn_license_number':
+                case 'nmcn':
+                    $cleaned['nmcn_license_number'] = $cleanValue;
+                    break;
+                    
+                case 'nmcn_issued_date':
+                    $cleaned['nmcn_issued_date'] = $this->normalizeDate($cleanValue);
+                    break;
+                    
+                case 'nmcn_expiry_date':
+                    $cleaned['nmcn_expiry_date'] = $this->normalizeDate($cleanValue);
+                    break;
+                    
+                case 'nmcn_status':
+                    $cleaned['nmcn_status'] = $this->normalizeLicenseStatus($cleanValue);
+                    break;
+                    
+                // TRCN License fields
+                case 'trcn_license_number':
+                case 'trcn':
+                    $cleaned['trcn_license_number'] = $cleanValue;
+                    break;
+                    
+                case 'trcn_issued_date':
+                    $cleaned['trcn_issued_date'] = $this->normalizeDate($cleanValue);
+                    break;
+                    
+                case 'trcn_expiry_date':
+                    $cleaned['trcn_expiry_date'] = $this->normalizeDate($cleanValue);
+                    break;
+                    
+                case 'trcn_status':
+                    $cleaned['trcn_status'] = $this->normalizeLicenseStatus($cleanValue);
                     break;
                     
                 // Dates
@@ -1737,6 +2045,24 @@ class NominalRollModel {
     }
     
     /**
+     * Normalize license status
+     */
+    private function normalizeLicenseStatus($value) {
+        $value = strtolower(trim($value));
+        $statusMap = [
+            'active' => 'Active',
+            'expired' => 'Expired',
+            'pending' => 'Pending',
+            'valid' => 'Active',
+            'invalid' => 'Expired',
+            '1' => 'Active',
+            '0' => 'Expired'
+        ];
+        
+        return $statusMap[$value] ?? 'Active';
+    }
+    
+    /**
      * Validate bulk upload data (more lenient) - NEW METHOD
      */
     private function validateBulkUploadRow($data, $rowNumber) {
@@ -1779,6 +2105,7 @@ class NominalRollModel {
         // Map CSV fields to database fields
         $fieldMapping = [
             'employee_number' => 'employee_number',
+            'ippis_number' => 'ippis_number',
             'surname' => 'surname',
             'first_name' => 'first_name',
             'middle_name' => 'middle_name',
@@ -1809,6 +2136,14 @@ class NominalRollModel {
             'pension_number' => 'pension_number',
             'telephone_number' => 'telephone_number',
             'email' => 'email',
+            'nmcn_license_number' => 'nmcn_license_number',
+            'nmcn_issued_date' => 'nmcn_issued_date',
+            'nmcn_expiry_date' => 'nmcn_expiry_date',
+            'nmcn_status' => 'nmcn_status',
+            'trcn_license_number' => 'trcn_license_number',
+            'trcn_issued_date' => 'trcn_issued_date',
+            'trcn_expiry_date' => 'trcn_expiry_date',
+            'trcn_status' => 'trcn_status',
             'status' => 'status'  // ADDED: Include status field
         ];
         
@@ -2334,6 +2669,16 @@ class NominalRollModel {
                 $params[':is_draft'] = $filters['is_draft'];
             }
             
+            if (!empty($filters['nmcn_status'])) {
+                $whereConditions[] = "nmcn_status = :nmcn_status";
+                $params[':nmcn_status'] = $filters['nmcn_status'];
+            }
+            
+            if (!empty($filters['trcn_status'])) {
+                $whereConditions[] = "trcn_status = :trcn_status";
+                $params[':trcn_status'] = $filters['trcn_status'];
+            }
+            
             $whereClause = $whereConditions ? "WHERE " . implode(" AND ", $whereConditions) : "";
             
             $sql = "SELECT * FROM " . self::TABLE_EMPLOYEES . " $whereClause ORDER BY surname, first_name";
@@ -2440,7 +2785,9 @@ class NominalRollModel {
         $dateFields = [
             'date_of_birth', 'date_of_first_appointment', 
             'date_of_confirmation', 'date_of_present_appointment',
-            'qualification_date', 'retirement_date'
+            'qualification_date', 'retirement_date',
+            'nmcn_issued_date', 'nmcn_expiry_date',
+            'trcn_issued_date', 'trcn_expiry_date'
         ];
         
         foreach ($dateFields as $field) {
@@ -2481,9 +2828,53 @@ class NominalRollModel {
             $errors[] = "NIN must be 11 digits";
         }
         
+        // Validate IPPIS Number (if provided)
+        if (!empty($data['ippis_number']) && !preg_match('/^[A-Za-z0-9]{5,20}$/', $data['ippis_number'])) {
+            $errors[] = "IPPIS Number must be 5-20 alphanumeric characters";
+        }
+        
+        // Validate NMCN License Number (if provided)
+        if (!empty($data['nmcn_license_number']) && !preg_match('/^[A-Za-z0-9]{5,20}$/', $data['nmcn_license_number'])) {
+            $errors[] = "NMCN License Number must be 5-20 alphanumeric characters";
+        }
+        
+        // Validate TRCN License Number (if provided)
+        if (!empty($data['trcn_license_number']) && !preg_match('/^[A-Za-z0-9]{5,20}$/', $data['trcn_license_number'])) {
+            $errors[] = "TRCN License Number must be 5-20 alphanumeric characters";
+        }
+        
         // Add status validation - UPDATED: Added 'draft' option
         if (!empty($data['status']) && !in_array($data['status'], ['active', 'inactive', 'retired', 'draft'])) {
             $errors[] = "Invalid status selected";
+        }
+        
+        // Add NMCN status validation
+        if (!empty($data['nmcn_status']) && !in_array($data['nmcn_status'], ['Active', 'Expired', 'Pending'])) {
+            $errors[] = "Invalid NMCN status selected";
+        }
+        
+        // Add TRCN status validation
+        if (!empty($data['trcn_status']) && !in_array($data['trcn_status'], ['Active', 'Expired', 'Pending'])) {
+            $errors[] = "Invalid TRCN status selected";
+        }
+        
+        // Validate license dates consistency
+        if (!empty($data['nmcn_issued_date']) && !empty($data['nmcn_expiry_date'])) {
+            $issued = strtotime($data['nmcn_issued_date']);
+            $expiry = strtotime($data['nmcn_expiry_date']);
+            
+            if ($issued > $expiry) {
+                $errors[] = "NMCN Expiry Date cannot be before Issued Date";
+            }
+        }
+        
+        if (!empty($data['trcn_issued_date']) && !empty($data['trcn_expiry_date'])) {
+            $issued = strtotime($data['trcn_issued_date']);
+            $expiry = strtotime($data['trcn_expiry_date']);
+            
+            if ($issued > $expiry) {
+                $errors[] = "TRCN Expiry Date cannot be before Issued Date";
+            }
         }
         
         return $errors;
@@ -2503,21 +2894,50 @@ class NominalRollModel {
     /**
      * Generate next employee number
      */
-    public function generateEmployeeNumber($prefix = 'EMP') {
+    public function generateEmployeeNumber($prefix = 'FCTCNS') {
         try {
-            $year = date('Y');
-            $sql = "SELECT COUNT(*) as count FROM " . self::TABLE_EMPLOYEES . " 
-                    WHERE employee_number LIKE :prefix";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([':prefix' => $prefix . $year . '%']);
-            $count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+            // Always use FCTCNS prefix, ignore parameter for now
+            $prefix = 'FCTCNS';
             
-            $nextNumber = str_pad($count + 1, 4, '0', STR_PAD_LEFT);
-            return $prefix . $year . $nextNumber;
+            // Get the highest existing FCTCNS number
+            $sql = "SELECT MAX(
+                        CAST(SUBSTRING(employee_number, 7) AS UNSIGNED)
+                    ) as max_num 
+                    FROM " . self::TABLE_EMPLOYEES . " 
+                    WHERE employee_number LIKE :prefix";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':prefix' => $prefix . '%']);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // If no FCTCNS numbers, check for old EMP format
+            if (empty($result['max_num']) || $result['max_num'] == 0) {
+                $sql = "SELECT MAX(
+                            CAST(SUBSTRING(employee_number, 8) AS UNSIGNED)
+                        ) as max_num 
+                        FROM " . self::TABLE_EMPLOYEES . " 
+                        WHERE employee_number LIKE 'EMP2026%'";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute();
+                $empResult = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!empty($empResult['max_num']) && $empResult['max_num'] > 0) {
+                    $nextNumber = $empResult['max_num'] + 1;
+                } else {
+                    $nextNumber = 1;
+                }
+            } else {
+                $nextNumber = $result['max_num'] + 1;
+            }
+            
+            // Format: FCTCNS0001 (4-digit padding)
+            return $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
             
         } catch (PDOException $e) {
             error_log("NominalRollModel generateEmployeeNumber error: " . $e->getMessage());
-            return $prefix . date('Y') . '0001';
+            // Fallback with current year
+            return 'FCTCNS' . date('Y') . '0001';
         }
     }
     
@@ -2535,14 +2955,15 @@ class NominalRollModel {
                 
                 // Validate headers
                 $expectedHeaders = [
-                    'S/N', 'Employee Number', 'Surname', 'First Name', 'Middle Name', 'Sex', 'Date of Birth',
+                    'S/N', 'Employee Number', 'IPPIS Number', 'Surname', 'First Name', 'Middle Name', 'Sex', 'Date of Birth',
                     'Marital Status', 'Rank', 'Grade Level (GL)', 'Qualification', 'Qualification Date',
                     'Highest Qualification', 'Year of Highest Qualification', 'Additional Qualifications',
                     'Date of 1st Appt.', 'Date of Confirmation', 'Rank on 1st Appt.',
                     'Date of Present. Appt.', 'State of Origin', 'Local Govt. Area', 'State of Residence',
                     'Residential Address', 'PF No', 'NHF No', 'Bank Name', 'Bank Branch', 'Other Bank Name',
                     'Account No', 'Pension Fund Admin', 'Other Pension Fund Admin', 'Pension No', 
-                    'Telephone No', 'Email'
+                    'Telephone No', 'Email', 'NMCN License Number', 'NMCN Issued Date', 'NMCN Expiry Date',
+                    'NMCN Status', 'TRCN License Number', 'TRCN Issued Date', 'TRCN Expiry Date', 'TRCN Status'
                 ];
                 
                 // Clean headers (remove BOM if present)
@@ -2691,6 +3112,7 @@ class NominalRollModel {
         // Map CSV columns to database fields
         $columnMapping = [
             'Employee Number' => 'employee_number',
+            'IPPIS Number' => 'ippis_number',
             'Surname' => 'surname',
             'First Name' => 'first_name',
             'Middle Name' => 'middle_name',
@@ -2722,7 +3144,15 @@ class NominalRollModel {
             'Other Pension Fund Admin' => 'other_pension_fund_admin',
             'Pension No' => 'pension_number',
             'Telephone No' => 'telephone_number',
-            'Email' => 'email'
+            'Email' => 'email',
+            'NMCN License Number' => 'nmcn_license_number',
+            'NMCN Issued Date' => 'nmcn_issued_date',
+            'NMCN Expiry Date' => 'nmcn_expiry_date',
+            'NMCN Status' => 'nmcn_status',
+            'TRCN License Number' => 'trcn_license_number',
+            'TRCN Issued Date' => 'trcn_issued_date',
+            'TRCN Expiry Date' => 'trcn_expiry_date',
+            'TRCN Status' => 'trcn_status'
         ];
         
         // Process each column
@@ -2745,7 +3175,16 @@ class NominalRollModel {
                     case 'Date of Confirmation':
                     case 'Qualification Date':
                     case 'Date of Present. Appt.':
+                    case 'NMCN Issued Date':
+                    case 'NMCN Expiry Date':
+                    case 'TRCN Issued Date':
+                    case 'TRCN Expiry Date':
                         $value = $this->normalizeDate($value);
+                        break;
+                        
+                    case 'NMCN Status':
+                    case 'TRCN Status':
+                        $value = $this->normalizeLicenseStatus($value);
                         break;
                         
                     case 'Additional Qualifications':
@@ -2828,6 +3267,7 @@ class NominalRollModel {
                 'label' => 'Basic Information',
                 'fields' => [
                     'employee_number' => 'Employee Number',
+                    'ippis_number' => 'IPPIS Number',
                     'surname' => 'Surname',
                     'first_name' => 'First Name',
                     'middle_name' => 'Middle Name',
@@ -2836,7 +3276,7 @@ class NominalRollModel {
                     'marital_status' => 'Marital Status',
                     'nationality' => 'Nationality',
                     'religion' => 'Religion',
-                    'status' => 'Status' // ← ADDED THIS NEW LINE
+                    'status' => 'Status'
                 ]
             ],
             'employment' => [
@@ -2857,13 +3297,21 @@ class NominalRollModel {
                 ]
             ],
             'qualifications' => [
-                'label' => 'Qualifications',
+                'label' => 'Qualifications & Licenses',
                 'fields' => [
                     'highest_qualification' => 'Highest Qualification',
                     'year_of_highest_qualification' => 'Year of Highest Qualification',
                     'institution_attended' => 'Institution Attended',
                     'course_of_study' => 'Course of Study',
-                    'class_of_degree' => 'Class of Degree'
+                    'class_of_degree' => 'Class of Degree',
+                    'nmcn_license_number' => 'NMCN License Number',
+                    'nmcn_issued_date' => 'NMCN Issued Date',
+                    'nmcn_expiry_date' => 'NMCN Expiry Date',
+                    'nmcn_status' => 'NMCN Status',
+                    'trcn_license_number' => 'TRCN License Number',
+                    'trcn_issued_date' => 'TRCN Issued Date',
+                    'trcn_expiry_date' => 'TRCN Expiry Date',
+                    'trcn_status' => 'TRCN Status'
                 ]
             ],
             'location' => [
@@ -3051,7 +3499,7 @@ class NominalRollModel {
                 // Handle reserved words and special cases
                 if ($field === 'rank') {
                     $selectFields[] = "`rank`"; // FIXED: Added backticks
-                } elseif (in_array($field, ['date_of_birth', 'date_of_first_appointment', 'date_of_confirmation', 'date_of_present_appointment'])) {
+                } elseif (in_array($field, ['date_of_birth', 'date_of_first_appointment', 'date_of_confirmation', 'date_of_present_appointment', 'nmcn_issued_date', 'nmcn_expiry_date', 'trcn_issued_date', 'trcn_expiry_date'])) {
                     // Store dates as-is for client-side formatting
                     $selectFields[] = "`{$field}`";
                 } else {
@@ -3084,16 +3532,21 @@ class NominalRollModel {
             
             if (!empty($filters['search'])) {
                 // Use full-text search if available, otherwise use LIKE with optimizations
-                $whereConditions[] = "(surname LIKE :search OR first_name LIKE :search OR employee_number = :exact_search)";
+                $whereConditions[] = "(surname LIKE :search OR first_name LIKE :search OR employee_number = :exact_search OR ippis_number = :exact_search2 OR nmcn_license_number = :exact_search3 OR trcn_license_number = :exact_search4)";
                 $params[':search'] = '%' . $filters['search'] . '%';
                 $params[':exact_search'] = $filters['search'];
+                $params[':exact_search2'] = $filters['search'];
+                $params[':exact_search3'] = $filters['search'];
+                $params[':exact_search4'] = $filters['search'];
             }
             
             // Add remaining filters - FIXED: Added backticks around rank
             $filterMap = [
                 'rank' => '`rank`', // FIXED: Added backticks
                 'sex' => 'sex',
-                'department' => 'department'
+                'department' => 'department',
+                'nmcn_status' => 'nmcn_status',
+                'trcn_status' => 'trcn_status'
             ];
             
             foreach ($filterMap as $key => $column) {
@@ -3115,7 +3568,9 @@ class NominalRollModel {
                 'grade_level_desc' => 'CAST(grade_level AS UNSIGNED) DESC, surname ASC',
                 'state_asc' => 'state ASC, surname ASC',
                 'date_of_first_appointment_asc' => 'date_of_first_appointment ASC',
-                'date_of_first_appointment_desc' => 'date_of_first_appointment DESC'
+                'date_of_first_appointment_desc' => 'date_of_first_appointment DESC',
+                'ippis_number_asc' => 'ippis_number ASC, surname ASC',
+                'ippis_number_desc' => 'ippis_number DESC, surname ASC'
             ];
             
             $orderBy = $orderByMap[$sortOrder] ?? 'surname ASC, first_name ASC';
@@ -3283,6 +3738,26 @@ class NominalRollModel {
             $stats['summary']['by_grade'] = $gradeCount;
         }
         
+        // Count by NMCN status
+        if (in_array('nmcn_status', $selectedFields)) {
+            $nmcnCount = [];
+            foreach ($data as $row) {
+                $status = $row['nmcn_status'] ?? 'Not Specified';
+                $nmcnCount[$status] = ($nmcnCount[$status] ?? 0) + 1;
+            }
+            $stats['summary']['by_nmcn_status'] = $nmcnCount;
+        }
+        
+        // Count by TRCN status
+        if (in_array('trcn_status', $selectedFields)) {
+            $trcnCount = [];
+            foreach ($data as $row) {
+                $status = $row['trcn_status'] ?? 'Not Specified';
+                $trcnCount[$status] = ($trcnCount[$status] ?? 0) + 1;
+            }
+            $stats['summary']['by_trcn_status'] = $trcnCount;
+        }
+        
         return $stats;
     }
     
@@ -3419,6 +3894,252 @@ class NominalRollModel {
     
     /**
      * ============================================
+     * REPORT DATA METHOD - NEWLY ADDED
+     * ============================================
+     */
+    
+    /**
+     * Get report data with selected fields and filters
+     * Compatible with both MySQLi and PDO
+     */
+    public function getReportData($selectedFields = [], $filters = [], $sortOrder = 'surname_asc', $limit = 20) {
+        error_log("=== getReportData() called ===");
+        error_log("Selected Fields: " . print_r($selectedFields, true));
+        error_log("Filters: " . print_r($filters, true));
+        error_log("Sort Order: $sortOrder");
+        error_log("Limit: $limit");
+        
+        try {
+            // Build SELECT clause
+            if (empty($selectedFields)) {
+                $selectFields = '*';
+            } else {
+                // Escape field names for PDO
+                $escapedFields = array_map(function($field) {
+                    // Handle reserved keywords like 'rank'
+                    if ($field === 'rank') {
+                        return '`rank`';
+                    }
+                    // Handle other potentially problematic fields
+                    if (in_array($field, ['order', 'group', 'key', 'date'])) {
+                        return "`$field`";
+                    }
+                    return $field;
+                }, $selectedFields);
+                $selectFields = implode(', ', $escapedFields);
+            }
+            
+            error_log("Select Fields: $selectFields");
+            
+            // Build WHERE clause
+            $whereConditions = [];
+            $params = [];
+            
+            // Search filter
+            if (!empty($filters['search'])) {
+                $whereConditions[] = "(surname LIKE ? OR first_name LIKE ? OR employee_number LIKE ? OR CONCAT(surname, ' ', first_name) LIKE ?)";
+                $searchTerm = "%{$filters['search']}%";
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+            }
+            
+            // State filter
+            if (!empty($filters['state'])) {
+                $whereConditions[] = "state = ?";
+                $params[] = $filters['state'];
+            }
+            
+            // Department filter
+            if (!empty($filters['department'])) {
+                $whereConditions[] = "department = ?";
+                $params[] = $filters['department'];
+            }
+            
+            // Grade level filter
+            if (!empty($filters['grade_level'])) {
+                $whereConditions[] = "grade_level = ?";
+                $params[] = $filters['grade_level'];
+            }
+            
+            // Gender filter
+            if (!empty($filters['sex'])) {
+                $whereConditions[] = "sex = ?";
+                $params[] = $filters['sex'];
+            }
+            
+            // Rank filter - FIXED: Added backticks
+            if (!empty($filters['rank'])) {
+                $whereConditions[] = "`rank` = ?";
+                $params[] = $filters['rank'];
+            }
+            
+            // Employment Status filter
+            if (!empty($filters['status'])) {
+                $whereConditions[] = "status = ?";
+                $params[] = $filters['status'];
+            }
+            
+            // NMCN Status filter
+            if (!empty($filters['nmcn_status'])) {
+                $whereConditions[] = "nmcn_status = ?";
+                $params[] = $filters['nmcn_status'];
+            }
+            
+            // TRCN Status filter
+            if (!empty($filters['trcn_status'])) {
+                $whereConditions[] = "trcn_status = ?";
+                $params[] = $filters['trcn_status'];
+            }
+            
+            // Combine WHERE conditions
+            $whereClause = '';
+            if (!empty($whereConditions)) {
+                $whereClause = 'WHERE ' . implode(' AND ', $whereConditions);
+            }
+            
+            // Build ORDER BY clause
+            $orderBy = $this->getOrderByClause($sortOrder);
+            
+            // Get total count
+            $countQuery = "SELECT COUNT(*) as total FROM " . self::TABLE_EMPLOYEES . " $whereClause";
+            error_log("Count Query: $countQuery");
+            error_log("Count Params: " . print_r($params, true));
+            
+            $countStmt = $this->db->prepare($countQuery);
+            if (!empty($params)) {
+                $countStmt->execute($params);
+            } else {
+                $countStmt->execute();
+            }
+            $countResult = $countStmt->fetch(PDO::FETCH_ASSOC);
+            $totalCount = $countResult['total'] ?? 0;
+            $countStmt->closeCursor();
+            
+            error_log("Total Count: $totalCount");
+            
+            // Get data with limit
+            $limitClause = $limit > 0 ? "LIMIT $limit" : "";
+            $dataQuery = "SELECT $selectFields FROM " . self::TABLE_EMPLOYEES . " $whereClause $orderBy $limitClause";
+            error_log("Data Query: $dataQuery");
+            error_log("Data Params: " . print_r($params, true));
+            
+            $dataStmt = $this->db->prepare($dataQuery);
+            if (!empty($params)) {
+                $dataStmt->execute($params);
+            } else {
+                $dataStmt->execute();
+            }
+            
+            // Fetch data
+            $previewData = [];
+            $fullData = [];
+            
+            while ($row = $dataStmt->fetch(PDO::FETCH_ASSOC)) {
+                $previewData[] = $row;
+                $fullData[] = $row;
+            }
+            
+            $dataStmt->closeCursor();
+            
+            $result = [
+                'preview_data' => $previewData,
+                'full_data' => $fullData,
+                'total_records' => $totalCount
+            ];
+            
+            error_log("Result preview count: " . count($previewData));
+            error_log("Result full count: " . count($fullData));
+            error_log("=== getReportData() completed ===");
+            
+            return $result;
+            
+        } catch (Exception $e) {
+            error_log("getReportData error: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            
+            return [
+                'preview_data' => [],
+                'full_data' => [],
+                'total_records' => 0
+            ];
+        }
+    }
+    
+    /**
+     * Get ORDER BY clause for sorting
+     */
+    private function getOrderByClause($sortOrder) {
+        $orderBy = 'ORDER BY ';
+        
+        switch ($sortOrder) {
+            case 'surname_asc':
+                $orderBy .= 'surname ASC';
+                break;
+            case 'surname_desc':
+                $orderBy .= 'surname DESC';
+                break;
+            case 'employee_number_asc':
+                $orderBy .= 'employee_number ASC';
+                break;
+            case 'employee_number_desc':
+                $orderBy .= 'employee_number DESC';
+                break;
+            case 'grade_level_asc':
+                $orderBy .= 'CAST(grade_level AS UNSIGNED) ASC';
+                break;
+            case 'grade_level_desc':
+                $orderBy .= 'CAST(grade_level AS UNSIGNED) DESC';
+                break;
+            case 'state_asc':
+                $orderBy .= 'state ASC';
+                break;
+            case 'state_desc':
+                $orderBy .= 'state DESC';
+                break;
+            case 'date_of_first_appointment_asc':
+                $orderBy .= 'date_of_first_appointment ASC';
+                break;
+            case 'date_of_first_appointment_desc':
+                $orderBy .= 'date_of_first_appointment DESC';
+                break;
+            // Add license status sorting
+            case 'nmcn_status_asc':
+                $orderBy .= 'nmcn_status ASC';
+                break;
+            case 'nmcn_status_desc':
+                $orderBy .= 'nmcn_status DESC';
+                break;
+            case 'trcn_status_asc':
+                $orderBy .= 'trcn_status ASC';
+                break;
+            case 'trcn_status_desc':
+                $orderBy .= 'trcn_status DESC';
+                break;
+            default:
+                $orderBy .= 'surname ASC';
+        }
+        
+        return $orderBy;
+    }
+    
+    /**
+     * Escape field name for SQL query
+     */
+    private function escapeFieldName($field) {
+        // Handle reserved keywords
+        $reservedKeywords = ['rank', 'order', 'group', 'key', 'date', 'table'];
+        
+        if (in_array(strtolower($field), $reservedKeywords)) {
+            return "`$field`";
+        }
+        
+        return $field;
+    }
+    
+    /**
+     * ============================================
      * DEBUG METHODS
      * ============================================
      */
@@ -3484,8 +4205,14 @@ class NominalRollModel {
                     surname LIKE ? OR 
                     first_name LIKE ? OR 
                     state LIKE ? OR 
-                    department LIKE ?
+                    department LIKE ? OR
+                    ippis_number LIKE ? OR
+                    nmcn_license_number LIKE ? OR
+                    trcn_license_number LIKE ?
                 )";
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
                 $params[] = $searchTerm;
                 $params[] = $searchTerm;
                 $params[] = $searchTerm;
@@ -3529,9 +4256,19 @@ class NominalRollModel {
                 $params[] = $filters['department'];
             }
             
+            if (!empty($filters['nmcn_status'])) {
+                $whereClause .= " AND nmcn_status = ?";
+                $params[] = $filters['nmcn_status'];
+            }
+            
+            if (!empty($filters['trcn_status'])) {
+                $whereClause .= " AND trcn_status = ?";
+                $params[] = $filters['trcn_status'];
+            }
+            
             // Build ORDER BY clause
             $orderBy = " ORDER BY ";
-            $validSortColumns = ['employee_number', 'surname', 'first_name', 'rank', 'grade_level', 'state', 'date_of_first_appointment', 'created_at'];
+            $validSortColumns = ['employee_number', 'surname', 'first_name', 'rank', 'grade_level', 'state', 'date_of_first_appointment', 'created_at', 'ippis_number', 'nmcn_license_number', 'trcn_license_number'];
             $sortBy = in_array($filters['sort_by'] ?? '', $validSortColumns) ? $filters['sort_by'] : 'surname';
             $sortOrder = strtoupper($filters['sort_order'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
             

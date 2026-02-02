@@ -399,6 +399,35 @@
             padding: 10px 12px;
         }
     }
+
+    /* License Card Styles */
+    .license-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        height: 100%;
+    }
+
+    .license-card h4 {
+        color: #2c5282;
+        border-bottom: 2px solid #4299e1;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+
+    .license-expiring {
+        border-left: 4px solid #f6ad55;
+    }
+
+    .license-expired {
+        border-left: 4px solid #fc8181;
+    }
+
+    .license-active {
+        border-left: 4px solid #68d391;
+    }
     </style>
     
     <!-- ============================================
@@ -486,6 +515,9 @@
                 </button>
                 <button type="button" class="tab-btn" data-tab="education">
                     <i class="fas fa-graduation-cap"></i> Education
+                </button>
+                <button type="button" class="tab-btn" data-tab="licenses">
+                    <i class="fas fa-certificate"></i> Licenses
                 </button>
                 <button type="button" class="tab-btn" data-tab="location">
                     <i class="fas fa-map-marker-alt"></i> Location
@@ -605,7 +637,7 @@
                     <!-- ADD STATUS FIELD -->
                     <div class="form-group required">
                         <label for="status">Status <span class="text-danger">*</span></label>
-                        <select id="status" name="status" class="form-select" required>
+                        <select id="status" name="status" class="form-control" required>
                             <option value="">Select Status</option>
                             <?php 
                             // Define status options - same as in index.php
@@ -627,6 +659,18 @@
                         <?php if (isset($formErrors['status'])): ?>
                             <div class="text-danger small"><?php echo $formErrors['status']; ?></div>
                         <?php endif; ?>
+                    </div>
+
+                    <!-- ADD IPPIS NUMBER FIELD -->
+                    <div class="form-group">
+                        <label for="ippis_number">IPPIS Number</label>
+                        <input type="text" 
+                               id="ippis_number" 
+                               name="ippis_number" 
+                               value="<?php echo htmlspecialchars($formData['ippis_number'] ?? ''); ?>"
+                               class="form-control"
+                               maxlength="50" 
+                               placeholder="Enter IPPIS number">
                     </div>
                 </div>
                 
@@ -655,6 +699,13 @@
             
             <div id="tab-education" class="tab-content skeleton-tab">
                 <div class="skeleton-field"></div>
+                <div class="skeleton-field"></div>
+                <div class="skeleton-field"></div>
+                <div class="skeleton-field"></div>
+                <div class="skeleton-field"></div>
+            </div>
+            
+            <div id="tab-licenses" class="tab-content skeleton-tab">
                 <div class="skeleton-field"></div>
                 <div class="skeleton-field"></div>
                 <div class="skeleton-field"></div>
@@ -960,12 +1011,113 @@ Loaded via JavaScript when needed
             <i class="fas fa-arrow-left"></i> Previous: Employment
         </button>
         <button type="button" class="btn btn-primary next-tab">
+            Next: Licenses <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
+</template>
+
+<!-- Template for Professional Licenses (Tab 4) -->
+<template id="template-licenses">
+    <div class="license-card">
+        <h4 class="section-title">NMCN License</h4>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="nmcn_license_number">NMCN License Number</label>
+                <input type="text" 
+                       id="nmcn_license_number" 
+                       name="nmcn_license_number" 
+                       value="<?php echo htmlspecialchars($formData['nmcn_license_number'] ?? ''); ?>"
+                       class="form-control"
+                       maxlength="50" 
+                       placeholder="NMCN license number">
+            </div>
+            
+            <div class="form-group">
+                <label for="nmcn_issued_date">Issued Date</label>
+                <input type="date" 
+                       id="nmcn_issued_date" 
+                       name="nmcn_issued_date" 
+                       class="form-control" 
+                       value="<?php echo htmlspecialchars($formData['nmcn_issued_date'] ?? ''); ?>">
+            </div>
+            
+            <div class="form-group">
+                <label for="nmcn_expiry_date">Expiry Date</label>
+                <input type="date" 
+                       id="nmcn_expiry_date" 
+                       name="nmcn_expiry_date" 
+                       class="form-control" 
+                       value="<?php echo htmlspecialchars($formData['nmcn_expiry_date'] ?? ''); ?>">
+            </div>
+            
+            <div class="form-group">
+                <label for="nmcn_status">NMCN Status</label>
+                <select id="nmcn_status" name="nmcn_status" class="form-control">
+                    <option value="">Select Status</option>
+                    <option value="Active" <?php echo isset($formData['nmcn_status']) && $formData['nmcn_status'] == 'Active' ? 'selected' : ''; ?>>Active</option>
+                    <option value="Expired" <?php echo isset($formData['nmcn_status']) && $formData['nmcn_status'] == 'Expired' ? 'selected' : ''; ?>>Expired</option>
+                    <option value="Pending" <?php echo isset($formData['nmcn_status']) && $formData['nmcn_status'] == 'Pending' ? 'selected' : ''; ?>>Pending</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="license-card">
+        <h4 class="section-title">TRCN License</h4>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="trcn_license_number">TRCN License Number</label>
+                <input type="text" 
+                       id="trcn_license_number" 
+                       name="trcn_license_number" 
+                       value="<?php echo htmlspecialchars($formData['trcn_license_number'] ?? ''); ?>"
+                       class="form-control"
+                       maxlength="50" 
+                       placeholder="TRCN license number">
+            </div>
+            
+            <div class="form-group">
+                <label for="trcn_issued_date">Issued Date</label>
+                <input type="date" 
+                       id="trcn_issued_date" 
+                       name="trcn_issued_date" 
+                       class="form-control" 
+                       value="<?php echo htmlspecialchars($formData['trcn_issued_date'] ?? ''); ?>">
+            </div>
+            
+            <div class="form-group">
+                <label for="trcn_expiry_date">Expiry Date</label>
+                <input type="date" 
+                       id="trcn_expiry_date" 
+                       name="trcn_expiry_date" 
+                       class="form-control" 
+                       value="<?php echo htmlspecialchars($formData['trcn_expiry_date'] ?? ''); ?>">
+            </div>
+            
+            <div class="form-group">
+                <label for="trcn_status">TRCN Status</label>
+                <select id="trcn_status" name="trcn_status" class="form-control">
+                    <option value="">Select Status</option>
+                    <option value="Active" <?php echo isset($formData['trcn_status']) && $formData['trcn_status'] == 'Active' ? 'selected' : ''; ?>>Active</option>
+                    <option value="Expired" <?php echo isset($formData['trcn_status']) && $formData['trcn_status'] == 'Expired' ? 'selected' : ''; ?>>Expired</option>
+                    <option value="Pending" <?php echo isset($formData['trcn_status']) && $formData['trcn_status'] == 'Pending' ? 'selected' : ''; ?>>Pending</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab Navigation Buttons -->
+    <div class="tab-navigation-buttons">
+        <button type="button" class="btn btn-outline prev-tab">
+            <i class="fas fa-arrow-left"></i> Previous: Education
+        </button>
+        <button type="button" class="btn btn-primary next-tab">
             Next: Location <i class="fas fa-arrow-right"></i>
         </button>
     </div>
 </template>
 
-<!-- Template for Location (Tab 4) -->
+<!-- Template for Location (Tab 5) -->
 <template id="template-location">
     <div class="form-grid">
         <?php 
@@ -1046,7 +1198,7 @@ Loaded via JavaScript when needed
     <!-- Tab Navigation Buttons -->
     <div class="tab-navigation-buttons">
         <button type="button" class="btn btn-outline prev-tab">
-            <i class="fas fa-arrow-left"></i> Previous: Education
+            <i class="fas fa-arrow-left"></i> Previous: Licenses
         </button>
         <button type="button" class="btn btn-primary next-tab">
             Next: Medical <i class="fas fa-arrow-right"></i>
@@ -1054,7 +1206,7 @@ Loaded via JavaScript when needed
     </div>
 </template>
 
-<!-- Template for Medical Information (Tab 5) -->
+<!-- Template for Medical Information (Tab 6) -->
 <template id="template-medical">
     <div class="form-grid">
         <div class="form-group">
@@ -1155,7 +1307,7 @@ Loaded via JavaScript when needed
     </div>
 </template>
 
-<!-- Template for Financial Information (Tab 6) -->
+<!-- Template for Financial Information (Tab 7) -->
 <template id="template-financial">
     <div class="form-grid">
         <?php 
@@ -1305,7 +1457,7 @@ Loaded via JavaScript when needed
     </div>
 </template>
 
-<!-- Template for Emergency Contacts (Tab 7) -->
+<!-- Template for Emergency Contacts (Tab 8) -->
 <template id="template-contacts">
     <div class="form-grid">
         <div class="form-group">
@@ -1400,7 +1552,7 @@ Loaded via JavaScript when needed
     </div>
 </template>
 
-<!-- Template for Passport Photo (Tab 8) -->
+<!-- Template for Passport Photo (Tab 9) -->
 <template id="template-photo">
     <div class="form-grid">
         <div class="form-group full-width-group">
@@ -1473,7 +1625,7 @@ OPTIMIZED JAVASCRIPT - FIXED TAB NAVIGATION
     // ============================================
     // GLOBAL VARIABLES
     // ============================================
-    const tabs = ['basic', 'employment', 'education', 'location', 'medical', 'financial', 'contacts', 'photo'];
+    const tabs = ['basic', 'employment', 'education', 'licenses', 'location', 'medical', 'financial', 'contacts', 'photo'];
     let currentTabIndex = 0;
     const loadedTabs = new Set(['basic']);
     
@@ -1549,6 +1701,7 @@ OPTIMIZED JAVASCRIPT - FIXED TAB NAVIGATION
             'basic': 'Basic Info',
             'employment': 'Employment',
             'education': 'Education',
+            'licenses': 'Licenses',
             'location': 'Location',
             'medical': 'Medical',
             'financial': 'Financial',
@@ -1559,10 +1712,112 @@ OPTIMIZED JAVASCRIPT - FIXED TAB NAVIGATION
     }
     
     // ============================================
+    // LICENSE DATE VALIDATION & STATUS UPDATE
+    // ============================================
+    function validateLicenseDates() {
+        const nmcnIssued = document.getElementById('nmcn_issued_date');
+        const nmcnExpiry = document.getElementById('nmcn_expiry_date');
+        const trcnIssued = document.getElementById('trcn_issued_date');
+        const trcnExpiry = document.getElementById('trcn_expiry_date');
+        
+        let isValid = true;
+        let message = '';
+        
+        // Validate NMCN dates
+        if (nmcnIssued && nmcnExpiry && nmcnIssued.value && nmcnExpiry.value) {
+            const issued = new Date(nmcnIssued.value);
+            const expiry = new Date(nmcnExpiry.value);
+            
+            if (expiry <= issued) {
+                isValid = false;
+                message = 'NMCN expiry date must be after issue date.';
+            }
+        }
+        
+        // Validate TRCN dates
+        if (trcnIssued && trcnExpiry && trcnIssued.value && trcnExpiry.value) {
+            const issued = new Date(trcnIssued.value);
+            const expiry = new Date(trcnExpiry.value);
+            
+            if (expiry <= issued) {
+                isValid = false;
+                message = message ? message + '\nTRCN expiry date must be after issue date.' : 
+                                   'TRCN expiry date must be after issue date.';
+            }
+        }
+        
+        if (!isValid) {
+            alert(message);
+            return false;
+        }
+        
+        return true;
+    }
+    
+    function updateLicenseStatus() {
+        const today = new Date();
+        
+        // NMCN
+        const nmcnExpiry = document.getElementById('nmcn_expiry_date');
+        const nmcnStatus = document.getElementById('nmcn_status');
+        
+        if (nmcnExpiry && nmcnExpiry.value && nmcnStatus) {
+            const expiryDate = new Date(nmcnExpiry.value);
+            const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilExpiry < 0 && nmcnStatus.value !== 'Expired') {
+                nmcnStatus.value = 'Expired';
+            } else if (daysUntilExpiry >= 0 && nmcnStatus.value !== 'Active') {
+                nmcnStatus.value = 'Active';
+            }
+        }
+        
+        // TRCN
+        const trcnExpiry = document.getElementById('trcn_expiry_date');
+        const trcnStatus = document.getElementById('trcn_status');
+        
+        if (trcnExpiry && trcnExpiry.value && trcnStatus) {
+            const expiryDate = new Date(trcnExpiry.value);
+            const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilExpiry < 0 && trcnStatus.value !== 'Expired') {
+                trcnStatus.value = 'Expired';
+            } else if (daysUntilExpiry >= 0 && trcnStatus.value !== 'Active') {
+                trcnStatus.value = 'Active';
+            }
+        }
+    }
+    
+    function initializeLicenseValidation() {
+        // Set maximum dates to today for issued dates
+        const today = new Date().toISOString().split('T')[0];
+        document.querySelectorAll('input[type="date"][id$="_issued_date"]').forEach(input => {
+            input.max = today;
+        });
+        
+        // Attach event listeners for expiry dates
+        document.querySelectorAll('#nmcn_expiry_date, #trcn_expiry_date').forEach(input => {
+            if (input) {
+                input.addEventListener('change', updateLicenseStatus);
+            }
+        });
+    }
+    
+    // ============================================
     // FORM VALIDATION & SUBMISSION - FIXED
     // ============================================
     function initializeFormValidation() {
         const form = document.getElementById('employeeForm');
+        
+        if (form) {
+            // Add license validation to form submission
+            form.addEventListener('submit', function(e) {
+                if (!validateLicenseDates()) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        }
         
         // Main form submit button (Save Employee Record)
         const mainSubmitBtn = form.querySelector('button[type="submit"]');
@@ -1584,6 +1839,12 @@ OPTIMIZED JAVASCRIPT - FIXED TAB NAVIGATION
                     saveInput.name = 'regular_save';
                     saveInput.value = '1';
                     form.appendChild(saveInput);
+                    
+                    // Validate license dates
+                    if (!validateLicenseDates()) {
+                        e.preventDefault();
+                        return false;
+                    }
                     
                     // Submit the form
                     form.submit();
@@ -1642,6 +1903,12 @@ OPTIMIZED JAVASCRIPT - FIXED TAB NAVIGATION
                 
                 // Validate all tabs before submission
                 if (validateAllTabs()) {
+                    // Validate license dates
+                    if (!validateLicenseDates()) {
+                        e.preventDefault();
+                        return false;
+                    }
+                    
                     // Remove draft flag if present
                     const existingDraftInput = document.querySelector('input[name="save_as_draft"]');
                     if (existingDraftInput) {
@@ -1837,6 +2104,7 @@ OPTIMIZED JAVASCRIPT - FIXED TAB NAVIGATION
         const templateMap = {
             'employment': 'template-employment',
             'education': 'template-education',
+            'licenses': 'template-licenses',
             'location': 'template-location',
             'medical': 'template-medical',
             'financial': 'template-financial',
@@ -1860,6 +2128,11 @@ OPTIMIZED JAVASCRIPT - FIXED TAB NAVIGATION
         loadedTabs.add(tabName);
         
         initializeTabFunctionality(tabName);
+        
+        // Initialize license validation for licenses tab
+        if (tabName === 'licenses') {
+            initializeLicenseValidation();
+        }
         
         // Attach event listeners to this tab's navigation buttons
         attachNavigationListeners(tabContent);
@@ -1909,6 +2182,9 @@ OPTIMIZED JAVASCRIPT - FIXED TAB NAVIGATION
         switch(tabName) {
             case 'education':
                 initializeQualificationsSystem();
+                break;
+            case 'licenses':
+                initializeLicenseValidation();
                 break;
             case 'location':
                 initializeStateLGASystem();
@@ -2502,7 +2778,7 @@ OPTIMIZED JAVASCRIPT - FIXED TAB NAVIGATION
             mainSaveBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 const form = document.getElementById('employeeForm');
-                if (validateAllTabs()) {
+                if (validateAllTabs() && validateLicenseDates()) {
                     const existingDraftInput = form.querySelector('input[name="save_as_draft"]');
                     if (existingDraftInput) {
                         existingDraftInput.remove();

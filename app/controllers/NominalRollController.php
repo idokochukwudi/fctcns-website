@@ -108,6 +108,635 @@ class NominalRollController extends Controller {
     
     /**
      * ============================================
+     * UPDATED EXPORT/IMPORT METHODS (Section 10.1)
+     * ============================================
+     */
+    
+    /**
+     * Update the exportEmployees() method to include new fields
+     */
+    public function exportEmployees() {
+        // Check if user has permission to export
+        if (!$this->data['hasExportPermission']) {
+            $this->flash('error', 'You do not have permission to export data.');
+            $this->redirect('/admin/nominal-roll');
+            return;
+        }
+        
+        try {
+            $nominalRollModel = new NominalRollModel();
+            
+            // Get filter parameters
+            $filters = $this->getFilters();
+            
+            // Get employees data with new fields
+            $employees = $nominalRollModel->getFilteredEmployees($filters);
+            
+            if (empty($employees)) {
+                $this->flash('warning', 'No employees found to export.');
+                $this->redirect('/admin/nominal-roll');
+                return;
+            }
+            
+            // Define export columns including new fields
+            $exportColumns = [
+                'employee_number' => 'Employee Number',
+                'ippis_number' => 'IPPIS Number',
+                'surname' => 'Surname',
+                'first_name' => 'First Name',
+                'middle_name' => 'Middle Name',
+                'sex' => 'Sex',
+                'date_of_birth' => 'Date of Birth',
+                'marital_status' => 'Marital Status',
+                'nationality' => 'Nationality',
+                'religion' => 'Religion',
+                'rank' => 'Rank',
+                'grade_level' => 'Grade Level',
+                'step' => 'Step',
+                'cadre' => 'Cadre',
+                'staff_type' => 'Staff Type',
+                'employment_type' => 'Employment Type',
+                'appointment_type' => 'Appointment Type',
+                'department' => 'Department',
+                'highest_qualification' => 'Highest Qualification',
+                'year_of_highest_qualification' => 'Year of Highest Qualification',
+                'institution_attended' => 'Institution Attended',
+                'course_of_study' => 'Course of Study',
+                'class_of_degree' => 'Class of Degree',
+                'professional_certifications' => 'Professional Certifications',
+                'additional_qualifications' => 'Additional Qualifications',
+                'date_of_first_appointment' => 'Date of First Appointment',
+                'date_of_confirmation' => 'Date of Confirmation',
+                'rank_on_first_appointment' => 'Rank on First Appointment',
+                'date_of_present_appointment' => 'Date of Present Appointment',
+                'state' => 'State of Origin',
+                'local_govt_area' => 'Local Government Area',
+                'geopolitical_zone' => 'Geopolitical Zone',
+                'state_of_residence' => 'State of Residence',
+                'residential_address' => 'Residential Address',
+                'contact_address' => 'Contact Address',
+                'pf_number' => 'PF Number',
+                'nhf_number' => 'NHF Number',
+                'nin' => 'NIN',
+                'telephone_number' => 'Telephone Number',
+                'email' => 'Email',
+                'blood_group' => 'Blood Group',
+                'genotype' => 'Genotype',
+                'disability' => 'Disability',
+                'disability_type' => 'Disability Type',
+                'bank_name' => 'Bank Name',
+                'other_bank_name' => 'Other Bank Name',
+                'bank_branch' => 'Bank Branch',
+                'account_number' => 'Account Number',
+                'account_name' => 'Account Name',
+                'pension_fund_admin' => 'Pension Fund Administrator',
+                'other_pension_fund_admin' => 'Other Pension Fund Administrator',
+                'pension_number' => 'Pension Number',
+                'tin_number' => 'TIN Number',
+                'salary_structure' => 'Salary Structure',
+                'emergency_contact_name' => 'Emergency Contact Name',
+                'emergency_contact_phone' => 'Emergency Contact Phone',
+                'emergency_contact_relationship' => 'Emergency Contact Relationship',
+                'next_of_kin_name' => 'Next of Kin Name',
+                'next_of_kin_phone' => 'Next of Kin Phone',
+                'next_of_kin_relationship' => 'Next of Kin Relationship',
+                'next_of_kin_address' => 'Next of Kin Address',
+                // New fields
+                'nmcn_license_number' => 'NMCN License Number',
+                'nmcn_issued_date' => 'NMCN Issued Date',
+                'nmcn_expiry_date' => 'NMCN Expiry Date',
+                'nmcn_status' => 'NMCN Status',
+                'trcn_license_number' => 'TRCN License Number',
+                'trcn_issued_date' => 'TRCN Issued Date',
+                'trcn_expiry_date' => 'TRCN Expiry Date',
+                'trcn_status' => 'TRCN Status',
+                'status' => 'Employee Status',
+                'created_at' => 'Created Date',
+                'updated_at' => 'Last Updated'
+            ];
+            
+            // Set headers for CSV export
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename=nominal_roll_export_' . date('Y-m-d_H-i-s') . '.csv');
+            
+            $output = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for Excel compatibility
+            fputs($output, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
+            
+            // Write headers
+            fputcsv($output, array_values($exportColumns));
+            
+            // Write data rows
+            foreach ($employees as $employee) {
+                $rowData = [];
+                foreach (array_keys($exportColumns) as $column) {
+                    // Handle special formatting for dates
+                    if (strpos($column, '_date') !== false || $column == 'created_at' || $column == 'updated_at') {
+                        if (!empty($employee[$column]) && $employee[$column] != '0000-00-00') {
+                            $rowData[] = date('Y-m-d', strtotime($employee[$column]));
+                        } else {
+                            $rowData[] = '';
+                        }
+                    } else {
+                        $rowData[] = $employee[$column] ?? '';
+                    }
+                }
+                fputcsv($output, $rowData);
+            }
+            
+            fclose($output);
+            exit;
+            
+        } catch (Exception $e) {
+            error_log("NominalRollController exportEmployees error: " . $e->getMessage());
+            $this->flash('error', 'Failed to export employees. Please try again.');
+            $this->redirect('/admin/nominal-roll');
+        }
+    }
+    
+    /**
+     * Add method to handle import of updated CSV with new fields
+     */
+    public function importEmployees() {
+        // Check if user has permission
+        if (!$this->data['hasBulkUploadPermission']) {
+            $this->flash('error', 'You do not have permission to import data.');
+            $this->redirect('/admin/nominal-roll/bulk-upload');
+            return;
+        }
+        
+        // Check CSRF token
+        if (!$this->verifyCsrfToken()) {
+            $this->flash('error', 'Invalid security token. Please try again.');
+            $this->redirect('/admin/nominal-roll/bulk-upload');
+            return;
+        }
+        
+        try {
+            // Check if file was uploaded
+            if (!isset($_FILES['import_file']) || $_FILES['import_file']['error'] !== UPLOAD_ERR_OK) {
+                $this->flash('error', 'Please select a CSV file to import.');
+                $this->redirect('/admin/nominal-roll/bulk-upload');
+                return;
+            }
+            
+            $file = $_FILES['import_file']['tmp_name'];
+            $fileName = $_FILES['import_file']['name'];
+            $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+            
+            // Validate file extension
+            if (strtolower($fileExtension) !== 'csv') {
+                $this->flash('error', 'Please upload a CSV file.');
+                $this->redirect('/admin/nominal-roll/bulk-upload');
+                return;
+            }
+            
+            $nominalRollModel = new NominalRollModel();
+            
+            // Read CSV file
+            $handle = fopen($file, 'r');
+            if ($handle === false) {
+                throw new Exception('Unable to open uploaded file.');
+            }
+            
+            // Skip UTF-8 BOM if present
+            $bom = fread($handle, 3);
+            if ($bom != chr(0xEF) . chr(0xBB) . chr(0xBF)) {
+                rewind($handle);
+            }
+            
+            // Read headers
+            $headers = fgetcsv($handle);
+            if ($headers === false) {
+                throw new Exception('Empty CSV file or unable to read headers.');
+            }
+            
+            // Clean headers
+            $headers = array_map(function($header) {
+                return strtolower(trim(str_replace([' ', '-', '.', '(', ')'], '_', $header)));
+            }, $headers);
+            
+            // Expected headers including new fields
+            $expectedHeaders = [
+                'employee_number', 'ippis_number', 'surname', 'first_name', 'middle_name',
+                'sex', 'date_of_birth', 'marital_status', 'status', 'rank', 'grade_level_gl',
+                'qualification', 'qualification_date', 'highest_qualification', 'year_of_highest_qualification',
+                'additional_qualifications', 'date_of_1st_appt', 'date_of_confirmation',
+                'rank_on_1st_appt', 'date_of_present_appt', 'state_of_origin', 'local_govt_area',
+                'state_of_residence', 'residential_address', 'pf_no', 'nhf_no', 'bank_name',
+                'bank_branch', 'other_bank_name', 'account_no', 'pension_fund_admin', 
+                'other_pension_fund_admin', 'pension_no', 'telephone_no', 'email',
+                'nmcn_license_number', 'nmcn_issued_date', 'nmcn_expiry_date', 'nmcn_status',
+                'trcn_license_number', 'trcn_issued_date', 'trcn_expiry_date', 'trcn_status'
+            ];
+            
+            // Validate required headers
+            $requiredHeaders = ['employee_number', 'surname', 'first_name'];
+            foreach ($requiredHeaders as $required) {
+                if (!in_array($required, $headers)) {
+                    throw new Exception("Missing required column: " . str_replace('_', ' ', $required));
+                }
+            }
+            
+            $rowCount = 0;
+            $successCount = 0;
+            $errorCount = 0;
+            $errors = [];
+            
+            // Process rows
+            while (($row = fgetcsv($handle)) !== false) {
+                $rowCount++;
+                
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+                
+                // Map row data to associative array
+                $rowData = array_combine($headers, $row);
+                
+                try {
+                    // Clean and validate row data
+                    $cleanData = $nominalRollModel->cleanBulkUploadRow($rowData);
+                    
+                    // Check if employee exists
+                    $existingEmployee = $nominalRollModel->getEmployeeByNumber($cleanData['employee_number']);
+                    
+                    if ($existingEmployee) {
+                        // Update existing employee
+                        $result = $nominalRollModel->updateEmployee($existingEmployee['id'], $cleanData);
+                        if ($result) {
+                            $successCount++;
+                        } else {
+                            $errorCount++;
+                            $errors[] = "Row {$rowCount}: Failed to update employee {$cleanData['employee_number']}";
+                        }
+                    } else {
+                        // Create new employee
+                        $result = $nominalRollModel->createEmployeeLegacy($cleanData);
+                        if ($result) {
+                            $successCount++;
+                        } else {
+                            $errorCount++;
+                            $errors[] = "Row {$rowCount}: Failed to create employee {$cleanData['employee_number']}";
+                        }
+                    }
+                    
+                } catch (Exception $e) {
+                    $errorCount++;
+                    $errors[] = "Row {$rowCount}: " . $e->getMessage();
+                    error_log("Import error row {$rowCount}: " . $e->getMessage());
+                }
+            }
+            
+            fclose($handle);
+            
+            // Prepare result message
+            $message = "Import completed. Total rows: {$rowCount}, Success: {$successCount}, Errors: {$errorCount}";
+            
+            if ($errorCount > 0) {
+                $this->flash('warning', $message . '. ' . implode('<br>', array_slice($errors, 0, 5)));
+                if (count($errors) > 5) {
+                    $this->flash('info', '... and ' . (count($errors) - 5) . ' more errors.');
+                }
+            } else {
+                $this->flash('success', $message);
+            }
+            
+            $this->redirect('/admin/nominal-roll');
+            
+        } catch (Exception $e) {
+            error_log("NominalRollController importEmployees error: " . $e->getMessage());
+            $this->flash('error', 'Import failed: ' . $e->getMessage());
+            $this->redirect('/admin/nominal-roll/bulk-upload');
+        }
+    }
+    
+    /**
+     * ============================================
+     * UPDATED SEARCH FUNCTIONALITY (Section 10.2)
+     * ============================================
+     */
+    
+    /**
+     * Update the getFilters() method to include search for new fields
+     */
+    private function getFilters() {
+        $filters = [];
+        
+        // Existing filters
+        if (isset($_GET['search']) && !empty(trim($_GET['search']))) {
+            $search = trim($_GET['search']);
+            $filters['search'] = $search;
+            
+            // Expanded search fields to include new license numbers and IPPIS
+            $filters['search_fields'] = [
+                'employee_number', 'ippis_number', 'surname', 'first_name', 'middle_name',
+                'rank', 'department', 'cadre', 'email', 'telephone_number',
+                'nmcn_license_number', 'trcn_license_number'  // Added new searchable fields
+            ];
+        }
+        
+        // Add filter for license status
+        if (isset($_GET['nmcn_status']) && !empty($_GET['nmcn_status'])) {
+            $filters['nmcn_status'] = $_GET['nmcn_status'];
+        }
+        
+        if (isset($_GET['trcn_status']) && !empty($_GET['trcn_status'])) {
+            $filters['trcn_status'] = $_GET['trcn_status'];
+        }
+        
+        // Add filter for IPPIS number
+        if (isset($_GET['ippis_number']) && !empty($_GET['ippis_number'])) {
+            $filters['ippis_number'] = $_GET['ippis_number'];
+        }
+        
+        // Existing department filter
+        if (isset($_GET['department']) && !empty($_GET['department'])) {
+            $filters['department'] = $_GET['department'];
+        }
+        
+        // Existing cadre filter
+        if (isset($_GET['cadre']) && !empty($_GET['cadre'])) {
+            $filters['cadre'] = $_GET['cadre'];
+        }
+        
+        // Existing status filter
+        if (isset($_GET['status_filter']) && !empty($_GET['status_filter'])) {
+            $filters['status'] = $_GET['status_filter'];
+        }
+        
+        return $filters;
+    }
+    
+    /**
+     * Update the index() method to pass new filter options to the view
+     */
+    public function index() {
+        try {
+            error_log("=== CONTROLLER INDEX START ===");
+            
+            // ============================================
+            // FIX: READ parameters from URL query string
+            // ============================================
+            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+            $limit = isset($_GET['limit']) ? max(5, min(100, (int)$_GET['limit'])) : 10;
+            
+            // ============================================
+            // FIX: Build filters from URL query string using updated getFilters()
+            // ============================================
+            $filters = $this->getFilters();
+            
+            // ============================================
+            // STEP 3.1: ADD STATUS FILTER
+            // ============================================
+            if (!empty($_GET['status'])) {
+                $filters['status'] = trim($_GET['status']);
+            }
+            
+            // ============================================
+            // FIX: Add debug logging
+            // ============================================
+            error_log("Page: $page, Limit: $limit, Filters: " . json_encode($filters));
+            
+            // Get data from model
+            $result = $this->model->getAllEmployees($page, $limit, $filters);
+            
+            // Rest of existing index method code...
+            error_log("NominalRollController::index() - Page: $page, Limit: $limit");
+            error_log("Filters: " . print_r($filters, true));
+            
+            // Ensure result has expected structure
+            if (!isset($result['employees']) || !isset($result['pagination'])) {
+                throw new Exception("Invalid response from model");
+            }
+            
+            // Get filter options for dropdowns
+            $filterOptions = $this->model->getFilterOptions();
+            
+            // Get unique license statuses for new filters
+            $nmcnStatuses = $this->model->getUniqueValues('nmcn_status');
+            $trcnStatuses = $this->model->getUniqueValues('trcn_status');
+            
+            // Get statistics
+            $stats = $this->model->getEmployeeStats();
+            
+            // Prepare pagination data for view
+            $pagination = $result['pagination'];
+            $pagination['page'] = $page;
+            $pagination['limit'] = $limit;
+            
+            // Calculate total pages
+            if ($pagination['total'] > 0 && $limit > 0) {
+                $pagination['total_pages'] = ceil($pagination['total'] / $limit);
+            } else {
+                $pagination['total_pages'] = 1;
+            }
+            
+            // Ensure page doesn't exceed total pages
+            if ($page > $pagination['total_pages'] && $pagination['total_pages'] > 0) {
+                $page = $pagination['total_pages'];
+                // Re-fetch with corrected page
+                $result = $this->model->getAllEmployees($page, $limit, $filters);
+                $pagination = $result['pagination'];
+                $pagination['page'] = $page;
+                $pagination['limit'] = $limit;
+                $pagination['total_pages'] = ceil($pagination['total'] / $limit);
+            }
+            
+            // Calculate display range
+            $startRecord = (($page - 1) * $limit) + 1;
+            $endRecord = min($page * $limit, $pagination['total']);
+            
+            error_log("Final pagination: " . print_r($pagination, true));
+            error_log("=== CONTROLLER INDEX END ===");
+            
+            // Merge data including new filter options
+            $this->data = array_merge($this->data, [
+                'employees' => $result['employees'],
+                'pagination' => $pagination,
+                'filters' => $filters,
+                'filterOptions' => $filterOptions,
+                'nmcnStatuses' => $nmcnStatuses,
+                'trcnStatuses' => $trcnStatuses,
+                'stats' => $stats,
+                'currentLimit' => $limit,
+                'currentSortBy' => $filters['sort_by'] ?? 'surname',
+                'currentSortOrder' => $filters['sort_order'] ?? 'asc',
+                'pageTitle' => 'Nominal Roll Management - FCT College of Nursing Sciences',
+                'pageDescription' => 'Manage employee records and details',
+                'startRecord' => $startRecord,
+                'endRecord' => $endRecord
+            ]);
+            
+            // Render view
+            $this->render('admin/nominal-roll/index');
+            
+        } catch (Exception $e) {
+            error_log("NominalRollController index error: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            $this->showNominalRollError("Failed to load nominal roll data.");
+        }
+    }
+    
+    /**
+     * ============================================
+     * NEW LICENSE REPORTS METHODS (Section 10.2)
+     * ============================================
+     */
+    
+    /**
+     * Add method for expiring licenses report
+     */
+    public function expiringLicenses() {
+        try {
+            $nominalRollModel = new NominalRollModel();
+            
+            // Get employees with licenses expiring within 30 days
+            $expiringEmployees = $nominalRollModel->getEmployeesWithExpiringLicenses(30);
+            
+            $data = [
+                'employees' => $expiringEmployees,
+                'reportTitle' => 'Employees with Licenses Expiring Soon (Next 30 Days)',
+                'reportType' => 'expiring_licenses',
+                'csrf_token' => $this->generateCsrfToken('license_report')
+            ];
+            
+            // Merge with controller data
+            $this->data = array_merge($this->data, $data);
+            
+            $this->render('admin/nominal-roll/license-reports');
+            
+        } catch (Exception $e) {
+            error_log("NominalRollController expiringLicenses error: " . $e->getMessage());
+            $this->flash('error', 'An error occurred while loading expiring licenses report.');
+            $this->redirect('/admin/nominal-roll');
+        }
+    }
+    
+    /**
+     * Add method for expired licenses report
+     */
+    public function expiredLicenses() {
+        try {
+            $nominalRollModel = new NominalRollModel();
+            
+            // Get employees with expired licenses
+            $expiredEmployees = $nominalRollModel->getEmployeesWithExpiredLicenses();
+            
+            $data = [
+                'employees' => $expiredEmployees,
+                'reportTitle' => 'Employees with Expired Licenses',
+                'reportType' => 'expired_licenses',
+                'csrf_token' => $this->generateCsrfToken('license_report')
+            ];
+            
+            // Merge with controller data
+            $this->data = array_merge($this->data, $data);
+            
+            $this->render('admin/nominal-roll/license-reports');
+            
+        } catch (Exception $e) {
+            error_log("NominalRollController expiredLicenses error: " . $e->getMessage());
+            $this->flash('error', 'An error occurred while loading expired licenses report.');
+            $this->redirect('/admin/nominal-roll');
+        }
+    }
+    
+    /**
+     * Add method for license summary report
+     */
+    public function licenseSummary() {
+        try {
+            $nominalRollModel = new NominalRollModel();
+            
+            // Get all employees with license data
+            $allEmployees = $nominalRollModel->getAllEmployees();
+            
+            // Calculate summary statistics
+            $summary = [
+                'totalEmployees' => count($allEmployees),
+                'withNMCN' => 0,
+                'withTRCN' => 0,
+                'withBoth' => 0,
+                'withoutLicenses' => 0,
+                'nmcnActive' => 0,
+                'nmcnExpired' => 0,
+                'nmcnPending' => 0,
+                'trcnActive' => 0,
+                'trcnExpired' => 0,
+                'trcnPending' => 0,
+                'expiringSoon' => 0
+            ];
+            
+            $currentDate = date('Y-m-d');
+            $thresholdDate = date('Y-m-d', strtotime('+30 days'));
+            
+            foreach ($allEmployees as $employee) {
+                $hasNMCN = !empty($employee['nmcn_license_number']);
+                $hasTRCN = !empty($employee['trcn_license_number']);
+                
+                if ($hasNMCN) $summary['withNMCN']++;
+                if ($hasTRCN) $summary['withTRCN']++;
+                if ($hasNMCN && $hasTRCN) $summary['withBoth']++;
+                if (!$hasNMCN && !$hasTRCN) $summary['withoutLicenses']++;
+                
+                // NMCN Status
+                if ($hasNMCN && !empty($employee['nmcn_status'])) {
+                    switch ($employee['nmcn_status']) {
+                        case 'Active': $summary['nmcnActive']++; break;
+                        case 'Expired': $summary['nmcnExpired']++; break;
+                        case 'Pending': $summary['nmcnPending']++; break;
+                    }
+                    
+                    // Check if expiring soon
+                    if (!empty($employee['nmcn_expiry_date']) && 
+                        $employee['nmcn_expiry_date'] >= $currentDate && 
+                        $employee['nmcn_expiry_date'] <= $thresholdDate) {
+                        $summary['expiringSoon']++;
+                    }
+                }
+                
+                // TRCN Status
+                if ($hasTRCN && !empty($employee['trcn_status'])) {
+                    switch ($employee['trcn_status']) {
+                        case 'Active': $summary['trcnActive']++; break;
+                        case 'Expired': $summary['trcnExpired']++; break;
+                        case 'Pending': $summary['trcnPending']++; break;
+                    }
+                    
+                    // Check if expiring soon
+                    if (!empty($employee['trcn_expiry_date']) && 
+                        $employee['trcn_expiry_date'] >= $currentDate && 
+                        $employee['trcn_expiry_date'] <= $thresholdDate) {
+                        $summary['expiringSoon']++;
+                    }
+                }
+            }
+            
+            $data = [
+                'summary' => $summary,
+                'reportTitle' => 'Professional Licenses Summary Report',
+                'reportType' => 'license_summary',
+                'currentDate' => $currentDate,
+                'csrf_token' => $this->generateCsrfToken('license_report')
+            ];
+            
+            // Merge with controller data
+            $this->data = array_merge($this->data, $data);
+            
+            $this->render('admin/nominal-roll/license-summary');
+            
+        } catch (Exception $e) {
+            error_log("NominalRollController licenseSummary error: " . $e->getMessage());
+            $this->flash('error', 'An error occurred while generating license summary report.');
+            $this->redirect('/admin/nominal-roll');
+        }
+    }
+    
+    /**
+     * ============================================
      * FIX 2: Add Debug Method to Controller for Testing
      * ============================================
      */
@@ -582,116 +1211,6 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * Display all employees with pagination - UPDATED WITH FIXES AND STATUS FILTER
-     */
-    public function index() {
-        try {
-            error_log("=== CONTROLLER INDEX START ===");
-            
-            // ============================================
-            // FIX: READ parameters from URL query string
-            // ============================================
-            $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-            $limit = isset($_GET['limit']) ? max(5, min(100, (int)$_GET['limit'])) : 10;
-            
-            // ============================================
-            // FIX: Build filters from URL query string
-            // ============================================
-            $filters = [];
-            if (!empty($_GET['search'])) $filters['search'] = trim($_GET['search']);
-            if (!empty($_GET['state'])) $filters['state'] = trim($_GET['state']);
-            if (!empty($_GET['grade_level'])) $filters['grade_level'] = trim($_GET['grade_level']);
-            if (!empty($_GET['rank'])) $filters['rank'] = trim($_GET['rank']);
-            if (!empty($_GET['gender'])) $filters['gender'] = trim($_GET['gender']);
-            if (!empty($_GET['department'])) $filters['department'] = trim($_GET['department']);
-            
-            // ============================================
-            // STEP 3.1: ADD STATUS FILTER
-            // ============================================
-            if (!empty($_GET['status'])) {
-                $filters['status'] = trim($_GET['status']);
-            }
-            
-            // ============================================
-            // FIX: Add debug logging
-            // ============================================
-            error_log("Page: $page, Limit: $limit, Filters: " . json_encode($filters));
-            
-            // Get data from model
-            $result = $this->model->getAllEmployees($page, $limit, $filters);
-            
-            // Rest of existing index method code...
-            error_log("NominalRollController::index() - Page: $page, Limit: $limit");
-            error_log("Filters: " . print_r($filters, true));
-            
-            // Ensure result has expected structure
-            if (!isset($result['employees']) || !isset($result['pagination'])) {
-                throw new Exception("Invalid response from model");
-            }
-            
-            // Get filter options for dropdowns
-            $filterOptions = $this->model->getFilterOptions();
-            
-            // Get statistics
-            $stats = $this->model->getEmployeeStats();
-            
-            // Prepare pagination data for view
-            $pagination = $result['pagination'];
-            $pagination['page'] = $page;
-            $pagination['limit'] = $limit;
-            
-            // Calculate total pages
-            if ($pagination['total'] > 0 && $limit > 0) {
-                $pagination['total_pages'] = ceil($pagination['total'] / $limit);
-            } else {
-                $pagination['total_pages'] = 1;
-            }
-            
-            // Ensure page doesn't exceed total pages
-            if ($page > $pagination['total_pages'] && $pagination['total_pages'] > 0) {
-                $page = $pagination['total_pages'];
-                // Re-fetch with corrected page
-                $result = $this->model->getAllEmployees($page, $limit, $filters);
-                $pagination = $result['pagination'];
-                $pagination['page'] = $page;
-                $pagination['limit'] = $limit;
-                $pagination['total_pages'] = ceil($pagination['total'] / $limit);
-            }
-            
-            // Calculate display range
-            $startRecord = (($page - 1) * $limit) + 1;
-            $endRecord = min($page * $limit, $pagination['total']);
-            
-            error_log("Final pagination: " . print_r($pagination, true));
-            error_log("=== CONTROLLER INDEX END ===");
-            
-            // Merge data
-            $this->data = array_merge($this->data, [
-                'employees' => $result['employees'],
-                'pagination' => $pagination,
-                'filters' => $filters,
-                'filterOptions' => $filterOptions,
-                'stats' => $stats,
-                'currentLimit' => $limit,
-                'currentSortBy' => $filters['sort_by'] ?? 'surname',
-                'currentSortOrder' => $filters['sort_order'] ?? 'asc',
-                'pageTitle' => 'Nominal Roll Management - FCT College of Nursing Sciences',
-                'pageDescription' => 'Manage employee records and details',
-                'startRecord' => $startRecord,
-                'endRecord' => $endRecord
-            ]);
-            
-            // Render view
-            $this->render('admin/nominal-roll/index');
-            
-        } catch (Exception $e) {
-            error_log("NominalRollController index error: " . $e->getMessage());
-            error_log("Stack trace: " . $e->getTraceAsString());
-            $this->showNominalRollError("Failed to load nominal roll data.");
-        }
-    }
-    
-    /**
      * Display create employee form - UPDATED WITH STATUS FIELD
      */
     public function create() {
@@ -705,28 +1224,22 @@ class NominalRollController extends Controller {
             // Get filter options for dropdowns
             $filterOptions = $this->model->getFilterOptions();
             
-            // Generate employee number
+            // Generate employee number - UPDATED: Will now generate FCTCNS0001 format
             $employeeNumber = $this->model->generateEmployeeNumber();
             
-            // Check for stored form data (from failed validation)
-            $formData = [];
-            $formErrors = [];
-            
+            // Clear any cached form data to prevent old EMP numbers from showing
             if (isset($_SESSION['form_data'])) {
-                $formData = $_SESSION['form_data'];
                 unset($_SESSION['form_data']);
             }
-            
             if (isset($_SESSION['form_errors'])) {
-                $formErrors = $_SESSION['form_errors'];
                 unset($_SESSION['form_errors']);
             }
             
             $this->data = array_merge($this->data, [
                 'filterOptions' => $filterOptions,
-                'employeeNumber' => $employeeNumber,
-                'formData' => $formData,
-                'formErrors' => $formErrors,
+                'employeeNumber' => $employeeNumber, // This will now be FCTCNSxxxx
+                'formData' => [],
+                'formErrors' => [],
                 'pageTitle' => 'Add New Employee - Nominal Roll',
                 'pageDescription' => 'Add a new employee to the nominal roll'
             ]);
@@ -932,6 +1445,8 @@ class NominalRollController extends Controller {
             $this->data = array_merge($this->data, [
                 'employee' => $employee,
                 'activityLogs' => $activityLogs,
+                // Add license status data
+                'licenseStatus' => $this->getLicenseStatus($employee),
                 'pageTitle' => $employee['surname'] . ', ' . $employee['first_name'] . ' - Employee Details',
                 'pageDescription' => 'View employee record details'
             ]);
@@ -1023,6 +1538,8 @@ class NominalRollController extends Controller {
      */
     public function print($id) {
         try {
+            error_log("=== OLD PRINT METHOD CALLED FOR ID: " . $id . " ===");
+            
             $employee = $this->model->getEmployee($id);
             
             if (!$employee) {
@@ -1031,9 +1548,19 @@ class NominalRollController extends Controller {
                 return;
             }
             
+            // DEBUG
+            error_log("Employee Number from DB: " . ($employee['employee_number'] ?? 'NULL'));
+            
+            // Generate correct document ID
+            $documentId = ($employee['employee_number'] ?? '') . '-' . 
+                        date('YmdHis', strtotime($employee['updated_at'] ?? 'now'));
+            
+            error_log("Document ID: " . $documentId);
+            
             $this->data = array_merge($this->data, [
                 'employee' => $employee,
-                'pageTitle' => 'Print Employee Record'
+                'pageTitle' => 'Print Employee Record',
+                'documentId' => $documentId  // Make sure this is set
             ]);
             
             $this->render('admin/nominal-roll/print');
@@ -1073,13 +1600,17 @@ class NominalRollController extends Controller {
             'baseUrl' => BASE_URL,
             'showAudit' => $_GET['audit'] ?? false,
             'autoPrint' => $_GET['autoprint'] ?? false,
-            'documentId' => 'EMP-' . $employee['id'] . '-' . date('YmdHis'),
+            // Use employee_number (FCTCNS...) for document ID
+            'documentId' => $employee['employee_number'] . '-' . 
+                date('YmdHis', strtotime($employee['updated_at'] ?? 'now')),
             'confidential' => true,
             'pageTitle' => 'Print Employee Record - ' . $employee['surname'] . ', ' . $employee['first_name'],
             'user' => $_SESSION ?? [],
             'isSuperAdmin' => ($_SESSION['user_role'] ?? '') === 'admin',
             'hasEditPermission' => $this->data['hasEditPermission'],
-            'editingEnabled' => $this->model->isEditingEnabled()
+            'editingEnabled' => $this->model->isEditingEnabled(),
+            // Add license status data
+            'licenseStatus' => $this->getLicenseStatus($employee)
         ];
         
         // Merge with controller data
@@ -1094,8 +1625,9 @@ class NominalRollController extends Controller {
      */
     public function printDirect($id = null)
     {
+        // Add autoPrint flag to GET parameters
+        $_GET['autoprint'] = true;
         $this->printView($id);
-        // Auto-print is handled in the view via $autoPrint flag
     }
 
     /**
@@ -1103,6 +1635,7 @@ class NominalRollController extends Controller {
      */
     public function printWithAudit($id = null)
     {
+        // Add audit and autoPrint flags to GET parameters
         $_GET['audit'] = true;
         $_GET['autoprint'] = true;
         $this->printView($id);
@@ -1133,19 +1666,22 @@ class NominalRollController extends Controller {
             $verifierName = $_GET['name'] ?? '';
             $verifierNotes = $_GET['notes'] ?? '';
             
-            // Prepare verification data
+            // Prepare verification data with license status
             $verificationData = [
                 'employee' => $employee,
                 'documentRef' => $documentRef,
-                'expectedRef' => 'EMP-' . $employee['id'] . '-' . date('Ymd', strtotime($employee['updated_at'] ?? 'now')),
-                'isValid' => strpos($documentRef, 'EMP-' . $employee['id']) === 0,
+                'expectedRef' => $employee['employee_number'] . '-' . 
+                    date('Ymd', strtotime($employee['updated_at'] ?? 'now')),
+                'isValid' => strpos($documentRef, $employee['employee_number']) === 0,
                 'verificationDate' => date('Y-m-d H:i:s'),
                 'verificationId' => uniqid('VER-'),
                 'ipAddress' => $_SERVER['REMOTE_ADDR'],
                 'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
                 'verifierName' => $verifierName,
                 'verifierNotes' => $verifierNotes,
-                'baseUrl' => $this->data['baseUrl'] ?? BASE_URL
+                'baseUrl' => $this->data['baseUrl'] ?? BASE_URL,
+                // Add license status data
+                'licenseStatus' => $this->getLicenseStatus($employee)
             ];
             
             // Log verification attempt
@@ -2442,34 +2978,38 @@ class NominalRollController extends Controller {
     }
     
     /**
-     * Download bulk upload template - UPDATED WITH STATUS FIELD (STEP 5.1)
+     * Download bulk upload template - UPDATED WITH STATUS FIELD AND NEW FIELDS (STEP 5.1)
      */
     public function downloadTemplate() {
         try {
             // CSV template headers (updated with new fields including status)
             $headers = [
-                'S/N', 'Employee Number', 'Surname', 'First Name', 'Middle Name', 
-                'Sex', 'Date of Birth', 'Marital Status', 'Status', // ← ADDED STATUS HERE
+                'S/N', 'Employee Number', 'IPPIS Number', 'Surname', 'First Name', 'Middle Name', 
+                'Sex', 'Date of Birth', 'Marital Status', 'Status',
                 'Rank', 'Grade Level (GL)', 'Qualification', 'Qualification Date',
                 'Highest Qualification', 'Year of Highest Qualification', 'Additional Qualifications',
                 'Date of 1st Appt.', 'Date of Confirmation', 'Rank on 1st Appt.',
                 'Date of Present. Appt.', 'State of Origin', 'Local Govt. Area', 'State of Residence',
                 'Residential Address', 'PF No', 'NHF No', 'Bank Name', 'Bank Branch', 'Other Bank Name',
                 'Account No', 'Pension Fund Admin', 'Other Pension Fund Admin', 'Pension No', 
-                'Telephone No', 'Email'
+                'Telephone No', 'Email',
+                'NMCN License Number', 'NMCN Issued Date', 'NMCN Expiry Date', 'NMCN Status',
+                'TRCN License Number', 'TRCN Issued Date', 'TRCN Expiry Date', 'TRCN Status'
             ];
             
             // Sample data
             $sampleData = [
                 [
-                    '1', 'EMP20240001', 'Doe', 'John', 'Michael', 'Male', '1990-05-15',
-                    'Married', 'active', // ← ADDED STATUS VALUE HERE
+                    '1', 'EMP20240001', 'IPPIS123456', 'Doe', 'John', 'Michael', 'Male', '1990-05-15',
+                    'Married', 'active',
                     'Senior Lecturer', '15', 'B.Sc Nursing', '2010-05-20',
                     'PhD in Nursing', '2020', '[{"qualification":"M.Sc Nursing","year":"2015"},{"qualification":"PGDE","year":"2016"}]',
                     '2015-03-01', '2016-03-01', 'Lecturer II',
                     '2023-01-15', 'FCT', 'Gwagwalada', 'FCT', 'Plot 123, Gwagwalada, Abuja',
                     'PF123456', 'NHF789012', 'First Bank', 'Gwagwalada', '', '1234567890',
-                    'PENCOM', '', 'PEN123456', '08012345678', 'john.doe@fcns.edu.ng'
+                    'PENCOM', '', 'PEN123456', '08012345678', 'john.doe@fcns.edu.ng',
+                    'NMCN123456', '2022-01-15', '2025-01-15', 'Active',
+                    'TRCN654321', '2021-06-20', '2024-06-20', 'Active'
                 ]
             ];
             
@@ -2684,14 +3224,30 @@ class NominalRollController extends Controller {
             $defaultFields = $this->model->getDefaultReportFields();
             $savedReports = $this->model->getSavedReports($_SESSION['user_id'] ?? null);
             
+            // Add license fields to available fields (UPDATED)
+            if (isset($availableFields['professional'])) {
+                $availableFields['professional']['fields']['nmcn_license_number'] = 'NMCN License Number';
+                $availableFields['professional']['fields']['nmcn_issued_date'] = 'NMCN Issue Date';
+                $availableFields['professional']['fields']['nmcn_expiry_date'] = 'NMCN Expiry Date';
+                $availableFields['professional']['fields']['nmcn_status'] = 'NMCN Status';
+                $availableFields['professional']['fields']['trcn_license_number'] = 'TRCN License Number';
+                $availableFields['professional']['fields']['trcn_issued_date'] = 'TRCN Issue Date';
+                $availableFields['professional']['fields']['trcn_expiry_date'] = 'TRCN Expiry Date';
+                $availableFields['professional']['fields']['trcn_status'] = 'TRCN Status';
+            }
+            
             // Get filter options for status dropdown
             $filterOptions = $this->model->getFilterOptions();
+            
+            // Add license status options
+            $filterOptions['nmcn_status_options'] = $this->getNmcnStatusOptions();
+            $filterOptions['trcn_status_options'] = $this->getTrcnStatusOptions();
             
             $this->data = [
                 'availableFields' => $availableFields,
                 'defaultFields' => $defaultFields,
                 'savedReports' => $savedReports,
-                'filterOptions' => $filterOptions, // Contains status_options
+                'filterOptions' => $filterOptions, // Contains status_options and license status options
                 'pageTitle' => 'Nominal Roll Reports',
                 'pageDescription' => 'Generate custom reports'
             ];
@@ -2705,6 +3261,48 @@ class NominalRollController extends Controller {
             error_log("Reports error: " . $e->getMessage());
             $this->flash('error', 'Failed to load reports');
             $this->redirect('/admin/nominal-roll');
+        }
+    }
+    
+    /**
+     * Get NMCN status options
+     */
+    private function getNmcnStatusOptions()
+    {
+        try {
+            // Use the model to get distinct values
+            $statuses = $this->model->getUniqueValues('nmcn_status');
+            
+            // If no statuses found, return default options
+            if (empty($statuses)) {
+                return ['Active', 'Expired', 'Pending', 'Not Applicable'];
+            }
+            
+            return array_unique($statuses);
+        } catch (Exception $e) {
+            error_log("Error getting NMCN status options: " . $e->getMessage());
+            return ['Active', 'Expired', 'Pending', 'Not Applicable'];
+        }
+    }
+
+    /**
+     * Get TRCN status options
+     */
+    private function getTrcnStatusOptions()
+    {
+        try {
+            // Use the model to get distinct values
+            $statuses = $this->model->getUniqueValues('trcn_status');
+            
+            // If no statuses found, return default options
+            if (empty($statuses)) {
+                return ['Active', 'Expired', 'Pending', 'Not Applicable'];
+            }
+            
+            return array_unique($statuses);
+        } catch (Exception $e) {
+            error_log("Error getting TRCN status options: " . $e->getMessage());
+            return ['Active', 'Expired', 'Pending', 'Not Applicable'];
         }
     }
     
@@ -2754,7 +3352,7 @@ class NominalRollController extends Controller {
                 throw new Exception('Please select at least one field');
             }
             
-            // Get filters
+            // Get filters - ADD THE NEW LICENSE FILTERS
             $filters = [
                 'search' => $postData['search'] ?? '',
                 'state' => $postData['filter_state'] ?? '',
@@ -2762,13 +3360,16 @@ class NominalRollController extends Controller {
                 'grade_level' => $postData['filter_grade_level'] ?? '',
                 'sex' => $postData['filter_sex'] ?? '',
                 'rank' => $postData['filter_rank'] ?? '',
-                'status' => $postData['filter_status'] ?? 'active'
+                'status' => $postData['filter_status'] ?? 'active', // Employment status
+                'nmcn_status' => $postData['filter_nmcn_status'] ?? '', // NEW: NMCN license status
+                'trcn_status' => $postData['filter_trcn_status'] ?? ''  // NEW: TRCN license status
             ];
             
             $sortOrder = $postData['sort_order'] ?? 'surname_asc';
+            $limit = (int)($postData['preview_limit'] ?? 20);
             
             // Generate report data
-            $reportData = $this->model->generateReportData($selectedFields, $filters, $sortOrder);
+            $reportData = $this->model->getReportData($selectedFields, $filters, $sortOrder, $limit);
             
             // Get field labels
             $availableFields = $this->model->getAvailableReportFields();
@@ -2779,42 +3380,17 @@ class NominalRollController extends Controller {
                 }
             }
             
-            // Get preview limit
-            $previewLimit = isset($postData['preview_limit']) ? (int)$postData['preview_limit'] : 20;
-            
-            // Get preview data
-            if ($previewLimit <= 0 || $previewLimit > count($reportData)) {
-                $previewData = $reportData;
-            } else {
-                $previewData = array_slice($reportData, 0, $previewLimit);
-            }
-            
-            // Store in session
-            $_SESSION['current_report_data'] = [
-                'full_data' => $reportData,
-                'preview_data' => $previewData,
-                'selected_fields' => $selectedFields,
-                'field_labels' => $fieldLabels,
-                'filters' => $filters,
-                'sort_order' => $sortOrder,
-                'total_records' => count($reportData),
-                'preview_records' => count($previewData),
-                'preview_limit' => $previewLimit,
-                'statistics' => $this->model->getReportStatistics($reportData, $selectedFields),
-                'generated_at' => date('Y-m-d H:i:s')
-            ];
-            
-            error_log("=== GENERATE PREVIEW SUCCESS: " . count($previewData) . " preview records ===");
+            error_log("=== GENERATE PREVIEW SUCCESS: " . count($reportData['preview_data']) . " preview records ===");
             
             echo json_encode([
                 'success' => true,
                 'fields' => $selectedFields,
                 'fieldLabels' => $fieldLabels,
-                'data' => $previewData,
-                'fullData' => $reportData,
-                'totalRecords' => count($reportData),
-                'previewRecords' => count($previewData),
-                'previewLimit' => $previewLimit,
+                'data' => $reportData['preview_data'],
+                'fullData' => $reportData['full_data'],
+                'totalRecords' => $reportData['total_records'],
+                'previewRecords' => count($reportData['preview_data']),
+                'previewLimit' => $limit,
                 'config' => [
                     'selected_fields' => $selectedFields,
                     'sort_order' => $sortOrder,
@@ -2860,7 +3436,7 @@ class NominalRollController extends Controller {
                 throw new Exception('Please select at least one field');
             }
             
-            // Get filters - ADD STATUS FILTER (STEP 3.6)
+            // Get filters - ADD STATUS FILTER (STEP 3.6) AND LICENSE FILTERS
             $filters = [
                 'search' => $_POST['search'] ?? '',
                 'state' => $_POST['filter_state'] ?? '',
@@ -2868,7 +3444,9 @@ class NominalRollController extends Controller {
                 'grade_level' => $_POST['filter_grade_level'] ?? '',
                 'sex' => $_POST['filter_sex'] ?? '',
                 'rank' => $_POST['filter_rank'] ?? '',
-                'status' => $_POST['filter_status'] ?? '' // ADD THIS LINE
+                'status' => $_POST['filter_status'] ?? '', // ADD THIS LINE
+                'nmcn_status' => $_POST['filter_nmcn_status'] ?? '', // NEW: NMCN license status
+                'trcn_status' => $_POST['filter_trcn_status'] ?? ''  // NEW: TRCN license status
             ];
             
             $sortOrder = $_POST['sort_order'] ?? 'surname_asc';
@@ -2982,7 +3560,7 @@ class NominalRollController extends Controller {
                 return;
             }
             
-            // Get filters
+            // Get filters - INCLUDING NEW LICENSE FILTERS
             $filters = [
                 'search' => isset($_POST['search']) ? $_POST['search'] : '',
                 'state' => isset($_POST['filter_state']) ? $_POST['filter_state'] : '',
@@ -2990,7 +3568,9 @@ class NominalRollController extends Controller {
                 'grade_level' => isset($_POST['filter_grade_level']) ? $_POST['filter_grade_level'] : '',
                 'sex' => isset($_POST['filter_sex']) ? $_POST['filter_sex'] : '',
                 'rank' => isset($_POST['filter_rank']) ? $_POST['filter_rank'] : '',
-                'status' => isset($_POST['filter_status']) ? $_POST['filter_status'] : 'active'
+                'status' => isset($_POST['filter_status']) ? $_POST['filter_status'] : 'active',
+                'nmcn_status' => isset($_POST['filter_nmcn_status']) ? $_POST['filter_nmcn_status'] : '',
+                'trcn_status' => isset($_POST['filter_trcn_status']) ? $_POST['filter_trcn_status'] : ''
             ];
             
             $sortOrder = isset($_POST['sort_order']) ? $_POST['sort_order'] : 'surname_asc';
@@ -3053,7 +3633,7 @@ class NominalRollController extends Controller {
                 return;
             }
             
-            // Get filters
+            // Get filters - INCLUDING NEW LICENSE FILTERS
             $filters = [
                 'search' => isset($_POST['search']) ? $_POST['search'] : '',
                 'state' => isset($_POST['filter_state']) ? $_POST['filter_state'] : '',
@@ -3061,7 +3641,9 @@ class NominalRollController extends Controller {
                 'grade_level' => isset($_POST['filter_grade_level']) ? $_POST['filter_grade_level'] : '',
                 'sex' => isset($_POST['filter_sex']) ? $_POST['filter_sex'] : '',
                 'rank' => isset($_POST['filter_rank']) ? $_POST['filter_rank'] : '',
-                'status' => isset($_POST['filter_status']) ? $_POST['filter_status'] : 'active'
+                'status' => isset($_POST['filter_status']) ? $_POST['filter_status'] : 'active',
+                'nmcn_status' => isset($_POST['filter_nmcn_status']) ? $_POST['filter_nmcn_status'] : '',
+                'trcn_status' => isset($_POST['filter_trcn_status']) ? $_POST['filter_trcn_status'] : ''
             ];
             
             $sortOrder = isset($_POST['sort_order']) ? $_POST['sort_order'] : 'surname_asc';
@@ -3150,6 +3732,8 @@ class NominalRollController extends Controller {
         if (!empty($filters['sex'])) $activeFilters[] = "Gender: {$filters['sex']}";
         if (!empty($filters['rank'])) $activeFilters[] = "Rank: {$filters['rank']}";
         if (!empty($filters['status'])) $activeFilters[] = "Status: " . ucfirst($filters['status']);
+        if (!empty($filters['nmcn_status'])) $activeFilters[] = "NMCN Status: " . ucfirst($filters['nmcn_status']);
+        if (!empty($filters['trcn_status'])) $activeFilters[] = "TRCN Status: " . ucfirst($filters['trcn_status']);
         
         if (empty($activeFilters)) {
             $html .= 'No filters applied (showing all records)';
@@ -3204,13 +3788,13 @@ class NominalRollController extends Controller {
                     } elseif (strtolower($value) === 'female') {
                         $formattedValue = '<span style="background-color: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-weight: bold;">' . $formattedValue . '</span>';
                     }
-                } elseif ($field === 'status') {
+                } elseif ($field === 'status' || $field === 'nmcn_status' || $field === 'trcn_status') {
                     $cellClass = 'text-center';
                     if (strtolower($value) === 'active') {
                         $formattedValue = '<span style="background-color: #d4edda; color: #155724; padding: 3px 8px; border-radius: 4px; font-weight: bold;">' . $formattedValue . '</span>';
-                    } elseif (strtolower($value) === 'inactive') {
+                    } elseif (strtolower($value) === 'inactive' || strtolower($value) === 'expired') {
                         $formattedValue = '<span style="background-color: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-weight: bold;">' . $formattedValue . '</span>';
-                    } elseif (strtolower($value) === 'draft') {
+                    } elseif (strtolower($value) === 'draft' || strtolower($value) === 'pending') {
                         $formattedValue = '<span style="background-color: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 4px; font-weight: bold;">' . $formattedValue . '</span>';
                     }
                 }
@@ -3336,6 +3920,8 @@ class NominalRollController extends Controller {
         if (!empty($filters['sex'])) $filterRows[] = ['Gender:', $filters['sex']];
         if (!empty($filters['rank'])) $filterRows[] = ['Rank:', $filters['rank']];
         if (!empty($filters['status'])) $filterRows[] = ['Status:', ucfirst($filters['status'])];
+        if (!empty($filters['nmcn_status'])) $filterRows[] = ['NMCN Status:', ucfirst($filters['nmcn_status'])];
+        if (!empty($filters['trcn_status'])) $filterRows[] = ['TRCN Status:', ucfirst($filters['trcn_status'])];
         
         if (empty($filterRows)) {
             fputcsv($output, ['No filters applied (showing all records)']);
@@ -3375,7 +3961,7 @@ class NominalRollController extends Controller {
                 throw new Exception('No fields selected for export');
             }
             
-            // Get filters from POST
+            // Get filters from POST - INCLUDING LICENSE FILTERS
             $filters = [
                 'search' => $this->input('search', ''),
                 'state' => $this->input('filter_state', ''),
@@ -3383,7 +3969,9 @@ class NominalRollController extends Controller {
                 'grade_level' => $this->input('filter_grade_level', ''),
                 'sex' => $this->input('filter_sex', ''),
                 'rank' => $this->input('filter_rank', ''),
-                'status' => $this->input('filter_status', 'active')
+                'status' => $this->input('filter_status', 'active'),
+                'nmcn_status' => $this->input('filter_nmcn_status', ''),
+                'trcn_status' => $this->input('filter_trcn_status', '')
             ];
             
             $sortOrder = $this->input('sort_order', 'surname_asc');
@@ -3589,7 +4177,7 @@ class NominalRollController extends Controller {
             echo '<style>';
             echo 'body { font-family: Arial, sans-serif; font-size: 11px; }';
             echo 'table { border-collapse: collapse; width: 100%; }';
-            echo 'th { background-color: #f2f2f2; border: 1px solid #000; padding: 8px; font-weight: bold; text-align: left; }';
+            echo 'th { background: #f2f2f2; border: 1px solid #000; padding: 8px; font-weight: bold; text-align: left; }';
             echo 'td { border: 1px solid #ccc; padding: 6px; }';
             echo '.header { text-align: center; margin-bottom: 20px; }';
             echo '.summary { margin: 20px 0; padding: 10px; background-color: #f9f9f9; border: 1px solid #ddd; }';
@@ -3646,14 +4234,18 @@ class NominalRollController extends Controller {
                         }
                     }
                     
-                    // Format status
-                    if ($field === 'status') {
+                    // Format status (including license statuses)
+                    if ($field === 'status' || $field === 'nmcn_status' || $field === 'trcn_status') {
                         if (strtolower($value) === 'active') {
                             $value = 'Active';
                         } elseif (strtolower($value) === 'inactive') {
                             $value = 'Inactive';
                         } elseif (strtolower($value) === 'draft') {
                             $value = 'Draft';
+                        } elseif (strtolower($value) === 'expired') {
+                            $value = 'Expired';
+                        } elseif (strtolower($value) === 'pending') {
+                            $value = 'Pending';
                         }
                     }
                     
@@ -3762,14 +4354,18 @@ class NominalRollController extends Controller {
                         }
                     }
                     
-                    // Format status
-                    if ($field === 'status') {
+                    // Format status (including license statuses)
+                    if ($field === 'status' || $field === 'nmcn_status' || $field === 'trcn_status') {
                         if (strtolower($value) === 'active') {
                             $value = 'Active';
                         } elseif (strtolower($value) === 'inactive') {
                             $value = 'Inactive';
                         } elseif (strtolower($value) === 'draft') {
                             $value = 'Draft';
+                        } elseif (strtolower($value) === 'expired') {
+                            $value = 'Expired';
+                        } elseif (strtolower($value) === 'pending') {
+                            $value = 'Pending';
                         }
                     }
                     
@@ -4373,12 +4969,13 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * Get form data from POST - CORRECTED VERSION with STEP 3 enhancements
+     * Get form data from POST - CORRECTED VERSION with STEP 3.1 enhancements (NEW FIELDS ADDED)
      */
     private function getFormData($sanitize = false) {
         // Get all form fields
         $data = [
             'employee_number' => $this->input('employee_number', ''),
+            'ippis_number' => $this->input('ippis_number', ''),
             'surname' => $this->input('surname', ''),
             'first_name' => $this->input('first_name', ''),
             'middle_name' => $this->input('middle_name', ''),
@@ -4441,6 +5038,17 @@ class NominalRollController extends Controller {
             // STEP 3.4: ADD STATUS FIELD
             // ========================================
             'status' => $this->input('status', 'active'),
+            // ========================================
+            // STEP 3.1: ADD NEW PROFESSIONAL LICENSE FIELDS
+            // ========================================
+            'nmcn_license_number' => $this->input('nmcn_license_number', ''),
+            'nmcn_issued_date' => $this->input('nmcn_issued_date', ''),
+            'nmcn_expiry_date' => $this->input('nmcn_expiry_date', ''),
+            'nmcn_status' => $this->input('nmcn_status', ''),
+            'trcn_license_number' => $this->input('trcn_license_number', ''),
+            'trcn_issued_date' => $this->input('trcn_issued_date', ''),
+            'trcn_expiry_date' => $this->input('trcn_expiry_date', ''),
+            'trcn_status' => $this->input('trcn_status', ''),
         ];
         
         // ========================================
@@ -4530,6 +5138,84 @@ class NominalRollController extends Controller {
         return $data;
     }
     
+    /**
+     * Get license status information for an employee
+     */
+    private function getLicenseStatus($employee)
+    {
+        $licenseStatus = [
+            'nmcn' => [
+                'number' => $employee['nmcn_license_number'] ?? null,
+                'issued_date' => $employee['nmcn_issued_date'] ?? null,
+                'expiry_date' => $employee['nmcn_expiry_date'] ?? null,
+                'status' => $employee['nmcn_status'] ?? null,
+                'is_valid' => false,
+                'is_expired' => false,
+                'is_expiring' => false,
+                'days_remaining' => null
+            ],
+            'trcn' => [
+                'number' => $employee['trcn_license_number'] ?? null,
+                'issued_date' => $employee['trcn_issued_date'] ?? null,
+                'expiry_date' => $employee['trcn_expiry_date'] ?? null,
+                'status' => $employee['trcn_status'] ?? null,
+                'is_valid' => false,
+                'is_expired' => false,
+                'is_expiring' => false,
+                'days_remaining' => null
+            ],
+            'overall_status' => 'none'
+        ];
+        
+        $now = time();
+        $hasValidLicense = false;
+        $hasExpiringLicense = false;
+        
+        // Check NMCN license
+        if (!empty($licenseStatus['nmcn']['expiry_date'])) {
+            $expiryDate = strtotime($licenseStatus['nmcn']['expiry_date']);
+            $daysRemaining = floor(($expiryDate - $now) / (60 * 60 * 24));
+            
+            $licenseStatus['nmcn']['days_remaining'] = $daysRemaining;
+            $licenseStatus['nmcn']['is_expired'] = $daysRemaining <= 0;
+            $licenseStatus['nmcn']['is_expiring'] = $daysRemaining > 0 && $daysRemaining <= 30;
+            $licenseStatus['nmcn']['is_valid'] = $daysRemaining > 0;
+            
+            if ($licenseStatus['nmcn']['is_valid']) {
+                $hasValidLicense = true;
+            }
+            if ($licenseStatus['nmcn']['is_expiring']) {
+                $hasExpiringLicense = true;
+            }
+        }
+        
+        // Check TRCN license
+        if (!empty($licenseStatus['trcn']['expiry_date'])) {
+            $expiryDate = strtotime($licenseStatus['trcn']['expiry_date']);
+            $daysRemaining = floor(($expiryDate - $now) / (60 * 60 * 24));
+            
+            $licenseStatus['trcn']['days_remaining'] = $daysRemaining;
+            $licenseStatus['trcn']['is_expired'] = $daysRemaining <= 0;
+            $licenseStatus['trcn']['is_expiring'] = $daysRemaining > 0 && $daysRemaining <= 30;
+            $licenseStatus['trcn']['is_valid'] = $daysRemaining > 0;
+            
+            if ($licenseStatus['trcn']['is_valid']) {
+                $hasValidLicense = true;
+            }
+            if ($licenseStatus['trcn']['is_expiring']) {
+                $hasExpiringLicense = true;
+            }
+        }
+        
+        // Determine overall status
+        if ($hasValidLicense) {
+            $licenseStatus['overall_status'] = $hasExpiringLicense ? 'expiring' : 'valid';
+        } elseif ($licenseStatus['nmcn']['is_expired'] || $licenseStatus['trcn']['is_expired']) {
+            $licenseStatus['overall_status'] = 'expired';
+        }
+        
+        return $licenseStatus;
+    }
     /**
      * Debug helper method
      */
@@ -5184,7 +5870,7 @@ class NominalRollController extends Controller {
     /**
      * Send JSON response
      */
-    private function jsonResponse($data) {
+    protected function jsonResponse($data) {
         header('Content-Type: application/json');
         echo json_encode($data);
         exit;
@@ -5310,5 +5996,66 @@ class NominalRollController extends Controller {
         
         // Final fallback
         return 'application/octet-stream';
+    }
+    
+    /**
+     * ============================================
+     * HELPER METHODS FOR CSRF
+     * ============================================
+     */
+    
+    /**
+     * Generate CSRF token
+     */
+    private function generateCsrfToken($formId = 'nominal_roll') {
+        require_once APP_PATH . '/config/session.php';
+        return Session::generateCSRFTokenMulti();
+    }
+    
+    /**
+     * Verify CSRF token
+     */
+    private function verifyCsrfToken() {
+        require_once APP_PATH . '/config/session.php';
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        return Session::validateCSRFTokenMulti($csrfToken);
+    }
+    
+    /**
+     * Get input value
+     */
+    protected function input($key = null, $default = null) {
+        if ($key === null) {
+            return $default;
+        }
+        
+        if (isset($_POST[$key])) {
+            return is_string($_POST[$key]) ? trim($_POST[$key]) : $_POST[$key];
+        }
+        if (isset($_GET[$key])) {
+            return is_string($_GET[$key]) ? trim($_GET[$key]) : $_GET[$key];
+        }
+        return $default;
+    }
+    
+    /**
+     * Get flash message
+     */
+    protected function getFlash($type) {
+        $key = 'flash_' . $type;
+        if (isset($_SESSION[$key])) {
+            $message = $_SESSION[$key];
+            unset($_SESSION[$key]);
+            return $message;
+        }
+        return null;
+    }
+    
+    /**
+     * Set flash message
+     */
+    protected function flash($type, $message) {
+        $key = 'flash_' . $type;
+        $_SESSION[$key] = $message;
     }
 }

@@ -73,6 +73,18 @@
                             <small class="form-text">Unique identifier for the employee</small>
                         </div>
 
+                        <!-- IPPIS Number -->
+                        <div class="form-group">
+                            <label for="ippis_number">IPPIS Number</label>
+                            <input type="text" 
+                                   id="ippis_number" 
+                                   name="ippis_number" 
+                                   value="<?php echo htmlspecialchars($formData['ippis_number'] ?? $employee['ippis_number'] ?? ''); ?>"
+                                   class="form-control"
+                                   maxlength="50" 
+                                   placeholder="Enter IPPIS number">
+                        </div>
+
                         <!-- Surname -->
                         <div class="form-group required">
                             <label for="surname">Surname *</label>
@@ -138,7 +150,7 @@
                             </select>
                         </div>
 
-                        <!-- Status Field - ADDED HERE -->
+                        <!-- Status Field -->
                         <div class="form-group required">
                             <label for="status">Status <span class="text-danger">*</span></label>
                             <select id="status" name="status" class="form-control" required>
@@ -414,7 +426,7 @@
                                       placeholder="List professional certifications separated by commas"><?php echo htmlspecialchars($formData['professional_certifications'] ?? $employee['professional_certifications'] ?? ''); ?></textarea>
                         </div>
 
-                        <!-- Additional Qualifications - UPDATED to match create form -->
+                        <!-- Additional Qualifications -->
                         <div class="form-group full-width-group">
                             <label>Additional Qualifications</label>
                             <div id="qualifications-container">
@@ -496,7 +508,105 @@
             </div>
         </div>
 
-        <!-- Row 3: Location & Origin -->
+        <!-- Row 3: Professional Licenses - FIXED -->
+        <div class="form-row">
+            <div class="form-card full-width-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-id-badge"></i> Professional Licenses</h3>
+                </div>
+                <div class="card-body">
+                    <div class="licenses-grid">
+                        <!-- NMCN License -->
+                        <div class="license-card <?php 
+                            if (!empty($employee['nmcn_status'])) {
+                                echo $employee['nmcn_status'] === 'Expired' ? 'license-expired' : 
+                                     ($employee['nmcn_status'] === 'Active' ? 'license-active' : '');
+                            }
+                        ?>">
+                            <h4 class="section-title">
+                                <i class="fas fa-hospital-user"></i> NMCN License
+                            </h4>
+                            <div class="license-fields">
+                                <div class="form-group">
+                                    <label for="nmcn_license_number">NMCN License Number</label>
+                                    <input type="text" id="nmcn_license_number" name="nmcn_license_number" 
+                                           class="form-control" 
+                                           value="<?php echo htmlspecialchars($employee['nmcn_license_number'] ?? ''); ?>" 
+                                           maxlength="50" 
+                                           placeholder="NMCN license number">
+                                </div>
+                                <div class="form-group">
+                                    <label for="nmcn_issued_date">Issued Date</label>
+                                    <input type="date" id="nmcn_issued_date" name="nmcn_issued_date" 
+                                           class="form-control" 
+                                           value="<?php echo htmlspecialchars($employee['nmcn_issued_date'] ?? ''); ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label for="nmcn_expiry_date">Expiry Date</label>
+                                    <input type="date" id="nmcn_expiry_date" name="nmcn_expiry_date" 
+                                           class="form-control" 
+                                           value="<?php echo htmlspecialchars($employee['nmcn_expiry_date'] ?? ''); ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label for="nmcn_status">NMCN Status</label>
+                                    <select id="nmcn_status" name="nmcn_status" class="form-control">
+                                        <option value="">Select Status</option>
+                                        <option value="Active" <?php echo isset($employee['nmcn_status']) && $employee['nmcn_status'] == 'Active' ? 'selected' : ''; ?>>Active</option>
+                                        <option value="Expired" <?php echo isset($employee['nmcn_status']) && $employee['nmcn_status'] == 'Expired' ? 'selected' : ''; ?>>Expired</option>
+                                        <option value="Pending" <?php echo isset($employee['nmcn_status']) && $employee['nmcn_status'] == 'Pending' ? 'selected' : ''; ?>>Pending</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- TRCN License -->
+                        <div class="license-card <?php 
+                            if (!empty($employee['trcn_status'])) {
+                                echo $employee['trcn_status'] === 'Expired' ? 'license-expired' : 
+                                     ($employee['trcn_status'] === 'Active' ? 'license-active' : '');
+                            }
+                        ?>">
+                            <h4 class="section-title">
+                                <i class="fas fa-chalkboard-teacher"></i> TRCN License
+                            </h4>
+                            <div class="license-fields">
+                                <div class="form-group">
+                                    <label for="trcn_license_number">TRCN License Number</label>
+                                    <input type="text" id="trcn_license_number" name="trcn_license_number" 
+                                           class="form-control" 
+                                           value="<?php echo htmlspecialchars($employee['trcn_license_number'] ?? ''); ?>" 
+                                           maxlength="50" 
+                                           placeholder="TRCN license number">
+                                </div>
+                                <div class="form-group">
+                                    <label for="trcn_issued_date">Issued Date</label>
+                                    <input type="date" id="trcn_issued_date" name="trcn_issued_date" 
+                                           class="form-control" 
+                                           value="<?php echo htmlspecialchars($employee['trcn_issued_date'] ?? ''); ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label for="trcn_expiry_date">Expiry Date</label>
+                                    <input type="date" id="trcn_expiry_date" name="trcn_expiry_date" 
+                                           class="form-control" 
+                                           value="<?php echo htmlspecialchars($employee['trcn_expiry_date'] ?? ''); ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label for="trcn_status">TRCN Status</label>
+                                    <select id="trcn_status" name="trcn_status" class="form-control">
+                                        <option value="">Select Status</option>
+                                        <option value="Active" <?php echo isset($employee['trcn_status']) && $employee['trcn_status'] == 'Active' ? 'selected' : ''; ?>>Active</option>
+                                        <option value="Expired" <?php echo isset($employee['trcn_status']) && $employee['trcn_status'] == 'Expired' ? 'selected' : ''; ?>>Expired</option>
+                                        <option value="Pending" <?php echo isset($employee['trcn_status']) && $employee['trcn_status'] == 'Pending' ? 'selected' : ''; ?>>Pending</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 4: Location & Origin -->
         <div class="form-row">
             <div class="form-card">
                 <div class="card-header">
@@ -586,7 +696,7 @@
                 </div>
             </div>
 
-            <!-- Row 3b: Medical & Identification -->
+            <!-- Row 4b: Medical & Identification -->
             <div class="form-card">
                 <div class="card-header">
                     <h3><i class="fas fa-user-tie"></i> Medical & Identification</h3>
@@ -702,7 +812,7 @@
             </div>
         </div>
 
-        <!-- Row 4: Financial Information -->
+        <!-- Row 5: Financial Information -->
         <div class="form-row">
             <div class="form-card">
                 <div class="card-header">
@@ -854,7 +964,7 @@
                 </div>
             </div>
 
-            <!-- Row 4b: Emergency Contacts & Next of Kin -->
+            <!-- Row 5b: Emergency Contacts & Next of Kin -->
             <div class="form-card">
                 <div class="card-header">
                     <h3><i class="fas fa-user-friends"></i> Emergency Contacts & Next of Kin</h3>
@@ -952,7 +1062,7 @@
             </div>
         </div>
 
-        <!-- Row 5: Passport Photo - FIXED -->
+        <!-- Row 6: Passport Photo -->
         <div class="form-row">
             <div class="form-card">
                 <div class="card-header">
@@ -1073,7 +1183,7 @@
 </div>
 <?php } ?>
 
-<!-- Template for Qualification Entry - UPDATED to match create form -->
+<!-- Template for Qualification Entry -->
 <template id="qualification-template">
     <div class="qualification-entry">
         <div class="qualification-row">
@@ -1098,6 +1208,94 @@
 <!-- JavaScript for Edit Form -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Add to existing JavaScript: License Dates Validation and Auto-update Status
+    // Validate license dates
+    function validateLicenseDates() {
+        const nmcnIssued = document.getElementById('nmcn_issued_date');
+        const nmcnExpiry = document.getElementById('nmcn_expiry_date');
+        const trcnIssued = document.getElementById('trcn_issued_date');
+        const trcnExpiry = document.getElementById('trcn_expiry_date');
+        
+        let isValid = true;
+        let message = '';
+        
+        // Validate NMCN dates
+        if (nmcnIssued.value && nmcnExpiry.value) {
+            const issued = new Date(nmcnIssued.value);
+            const expiry = new Date(nmcnExpiry.value);
+            
+            if (expiry <= issued) {
+                isValid = false;
+                message = 'NMCN expiry date must be after issue date.';
+            }
+        }
+        
+        // Validate TRCN dates
+        if (trcnIssued.value && trcnExpiry.value) {
+            const issued = new Date(trcnIssued.value);
+            const expiry = new Date(trcnExpiry.value);
+            
+            if (expiry <= issued) {
+                isValid = false;
+                message = message ? message + '\nTRCN expiry date must be after issue date.' : 
+                                   'TRCN expiry date must be after issue date.';
+            }
+        }
+        
+        if (!isValid) {
+            alert(message);
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Auto-update status based on expiry dates
+    function updateLicenseStatus() {
+        const today = new Date();
+        
+        // NMCN
+        const nmcnExpiry = document.getElementById('nmcn_expiry_date');
+        const nmcnStatus = document.getElementById('nmcn_status');
+        
+        if (nmcnExpiry.value) {
+            const expiryDate = new Date(nmcnExpiry.value);
+            const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilExpiry < 0 && nmcnStatus.value !== 'Expired') {
+                nmcnStatus.value = 'Expired';
+            } else if (daysUntilExpiry >= 0 && nmcnStatus.value !== 'Active') {
+                nmcnStatus.value = 'Active';
+            }
+        }
+        
+        // TRCN
+        const trcnExpiry = document.getElementById('trcn_expiry_date');
+        const trcnStatus = document.getElementById('trcn_status');
+        
+        if (trcnExpiry.value) {
+            const expiryDate = new Date(trcnExpiry.value);
+            const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilExpiry < 0 && trcnStatus.value !== 'Expired') {
+                trcnStatus.value = 'Expired';
+            } else if (daysUntilExpiry >= 0 && trcnStatus.value !== 'Active') {
+                trcnStatus.value = 'Active';
+            }
+        }
+    }
+    
+    // Attach event listeners for license status updates
+    document.querySelectorAll('#nmcn_expiry_date, #trcn_expiry_date').forEach(input => {
+        input.addEventListener('change', updateLicenseStatus);
+    });
+    
+    // Set maximum dates to today for issued dates
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelectorAll('input[type="date"][id$="_issued_date"]').forEach(input => {
+        input.max = today;
+    });
+    
     // Nigerian States and LGAs Data
     const nigerianLGAs = {
         'Abia': ['Aba North', 'Aba South', 'Arochukwu', 'Bende', 'Ikwuano', 'Isiala Ngwa North', 'Isiala Ngwa South', 
@@ -1264,7 +1462,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Multiple Qualifications with Year - UPDATED to match create form
+    // Multiple Qualifications with Year
     const qualificationsContainer = document.getElementById('qualifications-container');
     const addQualificationBtn = document.getElementById('add-qualification-btn');
     const qualificationTemplate = document.getElementById('qualification-template');
@@ -1418,7 +1616,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Form validation
+    // Form validation - updated to include license validation
     const form = document.getElementById('employeeForm');
     if (form) {
         form.addEventListener('submit', function(e) {
@@ -1449,6 +1647,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     yearSelect.classList.remove('is-invalid');
                 }
             });
+            
+            // Validate license dates
+            if (!validateLicenseDates()) {
+                isValid = false;
+            }
             
             if (!isValid) {
                 e.preventDefault();
@@ -1502,6 +1705,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update on resize
     window.addEventListener('resize', updateButtonTextForMobile);
+    
+    // Initial license status update on page load
+    updateLicenseStatus();
 });
 
 // Delete modal functions
@@ -1643,6 +1849,111 @@ document.addEventListener('keydown', function(event) {
     background: rgba(255, 255, 255, 0.1);
     border-color: white;
     transform: translateY(-2px);
+}
+
+/* FIXED: Full-width Professional Licenses card */
+.full-width-card {
+    grid-column: 1 / -1; /* Span all columns */
+}
+
+/* FIXED: License grid layout */
+.licenses-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+@media (min-width: 768px) {
+    .licenses-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* FIXED: License fields layout */
+.license-fields {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+@media (min-width: 640px) {
+    .license-fields {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* NEW: License card styles */
+.license-card {
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    height: auto;
+}
+
+.license-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.license-card h4.section-title {
+    color: #2c5282;
+    border-bottom: 3px solid #4299e1;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.license-card h4 i {
+    color: #4299e1;
+}
+
+.license-expired {
+    border-left: 4px solid #fc8181;
+}
+
+.license-active {
+    border-left: 4px solid #68d391;
+}
+
+/* Mobile Responsive for Licenses */
+@media (max-width: 768px) {
+    .licenses-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .license-fields {
+        grid-template-columns: 1fr;
+    }
+    
+    .full-width-card {
+        grid-column: 1;
+    }
+}
+
+/* EMERGENCY FIX */
+div[class*="license-card"] {
+    display: block !important;
+    width: 100% !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+}
+
+.row {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 15px !important;
+}
+
+.col-md-6, .col-md-3, .col-md-12 {
+    width: 100% !important;
+    padding: 0 !important;
 }
 
 /* Photo Section */

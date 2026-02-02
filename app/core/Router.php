@@ -168,7 +168,7 @@ class Router {
         $this->post('/admin/nominal-roll/delete/{id}', 'NominalRollController@destroy');
         $this->get('/admin/nominal-roll/bulk-upload', 'NominalRollController@bulkUpload');
         $this->post('/admin/nominal-roll/bulk-upload', 'NominalRollController@processBulkUpload'); // ADDED: POST route for bulk upload
-
+  
         // FIXED: Keep only these two admin routes for bulk upload (removed conflicting non-admin routes)
         $this->post('/admin/nominal-roll/validate-bulk-upload', 'NominalRollController@validateBulkUpload');
         $this->post('/admin/nominal-roll/bulk-upload-process', 'NominalRollController@processBulkUpload');

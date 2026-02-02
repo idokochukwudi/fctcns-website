@@ -10,6 +10,7 @@
  * 4. Fixed form submission with proper POST request
  * 5. Removed unnecessary complexity
  * 6. FIXED STATUS BADGES - Now shows all statuses (active, inactive, retired, draft) from database
+ * 7. ADDED Professional Licenses section for NMCN and TRCN
  */
 
 // First, include the session class to generate proper token
@@ -616,6 +617,35 @@ $display_text = $status_text[$status] ?? strtoupper($status);
             white-space: nowrap;
         }
 
+        /* Professional Licenses Card Styling */
+        .license-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            height: 100%;
+        }
+
+        .license-card h4 {
+            color: #2c5282;
+            border-bottom: 2px solid #4299e1;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .license-expiring {
+            border-left: 4px solid #f6ad55;
+        }
+
+        .license-expired {
+            border-left: 4px solid #fc8181;
+        }
+
+        .license-active {
+            border-left: 4px solid #68d391;
+        }
+
         /* Audit Trail */
         .audit-trail {
             margin-bottom: 30px;
@@ -1069,6 +1099,9 @@ $display_text = $status_text[$status] ?? strtoupper($status);
                 <button class="tab-button" data-tab="qualifications">
                     <i class="fas fa-graduation-cap"></i> Qualifications
                 </button>
+                <button class="tab-button" data-tab="licenses">
+                    <i class="fas fa-id-card"></i> Professional Licenses
+                </button>
                 <button class="tab-button" data-tab="audit">
                     <i class="fas fa-history"></i> Audit Trail
                 </button>
@@ -1355,6 +1388,159 @@ $display_text = $status_text[$status] ?? strtoupper($status);
                                 <?php else: ?>
                                 <p class="text-muted">No professional certifications</p>
                                 <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Professional Licenses Tab -->
+                <div id="licenses" class="tab-pane">
+                    <div class="tab-card">
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h3 class="card-title">Professional Licenses</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <!-- NMCN License -->
+                                    <div class="col-md-6">
+                                        <?php
+                                        $nmcnExpiryDate = !empty($employee['nmcn_expiry_date']) ? strtotime($employee['nmcn_expiry_date']) : null;
+                                        $now = time();
+                                        $nmcnCardClass = 'license-card';
+                                        if ($nmcnExpiryDate) {
+                                            $daysLeft = floor(($nmcnExpiryDate - $now) / (60 * 60 * 24));
+                                            if ($daysLeft <= 0) {
+                                                $nmcnCardClass .= ' license-expired';
+                                            } elseif ($daysLeft <= 30) {
+                                                $nmcnCardClass .= ' license-expiring';
+                                            } else {
+                                                $nmcnCardClass .= ' license-active';
+                                            }
+                                        }
+                                        ?>
+                                        <div class="<?php echo $nmcnCardClass; ?>">
+                                            <h4>NMCN License</h4>
+                                            <div class="info-item">
+                                                <label>License Number:</label>
+                                                <span><?php echo !empty($employee['nmcn_license_number']) ? htmlspecialchars($employee['nmcn_license_number']) : '<em class="text-muted">Not provided</em>'; ?></span>
+                                            </div>
+                                            <div class="info-item">
+                                                <label>Issued Date:</label>
+                                                <span><?php echo !empty($employee['nmcn_issued_date']) ? date('M d, Y', strtotime($employee['nmcn_issued_date'])) : '<em class="text-muted">Not provided</em>'; ?></span>
+                                            </div>
+                                            <div class="info-item">
+                                                <label>Expiry Date:</label>
+                                                <span>
+                                                    <?php 
+                                                    if (!empty($employee['nmcn_expiry_date'])) {
+                                                        $expiryDate = strtotime($employee['nmcn_expiry_date']);
+                                                        $now = time();
+                                                        $daysLeft = floor(($expiryDate - $now) / (60 * 60 * 24));
+                                                        
+                                                        echo date('M d, Y', $expiryDate);
+                                                        if ($daysLeft > 0 && $daysLeft <= 30) {
+                                                            echo ' <span class="badge badge-warning">Expires in ' . $daysLeft . ' days</span>';
+                                                        } elseif ($daysLeft <= 0) {
+                                                            echo ' <span class="badge badge-danger">Expired</span>';
+                                                        } else {
+                                                            echo ' <span class="badge badge-success">Active</span>';
+                                                        }
+                                                    } else {
+                                                        echo '<em class="text-muted">Not provided</em>';
+                                                    }
+                                                    ?>
+                                                </span>
+                                            </div>
+                                            <div class="info-item">
+                                                <label>Status:</label>
+                                                <span>
+                                                    <?php if (!empty($employee['nmcn_status'])): 
+                                                        $badgeClass = 'badge-secondary';
+                                                        if ($employee['nmcn_status'] == 'Active') $badgeClass = 'badge-success';
+                                                        if ($employee['nmcn_status'] == 'Expired') $badgeClass = 'badge-danger';
+                                                        if ($employee['nmcn_status'] == 'Pending') $badgeClass = 'badge-warning';
+                                                    ?>
+                                                    <span class="badge <?php echo $badgeClass; ?>">
+                                                        <?php echo htmlspecialchars($employee['nmcn_status']); ?>
+                                                    </span>
+                                                    <?php else: ?>
+                                                    <em class="text-muted">Not provided</em>
+                                                    <?php endif; ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- TRCN License -->
+                                    <div class="col-md-6">
+                                        <?php
+                                        $trcnExpiryDate = !empty($employee['trcn_expiry_date']) ? strtotime($employee['trcn_expiry_date']) : null;
+                                        $trcnCardClass = 'license-card';
+                                        if ($trcnExpiryDate) {
+                                            $daysLeft = floor(($trcnExpiryDate - $now) / (60 * 60 * 24));
+                                            if ($daysLeft <= 0) {
+                                                $trcnCardClass .= ' license-expired';
+                                            } elseif ($daysLeft <= 30) {
+                                                $trcnCardClass .= ' license-expiring';
+                                            } else {
+                                                $trcnCardClass .= ' license-active';
+                                            }
+                                        }
+                                        ?>
+                                        <div class="<?php echo $trcnCardClass; ?>">
+                                            <h4>TRCN License</h4>
+                                            <div class="info-item">
+                                                <label>License Number:</label>
+                                                <span><?php echo !empty($employee['trcn_license_number']) ? htmlspecialchars($employee['trcn_license_number']) : '<em class="text-muted">Not provided</em>'; ?></span>
+                                            </div>
+                                            <div class="info-item">
+                                                <label>Issued Date:</label>
+                                                <span><?php echo !empty($employee['trcn_issued_date']) ? date('M d, Y', strtotime($employee['trcn_issued_date'])) : '<em class="text-muted">Not provided</em>'; ?></span>
+                                            </div>
+                                            <div class="info-item">
+                                                <label>Expiry Date:</label>
+                                                <span>
+                                                    <?php 
+                                                    if (!empty($employee['trcn_expiry_date'])) {
+                                                        $expiryDate = strtotime($employee['trcn_expiry_date']);
+                                                        $now = time();
+                                                        $daysLeft = floor(($expiryDate - $now) / (60 * 60 * 24));
+                                                        
+                                                        echo date('M d, Y', $expiryDate);
+                                                        if ($daysLeft > 0 && $daysLeft <= 30) {
+                                                            echo ' <span class="badge badge-warning">Expires in ' . $daysLeft . ' days</span>';
+                                                        } elseif ($daysLeft <= 0) {
+                                                            echo ' <span class="badge badge-danger">Expired</span>';
+                                                        } else {
+                                                            echo ' <span class="badge badge-success">Active</span>';
+                                                        }
+                                                    } else {
+                                                        echo '<em class="text-muted">Not provided</em>';
+                                                    }
+                                                    ?>
+                                                </span>
+                                            </div>
+                                            <div class="info-item">
+                                                <label>Status:</label>
+                                                <span>
+                                                    <?php if (!empty($employee['trcn_status'])): 
+                                                        $badgeClass = 'badge-secondary';
+                                                        if ($employee['trcn_status'] == 'Active') $badgeClass = 'badge-success';
+                                                        if ($employee['trcn_status'] == 'Expired') $badgeClass = 'badge-danger';
+                                                        if ($employee['trcn_status'] == 'Pending') $badgeClass = 'badge-warning';
+                                                    ?>
+                                                    <span class="badge <?php echo $badgeClass; ?>">
+                                                        <?php echo htmlspecialchars($employee['trcn_status']); ?>
+                                                    </span>
+                                                    <?php else: ?>
+                                                    <em class="text-muted">Not provided</em>
+                                                    <?php endif; ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

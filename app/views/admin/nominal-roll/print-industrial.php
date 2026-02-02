@@ -8,10 +8,11 @@
 // Extract data
 $employee = $employee ?? [];
 $baseUrl = $baseUrl ?? BASE_URL;
+$licenseStatus = $licenseStatus ?? ['nmcn' => [], 'trcn' => [], 'overall_status' => 'none']; // Added license status
 
 // Configure print layout
 $pageTitle = 'Employee Record - ' . ($employee['employee_number'] ?? 'N/A');
-$documentId = 'EMP-' . ($employee['id'] ?? '') . '-' . date('YmdHis');
+// $documentId = 'EMP-' . ($employee['id'] ?? '') . '-' . date('YmdHis');
 $autoPrint = $_GET['autoprint'] ?? false;
 
 // Calculate age and service years
@@ -48,6 +49,13 @@ $status_colors = [
     'draft' => '#f8f9fa' // Light
 ];
 $status_color = $status_colors[$status] ?? '#e2e3e5';
+
+// License status CSS classes
+$license_status_classes = [
+    'valid' => 'valid',
+    'expiring' => 'warning', 
+    'expired' => 'expired'
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -342,6 +350,73 @@ $status_color = $status_colors[$status] ?? '#e2e3e5';
         
         .info-table td:nth-child(4) {
             width: 30%;
+        }
+        
+        /* Info Grid for Licenses */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .info-row {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 15px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            align-items: start;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-row:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #333;
+            background: #f5f7fa;
+            padding: 8px 10px;
+            border-radius: 4px;
+        }
+        
+        .info-value {
+            padding: 8px 10px;
+            line-height: 1.5;
+        }
+        
+        /* License Status Badges */
+        .license-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .license-status.valid {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .license-status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .license-status.expired {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
         
         /* Status Highlight */
@@ -745,6 +820,83 @@ $status_color = $status_colors[$status] ?? '#e2e3e5';
             </table>
         </div>
         
+        <!-- Professional Licenses Section -->
+        <?php if (isset($licenseStatus) && ($licenseStatus['nmcn']['number'] || $licenseStatus['trcn']['number'])): ?>
+        <div class="section">
+            <div class="section-title">PROFESSIONAL LICENSES</div>
+            <div class="info-grid">
+                <?php if ($licenseStatus['nmcn']['number']): ?>
+                <div class="info-row">
+                    <div class="info-label">NMCN License:</div>
+                    <div class="info-value">
+                        <?php echo htmlspecialchars($licenseStatus['nmcn']['number']); ?>
+                        <?php if ($licenseStatus['nmcn']['issued_date']): ?>
+                        <br>Issued: <?php echo date('d/m/Y', strtotime($licenseStatus['nmcn']['issued_date'])); ?>
+                        <?php endif; ?>
+                        <?php if ($licenseStatus['nmcn']['expiry_date']): ?>
+                        <br>Expires: <?php echo date('d/m/Y', strtotime($licenseStatus['nmcn']['expiry_date'])); ?>
+                        (<?php echo $licenseStatus['nmcn']['is_expired'] ? 'EXPIRED' : 
+                            ($licenseStatus['nmcn']['is_expiring'] ? 'Expiring in ' . $licenseStatus['nmcn']['days_remaining'] . ' days' : 'Active'); ?>)
+                        <?php endif; ?>
+                        <?php if ($licenseStatus['nmcn']['status']): ?>
+                        <br>Status: <?php echo htmlspecialchars($licenseStatus['nmcn']['status']); ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($licenseStatus['trcn']['number']): ?>
+                <div class="info-row">
+                    <div class="info-label">TRCN License:</div>
+                    <div class="info-value">
+                        <?php echo htmlspecialchars($licenseStatus['trcn']['number']); ?>
+                        <?php if ($licenseStatus['trcn']['issued_date']): ?>
+                        <br>Issued: <?php echo date('d/m/Y', strtotime($licenseStatus['trcn']['issued_date'])); ?>
+                        <?php endif; ?>
+                        <?php if ($licenseStatus['trcn']['expiry_date']): ?>
+                        <br>Expires: <?php echo date('d/m/Y', strtotime($licenseStatus['trcn']['expiry_date'])); ?>
+                        (<?php echo $licenseStatus['trcn']['is_expired'] ? 'EXPIRED' : 
+                            ($licenseStatus['trcn']['is_expiring'] ? 'Expiring in ' . $licenseStatus['trcn']['days_remaining'] . ' days' : 'Active'); ?>)
+                        <?php endif; ?>
+                        <?php if ($licenseStatus['trcn']['status']): ?>
+                        <br>Status: <?php echo htmlspecialchars($licenseStatus['trcn']['status']); ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($licenseStatus['overall_status'] !== 'none'): ?>
+                <div class="info-row">
+                    <div class="info-label">Overall License Status:</div>
+                    <div class="info-value">
+                        <?php
+                        $statusClass = '';
+                        $statusText = '';
+                        switch ($licenseStatus['overall_status']) {
+                            case 'valid':
+                                $statusClass = 'valid';
+                                $statusText = 'Valid License';
+                                break;
+                            case 'expiring':
+                                $statusClass = 'warning';
+                                $statusText = 'License Expiring Soon';
+                                break;
+                            case 'expired':
+                                $statusClass = 'expired';
+                                $statusText = 'No Valid License';
+                                break;
+                        }
+                        ?>
+                        <span class="license-status <?php echo $statusClass; ?>">
+                            <?php echo $statusText; ?>
+                        </span>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+        
         <!-- Financial Information -->
         <div class="section">
             <div class="section-title">Financial Information</div>
@@ -823,6 +975,22 @@ $status_color = $status_colors[$status] ?? '#e2e3e5';
                                                           ($status === 'retired' ? '#6c757d' : '#adb5bd')); ?>;">
                     Status: <?php echo $display_text; ?>
                 </div>
+                <?php if (isset($licenseStatus) && $licenseStatus['overall_status'] !== 'none'): ?>
+                <div>
+                    License Status: 
+                    <span class="license-status <?php echo $license_status_classes[$licenseStatus['overall_status']] ?? ''; ?>" 
+                          style="font-size: 9px; padding: 2px 6px;">
+                        <?php 
+                        switch($licenseStatus['overall_status']) {
+                            case 'valid': echo 'VALID'; break;
+                            case 'expiring': echo 'EXPIRING SOON'; break;
+                            case 'expired': echo 'EXPIRED'; break;
+                            default: echo 'N/A';
+                        }
+                        ?>
+                    </span>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

@@ -52,6 +52,9 @@ $currentLimit = isset($_GET['limit']) ? intval($_GET['limit']) : 5;
 
 // Define status options
 $statusOptions = ['active', 'inactive', 'retired', 'draft'];
+
+// Build filters array from GET parameters
+$filters = $_GET;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1228,7 +1231,6 @@ body {
 <body>
     <!-- Top Navigation Bar with Logout -->
     <nav class="top-navbar" role="navigation" aria-label="Main navigation">
-        <!-- CHANGE 1: Disabled "Back to Dashboard" Link -->
         <div class="nav-brand" style="cursor: default;">
             <div class="nav-logo">
                 <i class="fas fa-users"></i>
@@ -1243,7 +1245,6 @@ body {
             <div class="user-profile" role="button" aria-haspopup="true" aria-expanded="false" aria-label="User profile">
                 <div class="user-avatar" aria-hidden="true">
                     <?php 
-                    // Fixed: Added check for $username before using substr
                     echo $username ? strtoupper(substr($username, 0, 2)) : 'US';
                     ?>
                 </div>
@@ -1253,7 +1254,6 @@ body {
                 </div>
             </div>
             
-            <!-- FIXED LOGOUT BUTTON - Simple version with confirmation -->
             <a href="<?php echo BASE_URL; ?>/admin/logout" 
                class="logout-btn" 
                onclick="return confirm('Are you sure you want to logout?')"
@@ -1275,14 +1275,12 @@ body {
                 </div>
                 
                 <div class="header-actions">
-                    <!-- LINE 181: Add Employee button with permission check -->
                     <?php if ($hasCreatePermission && ($editingEnabled || $isSuperAdmin)): ?>
                     <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/create" class="btn btn-primary">
                         <i class="fas fa-plus" aria-hidden="true"></i> Add Employee
                     </a>
                     <?php endif; ?>
                     
-                    <!-- LINE 50: Bulk Upload button with permission check -->
                     <?php if ($hasBulkUploadPermission): ?>
                     <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/bulk-upload" class="btn btn-secondary">
                         <i class="fas fa-upload" aria-hidden="true"></i> Bulk Upload
@@ -1293,14 +1291,13 @@ body {
                         <i class="fas fa-chart-bar" aria-hidden="true"></i> Reports
                     </a>
                     
-                    <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/export?<?php echo isset($filters) ? http_build_query($filters) : ''; ?>" 
+                    <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/export?<?php echo http_build_query($filters); ?>" 
                        class="btn btn-success" 
                        target="_blank"
                        aria-label="Export data as CSV">
                         <i class="fas fa-download" aria-hidden="true"></i> Export CSV
                     </a>
                     
-                    <!-- LINE 43: Settings button with permission check -->
                     <?php if ($hasSettingsPermission || $isSuperAdmin): ?>
                     <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/settings" class="btn btn-outline">
                         <i class="fas fa-cog" aria-hidden="true"></i> Settings
@@ -1385,28 +1382,24 @@ body {
         
         <!-- Search and Filters -->
         <section class="search-filters-card" aria-label="Search and Filters">
-            <form method="GET" action="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll" class="search-form" id="searchForm">
-                <input type="hidden" name="filtered" value="1">
-                
+            <form method="GET" action="" class="search-form" id="searchForm">
                 <div class="search-row">
                     <div class="search-input-group">
                         <div class="input-with-icon">
                             <i class="fas fa-search" aria-hidden="true"></i>
-                            <!-- CHANGE 2: Updated search placeholder -->
                             <input type="text" 
                                    name="search" 
                                    id="searchInput"
-                                   placeholder="Search by name, employee ID, employee number, state, department..." 
+                                   placeholder="Search by name, employee number, state, department..." 
                                    value="<?php echo isset($filters['search']) ? htmlspecialchars($filters['search']) : ''; ?>"
                                    class="form-control"
                                    aria-label="Search employees">
                         </div>
-                        <button type="submit" class="btn btn-primary btn-search">
+                        <button type="submit" class="btn btn-primary btn-search" id="searchButton">
                             <i class="fas fa-search" aria-hidden="true"></i> Search
                         </button>
                         <?php if (isset($filters['search']) && !empty($filters['search'])): ?>
-                        <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll?<?php echo isset($filters) ? http_build_query(array_diff_key($filters, ['search' => ''])) : ''; ?>" 
-                           class="btn btn-outline btn-clear-search" title="Clear search" aria-label="Clear search">
+                        <a href="?" class="btn btn-outline btn-clear-search" title="Clear search" aria-label="Clear search">
                             <i class="fas fa-times" aria-hidden="true"></i>
                         </a>
                         <?php endif; ?>
@@ -1417,7 +1410,7 @@ body {
                         <span class="badge" id="activeFiltersCount" aria-hidden="true">
                             <?php 
                             if (isset($filters)) {
-                                $activeFilters = array_filter($filters, fn($v, $k) => !empty($v) && !in_array($k, ['search', 'page', 'filtered', 'sort_by', 'sort_order']), ARRAY_FILTER_USE_BOTH);
+                                $activeFilters = array_filter($filters, fn($v, $k) => !empty($v) && !in_array($k, ['search', 'page', 'sort_by', 'sort_order', 'limit']), ARRAY_FILTER_USE_BOTH);
                                 echo count($activeFilters) > 0 ? count($activeFilters) : '';
                             }
                             ?>
@@ -1431,122 +1424,18 @@ body {
                     </div>
                 </div>
                 
-                <div class="advanced-filters" id="advancedFilters" style="display: <?php echo isset($filters['filtered']) && !empty($filters['filtered']) ? 'block' : 'none'; ?>;" role="region" aria-labelledby="toggleFilters">
-                    <div class="filter-grid">
-                        <div class="form-group">
-                            <label for="state">State</label>
-                            <select name="state" id="state" class="form-control filter-select" aria-label="Filter by State">
-                                <option value="">All States</option>
-                                <?php if (isset($filterOptions['states'])): ?>
-                                <?php foreach ($filterOptions['states'] as $state): ?>
-                                <option value="<?php echo htmlspecialchars($state); ?>" <?php echo (isset($filters['state']) && $filters['state'] === $state) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($state); ?>
-                                </option>
-                                <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="grade_level">Grade Level</label>
-                            <select name="grade_level" id="grade_level" class="form-control filter-select" aria-label="Filter by Grade Level">
-                                <option value="">All Grade Levels</option>
-                                <?php if (isset($filterOptions['grade_levels'])): ?>
-                                <?php foreach ($filterOptions['grade_levels'] as $grade): ?>
-                                <option value="<?php echo htmlspecialchars($grade); ?>" <?php echo (isset($filters['grade_level']) && $filters['grade_level'] === $grade) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($grade); ?>
-                                </option>
-                                <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="rank">Rank</label>
-                            <select name="rank" id="rank" class="form-control filter-select" aria-label="Filter by Rank">
-                                <option value="">All Ranks</option>
-                                <?php if (isset($filterOptions['ranks'])): ?>
-                                <?php foreach ($filterOptions['ranks'] as $rank): ?>
-                                <option value="<?php echo htmlspecialchars($rank); ?>" <?php echo (isset($filters['rank']) && $filters['rank'] === $rank) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($rank); ?>
-                                </option>
-                                <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="sex">Sex</label>
-                            <select name="sex" id="sex" class="form-control filter-select" aria-label="Filter by Sex">
-                                <option value="">All</option>
-                                <option value="Male" <?php echo (isset($filters['sex']) && $filters['sex'] === 'Male') ? 'selected' : ''; ?>>Male</option>
-                                <option value="Female" <?php echo (isset($filters['sex']) && $filters['sex'] === 'Female') ? 'selected' : ''; ?>>Female</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="department">Department</label>
-                            <select name="department" id="department" class="form-control filter-select" aria-label="Filter by Department">
-                                <option value="">All Departments</option>
-                                <?php if (isset($filterOptions['departments'])): ?>
-                                <?php foreach ($filterOptions['departments'] as $dept): ?>
-                                <option value="<?php echo htmlspecialchars($dept); ?>" <?php echo (isset($filters['department']) && $filters['department'] === $dept) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($dept); ?>
-                                </option>
-                                <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                        </div>
-                        
-                        <!-- ADD STATUS FILTER -->
-                        <div class="form-group">
-                            <label for="filter_status" class="form-label">Status</label>
-                            <select name="status" id="filter_status" class="form-control filter-select" aria-label="Filter by Status">
-                                <option value="">All Status</option>
-                                <?php foreach ($statusOptions as $status_option): ?>
-                                    <option value="<?php echo $status_option; ?>" 
-                                        <?php echo (isset($filters['status']) && $filters['status'] == $status_option) ? 'selected' : ''; ?>>
-                                        <?php echo ucfirst($status_option); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="filter-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-check" aria-hidden="true"></i> Apply Filters
-                        </button>
-                        <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll" class="btn btn-outline btn-clear-filters">
-                            <i class="fas fa-times" aria-hidden="true"></i> Clear All
-                        </a>
-                        <button type="button" class="btn btn-outline" id="saveFilterSet" title="Save this filter set" aria-label="Save Filters">
-                            <i class="fas fa-save" aria-hidden="true"></i> Save Filters
-                        </button>
-                    </div>
-                    
-                    <?php if (isset($activeFilters) && count($activeFilters) > 0): ?>
-                    <div class="active-filters-display" aria-label="Active Filters">
-                        <div class="active-filters-header">
-                            <small><strong>Active Filters:</strong></small>
-                        </div>
-                        <div class="active-filters-tags">
-                            <?php foreach ($activeFilters as $key => $value): ?>
-                                <?php if (!in_array($key, ['sort_by', 'sort_order'])): ?>
-                                <span class="filter-tag">
-                                    <?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $key))); ?>: 
-                                    <strong><?php echo htmlspecialchars($value); ?></strong>
-                                    <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll?<?php echo isset($filters) ? http_build_query(array_merge($filters, [$key => ''])) : ''; ?>" 
-                                       class="remove-filter" title="Remove this filter" aria-label="Remove filter <?php echo htmlspecialchars($key); ?>">
-                                        <i class="fas fa-times" aria-hidden="true"></i>
-                                    </a>
-                                </span>
-                                <?php endif; ?>
+                <!-- Hidden inputs to preserve other parameters -->
+                <?php foreach($filters as $key => $value): ?>
+                    <?php if ($key !== 'search' && $key !== 'page'): ?>
+                        <?php if (is_array($value)): ?>
+                            <?php foreach($value as $val): ?>
+                                <input type="hidden" name="<?php echo htmlspecialchars($key); ?>[]" value="<?php echo htmlspecialchars($val); ?>">
                             <?php endforeach; ?>
-                        </div>
-                    </div>
+                        <?php else: ?>
+                            <input type="hidden" name="<?php echo htmlspecialchars($key); ?>" value="<?php echo htmlspecialchars($value); ?>">
+                        <?php endif; ?>
                     <?php endif; ?>
-                </div>
+                <?php endforeach; ?>
             </form>
         </section>
         
@@ -1557,22 +1446,21 @@ body {
                 <i class="fas fa-users-slash" aria-hidden="true"></i>
                 <h3>No employees found</h3>
                 <p>
-                    <?php if ((isset($filters['search']) && !empty($filters['search'])) || (isset($activeFilters) && count($activeFilters) > 0)): ?>
-                    Try adjusting your search or filters
+                    <?php if (isset($filters['search']) && !empty($filters['search'])): ?>
+                    No results for "<?php echo htmlspecialchars($filters['search']); ?>". Try a different search term.
                     <?php else: ?>
                     No employees in the database yet
                     <?php endif; ?>
                 </p>
                 <div class="empty-state-actions">
-                    <!-- LINE 254: Add First Employee button in empty state with permission check -->
                     <?php if ($hasCreatePermission && ($editingEnabled || $isSuperAdmin)): ?>
                     <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/create" class="btn btn-primary">
                         <i class="fas fa-plus" aria-hidden="true"></i> Add First Employee
                     </a>
                     <?php endif; ?>
-                    <?php if ((isset($filters['search']) && !empty($filters['search'])) || (isset($activeFilters) && count($activeFilters) > 0)): ?>
-                    <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll" class="btn btn-outline">
-                        <i class="fas fa-times" aria-hidden="true"></i> Clear All Filters
+                    <?php if (isset($filters['search']) && !empty($filters['search'])): ?>
+                    <a href="?" class="btn btn-outline">
+                        <i class="fas fa-times" aria-hidden="true"></i> Clear Search
                     </a>
                     <?php endif; ?>
                 </div>
@@ -1584,9 +1472,11 @@ body {
                     Showing <?php echo isset($pagination['page']) ? (($pagination['page'] - 1) * $pagination['limit']) + 1 : '1'; ?> to 
                     <?php echo isset($pagination['page'], $pagination['limit'], $pagination['total']) ? min($pagination['page'] * $pagination['limit'], $pagination['total']) : '5'; ?> of 
                     <?php echo isset($pagination['total']) ? number_format($pagination['total']) : '5'; ?> employees
+                    <?php if (isset($filters['search']) && !empty($filters['search'])): ?>
+                    <br><span style="color: #666; font-size: 0.9em;">Search results for "<?php echo htmlspecialchars($filters['search']); ?>"</span>
+                    <?php endif; ?>
                 </div>
                 <div class="table-actions">
-                    <!-- CHANGE 3: Added Records per page selector -->
                     <div class="records-per-page" style="display: flex; align-items: center; gap: 8px; margin-right: 12px;">
                         <label for="recordsPerPage" style="font-size: 0.875rem; color: var(--gray-600); margin: 0; white-space: nowrap;">Show:</label>
                         <select id="recordsPerPage" class="form-control" style="width: 80px; height: 36px; padding: 6px 8px; font-size: 0.875rem;" onchange="changeRecordsPerPage(this.value)">
@@ -1646,7 +1536,12 @@ body {
                             <th class="serial-column">S/N</th>
                             <th class="employee-number">
                                 <?php $sortOrder = ($currentSortBy == 'employee_number' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
-                                <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'employee_number', 'sort_order' => $sortOrder])); ?>" 
+                                <a href="?<?php 
+                                    $query = $filters;
+                                    $query['sort_by'] = 'employee_number';
+                                    $query['sort_order'] = $sortOrder;
+                                    echo http_build_query($query);
+                                ?>" 
                                    style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 4px;">
                                     Employee No.
                                     <?php if ($currentSortBy == 'employee_number'): ?>
@@ -1658,7 +1553,12 @@ body {
                             </th>
                             <th class="name-column">
                                 <?php $sortOrder = ($currentSortBy == 'surname' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
-                                <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'surname', 'sort_order' => $sortOrder])); ?>" 
+                                <a href="?<?php 
+                                    $query = $filters;
+                                    $query['sort_by'] = 'surname';
+                                    $query['sort_order'] = $sortOrder;
+                                    echo http_build_query($query);
+                                ?>" 
                                    style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 4px;">
                                     Name
                                     <?php if ($currentSortBy == 'surname'): ?>
@@ -1671,7 +1571,12 @@ body {
                             <th class="sex-column">Sex</th>
                             <th class="rank-column">
                                 <?php $sortOrder = ($currentSortBy == 'rank' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
-                                <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'rank', 'sort_order' => $sortOrder])); ?>" 
+                                <a href="?<?php 
+                                    $query = $filters;
+                                    $query['sort_by'] = 'rank';
+                                    $query['sort_order'] = $sortOrder;
+                                    echo http_build_query($query);
+                                ?>" 
                                    style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 4px;">
                                     Rank
                                     <?php if ($currentSortBy == 'rank'): ?>
@@ -1683,7 +1588,12 @@ body {
                             </th>
                             <th class="grade-column">
                                 <?php $sortOrder = ($currentSortBy == 'grade_level' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
-                                <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'grade_level', 'sort_order' => $sortOrder])); ?>" 
+                                <a href="?<?php 
+                                    $query = $filters;
+                                    $query['sort_by'] = 'grade_level';
+                                    $query['sort_order'] = $sortOrder;
+                                    echo http_build_query($query);
+                                ?>" 
                                    style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 4px;">
                                     Grade Level
                                     <?php if ($currentSortBy == 'grade_level'): ?>
@@ -1695,7 +1605,12 @@ body {
                             </th>
                             <th class="state-column">
                                 <?php $sortOrder = ($currentSortBy == 'state' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
-                                <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'state', 'sort_order' => $sortOrder])); ?>" 
+                                <a href="?<?php 
+                                    $query = $filters;
+                                    $query['sort_by'] = 'state';
+                                    $query['sort_order'] = $sortOrder;
+                                    echo http_build_query($query);
+                                ?>" 
                                    style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 4px;">
                                     State
                                     <?php if ($currentSortBy == 'state'): ?>
@@ -1709,7 +1624,12 @@ body {
                             <th class="status-column">Status</th>
                             <th class="date-column">
                                 <?php $sortOrder = ($currentSortBy == 'date_of_first_appointment' && $currentSortOrder == 'asc') ? 'desc' : 'asc'; ?>
-                                <a href="?<?php echo http_build_query(array_merge($filters, ['sort_by' => 'date_of_first_appointment', 'sort_order' => $sortOrder])); ?>" 
+                                <a href="?<?php 
+                                    $query = $filters;
+                                    $query['sort_by'] = 'date_of_first_appointment';
+                                    $query['sort_order'] = $sortOrder;
+                                    echo http_build_query($query);
+                                ?>" 
                                    style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 4px;">
                                     Date of 1st Appt.
                                     <?php if ($currentSortBy == 'date_of_first_appointment'): ?>
@@ -1814,7 +1734,6 @@ body {
                                         <span class="btn-text">View</span>
                                     </a>
                                     
-                                    <!-- LINE 273: Edit button in table with permission check -->
                                     <?php if ($hasEditPermission && ($editingEnabled || $isSuperAdmin)): ?>
                                     <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/edit/<?php echo $employee['id']; ?>" 
                                        class="btn btn-sm btn-warning" title="Edit Employee" aria-label="Edit Employee">
@@ -1835,7 +1754,6 @@ body {
                                         <span class="btn-text">Report</span>
                                     </a>
                                     
-                                    <!-- LINE 280: Delete button with permission check -->
                                     <?php if ($hasDeletePermission && $isSuperAdmin): ?>
                                     <form method="POST" 
                                           action="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll/delete/<?php echo $employee['id']; ?>" 
@@ -1866,14 +1784,22 @@ body {
                 
                 <div class="pagination-controls">
                     <?php if ($pagination['page'] > 1): ?>
-                    <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll?<?php echo isset($filters) ? http_build_query(array_merge($filters, ['page' => 1])) : 'page=1'; ?>" 
+                    <a href="?<?php 
+                        $query = $filters;
+                        $query['page'] = 1;
+                        echo http_build_query($query);
+                    ?>" 
                        class="btn btn-sm btn-outline" title="First Page" aria-label="First Page">
                         <i class="fas fa-angle-double-left" aria-hidden="true"></i>
                     </a>
                     <?php endif; ?>
                     
                     <?php if ($pagination['page'] > 1): ?>
-                    <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll?<?php echo isset($filters) ? http_build_query(array_merge($filters, ['page' => $pagination['page'] - 1])) : 'page=' . ($pagination['page'] - 1); ?>" 
+                    <a href="?<?php 
+                        $query = $filters;
+                        $query['page'] = $pagination['page'] - 1;
+                        echo http_build_query($query);
+                    ?>" 
                        class="btn btn-sm btn-outline" title="Previous Page" aria-label="Previous Page">
                         <i class="fas fa-angle-left" aria-hidden="true"></i>
                     </a>
@@ -1885,7 +1811,11 @@ body {
                     
                     for ($i = $startPage; $i <= $endPage; $i++):
                     ?>
-                    <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll?<?php echo isset($filters) ? http_build_query(array_merge($filters, ['page' => $i])) : 'page=' . $i; ?>" 
+                    <a href="?<?php 
+                        $query = $filters;
+                        $query['page'] = $i;
+                        echo http_build_query($query);
+                    ?>" 
                        class="btn btn-sm <?php echo $i === $pagination['page'] ? 'btn-primary' : 'btn-outline'; ?>"
                        title="Page <?php echo $i; ?>" aria-label="Page <?php echo $i; ?>" <?php echo $i === $pagination['page'] ? 'aria-current="page"' : ''; ?>>
                         <?php echo $i; ?>
@@ -1893,14 +1823,22 @@ body {
                     <?php endfor; ?>
                     
                     <?php if ($pagination['page'] < $pagination['total_pages']): ?>
-                    <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll?<?php echo isset($filters) ? http_build_query(array_merge($filters, ['page' => $pagination['page'] + 1])) : 'page=' . ($pagination['page'] + 1); ?>" 
+                    <a href="?<?php 
+                        $query = $filters;
+                        $query['page'] = $pagination['page'] + 1;
+                        echo http_build_query($query);
+                    ?>" 
                        class="btn btn-sm btn-outline" title="Next Page" aria-label="Next Page">
                         <i class="fas fa-angle-right" aria-hidden="true"></i>
                     </a>
                     <?php endif; ?>
                     
                     <?php if ($pagination['page'] < $pagination['total_pages']): ?>
-                    <a href="<?php echo isset($baseUrl) ? $baseUrl : BASE_URL; ?>/admin/nominal-roll?<?php echo isset($filters) ? http_build_query(array_merge($filters, ['page' => $pagination['total_pages']])) : 'page=' . $pagination['total_pages']; ?>" 
+                    <a href="?<?php 
+                        $query = $filters;
+                        $query['page'] = $pagination['total_pages'];
+                        echo http_build_query($query);
+                    ?>" 
                        class="btn btn-sm btn-outline" title="Last Page" aria-label="Last Page">
                         <i class="fas fa-angle-double-right" aria-hidden="true"></i>
                     </a>
@@ -1933,154 +1871,56 @@ body {
     <script>
         // Initialize on DOM ready
         document.addEventListener("DOMContentLoaded", function() {
-            // Toggle filters visibility
-            const toggleFilters = document.getElementById("toggleFilters");
-            const advancedFilters = document.getElementById("advancedFilters");
-            
-            if (toggleFilters && advancedFilters) {
-                const urlParams = new URLSearchParams(window.location.search);
-                const hasFilters = urlParams.has("state") || urlParams.has("grade_level") || 
-                                 urlParams.has("rank") || urlParams.has("sex") || 
-                                 urlParams.has("department") || urlParams.has("status");
-                
-                if (hasFilters) {
-                    advancedFilters.style.display = "block";
-                    toggleFilters.innerHTML = '<i class="fas fa-filter"></i> Hide Filters';
-                    toggleFilters.setAttribute("aria-expanded", "true");
-                }
-                
-                toggleFilters.addEventListener("click", function() {
-                    if (advancedFilters.style.display === "none") {
-                        advancedFilters.style.display = "block";
-                        this.innerHTML = '<i class="fas fa-filter"></i> Hide Filters';
-                        this.setAttribute("aria-expanded", "true");
-                        localStorage.setItem("nominalFiltersVisible", "true");
-                    } else {
-                        advancedFilters.style.display = "none";
-                        this.innerHTML = '<i class="fas fa-filter"></i> Filters';
-                        this.setAttribute("aria-expanded", "false");
-                        localStorage.setItem("nominalFiltersVisible", "false");
-                    }
-                });
-                
-                // Restore filter visibility from localStorage
-                const filtersVisible = localStorage.getItem("nominalFiltersVisible");
-                if (filtersVisible === "true") {
-                    advancedFilters.style.display = "block";
-                    toggleFilters.innerHTML = '<i class="fas fa-filter"></i> Hide Filters';
-                    toggleFilters.setAttribute("aria-expanded", "true");
-                }
-            }
-            
-            // Update active filters count
-            function updateActiveFiltersCount() {
-                const activeFiltersCount = document.getElementById("activeFiltersCount");
-                if (activeFiltersCount) {
-                    const form = document.getElementById("searchForm");
-                    const formData = new FormData(form);
-                    let count = 0;
-                    
-                    for (let [key, value] of formData.entries()) {
-                        if (key !== "search" && key !== "page" && key !== "filtered" && key !== "sort_by" && key !== "sort_order" && value.trim() !== "") {
-                            count++;
-                        }
-                    }
-                    
-                    if (count > 0) {
-                        activeFiltersCount.textContent = count;
-                        activeFiltersCount.style.display = "inline-block";
-                        activeFiltersCount.classList.add("badge-active");
-                    } else {
-                        activeFiltersCount.style.display = "none";
-                        activeFiltersCount.classList.remove("badge-active");
-                    }
-                }
-            }
-            
-            // Update count on filter changes
-            document.querySelectorAll(".advanced-filters select, #searchInput").forEach(element => {
-                element.addEventListener("change", updateActiveFiltersCount);
-                if (element.id === "searchInput") {
-                    element.addEventListener("input", updateActiveFiltersCount);
-                }
-            });
-            
-            // Initial count update
-            updateActiveFiltersCount();
-            
-            // Enhanced search with debouncing
+            // Get the search form
+            const searchForm = document.getElementById("searchForm");
             const searchInput = document.getElementById("searchInput");
-            let searchTimeout;
-            let previousValue = "";
+            const searchButton = document.getElementById("searchButton");
             
-            if (searchInput) {
-                const searchForm = document.getElementById("searchForm");
-                const searchButton = searchForm.querySelector('button[type="submit"]');
-                
-                // CHANGE 5 & 6: Enhanced search with dynamic placeholder rotation and better debouncing
-                const placeholders = [
-                    "Search by name...",
-                    "Search by employee number...",
-                    "Search by employee ID...",
-                    "Search by state...",
-                    "Search by department..."
-                ];
-                let placeholderIndex = 0;
-                
-                // Rotate placeholder every 3 seconds
-                setInterval(() => {
-                    if (document.activeElement !== searchInput && !searchInput.value) {
-                        searchInput.placeholder = placeholders[placeholderIndex];
-                        placeholderIndex = (placeholderIndex + 1) % placeholders.length;
-                    }
-                }, 3000);
-                
-                searchInput.addEventListener("input", function() {
-                    clearTimeout(searchTimeout);
+            if (searchForm && searchInput && searchButton) {
+                // Handle search button click
+                searchButton.addEventListener("click", function(e) {
+                    e.preventDefault();
                     
-                    if (this.value !== previousValue) {
-                        // CHANGE 5: Changed from 3 to 2 characters for better UX
-                        if (this.value.length >= 2) {
-                            searchTimeout = setTimeout(() => {
-                                searchButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
-                                searchButton.disabled = true;
-                                searchForm.submit();
-                            }, 600); // CHANGE 5: Changed from 800 to 600ms for faster response
-                        }
-                        previousValue = this.value;
+                    // Remove page parameter when searching (go to page 1)
+                    const pageInput = searchForm.querySelector('input[name="page"]');
+                    if (pageInput) {
+                        pageInput.value = '1';
+                    } else {
+                        // Create hidden page input if it doesn't exist
+                        const hiddenPageInput = document.createElement('input');
+                        hiddenPageInput.type = 'hidden';
+                        hiddenPageInput.name = 'page';
+                        hiddenPageInput.value = '1';
+                        searchForm.appendChild(hiddenPageInput);
                     }
+                    
+                    // Submit the form
+                    searchForm.submit();
                 });
                 
+                // Handle Enter key in search input
                 searchInput.addEventListener("keydown", function(e) {
-                    if (e.key === "Enter" && this.value.length >= 1) {
+                    if (e.key === "Enter") {
                         e.preventDefault();
-                        searchButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
-                        searchButton.disabled = true;
+                        
+                        // Remove page parameter when searching (go to page 1)
+                        const pageInput = searchForm.querySelector('input[name="page"]');
+                        if (pageInput) {
+                            pageInput.value = '1';
+                        } else {
+                            // Create hidden page input if it doesn't exist
+                            const hiddenPageInput = document.createElement('input');
+                            hiddenPageInput.type = 'hidden';
+                            hiddenPageInput.name = 'page';
+                            hiddenPageInput.value = '1';
+                            searchForm.appendChild(hiddenPageInput);
+                        }
+                        
+                        // Submit the form
                         searchForm.submit();
                     }
                 });
-                
-                // Reset button text after form submission
-                searchButton.innerHTML = '<i class="fas fa-search"></i> Search';
-                searchButton.disabled = false;
             }
-            
-            // Responsive button text handling
-            function handleResponsiveButtons() {
-                const isMobile = window.innerWidth <= 768;
-                const btnTexts = document.querySelectorAll(".btn-text");
-                
-                btnTexts.forEach(text => {
-                    if (isMobile) {
-                        text.style.display = "none";
-                    } else {
-                        text.style.display = "inline";
-                    }
-                });
-            }
-            
-            handleResponsiveButtons();
-            window.addEventListener("resize", handleResponsiveButtons);
             
             // Column visibility toggle
             document.querySelectorAll(".column-toggle").forEach(checkbox => {
@@ -2107,62 +1947,6 @@ body {
                 }
             });
             
-            // Save filter set functionality
-            document.getElementById("saveFilterSet")?.addEventListener("click", function() {
-                const filters = {};
-                
-                document.querySelectorAll(".filter-select").forEach(select => {
-                    if (select.value) {
-                        filters[select.name] = select.value;
-                    }
-                });
-                
-                const searchValue = document.getElementById("searchInput").value;
-                if (searchValue) {
-                    filters.search = searchValue;
-                }
-                
-                if (Object.keys(filters).length === 0) {
-                    Swal.fire({
-                        icon: "warning",
-                        title: "No Filters",
-                        text: "Please apply some filters before saving."
-                    });
-                    return;
-                }
-                
-                Swal.fire({
-                    title: "Save Filter Set",
-                    input: "text",
-                    inputLabel: "Filter Set Name",
-                    inputPlaceholder: 'e.g., "Active Lagos Staff"',
-                    showCancelButton: true,
-                    confirmButtonText: "Save",
-                    cancelButtonText: "Cancel",
-                    inputValidator: (value) => {
-                        if (!value) {
-                            return "Please enter a name for your filter set";
-                        }
-                    }
-                }).then(result => {
-                    if (result.isConfirmed && result.value) {
-                        const filterSets = JSON.parse(localStorage.getItem("nominalFilterSets") || "[]");
-                        filterSets.push({
-                            name: result.value,
-                            filters: filters,
-                            date: new Date().toISOString()
-                        });
-                        localStorage.setItem("nominalFilterSets", JSON.stringify(filterSets));
-                        
-                        Swal.fire({
-                            icon: "success",
-                            title: "Saved!",
-                            text: "Filter set saved successfully."
-                        });
-                    }
-                });
-            });
-            
             // Column dropdown toggle
             const toggleColumnsBtn = document.getElementById("toggleColumnsBtn");
             const columnsDropdown = document.getElementById("columnsDropdown");
@@ -2187,34 +1971,6 @@ body {
                 });
             }
             
-            // Clear filters with confirmation - FIXED VERSION (Option 1)
-            document.querySelector(".btn-clear-filters")?.addEventListener("click", function(e) {
-                e.preventDefault();
-                
-                const hasFilters = document.querySelectorAll(".filter-select").length > 0;
-                const hasSearch = document.getElementById("searchInput")?.value;
-                
-                if (!hasFilters && !hasSearch) {
-                    window.location.href = this.href;
-                    return;
-                }
-                
-                const buttonElement = this; // Capture the button element
-                
-                Swal.fire({
-                    title: "Clear All Filters?",
-                    text: "This will remove all applied filters and search terms.",
-                    icon: "question",
-                    showCancelButton: true,
-                    confirmButtonText: "Yes, Clear All",
-                    cancelButtonText: "Cancel"
-                }).then(result => {
-                    if (result.isConfirmed) {
-                        window.location.href = buttonElement.href; // Use captured reference
-                    }
-                });
-            });
-            
             // Row click handling (view details)
             document.querySelectorAll(".data-table tbody tr").forEach(row => {
                 row.addEventListener("click", function(e) {
@@ -2234,70 +1990,9 @@ body {
                     this.style.cursor = "pointer";
                 });
             });
-            
-            // Auto-hide filters on mobile after applying
-            if (window.innerWidth <= 768 && advancedFilters) {
-                document.querySelector(".filter-actions .btn-primary").addEventListener("click", function() {
-                    setTimeout(() => {
-                        if (advancedFilters) {
-                            advancedFilters.style.display = "none";
-                            if (toggleFilters) {
-                                toggleFilters.innerHTML = '<i class="fas fa-filter"></i> Filters';
-                                toggleFilters.setAttribute("aria-expanded", "false");
-                                localStorage.setItem("nominalFiltersVisible", "false");
-                            }
-                        }
-                    }, 100);
-                });
-            }
-            
-            // Remove filter tag handler
-            document.querySelectorAll(".filter-tag .remove-filter").forEach(link => {
-                link.addEventListener("click", function(e) {
-                    e.preventDefault();
-                    window.location.href = this.href;
-                });
-            });
-            
-            // Initialize tooltips
-            document.querySelectorAll('[title]').forEach(element => {
-                element.addEventListener('mouseenter', function() {
-                    const title = this.getAttribute('title');
-                    if (title) {
-                        const tooltip = document.createElement('div');
-                        tooltip.className = 'custom-tooltip';
-                        tooltip.textContent = title;
-                        tooltip.style.cssText = `
-                            position: fixed;
-                            background: var(--gray-800);
-                            color: white;
-                            padding: 6px 12px;
-                            border-radius: 4px;
-                            font-size: 0.75rem;
-                            z-index: 9999;
-                            pointer-events: none;
-                            white-space: nowrap;
-                        `;
-                        document.body.appendChild(tooltip);
-                        
-                        const rect = this.getBoundingClientRect();
-                        tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
-                        tooltip.style.top = (rect.top - tooltip.offsetHeight - 8) + 'px';
-                        
-                        this._tooltip = tooltip;
-                    }
-                });
-                
-                element.addEventListener('mouseleave', function() {
-                    if (this._tooltip) {
-                        document.body.removeChild(this._tooltip);
-                        delete this._tooltip;
-                    }
-                });
-            });
         });
         
-        // CHANGE 4: Records per page function
+        // Records per page function
         window.changeRecordsPerPage = function(limit) {
             const currentUrl = new URL(window.location.href);
             currentUrl.searchParams.set('limit', limit);
@@ -2305,203 +2000,73 @@ body {
             window.location.href = currentUrl.toString();
         };
         
-        // Global functions
-        window.confirmDelete = function(form) {
-        const row = form.closest("tr");
-        const employeeName = row.querySelector(".employee-name strong").textContent;
-        const employeeNumber = row.querySelector(".employee-number strong").textContent;
-        
-        Swal.fire({
-            title: "Delete Employee?",
-            html: '<div class="text-left">' +
-                '<p><strong>Are you sure you want to delete this employee?</strong></p>' +
-                '<div style="background: #fffaf0; border: 1px solid #fed7d7; padding: 12px; border-radius: 6px; margin-bottom: 16px;">' +
-                '<i class="fas fa-exclamation-triangle" style="color: #d69e2e; margin-right: 8px;"></i>' +
-                'This action cannot be undone!' +
-                '</div>' +
-                '<div style="background: #f8f9fa; padding: 12px; border-radius: 6px;">' +
-                '<p><strong>Name:</strong> ' + employeeName + '</p>' +
-                '<p><strong>Employee No:</strong> ' + employeeNumber + '</p>' +
-                '</div>' +
-                '</div>',
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Yes, Delete",
-            cancelButtonText: "Cancel",
-            confirmButtonColor: "#e53e3e",
-            cancelButtonColor: "#3182ce"
-        }).then(result => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: "Deleting...",
-                    text: "Please wait",
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-                form.submit();
-            }
-        });
-        
-        return false;
-    };
-        
+        // Jump to page function
         window.jumpToPage = function() {
-        const pageInput = document.getElementById("jumpToPage");
-        const pageNum = parseInt(pageInput.value);
-        
-        // FIX 1: Get totalPages safely
-        let totalPages = 1;
-        try {
-            totalPages = parseInt("<?php echo isset($pagination['total_pages']) ? (int)$pagination['total_pages'] : 1; ?>");
-        } catch (e) {
-            totalPages = 1;
-        }
-        
-        if (!pageNum || pageNum < 1 || pageNum > totalPages) {
-            Swal.fire({
-                icon: "error",
-                title: "Invalid Page",
-                text: "Please enter a page number between 1 and " + totalPages
-            });
-            return;
-        }
-        
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set("page", pageNum);
-        window.location.href = currentUrl.toString();
-    };
-        
-        // FIXED: Simple logout function with regular confirmation dialog
-        window.confirmLogout = function(event) {
-            event.preventDefault();
+            const pageInput = document.getElementById("jumpToPage");
+            const pageNum = parseInt(pageInput.value);
             
-            // Simple confirmation - no complex form creation
-            if (confirm("Are you sure you want to logout?")) {
-                // Direct redirect to logout URL
-                window.location.href = '<?php echo BASE_URL; ?>/admin/logout';
+            let totalPages = 1;
+            try {
+                totalPages = parseInt("<?php echo isset($pagination['total_pages']) ? (int)$pagination['total_pages'] : 1; ?>");
+            } catch (e) {
+                totalPages = 1;
             }
+            
+            if (!pageNum || pageNum < 1 || pageNum > totalPages) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Invalid Page",
+                    text: "Please enter a page number between 1 and " + totalPages
+                });
+                return;
+            }
+            
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set("page", pageNum);
+            window.location.href = currentUrl.toString();
+        };
+        
+        // Delete confirmation
+        window.confirmDelete = function(form) {
+            const row = form.closest("tr");
+            const employeeName = row.querySelector(".employee-name strong").textContent;
+            const employeeNumber = row.querySelector(".employee-number strong").textContent;
+            
+            Swal.fire({
+                title: "Delete Employee?",
+                html: '<div class="text-left">' +
+                    '<p><strong>Are you sure you want to delete this employee?</strong></p>' +
+                    '<div style="background: #fffaf0; border: 1px solid #fed7d7; padding: 12px; border-radius: 6px; margin-bottom: 16px;">' +
+                    '<i class="fas fa-exclamation-triangle" style="color: #d69e2e; margin-right: 8px;"></i>' +
+                    'This action cannot be undone!' +
+                    '</div>' +
+                    '<div style="background: #f8f9fa; padding: 12px; border-radius: 6px;">' +
+                    '<p><strong>Name:</strong> ' + employeeName + '</p>' +
+                    '<p><strong>Employee No:</strong> ' + employeeNumber + '</p>' +
+                    '</div>' +
+                    '</div>',
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes, Delete",
+                cancelButtonText: "Cancel",
+                confirmButtonColor: "#e53e3e",
+                cancelButtonColor: "#3182ce"
+            }).then(result => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: "Deleting...",
+                        text: "Please wait",
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    form.submit();
+                }
+            });
             
             return false;
         };
-        
-        // Session timeout warning (30 minutes)
-        let idleTime = 0;
-        const idleInterval = setInterval(() => {
-            idleTime++;
-            if (idleTime > 29) { // 30 minutes
-                showSessionWarning();
-            }
-        }, 60000); // 1 minute
-        
-        function resetIdleTime() {
-            idleTime = 0;
-        }
-        
-        // Reset idle time on user activity
-        ['mousemove', 'keypress', 'click', 'scroll'].forEach(event => {
-            document.addEventListener(event, resetIdleTime);
-        });
-        
-        function showSessionWarning() {
-            if (!document.getElementById('session-warning')) {
-                const warning = document.createElement('div');
-                warning.id = 'session-warning';
-                warning.style.cssText = `
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background: white;
-                    padding: 2rem;
-                    border-radius: 12px;
-                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-                    z-index: 2000;
-                    text-align: center;
-                    max-width: 400px;
-                    width: 90%;
-                `;
-                
-                warning.innerHTML = `
-                    <h3 style="margin-bottom: 1rem; color: var(--warning);">Session Expiring Soon</h3>
-                    <p style="margin-bottom: 1.5rem; color: var(--gray-700);">
-                        Your session will expire in 5 minutes due to inactivity.
-                    </p>
-                    <div style="display: flex; gap: 1rem; justify-content: center;">
-                        <button onclick="extendSession()" style="padding: 0.5rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            Stay Logged In
-                        </button>
-                        <button onclick="logoutNow()" style="padding: 0.5rem 1.5rem; background: var(--gray-200); color: var(--gray-700); border: none; border-radius: 6px; cursor: pointer;">
-                            Logout Now
-                        </button>
-                    </div>
-                `;
-                
-                document.body.appendChild(warning);
-                
-                // Add overlay
-                const overlay = document.createElement('div');
-                overlay.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0, 0, 0, 0.5);
-                    z-index: 1999;
-                `;
-                document.body.appendChild(overlay);
-            }
-        }
-        
-        window.extendSession = function() {
-            fetch('<?php echo BASE_URL; ?>/admin/api/session/extend', {
-                method: 'POST',
-                credentials: 'same-origin'
-            })
-            .then(() => {
-                resetIdleTime();
-                const warning = document.getElementById('session-warning');
-                const overlay = document.querySelector('#session-warning + div');
-                if (warning) warning.remove();
-                if (overlay) overlay.remove();
-            })
-            .catch(error => console.error('Session extend error:', error));
-        };
-        
-        window.logoutNow = function() {
-            window.location.href = '<?php echo BASE_URL; ?>/admin/logout';
-        };
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            // Ctrl/Cmd + F for search
-            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-                e.preventDefault();
-                const searchInput = document.getElementById('searchInput');
-                if (searchInput) {
-                    searchInput.focus();
-                    searchInput.select();
-                }
-            }
-            
-            // Ctrl/Cmd + P for print
-            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                e.preventDefault();
-                window.print();
-            }
-            
-            // Escape to close modals/dropdowns
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                    menu.style.display = 'none';
-                });
-            }
-        });
-        
-        // Auto-refresh data every 5 minutes (optional)
-        // setTimeout(() => location.reload(), 5 * 60 * 1000);
     </script>
 </body>
 </html>

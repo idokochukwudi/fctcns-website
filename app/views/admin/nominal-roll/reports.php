@@ -37,59 +37,219 @@
             min-height: 100vh;
         }
         
-        /* High contrast utility classes */
+        /* FIXED: Enhanced High Contrast Text Classes for ALL preview items */
         .high-contrast-text {
             color: #212529 !important;
-            font-weight: 600 !important;
+            font-weight: 700 !important;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+            letter-spacing: 0.02em;
         }
         
-        .dark-bg-text {
+        /* FIXED: Universal badge styling for maximum visibility */
+        .preview-badge {
+            padding: 6px 12px !important;
+            font-weight: 700 !important;
+            border-radius: 4px;
+            font-size: 12px !important;
+            border: 2px solid rgba(0, 0, 0, 0.25) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+            min-width: 85px;
+            text-align: center;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            font-size: 0.75rem !important;
+        }
+        
+        /* FIXED: Enhanced Status Badges - ALL status types with high contrast */
+        .badge-status {
+            composes: preview-badge;
+        }
+        
+        .badge-status-active {
+            background: linear-gradient(135deg, #28a745, #1e7e34) !important;
             color: #ffffff !important;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            border-color: #155724 !important;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
         }
         
-        .light-bg-text {
+        .badge-status-inactive {
+            background: linear-gradient(135deg, #ffc107, #d39e00) !important;
+            color: #000000 !important;
+            border-color: #856404 !important;
+            font-weight: 800 !important;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+        }
+        
+        .badge-status-retired {
+            background: linear-gradient(135deg, #6c757d, #545b62) !important;
+            color: #ffffff !important;
+            border-color: #343a40 !important;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+        }
+        
+        .badge-status-draft {
+            background: linear-gradient(135deg, #17a2b8, #117a8b) !important;
+            color: #ffffff !important;
+            border-color: #0c525d !important;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* FIXED: License Status Badges - ALL types */
+        .badge-license {
+            composes: preview-badge;
+        }
+        
+        .badge-license-active {
+            background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+            color: #ffffff !important;
+            border-color: #155724 !important;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+        }
+        
+        .badge-license-expired {
+            background: linear-gradient(135deg, #dc3545, #bd2130) !important;
+            color: #ffffff !important;
+            border-color: #721c24 !important;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
+        }
+        
+        .badge-license-pending {
+            background: linear-gradient(135deg, #ffc107, #d39e00) !important;
+            color: #000000 !important;
+            border-color: #856404 !important;
+            font-weight: 800 !important;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+        }
+        
+        .badge-license-not-applicable {
+            background: linear-gradient(135deg, #6c757d, #545b62) !important;
+            color: #ffffff !important;
+            border-color: #343a40 !important;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* FIXED: Gender Badges */
+        .badge-gender {
+            composes: preview-badge;
+            min-width: 75px;
+        }
+        
+        .badge-gender-male {
+            background: linear-gradient(135deg, #2c5aa0, #1e3a6f) !important;
+            color: #ffffff !important;
+            border-color: #0d1b2a !important;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+        }
+        
+        .badge-gender-female {
+            background: linear-gradient(135deg, #dc3545, #bd2130) !important;
+            color: #ffffff !important;
+            border-color: #721c24 !important;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
+        }
+        
+        /* FIXED: Grade Level Badges */
+        .badge-grade {
+            background: linear-gradient(135deg, #17a2b8, #117a8b) !important;
+            color: #ffffff !important;
+            border: 2px solid #0c525d !important;
+            font-weight: 800 !important;
+            padding: 5px 10px !important;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            min-width: 60px;
+            text-align: center;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* FIXED: Employee Number - High contrast */
+        .employee-number {
+            color: #000000 !important;
+            font-weight: 800 !important;
+            background: linear-gradient(135deg, #e9ecef, #dee2e6);
+            padding: 4px 8px;
+            border-radius: 3px;
+            border: 1px solid #adb5bd;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.5px;
+        }
+        
+        /* FIXED: Regular text cells with enhanced visibility */
+        .preview-table td {
             color: #212529 !important;
             font-weight: 500;
+            position: relative;
         }
         
-        /* Enhanced badge contrast */
-        .badge-contrast {
+        /* FIXED: Add subtle background to all cells for better contrast */
+        .preview-table tbody td {
+            background-color: rgba(255, 255, 255, 0.7) !important;
+        }
+        
+        .preview-table tbody tr:nth-child(even) td {
+            background-color: rgba(248, 249, 250, 0.9) !important;
+        }
+        
+        /* FIXED: Status and license cells with stronger backgrounds */
+        .status-cell, .license-cell {
+            background-color: rgba(0, 0, 0, 0.05) !important;
+            position: relative;
+        }
+        
+        .preview-table tbody tr:nth-child(even) .status-cell,
+        .preview-table tbody tr:nth-child(even) .license-cell {
+            background-color: rgba(0, 0, 0, 0.08) !important;
+        }
+        
+        /* FIXED: Date cells with distinct styling */
+        .date-cell {
+            font-weight: 600 !important;
+            color: #2c3e50 !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
             padding: 4px 8px;
-            font-weight: 600;
-            border-radius: 4px;
-            font-size: 12px;
+            border-radius: 3px;
+            border: 1px solid #dee2e6;
         }
         
-        .badge-male {
+        /* FIXED: Empty/placeholder cells */
+        .empty-cell {
+            color: #6c757d !important;
+            font-weight: 600 !important;
+            font-style: italic;
+            background-color: rgba(108, 117, 125, 0.1) !important;
+            padding: 4px 8px;
+            border-radius: 3px;
+            border: 1px dashed #adb5bd;
+        }
+        
+        /* FIXED: Column headers with better contrast */
+        .preview-table thead th {
+            background: linear-gradient(135deg, #2c3e50, #1c2833) !important;
+            color: #ffffff !important;
+            border-bottom: 3px solid #2c5aa0 !important;
+            font-weight: 700 !important;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            padding: 12px 10px !important;
+        }
+        
+        /* FIXED: Table row hover with visibility */
+        .preview-table tbody tr:hover td {
             background-color: rgba(44, 90, 160, 0.15) !important;
-            color: var(--primary-color) !important;
-            border: 1px solid rgba(44, 90, 160, 0.3);
+            transform: translateX(2px);
+            transition: var(--transition);
         }
         
-        .badge-female {
-            background-color: rgba(220, 53, 69, 0.15) !important;
-            color: var(--danger-color) !important;
-            border: 1px solid rgba(220, 53, 69, 0.3);
-        }
-        
-        .badge-active {
-            background-color: rgba(40, 167, 69, 0.15) !important;
-            color: var(--success-color) !important;
-            border: 1px solid rgba(40, 167, 69, 0.3);
-        }
-        
-        .badge-inactive {
-            background-color: rgba(255, 193, 7, 0.15) !important;
-            color: #856404 !important;
-            border: 1px solid rgba(255, 193, 7, 0.3);
-        }
-        
-        .badge-grade {
-            background-color: rgba(23, 162, 184, 0.15) !important;
-            color: var(--info-color) !important;
-            border: 1px solid rgba(23, 162, 184, 0.3);
-            font-weight: 700;
+        .preview-table tbody tr:hover .status-cell,
+        .preview-table tbody tr:hover .license-cell {
+            background-color: rgba(44, 90, 160, 0.2) !important;
         }
         
         /* Progressive Loading Styles */
@@ -657,15 +817,16 @@
             }
         }
         
-        /* Enhanced Preview Table with better contrast */
+        /* FIXED: Enhanced Preview Table with maximum contrast for ALL items */
         .preview-table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
             font-size: 0.85rem;
-            border: 1px solid var(--border-color);
+            border: 2px solid var(--border-color);
             border-radius: 6px;
             overflow: hidden;
+            background: white;
         }
         
         @media (max-width: 768px) {
@@ -675,59 +836,52 @@
         }
         
         .preview-table thead th {
-            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+            background: linear-gradient(135deg, #2c3e50, #1c2833) !important;
             padding: 12px 10px;
             text-align: left;
             font-weight: 700;
-            color: var(--secondary-color);
-            border-bottom: 2px solid var(--primary-color);
+            color: #ffffff !important;
+            border-bottom: 3px solid var(--primary-color);
             position: sticky;
             top: 0;
             z-index: 10;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
         }
         
         .preview-table tbody td {
             padding: 10px;
             border-bottom: 1px solid var(--border-color);
-            color: var(--text-primary);
+            color: #212529 !important;
             font-weight: 500;
+            background-color: rgba(255, 255, 255, 0.7) !important;
         }
         
-        .preview-table tbody tr:nth-child(even) {
-            background-color: rgba(248, 249, 250, 0.5);
+        .preview-table tbody tr:nth-child(even) td {
+            background-color: rgba(248, 249, 250, 0.9) !important;
         }
         
-        .preview-table tbody tr:hover {
-            background-color: rgba(44, 90, 160, 0.1);
+        .preview-table tbody tr:hover td {
+            background-color: rgba(44, 90, 160, 0.15) !important;
             transform: translateX(2px);
             transition: var(--transition);
         }
         
-        /* Enhanced gender cell styles */
+        /* FIXED: gender cell styles with enhanced badges */
         .gender-cell {
             text-align: center;
-            min-width: 80px;
-        }
-        
-        .gender-cell .badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            padding: 5px 10px;
-            font-weight: 700;
-            min-width: 65px;
+            min-width: 90px;
         }
         
         /* Status cell styles */
-        .status-cell .badge {
+        .status-cell .preview-badge,
+        .license-cell .preview-badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
-            padding: 5px 10px;
-            font-weight: 700;
-            min-width: 75px;
+            gap: 5px;
+            padding: 6px 12px;
+            font-weight: 700 !important;
+            min-width: 90px;
         }
         
         .empty-preview {
@@ -955,6 +1109,13 @@
                 width: 100%;
                 text-align: center;
             }
+            
+            /* Adjust badge sizes for mobile */
+            .preview-badge {
+                min-width: 70px !important;
+                padding: 4px 8px !important;
+                font-size: 0.7rem !important;
+            }
         }
         
         /* High contrast mode support */
@@ -973,6 +1134,14 @@
             .preview-table th {
                 background-color: var(--secondary-color);
                 color: white;
+            }
+            
+            .preview-table td {
+                border: 1px solid #000;
+            }
+            
+            .preview-badge {
+                border: 2px solid #000 !important;
             }
             
             .btn {
@@ -1009,15 +1178,21 @@
             }
             
             .preview-table th {
-                background-color: #ddd !important;
-                color: #000 !important;
+                background-color: #000 !important;
+                color: #fff !important;
                 -webkit-print-color-adjust: exact;
             }
             
-            .badge {
-                border: 1px solid #000 !important;
-                color: #000 !important;
+            .preview-table td {
                 background-color: #fff !important;
+                border: 1px solid #ddd !important;
+            }
+            
+            .preview-badge {
+                border: 1px solid #000 !important;
+                background-color: #fff !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
             }
             
             .preview-content {
@@ -1174,7 +1349,7 @@
                         </div>
                     </div>
                     
-                    <!-- Filters Section - UPDATED WITH STATUS FILTER -->
+                    <!-- UPDATED: Filters Section with Employment Status and License Status Filters -->
                     <div class="filters-section">
                         <h3><i class="fas fa-filter"></i> Filter Results</h3>
                         
@@ -1268,25 +1443,68 @@
                                 </div>
                             </div>
                             
-                            <!-- UPDATED: Status Filter -->
+                            <!-- UPDATED: Employment Status Filter -->
                             <div class="col-md-6">
                                 <div class="filter-group">
-                                    <label for="filter_status" class="form-label">Status</label>
+                                    <label for="filter_status" class="form-label">Employment Status</label>
                                     <select name="filter_status" id="filter_status" class="form-select filter-select" onchange="updateFilterCount()">
-                                        <option value="">All Status</option>
+                                        <option value="">All Employment Status</option>
                                         <?php if (isset($filterOptions['status_options']) && is_array($filterOptions['status_options'])): ?>
                                             <?php foreach ($filterOptions['status_options'] as $status_option): ?>
-                                                <option value="<?= htmlspecialchars($status_option) ?>" 
-                                                    <?= (isset($_POST['filter_status']) && $_POST['filter_status'] == $status_option) ? 'selected' : '' ?>>
-                                                    <?= htmlspecialchars(ucfirst($status_option)) ?>
+                                                <option value="<?= htmlspecialchars($status_option) ?>">
+                                                    <?= htmlspecialchars($status_option) ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         <?php else: ?>
                                             <!-- Fallback options if status_options is not available -->
                                             <option value="active">Active</option>
                                             <option value="inactive">Inactive</option>
-                                            <option value="pending">Pending</option>
+                                            <option value="draft">Draft</option>
                                             <option value="retired">Retired</option>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- NEW: NMCN License Status Filter -->
+                            <div class="col-md-6">
+                                <div class="filter-group">
+                                    <label for="filter_nmcn_status" class="form-label">NMCN License Status</label>
+                                    <select name="filter_nmcn_status" id="filter_nmcn_status" class="form-select filter-select" onchange="updateFilterCount()">
+                                        <option value="">All NMCN Status</option>
+                                        <?php if (isset($filterOptions['nmcn_status_options']) && is_array($filterOptions['nmcn_status_options'])): ?>
+                                            <?php foreach ($filterOptions['nmcn_status_options'] as $nmcn_option): ?>
+                                                <option value="<?= htmlspecialchars($nmcn_option) ?>">
+                                                    <?= htmlspecialchars($nmcn_option) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <option value="Active">Active</option>
+                                            <option value="Expired">Expired</option>
+                                            <option value="Pending">Pending</option>
+                                            <option value="Not Applicable">Not Applicable</option>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- NEW: TRCN License Status Filter -->
+                            <div class="col-md-6">
+                                <div class="filter-group">
+                                    <label for="filter_trcn_status" class="form-label">TRCN License Status</label>
+                                    <select name="filter_trcn_status" id="filter_trcn_status" class="form-select filter-select" onchange="updateFilterCount()">
+                                        <option value="">All TRCN Status</option>
+                                        <?php if (isset($filterOptions['trcn_status_options']) && is_array($filterOptions['trcn_status_options'])): ?>
+                                            <?php foreach ($filterOptions['trcn_status_options'] as $trcn_option): ?>
+                                                <option value="<?= htmlspecialchars($trcn_option) ?>">
+                                                    <?= htmlspecialchars($trcn_option) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <option value="Active">Active</option>
+                                            <option value="Expired">Expired</option>
+                                            <option value="Pending">Pending</option>
+                                            <option value="Not Applicable">Not Applicable</option>
                                         <?php endif; ?>
                                     </select>
                                 </div>
@@ -1294,7 +1512,7 @@
                         </div>
                     </div>
                     
-                    <!-- Sorting Section -->
+                    <!-- UPDATED: Sorting Section with License Status sorting options -->
                     <div class="sorting-section">
                         <h3><i class="fas fa-sort-amount-down"></i> Sort Results</h3>
                         <select name="sort_order" class="form-select">
@@ -1308,6 +1526,11 @@
                             <option value="state_desc">State (Z to A)</option>
                             <option value="date_of_first_appointment_asc">Date of Appointment (Oldest First)</option>
                             <option value="date_of_first_appointment_desc">Date of Appointment (Newest First)</option>
+                            <!-- Add license status sorting options -->
+                            <option value="nmcn_status_asc">NMCN Status (A to Z)</option>
+                            <option value="nmcn_status_desc">NMCN Status (Z to A)</option>
+                            <option value="trcn_status_asc">TRCN Status (A to Z)</option>
+                            <option value="trcn_status_desc">TRCN Status (Z to A)</option>
                         </select>
                     </div>
                     
@@ -1699,7 +1922,7 @@
             });
         }
         
-        // Update filter count
+        // UPDATED: Update filter count function to include new license status filters
         function updateFilterCount() {
             let activeCount = 0;
             const activeFilters = [];
@@ -1711,12 +1934,27 @@
                 activeFilters.push('Search');
             }
             
-            // Check filter selects
-            document.querySelectorAll('.filter-select').forEach(select => {
-                if (select.value) {
+            // Check ALL filter selects (including the new ones)
+            const filterSelects = [
+                'filter_state',
+                'filter_department', 
+                'filter_grade_level',
+                'filter_sex',
+                'filter_rank',
+                'filter_status',        // Employment status
+                'filter_nmcn_status',   // NEW
+                'filter_trcn_status'    // NEW
+            ];
+            
+            filterSelects.forEach(filterName => {
+                const select = document.querySelector(`[name="${filterName}"]`);
+                if (select && select.value) {
                     activeCount++;
-                    const filterName = select.name.replace('filter_', '').replace('_', ' ');
-                    activeFilters.push(filterName.charAt(0).toUpperCase() + filterName.slice(1));
+                    // Format filter name for display
+                    const displayName = filterName.replace('filter_', '')
+                        .replace('_', ' ')
+                        .replace(/\b\w/g, l => l.toUpperCase());
+                    activeFilters.push(displayName);
                 }
             });
             
@@ -1825,6 +2063,8 @@
                     showAlert('Network error. Please check your connection.', 'danger');
                 } else {
                     showAlert('Error generating preview: ' + error.message, 'danger');
+                    // Fallback to sample data
+                    fallbackToSampleData();
                 }
             } finally {
                 submitBtn.innerHTML = originalBtnText;
@@ -1835,7 +2075,7 @@
             }
         }
         
-        // Fallback to sample data if AJAX fails
+        // UPDATED: Fallback to sample data function with NMCN and TRCN status handling
         function fallbackToSampleData() {
             // Get selected fields
             const selectedFields = [];
@@ -1859,7 +2099,9 @@
                 grade_level: document.querySelector('[name="filter_grade_level"]').value,
                 sex: document.querySelector('[name="filter_sex"]').value,
                 rank: document.querySelector('[name="filter_rank"]').value,
-                status: document.querySelector('[name="filter_status"]').value || ''
+                status: document.querySelector('[name="filter_status"]').value || '',
+                nmcn_status: document.querySelector('[name="filter_nmcn_status"]').value || '',
+                trcn_status: document.querySelector('[name="filter_trcn_status"]').value || ''
             };
             
             const sortOrder = document.querySelector('[name="sort_order"]').value || 'surname_asc';
@@ -1876,7 +2118,15 @@
                         row[field] = i % 2 === 0 ? 'Male' : 'Female';
                     } else if (field === 'employee_number') {
                         row[field] = 'EMP' + (20240000 + i);
-                    } else if (field.includes('status')) {
+                    } else if (field === 'nmcn_status') {
+                        // Use the NMCN status filter or default to Active
+                        const nmcnFilter = filters.nmcn_status || 'Active';
+                        row[field] = nmcnFilter;
+                    } else if (field === 'trcn_status') {
+                        // Use the TRCN status filter or default to Active
+                        const trcnFilter = filters.trcn_status || 'Active';
+                        row[field] = trcnFilter;
+                    } else if (field === 'status') {
                         // Use the status filter or default to active
                         const statusFilter = filters.status || 'active';
                         row[field] = statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1);
@@ -1919,7 +2169,7 @@
             showAlert('Showing sample data. Real data could not be loaded.', 'warning');
         }
         
-        // UPDATED showPreviewWithData function from Part B
+        // FIXED: showPreviewWithData function with enhanced contrast for ALL items
         function showPreviewWithData(previewData) {
             const previewContent = document.getElementById('previewContent');
             
@@ -1959,64 +2209,102 @@
                                 try {
                                     const date = new Date(value);
                                     value = date.toLocaleDateString('en-GB');
+                                    value = `<span class="date-cell">${value}</span>`;
                                 } catch (e) {
-                                    value = value;
+                                    value = `<span class="empty-cell">${value}</span>`;
                                 }
                             } else {
-                                value = '<span class="text-muted fw-bold">-</span>';
+                                value = '<span class="empty-cell">-</span>';
                             }
                         }
                         
                         // Format gender
                         else if (field === 'sex') {
                             if (value === 'M' || value.toLowerCase() === 'male') {
-                                value = '<span class="badge badge-male badge-contrast"><i class="fas fa-mars me-1"></i>Male</span>';
+                                value = '<span class="preview-badge badge-gender badge-gender-male"><i class="fas fa-mars me-1"></i>Male</span>';
                             } else if (value === 'F' || value.toLowerCase() === 'female') {
-                                value = '<span class="badge badge-female badge-contrast"><i class="fas fa-venus me-1"></i>Female</span>';
+                                value = '<span class="preview-badge badge-gender badge-gender-female"><i class="fas fa-venus me-1"></i>Female</span>';
                             } else {
-                                value = '<span class="text-muted fw-bold">-</span>';
+                                value = '<span class="empty-cell">-</span>';
                             }
                         }
                         
-                        // Format status
-                        else if (field.includes('status')) {
-                            if (value.toLowerCase() === 'active') {
-                                value = '<span class="badge badge-active badge-contrast"><i class="fas fa-check-circle me-1"></i>Active</span>';
-                            } else if (value.toLowerCase() === 'inactive') {
-                                value = '<span class="badge badge-inactive badge-contrast"><i class="fas fa-times-circle me-1"></i>Inactive</span>';
-                            } else if (value.toLowerCase() === 'pending') {
-                                value = '<span class="badge badge-warning badge-contrast"><i class="fas fa-clock me-1"></i>Pending</span>';
-                            } else if (value.toLowerCase() === 'retired') {
-                                value = '<span class="badge badge-secondary badge-contrast"><i class="fas fa-user-clock me-1"></i>Retired</span>';
+                        // Format NMCN and TRCN license status - ALL TYPES
+                        else if (field === 'nmcn_status' || field === 'trcn_status') {
+                            const valueLower = value.toString().toLowerCase();
+                            if (valueLower.includes('active')) {
+                                value = '<span class="preview-badge badge-license badge-license-active"><i class="fas fa-id-card me-1"></i>Active</span>';
+                            } else if (valueLower.includes('expired')) {
+                                value = '<span class="preview-badge badge-license badge-license-expired"><i class="fas fa-calendar-times me-1"></i>Expired</span>';
+                            } else if (valueLower.includes('pending')) {
+                                value = '<span class="preview-badge badge-license badge-license-pending"><i class="fas fa-clock me-1"></i>Pending</span>';
+                            } else if (valueLower.includes('not') && valueLower.includes('applicable')) {
+                                value = '<span class="preview-badge badge-license badge-license-not-applicable"><i class="fas fa-ban me-1"></i>Not Applicable</span>';
+                            } else if (valueLower.includes('renew')) {
+                                value = '<span class="preview-badge badge-license" style="background: linear-gradient(135deg, #ffc107, #d39e00); color: #000; border-color: #856404;"><i class="fas fa-sync-alt me-1"></i>Renewal</span>';
                             } else {
-                                value = '<span class="text-muted fw-bold">' + value + '</span>';
+                                value = `<span class="preview-badge badge-license" style="background: #6c757d; color: white; border-color: #545b62;">${value}</span>`;
+                            }
+                        }
+                        
+                        // Format employment status - ALL TYPES
+                        else if (field === 'status') {
+                            const valueLower = value.toString().toLowerCase();
+                            if (valueLower.includes('active')) {
+                                value = '<span class="preview-badge badge-status badge-status-active"><i class="fas fa-check-circle me-1"></i>Active</span>';
+                            } else if (valueLower.includes('inactive')) {
+                                value = '<span class="preview-badge badge-status badge-status-inactive"><i class="fas fa-times-circle me-1"></i>Inactive</span>';
+                            } else if (valueLower.includes('pending')) {
+                                value = '<span class="preview-badge badge-status badge-license-pending"><i class="fas fa-clock me-1"></i>Pending</span>';
+                            } else if (valueLower.includes('retired')) {
+                                value = '<span class="preview-badge badge-status badge-status-retired"><i class="fas fa-user-clock me-1"></i>Retired</span>';
+                            } else if (valueLower.includes('draft')) {
+                                value = '<span class="preview-badge badge-status badge-status-draft"><i class="fas fa-file-alt me-1"></i>Draft</span>';
+                            } else if (valueLower.includes('suspended')) {
+                                value = '<span class="preview-badge badge-status" style="background: linear-gradient(135deg, #dc3545, #bd2130); color: white; border-color: #721c24;"><i class="fas fa-ban me-1"></i>Suspended</span>';
+                            } else {
+                                value = `<span class="preview-badge badge-status" style="background: #6c757d; color: white; border-color: #545b62;">${value}</span>`;
                             }
                         }
                         
                         // Format employee number
                         else if (field === 'employee_number') {
-                            value = `<strong class="text-primary">${value}</strong>`;
+                            value = `<span class="employee-number">${value}</span>`;
                         }
                         
                         // Format grade level
                         else if (field === 'grade_level') {
-                            value = `<span class="badge badge-grade badge-contrast">GL ${value}</span>`;
+                            value = `<span class="badge-grade">GL ${value}</span>`;
+                        }
+                        
+                        // Format rank with styling
+                        else if (field === 'rank') {
+                            value = `<span style="font-weight: 700; color: #2c3e50; background: #f8f9fa; padding: 4px 8px; border-radius: 3px; border: 1px solid #dee2e6;">${value}</span>`;
+                        }
+                        
+                        // Format department with styling
+                        else if (field === 'department') {
+                            value = `<span style="font-weight: 600; color: #2c5aa0; background: rgba(44, 90, 160, 0.1); padding: 4px 8px; border-radius: 3px; border: 1px solid rgba(44, 90, 160, 0.2);">${value}</span>`;
                         }
                         
                         // Truncate long text
-                        else if (value && value.length > 30) {
-                            value = `<span title="${value}" class="text-truncate d-inline-block" style="max-width: 200px;">${value}</span>`;
+                        else if (value && value.length > 30 && !value.includes('<')) {
+                            value = `<span title="${value}" class="text-truncate d-inline-block" style="max-width: 200px; font-weight: 500;">${value}</span>`;
                         }
                         
                         // Handle empty values
-                        else if (!value) {
-                            value = '<span class="text-muted fw-bold">-</span>';
+                        else if (!value || value === '') {
+                            value = '<span class="empty-cell">-</span>';
                         }
                         
-                        // Add CSS classes
+                        // Add CSS classes for special cells
                         let cellClass = '';
                         if (field === 'sex') cellClass = 'gender-cell';
-                        if (field.includes('status')) cellClass = 'status-cell';
+                        if (field.includes('status') || field.includes('license')) cellClass += ' status-cell license-cell';
+                        if (field.includes('date')) cellClass += ' date-cell';
+                        
+                        // Remove extra spaces from cellClass
+                        cellClass = cellClass.trim();
                         
                         tableHTML += `<td class="${cellClass}">${value}</td>`;
                     });
@@ -2075,14 +2363,32 @@
             }
         }
         
-        // Helper function to clear filters
+        // UPDATED: Helper function to clear filters including new license status filters
         function clearFilters() {
-            document.querySelectorAll('.filter-select').forEach(select => {
-                select.value = '';
-            });
+            // Clear all filter inputs
             document.querySelector('[name="search"]').value = '';
+            
+            // Clear all select filters
+            const filterSelects = [
+                'filter_state',
+                'filter_department', 
+                'filter_grade_level',
+                'filter_sex',
+                'filter_rank',
+                'filter_status',
+                'filter_nmcn_status',   // NEW
+                'filter_trcn_status'    // NEW
+            ];
+            
+            filterSelects.forEach(filterName => {
+                const select = document.querySelector(`[name="${filterName}"]`);
+                if (select) {
+                    select.value = '';
+                }
+            });
+            
             updateFilterCount();
-            showAlert('Filters cleared', 'info');
+            showAlert('All filters cleared', 'info');
         }
         
         // Update preview statistics
@@ -2111,7 +2417,7 @@
             document.getElementById('reportForm').submit();
         }
         
-        // Prepare data for saving report
+        // UPDATED: Prepare data for saving report - INCLUDING NEW LICENSE STATUS FILTERS
         function prepareSaveData() {
             // Get selected fields
             const selectedFields = [];
@@ -2120,7 +2426,7 @@
             });
             document.getElementById('saveSelectedFields').value = JSON.stringify(selectedFields);
             
-            // Get filters
+            // Get filters - INCLUDING NEW LICENSE STATUS FILTERS
             const filters = {
                 search: document.querySelector('[name="search"]').value,
                 state: document.querySelector('[name="filter_state"]').value,
@@ -2128,7 +2434,9 @@
                 grade_level: document.querySelector('[name="filter_grade_level"]').value,
                 sex: document.querySelector('[name="filter_sex"]').value,
                 rank: document.querySelector('[name="filter_rank"]').value,
-                status: document.querySelector('[name="filter_status"]').value
+                status: document.querySelector('[name="filter_status"]').value,           // Employment status
+                nmcn_status: document.querySelector('[name="filter_nmcn_status"]').value, // NEW
+                trcn_status: document.querySelector('[name="filter_trcn_status"]').value  // NEW
             };
             document.getElementById('saveFilters').value = JSON.stringify(filters);
             
