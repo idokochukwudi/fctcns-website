@@ -424,8 +424,8 @@ $statusColor = $isValid ? '#28a745' : '#dc3545';
                 <?php if (!empty($employee['passport_photo'])): ?>
                 <div class="employee-photo">
                     <img src="<?php echo $baseUrl; ?>/verify/passport/<?php echo $employee['id']; ?>" 
-     alt="Passport Photo"
-     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI2YwZjBmMCIvPjxjaXJjbGUgY3g9Ijc1IiBjeT0iNzAiIHI9IjQwIiBmaWxsPSIjY2NjIi8+PHJlY3QgeD0iNDAiIHk9IjEyMCIgd2lkdGg9IjcwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjY2NjIiByeD0iNSIvPjx0ZXh0IHg9Ijc1IiB5PSIxNzAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzY2NiI+Tm8gUGhvdG88L3RleHQ+PC9zdmc+'; this.onerror=null;">
+                         alt="Passport Photo"
+                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI2YwZjBmMCIvPjxjaXJjbGUgY3g9Ijc1IiBjeT0iNzAiIHI9IjQwIiBmaWxsPSIjY2NjIi8+PHJlY3QgeD0iNDAiIHk9IjEyMCIgd2lkdGg9IjcwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjY2NjIiByeD0iNSIvPjx0ZXh0IHg9Ijc1IiB5PSIxNzAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzY2NiI+Tm8gUGhvdG88L3RleHQ+PC9zdmc+'; this.onerror=null;">
                 </div>
                 <?php endif; ?>
                 
@@ -451,6 +451,37 @@ $statusColor = $isValid ? '#28a745' : '#dc3545';
                             <span class="detail-label">Department:</span>
                             <span class="detail-value"><?php echo htmlspecialchars($employee['department'] ?? 'N/A'); ?></span>
                         </div>
+                        <!-- License Summary -->
+                        <?php if (isset($verification['licenseStatus']) && $verification['licenseStatus']['overall_status'] !== 'none'): ?>
+                        <div class="detail-item">
+                            <span class="detail-label">License Status:</span>
+                            <span class="detail-value">
+                                <?php
+                                $statusIcon = '';
+                                $statusColor = '';
+                                switch ($verification['licenseStatus']['overall_status']) {
+                                    case 'valid':
+                                        $statusIcon = 'fa-check-circle';
+                                        $statusColor = '#28a745';
+                                        $statusText = 'Valid';
+                                        break;
+                                    case 'expiring':
+                                        $statusIcon = 'fa-exclamation-triangle';
+                                        $statusColor = '#ffc107';
+                                        $statusText = 'Expiring Soon';
+                                        break;
+                                    case 'expired':
+                                        $statusIcon = 'fa-times-circle';
+                                        $statusColor = '#dc3545';
+                                        $statusText = 'Expired';
+                                        break;
+                                }
+                                ?>
+                                <i class="fas <?php echo $statusIcon; ?>" style="color: <?php echo $statusColor; ?>;"></i>
+                                <span style="color: <?php echo $statusColor; ?>; font-weight: bold;"><?php echo $statusText; ?></span>
+                            </span>
+                        </div>
+                        <?php endif; ?>
                         <div class="detail-item">
                             <span class="detail-label">Status:</span>
                             <span class="detail-value">
@@ -472,6 +503,181 @@ $statusColor = $isValid ? '#28a745' : '#dc3545';
                     </div>
                 </div>
             </div>
+            
+            <!-- Professional Licenses Section -->
+            <?php if (isset($verification['licenseStatus']) && 
+                     ($verification['licenseStatus']['nmcn']['number'] || 
+                      $verification['licenseStatus']['trcn']['number'])): ?>
+            <div class="verification-details" style="margin-top: 25px; border-left: 4px solid #17a2b8;">
+                <h3 style="color: #17a2b8; margin-bottom: 15px;">
+                    <i class="fas fa-id-card me-2"></i>Professional Licenses Status
+                </h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+                    <?php if ($verification['licenseStatus']['nmcn']['number']): ?>
+                    <div class="license-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h4 style="margin: 0; color: #003366;">
+                                <i class="fas fa-stethoscope me-2"></i>NMCN License
+                            </h4>
+                            <span class="license-badge" style="
+                                padding: 5px 12px;
+                                border-radius: 20px;
+                                font-size: 12px;
+                                font-weight: bold;
+                                background: <?php echo $verification['licenseStatus']['nmcn']['is_valid'] ? 
+                                             ($verification['licenseStatus']['nmcn']['is_expiring'] ? '#fff3cd' : '#d4edda') : 
+                                             '#f8d7da'; ?>;
+                                color: <?php echo $verification['licenseStatus']['nmcn']['is_valid'] ? 
+                                        ($verification['licenseStatus']['nmcn']['is_expiring'] ? '#856404' : '#155724') : 
+                                        '#721c24'; ?>;
+                                border: 1px solid <?php echo $verification['licenseStatus']['nmcn']['is_valid'] ? 
+                                                  ($verification['licenseStatus']['nmcn']['is_expiring'] ? '#ffeaa7' : '#c3e6cb') : 
+                                                  '#f5c6cb'; ?>;
+                            ">
+                                <?php echo $verification['licenseStatus']['nmcn']['is_valid'] ? 
+                                       ($verification['licenseStatus']['nmcn']['is_expiring'] ? 'EXPIRING' : 'ACTIVE') : 
+                                       'EXPIRED'; ?>
+                            </span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                            <div>
+                                <div style="font-size: 12px; color: #666; margin-bottom: 3px;">License Number</div>
+                                <div style="font-weight: 500; color: #003366;">
+                                    <?php echo htmlspecialchars($verification['licenseStatus']['nmcn']['number']); ?>
+                                </div>
+                            </div>
+                            <?php if ($verification['licenseStatus']['nmcn']['issued_date']): ?>
+                            <div>
+                                <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Issued Date</div>
+                                <div style="font-weight: 500;">
+                                    <?php echo date('M j, Y', strtotime($verification['licenseStatus']['nmcn']['issued_date'])); ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            <?php if ($verification['licenseStatus']['nmcn']['expiry_date']): ?>
+                            <div>
+                                <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Expiry Date</div>
+                                <div style="font-weight: 500;">
+                                    <?php echo date('M j, Y', strtotime($verification['licenseStatus']['nmcn']['expiry_date'])); ?>
+                                    <?php if ($verification['licenseStatus']['nmcn']['days_remaining'] !== null): ?>
+                                    <br>
+                                    <small style="color: <?php echo $verification['licenseStatus']['nmcn']['is_expired'] ? '#dc3545' : 
+                                                             ($verification['licenseStatus']['nmcn']['is_expiring'] ? '#ffc107' : '#28a745'); ?>;">
+                                        (<?php echo $verification['licenseStatus']['nmcn']['is_expired'] ? 'Expired' : 
+                                            $verification['licenseStatus']['nmcn']['days_remaining'] . ' days remaining'; ?>)
+                                    </small>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <?php if ($verification['licenseStatus']['trcn']['number']): ?>
+                    <div class="license-card" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h4 style="margin: 0; color: #003366;">
+                                <i class="fas fa-chalkboard-teacher me-2"></i>TRCN License
+                            </h4>
+                            <span class="license-badge" style="
+                                padding: 5px 12px;
+                                border-radius: 20px;
+                                font-size: 12px;
+                                font-weight: bold;
+                                background: <?php echo $verification['licenseStatus']['trcn']['is_valid'] ? 
+                                             ($verification['licenseStatus']['trcn']['is_expiring'] ? '#fff3cd' : '#d4edda') : 
+                                             '#f8d7da'; ?>;
+                                color: <?php echo $verification['licenseStatus']['trcn']['is_valid'] ? 
+                                        ($verification['licenseStatus']['trcn']['is_expiring'] ? '#856404' : '#155724') : 
+                                        '#721c24'; ?>;
+                                border: 1px solid <?php echo $verification['licenseStatus']['trcn']['is_valid'] ? 
+                                                  ($verification['licenseStatus']['trcn']['is_expiring'] ? '#ffeaa7' : '#c3e6cb') : 
+                                                  '#f5c6cb'; ?>;
+                            ">
+                                <?php echo $verification['licenseStatus']['trcn']['is_valid'] ? 
+                                       ($verification['licenseStatus']['trcn']['is_expiring'] ? 'EXPIRING' : 'ACTIVE') : 
+                                       'EXPIRED'; ?>
+                            </span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                            <div>
+                                <div style="font-size: 12px; color: #666; margin-bottom: 3px;">License Number</div>
+                                <div style="font-weight: 500; color: #003366;">
+                                    <?php echo htmlspecialchars($verification['licenseStatus']['trcn']['number']); ?>
+                                </div>
+                            </div>
+                            <?php if ($verification['licenseStatus']['trcn']['issued_date']): ?>
+                            <div>
+                                <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Issued Date</div>
+                                <div style="font-weight: 500;">
+                                    <?php echo date('M j, Y', strtotime($verification['licenseStatus']['trcn']['issued_date'])); ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            <?php if ($verification['licenseStatus']['trcn']['expiry_date']): ?>
+                            <div>
+                                <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Expiry Date</div>
+                                <div style="font-weight: 500;">
+                                    <?php echo date('M j, Y', strtotime($verification['licenseStatus']['trcn']['expiry_date'])); ?>
+                                    <?php if ($verification['licenseStatus']['trcn']['days_remaining'] !== null): ?>
+                                    <br>
+                                    <small style="color: <?php echo $verification['licenseStatus']['trcn']['is_expired'] ? '#dc3545' : 
+                                                             ($verification['licenseStatus']['trcn']['is_expiring'] ? '#ffc107' : '#28a745'); ?>;">
+                                        (<?php echo $verification['licenseStatus']['trcn']['is_expired'] ? 'Expired' : 
+                                            $verification['licenseStatus']['trcn']['days_remaining'] . ' days remaining'; ?>)
+                                    </small>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                
+                <?php if ($verification['licenseStatus']['overall_status'] !== 'none'): ?>
+                <div style="margin-top: 15px; padding: 12px; background: #e7f1ff; border-radius: 6px; border: 1px solid #b8daff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong style="color: #004085;">Overall Professional Status:</strong>
+                            <span style="margin-left: 10px;">
+                                <?php
+                                $statusText = '';
+                                switch ($verification['licenseStatus']['overall_status']) {
+                                    case 'valid':
+                                        $statusText = 'Valid Professional License(s)';
+                                        $statusClass = 'success';
+                                        break;
+                                    case 'expiring':
+                                        $statusText = 'License(s) Expiring Soon';
+                                        $statusClass = 'warning';
+                                        break;
+                                    case 'expired':
+                                        $statusText = 'No Valid Professional License';
+                                        $statusClass = 'danger';
+                                        break;
+                                }
+                                ?>
+                                <span style="padding: 4px 10px; border-radius: 4px; font-weight: bold;
+                                    background: <?php echo $statusClass === 'success' ? '#d4edda' : 
+                                                   ($statusClass === 'warning' ? '#fff3cd' : '#f8d7da'); ?>;
+                                    color: <?php echo $statusClass === 'success' ? '#155724' : 
+                                              ($statusClass === 'warning' ? '#856404' : '#721c24'); ?>;
+                                    border: 1px solid <?php echo $statusClass === 'success' ? '#c3e6cb' : 
+                                                         ($statusClass === 'warning' ? '#ffeaa7' : '#f5c6cb'); ?>;
+                                ">
+                                    <?php echo $statusText; ?>
+                                </span>
+                            </span>
+                        </div>
+                        <i class="fas fa-info-circle" style="color: #004085;"></i>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
             
             <!-- Verification Details -->
             <div class="verification-details">

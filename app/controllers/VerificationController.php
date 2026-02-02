@@ -51,6 +51,9 @@ class VerificationController extends Controller {
             $verifierName = $_GET['name'] ?? '';
             $verifierNotes = $_GET['notes'] ?? '';
             
+            // Calculate license status
+            $licenseStatus = $this->getLicenseStatus($employee);
+            
             // FIXED: Updated validation for FCTCNS0001 format
             $isValid = false;
             $employeeNumber = $employee['employee_number'] ?? '';
@@ -83,7 +86,9 @@ class VerificationController extends Controller {
                 'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
                 'verifierName' => $verifierName,
                 'verifierNotes' => $verifierNotes,
-                'baseUrl' => $this->data['baseUrl']
+                'baseUrl' => $this->data['baseUrl'],
+                // Add license status data
+                'licenseStatus' => $licenseStatus
             ];
             
             // Log verification attempt
@@ -96,6 +101,85 @@ class VerificationController extends Controller {
             error_log("Employee verification error: " . $e->getMessage());
             return $this->renderVerificationError('An error occurred during verification.');
         }
+    }
+    
+    /**
+     * Get license status information for an employee
+     */
+    private function getLicenseStatus($employee)
+    {
+        $licenseStatus = [
+            'nmcn' => [
+                'number' => $employee['nmcn_license_number'] ?? null,
+                'issued_date' => $employee['nmcn_issued_date'] ?? null,
+                'expiry_date' => $employee['nmcn_expiry_date'] ?? null,
+                'status' => $employee['nmcn_status'] ?? null,
+                'is_valid' => false,
+                'is_expired' => false,
+                'is_expiring' => false,
+                'days_remaining' => null
+            ],
+            'trcn' => [
+                'number' => $employee['trcn_license_number'] ?? null,
+                'issued_date' => $employee['trcn_issued_date'] ?? null,
+                'expiry_date' => $employee['trcn_expiry_date'] ?? null,
+                'status' => $employee['trcn_status'] ?? null,
+                'is_valid' => false,
+                'is_expired' => false,
+                'is_expiring' => false,
+                'days_remaining' => null
+            ],
+            'overall_status' => 'none'
+        ];
+        
+        $now = time();
+        $hasValidLicense = false;
+        $hasExpiringLicense = false;
+        
+        // Check NMCN license
+        if (!empty($licenseStatus['nmcn']['expiry_date'])) {
+            $expiryDate = strtotime($licenseStatus['nmcn']['expiry_date']);
+            $daysRemaining = floor(($expiryDate - $now) / (60 * 60 * 24));
+            
+            $licenseStatus['nmcn']['days_remaining'] = $daysRemaining;
+            $licenseStatus['nmcn']['is_expired'] = $daysRemaining <= 0;
+            $licenseStatus['nmcn']['is_expiring'] = $daysRemaining > 0 && $daysRemaining <= 30;
+            $licenseStatus['nmcn']['is_valid'] = $daysRemaining > 0;
+            
+            if ($licenseStatus['nmcn']['is_valid']) {
+                $hasValidLicense = true;
+            }
+            if ($licenseStatus['nmcn']['is_expiring']) {
+                $hasExpiringLicense = true;
+            }
+        }
+        
+        // Check TRCN license
+        if (!empty($licenseStatus['trcn']['expiry_date'])) {
+            $expiryDate = strtotime($licenseStatus['trcn']['expiry_date']);
+            $daysRemaining = floor(($expiryDate - $now) / (60 * 60 * 24));
+            
+            $licenseStatus['trcn']['days_remaining'] = $daysRemaining;
+            $licenseStatus['trcn']['is_expired'] = $daysRemaining <= 0;
+            $licenseStatus['trcn']['is_expiring'] = $daysRemaining > 0 && $daysRemaining <= 30;
+            $licenseStatus['trcn']['is_valid'] = $daysRemaining > 0;
+            
+            if ($licenseStatus['trcn']['is_valid']) {
+                $hasValidLicense = true;
+            }
+            if ($licenseStatus['trcn']['is_expiring']) {
+                $hasExpiringLicense = true;
+            }
+        }
+        
+        // Determine overall status
+        if ($hasValidLicense) {
+            $licenseStatus['overall_status'] = $hasExpiringLicense ? 'expiring' : 'valid';
+        } elseif ($licenseStatus['nmcn']['is_expired'] || $licenseStatus['trcn']['is_expired']) {
+            $licenseStatus['overall_status'] = 'expired';
+        }
+        
+        return $licenseStatus;
     }
     
     /**
