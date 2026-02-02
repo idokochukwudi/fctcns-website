@@ -12,7 +12,9 @@ $licenseStatus = $licenseStatus ?? ['nmcn' => [], 'trcn' => [], 'overall_status'
 
 // Configure print layout
 $pageTitle = 'Employee Record - ' . ($employee['employee_number'] ?? 'N/A');
-// $documentId = 'EMP-' . ($employee['id'] ?? '') . '-' . date('YmdHis');
+// Fix this line - UNCOMMENT and use correct format
+$documentId = ($employee['employee_number'] ?? 'FCTCNS' . ($employee['id'] ?? '')) . '-' . 
+    date('Ymd', strtotime($employee['updated_at'] ?? $employee['created_at'] ?? 'now'));
 $autoPrint = $_GET['autoprint'] ?? false;
 
 // Calculate age and service years
