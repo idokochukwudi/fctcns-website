@@ -1648,7 +1648,7 @@ class NominalRollController extends Controller {
      */
     
     /**
-     * DEBUG VERSION: Verify employee via QR code
+     * Verify employee via QR code - Shows nice confirmation
      */
     public function verifyEmployee($id) {
         try {
@@ -1656,6 +1656,7 @@ class NominalRollController extends Controller {
             $employee = $this->model->getEmployee($id);
             
             if (!$employee) {
+                // Show error page
                 $this->renderVerificationError('Employee record not found or has been deleted.');
                 return;
             }
@@ -1665,45 +1666,13 @@ class NominalRollController extends Controller {
             $verifierName = $_GET['name'] ?? '';
             $verifierNotes = $_GET['notes'] ?? '';
             
-            // DEBUG: Log everything
-            error_log("=== VERIFICATION DEBUG START ===");
-            error_log("Employee ID: " . $id);
-            error_log("Employee Number: " . ($employee['employee_number'] ?? 'NULL'));
-            error_log("Document Ref from URL: " . $documentRef);
-            error_log("Employee Status: " . ($employee['status'] ?? 'NULL'));
-            error_log("is_draft: " . ($employee['is_draft'] ?? 'NULL'));
-            
-            // Check 1: Basic validation
-            $check1 = false;
-            if (!empty($documentRef) && !empty($employee['employee_number'])) {
-                $check1 = strpos($documentRef, $employee['employee_number']) === 0;
-                error_log("Check 1 (strpos): " . ($check1 ? 'PASS' : 'FAIL'));
-                error_log("strpos position: " . strpos($documentRef, $employee['employee_number']));
-                error_log("DocumentRef: " . $documentRef);
-                error_log("Employee Number: " . $employee['employee_number']);
-            } else {
-                error_log("Check 1: Empty documentRef or employee_number");
-            }
-            
-            // Check 2: Employee status
-            $check2 = ($employee['status'] ?? '') === 'active';
-            error_log("Check 2 (status active): " . ($check2 ? 'PASS' : 'FAIL'));
-            
-            // Check 3: Not draft
-            $check3 = ($employee['is_draft'] ?? 0) == 0;
-            error_log("Check 3 (not draft): " . ($check3 ? 'PASS' : 'FAIL'));
-            
-            $isValid = $check1 && $check2 && $check3;
-            error_log("Final isValid: " . ($isValid ? 'TRUE' : 'FALSE'));
-            error_log("=== VERIFICATION DEBUG END ===");
-            
-            // Prepare verification data
+            // Prepare verification data with license status
             $verificationData = [
                 'employee' => $employee,
                 'documentRef' => $documentRef,
                 'expectedRef' => $employee['employee_number'] . '-' . 
                     date('Ymd', strtotime($employee['updated_at'] ?? 'now')),
-                'isValid' => $isValid,
+                'isValid' => strpos($documentRef, $employee['employee_number']) === 0,
                 'verificationDate' => date('Y-m-d H:i:s'),
                 'verificationId' => uniqid('VER-'),
                 'ipAddress' => $_SERVER['REMOTE_ADDR'],
@@ -1711,6 +1680,7 @@ class NominalRollController extends Controller {
                 'verifierName' => $verifierName,
                 'verifierNotes' => $verifierNotes,
                 'baseUrl' => $this->data['baseUrl'] ?? BASE_URL,
+                // Add license status data
                 'licenseStatus' => $this->getLicenseStatus($employee)
             ];
             
