@@ -1323,10 +1323,7 @@
                                     </div>
                                 </div>
                                 <div class="category-fields" id="fields_<?= $categoryKey ?>">
-                                    <?php foreach ($category['fields'] as $fieldKey => $fieldLabel): 
-                                        // Make sure 'professional_certifications' and 'additional_qualifications' 
-                                        // are in the professional category or wherever they should be
-                                    ?>
+                                    <?php foreach ($category['fields'] as $fieldKey => $fieldLabel): ?>
                                     <div class="field-item">
                                         <div class="form-check">
                                             <input class="form-check-input field-checkbox" 
@@ -1352,7 +1349,7 @@
                         </div>
                     </div>
                     
-                    <!-- UPDATED: Filters Section with Employment Status and License Status Filters -->
+                    <!-- FIXED: Filters Section without duplicate NMCN/TRCN filters -->
                     <div class="filters-section">
                         <h3><i class="fas fa-filter"></i> Filter Results</h3>
                         
@@ -1446,7 +1443,7 @@
                                 </div>
                             </div>
                             
-                            <!-- UPDATED: Employment Status Filter -->
+                            <!-- Employment Status Filter -->
                             <div class="col-md-6">
                                 <div class="filter-group">
                                     <label for="filter_status" class="form-label">Employment Status</label>
@@ -1469,7 +1466,7 @@
                                 </div>
                             </div>
                             
-                            <!-- NEW: NMCN License Status Filter -->
+                            <!-- NMCN License Status Filter -->
                             <div class="col-md-6">
                                 <div class="filter-group">
                                     <label for="filter_nmcn_status" class="form-label">NMCN License Status</label>
@@ -1491,7 +1488,7 @@
                                 </div>
                             </div>
                             
-                            <!-- NEW: TRCN License Status Filter -->
+                            <!-- TRCN License Status Filter -->
                             <div class="col-md-6">
                                 <div class="filter-group">
                                     <label for="filter_trcn_status" class="form-label">TRCN License Status</label>
@@ -1515,7 +1512,7 @@
                         </div>
                     </div>
                     
-                    <!-- UPDATED: Sorting Section with License Status sorting options -->
+                    <!-- FIXED: Sorting Section -->
                     <div class="sorting-section">
                         <h3><i class="fas fa-sort-amount-down"></i> Sort Results</h3>
                         <select name="sort_order" class="form-select">
@@ -1529,7 +1526,7 @@
                             <option value="state_desc">State (Z to A)</option>
                             <option value="date_of_first_appointment_asc">Date of Appointment (Oldest First)</option>
                             <option value="date_of_first_appointment_desc">Date of Appointment (Newest First)</option>
-                            <!-- Add license status sorting options -->
+                            <!-- License status sorting options -->
                             <option value="nmcn_status_asc">NMCN Status (A to Z)</option>
                             <option value="nmcn_status_desc">NMCN Status (Z to A)</option>
                             <option value="trcn_status_asc">TRCN Status (A to Z)</option>
@@ -1551,7 +1548,7 @@
                         <small class="text-muted">Number of records to show in preview</small>
                     </div>
                     
-                    <!-- UPDATED: Simple Export Options -->
+                    <!-- Export Options -->
                     <div class="mb-3">
                         <h3><i class="fas fa-download"></i> Export Options</h3>
                         <div class="form-check">
@@ -1925,7 +1922,7 @@
             });
         }
         
-        // UPDATED: Update filter count function to include new license status filters
+        // FIXED: Update filter count function - removed duplicate filters
         function updateFilterCount() {
             let activeCount = 0;
             const activeFilters = [];
@@ -1937,7 +1934,7 @@
                 activeFilters.push('Search');
             }
             
-            // Check ALL filter selects (including the new ones)
+            // Check filter selects (only one set of NMCN/TRCN filters)
             const filterSelects = [
                 'filter_state',
                 'filter_department', 
@@ -1945,8 +1942,8 @@
                 'filter_sex',
                 'filter_rank',
                 'filter_status',        // Employment status
-                'filter_nmcn_status',   // NEW
-                'filter_trcn_status'    // NEW
+                'filter_nmcn_status',   // NMCN status
+                'filter_trcn_status'    // TRCN status
             ];
             
             filterSelects.forEach(filterName => {
@@ -1976,7 +1973,7 @@
             }
         }
         
-        // UPDATED generatePreview function with FormData fix
+        // FIXED: generatePreview function with FormData fix
         async function generatePreview() {
             if (previewGenerationInProgress) {
                 showAlert('Please wait for the current preview to finish', 'info');
@@ -2078,7 +2075,7 @@
             }
         }
         
-        // UPDATED: Fallback to sample data function with NMCN, TRCN status, and new fields handling
+        // FIXED: Fallback to sample data function with NMCN, TRCN status, and new fields handling
         function fallbackToSampleData() {
             // Get selected fields
             const selectedFields = [];
@@ -2392,7 +2389,7 @@
             }
         }
         
-        // UPDATED: Helper function to clear filters including new license status filters
+        // FIXED: Helper function to clear filters
         function clearFilters() {
             // Clear all filter inputs
             document.querySelector('[name="search"]').value = '';
@@ -2405,8 +2402,8 @@
                 'filter_sex',
                 'filter_rank',
                 'filter_status',
-                'filter_nmcn_status',   // NEW
-                'filter_trcn_status'    // NEW
+                'filter_nmcn_status',
+                'filter_trcn_status'
             ];
             
             filterSelects.forEach(filterName => {
@@ -2446,7 +2443,7 @@
             document.getElementById('reportForm').submit();
         }
         
-        // UPDATED: Prepare data for saving report - INCLUDING NEW LICENSE STATUS FILTERS
+        // FIXED: Prepare data for saving report
         function prepareSaveData() {
             // Get selected fields
             const selectedFields = [];
@@ -2455,7 +2452,7 @@
             });
             document.getElementById('saveSelectedFields').value = JSON.stringify(selectedFields);
             
-            // Get filters - INCLUDING NEW LICENSE STATUS FILTERS
+            // Get filters
             const filters = {
                 search: document.querySelector('[name="search"]').value,
                 state: document.querySelector('[name="filter_state"]').value,
@@ -2463,9 +2460,9 @@
                 grade_level: document.querySelector('[name="filter_grade_level"]').value,
                 sex: document.querySelector('[name="filter_sex"]').value,
                 rank: document.querySelector('[name="filter_rank"]').value,
-                status: document.querySelector('[name="filter_status"]').value,           // Employment status
-                nmcn_status: document.querySelector('[name="filter_nmcn_status"]').value, // NEW
-                trcn_status: document.querySelector('[name="filter_trcn_status"]').value  // NEW
+                status: document.querySelector('[name="filter_status"]').value,
+                nmcn_status: document.querySelector('[name="filter_nmcn_status"]').value,
+                trcn_status: document.querySelector('[name="filter_trcn_status"]').value
             };
             document.getElementById('saveFilters').value = JSON.stringify(filters);
             
@@ -2480,7 +2477,7 @@
             document.getElementById('saveExcelOptions').value = JSON.stringify(exportOptions);
         }
         
-        // UPDATED: Professional Excel Export using HTML method
+        // Professional Excel Export using HTML method
         function exportExcel() {
             try {
                 const exportBtn = document.querySelector('[onclick="exportExcel()"]');
@@ -2563,7 +2560,7 @@
             }
         }
 
-        // UPDATED: CSV Export
+        // CSV Export
         function exportCSV() {
             try {
                 const exportBtn = document.querySelector('[onclick="exportCSV()"]');
@@ -2636,7 +2633,7 @@
             }
         }
 
-        // UPDATED: PDF Export function
+        // PDF Export function
         function exportPDF() {
             showAlert('PDF export is currently unavailable. Please use Excel or CSV export.', 'info');
         }
