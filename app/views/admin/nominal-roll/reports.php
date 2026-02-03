@@ -1323,7 +1323,10 @@
                                     </div>
                                 </div>
                                 <div class="category-fields" id="fields_<?= $categoryKey ?>">
-                                    <?php foreach ($category['fields'] as $fieldKey => $fieldLabel): ?>
+                                    <?php foreach ($category['fields'] as $fieldKey => $fieldLabel): 
+                                        // Make sure 'professional_certifications' and 'additional_qualifications' 
+                                        // are in the professional category or wherever they should be
+                                    ?>
                                     <div class="field-item">
                                         <div class="form-check">
                                             <input class="form-check-input field-checkbox" 
@@ -2075,7 +2078,7 @@
             }
         }
         
-        // UPDATED: Fallback to sample data function with NMCN and TRCN status handling
+        // UPDATED: Fallback to sample data function with NMCN, TRCN status, and new fields handling
         function fallbackToSampleData() {
             // Get selected fields
             const selectedFields = [];
@@ -2138,6 +2141,10 @@
                     } else if (field === 'state') {
                         const states = ['Lagos', 'Abuja', 'Rivers', 'Kano', 'Oyo', 'Kaduna'];
                         row[field] = states[i % states.length];
+                    } else if (field === 'professional_certifications') {
+                        row[field] = 'Nursing Council of Nigeria, Midwifery Council';
+                    } else if (field === 'additional_qualifications') {
+                        row[field] = '[{"qualification":"Certificate in Nursing","year":"2010"},{"qualification":"Advanced Diploma","year":"2015"}]';
                     } else {
                         row[field] = 'Sample ' + field.charAt(0).toUpperCase() + field.slice(1) + ' ' + i;
                     }
@@ -2169,7 +2176,7 @@
             showAlert('Showing sample data. Real data could not be loaded.', 'warning');
         }
         
-        // FIXED: showPreviewWithData function with enhanced contrast for ALL items
+        // FIXED: showPreviewWithData function with enhanced contrast for ALL items including new fields
         function showPreviewWithData(previewData) {
             const previewContent = document.getElementById('previewContent');
             
@@ -2285,6 +2292,28 @@
                         // Format department with styling
                         else if (field === 'department') {
                             value = `<span style="font-weight: 600; color: #2c5aa0; background: rgba(44, 90, 160, 0.1); padding: 4px 8px; border-radius: 3px; border: 1px solid rgba(44, 90, 160, 0.2);">${value}</span>`;
+                        }
+                        
+                        // Format professional certifications with styling
+                        else if (field === 'professional_certifications') {
+                            value = `<span style="font-weight: 600; color: #2c5aa0; background: rgba(44, 90, 160, 0.1); padding: 4px 8px; border-radius: 3px; border: 1px solid rgba(44, 90, 160, 0.2);">${value}</span>`;
+                        }
+                        
+                        // Format additional qualifications
+                        else if (field === 'additional_qualifications') {
+                            // Try to format JSON as readable text
+                            try {
+                                const quals = JSON.parse(value);
+                                if (Array.isArray(quals)) {
+                                    const formattedQuals = quals.map(q => 
+                                        `${q.qualification} (${q.year})`
+                                    ).join(', ');
+                                    value = `<span title="${formattedQuals}" class="text-truncate d-inline-block" style="max-width: 300px; font-weight: 500;">${formattedQuals}</span>`;
+                                }
+                            } catch (e) {
+                                // If not JSON, display as is
+                                value = `<span style="font-weight: 500; color: #495057;">${value}</span>`;
+                            }
                         }
                         
                         // Truncate long text

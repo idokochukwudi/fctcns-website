@@ -692,6 +692,7 @@ class NominalRollModel {
             throw new Exception("Database error in updateEmployee: " . $e->getMessage());
         }
     }
+    
     /**
      * Update employee status
      */
@@ -2599,10 +2600,12 @@ class NominalRollModel {
             
             $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // Decode JSON fields
+            // Format additional qualifications for export
             foreach ($employees as &$employee) {
                 if (!empty($employee['additional_qualifications'])) {
-                    $employee['additional_qualifications'] = json_decode($employee['additional_qualifications'], true);
+                    $employee['additional_qualifications'] = $this->formatAdditionalQualifications(
+                        $employee['additional_qualifications']
+                    );
                 }
             }
             
@@ -3174,7 +3177,7 @@ class NominalRollModel {
      * Get all available fields for reporting with categories - UPDATED
      */
     public function getAvailableReportFields() {
-        return [
+        $availableFields = [
             'basic_info' => [
                 'label' => 'Basic Information',
                 'fields' => [
@@ -3270,8 +3273,17 @@ class NominalRollModel {
                     'next_of_kin_relationship' => 'Next of Kin Relationship',
                     'next_of_kin_address' => 'Next of Kin Address'
                 ]
+            ],
+            'professional' => [
+                'label' => 'Professional Information',
+                'fields' => [
+                    'professional_certifications' => 'Professional Certifications',
+                    'additional_qualifications' => 'Additional Qualifications'
+                ]
             ]
         ];
+        
+        return $availableFields;
     }
     
     /**
@@ -3499,13 +3511,18 @@ class NominalRollModel {
             
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // Process data efficiently
+            // Process data efficiently - format additional qualifications
             foreach ($data as &$row) {
                 // Ensure all selected fields exist
                 foreach ($selectedFields as $field) {
                     if (!array_key_exists($field, $row)) {
                         $row[$field] = '';
                     }
+                }
+                
+                // Format additional qualifications if present
+                if (isset($row['additional_qualifications']) && !empty($row['additional_qualifications'])) {
+                    $row['additional_qualifications'] = $this->formatAdditionalQualifications($row['additional_qualifications']);
                 }
             }
             
@@ -3802,6 +3819,38 @@ class NominalRollModel {
             error_log("Get bulk upload results summary error: " . $e->getMessage());
             return null;
         }
+    }
+    
+    /**
+     * ============================================
+     * NEW METHODS FOR ADDITIONAL QUALIFICATIONS FORMATTING
+     * ============================================
+     */
+    
+    /**
+     * Format additional qualifications for export
+     */
+    public function formatAdditionalQualifications($qualificationsJson) {
+        if (empty($qualificationsJson)) {
+            return '';
+        }
+        
+        try {
+            $qualifications = json_decode($qualificationsJson, true);
+            if (is_array($qualifications)) {
+                $formatted = [];
+                foreach ($qualifications as $qual) {
+                    if (isset($qual['qualification']) && isset($qual['year'])) {
+                        $formatted[] = $qual['qualification'] . ' (' . $qual['year'] . ')';
+                    }
+                }
+                return implode('; ', $formatted);
+            }
+        } catch (Exception $e) {
+            error_log("Error formatting qualifications: " . $e->getMessage());
+        }
+        
+        return $qualificationsJson;
     }
     
     /**

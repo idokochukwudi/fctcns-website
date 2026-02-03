@@ -163,8 +163,8 @@ class NominalRollController extends Controller {
                 'institution_attended' => 'Institution Attended',
                 'course_of_study' => 'Course of Study',
                 'class_of_degree' => 'Class of Degree',
-                'professional_certifications' => 'Professional Certifications',
-                'additional_qualifications' => 'Additional Qualifications',
+                'professional_certifications' => 'Professional Certifications', // ADD THIS LINE
+                'additional_qualifications' => 'Additional Qualifications',     // ADD THIS LINE
                 'date_of_first_appointment' => 'Date of First Appointment',
                 'date_of_confirmation' => 'Date of Confirmation',
                 'rank_on_first_appointment' => 'Rank on First Appointment',
@@ -317,12 +317,12 @@ class NominalRollController extends Controller {
                 return strtolower(trim(str_replace([' ', '-', '.', '(', ')'], '_', $header)));
             }, $headers);
             
-            // Expected headers including new fields
+            // Expected headers including new fields - UPDATED FOR STEP 5
             $expectedHeaders = [
                 'employee_number', 'ippis_number', 'surname', 'first_name', 'middle_name',
                 'sex', 'date_of_birth', 'marital_status', 'status', 'rank', 'grade_level_gl',
                 'qualification', 'qualification_date', 'highest_qualification', 'year_of_highest_qualification',
-                'additional_qualifications', 'date_of_1st_appt', 'date_of_confirmation',
+                'additional_qualifications', 'professional_certifications', 'date_of_1st_appt', 'date_of_confirmation', // UPDATED
                 'rank_on_1st_appt', 'date_of_present_appt', 'state_of_origin', 'local_govt_area',
                 'state_of_residence', 'residential_address', 'pf_no', 'nhf_no', 'bank_name',
                 'bank_branch', 'other_bank_name', 'account_no', 'pension_fund_admin', 
@@ -430,11 +430,13 @@ class NominalRollController extends Controller {
             $search = trim($_GET['search']);
             $filters['search'] = $search;
             
-            // Expanded search fields to include new license numbers and IPPIS
+            // Expanded search fields to include new license numbers and IPPIS - UPDATED FOR STEP 1
             $filters['search_fields'] = [
                 'employee_number', 'ippis_number', 'surname', 'first_name', 'middle_name',
                 'rank', 'department', 'cadre', 'email', 'telephone_number',
-                'nmcn_license_number', 'trcn_license_number'  // Added new searchable fields
+                'nmcn_license_number', 'trcn_license_number',
+                'additional_qualifications',    // ADD THIS LINE
+                'professional_certifications'   // ADD THIS LINE
             ];
         }
         
@@ -2744,7 +2746,7 @@ class NominalRollController extends Controller {
             // Check required fields
             $requiredFields = [
                 'employee_number' => 'Employee Number',
-                'surname' => 'Surname', 
+                'surname' => 'Surname',
                 'first_name' => 'First Name',
                 'sex' => 'Sex',
                 'date_of_birth' => 'Date of Birth'
@@ -3206,13 +3208,13 @@ class NominalRollController extends Controller {
      */
     public function downloadTemplate() {
         try {
-            // CSV template headers (updated with new fields including status)
+            // CSV template headers (updated with new fields including status) - UPDATED FOR STEP 6
             $headers = [
                 'S/N', 'Employee Number', 'IPPIS Number', 'Surname', 'First Name', 'Middle Name', 
                 'Sex', 'Date of Birth', 'Marital Status', 'Status',
                 'Rank', 'Grade Level (GL)', 'Qualification', 'Qualification Date',
                 'Highest Qualification', 'Year of Highest Qualification', 'Additional Qualifications',
-                'Date of 1st Appt.', 'Date of Confirmation', 'Rank on 1st Appt.',
+                'Professional Certifications', 'Date of 1st Appt.', 'Date of Confirmation', 'Rank on 1st Appt.',
                 'Date of Present. Appt.', 'State of Origin', 'Local Govt. Area', 'State of Residence',
                 'Residential Address', 'PF No', 'NHF No', 'Bank Name', 'Bank Branch', 'Other Bank Name',
                 'Account No', 'Pension Fund Admin', 'Other Pension Fund Admin', 'Pension No', 
@@ -3221,14 +3223,14 @@ class NominalRollController extends Controller {
                 'TRCN License Number', 'TRCN Issued Date', 'TRCN Expiry Date', 'TRCN Status'
             ];
             
-            // Sample data
+            // Sample data - UPDATED FOR STEP 6
             $sampleData = [
                 [
                     '1', 'EMP20240001', 'IPPIS123456', 'Doe', 'John', 'Michael', 'Male', '1990-05-15',
                     'Married', 'active',
                     'Senior Lecturer', '15', 'B.Sc Nursing', '2010-05-20',
                     'PhD in Nursing', '2020', '[{"qualification":"M.Sc Nursing","year":"2015"},{"qualification":"PGDE","year":"2016"}]',
-                    '2015-03-01', '2016-03-01', 'Lecturer II',
+                    'Nursing Council of Nigeria, Midwifery Council', '2015-03-01', '2016-03-01', 'Lecturer II', // UPDATED
                     '2023-01-15', 'FCT', 'Gwagwalada', 'FCT', 'Plot 123, Gwagwalada, Abuja',
                     'PF123456', 'NHF789012', 'First Bank', 'Gwagwalada', '', '1234567890',
                     'PENCOM', '', 'PEN123456', '08012345678', 'john.doe@fcns.edu.ng',
@@ -3355,7 +3357,7 @@ class NominalRollController extends Controller {
                 'Employee Number', 'Surname', 'First Name', 'Middle Name', 'Sex', 'Date of Birth',
                 'Marital Status', 'Status', 'Rank', 'Grade Level', 'Qualification', 'Qualification Date',
                 'Highest Qualification', 'Year of Highest Qualification', 'Additional Qualifications',
-                'Date of 1st Appointment', 'Date of Confirmation', 'Rank on 1st Appointment',
+                'Professional Certifications', 'Date of 1st Appointment', 'Date of Confirmation', 'Rank on 1st Appointment',
                 'Date of Present Appointment', 'State of Origin', 'Local Govt. Area', 'State of Residence',
                 'Residential Address', 'PF Number', 'NHF Number', 'Bank Name', 'Bank Branch', 'Other Bank Name',
                 'Account Number', 'Pension Fund Admin', 'Other Pension Fund Admin', 'Pension Number',
@@ -3408,6 +3410,7 @@ class NominalRollController extends Controller {
             'Employee Number', 'Surname', 'First Name', 'Middle Name', 'Sex', 'Date of Birth',
             'Marital Status', 'Status', 'Rank', 'Grade Level', 'Qualification', 'Qualification Date',
             'Highest Qualification', 'Year of Highest Qualification',
+            'Additional Qualifications', 'Professional Certifications', // ADDED
             'Date of 1st Appointment', 'Date of Confirmation',
             'State of Origin', 'Local Govt. Area', 'State of Residence',
             'PF Number', 'NHF Number', 'Bank Name', 'Account Number',
@@ -5221,7 +5224,7 @@ class NominalRollController extends Controller {
             'institution_attended' => $this->input('institution_attended', ''),
             'course_of_study' => $this->input('course_of_study', ''),
             'class_of_degree' => $this->input('class_of_degree', ''),
-            'professional_certifications' => $this->input('professional_certifications', ''),
+            'professional_certifications' => $this->input('professional_certifications', ''), // ADDED FOR STEP 1
             'date_of_first_appointment' => $this->input('date_of_first_appointment', ''),
             'date_of_confirmation' => $this->input('date_of_confirmation', ''),
             'rank_on_first_appointment' => $this->input('rank_on_first_appointment', ''),
