@@ -402,19 +402,34 @@
 
     /* License Card Styles */
     .license-card {
-        background: #f8f9fa;
+        background: white;
         border: 1px solid #dee2e6;
         border-radius: 8px;
-        padding: 20px;
+        padding: 25px;
         margin-bottom: 20px;
-        height: 100%;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transition: all 0.3s;
+        border-left: 4px solid #4299e1;
+    }
+
+    .license-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transform: translateY(-2px);
     }
 
     .license-card h4 {
         color: #2c5282;
-        border-bottom: 2px solid #4299e1;
+        border-bottom: 2px solid #e2e8f0;
         padding-bottom: 10px;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .license-card h4 i {
+        color: #4299e1;
     }
 
     .license-expiring {
@@ -427,6 +442,28 @@
 
     .license-active {
         border-left: 4px solid #68d391;
+    }
+    
+    /* Form text styling for license numbers */
+    .form-text {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 5px;
+        font-style: italic;
+    }
+    
+    /* Error styling */
+    .is-invalid {
+        border-color: #e74c3c;
+        background-color: #fff5f5;
+    }
+    
+    .invalid-feedback {
+        display: block;
+        width: 100%;
+        margin-top: 5px;
+        font-size: 12px;
+        color: #e74c3c;
     }
     </style>
     
@@ -1016,92 +1053,106 @@ Loaded via JavaScript when needed
     </div>
 </template>
 
-<!-- Template for Professional Licenses (Tab 4) -->
+<!-- Template for Professional Licenses (Tab 4) - UPDATED WITH NMCN & TRCN -->
 <template id="template-licenses">
+    <!-- NMCN License Information -->
     <div class="license-card">
-        <h4 class="section-title">NMCN License</h4>
+        <h4><i class="fas fa-file-medical-alt"></i> NMCN License Information</h4>
         <div class="form-grid">
             <div class="form-group">
                 <label for="nmcn_license_number">NMCN License Number</label>
                 <input type="text" 
+                       class="form-control <?php echo isset($formErrors['nmcn_license_number']) ? 'is-invalid' : ''; ?>" 
                        id="nmcn_license_number" 
                        name="nmcn_license_number" 
                        value="<?php echo htmlspecialchars($formData['nmcn_license_number'] ?? ''); ?>"
-                       class="form-control"
-                       maxlength="50" 
-                       placeholder="NMCN license number">
-            </div>
-            
-            <div class="form-group">
-                <label for="nmcn_issued_date">Issued Date</label>
-                <input type="date" 
-                       id="nmcn_issued_date" 
-                       name="nmcn_issued_date" 
-                       class="form-control" 
-                       value="<?php echo htmlspecialchars($formData['nmcn_issued_date'] ?? ''); ?>">
-            </div>
-            
-            <div class="form-group">
-                <label for="nmcn_expiry_date">Expiry Date</label>
-                <input type="date" 
-                       id="nmcn_expiry_date" 
-                       name="nmcn_expiry_date" 
-                       class="form-control" 
-                       value="<?php echo htmlspecialchars($formData['nmcn_expiry_date'] ?? ''); ?>">
+                       placeholder="e.g., 01490/22/F, NMCN12345, or plain 01490">
+                <small class="form-text text-muted">
+                    Accepts formats: 01490/22/F, NMCN01490, or plain numbers
+                </small>
+                <?php if (isset($formErrors['nmcn_license_number'])): ?>
+                    <div class="invalid-feedback"><?php echo $formErrors['nmcn_license_number']; ?></div>
+                <?php endif; ?>
             </div>
             
             <div class="form-group">
                 <label for="nmcn_status">NMCN Status</label>
-                <select id="nmcn_status" name="nmcn_status" class="form-control">
+                <select class="form-control" id="nmcn_status" name="nmcn_status">
                     <option value="">Select Status</option>
-                    <option value="Active" <?php echo isset($formData['nmcn_status']) && $formData['nmcn_status'] == 'Active' ? 'selected' : ''; ?>>Active</option>
-                    <option value="Expired" <?php echo isset($formData['nmcn_status']) && $formData['nmcn_status'] == 'Expired' ? 'selected' : ''; ?>>Expired</option>
-                    <option value="Pending" <?php echo isset($formData['nmcn_status']) && $formData['nmcn_status'] == 'Pending' ? 'selected' : ''; ?>>Pending</option>
+                    <option value="Active" <?php echo ($formData['nmcn_status'] ?? '') == 'Active' ? 'selected' : ''; ?>>Active</option>
+                    <option value="Expired" <?php echo ($formData['nmcn_status'] ?? '') == 'Expired' ? 'selected' : ''; ?>>Expired</option>
+                    <option value="Pending" <?php echo ($formData['nmcn_status'] ?? '') == 'Pending' ? 'selected' : ''; ?>>Pending</option>
+                    <option value="Not Applicable" <?php echo ($formData['nmcn_status'] ?? '') == 'Not Applicable' ? 'selected' : ''; ?>>Not Applicable</option>
                 </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="nmcn_issued_date">NMCN Issued Date</label>
+                <input type="date" 
+                       class="form-control" 
+                       id="nmcn_issued_date" 
+                       name="nmcn_issued_date" 
+                       value="<?php echo htmlspecialchars($formData['nmcn_issued_date'] ?? ''); ?>">
+            </div>
+            
+            <div class="form-group">
+                <label for="nmcn_expiry_date">NMCN Expiry Date</label>
+                <input type="date" 
+                       class="form-control" 
+                       id="nmcn_expiry_date" 
+                       name="nmcn_expiry_date" 
+                       value="<?php echo htmlspecialchars($formData['nmcn_expiry_date'] ?? ''); ?>">
             </div>
         </div>
     </div>
     
+    <!-- TRCN License Information -->
     <div class="license-card">
-        <h4 class="section-title">TRCN License</h4>
+        <h4><i class="fas fa-chalkboard-teacher"></i> TRCN License Information</h4>
         <div class="form-grid">
             <div class="form-group">
                 <label for="trcn_license_number">TRCN License Number</label>
                 <input type="text" 
+                       class="form-control <?php echo isset($formErrors['trcn_license_number']) ? 'is-invalid' : ''; ?>" 
                        id="trcn_license_number" 
                        name="trcn_license_number" 
                        value="<?php echo htmlspecialchars($formData['trcn_license_number'] ?? ''); ?>"
-                       class="form-control"
-                       maxlength="50" 
-                       placeholder="TRCN license number">
-            </div>
-            
-            <div class="form-group">
-                <label for="trcn_issued_date">Issued Date</label>
-                <input type="date" 
-                       id="trcn_issued_date" 
-                       name="trcn_issued_date" 
-                       class="form-control" 
-                       value="<?php echo htmlspecialchars($formData['trcn_issued_date'] ?? ''); ?>">
-            </div>
-            
-            <div class="form-group">
-                <label for="trcn_expiry_date">Expiry Date</label>
-                <input type="date" 
-                       id="trcn_expiry_date" 
-                       name="trcn_expiry_date" 
-                       class="form-control" 
-                       value="<?php echo htmlspecialchars($formData['trcn_expiry_date'] ?? ''); ?>">
+                       placeholder="e.g., CT/R/01490, TRCN01490, or plain numbers">
+                <small class="form-text text-muted">
+                    Accepts formats: CT/R/01490, TRCN01490, or plain numbers
+                </small>
+                <?php if (isset($formErrors['trcn_license_number'])): ?>
+                    <div class="invalid-feedback"><?php echo $formErrors['trcn_license_number']; ?></div>
+                <?php endif; ?>
             </div>
             
             <div class="form-group">
                 <label for="trcn_status">TRCN Status</label>
-                <select id="trcn_status" name="trcn_status" class="form-control">
+                <select class="form-control" id="trcn_status" name="trcn_status">
                     <option value="">Select Status</option>
-                    <option value="Active" <?php echo isset($formData['trcn_status']) && $formData['trcn_status'] == 'Active' ? 'selected' : ''; ?>>Active</option>
-                    <option value="Expired" <?php echo isset($formData['trcn_status']) && $formData['trcn_status'] == 'Expired' ? 'selected' : ''; ?>>Expired</option>
-                    <option value="Pending" <?php echo isset($formData['trcn_status']) && $formData['trcn_status'] == 'Pending' ? 'selected' : ''; ?>>Pending</option>
+                    <option value="Active" <?php echo ($formData['trcn_status'] ?? '') == 'Active' ? 'selected' : ''; ?>>Active</option>
+                    <option value="Expired" <?php echo ($formData['trcn_status'] ?? '') == 'Expired' ? 'selected' : ''; ?>>Expired</option>
+                    <option value="Pending" <?php echo ($formData['trcn_status'] ?? '') == 'Pending' ? 'selected' : ''; ?>>Pending</option>
+                    <option value="Not Applicable" <?php echo ($formData['trcn_status'] ?? '') == 'Not Applicable' ? 'selected' : ''; ?>>Not Applicable</option>
                 </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="trcn_issued_date">TRCN Issued Date</label>
+                <input type="date" 
+                       class="form-control" 
+                       id="trcn_issued_date" 
+                       name="trcn_issued_date" 
+                       value="<?php echo htmlspecialchars($formData['trcn_issued_date'] ?? ''); ?>">
+            </div>
+            
+            <div class="form-group">
+                <label for="trcn_expiry_date">TRCN Expiry Date</label>
+                <input type="date" 
+                       class="form-control" 
+                       id="trcn_expiry_date" 
+                       name="trcn_expiry_date" 
+                       value="<?php echo htmlspecialchars($formData['trcn_expiry_date'] ?? ''); ?>">
             </div>
         </div>
     </div>
@@ -1712,6 +1763,39 @@ OPTIMIZED JAVASCRIPT - FIXED TAB NAVIGATION
     }
     
     // ============================================
+    // LICENSE NUMBER VALIDATION & FORMATTING
+    // ============================================
+    function normalizeLicenseNumber(value) {
+        if (!value) return '';
+        
+        // Remove spaces and convert to uppercase
+        value = value.trim().toUpperCase();
+        
+        // Extract numbers from the string
+        var numbers = value.replace(/\D/g, '');
+        
+        // For NMCN: Check if it's in format 01490/22/F
+        if (value.includes('/')) {
+            // Keep original format but clean up spaces
+            return value.replace(/\s+/g, '');
+        }
+        
+        // For TRCN: Check if it's in format CT/R/01490
+        if (value.includes('CT/R/')) {
+            // Keep original format but clean up spaces
+            return value.replace(/\s+/g, '');
+        }
+        
+        // If it's just numbers, return them
+        if (numbers) {
+            return numbers;
+        }
+        
+        // Otherwise return original value cleaned
+        return value.replace(/\s+/g, '');
+    }
+    
+    // ============================================
     // LICENSE DATE VALIDATION & STATUS UPDATE
     // ============================================
     function validateLicenseDates() {
@@ -1801,6 +1885,62 @@ OPTIMIZED JAVASCRIPT - FIXED TAB NAVIGATION
                 input.addEventListener('change', updateLicenseStatus);
             }
         });
+        
+        // Auto-format license numbers on blur
+        const nmcnInput = document.getElementById('nmcn_license_number');
+        const trcnInput = document.getElementById('trcn_license_number');
+        
+        if (nmcnInput) {
+            nmcnInput.addEventListener('blur', function() {
+                const normalized = normalizeLicenseNumber(this.value);
+                if (this.value !== normalized) {
+                    this.value = normalized;
+                }
+            });
+        }
+        
+        if (trcnInput) {
+            trcnInput.addEventListener('blur', function() {
+                const normalized = normalizeLicenseNumber(this.value);
+                if (this.value !== normalized) {
+                    this.value = normalized;
+                }
+            });
+        }
+        
+        // Set expiry date based on issued date (optional)
+        const nmcnIssued = document.getElementById('nmcn_issued_date');
+        const nmcnExpiry = document.getElementById('nmcn_expiry_date');
+        const trcnIssued = document.getElementById('trcn_issued_date');
+        const trcnExpiry = document.getElementById('trcn_expiry_date');
+        
+        function setExpiryDate(issuedInput, expiryInput, years = 3) {
+            if (issuedInput && expiryInput && issuedInput.value) {
+                const issuedDate = new Date(issuedInput.value);
+                if (!isNaN(issuedDate.getTime())) {
+                    const expiryDate = new Date(issuedDate);
+                    expiryDate.setFullYear(expiryDate.getFullYear() + years);
+                    const expiryString = expiryDate.toISOString().split('T')[0];
+                    
+                    // Only set if expiry is empty or before issued date
+                    if (!expiryInput.value || new Date(expiryInput.value) < issuedDate) {
+                        expiryInput.value = expiryString;
+                    }
+                }
+            }
+        }
+        
+        if (nmcnIssued) {
+            nmcnIssued.addEventListener('change', function() {
+                setExpiryDate(nmcnIssued, nmcnExpiry, 3); // 3 years for NMCN
+            });
+        }
+        
+        if (trcnIssued) {
+            trcnIssued.addEventListener('change', function() {
+                setExpiryDate(trcnIssued, trcnExpiry, 3); // 3 years for TRCN
+            });
+        }
     }
     
     // ============================================
@@ -2182,9 +2322,6 @@ OPTIMIZED JAVASCRIPT - FIXED TAB NAVIGATION
         switch(tabName) {
             case 'education':
                 initializeQualificationsSystem();
-                break;
-            case 'licenses':
-                initializeLicenseValidation();
                 break;
             case 'location':
                 initializeStateLGASystem();

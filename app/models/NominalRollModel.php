@@ -66,6 +66,87 @@ class NominalRollModel {
     
     /**
      * ============================================
+     * LICENSE VALIDATION AND NORMALIZATION METHODS
+     * ============================================
+     */
+    
+    /**
+     * Validate license number with various patterns
+     */
+    public function validateLicenseNumber($type, $number) {
+        if (empty($number)) {
+            return true; // Empty is okay
+        }
+        
+        // Clean the number
+        $number = trim($number);
+        
+        if ($type === 'NMCN') {
+            // Accept formats: 01490/22/F, NMCN01490, or plain numbers
+            $patterns = [
+                '/^\d{5}\/\d{2}\/[A-Z]$/i',  // 01490/22/F
+                '/^NMCN\d+$/i',              // NMCN01490
+                '/^\d+$/'                    // Plain numbers
+            ];
+        } else if ($type === 'TRCN') {
+            // Accept formats: CT/R/01490, TRCN01490, or plain numbers
+            $patterns = [
+                '/^CT\/R\/\d+$/i',           // CT/R/01490
+                '/^TRCN\d+$/i',              // TRCN01490
+                '/^\d+$/'                    // Plain numbers
+            ];
+        } else {
+            return false; // Unknown license type
+        }
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $number)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Normalize license number for consistent storage
+     */
+    public function normalizeLicenseNumber($type, $number) {
+        if (empty($number)) {
+            return '';
+        }
+        
+        $number = trim($number);
+        
+        // Extract the core number (digits)
+        preg_match('/\d+/', $number, $matches);
+        $coreNumber = $matches[0] ?? '';
+        
+        if ($type === 'NMCN') {
+            // If it's in format 01490/22/F, keep it as is
+            if (preg_match('/^\d{5}\/\d{2}\/[A-Z]$/i', $number)) {
+                return strtoupper($number);
+            }
+            // Otherwise, prepend NMCN if not already
+            if (!preg_match('/^NMCN/i', $number) && $coreNumber) {
+                return 'NMCN' . $coreNumber;
+            }
+        } else if ($type === 'TRCN') {
+            // If it's in format CT/R/01490, keep it as is
+            if (preg_match('/^CT\/R\/\d+$/i', $number)) {
+                return strtoupper($number);
+            }
+            // Otherwise, prepend TRCN if not already
+            if (!preg_match('/^TRCN/i', $number) && $coreNumber) {
+                return 'TRCN' . $coreNumber;
+            }
+        }
+        
+        return strtoupper($number);
+    }
+    
+    /**
+     * ============================================
      * EMPLOYEE CRUD OPERATIONS
      * ============================================
      */
@@ -82,6 +163,21 @@ class NominalRollModel {
             if (empty($data['employee_number'])) {
                 $data['employee_number'] = $this->generateEmployeeNumber();
                 error_log("Generated employee number: " . $data['employee_number']);
+            }
+            
+            // Validate license numbers if provided
+            if (!empty($data['nmcn_license_number'])) {
+                if (!$this->validateLicenseNumber('NMCN', $data['nmcn_license_number'])) {
+                    throw new Exception("Invalid NMCN license number format: " . $data['nmcn_license_number']);
+                }
+                $data['nmcn_license_number'] = $this->normalizeLicenseNumber('NMCN', $data['nmcn_license_number']);
+            }
+            
+            if (!empty($data['trcn_license_number'])) {
+                if (!$this->validateLicenseNumber('TRCN', $data['trcn_license_number'])) {
+                    throw new Exception("Invalid TRCN license number format: " . $data['trcn_license_number']);
+                }
+                $data['trcn_license_number'] = $this->normalizeLicenseNumber('TRCN', $data['trcn_license_number']);
             }
             
             // Ensure required fields are set
@@ -235,6 +331,21 @@ class NominalRollModel {
             error_log("=== MODEL createEmployeeLegacy START ===");
             error_log("Data to insert: " . print_r($data, true));
             error_log("User ID: " . $userId);
+            
+            // Validate license numbers if provided
+            if (!empty($data['nmcn_license_number'])) {
+                if (!$this->validateLicenseNumber('NMCN', $data['nmcn_license_number'])) {
+                    throw new Exception("Invalid NMCN license number format: " . $data['nmcn_license_number']);
+                }
+                $data['nmcn_license_number'] = $this->normalizeLicenseNumber('NMCN', $data['nmcn_license_number']);
+            }
+            
+            if (!empty($data['trcn_license_number'])) {
+                if (!$this->validateLicenseNumber('TRCN', $data['trcn_license_number'])) {
+                    throw new Exception("Invalid TRCN license number format: " . $data['trcn_license_number']);
+                }
+                $data['trcn_license_number'] = $this->normalizeLicenseNumber('TRCN', $data['trcn_license_number']);
+            }
             
             // FIXED: rank already has backticks in this query
             $sql = "INSERT INTO " . self::TABLE_EMPLOYEES . " SET
@@ -515,6 +626,21 @@ class NominalRollModel {
             $oldData = $this->getEmployee($id);
             if (!$oldData) {
                 throw new Exception("Employee not found with ID: $id");
+            }
+            
+            // Validate license numbers if provided
+            if (!empty($data['nmcn_license_number'])) {
+                if (!$this->validateLicenseNumber('NMCN', $data['nmcn_license_number'])) {
+                    throw new Exception("Invalid NMCN license number format: " . $data['nmcn_license_number']);
+                }
+                $data['nmcn_license_number'] = $this->normalizeLicenseNumber('NMCN', $data['nmcn_license_number']);
+            }
+            
+            if (!empty($data['trcn_license_number'])) {
+                if (!$this->validateLicenseNumber('TRCN', $data['trcn_license_number'])) {
+                    throw new Exception("Invalid TRCN license number format: " . $data['trcn_license_number']);
+                }
+                $data['trcn_license_number'] = $this->normalizeLicenseNumber('TRCN', $data['trcn_license_number']);
             }
             
             $sql = "UPDATE " . self::TABLE_EMPLOYEES . " SET
@@ -1604,6 +1730,33 @@ class NominalRollModel {
                     continue;
                 }
                 
+                // Validate license numbers
+                if (!empty($cleanedData['nmcn_license_number'])) {
+                    if (!$this->validateLicenseNumber('NMCN', $cleanedData['nmcn_license_number'])) {
+                        $results['failed']++;
+                        $results['errors'][] = [
+                            'row' => $rowNumber,
+                            'message' => "Invalid NMCN license number format: " . $cleanedData['nmcn_license_number'],
+                            'employee_number' => $cleanedData['employee_number'] ?? 'Unknown'
+                        ];
+                        continue;
+                    }
+                    $cleanedData['nmcn_license_number'] = $this->normalizeLicenseNumber('NMCN', $cleanedData['nmcn_license_number']);
+                }
+                
+                if (!empty($cleanedData['trcn_license_number'])) {
+                    if (!$this->validateLicenseNumber('TRCN', $cleanedData['trcn_license_number'])) {
+                        $results['failed']++;
+                        $results['errors'][] = [
+                            'row' => $rowNumber,
+                            'message' => "Invalid TRCN license number format: " . $cleanedData['trcn_license_number'],
+                            'employee_number' => $cleanedData['employee_number'] ?? 'Unknown'
+                        ];
+                        continue;
+                    }
+                    $cleanedData['trcn_license_number'] = $this->normalizeLicenseNumber('TRCN', $cleanedData['trcn_license_number']);
+                }
+                
                 // Check for existing employee
                 $existingEmployee = $this->getEmployeeByNumber($cleanedData['employee_number']);
                 
@@ -2006,6 +2159,27 @@ class NominalRollModel {
             }
         }
         
+        // Validate license numbers if provided
+        if (!empty($data['nmcn_license_number'])) {
+            if (!$this->validateLicenseNumber('NMCN', $data['nmcn_license_number'])) {
+                $errors[] = [
+                    'row' => $rowNumber,
+                    'message' => "Invalid NMCN license number format: " . $data['nmcn_license_number'],
+                    'employee_number' => $data['employee_number'] ?? 'Unknown'
+                ];
+            }
+        }
+        
+        if (!empty($data['trcn_license_number'])) {
+            if (!$this->validateLicenseNumber('TRCN', $data['trcn_license_number'])) {
+                $errors[] = [
+                    'row' => $rowNumber,
+                    'message' => "Invalid TRCN license number format: " . $data['trcn_license_number'],
+                    'employee_number' => $data['employee_number'] ?? 'Unknown'
+                ];
+            }
+        }
+        
         return $errors;
     }
     
@@ -2038,6 +2212,7 @@ class NominalRollModel {
             'local_govt_area' => 'local_govt_area',
             'state_of_residence' => 'state_of_residence',
             'residential_address' => 'residential_address',
+            'contact_address' => 'contact_address',
             'pf_number' => 'pf_number',
             'nhf_number' => 'nhf_number',
             'bank_name' => 'bank_name',
@@ -2696,6 +2871,19 @@ class NominalRollModel {
             }
         }
         
+        // Validate license numbers if provided
+        if (!empty($data['nmcn_license_number'])) {
+            if (!$this->validateLicenseNumber('NMCN', $data['nmcn_license_number'])) {
+                $errors[] = "Invalid NMCN license number format: " . $data['nmcn_license_number'];
+            }
+        }
+        
+        if (!empty($data['trcn_license_number'])) {
+            if (!$this->validateLicenseNumber('TRCN', $data['trcn_license_number'])) {
+                $errors[] = "Invalid TRCN license number format: " . $data['trcn_license_number'];
+            }
+        }
+        
         // Validate dates
         $dateFields = [
             'date_of_birth', 'date_of_first_appointment', 
@@ -2746,16 +2934,6 @@ class NominalRollModel {
         // Validate IPPIS Number (if provided)
         if (!empty($data['ippis_number']) && !preg_match('/^[A-Za-z0-9]{5,20}$/', $data['ippis_number'])) {
             $errors[] = "IPPIS Number must be 5-20 alphanumeric characters";
-        }
-        
-        // Validate NMCN License Number (if provided)
-        if (!empty($data['nmcn_license_number']) && !preg_match('/^[A-Za-z0-9]{5,20}$/', $data['nmcn_license_number'])) {
-            $errors[] = "NMCN License Number must be 5-20 alphanumeric characters";
-        }
-        
-        // Validate TRCN License Number (if provided)
-        if (!empty($data['trcn_license_number']) && !preg_match('/^[A-Za-z0-9]{5,20}$/', $data['trcn_license_number'])) {
-            $errors[] = "TRCN License Number must be 5-20 alphanumeric characters";
         }
         
         // Add status validation - UPDATED: Added 'draft' option
@@ -3124,6 +3302,17 @@ class NominalRollModel {
                             }
                         }
                         continue 2; // Skip to next iteration
+                        
+                    case 'NMCN License Number':
+                    case 'TRCN License Number':
+                        // Validate license numbers
+                        $licenseType = $header === 'NMCN License Number' ? 'NMCN' : 'TRCN';
+                        if (!empty($value) && !$this->validateLicenseNumber($licenseType, $value)) {
+                            $errors[] = "Invalid {$licenseType} license number format: {$value}";
+                        } else if (!empty($value)) {
+                            $value = $this->normalizeLicenseNumber($licenseType, $value);
+                        }
+                        break;
                 }
                 
                 $fieldName = $columnMapping[$header];
