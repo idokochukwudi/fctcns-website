@@ -1064,6 +1064,37 @@
             display: block;
         }
         
+        /* Quick Actions Styling */
+        .quick-actions {
+            background: linear-gradient(to right, #f8f9fa, #ffffff);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .quick-actions h6 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .quick-actions .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .quick-actions .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+        
         /* Mobile-specific optimizations */
         @media (max-width: 576px) {
             .main-container {
@@ -1116,6 +1147,17 @@
                 padding: 4px 8px !important;
                 font-size: 0.7rem !important;
             }
+            
+            .quick-actions .btn-group {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .quick-actions .btn-sm {
+                width: 100%;
+                text-align: left;
+                justify-content: flex-start;
+            }
         }
         
         /* High contrast mode support */
@@ -1161,7 +1203,8 @@
             .config-panel,
             .saved-reports-section,
             .stats-container,
-            .page-header .btn {
+            .page-header .btn,
+            .quick-actions {
                 display: none !important;
             }
             
@@ -1279,7 +1322,6 @@
                 <form id="reportForm" method="POST" action="/admin/nominal-roll/generate-report" target="_blank">
                     <!-- FIXED CSRF Token: Using $this->data['csrf_token'] -->
                     <input type="hidden" name="csrf_token" value="<?php echo $this->data['csrf_token'] ?? ''; ?>">
-                    <!-- Removed csrf_token_time field as your system doesn't use it -->
                     
                     <!-- Field Selection -->
                     <div class="field-categories-container">
@@ -1349,7 +1391,7 @@
                         </div>
                     </div>
                     
-                    <!-- FIXED: Filters Section without duplicate NMCN/TRCN filters -->
+                    <!-- UPDATED: Filters Section with Qualification Filters -->
                     <div class="filters-section">
                         <h3><i class="fas fa-filter"></i> Filter Results</h3>
                         
@@ -1509,6 +1551,96 @@
                                     </select>
                                 </div>
                             </div>
+                            
+                            <!-- NEW: Highest Qualification Filter -->
+                            <div class="col-md-6">
+                                <div class="filter-group">
+                                    <label for="filter_highest_qualification" class="form-label">Highest Qualification</label>
+                                    <select name="filter_highest_qualification[]" id="filter_highest_qualification" 
+                                            class="form-select filter-select" multiple onchange="updateFilterCount()"
+                                            data-placeholder="Select qualification(s)" style="height: auto;">
+                                        <option value="">Any Qualification</option>
+                                        <?php if (isset($filterOptions['highest_qualification_options']) && is_array($filterOptions['highest_qualification_options'])): ?>
+                                            <?php foreach ($filterOptions['highest_qualification_options'] as $qual): ?>
+                                                <option value="<?= htmlspecialchars($qual) ?>">
+                                                    <?= htmlspecialchars($qual) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <!-- Fallback options -->
+                                            <option value="PhD">PhD</option>
+                                            <option value="MSc">MSc</option>
+                                            <option value="BSc">BSc</option>
+                                            <option value="HND">HND</option>
+                                            <option value="ND">ND</option>
+                                            <option value="PGD">PGD</option>
+                                            <option value="FSLC">FSLC</option>
+                                        <?php endif; ?>
+                                    </select>
+                                    <small class="text-muted">Hold Ctrl/Cmd to select multiple</small>
+                                </div>
+                            </div>
+
+                            <!-- NEW: Professional Certification Filter -->
+                            <div class="col-md-6">
+                                <div class="filter-group">
+                                    <label for="filter_professional_certification" class="form-label">Professional Certification</label>
+                                    <select name="filter_professional_certification" id="filter_professional_certification" 
+                                            class="form-select filter-select" onchange="updateFilterCount()">
+                                        <option value="">Any Certification</option>
+                                        <?php if (isset($filterOptions['professional_certification_options']) && is_array($filterOptions['professional_certification_options'])): ?>
+                                            <?php foreach ($filterOptions['professional_certification_options'] as $cert): ?>
+                                                <option value="<?= htmlspecialchars($cert) ?>">
+                                                    <?= htmlspecialchars($cert) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <!-- Fallback options -->
+                                            <option value="TRCN">TRCN</option>
+                                            <option value="RN">RN</option>
+                                            <option value="RM">RM</option>
+                                            <option value="RPHN">RPHN</option>
+                                            <option value="NMCN">NMCN</option>
+                                        <?php endif; ?>
+                                    </select>
+                                    <small class="text-muted">e.g., TRCN, RN, RM, RPHN</small>
+                                </div>
+                            </div>
+
+                            <!-- NEW: Additional Qualification Filter -->
+                            <div class="col-12">
+                                <div class="filter-group">
+                                    <label for="filter_additional_qualification" class="form-label">Additional Qualification Contains</label>
+                                    <input type="text" 
+                                           id="filter_additional_qualification" 
+                                           name="filter_additional_qualification" 
+                                           class="form-control" 
+                                           placeholder="e.g., PGDE, MSC, PGD"
+                                           oninput="updateFilterCount()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions for Common Reports -->
+                    <div class="quick-actions mt-3">
+                        <h6><i class="fas fa-bolt"></i> Quick Reports:</h6>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="generateQualificationReport('professional_certification', 'TRCN')">
+                                <i class="fas fa-id-card"></i> TRCN Holders
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="generateQualificationReport('professional_certification', 'RPHN')">
+                                <i class="fas fa-user-nurse"></i> RPHN Holders
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="generateQualificationReport('highest_qualification', 'PhD')">
+                                <i class="fas fa-graduation-cap"></i> PhD Holders
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="generateQualificationReport('highest_qualification', 'MSc')">
+                                <i class="fas fa-graduation-cap"></i> MSc Holders
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="generateQualificationReport('professional_certification', 'RN')">
+                                <i class="fas fa-user-nurse"></i> RN Holders
+                            </button>
                         </div>
                     </div>
                     
@@ -1531,6 +1663,9 @@
                             <option value="nmcn_status_desc">NMCN Status (Z to A)</option>
                             <option value="trcn_status_asc">TRCN Status (A to Z)</option>
                             <option value="trcn_status_desc">TRCN Status (Z to A)</option>
+                            <!-- NEW: Qualification sorting options -->
+                            <option value="highest_qualification_asc">Highest Qualification (A to Z)</option>
+                            <option value="highest_qualification_desc">Highest Qualification (Z to A)</option>
                         </select>
                     </div>
                     
@@ -1922,7 +2057,7 @@
             });
         }
         
-        // FIXED: Update filter count function - removed duplicate filters
+        // UPDATED: Update filter count function with new qualification filters
         function updateFilterCount() {
             let activeCount = 0;
             const activeFilters = [];
@@ -1934,7 +2069,7 @@
                 activeFilters.push('Search');
             }
             
-            // Check filter selects (only one set of NMCN/TRCN filters)
+            // Check main filter selects
             const filterSelects = [
                 'filter_state',
                 'filter_department', 
@@ -1943,7 +2078,8 @@
                 'filter_rank',
                 'filter_status',        // Employment status
                 'filter_nmcn_status',   // NMCN status
-                'filter_trcn_status'    // TRCN status
+                'filter_trcn_status',   // TRCN status
+                'filter_professional_certification' // Professional certification
             ];
             
             filterSelects.forEach(filterName => {
@@ -1958,6 +2094,25 @@
                 }
             });
             
+            // Check highest qualification filter (multiple select)
+            const highestQualSelect = document.getElementById('filter_highest_qualification');
+            if (highestQualSelect) {
+                const selectedOptions = Array.from(highestQualSelect.selectedOptions)
+                    .filter(opt => opt.value)
+                    .map(opt => opt.value);
+                if (selectedOptions.length > 0) {
+                    activeCount++;
+                    activeFilters.push('Qualification: ' + selectedOptions.join(', '));
+                }
+            }
+            
+            // Check additional qualification filter
+            const addQualInput = document.getElementById('filter_additional_qualification');
+            if (addQualInput && addQualInput.value.trim()) {
+                activeCount++;
+                activeFilters.push('Add. Qual: ' + addQualInput.value.trim());
+            }
+            
             // Update count
             document.getElementById('activeFiltersCount').textContent = activeCount;
             
@@ -1971,6 +2126,31 @@
             } else {
                 preview.textContent = 'No filters applied';
             }
+        }
+        
+        // NEW: Function to generate qualification-specific reports
+        function generateQualificationReport(qualificationType, value) {
+            // This can be called from quick action buttons
+            const form = document.getElementById('reportForm');
+            
+            // Clear existing filters
+            clearFilters();
+            
+            // Set the specific qualification filter
+            if (qualificationType === 'highest_qualification') {
+                const select = document.getElementById('filter_highest_qualification');
+                // Clear and set value
+                Array.from(select.options).forEach(opt => opt.selected = false);
+                const option = Array.from(select.options).find(opt => opt.value === value);
+                if (option) option.selected = true;
+            } else if (qualificationType === 'professional_certification') {
+                document.getElementById('filter_professional_certification').value = value;
+            }
+            
+            // Update counts and generate preview
+            updateFilterCount();
+            showAlert(`Filtered by ${qualificationType}: ${value}`, 'info');
+            generatePreview();
         }
         
         // FIXED: generatePreview function with FormData fix
@@ -2075,7 +2255,7 @@
             }
         }
         
-        // FIXED: Fallback to sample data function with NMCN, TRCN status, and new fields handling
+        // FIXED: Fallback to sample data function with NMCN, TRCN status, and new qualification fields handling
         function fallbackToSampleData() {
             // Get selected fields
             const selectedFields = [];
@@ -2101,7 +2281,10 @@
                 rank: document.querySelector('[name="filter_rank"]').value,
                 status: document.querySelector('[name="filter_status"]').value || '',
                 nmcn_status: document.querySelector('[name="filter_nmcn_status"]').value || '',
-                trcn_status: document.querySelector('[name="filter_trcn_status"]').value || ''
+                trcn_status: document.querySelector('[name="filter_trcn_status"]').value || '',
+                highest_qualification: Array.from(document.querySelector('[name="filter_highest_qualification[]"]')?.selectedOptions || []).map(opt => opt.value),
+                professional_certification: document.querySelector('[name="filter_professional_certification"]').value || '',
+                additional_qualification: document.querySelector('[name="filter_additional_qualification"]').value || ''
             };
             
             const sortOrder = document.querySelector('[name="sort_order"]').value || 'surname_asc';
@@ -2138,8 +2321,12 @@
                     } else if (field === 'state') {
                         const states = ['Lagos', 'Abuja', 'Rivers', 'Kano', 'Oyo', 'Kaduna'];
                         row[field] = states[i % states.length];
-                    } else if (field === 'professional_certifications') {
-                        row[field] = 'Nursing Council of Nigeria, Midwifery Council';
+                    } else if (field === 'highest_qualification') {
+                        const qualifications = ['PhD', 'MSc', 'BSc', 'HND', 'PGD'];
+                        row[field] = qualifications[i % qualifications.length];
+                    } else if (field === 'professional_certifications' || field === 'professional_certification') {
+                        const certs = ['TRCN', 'RN', 'RM', 'RPHN', 'NMCN'];
+                        row[field] = certs[i % certs.length];
                     } else if (field === 'additional_qualifications') {
                         row[field] = '[{"qualification":"Certificate in Nursing","year":"2010"},{"qualification":"Advanced Diploma","year":"2015"}]';
                     } else {
@@ -2173,7 +2360,7 @@
             showAlert('Showing sample data. Real data could not be loaded.', 'warning');
         }
         
-        // FIXED: showPreviewWithData function with enhanced contrast for ALL items including new fields
+        // FIXED: showPreviewWithData function with enhanced contrast for ALL items including qualification fields
         function showPreviewWithData(previewData) {
             const previewContent = document.getElementById('previewContent');
             
@@ -2281,6 +2468,51 @@
                             value = `<span class="badge-grade">GL ${value}</span>`;
                         }
                         
+                        // Format highest qualification with styling
+                        else if (field === 'highest_qualification') {
+                            if (value) {
+                                value = `<span style="font-weight: 700; color: #2c5aa0; background: rgba(44, 90, 160, 0.1); padding: 4px 8px; border-radius: 3px; border: 1px solid rgba(44, 90, 160, 0.2);">${value}</span>`;
+                            } else {
+                                value = '<span class="empty-cell">-</span>';
+                            }
+                        }
+                        
+                        // Format professional certifications with styling
+                        else if (field === 'professional_certifications' || field === 'professional_certification') {
+                            if (value) {
+                                value = `<span style="font-weight: 600; color: #28a745; background: rgba(40, 167, 69, 0.1); padding: 4px 8px; border-radius: 3px; border: 1px solid rgba(40, 167, 69, 0.2);">${value}</span>`;
+                            } else {
+                                value = '<span class="empty-cell">-</span>';
+                            }
+                        }
+                        
+                        // Format additional qualifications
+                        else if (field === 'additional_qualifications') {
+                            // Try to format JSON as readable text
+                            try {
+                                if (value && value !== '') {
+                                    const quals = JSON.parse(value);
+                                    if (Array.isArray(quals)) {
+                                        const formattedQuals = quals.map(q => 
+                                            `${q.qualification} (${q.year})`
+                                        ).join(', ');
+                                        value = `<span title="${formattedQuals}" class="text-truncate d-inline-block" style="max-width: 300px; font-weight: 500; color: #495057;">${formattedQuals}</span>`;
+                                    } else {
+                                        value = `<span style="font-weight: 500; color: #495057;">${value}</span>`;
+                                    }
+                                } else {
+                                    value = '<span class="empty-cell">-</span>';
+                                }
+                            } catch (e) {
+                                // If not JSON, display as is
+                                if (value && value !== '') {
+                                    value = `<span style="font-weight: 500; color: #495057;">${value}</span>`;
+                                } else {
+                                    value = '<span class="empty-cell">-</span>';
+                                }
+                            }
+                        }
+                        
                         // Format rank with styling
                         else if (field === 'rank') {
                             value = `<span style="font-weight: 700; color: #2c3e50; background: #f8f9fa; padding: 4px 8px; border-radius: 3px; border: 1px solid #dee2e6;">${value}</span>`;
@@ -2289,28 +2521,6 @@
                         // Format department with styling
                         else if (field === 'department') {
                             value = `<span style="font-weight: 600; color: #2c5aa0; background: rgba(44, 90, 160, 0.1); padding: 4px 8px; border-radius: 3px; border: 1px solid rgba(44, 90, 160, 0.2);">${value}</span>`;
-                        }
-                        
-                        // Format professional certifications with styling
-                        else if (field === 'professional_certifications') {
-                            value = `<span style="font-weight: 600; color: #2c5aa0; background: rgba(44, 90, 160, 0.1); padding: 4px 8px; border-radius: 3px; border: 1px solid rgba(44, 90, 160, 0.2);">${value}</span>`;
-                        }
-                        
-                        // Format additional qualifications
-                        else if (field === 'additional_qualifications') {
-                            // Try to format JSON as readable text
-                            try {
-                                const quals = JSON.parse(value);
-                                if (Array.isArray(quals)) {
-                                    const formattedQuals = quals.map(q => 
-                                        `${q.qualification} (${q.year})`
-                                    ).join(', ');
-                                    value = `<span title="${formattedQuals}" class="text-truncate d-inline-block" style="max-width: 300px; font-weight: 500;">${formattedQuals}</span>`;
-                                }
-                            } catch (e) {
-                                // If not JSON, display as is
-                                value = `<span style="font-weight: 500; color: #495057;">${value}</span>`;
-                            }
                         }
                         
                         // Truncate long text
@@ -2328,6 +2538,7 @@
                         if (field === 'sex') cellClass = 'gender-cell';
                         if (field.includes('status') || field.includes('license')) cellClass += ' status-cell license-cell';
                         if (field.includes('date')) cellClass += ' date-cell';
+                        if (field.includes('qualification') || field.includes('certification')) cellClass += ' qualification-cell';
                         
                         // Remove extra spaces from cellClass
                         cellClass = cellClass.trim();
@@ -2389,7 +2600,7 @@
             }
         }
         
-        // FIXED: Helper function to clear filters
+        // FIXED: Helper function to clear filters (updated with new filters)
         function clearFilters() {
             // Clear all filter inputs
             document.querySelector('[name="search"]').value = '';
@@ -2403,15 +2614,25 @@
                 'filter_rank',
                 'filter_status',
                 'filter_nmcn_status',
-                'filter_trcn_status'
+                'filter_trcn_status',
+                'filter_professional_certification'
             ];
             
             filterSelects.forEach(filterName => {
-                const select = document.querySelector(`[name="${filterName}"]`);
+                const select = document.querySelector(`[name="${filterName}]`);
                 if (select) {
                     select.value = '';
                 }
             });
+            
+            // Clear highest qualification (multiple select)
+            const highestQualSelect = document.getElementById('filter_highest_qualification');
+            if (highestQualSelect) {
+                Array.from(highestQualSelect.options).forEach(opt => opt.selected = false);
+            }
+            
+            // Clear additional qualification
+            document.getElementById('filter_additional_qualification').value = '';
             
             updateFilterCount();
             showAlert('All filters cleared', 'info');
@@ -2443,7 +2664,7 @@
             document.getElementById('reportForm').submit();
         }
         
-        // FIXED: Prepare data for saving report
+        // FIXED: Prepare data for saving report (updated with new filters)
         function prepareSaveData() {
             // Get selected fields
             const selectedFields = [];
@@ -2452,7 +2673,7 @@
             });
             document.getElementById('saveSelectedFields').value = JSON.stringify(selectedFields);
             
-            // Get filters
+            // Get filters (including new qualification filters)
             const filters = {
                 search: document.querySelector('[name="search"]').value,
                 state: document.querySelector('[name="filter_state"]').value,
@@ -2462,7 +2683,10 @@
                 rank: document.querySelector('[name="filter_rank"]').value,
                 status: document.querySelector('[name="filter_status"]').value,
                 nmcn_status: document.querySelector('[name="filter_nmcn_status"]').value,
-                trcn_status: document.querySelector('[name="filter_trcn_status"]').value
+                trcn_status: document.querySelector('[name="filter_trcn_status"]').value,
+                highest_qualification: Array.from(document.querySelector('[name="filter_highest_qualification[]"]')?.selectedOptions || []).map(opt => opt.value),
+                professional_certification: document.querySelector('[name="filter_professional_certification"]').value,
+                additional_qualification: document.querySelector('[name="filter_additional_qualification"]').value
             };
             document.getElementById('saveFilters').value = JSON.stringify(filters);
             
