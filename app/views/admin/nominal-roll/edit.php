@@ -1,6 +1,6 @@
 <?php
 /**
- * Edit Employee View - Optimized Complete Solution
+ * Edit Employee View - Fixed Complete Solution
  */
 ?>
 <!DOCTYPE html>
@@ -210,85 +210,20 @@
             font-size: 1.1rem;
         }
         
-        /* ===== TABS ===== */
-        .tab-navigation {
-            background: white;
-            border-radius: var(--radius);
+        /* ===== FORM LAYOUT ===== */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
             margin-bottom: 2rem;
-            box-shadow: var(--shadow-light);
-            overflow: hidden;
-            position: relative;
         }
         
-        .tab-progress {
-            height: 3px;
-            background: var(--accent-color);
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            transition: all 0.3s ease;
+        @media (min-width: 992px) {
+            .form-row {
+                grid-template-columns: 1fr 1fr;
+            }
         }
         
-        .tab-buttons {
-            display: flex;
-            overflow-x: auto;
-            padding: 0.5rem;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
-        
-        .tab-buttons::-webkit-scrollbar {
-            display: none;
-        }
-        
-        .tab-btn {
-            flex: 1;
-            min-width: 140px;
-            padding: 1rem 1.25rem;
-            border: none;
-            background: none;
-            font-weight: 600;
-            color: var(--gray-dark);
-            cursor: pointer;
-            white-space: nowrap;
-            border-radius: var(--radius-sm);
-            transition: all 0.25s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-        }
-        
-        .tab-btn i {
-            font-size: 1.1rem;
-        }
-        
-        .tab-btn:hover {
-            background: var(--gray-light);
-            color: var(--primary-color);
-        }
-        
-        .tab-btn.active {
-            background: rgba(52, 152, 219, 0.1);
-            color: var(--secondary-color);
-            font-weight: 700;
-        }
-        
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* ===== FORM LAYOUT - LANDSCAPE OPTIMIZED ===== */
         .form-card {
             background: white;
             border-radius: var(--radius);
@@ -301,6 +236,10 @@
         .form-card:hover {
             box-shadow: var(--shadow-medium);
             transform: translateY(-2px);
+        }
+        
+        .full-width-card {
+            grid-column: 1 / -1;
         }
         
         .card-header {
@@ -328,7 +267,7 @@
             padding: 1.5rem;
         }
         
-        /* ===== FORM GRID - LANDSCAPE OPTIMIZED ===== */
+        /* ===== FORM GRID ===== */
         .form-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -341,24 +280,12 @@
             }
         }
         
-        @media (min-width: 992px) {
-            .form-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-        
-        @media (min-width: 1200px) {
-            .form-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-        
         /* Full width group for textareas and special fields */
-        .full-width {
+        .full-width-group {
             grid-column: 1 / -1;
         }
         
-        /* License Grid Layout */
+        /* ===== LICENSE GRID ===== */
         .licenses-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -531,21 +458,6 @@
             font-size: 1.2rem;
         }
         
-        /* ===== NAVIGATION CONTROLS ===== */
-        .nav-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 2rem 0;
-            margin-top: 2rem;
-            border-top: 1px solid var(--border-color);
-        }
-        
-        .nav-buttons {
-            display: flex;
-            gap: 1rem;
-        }
-        
         /* ===== FORM ACTIONS ===== */
         .form-actions {
             background: white;
@@ -576,30 +488,6 @@
         
         .action-info i {
             color: var(--secondary-color);
-        }
-        
-        /* ===== SAVE NOTIFICATION ===== */
-        .save-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--success-color);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            z-index: 9999;
-            box-shadow: var(--shadow-medium);
-            opacity: 0;
-            transform: translateX(100%);
-            transition: all 0.3s ease;
-        }
-        
-        .save-notification.show {
-            opacity: 1;
-            transform: translateX(0);
         }
         
         /* ===== MODAL ===== */
@@ -766,33 +654,8 @@
         }
         
         /* ===== FORM STATUS INDICATORS ===== */
-        .field-modified {
-            border-color: var(--warning-color) !important;
-        }
-        
         .field-error {
             border-color: var(--danger-color) !important;
-        }
-        
-        .form-saving {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--secondary-color);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.9rem;
-            display: none;
-            align-items: center;
-            gap: 0.5rem;
-            z-index: 9998;
-            box-shadow: var(--shadow-light);
-        }
-        
-        .form-saving.show {
-            display: flex;
         }
         
         /* ===== RESPONSIVE DESIGN ===== */
@@ -840,22 +703,6 @@
                 justify-content: center;
             }
             
-            .tab-btn {
-                min-width: 120px;
-                padding: 0.875rem 1rem;
-                font-size: 0.9rem;
-            }
-            
-            .nav-controls {
-                flex-direction: column;
-                gap: 1.5rem;
-                align-items: stretch;
-            }
-            
-            .nav-buttons {
-                justify-content: space-between;
-            }
-            
             .licenses-grid {
                 grid-template-columns: 1fr;
             }
@@ -874,28 +721,9 @@
                 grid-template-columns: 1fr;
             }
             
-            .tab-btn span {
-                display: none;
-            }
-            
-            .tab-btn i {
-                font-size: 1.3rem;
-            }
-            
             .btn {
                 padding: 0.75rem 1rem;
                 font-size: 0.9rem;
-            }
-            
-            .save-notification {
-                top: 10px;
-                right: 10px;
-                left: 10px;
-                transform: translateY(-100%);
-            }
-            
-            .save-notification.show {
-                transform: translateY(0);
             }
         }
         
@@ -983,48 +811,14 @@
         </div>
         <?php endif; ?>
 
-        <!-- Tab Navigation -->
-        <div class="tab-navigation">
-            <div class="tab-progress" id="tabProgress"></div>
-            <div class="tab-buttons" id="tabButtons">
-                <button class="tab-btn active" data-tab="basic">
-                    <i class="fas fa-user"></i> <span>Basic Info</span>
-                </button>
-                <button class="tab-btn" data-tab="employment">
-                    <i class="fas fa-briefcase"></i> <span>Employment</span>
-                </button>
-                <button class="tab-btn" data-tab="education">
-                    <i class="fas fa-graduation-cap"></i> <span>Education</span>
-                </button>
-                <button class="tab-btn" data-tab="licenses">
-                    <i class="fas fa-id-card"></i> <span>Licenses</span>
-                </button>
-                <button class="tab-btn" data-tab="location">
-                    <i class="fas fa-map-marker-alt"></i> <span>Location</span>
-                </button>
-                <button class="tab-btn" data-tab="medical">
-                    <i class="fas fa-heartbeat"></i> <span>Medical</span>
-                </button>
-                <button class="tab-btn" data-tab="financial">
-                    <i class="fas fa-file-invoice-dollar"></i> <span>Financial</span>
-                </button>
-                <button class="tab-btn" data-tab="emergency">
-                    <i class="fas fa-user-friends"></i> <span>Emergency</span>
-                </button>
-                <button class="tab-btn" data-tab="photo">
-                    <i class="fas fa-camera"></i> <span>Photo</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Main Form -->
+        <!-- Main Form - SIMPLIFIED WITHOUT TABS -->
         <form method="POST" action="<?php echo $baseUrl; ?>/admin/nominal-roll/update/<?php echo $employee['id']; ?>" 
-              enctype="multipart/form-data" id="employeeForm">
+              enctype="multipart/form-data" id="employeeForm" onsubmit="return validateForm()">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token ?? '', ENT_QUOTES, 'UTF-8'); ?>">
             <input type="hidden" name="_method" value="PUT">
             
-            <!-- Tab 1: Basic Information -->
-            <div id="tab-basic" class="tab-content active">
+            <!-- Row 1: Basic Information -->
+            <div class="form-row">
                 <div class="form-card">
                     <div class="card-header">
                         <h3><i class="fas fa-id-card"></i> Basic Information</h3>
@@ -1146,8 +940,8 @@
                 </div>
             </div>
             
-            <!-- Tab 2: Employment Details -->
-            <div id="tab-employment" class="tab-content">
+            <!-- Row 2: Employment Details & Education -->
+            <div class="form-row">
                 <div class="form-card">
                     <div class="card-header">
                         <h3><i class="fas fa-briefcase"></i> Employment Details</h3>
@@ -1274,10 +1068,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Tab 3: Education -->
-            <div id="tab-education" class="tab-content">
+
+                <!-- Education -->
                 <div class="form-card">
                     <div class="card-header">
                         <h3><i class="fas fa-graduation-cap"></i> Educational Qualifications</h3>
@@ -1344,7 +1136,7 @@
                             </div>
 
                             <!-- Professional Certifications -->
-                            <div class="form-group full-width">
+                            <div class="form-group full-width-group">
                                 <label for="professional_certifications">Professional Certifications</label>
                                 <textarea id="professional_certifications" 
                                           name="professional_certifications" 
@@ -1354,7 +1146,7 @@
                             </div>
 
                             <!-- Additional Qualifications -->
-                            <div class="form-group full-width">
+                            <div class="form-group full-width-group">
                                 <label>Additional Qualifications</label>
                                 <div id="qualifications-container">
                                     <?php
@@ -1435,9 +1227,9 @@
                 </div>
             </div>
             
-            <!-- Tab 4: Professional Licenses -->
-            <div id="tab-licenses" class="tab-content">
-                <div class="form-card">
+            <!-- Row 3: Professional Licenses -->
+            <div class="form-row">
+                <div class="form-card full-width-card">
                     <div class="card-header">
                         <h3><i class="fas fa-id-badge"></i> Professional Licenses</h3>
                     </div>
@@ -1455,7 +1247,7 @@
                                 </h4>
                                 <div class="license-fields">
                                     <div class="form-group">
-                                        <label for="nmcn_license_number">NMCN License Number *</label>
+                                        <label for="nmcn_license_number">NMCN License Number</label>
                                         <input type="text" 
                                                class="form-control" 
                                                id="nmcn_license_number" 
@@ -1507,7 +1299,7 @@
                                 </h4>
                                 <div class="license-fields">
                                     <div class="form-group">
-                                        <label for="trcn_license_number">TRCN License Number *</label>
+                                        <label for="trcn_license_number">TRCN License Number</label>
                                         <input type="text" 
                                                class="form-control" 
                                                id="trcn_license_number" 
@@ -1551,8 +1343,8 @@
                 </div>
             </div>
             
-            <!-- Tab 5: Location -->
-            <div id="tab-location" class="tab-content">
+            <!-- Row 4: Location & Medical -->
+            <div class="form-row">
                 <div class="form-card">
                     <div class="card-header">
                         <h3><i class="fas fa-map-marker-alt"></i> Location & Origin</h3>
@@ -1619,7 +1411,7 @@
                             </div>
 
                             <!-- Residential Address -->
-                            <div class="form-group full-width">
+                            <div class="form-group full-width-group">
                                 <label for="residential_address">Residential Address</label>
                                 <textarea id="residential_address" 
                                           name="residential_address" 
@@ -1629,7 +1421,7 @@
                             </div>
 
                             <!-- Contact Address -->
-                            <div class="form-group full-width">
+                            <div class="form-group full-width-group">
                                 <label for="contact_address">Contact Address</label>
                                 <textarea id="contact_address" 
                                           name="contact_address" 
@@ -1640,10 +1432,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Tab 6: Medical -->
-            <div id="tab-medical" class="tab-content">
+
+                <!-- Medical & Identification -->
                 <div class="form-card">
                     <div class="card-header">
                         <h3><i class="fas fa-user-tie"></i> Medical & Identification</h3>
@@ -1744,8 +1534,8 @@
                 </div>
             </div>
             
-            <!-- Tab 7: Financial -->
-            <div id="tab-financial" class="tab-content">
+            <!-- Row 5: Financial & Emergency Contacts -->
+            <div class="form-row">
                 <div class="form-card">
                     <div class="card-header">
                         <h3><i class="fas fa-file-invoice-dollar"></i> Financial Information</h3>
@@ -1895,10 +1685,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Tab 8: Emergency Contacts -->
-            <div id="tab-emergency" class="tab-content">
+
+                <!-- Emergency Contacts & Next of Kin -->
                 <div class="form-card">
                     <div class="card-header">
                         <h3><i class="fas fa-user-friends"></i> Emergency Contacts & Next of Kin</h3>
@@ -1983,7 +1771,7 @@
                             </div>
 
                             <!-- Next of Kin Address -->
-                            <div class="form-group full-width">
+                            <div class="form-group full-width-group">
                                 <label for="next_of_kin_address">Next of Kin Address</label>
                                 <textarea id="next_of_kin_address" 
                                           name="next_of_kin_address" 
@@ -1996,9 +1784,9 @@
                 </div>
             </div>
             
-            <!-- Tab 9: Photo -->
-            <div id="tab-photo" class="tab-content">
-                <div class="form-card">
+            <!-- Row 6: Passport Photo -->
+            <div class="form-row">
+                <div class="form-card full-width-card">
                     <div class="card-header">
                         <h3><i class="fas fa-camera"></i> Passport Photo</h3>
                     </div>
@@ -2050,33 +1838,11 @@
                 </div>
             </div>
 
-            <!-- Navigation Controls -->
-            <div class="nav-controls">
-                <div class="nav-buttons">
-                    <button type="button" class="btn btn-secondary" id="prevBtn">
-                        <i class="fas fa-arrow-left"></i> Previous
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="nextBtn">
-                        Next <i class="fas fa-arrow-right"></i>
-                    </button>
-                </div>
-                <div class="nav-info">
-                    <span class="badge" id="currentTabIndicator">Step 1 of 9</span>
-                </div>
-            </div>
-
             <!-- Form Actions -->
             <div class="form-actions">
-                <div class="action-info">
-                    <i class="fas fa-info-circle"></i>
-                    <span>Changes are auto-saved locally every 30 seconds</span>
-                </div>
                 <div class="action-buttons">
                     <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
                         <i class="fas fa-save"></i> Update Employee Record
-                    </button>
-                    <button type="button" class="btn btn-success" id="saveDraftBtn">
-                        <i class="fas fa-save"></i> Save Draft Now
                     </button>
                     <a href="<?php echo $baseUrl; ?>/admin/nominal-roll/view/<?php echo $employee['id']; ?>" class="btn btn-secondary">
                         <i class="fas fa-times"></i> Cancel
@@ -2089,18 +1855,6 @@
                 </div>
             </div>
         </form>
-    </div>
-
-    <!-- Silent Save Notification -->
-    <div class="save-notification" id="saveNotification">
-        <i class="fas fa-check-circle"></i>
-        <span>Draft saved successfully</span>
-    </div>
-
-    <!-- Saving Indicator -->
-    <div class="form-saving" id="formSaving">
-        <i class="fas fa-spinner fa-spin"></i>
-        <span>Saving changes...</span>
     </div>
 
     <!-- Delete Confirmation Modal -->
@@ -2158,23 +1912,7 @@
     </template>
 
     <script>
-        // ====================
-        // GLOBAL VARIABLES
-        // ====================
-        const tabs = ['basic', 'employment', 'education', 'licenses', 'location', 'medical', 'financial', 'emergency', 'photo'];
-        let currentTabIndex = 0;
-        let autoSaveTimeout;
-        let autoSaveInterval;
-        let saveNotificationTimeout;
-        let isSaving = false;
-        let hasUnsavedChanges = false;
-        let formInitialized = false;
-        
-        // Performance optimization - debounce timers
-        let inputDebounceTimer;
-        let saveDebounceTimer;
-        
-        // COMPLETE State-LGA Data for Nigeria
+        // Nigerian States and LGAs Data
         const nigerianLGAs = {
             'Abia': ['Aba North', 'Aba South', 'Arochukwu', 'Bende', 'Ikwuano', 'Isiala Ngwa North', 'Isiala Ngwa South', 
                     'Isuikwuato', 'Obi Ngwa', 'Ohafia', 'Osisioma', 'Ugwunagbo', 'Ukwa East', 'Ukwa West', 
@@ -2295,37 +2033,27 @@
             'Zamfara': ['Anka', 'Bakura', 'Birnin Magaji/Kiyaw', 'Bukkuyum', 'Bungudu', 'Chafe', 'Gummi', 
                        'Gusau', 'Kaura Namoda', 'Maradun', 'Maru', 'Shinkafi', 'Talata Mafara', 'Tsafe', 'Zurmi']
         };
-        
-        // ====================
-        // CORE FUNCTIONS
-        // ====================
-        
-        // Initialize form
-        function initForm() {
-            if (formInitialized) return;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing form...');
             
+            // Initialize form
+            initForm();
+            
+            // Clean up on page unload
+            window.addEventListener('unload', function() {
+                // Clean up any event listeners if needed
+            });
+        });
+        
+        function initForm() {
             console.log('Initializing employee form...');
             
-            // Set up tab system
-            setupTabs();
-            
-            // Set up auto-save
-            setupAutoSave();
-            
-            // Load any saved draft
-            setTimeout(loadDraft, 100);
-            
-            // Set up state-LGA selection - FIXED: Called immediately
+            // Set up state-LGA selection
             setupStateLga();
             
             // Set up photo upload
-            setTimeout(setupPhotoUpload, 200);
-            
-            // Set up form submission
-            setupFormSubmission();
-            
-            // Set up modals
-            setupModals();
+            setupPhotoUpload();
             
             // Set up qualifications
             setupQualifications();
@@ -2336,168 +2064,31 @@
             // Set up license validation
             setupLicenseValidation();
             
-            formInitialized = true;
+            // Set up modals
+            setupModals();
+            
             console.log('Form initialized successfully');
-        }
-        
-        // ====================
-        // TAB MANAGEMENT
-        // ====================
-        function setupTabs() {
-            const tabButtons = document.querySelectorAll('.tab-btn');
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            
-            if (!tabButtons.length || !prevBtn || !nextBtn) {
-                console.error('Tab elements not found');
-                return;
-            }
-            
-            // Tab button click handlers
-            tabButtons.forEach((btn, index) => {
-                btn.addEventListener('click', () => showTab(index));
-            });
-            
-            // Navigation button handlers
-            prevBtn.addEventListener('click', prevTab);
-            nextBtn.addEventListener('click', nextTab);
-            
-            // Load saved tab position
-            const savedTab = localStorage.getItem(`employee_<?php echo $employee['id']; ?>_current_tab`);
-            if (savedTab !== null) {
-                const tabIndex = parseInt(savedTab);
-                if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex < tabs.length) {
-                    currentTabIndex = tabIndex;
-                }
-            }
-            
-            // Show initial tab
-            showTab(currentTabIndex);
-        }
-        
-        function showTab(index) {
-            if (index < 0 || index >= tabs.length) return;
-            
-            currentTabIndex = index;
-            
-            // Update tab buttons
-            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-                btn.classList.toggle('active', i === index);
-            });
-            
-            // Show/hide tab content
-            document.querySelectorAll('.tab-content').forEach((content, i) => {
-                content.classList.toggle('active', i === index);
-            });
-            
-            // Update progress bar
-            const progress = ((index + 1) / tabs.length) * 100;
-            const progressBar = document.getElementById('tabProgress');
-            if (progressBar) {
-                progressBar.style.width = `${progress}%`;
-            }
-            
-            // Update navigation buttons
-            updateNavButtons();
-            
-            // Update step indicator
-            const indicator = document.getElementById('currentTabIndicator');
-            if (indicator) {
-                indicator.textContent = `Step ${index + 1} of ${tabs.length}`;
-            }
-            
-            // Save current tab
-            localStorage.setItem(`employee_<?php echo $employee['id']; ?>_current_tab`, index);
-            
-            // Scroll to top for better UX
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        
-        function nextTab() {
-            if (currentTabIndex < tabs.length - 1) {
-                showTab(currentTabIndex + 1);
-            } else {
-                // Last tab - validate all
-                if (validateForm()) {
-                    showNotification('Form is complete! You can now submit.', 'success');
-                }
-            }
-        }
-        
-        function prevTab() {
-            if (currentTabIndex > 0) {
-                showTab(currentTabIndex - 1);
-            }
-        }
-        
-        function updateNavButtons() {
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            
-            if (!prevBtn || !nextBtn) return;
-            
-            prevBtn.disabled = currentTabIndex === 0;
-            prevBtn.style.opacity = currentTabIndex === 0 ? '0.5' : '1';
-            
-            nextBtn.innerHTML = currentTabIndex === tabs.length - 1 
-                ? 'Review <i class="fas fa-check"></i>' 
-                : 'Next <i class="fas fa-arrow-right"></i>';
         }
         
         // ====================
         // FORM VALIDATION
         // ====================
-        function validateCurrentTab() {
-            const currentTab = document.getElementById(`tab-${tabs[currentTabIndex]}`);
-            if (!currentTab) return true;
-            
-            const requiredFields = currentTab.querySelectorAll('[required]');
+        function validateForm() {
             let isValid = true;
-            let firstErrorField = null;
+            let errorFields = [];
             
+            // Validate required fields
+            const requiredFields = document.querySelectorAll('[required]');
             requiredFields.forEach(field => {
                 field.classList.remove('field-error');
                 
                 if (!field.value.trim()) {
                     isValid = false;
                     field.classList.add('field-error');
-                    
-                    if (!firstErrorField) {
-                        firstErrorField = field;
-                    }
+                    const label = field.closest('.form-group')?.querySelector('label');
+                    errorFields.push(label?.textContent?.replace('*', '').trim() || 'Unknown field');
                 }
             });
-            
-            if (!isValid && firstErrorField) {
-                // Scroll to first error
-                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                firstErrorField.focus();
-                
-                // Show error message
-                const fieldName = firstErrorField.previousElementSibling?.textContent || 'Field';
-                showNotification(`Please fill in required field: ${fieldName.replace('*', '').trim()}`, 'error');
-            }
-            
-            return isValid;
-        }
-        
-        function validateForm() {
-            let allValid = true;
-            let errorFields = [];
-            
-            for (let i = 0; i < tabs.length; i++) {
-                const tab = document.getElementById(`tab-${tabs[i]}`);
-                if (!tab) continue;
-                
-                const requiredFields = tab.querySelectorAll('[required]');
-                requiredFields.forEach(field => {
-                    if (!field.value.trim()) {
-                        allValid = false;
-                        const label = field.closest('.form-group')?.querySelector('label');
-                        errorFields.push(label?.textContent?.replace('*', '').trim() || 'Unknown field');
-                    }
-                });
-            }
             
             // Validate qualification entries
             const qualificationEntries = document.querySelectorAll('.qualification-entry');
@@ -2506,7 +2097,7 @@
                 const yearSelect = entry.querySelector('.qualification-year');
                 
                 if (nameInput.value.trim() && !yearSelect.value) {
-                    allValid = false;
+                    isValid = false;
                     yearSelect.classList.add('field-error');
                     errorFields.push('Qualification year');
                 } else {
@@ -2516,273 +2107,23 @@
             
             // Validate license dates
             if (!validateLicenseDates()) {
-                allValid = false;
+                isValid = false;
                 errorFields.push('License dates');
             }
             
-            if (!allValid) {
+            if (!isValid) {
                 const errorMsg = `Missing required fields: ${errorFields.slice(0, 3).join(', ')}${errorFields.length > 3 ? '...' : ''}`;
-                showNotification(errorMsg, 'error');
+                alert(errorMsg);
                 
-                // Go to first tab with errors
-                for (let i = 0; i < tabs.length; i++) {
-                    const tab = document.getElementById(`tab-${tabs[i]}`);
-                    const requiredFields = tab.querySelectorAll('[required]');
-                    const hasError = Array.from(requiredFields).some(field => !field.value.trim());
-                    
-                    if (hasError) {
-                        showTab(i);
-                        break;
-                    }
+                // Scroll to first error field
+                const firstError = document.querySelector('.field-error');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstError.focus();
                 }
             }
             
-            return allValid;
-        }
-        
-        // ====================
-        // AUTO-SAVE FUNCTIONALITY (SILENT)
-        // ====================
-        function setupAutoSave() {
-            const form = document.getElementById('employeeForm');
-            if (!form) return;
-            
-            // Track changes
-            form.addEventListener('input', handleFormChange);
-            form.addEventListener('change', handleFormChange);
-            
-            // Periodic auto-save (every 30 seconds)
-            autoSaveInterval = setInterval(silentAutoSave, 30000);
-            
-            // Save before page unload
-            window.addEventListener('beforeunload', (e) => {
-                if (hasUnsavedChanges) {
-                    silentAutoSave();
-                }
-            });
-        }
-        
-        function handleFormChange(e) {
-            // Mark field as modified
-            if (e.target.classList.contains('form-control')) {
-                e.target.classList.add('field-modified');
-            }
-            
-            // Debounce auto-save
-            clearTimeout(inputDebounceTimer);
-            inputDebounceTimer = setTimeout(() => {
-                hasUnsavedChanges = true;
-                scheduleAutoSave();
-            }, 1000);
-        }
-        
-        function scheduleAutoSave() {
-            clearTimeout(saveDebounceTimer);
-            saveDebounceTimer = setTimeout(silentAutoSave, 5000); // Save after 5 seconds of inactivity
-        }
-        
-        function silentAutoSave() {
-            if (isSaving || !hasUnsavedChanges) return;
-            
-            saveDraft(true); // Silent save
-        }
-        
-        function saveDraft(isSilent = false) {
-            if (isSaving) {
-                if (!isSilent) {
-                    showNotification('Already saving, please wait...', 'info');
-                }
-                return;
-            }
-            
-            const form = document.getElementById('employeeForm');
-            if (!form) return;
-            
-            isSaving = true;
-            
-            if (!isSilent) {
-                showSavingIndicator(true);
-            }
-            
-            // Collect form data
-            const formData = new FormData(form);
-            const draftData = {};
-            
-            for (let [key, value] of formData.entries()) {
-                draftData[key] = value;
-            }
-            
-            // Collect qualification data
-            const qualifications = [];
-            document.querySelectorAll('.qualification-entry').forEach(entry => {
-                const name = entry.querySelector('.qualification-name').value;
-                const year = entry.querySelector('.qualification-year').value;
-                if (name || year) {
-                    qualifications.push({ name, year });
-                }
-            });
-            
-            const draft = {
-                data: draftData,
-                qualifications: qualifications,
-                timestamp: new Date().toISOString(),
-                currentTab: currentTabIndex,
-                employeeId: <?php echo $employee['id']; ?>,
-                version: '1.0'
-            };
-            
-            // Simulate save delay (remove in production)
-            setTimeout(() => {
-                try {
-                    localStorage.setItem(`employee_draft_<?php echo $employee['id']; ?>`, JSON.stringify(draft));
-                    hasUnsavedChanges = false;
-                    
-                    if (!isSilent) {
-                        showNotification('Draft saved successfully!', 'success');
-                    } else {
-                        // Silent notification (brief)
-                        showSilentNotification();
-                    }
-                    
-                    console.log('Draft saved at', new Date().toLocaleTimeString());
-                } catch (error) {
-                    console.error('Error saving draft:', error);
-                    if (!isSilent) {
-                        showNotification('Error saving draft. Storage might be full.', 'error');
-                    }
-                } finally {
-                    isSaving = false;
-                    if (!isSilent) {
-                        showSavingIndicator(false);
-                    }
-                }
-            }, 800); // Simulated network delay
-        }
-        
-        function loadDraft() {
-            try {
-                const saved = localStorage.getItem(`employee_draft_<?php echo $employee['id']; ?>`);
-                if (!saved) return;
-                
-                const draft = JSON.parse(saved);
-                
-                // Check if draft is for this employee
-                if (draft.employeeId !== <?php echo $employee['id']; ?>) {
-                    localStorage.removeItem(`employee_draft_<?php echo $employee['id']; ?>`);
-                    return;
-                }
-                
-                // Check draft version/age (optional)
-                const draftAge = new Date() - new Date(draft.timestamp);
-                const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
-                
-                if (draftAge > maxAge) {
-                    if (confirm('Found an old draft (over 7 days). Do you want to load it?')) {
-                        restoreDraft(draft);
-                    } else {
-                        localStorage.removeItem(`employee_draft_<?php echo $employee['id']; ?>`);
-                    }
-                } else {
-                    restoreDraft(draft);
-                }
-                
-            } catch (error) {
-                console.error('Error loading draft:', error);
-                localStorage.removeItem(`employee_draft_<?php echo $employee['id']; ?>`);
-            }
-        }
-        
-        function restoreDraft(draft) {
-            // Restore form data
-            for (const [name, value] of Object.entries(draft.data)) {
-                const field = document.querySelector(`[name="${name}"]`);
-                if (field) {
-                    if (field.type === 'checkbox') {
-                        field.checked = value;
-                    } else if (field.type === 'radio') {
-                        const radio = document.querySelector(`[name="${name}"][value="${value}"]`);
-                        if (radio) radio.checked = true;
-                    } else {
-                        field.value = value;
-                    }
-                }
-            }
-            
-            // Restore qualifications
-            if (draft.qualifications && draft.qualifications.length > 0) {
-                const container = document.getElementById('qualifications-container');
-                if (container) {
-                    container.innerHTML = '';
-                    draft.qualifications.forEach(qual => {
-                        addQualificationField(qual.name, qual.year);
-                    });
-                }
-            }
-            
-            // Restore tab position
-            if (draft.currentTab !== undefined) {
-                showTab(draft.currentTab);
-            }
-            
-            // Update conditional fields
-            updateConditionalFields();
-            
-            showNotification('Draft loaded from ' + new Date(draft.timestamp).toLocaleString(), 'info');
-        }
-        
-        // ====================
-        // FORM SUBMISSION
-        // ====================
-        function setupFormSubmission() {
-            const form = document.getElementById('employeeForm');
-            const submitBtn = document.getElementById('submitBtn');
-            
-            if (!form || !submitBtn) return;
-            
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                if (!validateForm()) {
-                    return false;
-                }
-                
-                // Show loading state
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-                submitBtn.disabled = true;
-                submitBtn.classList.add('btn-loading');
-                
-                try {
-                    // Clear draft before submission
-                    localStorage.removeItem(`employee_draft_<?php echo $employee['id']; ?>`);
-                    
-                    // Submit form
-                    const formData = new FormData(this);
-                    
-                    // Simulate submission delay
-                    setTimeout(() => {
-                        // Remove loading state
-                        submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Employee Record';
-                        submitBtn.disabled = false;
-                        submitBtn.classList.remove('btn-loading');
-                        
-                        // Submit the form
-                        this.submit();
-                    }, 1000);
-                    
-                } catch (error) {
-                    console.error('Form submission error:', error);
-                    submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Employee Record';
-                    submitBtn.disabled = false;
-                    submitBtn.classList.remove('btn-loading');
-                    showNotification('Error submitting form. Please try again.', 'error');
-                }
-            });
-            
-            // Manual save draft button
-            const saveDraftBtn = document.getElementById('saveDraftBtn');
-            if (saveDraftBtn) {
-                saveDraftBtn.addEventListener('click', () => saveDraft(false));
-            }
+            return isValid;
         }
         
         // ====================
@@ -2802,7 +2143,6 @@
                 button.addEventListener('click', function() {
                     const entry = this.closest('.qualification-entry');
                     entry.remove();
-                    hasUnsavedChanges = true;
                 });
             });
             
@@ -2831,15 +2171,9 @@
             const removeBtn = entry.querySelector('.remove-qualification');
             removeBtn.addEventListener('click', function() {
                 entry.remove();
-                hasUnsavedChanges = true;
             });
             
-            // Add change listener
-            nameInput.addEventListener('input', () => hasUnsavedChanges = true);
-            yearSelect.addEventListener('change', () => hasUnsavedChanges = true);
-            
             container.appendChild(entry);
-            hasUnsavedChanges = true;
         }
         
         function updateButtonTextForMobile() {
@@ -2862,7 +2196,6 @@
             if (disabilitySelect && disabilityTypeContainer) {
                 disabilitySelect.addEventListener('change', function() {
                     disabilityTypeContainer.style.display = this.value === 'Yes' ? 'block' : 'none';
-                    hasUnsavedChanges = true;
                 });
             }
             
@@ -2873,7 +2206,6 @@
             if (bankSelect && otherBankContainer) {
                 bankSelect.addEventListener('change', function() {
                     otherBankContainer.style.display = this.value === 'Other' ? 'block' : 'none';
-                    hasUnsavedChanges = true;
                 });
             }
             
@@ -2884,29 +2216,7 @@
             if (pfaSelect && otherPFAContainer) {
                 pfaSelect.addEventListener('change', function() {
                     otherPFAContainer.style.display = this.value === 'Other' ? 'block' : 'none';
-                    hasUnsavedChanges = true;
                 });
-            }
-        }
-        
-        function updateConditionalFields() {
-            // Update all conditional fields based on current values
-            const disabilitySelect = document.getElementById('disability');
-            const disabilityTypeContainer = document.getElementById('disabilityTypeContainer');
-            if (disabilitySelect && disabilityTypeContainer) {
-                disabilityTypeContainer.style.display = disabilitySelect.value === 'Yes' ? 'block' : 'none';
-            }
-            
-            const bankSelect = document.getElementById('bank_name');
-            const otherBankContainer = document.getElementById('otherBankContainer');
-            if (bankSelect && otherBankContainer) {
-                otherBankContainer.style.display = bankSelect.value === 'Other' ? 'block' : 'none';
-            }
-            
-            const pfaSelect = document.getElementById('pension_fund_admin');
-            const otherPFAContainer = document.getElementById('otherPFAContainer');
-            if (pfaSelect && otherPFAContainer) {
-                otherPFAContainer.style.display = pfaSelect.value === 'Other' ? 'block' : 'none';
             }
         }
         
@@ -2954,7 +2264,6 @@
                     const normalized = normalizeLicenseNumber(this.value);
                     if (this.value !== normalized) {
                         this.value = normalized;
-                        hasUnsavedChanges = true;
                     }
                 });
             }
@@ -2964,7 +2273,6 @@
                     const normalized = normalizeLicenseNumber(this.value);
                     if (this.value !== normalized) {
                         this.value = normalized;
-                        hasUnsavedChanges = true;
                     }
                 });
             }
@@ -2986,7 +2294,6 @@
                         // Only set if expiry is empty or before issued date
                         if (!expiryInput.value || new Date(expiryInput.value) < issuedDate) {
                             expiryInput.value = expiryString;
-                            hasUnsavedChanges = true;
                         }
                     }
                 }
@@ -2995,14 +2302,12 @@
             if (nmcnIssued) {
                 nmcnIssued.addEventListener('change', function() {
                     setExpiryDate(nmcnIssued, nmcnExpiry, 3); // 3 years for NMCN
-                    hasUnsavedChanges = true;
                 });
             }
             
             if (trcnIssued) {
                 trcnIssued.addEventListener('change', function() {
                     setExpiryDate(trcnIssued, trcnExpiry, 3); // 3 years for TRCN
-                    hasUnsavedChanges = true;
                 });
             }
             
@@ -3026,10 +2331,8 @@
                     
                     if (daysUntilExpiry < 0 && nmcnStatus.value !== 'Expired') {
                         nmcnStatus.value = 'Expired';
-                        hasUnsavedChanges = true;
                     } else if (daysUntilExpiry >= 0 && nmcnStatus.value !== 'Active') {
                         nmcnStatus.value = 'Active';
-                        hasUnsavedChanges = true;
                     }
                 }
                 
@@ -3043,10 +2346,8 @@
                     
                     if (daysUntilExpiry < 0 && trcnStatus.value !== 'Expired') {
                         trcnStatus.value = 'Expired';
-                        hasUnsavedChanges = true;
                     } else if (daysUntilExpiry >= 0 && trcnStatus.value !== 'Active') {
                         trcnStatus.value = 'Active';
-                        hasUnsavedChanges = true;
                     }
                 }
             }
@@ -3054,7 +2355,6 @@
             // Attach event listeners for license status updates
             document.querySelectorAll('#nmcn_expiry_date, #trcn_expiry_date').forEach(input => {
                 input.addEventListener('change', updateLicenseStatus);
-                input.addEventListener('change', () => hasUnsavedChanges = true);
             });
             
             // Initial license status update on page load
@@ -3094,7 +2394,7 @@
             }
             
             if (!isValid) {
-                showNotification(message, 'error');
+                alert(message);
                 return false;
             }
             
@@ -3138,7 +2438,6 @@
                     lgaSelect.innerHTML = '<option value="">Select LGA</option>';
                     lgaSelect.disabled = true;
                 }
-                hasUnsavedChanges = true;
             });
             
             // Also populate LGAs on page load for any selected state
@@ -3164,7 +2463,6 @@
                     for (const [zone, states] of Object.entries(zoneMapping)) {
                         if (states.includes(selectedState)) {
                             zoneSelect.value = zone;
-                            hasUnsavedChanges = true;
                             break;
                         }
                     }
@@ -3240,7 +2538,7 @@
             function handleImageUpload(file) {
                 // Check file size (2MB max)
                 if (file.size > 2 * 1024 * 1024) {
-                    showNotification('File size must be less than 2MB', 'error');
+                    alert('File size must be less than 2MB');
                     fileInput.value = '';
                     return;
                 }
@@ -3248,7 +2546,7 @@
                 // Check file type
                 const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
                 if (!validTypes.includes(file.type)) {
-                    showNotification('Only JPG, JPEG, and PNG files are allowed', 'error');
+                    alert('Only JPG, JPEG, and PNG files are allowed');
                     fileInput.value = '';
                     return;
                 }
@@ -3258,7 +2556,6 @@
                 reader.onload = function(e) {
                     previewImage.src = e.target.result;
                     uploadPreview.style.display = 'block';
-                    hasUnsavedChanges = true;
                 }
                 
                 reader.readAsDataURL(file);
@@ -3270,57 +2567,7 @@
                     fileInput.value = '';
                     uploadPreview.style.display = 'none';
                     previewImage.src = '#';
-                    hasUnsavedChanges = true;
                 });
-            }
-        }
-        
-        // ====================
-        // NOTIFICATIONS
-        // ====================
-        function showNotification(message, type = 'info') {
-            const notification = document.getElementById('saveNotification');
-            if (!notification) return;
-            
-            // Update message and style
-            notification.querySelector('span').textContent = message;
-            notification.style.background = type === 'error' ? 'var(--danger-color)' : 
-                                          type === 'success' ? 'var(--success-color)' : 
-                                          'var(--secondary-color)';
-            
-            // Show notification
-            notification.classList.add('show');
-            
-            // Auto-hide after 3 seconds
-            clearTimeout(saveNotificationTimeout);
-            saveNotificationTimeout = setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-        
-        function showSilentNotification() {
-            const notification = document.getElementById('saveNotification');
-            if (!notification) return;
-            
-            notification.querySelector('span').textContent = 'Auto-saved';
-            notification.style.background = 'var(--success-color)';
-            notification.classList.add('show');
-            
-            // Hide quickly for silent save
-            clearTimeout(saveNotificationTimeout);
-            saveNotificationTimeout = setTimeout(() => {
-                notification.classList.remove('show');
-            }, 1500);
-        }
-        
-        function showSavingIndicator(show) {
-            const indicator = document.getElementById('formSaving');
-            if (!indicator) return;
-            
-            if (show) {
-                indicator.classList.add('show');
-            } else {
-                indicator.classList.remove('show');
             }
         }
         
@@ -3376,26 +2623,6 @@
                 document.body.style.overflow = 'auto';
             }
         }
-        
-        // ====================
-        // INITIALIZATION
-        // ====================
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, initializing form...');
-            
-            // Initialize with a slight delay to ensure DOM is ready
-            setTimeout(() => {
-                initForm();
-            }, 50);
-            
-            // Clean up on page unload
-            window.addEventListener('unload', function() {
-                clearInterval(autoSaveInterval);
-                clearTimeout(inputDebounceTimer);
-                clearTimeout(saveDebounceTimer);
-                clearTimeout(saveNotificationTimeout);
-            });
-        });
         
         // Make functions available globally for inline onclick handlers
         window.addQualificationField = addQualificationField;
