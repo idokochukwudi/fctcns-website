@@ -379,83 +379,142 @@ class AdminNewsController extends Controller {
     }
     
     /**
-     * Handle image upload and return correct public URL - FIXED FOR CORRECT DIRECTORY
+     * Handle image upload - UNIVERSAL VERSION (Works on both local and shared hosting)
      */
-    private function handleImageUpload($base64Data, $filename) {
-        if (empty($base64Data) || empty($filename)) {
-            error_log("No image data provided");
+    private function handleImageUpload() {
+        error_log("=== UNIVERSAL IMAGE UPLOAD ===");
+        error_log("Server: " . $_SERVER['SERVER_NAME']);
+        error_log("Document Root: " . $_SERVER['DOCUMENT_ROOT']);
+        
+        // 1. Check if removing existing image
+        if (isset($_POST['remove_image']) && $_POST['remove_image'] == '1') {
+            error_log("User requested to remove image");
             return '';
         }
         
-        try {
-            error_log("=== IMAGE UPLOAD PROCESS STARTED ===");
-            error_log("Original filename: " . $filename);
+        // 2. Check if file was uploaded
+        if (isset($_FILES['featured_image_upload']) && $_FILES['featured_image_upload']['error'] === UPLOAD_ERR_OK) {
+            $file = $_FILES['featured_image_upload'];
+            $type = $_POST['type'] ?? 'news';
             
-            // Extract base64 data
-            if (strpos($base64Data, 'base64,') !== false) {
-                $base64Data = explode('base64,', $base64Data)[1];
-                error_log("Removed data:image prefix");
+            error_log("File upload detected:");
+            error_log("  - Name: " . $file['name']);
+            error_log("  - Size: " . $file['size']);
+            error_log("  - Type: " . ($file['type'] ?? 'unknown'));
+            
+            // Validate file type
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!in_array($file['type'], $allowedTypes)) {
+                error_log("Invalid file type: " . $file['type']);
+                return $_POST['featured_image'] ?? '';
             }
             
-            // Decode base64
-            $imageData = base64_decode($base64Data);
-            if (!$imageData) {
-                error_log("ERROR: Failed to decode base64 data");
-                return '';
+            // Validate file size (max 5MB)
+            if ($file['size'] > 5 * 1024 * 1024) {
+                error_log("File too large: " . $file['size'] . " bytes");
+                return $_POST['featured_image'] ?? '';
             }
             
-            // FIXED: Use correct upload directory (PROJECT ROOT)
-            // Create uploads directory in the correct location
-            $uploadDir = getProjectRootPath() . '/public/uploads/news/';
-            error_log("Upload directory: " . $uploadDir);
+            // Get upload directory that works for both environments
+            require_once APP_PATH . '/helpers/image_helper.php';
+            $uploadDir = getUploadPath($type);
             
+            // Ensure directory exists
             if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-                error_log("Created directory: " . $uploadDir);
+                if (mkdir($uploadDir, 0755, true)) {
+                    error_log("Created upload directory: " . $uploadDir);
+                } else {
+                    error_log("Failed to create directory: " . $uploadDir);
+                    return $_POST['featured_image'] ?? '';
+                }
             }
             
-            // Check directory permissions
+            // Check if directory is writable
             if (!is_writable($uploadDir)) {
-                error_log("ERROR: Directory not writable: " . $uploadDir);
-                return '';
+                error_log("Directory not writable: " . $uploadDir);
+                // Try to fix permissions
+                if (chmod($uploadDir, 0755)) {
+                    error_log("Fixed directory permissions");
+                } else {
+                    return $_POST['featured_image'] ?? '';
+                }
             }
             
             // Generate safe filename
-            $extension = pathinfo($filename, PATHINFO_EXTENSION);
-            if (empty($extension)) {
-                $extension = 'png';
-            }
-            $safeFilename = preg_replace('/[^a-zA-Z0-9\._-]/', '_', $filename);
-            $uniqueName = 'news_' . uniqid() . '_' . time() . '.' . $extension;
-            $filePath = $uploadDir . $uniqueName;
+            $originalName = pathinfo($file['name'], PATHINFO_FILENAME);
+            $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
             
-            // Save file
-            $bytesWritten = file_put_contents($filePath, $imageData);
+            // Clean filename
+            $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '', $originalName);
+            $filename = $safeName . '_' . time() . '.' . $extension;
+            $destination = rtrim($uploadDir, '/') . '/' . $filename;
             
-            if ($bytesWritten !== false) {
-                // FIXED: Ensure path starts with /uploads/news/
-                $publicUrl = '/uploads/news/' . $uniqueName;
+            error_log("Upload Details:");
+            error_log("  - Safe Name: " . $filename);
+            error_log("  - Destination: " . $destination);
+            error_log("  - Dir exists: " . (is_dir($uploadDir) ? 'YES' : 'NO'));
+            error_log("  - Dir writable: " . (is_writable($uploadDir) ? 'YES' : 'NO'));
+            
+            // Move uploaded file
+            if (move_uploaded_file($file['tmp_name'], $destination)) {
+                // Set proper permissions
+                chmod($destination, 0644);
                 
-                error_log("✓ SUCCESS: Image saved to correct location");
-                error_log("  File: " . $filePath);
-                error_log("  Size: " . $bytesWritten . " bytes");
-                error_log("  Public URL: " . $publicUrl);
-                error_log("  Full URL: " . BASE_URL . $publicUrl);
+                // Get relative path for database
+                $relativePath = getRelativeUploadPath($filename, $type);
                 
-                return $publicUrl; // This should be saved to database
+                error_log("✅ UPLOAD SUCCESS!");
+                error_log("  - Saved to: " . $destination);
+                error_log("  - Relative path: " . $relativePath);
+                error_log("  - File size on disk: " . filesize($destination) . " bytes");
+                
+                // Verify file was saved
+                if (file_exists($destination) && filesize($destination) > 0) {
+                    return $relativePath;
+                } else {
+                    error_log("❌ File not found after move or zero size");
+                    return $_POST['featured_image'] ?? '';
+                }
             } else {
-                error_log("✗ ERROR: Failed to write file to: " . $filePath);
-                return '';
+                error_log("❌ FAILED to move uploaded file");
+                $error = error_get_last();
+                error_log("  - Error: " . ($error['message'] ?? 'Unknown'));
+                error_log("  - is_uploaded_file: " . (is_uploaded_file($file['tmp_name']) ? 'YES' : 'NO'));
+                error_log("  - File exists: " . (file_exists($file['tmp_name']) ? 'YES' : 'NO'));
+                
+                return $_POST['featured_image'] ?? '';
             }
-            
-        } catch (Exception $e) {
-            error_log("✗ EXCEPTION in image upload: " . $e->getMessage());
-            return '';
+        } else {
+            // Log upload error if any
+            if (isset($_FILES['featured_image_upload'])) {
+                $error = $_FILES['featured_image_upload']['error'];
+                if ($error !== UPLOAD_ERR_OK && $error !== UPLOAD_ERR_NO_FILE) {
+                    $errors = [
+                        UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize',
+                        UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE in form',
+                        UPLOAD_ERR_PARTIAL => 'File partially uploaded',
+                        UPLOAD_ERR_NO_FILE => 'No file uploaded',
+                        UPLOAD_ERR_NO_TMP_DIR => 'Missing temp directory',
+                        UPLOAD_ERR_CANT_WRITE => 'Failed to write to disk',
+                        UPLOAD_ERR_EXTENSION => 'PHP extension stopped upload'
+                    ];
+                    error_log("File upload error (" . $error . "): " . ($errors[$error] ?? 'Unknown'));
+                }
+            }
         }
+        
+        // 3. Keep existing image if no new upload
+        if (isset($_POST['featured_image']) && !empty($_POST['featured_image'])) {
+            error_log("Keeping existing image: " . $_POST['featured_image']);
+            return $_POST['featured_image'];
+        }
+        
+        error_log("No image uploaded");
+        return '';
     }
     
     /**
-     * Store new content (news OR event) - UPDATED WITH IMAGE UPLOAD AND TAGS FIX
+     * Store new content (news OR event) - UPDATED WITH UNIVERSAL IMAGE UPLOAD
      */
     public function store() {
         error_log("==========================================");
@@ -480,7 +539,7 @@ class AdminNewsController extends Controller {
             error_log("  $key: " . ($file['name'] ?? 'NO FILE'));
         }
         
-        error_log("=== ADMIN NEWS STORE METHOD START (WITH IMAGE UPLOAD) ===");
+        error_log("=== ADMIN NEWS STORE METHOD START (WITH UNIVERSAL IMAGE UPLOAD) ===");
         error_log("POST Data: " . json_encode($_POST, JSON_PRETTY_PRINT));
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -547,25 +606,9 @@ class AdminNewsController extends Controller {
                 $data['event_location'] = $_POST['event_location'] ?? '';
             }
             
-            // Handle image upload from base64
-            if (!empty($_POST['featured_image_data']) && !empty($_POST['featured_image_filename'])) {
-                error_log("Processing image upload...");
-                $imagePath = $this->handleImageUpload(
-                    $_POST['featured_image_data'],
-                    $_POST['featured_image_filename']
-                );
-                
-                if ($imagePath) {
-                    $data['featured_image'] = $imagePath;
-                    error_log("Image uploaded successfully: " . $imagePath);
-                } else {
-                    error_log("Image upload failed");
-                    $data['featured_image'] = '';
-                }
-            } else {
-                error_log("No image data received");
-                $data['featured_image'] = $_POST['featured_image'] ?? '';
-            }
+            // ✅ APPLIED UNIVERSAL IMAGE UPLOAD FIX
+            $imagePath = $this->handleImageUpload();
+            $data['featured_image'] = $imagePath;
             
             // Validation
             if (empty($data['title'])) {
@@ -615,7 +658,7 @@ class AdminNewsController extends Controller {
     }
     
     /**
-     * Update content (news OR event) - UPDATED WITH IMAGE UPLOAD AND TAGS FIX
+     * Update content (news OR event) - UPDATED WITH UNIVERSAL IMAGE UPLOAD
      */
     public function update($id) {
         error_log("=== UPDATE METHOD CALLED for ID: $id ===");
@@ -675,28 +718,9 @@ class AdminNewsController extends Controller {
                 $data['tags'] = json_encode([]);
             }
             
-            // Handle image upload from base64
-            if (!empty($_POST['featured_image_data']) && !empty($_POST['featured_image_filename'])) {
-                error_log("Processing image upload in update...");
-                $imagePath = $this->handleImageUpload(
-                    $_POST['featured_image_data'],
-                    $_POST['featured_image_filename']
-                );
-                
-                if ($imagePath) {
-                    $data['featured_image'] = $imagePath;
-                    error_log("Image uploaded successfully: " . $imagePath);
-                } else {
-                    error_log("Image upload failed in update");
-                    // Don't overwrite existing image if upload fails
-                    if (empty($data['featured_image'])) {
-                        $data['featured_image'] = $_POST['featured_image'] ?? '';
-                    }
-                }
-            } else {
-                // Keep existing image if no new upload
-                $data['featured_image'] = $_POST['featured_image'] ?? '';
-            }
+            // ✅ APPLIED UNIVERSAL IMAGE UPLOAD FIX
+            $imagePath = $this->handleImageUpload();
+            $data['featured_image'] = $imagePath;
             
             // Add event-specific fields
             if ($isEvent) {
@@ -1195,34 +1219,10 @@ class AdminNewsController extends Controller {
         echo "<p><strong>Content:</strong> <textarea name='content' rows='3'>Test content for image upload</textarea></p>";
         echo "<p><strong>Category:</strong> <input type='text' name='category' value='Test'></p>";
         echo "<p><strong>Tags:</strong> <input type='text' name='tags' value='nursing,education'></p>";
-        echo "<p><strong>Upload Image:</strong> <input type='file' id='testImage' accept='image/*'></p>";
-        echo "<button type='button' onclick='testImageUpload()'>Test Image Preview</button>";
+        echo "<p><strong>Upload Image:</strong> <input type='file' name='featured_image_upload' id='testImage' accept='image/*'></p>";
         echo "<div id='imagePreview' style='margin-top: 10px;'></div>";
         echo "<button type='submit'>Create Test Article</button>";
         echo "</form>";
-        
-        echo "<script>
-        function testImageUpload() {
-            const fileInput = document.getElementById('testImage');
-            if (fileInput.files.length === 0) {
-                alert('Please select an image first');
-                return;
-            }
-            
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                const preview = document.getElementById('imagePreview');
-                preview.innerHTML = '<h4>Preview:</h4>' +
-                                   '<img src=\"' + e.target.result + '\" style=\"max-width: 200px;\"><br>' +
-                                   '<p>File: ' + file.name + ' (' + Math.round(file.size/1024) + 'KB)</p>' +
-                                   '<p>Base64 length: ' + e.target.result.length + ' characters</p>';
-            };
-            
-            reader.readAsDataURL(file);
-        }
-        </script>";
         
         exit;
     }
