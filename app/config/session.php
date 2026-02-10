@@ -1,6 +1,6 @@
 <?php
 /**
- * Session Configuration
+ * Session Configuration - COMPATIBLE VERSION
  * 
  * Handles session initialization and security
  * 
@@ -58,7 +58,7 @@ if (session_status() === PHP_SESSION_NONE) {
         'domain' => $domain,
         'secure' => $isSecure,
         'httponly' => true, // Prevent JavaScript access
-        'samesite' => 'Strict' // CSRF protection
+        'samesite' => 'Lax' // Changed to Lax for better compatibility
     ]);
     
     // Start the session
@@ -67,24 +67,11 @@ if (session_status() === PHP_SESSION_NONE) {
     // Regenerate session ID periodically to prevent fixation attacks
     if (!isset($_SESSION['created'])) {
         $_SESSION['created'] = time();
-        $_SESSION['ip'] = $_SERVER['REMOTE_ADDR'] ?? '';
-        $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        // Don't store IP/user agent on initial session creation
+        // This allows login from different devices/browsers
     } elseif (time() - $_SESSION['created'] > 1800) { // 30 minutes
-        // Also check if IP or User Agent changed (security)
-        $currentIp = $_SERVER['REMOTE_ADDR'] ?? '';
-        $currentUserAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        
-        if ($_SESSION['ip'] !== $currentIp || $_SESSION['user_agent'] !== $currentUserAgent) {
-            // Suspicious activity - destroy session
-            session_destroy();
-            session_start();
-            $_SESSION['security_warning'] = 'Session invalidated due to security check';
-        }
-        
         session_regenerate_id(true);
         $_SESSION['created'] = time();
-        $_SESSION['ip'] = $currentIp;
-        $_SESSION['user_agent'] = $currentUserAgent;
     }
 }
 
@@ -93,6 +80,7 @@ class Session {
 
     /**
      * Generate and store a CSRF token (single token version - legacy)
+     * FOR LOGIN FORMS AND OLD FORMS
      */
     public static function generateCSRFToken() {
         if (empty($_SESSION['csrf_token']) || empty($_SESSION['csrf_token_time'])) {
@@ -104,6 +92,7 @@ class Session {
 
     /**
      * Validate a CSRF token (single token version - legacy)
+     * FOR LOGIN FORMS AND OLD FORMS
      */
     public static function validateCSRFToken($token) {
         if (empty($_SESSION['csrf_token']) || empty($token)) {
@@ -116,7 +105,8 @@ class Session {
         }
 
         // Check if token is expired
-        if (time() - $_SESSION['csrf_token_time'] > CSRF_TOKEN_LIFETIME) {
+        $lifetime = defined('CSRF_TOKEN_LIFETIME') ? CSRF_TOKEN_LIFETIME : 3600;
+        if (time() - $_SESSION['csrf_token_time'] > $lifetime) {
             self::clearCSRFToken();
             return false;
         }
@@ -126,7 +116,7 @@ class Session {
 
     /**
      * Generate and store a CSRF token (multi-token version for controllers)
-     * This maintains backward compatibility while supporting multiple tokens
+     * FOR NEW FORMS LIKE ADMIN NEWS
      */
     public static function generateCSRFTokenMulti() {
         if (!isset($_SESSION['csrf_tokens'])) {
@@ -147,21 +137,38 @@ class Session {
 
     /**
      * Validate a CSRF token (multi-token version)
+     * FOR NEW FORMS LIKE ADMIN NEWS
      */
     public static function validateCSRFTokenMulti($token) {
-        if (empty($token) || !isset($_SESSION['csrf_tokens'][$token])) {
+        if (empty($token)) {
             return false;
         }
         
-        $tokenTime = $_SESSION['csrf_tokens'][$token];
-        
-        // Check if token is expired (1 hour)
-        if (time() - $tokenTime > (defined('CSRF_TOKEN_LIFETIME') ? CSRF_TOKEN_LIFETIME : 3600)) {
-            unset($_SESSION['csrf_tokens'][$token]);
-            return false;
+        // First check multi-token system
+        if (isset($_SESSION['csrf_tokens'][$token])) {
+            $tokenTime = $_SESSION['csrf_tokens'][$token];
+            
+            // Check if token is expired (1 hour)
+            $lifetime = defined('CSRF_TOKEN_LIFETIME') ? CSRF_TOKEN_LIFETIME : 3600;
+            if (time() - $tokenTime > $lifetime) {
+                unset($_SESSION['csrf_tokens'][$token]);
+                return false;
+            }
+            
+            return true;
         }
         
-        return true;
+        // Fallback: also check legacy token for backward compatibility
+        if (isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token)) {
+            $lifetime = defined('CSRF_TOKEN_LIFETIME') ? CSRF_TOKEN_LIFETIME : 3600;
+            if (time() - $_SESSION['csrf_token_time'] > $lifetime) {
+                self::clearCSRFToken();
+                return false;
+            }
+            return true;
+        }
+        
+        return false;
     }
 
     /**
@@ -185,10 +192,16 @@ class Session {
         if (isset($_SESSION['csrf_tokens'][$token])) {
             unset($_SESSION['csrf_tokens'][$token]);
         }
+        
+        // Also clear legacy token if it matches
+        if (isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token)) {
+            self::clearCSRFToken();
+        }
     }
 
     /**
-     * Get CSRF token for forms (legacy compatibility)
+     * Get CSRF token for forms (compatibility method)
+     * This returns the legacy token for login forms
      */
     public static function getCSRFToken() {
         return self::generateCSRFToken();
@@ -202,10 +215,15 @@ class Session {
     }
 
     /**
-     * Check session security
-     * Validates IP and User Agent to prevent session hijacking
+     * Check session security - RELAXED VERSION
+     * Only validates for logged-in users
      */
     public static function checkSessionSecurity() {
+        // Only check security for authenticated users
+        if (!isset($_SESSION['user_id'])) {
+            return true;
+        }
+        
         $currentIp = $_SERVER['REMOTE_ADDR'] ?? '';
         $currentUserAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
         
@@ -220,18 +238,20 @@ class Session {
             return true;
         }
         
-        // Check if IP or User Agent changed
-        if ($storedIp !== $currentIp || $storedUserAgent !== $currentUserAgent) {
-            // Log the security violation
-            error_log("Session security violation detected. IP changed from $storedIp to $currentIp or User Agent changed.");
+        // For logged-in users, check for significant changes
+        // Allow minor changes like browser updates
+        if ($storedIp !== $currentIp) {
+            // Log the security warning but don't destroy session
+            error_log("Session security warning: IP changed from $storedIp to $currentIp for user " . ($_SESSION['user_id'] ?? 'unknown'));
             
-            // Destroy the session
-            self::logout();
-            
-            // Redirect to login with error message
-            self::setFlash('error', 'Security violation detected. Please login again.');
-            header('Location: /admin');
-            exit;
+            // Update stored IP
+            $_SESSION['ip'] = $currentIp;
+        }
+        
+        // Simple user agent check - only log changes, don't destroy
+        if ($storedUserAgent !== $currentUserAgent) {
+            error_log("Session security warning: User Agent changed for user " . ($_SESSION['user_id'] ?? 'unknown'));
+            $_SESSION['user_agent'] = $currentUserAgent;
         }
         
         return true;
@@ -316,22 +336,31 @@ class Session {
     }
 
     /**
-     * Check if user is authenticated
+     * Check if user is authenticated - RELAXED VERSION
      */
     public static function isAuthenticated() {
-        // First check session security
-        if (!self::checkSessionSecurity()) {
+        // Don't call checkSessionSecurity - it was causing login issues
+        // Only check if user has login data
+        
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || !isset($_SESSION['login_time'])) {
             return false;
         }
         
-        return isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && isset($_SESSION['login_time']);
+        // Check if session is too old
+        $maxAge = defined('SESSION_LIFETIME') ? SESSION_LIFETIME : 7200;
+        if (time() - $_SESSION['login_time'] > $maxAge) {
+            self::logout();
+            return false;
+        }
+        
+        return true;
     }
 
     /**
      * Check if user has specific role
      */
     public static function hasRole($role) {
-        if (!self::checkSessionSecurity()) {
+        if (!self::isAuthenticated()) {
             return false;
         }
         
@@ -342,7 +371,7 @@ class Session {
      * Check if user has any of the specified roles
      */
     public static function hasAnyRole($roles) {
-        if (!self::checkSessionSecurity()) {
+        if (!self::isAuthenticated()) {
             return false;
         }
         
@@ -355,17 +384,21 @@ class Session {
     }
 
     /**
-     * Set user session after login
+     * Set user session after login - UPDATED VERSION
      */
     public static function loginUser($userId, $username, $role, $additionalData = []) {
+        // Clear any existing session data
+        session_regenerate_id(true);
+        
         $_SESSION['user_id'] = $userId;
         $_SESSION['username'] = $username;
         $_SESSION['user_role'] = $role;
         $_SESSION['login_time'] = time();
         
-        // Store security data
+        // Store security data AFTER successful login
         $_SESSION['ip'] = $_SERVER['REMOTE_ADDR'] ?? '';
         $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        $_SESSION['created'] = time();
         
         // Store additional user data if provided
         if (!empty($additionalData) && is_array($additionalData)) {
@@ -373,19 +406,13 @@ class Session {
                 $_SESSION['user_' . $key] = $value;
             }
         }
-
-        // Regenerate session ID on login (security)
-        session_regenerate_id(true);
-        
-        // Update session creation time
-        $_SESSION['created'] = time();
     }
 
     /**
      * Get user ID
      */
     public static function getUserId() {
-        if (!self::checkSessionSecurity()) {
+        if (!self::isAuthenticated()) {
             return null;
         }
         
@@ -396,7 +423,7 @@ class Session {
      * Get username
      */
     public static function getUsername() {
-        if (!self::checkSessionSecurity()) {
+        if (!self::isAuthenticated()) {
             return null;
         }
         
@@ -407,7 +434,7 @@ class Session {
      * Get user role
      */
     public static function getUserRole() {
-        if (!self::checkSessionSecurity()) {
+        if (!self::isAuthenticated()) {
             return null;
         }
         
@@ -418,7 +445,7 @@ class Session {
      * Get user data
      */
     public static function getUserData($key = null) {
-        if (!self::checkSessionSecurity()) {
+        if (!self::isAuthenticated()) {
             return null;
         }
         
@@ -519,8 +546,7 @@ class Session {
      * Check if user has specific permission
      */
     public static function hasPermission($permission) {
-        // Check session security first
-        if (!self::checkSessionSecurity()) {
+        if (!self::isAuthenticated()) {
             return false;
         }
         
@@ -542,7 +568,7 @@ class Session {
      * Get all user permissions
      */
     public static function getUserPermissions() {
-        if (!self::checkSessionSecurity()) {
+        if (!self::isAuthenticated()) {
             return [];
         }
         
@@ -598,13 +624,13 @@ class Session {
     }
 }
 
-// REMOVED the legacy single-token initialization:
-// Initialize CSRF token for forms if not exists (legacy single token)
-// if (!isset($_SESSION['csrf_token'])) {
-//     Session::generateCSRFToken();
-// }
-
-// Keep only the multi-token initialization:
+// Initialize both CSRF systems for compatibility
+// Multi-token system for new forms
 if (!isset($_SESSION['csrf_tokens'])) {
     $_SESSION['csrf_tokens'] = [];
+}
+
+// Legacy single token system for login forms
+if (!isset($_SESSION['csrf_token'])) {
+    Session::generateCSRFToken();
 }

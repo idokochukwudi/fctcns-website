@@ -36,3 +36,8 @@ public/assets/uploads/
 
 # Cache
 .cache/
+# SonarQube
+.sonar/
+.scannerwork/
+*.bak
+sonar-scanner.properties

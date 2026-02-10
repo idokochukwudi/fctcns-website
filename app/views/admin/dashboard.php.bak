@@ -1204,9 +1204,9 @@ try {
                     <?php endif; ?>
                     
                     <?php if ($userRole === 'admin'): ?>
-                    <!-- User Management Link - FIXED: Added onclick handler to prevent JavaScript interference -->
+                    <!-- User Management Link -->
                     <li class="nav-item">
-                        <a href="<?php echo BASE_URL; ?>/admin/users" class="nav-link" onclick="handleUserManagementClick(event)">
+                        <a href="<?php echo BASE_URL; ?>/admin/users" class="nav-link" onclick="return handleUserManagementClick(event)">
                             <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
                             </svg>
@@ -1341,22 +1341,6 @@ try {
         
         <!-- Content -->
         <div class="admin-content">
-            <!-- Test Section - Added for debugging -->
-            <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 2px solid var(--admin-primary);">
-                <h3 style="color: var(--admin-primary); margin-bottom: 0.5rem;">Debug Links:</h3>
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                    <a href="<?php echo BASE_URL; ?>/admin/users" style="padding: 0.5rem 1rem; background: var(--admin-primary); color: white; text-decoration: none; border-radius: 4px;">
-                        Direct User Management Link
-                    </a>
-                    <a href="<?php echo BASE_URL; ?>/admin/users-test2" style="padding: 0.5rem 1rem; background: var(--admin-warning); color: white; text-decoration: none; border-radius: 4px;">
-                        Test Controller
-                    </a>
-                    <a href="<?php echo BASE_URL; ?>/admin/users-test3" style="padding: 0.5rem 1rem; background: var(--admin-info); color: white; text-decoration: none; border-radius: 4px;">
-                        Test Route Matching
-                    </a>
-                </div>
-            </div>
-            
             <!-- Stats Grid -->
             <div class="stats-grid">
                 <?php if ($userRole !== 'nominal_roll_user'): // Hide non-nominal roll stats ?>
@@ -2003,10 +1987,8 @@ try {
             }, 5 * 60 * 1000);
         }
         
-        // FIXED: Handle User Management link click
+        // Handle User Management link click
         function handleUserManagementClick(event) {
-            console.log('User Management link clicked');
-            
             // Prevent any default handling that might be interfering
             event.preventDefault();
             event.stopPropagation();
@@ -2016,58 +1998,11 @@ try {
             
             // Navigate to the URL
             if (href) {
-                console.log('Navigating to:', href);
                 window.location.href = href;
             }
             
             return false;
         }
-        
-        // FIXED: Navigation handler for all sidebar links
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Dashboard JavaScript loaded');
-            
-            // Add click handlers to all sidebar links
-            const sidebarLinks = document.querySelectorAll('.sidebar-nav .nav-link');
-            sidebarLinks.forEach(link => {
-                // Remove any existing onclick handlers that might interfere
-                link.onclick = null;
-                
-                // Add our own handler that ensures navigation
-                link.addEventListener('click', function(e) {
-                    console.log('Sidebar link clicked:', this.href);
-                    
-                    // Check if this is a User Management link
-                    if (this.href.includes('/admin/users') && !this.href.includes('/logout')) {
-                        console.log('User Management link detected, using special handler');
-                        handleUserManagementClick(e);
-                        return false;
-                    }
-                    
-                    // For other links, just let them work normally
-                    console.log('Normal navigation for:', this.href);
-                    return true;
-                });
-            });
-            
-            // FIXED: Removed the problematic loading state JavaScript
-            // This was preventing navigation by setting pointer-events: none
-            // Comment out or remove this entire block:
-            /*
-            document.querySelectorAll('a.action-btn').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    const originalText = this.querySelector('h4').textContent;
-                    this.querySelector('h4').textContent = 'Loading...';
-                    this.style.pointerEvents = 'none';
-                    
-                    setTimeout(() => {
-                        this.querySelector('h4').textContent = originalText;
-                        this.style.pointerEvents = 'auto';
-                    }, 2000);
-                });
-            });
-            */
-        });
         
         // Fixed Notification System
         let notificationCount = 0;
@@ -2374,19 +2309,6 @@ try {
             }
         `;
         document.head.appendChild(style);
-        
-        // Debug: Log all link clicks
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Debug: Dashboard loaded successfully');
-            
-            // Log all link clicks to console for debugging
-            document.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    console.log('Link clicked:', this.href);
-                    console.log('Event target:', e.target);
-                });
-            });
-        });
     </script>
 </body>
 </html>

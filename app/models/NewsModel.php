@@ -1,7 +1,7 @@
 <?php
 /**
- * News Model
- * Handles news data operations for FCT College of Nursing Sciences
+ * News Model - COMPLETE FIXED VERSION WITH IMAGE HANDLING
+ * All methods working correctly - EVENTS NOW INSERT INTO NEWS TABLE
  */
 class NewsModel {
     private $db;
@@ -16,65 +16,1133 @@ class NewsModel {
         }
     }
     
-    // ============================================
-    // ADMIN METHODS
-    // ============================================
+    /**
+     * Get database connection (public getter)
+     */
+    public function getDb() {
+        return $this->db;
+    }
+    
+    // === IMAGE HANDLING METHODS ===
     
     /**
-     * Get all news with optional filters, limit, and offset
+     * Save uploaded image from base64 data - FIXED VERSION
+     * ✅ APPLIED FIX: Use getProjectRootPath() for correct directory
      */
-    public function getAll($filters = [], $limit = 20, $offset = 0) {
-        $whereClauses = [];
-        $params = [];
+    public function saveImageFromBase64($base64Data, $filename) {
+        if (empty($base64Data) || empty($filename)) {
+            error_log("No base64 data or filename provided for image");
+            return '';
+        }
         
-        // Build WHERE clause based on filters
-        if (!empty($filters)) {
-            if (isset($filters['status'])) {
+        try {
+            error_log("Starting image save from base64. Filename: $filename");
+            
+            // Remove data:image/xxx;base64, prefix if present
+            $base64Data = preg_replace('/^data:image\/\w+;base64,/', '', $base64Data);
+            
+            // Decode base64
+            $imageData = base64_decode($base64Data);
+            
+            if (!$imageData) {
+                error_log("Failed to decode base64 image");
+                return '';
+            }
+            
+            // ✅ APPLIED FIX: Use getProjectRootPath() for correct directory
+            $uploadDir = getProjectRootPath() . '/public/uploads/news/';
+            error_log("Upload directory: $uploadDir");
+            
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+                error_log("Created upload directory: $uploadDir");
+            }
+            
+            // Generate unique filename
+            $extension = pathinfo($filename, PATHINFO_EXTENSION);
+            if (empty($extension)) {
+                $extension = 'jpg'; // Default extension
+            }
+            $uniqueName = uniqid() . '_' . time() . '.' . $extension;
+            $filePath = $uploadDir . $uniqueName;
+            
+            error_log("Saving image to: $filePath");
+            
+            // Save file
+            if (file_put_contents($filePath, $imageData)) {
+                $imageUrl = '/uploads/news/' . $uniqueName;
+                error_log("✅ Image saved successfully to correct location: $imageUrl");
+                return $imageUrl;
+            } else {
+                error_log("Failed to save image to: $filePath");
+                return '';
+            }
+            
+        } catch (Exception $e) {
+            error_log("Image upload error: " . $e->getMessage());
+            return '';
+        }
+    }
+    
+    /**
+     * Process and save uploaded file - FIXED VERSION
+     * ✅ APPLIED FIX: Use getProjectRootPath() for correct directory
+     */
+    public function saveUploadedFile($file, $type = 'news') {
+        try {
+            if (empty($file['name'])) {
+                error_log("No file uploaded");
+                return '';
+            }
+            
+            error_log("Processing uploaded file: " . $file['name']);
+            
+            // Check for errors
+            if ($file['error'] !== UPLOAD_ERR_OK) {
+                error_log("File upload error: " . $file['error']);
+                return '';
+            }
+            
+            // Check file size (max 5MB)
+            $maxSize = 5 * 1024 * 1024; // 5MB in bytes
+            if ($file['size'] > $maxSize) {
+                error_log("File too large: " . $file['size'] . " bytes");
+                return '';
+            }
+            
+            // Check file type
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+            
+            if (!in_array($mimeType, $allowedTypes)) {
+                error_log("Invalid file type: $mimeType");
+                return '';
+            }
+            
+            // ✅ APPLIED FIX: Use getProjectRootPath() for correct directory
+            $uploadDir = getProjectRootPath() . "/public/uploads/{$type}/";
+            error_log("Upload directory: $uploadDir");
+            
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+                error_log("Created upload directory: $uploadDir");
+            }
+            
+            // Generate unique filename
+            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+            if (empty($extension)) {
+                // Determine extension from mime type
+                $extensionMap = [
+                    'image/jpeg' => 'jpg',
+                    'image/jpg' => 'jpg',
+                    'image/png' => 'png',
+                    'image/gif' => 'gif',
+                    'image/webp' => 'webp'
+                ];
+                $extension = $extensionMap[$mimeType] ?? 'jpg';
+            }
+            
+            $uniqueName = uniqid() . '_' . time() . '.' . $extension;
+            $filePath = $uploadDir . $uniqueName;
+            
+            // Move uploaded file
+            if (move_uploaded_file($file['tmp_name'], $filePath)) {
+                $imageUrl = "/uploads/{$type}/" . $uniqueName;
+                error_log("✅ File uploaded successfully to correct location: $imageUrl");
+                return $imageUrl;
+            } else {
+                error_log("Failed to move uploaded file to: $filePath");
+                return '';
+            }
+            
+        } catch (Exception $e) {
+            error_log("saveUploadedFile error: " . $e->getMessage());
+            return '';
+        }
+    }
+    
+    // === CRUD METHODS ===
+    
+    /**
+     * Create content in news table (handles both news and events) - UPDATED FIXED VERSION
+     * This is now the ONLY method that inserts into the database
+     */
+    public function createNews($data) {
+        try {
+            error_log("=== NewsModel::createNews() called ===");
+            error_log("Type: " . ($data['type'] ?? 'news'));
+            error_log("Data received: " . json_encode($data, JSON_PRETTY_PRINT));
+            
+            // Handle image upload if present as base64
+            if (!empty($data['featured_image_data']) && !empty($data['featured_image_filename'])) {
+                $imagePath = $this->saveImageFromBase64(
+                    $data['featured_image_data'],
+                    $data['featured_image_filename']
+                );
+                $data['featured_image'] = $imagePath;
+                error_log("Base64 Image saved: " . ($imagePath ?: 'Failed'));
+            }
+            
+            // Handle image upload from file input
+            if (!empty($_FILES['featured_image_upload']['name']) && empty($data['featured_image'])) {
+                $imagePath = $this->saveUploadedFile($_FILES['featured_image_upload']);
+                $data['featured_image'] = $imagePath;
+                error_log("Uploaded Image saved: " . ($imagePath ?: 'Failed'));
+            }
+            
+            // Build SQL with ALL fields including type
+            $sql = "INSERT INTO news (
+                title, slug, excerpt, content, author_id, category, type,
+                tags, featured_image, is_published, is_featured, is_breaking,
+                meta_title, meta_description, meta_keywords,
+                event_date, event_end_date, event_time, event_location,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            
+            error_log("SQL for NEWS table: " . $sql);
+            
+            $stmt = $this->db->prepare($sql);
+            
+            // Prepare values array with correct order and count
+            $values = [
+                $data['title'] ?? '',
+                $data['slug'] ?? '',
+                $data['excerpt'] ?? '',
+                $data['content'] ?? '',
+                $data['author_id'] ?? 1,
+                $data['category'] ?? '',
+                $data['type'] ?? 'news',  // CRITICAL: Type field is included!
+                $data['tags'] ?? '',
+                $data['featured_image'] ?? '',
+                $data['is_published'] ?? 1,
+                $data['is_featured'] ?? 0,
+                $data['is_breaking'] ?? 0,
+                $data['meta_title'] ?? '',
+                $data['meta_description'] ?? '',
+                $data['meta_keywords'] ?? '',
+                $data['event_date'] ?? null,
+                $data['event_end_date'] ?? null,
+                $data['event_time'] ?? null,
+                $data['event_location'] ?? ''
+            ];
+            
+            error_log("Values to insert into NEWS table: " . json_encode($values));
+            
+            $success = $stmt->execute($values);
+            
+            if ($success) {
+                $id = $this->db->lastInsertId();
+                error_log("✓ SUCCESS: Created content in news table with ID: $id");
+                error_log("  Type: " . ($data['type'] ?? 'news'));
+                error_log("  Title: " . ($data['title'] ?? ''));
+                return $id;
+            } else {
+                $errorInfo = $stmt->errorInfo();
+                error_log("✗ FAILED to create content in NEWS table:");
+                error_log("  - SQL State: " . $errorInfo[0]);
+                error_log("  - Error Code: " . $errorInfo[1]);
+                error_log("  - Error Message: " . $errorInfo[2]);
+                error_log("  - SQL: " . $sql);
+                error_log("  - Values: " . json_encode($values));
+                return false;
+            }
+            
+        } catch (Exception $e) {
+            error_log("NewsModel::createNews error: " . $e->getMessage());
+            error_log("Error trace: " . $e->getTraceAsString());
+            return false;
+        }
+    }
+    
+    /**
+     * Create event in NEWS table (with type='event') - UPDATED FIXED VERSION
+     * Now inserts into the news table instead of events table
+     */
+    public function createEvent($data) {
+        try {
+            error_log("=== NewsModel::createEvent() called ===");
+            error_log("Data: " . print_r($data, true));
+            
+            // Handle image upload if present as base64
+            if (!empty($data['featured_image_data']) && !empty($data['featured_image_filename'])) {
+                $imagePath = $this->saveImageFromBase64(
+                    $data['featured_image_data'],
+                    $data['featured_image_filename']
+                );
+                $data['featured_image'] = $imagePath;
+                error_log("Base64 Image saved: " . ($imagePath ?: 'Failed'));
+            }
+            
+            // Handle image upload from file input
+            if (!empty($_FILES['featured_image_upload']['name']) && empty($data['featured_image'])) {
+                $imagePath = $this->saveUploadedFile($_FILES['featured_image_upload']);
+                $data['featured_image'] = $imagePath;
+                error_log("Uploaded Image saved: " . ($imagePath ?: 'Failed'));
+            }
+            
+            // Build SQL for NEWS table with type='event'
+            $sql = "INSERT INTO news (
+                title, slug, excerpt, content, author_id, category, type,
+                tags, featured_image, is_published, is_featured, is_breaking,
+                meta_title, meta_description, meta_keywords,
+                event_date, event_end_date, event_time, event_location,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 'event', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            
+            error_log("Event SQL for NEWS table: " . $sql);
+            
+            $stmt = $this->db->prepare($sql);
+            
+            $values = [
+                $data['title'],
+                $data['slug'],
+                $data['excerpt'] ?? '',
+                $data['content'],
+                $data['author_id'] ?? 1,
+                $data['category'] ?? '',
+                $data['tags'] ?? '',
+                $data['featured_image'] ?? '',
+                $data['is_published'] ?? 1,
+                $data['is_featured'] ?? 0,
+                $data['is_breaking'] ?? 0,
+                $data['meta_title'] ?? '',
+                $data['meta_description'] ?? '',
+                $data['meta_keywords'] ?? '',
+                $data['event_date'],
+                $data['event_end_date'] ?? null,
+                $data['event_time'] ?? null,
+                $data['event_location'] ?? ''
+            ];
+            
+            error_log("Event values for NEWS table: " . json_encode($values));
+            
+            $success = $stmt->execute($values);
+            
+            if ($success) {
+                $id = $this->db->lastInsertId();
+                error_log("Successfully created event in NEWS table with ID: $id");
+                return $id;
+            } else {
+                $errorInfo = $stmt->errorInfo();
+                error_log("Failed to create event. SQL Error: " . $errorInfo[2]);
+                return false;
+            }
+            
+        } catch (Exception $e) {
+            error_log("NewsModel::createEvent error: " . $e->getMessage());
+            error_log("Error trace: " . $e->getTraceAsString());
+            return false;
+        }
+    }
+    
+    public function create($data) {
+        error_log("==========================================");
+        error_log("=== NewsModel::create() START ===");
+        error_log("Data type: " . ($data['type'] ?? 'unknown'));
+        error_log("Data received: " . json_encode($data, JSON_PRETTY_PRINT));
+        
+        try {
+            $type = $data['type'] ?? 'news';
+            
+            if ($type === 'event') {
+                error_log("Calling createEvent()");
+                return $this->createEvent($data);
+            } else {
+                error_log("Calling createNews()");
+                return $this->createNews($data);
+            }
+            
+        } catch (Exception $e) {
+            error_log("✗✗✗ NewsModel::create() ERROR: " . $e->getMessage());
+            error_log("Error trace: " . $e->getTraceAsString());
+            return false;
+        }
+    }
+    
+    // === FILTER METHODS FOR ADMIN ===
+    
+    /**
+     * Get all content from news table with filters (for admin)
+     */
+    public function getAllWithFilters($filters = [], $limit = 20, $offset = 0) {
+        error_log("=== NewsModel getAllWithFilters CALLED ===");
+        error_log("Filters: " . json_encode($filters));
+        error_log("Limit: $limit, Offset: $offset");
+        
+        try {
+            // Start with base WHERE clause
+            $where = ['1=1'];
+            $params = [];
+            
+            // Build WHERE clause based on filters
+            if (!empty($filters['status'])) {
                 if ($filters['status'] === 'published') {
-                    $whereClauses[] = "is_published = 1";
+                    $where[] = 'n.is_published = 1';
                 } elseif ($filters['status'] === 'draft') {
-                    $whereClauses[] = "is_published = 0";
-                } elseif ($filters['status'] === 'featured') {
-                    $whereClauses[] = "is_featured = 1";
+                    $where[] = 'n.is_published = 0';
                 }
             }
             
-            if (isset($filters['category']) && $filters['category']) {
-                $whereClauses[] = "category = ?";
+            if (!empty($filters['type'])) {
+                $where[] = 'n.type = ?';
+                $params[] = $filters['type'];
+            }
+            
+            if (!empty($filters['category'])) {
+                $where[] = 'n.category = ?';
                 $params[] = $filters['category'];
             }
             
-            if (isset($filters['search']) && $filters['search']) {
-                $whereClauses[] = "(title LIKE ? OR content LIKE ? OR excerpt LIKE ?)";
-                $searchTerm = '%' . $filters['search'] . '%';
-                $params[] = $searchTerm;
-                $params[] = $searchTerm;
-                $params[] = $searchTerm;
+            if (!empty($filters['search'])) {
+                $where[] = '(n.title LIKE ? OR n.excerpt LIKE ? OR n.content LIKE ?)';
+                $search = '%' . $filters['search'] . '%';
+                $params[] = $search;
+                $params[] = $search;
+                $params[] = $search;
             }
             
-            if (isset($filters['author_id']) && $filters['author_id']) {
-                $whereClauses[] = "author_id = ?";
-                $params[] = $filters['author_id'];
-            }
-            
-            if (isset($filters['date_from']) && $filters['date_from']) {
-                $whereClauses[] = "DATE(created_at) >= ?";
+            if (!empty($filters['date_from'])) {
+                $where[] = 'DATE(n.created_at) >= ?';
                 $params[] = $filters['date_from'];
             }
             
-            if (isset($filters['date_to']) && $filters['date_to']) {
-                $whereClauses[] = "DATE(created_at) <= ?";
+            if (!empty($filters['date_to'])) {
+                $where[] = 'DATE(n.created_at) <= ?';
                 $params[] = $filters['date_to'];
+            }
+            
+            $whereClause = implode(' AND ', $where);
+            error_log("WHERE clause: " . $whereClause);
+            
+            // Build the query
+            $sql = "SELECT 
+                        n.id,
+                        n.title,
+                        n.slug,
+                        n.excerpt,
+                        n.category,
+                        n.type,
+                        n.featured_image,
+                        n.is_published,
+                        n.is_featured,
+                        n.is_breaking,
+                        COALESCE(n.views_count, 0) as views_count,
+                        n.created_at,
+                        n.event_date,
+                        n.event_time,
+                        n.event_location,
+                        COALESCE(u.username, 'System') as author_name
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
+                    WHERE {$whereClause} 
+                    ORDER BY n.created_at DESC 
+                    LIMIT ? OFFSET ?";
+            
+            $params[] = $limit;
+            $params[] = $offset;
+            
+            error_log("SQL: " . $sql);
+            error_log("Params count: " . count($params));
+            
+            $stmt = $this->db->prepare($sql);
+            
+            // Bind parameters with correct types
+            foreach ($params as $index => $param) {
+                $paramType = is_int($param) ? PDO::PARAM_INT : PDO::PARAM_STR;
+                $stmt->bindValue($index + 1, $param, $paramType);
+            }
+            
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            error_log("Model returned " . count($results) . " results");
+            
+            return $results;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getAllWithFilters error: " . $e->getMessage());
+            error_log("Error trace: " . $e->getTraceAsString());
+            return [];
+        }
+    }
+    
+    /**
+     * Count all content with filters (for admin)
+     */
+    public function countAllWithFilters($filters = []) {
+        error_log("=== NewsModel countAllWithFilters CALLED ===");
+        error_log("Filters: " . json_encode($filters));
+        
+        try {
+            $where = ['1=1'];
+            $params = [];
+            
+            if (!empty($filters['status'])) {
+                if ($filters['status'] === 'published') {
+                    $where[] = 'is_published = 1';
+                } elseif ($filters['status'] === 'draft') {
+                    $where[] = 'is_published = 0';
+                }
+            }
+            
+            if (!empty($filters['type'])) {
+                $where[] = 'type = ?';
+                $params[] = $filters['type'];
+            }
+            
+            if (!empty($filters['category'])) {
+                $where[] = 'category = ?';
+                $params[] = $filters['category'];
+            }
+            
+            if (!empty($filters['search'])) {
+                $where[] = '(title LIKE ? OR excerpt LIKE ? OR content LIKE ?)';
+                $search = '%' . $filters['search'] . '%';
+                $params[] = $search;
+                $params[] = $search;
+                $params[] = $search;
+            }
+            
+            if (!empty($filters['date_from'])) {
+                $where[] = 'DATE(created_at) >= ?';
+                $params[] = $filters['date_from'];
+            }
+            
+            if (!empty($filters['date_to'])) {
+                $where[] = 'DATE(created_at) <= ?';
+                $params[] = $filters['date_to'];
+            }
+            
+            $whereClause = implode(' AND ', $where);
+            
+            $sql = "SELECT COUNT(*) as total FROM news WHERE {$whereClause}";
+            error_log("Count SQL: " . $sql);
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetch();
+            
+            $total = $result['total'] ?? 0;
+            error_log("Count result: " . $total);
+            
+            return $total;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel countAllWithFilters error: " . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    // === EXISTING METHODS (keeping all of them) ===
+    
+    /**
+     * Get published news only (for public display) - FIXED VERSION
+     * DEBUGGED: The issue was with integer casting and parameter binding
+     */
+    public function getPublishedNews($limit = 10, $offset = 0, $category = '') {
+        try {
+            error_log("=== NewsModel getPublishedNews CALLED ===");
+            error_log("Limit: $limit, Offset: $offset, Category: '$category'");
+            
+            if ($category) {
+                $sql = "SELECT 
+                    id,
+                    title,
+                    slug,
+                    excerpt,
+                    content,
+                    category,
+                    type,
+                    featured_image,
+                    is_published,
+                    is_featured,
+                    is_breaking,
+                    COALESCE(views_count, 0) as views_count,
+                    author_id,
+                    created_at,
+                    'news' as content_type
+                FROM news 
+                WHERE is_published = 1 AND category = ? 
+                ORDER BY created_at DESC 
+                LIMIT ? OFFSET ?";
+                
+                error_log("SQL with category: " . $sql);
+                
+                $stmt = $this->db->prepare($sql);
+                // IMPORTANT: Bind parameters correctly - don't cast to int here
+                $stmt->bindParam(1, $category, PDO::PARAM_STR);
+                $stmt->bindParam(2, $limit, PDO::PARAM_INT);
+                $stmt->bindParam(3, $offset, PDO::PARAM_INT);
+                $stmt->execute();
+            } else {
+                $sql = "SELECT 
+                    id,
+                    title,
+                    slug,
+                    excerpt,
+                    content,
+                    category,
+                    type,
+                    featured_image,
+                    is_published,
+                    is_featured,
+                    is_breaking,
+                    COALESCE(views_count, 0) as views_count,
+                    author_id,
+                    created_at,
+                    'news' as content_type
+                FROM news 
+                WHERE is_published = 1 
+                ORDER BY created_at DESC 
+                LIMIT ? OFFSET ?";
+                
+                error_log("SQL without category: " . $sql);
+                
+                $stmt = $this->db->prepare($sql);
+                // Bind parameters correctly
+                $stmt->bindParam(1, $limit, PDO::PARAM_INT);
+                $stmt->bindParam(2, $offset, PDO::PARAM_INT);
+                $stmt->execute();
+            }
+            
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("getPublishedNews returned: " . count($results) . " articles");
+            
+            if (count($results) > 0) {
+                error_log("First article: " . json_encode($results[0]));
+            }
+            
+            return $results;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getPublishedNews error: " . $e->getMessage());
+            error_log("Error trace: " . $e->getTraceAsString());
+            return [];
+        }
+    }
+    
+    /**
+     * ALTERNATIVE SIMPLER METHOD - Use this if above still has issues
+     */
+    public function getPublishedNewsSimple($limit = 10, $offset = 0, $category = '') {
+        try {
+            error_log("=== getPublishedNewsSimple CALLED ===");
+            
+            // Build query
+            $where = "WHERE is_published = 1";
+            $params = [];
+            
+            if ($category) {
+                $where .= " AND category = ?";
+                $params[] = $category;
+            }
+            
+            $sql = "SELECT 
+                    id,
+                    title,
+                    slug,
+                    excerpt,
+                    content,
+                    category,
+                    type,
+                    featured_image,
+                    is_published,
+                    is_featured,
+                    is_breaking,
+                    COALESCE(views_count, 0) as views_count,
+                    author_id,
+                    created_at
+                FROM news 
+                {$where}
+                ORDER BY created_at DESC 
+                LIMIT ? OFFSET ?";
+            
+            $params[] = (int)$limit;
+            $params[] = (int)$offset;
+            
+            error_log("Simple SQL: " . $sql);
+            error_log("Params: " . json_encode($params));
+            
+            $stmt = $this->db->prepare($sql);
+            
+            // Bind parameters one by one
+            foreach ($params as $key => $value) {
+                $paramType = is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR;
+                $stmt->bindValue($key + 1, $value, $paramType);
+            }
+            
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            error_log("getPublishedNewsSimple returned: " . count($results) . " articles");
+            return $results;
+            
+        } catch (Exception $e) {
+            error_log("getPublishedNewsSimple error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * EVEN SIMPLER - Direct query method
+     */
+    public function getPublishedNewsDirect($limit = 10, $offset = 0, $category = '') {
+        try {
+            error_log("=== getPublishedNewsDirect CALLED ===");
+            
+            if ($category) {
+                $sql = "SELECT * FROM news 
+                        WHERE is_published = 1 AND category = '{$category}' 
+                        ORDER BY created_at DESC 
+                        LIMIT {$limit} OFFSET {$offset}";
+            } else {
+                $sql = "SELECT * FROM news 
+                        WHERE is_published = 1 
+                        ORDER BY created_at DESC 
+                        LIMIT {$limit} OFFSET {$offset}";
+            }
+            
+            error_log("Direct SQL: " . $sql);
+            
+            $stmt = $this->db->query($sql);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            error_log("getPublishedNewsDirect returned: " . count($results) . " articles");
+            return $results;
+            
+        } catch (Exception $e) {
+            error_log("getPublishedNewsDirect error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Count published news with filters - FIXED
+     */
+    public function countPublishedNews($category = '') {
+        try {
+            error_log("=== countPublishedNews CALLED ===");
+            
+            if ($category) {
+                $sql = "SELECT COUNT(*) as total FROM news WHERE is_published = 1 AND category = ?";
+                error_log("Count SQL with category: " . $sql);
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$category]);
+            } else {
+                $sql = "SELECT COUNT(*) as total FROM news WHERE is_published = 1";
+                error_log("Count SQL: " . $sql);
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute();
+            }
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $total = $result['total'] ?? 0;
+            error_log("countPublishedNews result: " . $total);
+            
+            return $total;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel countPublishedNews error: " . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    /**
+     * Get featured news - FIXED
+     */
+    public function getFeaturedNews($limit = 3) {
+        try {
+            error_log("=== getFeaturedNews CALLED ===");
+            
+            $sql = "SELECT 
+                id,
+                title,
+                slug,
+                excerpt,
+                content,
+                category,
+                featured_image,
+                is_featured,
+                COALESCE(views_count, 0) as views_count,
+                created_at
+            FROM news 
+            WHERE is_published = 1 AND is_featured = 1 
+            ORDER BY created_at DESC 
+            LIMIT ?";
+            
+            error_log("Featured SQL: " . $sql);
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("getFeaturedNews returned: " . count($results) . " articles");
+            
+            return $results;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getFeaturedNews error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get popular news - FIXED
+     */
+    public function getPopularNews($limit = 5) {
+        try {
+            error_log("=== getPopularNews CALLED ===");
+            
+            $sql = "SELECT 
+                id,
+                title,
+                slug,
+                excerpt,
+                category,
+                featured_image,
+                COALESCE(views_count, 0) as views_count,
+                created_at
+            FROM news 
+            WHERE is_published = 1 
+            ORDER BY views_count DESC, created_at DESC 
+            LIMIT ?";
+            
+            error_log("Popular SQL: " . $sql);
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("getPopularNews returned: " . count($results) . " articles");
+            
+            return $results;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getPopularNews error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get news categories with counts - FIXED
+     */
+    public function getCategoriesWithCounts() {
+        try {
+            error_log("=== getCategoriesWithCounts CALLED ===");
+            
+            $sql = "SELECT category, COUNT(*) as count 
+                    FROM news 
+                    WHERE is_published = 1 AND category IS NOT NULL AND category != ''
+                    GROUP BY category 
+                    ORDER BY category";
+            
+            error_log("Categories SQL: " . $sql);
+            
+            $stmt = $this->db->query($sql);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $categories = [];
+            foreach ($results as $result) {
+                $categories[$result['category']] = $result['count'];
+            }
+            
+            error_log("Found categories: " . json_encode($categories));
+            
+            return $categories;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getCategoriesWithCounts error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get archive months - FIXED
+     */
+    public function getArchiveMonths() {
+        try {
+            error_log("=== getArchiveMonths CALLED ===");
+            
+            $sql = "SELECT 
+                        DATE_FORMAT(created_at, '%Y-%m') as month,
+                        DATE_FORMAT(created_at, '%M %Y') as month_name,
+                        COUNT(*) as count
+                    FROM news 
+                    WHERE is_published = 1
+                    GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+                    ORDER BY month DESC
+                    LIMIT 12";
+            
+            error_log("Archive SQL: " . $sql);
+            
+            $stmt = $this->db->query($sql);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            error_log("Archive months found: " . count($results));
+            
+            return $results;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getArchiveMonths error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get news by slug
+     */
+    public function getBySlug($slug) {
+        try {
+            $sql = "SELECT n.*, u.username as author_name 
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
+                    WHERE n.slug = ? AND n.is_published = 1";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$slug]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getBySlug error: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Get related news
+     */
+    public function getRelatedNews($newsId, $category, $limit = 3) {
+        try {
+            if (empty($category)) {
+                return [];
+            }
+            
+            $sql = "SELECT n.* FROM news n 
+                    WHERE n.is_published = 1 AND n.category = ? AND n.id != ? 
+                    ORDER BY n.created_at DESC 
+                    LIMIT ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$category, $newsId, (int)$limit]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getRelatedNews error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get news by archive month
+     */
+    public function getByArchiveMonth($year, $month, $limit = 10, $offset = 0) {
+        try {
+            $sql = "SELECT n.* FROM news n 
+                    WHERE n.is_published = 1 
+                    AND YEAR(n.created_at) = ? 
+                    AND MONTH(n.created_at) = ?
+                    ORDER BY n.created_at DESC 
+                    LIMIT ? OFFSET ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$year, $month, $limit, $offset]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getByArchiveMonth error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Count news by archive month
+     */
+    public function countByArchiveMonth($year, $month) {
+        try {
+            $sql = "SELECT COUNT(*) as total 
+                    FROM news 
+                    WHERE is_published = 1 
+                    AND YEAR(created_at) = ? 
+                    AND MONTH(created_at) = ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$year, $month]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['total'] ?? 0;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel countByArchiveMonth error: " . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    /**
+     * Search news
+     */
+    public function searchNews($query, $limit = 10, $offset = 0) {
+        try {
+            $sql = "SELECT n.* FROM news n 
+                    WHERE n.is_published = 1 
+                    AND (n.title LIKE ? OR n.content LIKE ? OR n.excerpt LIKE ?)
+                    ORDER BY n.created_at DESC 
+                    LIMIT ? OFFSET ?";
+            
+            $searchTerm = '%' . $query . '%';
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$searchTerm, $searchTerm, $searchTerm, $limit, $offset]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("NewsModel searchNews error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Count search results
+     */
+    public function countSearchResults($query) {
+        try {
+            $sql = "SELECT COUNT(*) as total FROM news 
+                    WHERE is_published = 1 
+                    AND (title LIKE ? OR content LIKE ? OR excerpt LIKE ?)";
+            
+            $searchTerm = '%' . $query . '%';
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$searchTerm, $searchTerm, $searchTerm]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['total'] ?? 0;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel countSearchResults error: " . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    /**
+     * Increment views
+     */
+    public function incrementViews($id) {
+        try {
+            $sql = "UPDATE news SET views_count = COALESCE(views_count, 0) + 1 WHERE id = ?";
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([$id]);
+        } catch (Exception $e) {
+            error_log("NewsModel incrementViews error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get all categories
+     */
+    public function getAllCategories() {
+        try {
+            $sql = "SELECT DISTINCT category FROM news WHERE category IS NOT NULL AND category != '' ORDER BY category";
+            $stmt = $this->db->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getAllCategories error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Count ALL content (news + events) with filters - for admin panel
+     */
+    public function countAll($filters = []) {
+        try {
+            $where = ['1=1'];
+            $params = [];
+            
+            if (!empty($filters['status'])) {
+                if ($filters['status'] === 'published') {
+                    $where[] = 'is_published = 1';
+                } elseif ($filters['status'] === 'draft') {
+                    $where[] = 'is_published = 0';
+                }
+            }
+            
+            if (!empty($filters['category'])) {
+                $where[] = 'category = ?';
+                $params[] = $filters['category'];
+            }
+            
+            if (!empty($filters['type'])) {
+                if ($filters['type'] === 'news') {
+                    $where[] = "type = 'news' OR type IS NULL";
+                } elseif ($filters['type'] === 'event') {
+                    $where[] = "type = 'event'";
+                }
+            }
+            
+            $whereClause = implode(' AND ', $where);
+            $sql = "SELECT COUNT(*) as count FROM news WHERE {$whereClause}";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result['count'] ?? 0;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel countAll error: " . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    /**
+     * Get all news only (not events)
+     */
+    public function getAllNewsOnly($filters = [], $limit = 20, $offset = 0) {
+        $where = ['1=1'];
+        $params = [];
+        
+        if (!empty($filters['status'])) {
+            if ($filters['status'] === 'published') {
+                $where[] = 'is_published = 1';
+            } elseif ($filters['status'] === 'draft') {
+                $where[] = 'is_published = 0';
             }
         }
         
-        $whereSQL = !empty($whereClauses) ? 'WHERE ' . implode(' AND ', $whereClauses) : '';
+        if (!empty($filters['category'])) {
+            $where[] = 'category = ?';
+            $params[] = $filters['category'];
+        }
+        
+        if (!empty($filters['search'])) {
+            $where[] = '(title LIKE ? OR excerpt LIKE ? OR content LIKE ?)';
+            $search = '%' . $filters['search'] . '%';
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+        }
+        
+        if (!empty($filters['date_from'])) {
+            $where[] = 'DATE(created_at) >= ?';
+            $params[] = $filters['date_from'];
+        }
+        
+        if (!empty($filters['date_to'])) {
+            $where[] = 'DATE(created_at) <= ?';
+            $params[] = $filters['date_to'];
+        }
+        
+        $whereClause = implode(' AND ', $where);
         
         $sql = "SELECT n.*, u.username as author_name 
                 FROM news n 
                 LEFT JOIN users u ON n.author_id = u.id 
-                $whereSQL 
-                ORDER BY n.created_at DESC 
+                WHERE {$whereClause} 
+                ORDER BY created_at DESC 
                 LIMIT ? OFFSET ?";
         
         $params[] = $limit;
@@ -86,513 +1154,356 @@ class NewsModel {
     }
     
     /**
-     * Get news by ID
+     * Get ALL content (news + events) with filters - SIMPLIFIED FIXED VERSION
      */
-    public function getById($id) {
-        $sql = "SELECT n.*, u.username as author_name, u.email as author_email 
-                FROM news n 
-                LEFT JOIN users u ON n.author_id = u.id 
-                WHERE n.id = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+    public function getAll($filters = [], $limit = 20, $offset = 0) {
+        try {
+            error_log("=== NEWS MODEL getAll CALLED ===");
+            error_log("Filters: " . json_encode($filters));
+            
+            $where = ['1=1'];
+            $params = [];
+            
+            if (!empty($filters['status'])) {
+                if ($filters['status'] === 'published') {
+                    $where[] = 'is_published = 1';
+                } elseif ($filters['status'] === 'draft') {
+                    $where[] = 'is_published = 0';
+                }
+            }
+            
+            if (!empty($filters['category'])) {
+                $where[] = 'category = ?';
+                $params[] = $filters['category'];
+            }
+            
+            if (!empty($filters['type'])) {
+                $where[] = 'type = ?';
+                $params[] = $filters['type'];
+            }
+            
+            if (!empty($filters['search'])) {
+                $where[] = '(title LIKE ? OR excerpt LIKE ? OR content LIKE ?)';
+                $search = '%' . $filters['search'] . '%';
+                $params[] = $search;
+                $params[] = $search;
+                $params[] = $search;
+            }
+            
+            if (!empty($filters['date_from'])) {
+                $where[] = 'DATE(created_at) >= ?';
+                $params[] = $filters['date_from'];
+            }
+            
+            if (!empty($filters['date_to'])) {
+                $where[] = 'DATE(created_at) <= ?';
+                $params[] = $filters['date_to'];
+            }
+            
+            $whereClause = implode(' AND ', $where);
+            
+            $sql = "SELECT n.*, u.username as author_name 
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
+                    WHERE {$whereClause} 
+                    ORDER BY created_at DESC 
+                    LIMIT ? OFFSET ?";
+            
+            $params[] = $limit;
+            $params[] = $offset;
+            
+            error_log("News SQL: " . $sql);
+            error_log("Params: " . json_encode($params));
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            error_log("Found " . count($results) . " items in news table");
+            
+            return $results;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getAll error: " . $e->getMessage());
+            error_log("Error trace: " . $e->getTraceAsString());
+            return [];
+        }
     }
     
     /**
-     * Get news statistics for dashboard
+     * Get statistics for BOTH news and events
      */
     public function getStats() {
-        $stats = [];
+        $stats = [
+            'total' => 0,
+            'published' => 0,
+            'draft' => 0,
+            'featured' => 0,
+            'news' => 0,
+            'events' => 0,
+            'breaking' => 0,
+            'this_month' => 0,
+            'this_week' => 0
+        ];
         
-        // Total news
-        $stmt = $this->db->query("SELECT COUNT(*) as total FROM news");
-        $stats['total_news'] = $stmt->fetch()['total'];
-        
-        // Published news
-        $stmt = $this->db->query("SELECT COUNT(*) as total FROM news WHERE is_published = 1");
-        $stats['published_news'] = $stmt->fetch()['total'];
-        
-        // Draft news
-        $stmt = $this->db->query("SELECT COUNT(*) as total FROM news WHERE is_published = 0");
-        $stats['draft_news'] = $stmt->fetch()['total'];
-        
-        // Featured news
-        $stmt = $this->db->query("SELECT COUNT(*) as total FROM news WHERE is_featured = 1");
-        $stats['featured_news'] = $stmt->fetch()['total'];
-        
-        // Breaking news
-        $stmt = $this->db->query("SELECT COUNT(*) as total FROM news WHERE is_breaking = 1");
-        $stats['breaking_news'] = $stmt->fetch()['total'];
-        
-        // Today's news
-        $stmt = $this->db->query("SELECT COUNT(*) as total FROM news WHERE DATE(created_at) = CURDATE()");
-        $stats['today_news'] = $stmt->fetch()['total'];
-        
-        // This month's news
-        $stmt = $this->db->query("SELECT COUNT(*) as total FROM news WHERE MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())");
-        $stats['month_news'] = $stmt->fetch()['total'];
+        try {
+            // NEWS Statistics (now includes events too)
+            $sql = "SELECT 
+                COUNT(*) as total,
+                SUM(is_published = 1) as published,
+                SUM(is_published = 0) as draft,
+                SUM(is_featured = 1) as featured,
+                SUM(is_breaking = 1) as breaking,
+                SUM(type = 'news' OR type IS NULL) as news_count,
+                SUM(type = 'event') as events_count,
+                SUM(MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())) as this_month,
+                SUM(YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)) as this_week
+            FROM news";
+            
+            $stmt = $this->db->query($sql);
+            $newsStats = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Now ALL statistics come from news table only
+            $stats['total'] = (int)($newsStats['total'] ?? 0);
+            $stats['published'] = (int)($newsStats['published'] ?? 0);
+            $stats['draft'] = (int)($newsStats['draft'] ?? 0);
+            $stats['featured'] = (int)($newsStats['featured'] ?? 0);
+            $stats['breaking'] = (int)($newsStats['breaking'] ?? 0);
+            $stats['news'] = (int)($newsStats['news_count'] ?? 0);
+            $stats['events'] = (int)($newsStats['events_count'] ?? 0);
+            $stats['this_month'] = (int)($newsStats['this_month'] ?? 0);
+            $stats['this_week'] = (int)($newsStats['this_week'] ?? 0);
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getStats error: " . $e->getMessage());
+        }
         
         return $stats;
     }
     
     /**
-     * Create new news article
+     * Get news by ID (from news table only now)
      */
-    public function create($data) {
-        // Set author_id from session if not provided
-        if (!isset($data['author_id']) && isset($_SESSION['user_id'])) {
-            $data['author_id'] = $_SESSION['user_id'];
+    public function getById($id) {
+        try {
+            // Get from news table only (events are now in news table too)
+            $sql = "SELECT n.*, u.username as author_name 
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
+                    WHERE n.id = ?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                // Set content_type based on type field
+                $result['content_type'] = $result['type'] ?? 'news';
+                return $result;
+            }
+            
+            return null;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getById error: " . $e->getMessage());
+            return null;
         }
-        
-        // Generate slug if not provided
-        if (empty($data['slug']) && !empty($data['title'])) {
-            $data['slug'] = $this->generateSlug($data['title']);
-        }
-        
-        // Set default values
-        $defaults = [
-            'is_published' => 0,
-            'is_featured' => 0,
-            'is_breaking' => 0,
-            'views_count' => 0,
-            'likes_count' => 0,
-            'shares_count' => 0,
-            'comments_count' => 0,
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
-        
-        $data = array_merge($defaults, $data);
-        
-        // Handle published_at
-        if (isset($data['is_published']) && $data['is_published'] == 1 && empty($data['published_at'])) {
-            $data['published_at'] = date('Y-m-d H:i:s');
-        }
-        
-        // Prepare SQL
-        $fields = array_keys($data);
-        $placeholders = array_fill(0, count($fields), '?');
-        $values = array_values($data);
-        
-        $sql = "INSERT INTO news (" . implode(', ', $fields) . ") 
-                VALUES (" . implode(', ', $placeholders) . ")";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($values);
-        
-        return $this->db->lastInsertId();
     }
     
     /**
-     * Update news article
+     * Update news or event (both in news table now)
      */
     public function update($id, $data) {
-        // Don't allow updating ID
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-        
-        // Set updated_at
-        $data['updated_at'] = date('Y-m-d H:i:s');
-        
-        // Handle published_at if status changed to published
-        if (isset($data['is_published']) && $data['is_published'] == 1) {
-            $current = $this->getById($id);
-            if (!$current || !$current['published_at']) {
-                $data['published_at'] = date('Y-m-d H:i:s');
+        try {
+            // Check if it exists in news table
+            $checkSql = "SELECT COUNT(*) as count FROM news WHERE id = ?";
+            $checkStmt = $this->db->prepare($checkSql);
+            $checkStmt->execute([$id]);
+            $result = $checkStmt->fetch();
+            
+            if ($result['count'] > 0) {
+                // Update news table
+                return $this->updateNews($id, $data);
+            } else {
+                error_log("Item with ID $id not found in news table");
+                return false;
             }
+            
+        } catch (Exception $e) {
+            error_log("NewsModel update error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Update news (including events)
+     */
+    private function updateNews($id, $data) {
+        $fields = [];
+        $values = [];
+        
+        foreach ($data as $key => $value) {
+            $fields[] = "{$key} = ?";
+            $values[] = $value;
         }
         
-        // Prepare SQL
-        $fields = array_keys($data);
-        $setClause = implode(' = ?, ', $fields) . ' = ?';
-        $values = array_values($data);
-        $values[] = $id; // For WHERE clause
+        $fields[] = "updated_at = NOW()";
+        $values[] = $id;
         
-        $sql = "UPDATE news SET $setClause WHERE id = ?";
+        $sql = "UPDATE news SET " . implode(', ', $fields) . " WHERE id = ?";
+        error_log("Update SQL: " . $sql);
+        error_log("Update values: " . json_encode($values));
         
         $stmt = $this->db->prepare($sql);
         return $stmt->execute($values);
     }
     
     /**
-     * Delete news article
+     * Delete news or event (both from news table)
      */
     public function delete($id) {
-        $sql = "DELETE FROM news WHERE id = ?";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([$id]);
+        try {
+            // Delete from news table (includes events)
+            $sql = "DELETE FROM news WHERE id = ?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$id]);
+            
+            return $stmt->rowCount() > 0;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel delete error: " . $e->getMessage());
+            return false;
+        }
     }
     
     /**
-     * Toggle status fields (publish/feature/breaking)
+     * Check if slug exists in news table (includes events)
      */
-    public function toggleStatus($id, $field) {
-        $allowedFields = ['is_published', 'is_featured', 'is_breaking'];
-        
-        if (!in_array($field, $allowedFields)) {
-            return false;
-        }
-        
-        // Get current value
-        $sql = "SELECT $field FROM news WHERE id = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$id]);
-        $current = $stmt->fetch();
-        
-        if (!$current) {
-            return false;
-        }
-        
-        // Toggle value
-        $newValue = $current[$field] ? 0 : 1;
-        $updateData = [
-            $field => $newValue,
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
-        
-        // Set published_at if publishing
-        if ($field === 'is_published' && $newValue == 1) {
-            $updateData['published_at'] = date('Y-m-d H:i:s');
-        }
-        
-        return $this->update($id, $updateData);
-    }
-    
-    /**
-     * Search news articles
-     */
-    public function search($query, $filters = []) {
-        $whereClauses = ["(title LIKE ? OR content LIKE ? OR excerpt LIKE ?)"];
-        $params = ["%$query%", "%$query%", "%$query%"];
-        
-        // Add filters
-        if (isset($filters['category']) && $filters['category']) {
-            $whereClauses[] = "category = ?";
-            $params[] = $filters['category'];
-        }
-        
-        if (isset($filters['status'])) {
-            if ($filters['status'] === 'published') {
-                $whereClauses[] = "is_published = 1";
-            } elseif ($filters['status'] === 'draft') {
-                $whereClauses[] = "is_published = 0";
+    public function slugExists($slug, $excludeId = null) {
+        try {
+            // Check news table (includes events)
+            $sql = "SELECT COUNT(*) as count FROM news WHERE slug = ?";
+            $params = [$slug];
+            
+            if ($excludeId) {
+                $sql .= " AND id != ?";
+                $params[] = $excludeId;
             }
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetch();
+            
+            return $result['count'] > 0;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel slugExists error: " . $e->getMessage());
+            return false;
         }
-        
-        if (isset($filters['author_id']) && $filters['author_id']) {
-            $whereClauses[] = "author_id = ?";
-            $params[] = $filters['author_id'];
-        }
-        
-        $whereSQL = implode(' AND ', $whereClauses);
-        
-        $sql = "SELECT n.*, u.username as author_name 
-                FROM news n 
-                LEFT JOIN users u ON n.author_id = u.id 
-                WHERE $whereSQL 
-                ORDER BY created_at DESC 
-                LIMIT 100";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
     /**
-     * Get distinct categories from existing data
+     * Get events specifically (for backwards compatibility)
      */
-    public function getCategories() {
-        $sql = "SELECT DISTINCT category FROM news WHERE category IS NOT NULL AND category != '' ORDER BY category";
-        $stmt = $this->db->query($sql);
-        $categories = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        // Add default categories if none exist
-        if (empty($categories)) {
-            $categories = [
-                'Announcements',
-                'Events',
-                'Academic News',
-                'Research Updates',
-                'Student Life',
-                'Faculty News',
-                'Alumni News',
-                'Community Outreach'
-            ];
-        }
-        
-        return $categories;
-    }
-    
-    // ============================================
-    // PUBLIC METHODS
-    // ============================================
-    
-    /**
-     * Get published news for public website
-     */
-    public function getPublished($limit = 10, $offset = 0) {
-        $sql = "SELECT n.*, u.username as author_name 
-                FROM news n 
-                LEFT JOIN users u ON n.author_id = u.id 
-                WHERE n.is_published = 1 
-                AND (n.published_at IS NULL OR n.published_at <= NOW())
-                ORDER BY n.published_at DESC, n.created_at DESC 
-                LIMIT ? OFFSET ?";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$limit, $offset]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    
-    /**
-     * Get news by slug for public viewing
-     */
-    public function getBySlug($slug) {
-        $sql = "SELECT n.*, u.username as author_name, u.email as author_email 
-                FROM news n 
-                LEFT JOIN users u ON n.author_id = u.id 
-                WHERE n.slug = ? AND n.is_published = 1 
-                AND (n.published_at IS NULL OR n.published_at <= NOW())";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$slug]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-    
-    /**
-     * Get featured news for homepage
-     */
-    public function getFeatured($limit = 3) {
-        $sql = "SELECT n.*, u.username as author_name 
-                FROM news n 
-                LEFT JOIN users u ON n.author_id = u.id 
-                WHERE n.is_published = 1 AND n.is_featured = 1 
-                AND (n.published_at IS NULL OR n.published_at <= NOW())
-                ORDER BY n.published_at DESC, n.created_at DESC 
-                LIMIT ?";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$limit]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    
-    /**
-     * Get news by category for public
-     */
-    public function getByCategory($category, $limit = 10, $offset = 0) {
-        $sql = "SELECT n.*, u.username as author_name 
-                FROM news n 
-                LEFT JOIN users u ON n.author_id = u.id 
-                WHERE n.is_published = 1 AND n.category = ?
-                AND (n.published_at IS NULL OR n.published_at <= NOW())
-                ORDER BY n.published_at DESC, n.created_at DESC 
-                LIMIT ? OFFSET ?";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$category, $limit, $offset]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    
-    /**
-     * Get related news articles
-     */
-    public function getRelated($newsId, $limit = 3) {
-        // First get the current news article
-        $current = $this->getById($newsId);
-        if (!$current) {
+    public function getEvents($limit = 10, $offset = 0) {
+        try {
+            $sql = "SELECT n.*, u.username as author_name 
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
+                    WHERE n.type = 'event' AND n.is_published = 1 
+                    ORDER BY n.event_date ASC 
+                    LIMIT ? OFFSET ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(2, (int)$offset, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getEvents error: " . $e->getMessage());
             return [];
         }
-        
-        $whereClauses = ["n.is_published = 1", "n.id != ?"];
-        $params = [$newsId];
-        
-        // Try to find by same category
-        if (!empty($current['category'])) {
-            $whereClauses[] = "n.category = ?";
-            $params[] = $current['category'];
+    }
+    
+    /**
+     * Count events (for backwards compatibility)
+     */
+    public function countEvents() {
+        try {
+            $sql = "SELECT COUNT(*) as total FROM news WHERE type = 'event' AND is_published = 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['total'] ?? 0;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel countEvents error: " . $e->getMessage());
+            return 0;
         }
-        
-        // Try to find by tags if available
-        $tags = [];
-        if (!empty($current['tags'])) {
-            $tags = explode(',', $current['tags']);
-            $tags = array_map('trim', $tags);
-            $tags = array_filter($tags);
+    }
+    
+    /**
+     * Get upcoming events
+     */
+    public function getUpcomingEvents($limit = 5) {
+        try {
+            $sql = "SELECT n.*, u.username as author_name 
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
+                    WHERE n.type = 'event' 
+                    AND n.is_published = 1 
+                    AND (n.event_date >= CURDATE() OR n.event_date IS NULL)
+                    ORDER BY n.event_date ASC 
+                    LIMIT ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getUpcomingEvents error: " . $e->getMessage());
+            return [];
         }
-        
-        $whereSQL = implode(' AND ', $whereClauses);
-        
-        $sql = "SELECT n.*, u.username as author_name 
-                FROM news n 
-                LEFT JOIN users u ON n.author_id = u.id 
-                WHERE $whereSQL 
-                AND (n.published_at IS NULL OR n.published_at <= NOW())
-                ORDER BY n.published_at DESC, n.created_at DESC 
-                LIMIT ?";
-        
-        $params[] = $limit;
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
     /**
-     * Increment view count
+     * DEBUG METHOD: Test all queries directly
      */
-    public function incrementViews($id) {
-        $sql = "UPDATE news SET views_count = views_count + 1, updated_at = NOW() WHERE id = ?";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([$id]);
-    }
-    
-    /**
-     * Get latest news (existing method - enhanced)
-     */
-    public function getLatestNews($limit = 3) {
-        return $this->getPublished($limit, 0);
-    }
-    
-    /**
-     * Find all news (existing method - enhanced)
-     */
-    public function findAll() {
-        return $this->getAll([], 1000, 0);
-    }
-    
-    /**
-     * Get breaking news
-     */
-    public function getBreakingNews($limit = 5) {
-        $sql = "SELECT n.*, u.username as author_name 
-                FROM news n 
-                LEFT JOIN users u ON n.author_id = u.id 
-                WHERE n.is_published = 1 AND n.is_breaking = 1 
-                AND (n.published_at IS NULL OR n.published_at <= NOW())
-                ORDER BY n.published_at DESC 
-                LIMIT ?";
+    public function debugQueries() {
+        error_log("=== DEBUGGING ALL QUERIES ===");
         
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$limit]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    
-    /**
-     * Get news count by category for sidebar
-     */
-    public function getCategoryCounts() {
-        $sql = "SELECT category, COUNT(*) as count 
-                FROM news 
-                WHERE is_published = 1 AND category IS NOT NULL AND category != ''
-                GROUP BY category 
-                ORDER BY count DESC, category";
+        $results = [];
         
-        $stmt = $this->db->query($sql);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    
-    /**
-     * Get archive months (for archive widget)
-     */
-    public function getArchiveMonths() {
-        $sql = "SELECT 
-                    DATE_FORMAT(published_at, '%Y-%m') as month,
-                    DATE_FORMAT(published_at, '%M %Y') as month_name,
-                    COUNT(*) as count
-                FROM news 
-                WHERE is_published = 1 AND published_at IS NOT NULL
-                GROUP BY DATE_FORMAT(published_at, '%Y-%m')
-                ORDER BY published_at DESC";
-        
-        $stmt = $this->db->query($sql);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    
-    /**
-     * Get popular news by views
-     */
-    public function getPopularNews($limit = 5) {
-        $sql = "SELECT n.*, u.username as author_name 
-                FROM news n 
-                LEFT JOIN users u ON n.author_id = u.id 
-                WHERE n.is_published = 1 
-                AND (n.published_at IS NULL OR n.published_at <= NOW())
-                ORDER BY n.views_count DESC, n.published_at DESC 
-                LIMIT ?";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$limit]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    
-    /**
-     * Generate URL slug from title
-     */
-    private function generateSlug($title) {
-        // Convert to lowercase
-        $slug = strtolower($title);
-        
-        // Replace spaces with hyphens
-        $slug = preg_replace('/\s+/', '-', $slug);
-        
-        // Remove special characters
-        $slug = preg_replace('/[^a-z0-9\-]/', '', $slug);
-        
-        // Remove multiple hyphens
-        $slug = preg_replace('/-+/', '-', $slug);
-        
-        // Trim hyphens from start and end
-        $slug = trim($slug, '-');
-        
-        // Add timestamp to ensure uniqueness
-        $slug .= '-' . time();
-        
-        return $slug;
-    }
-    
-    /**
-     * Export news to CSV
-     */
-    public function exportToCSV($filters = []) {
-        $news = $this->getAll($filters, 10000, 0); // Get all with filters
-        
-        if (empty($news)) {
-            return false;
+        try {
+            // Test 1: Direct published news query
+            $sql1 = "SELECT COUNT(*) as count FROM news WHERE is_published = 1";
+            $stmt1 = $this->db->query($sql1);
+            $result1 = $stmt1->fetch(PDO::FETCH_ASSOC);
+            $results['direct_count'] = $result1['count'] ?? 0;
+            error_log("Direct count: " . $results['direct_count']);
+            
+            // Test 2: Check type distribution
+            $sql2 = "SELECT type, COUNT(*) as count FROM news GROUP BY type";
+            $stmt2 = $this->db->query($sql2);
+            $typeCounts = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+            $results['type_counts'] = $typeCounts;
+            error_log("Type distribution: " . json_encode($typeCounts));
+            
+            // Test 3: Check actual data
+            $sql3 = "SELECT id, title, type, is_published, category, event_date FROM news ORDER BY created_at DESC LIMIT 10";
+            $stmt3 = $this->db->query($sql3);
+            $allNews = $stmt3->fetchAll(PDO::FETCH_ASSOC);
+            $results['recent_items'] = $allNews;
+            error_log("Recent items: " . json_encode($allNews));
+            
+            return $results;
+            
+        } catch (Exception $e) {
+            error_log("Debug error: " . $e->getMessage());
+            return ['error' => $e->getMessage()];
         }
-        
-        // Create CSV content
-        $output = fopen('php://temp', 'w');
-        
-        // Add BOM for UTF-8
-        fwrite($output, "\xEF\xBB\xBF");
-        
-        // Add headers
-        $headers = ['ID', 'Title', 'Slug', 'Category', 'Status', 'Author', 'Published Date', 'Created Date', 'Views', 'Featured', 'Breaking'];
-        fputcsv($output, $headers);
-        
-        // Add data
-        foreach ($news as $item) {
-            $row = [
-                $item['id'],
-                $item['title'],
-                $item['slug'],
-                $item['category'] ?? 'N/A',
-                $item['is_published'] ? 'Published' : 'Draft',
-                $item['author_name'] ?? 'Unknown',
-                $item['published_at'] ?? 'Not published',
-                $item['created_at'],
-                $item['views_count'],
-                $item['is_featured'] ? 'Yes' : 'No',
-                $item['is_breaking'] ? 'Yes' : 'No'
-            ];
-            fputcsv($output, $row);
-        }
-        
-        rewind($output);
-        $csv = stream_get_contents($output);
-        fclose($output);
-        
-        return $csv;
     }
 }

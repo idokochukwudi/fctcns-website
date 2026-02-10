@@ -19,28 +19,67 @@ require_once APP_PATH . '/config/session.php';
 $userRole = $_SESSION['user_role'];
 $username = $_SESSION['username'];
 
+// Function to check if table has a column
+function tableHasColumn($conn, $table, $column) {
+    try {
+        $stmt = $conn->query("SHOW COLUMNS FROM $table LIKE '$column'");
+        return $stmt->rowCount() > 0;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
 // Get statistics
 $stats = [];
 $recentActivities = [];
 $recentApplications = [];
 $recentContacts = [];
+$recentNews = [];
+$recentEvents = [];
 
 try {
-    // Update the queries in your dashboard.php to match your table structure
-    $queries = [
-        'total_users' => "SELECT COUNT(*) as total FROM users WHERE is_active = 1",
-        'total_applications' => "SELECT COUNT(*) as total FROM applications",
-        'pending_applications' => "SELECT COUNT(*) as total FROM applications WHERE status = 'pending'",
-        'total_research' => "SELECT COUNT(*) as total FROM research_publications WHERE is_published = 1",
-        'total_news' => "SELECT COUNT(*) as total FROM news WHERE is_published = 1",
-        'total_contacts' => "SELECT COUNT(*) as total FROM contact_submissions",
-        'pending_contacts' => "SELECT COUNT(*) as total FROM contact_submissions WHERE status = 'pending'",
-        'recent_activities' => "SELECT al.*, u.username as user_name FROM activity_logs al LEFT JOIN users u ON al.user_id = u.id ORDER BY al.created_at DESC LIMIT 10",
-        'recent_applications' => "SELECT a.* FROM applications a ORDER BY a.created_at DESC LIMIT 5"
-    ];
+    // Check database structure
+    $newsHasType = tableHasColumn($conn, 'news', 'type');
+    $eventsTableExists = tableHasColumn($conn, 'events', 'id');
+    
+    if ($newsHasType && !$eventsTableExists) {
+        // OLD SYSTEM: news table contains both news and events (has type column)
+        $queries = [
+            'total_users' => "SELECT COUNT(*) as total FROM users WHERE is_active = 1",
+            'total_applications' => "SELECT COUNT(*) as total FROM applications",
+            'pending_applications' => "SELECT COUNT(*) as total FROM applications WHERE status = 'pending'",
+            'total_research' => "SELECT COUNT(*) as total FROM research_publications WHERE is_published = 1",
+            'total_news' => "SELECT COUNT(*) as total FROM news WHERE is_published = 1 AND type = 'news'",
+            'total_events' => "SELECT COUNT(*) as total FROM news WHERE is_published = 1 AND type = 'event'",
+            'upcoming_events' => "SELECT COUNT(*) as total FROM news WHERE is_published = 1 AND type = 'event' AND (event_date >= CURDATE() OR event_date IS NULL)",
+            'total_contacts' => "SELECT COUNT(*) as total FROM contact_submissions",
+            'pending_contacts' => "SELECT COUNT(*) as total FROM contact_submissions WHERE status = 'pending'",
+            'recent_activities' => "SELECT al.*, u.username as user_name FROM activity_logs al LEFT JOIN users u ON al.user_id = u.id ORDER BY al.created_at DESC LIMIT 10",
+            'recent_applications' => "SELECT a.* FROM applications a ORDER BY a.created_at DESC LIMIT 5",
+            'recent_news' => "SELECT n.*, u.username as author_name FROM news n LEFT JOIN users u ON n.author_id = u.id WHERE n.is_published = 1 AND n.type = 'news' ORDER BY n.created_at DESC LIMIT 5",
+            'recent_events' => "SELECT n.*, u.username as author_name FROM news n LEFT JOIN users u ON n.author_id = u.id WHERE n.is_published = 1 AND n.type = 'event' ORDER BY n.event_date DESC, n.created_at DESC LIMIT 5"
+        ];
+    } else {
+        // NEW SYSTEM: separate tables for news and events
+        $queries = [
+            'total_users' => "SELECT COUNT(*) as total FROM users WHERE is_active = 1",
+            'total_applications' => "SELECT COUNT(*) as total FROM applications",
+            'pending_applications' => "SELECT COUNT(*) as total FROM applications WHERE status = 'pending'",
+            'total_research' => "SELECT COUNT(*) as total FROM research_publications WHERE is_published = 1",
+            'total_news' => "SELECT COUNT(*) as total FROM news WHERE is_published = 1",
+            'total_events' => "SELECT COUNT(*) as total FROM events WHERE is_published = 1",
+            'upcoming_events' => "SELECT COUNT(*) as total FROM events WHERE is_published = 1 AND (event_date >= CURDATE() OR event_date IS NULL)",
+            'total_contacts' => "SELECT COUNT(*) as total FROM contact_submissions",
+            'pending_contacts' => "SELECT COUNT(*) as total FROM contact_submissions WHERE status = 'pending'",
+            'recent_activities' => "SELECT al.*, u.username as user_name FROM activity_logs al LEFT JOIN users u ON al.user_id = u.id ORDER BY al.created_at DESC LIMIT 10",
+            'recent_applications' => "SELECT a.* FROM applications a ORDER BY a.created_at DESC LIMIT 5",
+            'recent_news' => "SELECT n.*, u.username as author_name FROM news n LEFT JOIN users u ON n.author_id = u.id WHERE n.is_published = 1 ORDER BY n.created_at DESC LIMIT 5",
+            'recent_events' => "SELECT e.*, u.username as author_name FROM events e LEFT JOIN users u ON e.author_id = u.id WHERE e.is_published = 1 ORDER BY e.event_date DESC, e.created_at DESC LIMIT 5"
+        ];
+    }
     
     foreach ($queries as $key => $sql) {
-        if ($key === 'recent_activities' || $key === 'recent_applications') {
+        if (in_array($key, ['recent_activities', 'recent_applications', 'recent_news', 'recent_events'])) {
             continue; // Handle separately
         }
         $stmt = $conn->query($sql);
@@ -63,6 +102,14 @@ try {
     ");
     $recentContacts = $stmt->fetchAll();
     
+    // Recent news
+    $stmt = $conn->query($queries['recent_news']);
+    $recentNews = $stmt->fetchAll();
+    
+    // Recent events
+    $stmt = $conn->query($queries['recent_events']);
+    $recentEvents = $stmt->fetchAll();
+    
 } catch (Exception $e) {
     error_log("Dashboard error: " . $e->getMessage());
     // Set default values to prevent errors
@@ -72,6 +119,8 @@ try {
         'pending_applications' => 0,
         'total_research' => 0,
         'total_news' => 0,
+        'total_events' => 0,
+        'upcoming_events' => 0,
         'total_contacts' => 0,
         'pending_contacts' => 0
     ], $stats);
@@ -469,7 +518,8 @@ try {
         .stat-users .stat-icon { background: rgba(66, 153, 225, 0.1); color: var(--admin-primary-light); }
         .stat-applications .stat-icon { background: rgba(56, 161, 105, 0.1); color: var(--admin-success); }
         .stat-research .stat-icon { background: rgba(159, 122, 234, 0.1); color: var(--admin-purple); }
-        .stat-news .stat-icon { background: rgba(237, 137, 54, 0.1); color: var(--admin-warning); }
+        .stat-news .stat-icon { background: rgba(245, 158, 11, 0.1); color: var(--admin-warning); }
+        .stat-events .stat-icon { background: rgba(139, 92, 246, 0.1); color: var(--admin-purple); }
         
         .stat-value {
             font-size: 2.25rem;
@@ -662,6 +712,9 @@ try {
         .status-pending { background: rgba(214, 158, 46, 0.1); color: var(--admin-warning); }
         .status-approved { background: rgba(56, 161, 105, 0.1); color: var(--admin-success); }
         .status-rejected { background: rgba(229, 62, 62, 0.1); color: var(--admin-danger); }
+        .status-published { background: rgba(56, 161, 105, 0.1); color: var(--admin-success); }
+        .status-draft { background: rgba(214, 158, 46, 0.1); color: var(--admin-warning); }
+        .status-upcoming { background: rgba(139, 92, 246, 0.1); color: var(--admin-purple); }
         
         /* Quick Actions */
         .quick-actions {
@@ -722,6 +775,51 @@ try {
             font-size: 0.8125rem;
             color: var(--admin-gray-600);
             line-height: 1.4;
+        }
+        
+        /* News/Events specific action icons */
+        .news-action-icon {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--admin-warning);
+        }
+        
+        .events-action-icon {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--admin-purple);
+        }
+        
+        /* Event date badge */
+        .event-date {
+            font-size: 0.75rem;
+            color: var(--admin-purple);
+            background: rgba(139, 92, 246, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-top: 0.25rem;
+        }
+        
+        /* Breaking news badge */
+        .breaking-badge {
+            background: rgba(229, 62, 62, 0.1);
+            color: var(--admin-danger);
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        
+        /* Featured badge */
+        .featured-badge {
+            background: rgba(66, 153, 225, 0.1);
+            color: var(--admin-primary);
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.6875rem;
+            font-weight: 600;
         }
         
         /* Enhanced Responsive Design */
@@ -1153,9 +1251,20 @@ try {
                                 <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/>
                                 <path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V7z"/>
                             </svg>
-                            <span>News & Events</span>
+                            <span>News Articles</span>
                         </a>
                     </li>
+                    
+                    <?php if (in_array($userRole, ['admin', 'editor'])): ?>
+                    <li class="nav-item">
+                        <a href="<?php echo BASE_URL; ?>/admin/events" class="nav-link">
+                            <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Events</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
                     <?php endif; ?>
                     
                     <!-- Carousel Slides Link -->
@@ -1404,6 +1513,7 @@ try {
                     </div>
                 </div>
                 
+                <!-- News Statistics Card -->
                 <div class="stat-card stat-news" style="border-left-color: var(--admin-warning);">
                     <div class="stat-header">
                         <div>
@@ -1417,11 +1527,32 @@ try {
                             </svg>
                         </div>
                     </div>
-                    <div class="stat-trend trend-down">
+                    <div class="stat-trend trend-up">
                         <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
                         </svg>
-                        -3%
+                        +12%
+                    </div>
+                </div>
+
+                <!-- Events Statistics Card -->
+                <div class="stat-card stat-events" style="border-left-color: var(--admin-purple);">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-value"><?php echo number_format($stats['total_events']); ?></div>
+                            <div class="stat-label">Events</div>
+                        </div>
+                        <div class="stat-icon">
+                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-trend trend-up">
+                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <?php echo $stats['upcoming_events']; ?> upcoming
                     </div>
                 </div>
                 
@@ -1642,6 +1773,130 @@ try {
                         <?php endif; ?>
                     </div>
                 </div>
+
+                <!-- Recent News -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>Recent News</h3>
+                        <a href="<?php echo BASE_URL; ?>/admin/news">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <?php if (!empty($recentNews)): ?>
+                        <table class="applications-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($recentNews as $newsItem): ?>
+                                <tr>
+                                    <td>
+                                        <a href="<?php echo BASE_URL; ?>/admin/news/<?php echo $newsItem['id']; ?>" 
+                                           style="color: var(--admin-primary); text-decoration: none; font-weight: 500;">
+                                            <?php echo htmlspecialchars(mb_strlen($newsItem['title']) > 30 ? substr($newsItem['title'], 0, 30) . '...' : $newsItem['title']); ?>
+                                        </a>
+                                        <?php if ($newsItem['is_breaking'] ?? false): ?>
+                                        <span class="breaking-badge">Breaking</span>
+                                        <?php endif; ?>
+                                        <?php if ($newsItem['is_featured'] ?? false): ?>
+                                        <span class="featured-badge">Featured</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($newsItem['category'] ?? 'General'); ?></td>
+                                    <td><?php echo date('M d', strtotime($newsItem['created_at'])); ?></td>
+                                    <td>
+                                        <?php if ($newsItem['is_published'] ?? false): ?>
+                                        <span class="status-badge status-published">Published</span>
+                                        <?php else: ?>
+                                        <span class="status-badge status-draft">Draft</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <?php else: ?>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📰</div>
+                            <div class="empty-state-title">No recent news</div>
+                            <div class="empty-state-description">News articles will appear here when published.</div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Recent Events -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>Recent Events</h3>
+                        <a href="<?php echo BASE_URL; ?>/admin/events">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <?php if (!empty($recentEvents)): ?>
+                        <table class="applications-table">
+                            <thead>
+                                <tr>
+                                    <th>Event Title</th>
+                                    <th>Date</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($recentEvents as $event): 
+                                    $isUpcoming = isset($event['event_date']) && strtotime($event['event_date']) > time();
+                                    $statusClass = $isUpcoming ? 'status-upcoming' : ($event['is_published'] ?? false ? 'status-published' : 'status-draft');
+                                    $statusText = $isUpcoming ? 'Upcoming' : ($event['is_published'] ?? false ? 'Published' : 'Draft');
+                                ?>
+                                <tr>
+                                    <td>
+                                        <?php 
+                                        // Determine the correct link based on database structure
+                                        if ($eventsTableExists) {
+                                            $eventLink = BASE_URL . '/admin/events/' . $event['id'];
+                                        } else {
+                                            $eventLink = BASE_URL . '/admin/news/' . $event['id'];
+                                        }
+                                        ?>
+                                        <a href="<?php echo $eventLink; ?>" 
+                                           style="color: var(--admin-primary); text-decoration: none; font-weight: 500;">
+                                            <?php echo htmlspecialchars(mb_strlen($event['title']) > 30 ? substr($event['title'], 0, 30) . '...' : $event['title']); ?>
+                                        </a>
+                                        <?php if ($event['is_featured'] ?? false): ?>
+                                        <span class="featured-badge">Featured</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($event['event_date'])): ?>
+                                        <div class="event-date">
+                                            <i class="fas fa-calendar"></i>
+                                            <?php echo date('M d', strtotime($event['event_date'])); ?>
+                                        </div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($event['event_location'] ?? 'TBA'); ?></td>
+                                    <td>
+                                        <span class="status-badge <?php echo $statusClass; ?>">
+                                            <?php echo $statusText; ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <?php else: ?>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📅</div>
+                            <div class="empty-state-title">No recent events</div>
+                            <div class="empty-state-description">Events will appear here when created.</div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
             <?php else: ?>
             <!-- Nominal Roll User Dashboard Content -->
@@ -1806,8 +2061,9 @@ try {
                     </div>
                 </a>
                 
+                <!-- News Quick Action -->
                 <a href="<?php echo BASE_URL; ?>/admin/news/create" class="action-btn">
-                    <div class="action-icon">
+                    <div class="action-icon news-action-icon">
                         <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
                         </svg>
@@ -1815,6 +2071,54 @@ try {
                     <div>
                         <h4>Create News</h4>
                         <p>Publish news article</p>
+                    </div>
+                </a>
+
+                <!-- Events Quick Action -->
+                <?php if ($eventsTableExists): ?>
+                <a href="<?php echo BASE_URL; ?>/admin/events/create" class="action-btn">
+                <?php else: ?>
+                <a href="<?php echo BASE_URL; ?>/admin/news/create?type=event" class="action-btn">
+                <?php endif; ?>
+                    <div class="action-icon events-action-icon">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>Create Event</h4>
+                        <p>Add new event</p>
+                    </div>
+                </a>
+
+                <!-- Manage News Quick Action -->
+                <a href="<?php echo BASE_URL; ?>/admin/news" class="action-btn">
+                    <div class="action-icon news-action-icon">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/>
+                            <path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V7z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>Manage News</h4>
+                        <p>View all news articles</p>
+                    </div>
+                </a>
+
+                <!-- Manage Events Quick Action -->
+                <?php if ($eventsTableExists): ?>
+                <a href="<?php echo BASE_URL; ?>/admin/events" class="action-btn">
+                <?php else: ?>
+                <a href="<?php echo BASE_URL; ?>/admin/news?type=event" class="action-btn">
+                <?php endif; ?>
+                    <div class="action-icon events-action-icon">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>Manage Events</h4>
+                        <p>View all events</p>
                     </div>
                 </a>
                 

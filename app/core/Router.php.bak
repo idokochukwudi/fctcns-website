@@ -167,7 +167,8 @@ class Router {
         $this->post('/admin/nominal-roll/update/{id}', 'NominalRollController@update');
         $this->post('/admin/nominal-roll/delete/{id}', 'NominalRollController@destroy');
         $this->get('/admin/nominal-roll/bulk-upload', 'NominalRollController@bulkUpload');
-
+        $this->post('/admin/nominal-roll/bulk-upload', 'NominalRollController@processBulkUpload'); // ADDED: POST route for bulk upload
+  
         // FIXED: Keep only these two admin routes for bulk upload (removed conflicting non-admin routes)
         $this->post('/admin/nominal-roll/validate-bulk-upload', 'NominalRollController@validateBulkUpload');
         $this->post('/admin/nominal-roll/bulk-upload-process', 'NominalRollController@processBulkUpload');
@@ -597,6 +598,11 @@ class Router {
             error_log("Router:   ✓ ADDED GET /admin/users/change-password -> UserManagementController@changePassword");
             error_log("Router:   ✓ ADDED POST /admin/users/change-password -> UserManagementController@processPasswordChange");
             error_log("Router:   ✓ ADDED GET /debug-bulk-upload-test -> Debug route for bulk upload testing");
+            error_log("Router:   ✓ ADDED POST /admin/nominal-roll/bulk-upload -> NominalRollController@processBulkUpload");
+            error_log("Router:   ✓ ADDED POST /admin/nominal-roll/export-excel -> NominalRollController@exportExcel");
+            error_log("Router:   ✓ ADDED POST /admin/nominal-roll/export-csv -> NominalRollController@exportCsv");
+            error_log("Router:   ✓ ADDED POST /admin/nominal-roll/generate-report -> NominalRollController@generateReport");
+            error_log("Router:   ✓ ADDED POST /admin/nominal-roll/save-report -> NominalRollController@saveReport");
         }
     }
 

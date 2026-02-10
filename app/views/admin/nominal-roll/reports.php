@@ -37,7 +37,7 @@
             min-height: 100vh;
         }
         
-        /* FIXED: Enhanced High Contrast Text Classes for ALL preview items */
+        /* Enhanced High Contrast Text Classes */
         .high-contrast-text {
             color: #212529 !important;
             font-weight: 700 !important;
@@ -45,7 +45,7 @@
             letter-spacing: 0.02em;
         }
         
-        /* FIXED: Universal badge styling for maximum visibility */
+        /* Universal badge styling for maximum visibility */
         .preview-badge {
             padding: 6px 12px !important;
             font-weight: 700 !important;
@@ -64,7 +64,7 @@
             font-size: 0.75rem !important;
         }
         
-        /* FIXED: Enhanced Status Badges - ALL status types with high contrast */
+        /* Enhanced Status Badges */
         .badge-status {
             composes: preview-badge;
         }
@@ -98,7 +98,7 @@
             text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
         }
         
-        /* FIXED: License Status Badges - ALL types */
+        /* License Status Badges */
         .badge-license {
             composes: preview-badge;
         }
@@ -132,7 +132,7 @@
             text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
         }
         
-        /* FIXED: Gender Badges */
+        /* Gender Badges */
         .badge-gender {
             composes: preview-badge;
             min-width: 75px;
@@ -152,7 +152,7 @@
             text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
         }
         
-        /* FIXED: Grade Level Badges */
+        /* Grade Level Badges */
         .badge-grade {
             background: linear-gradient(135deg, #17a2b8, #117a8b) !important;
             color: #ffffff !important;
@@ -166,7 +166,7 @@
             text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
         }
         
-        /* FIXED: Employee Number - High contrast */
+        /* Employee Number - High contrast */
         .employee-number {
             color: #000000 !important;
             font-weight: 800 !important;
@@ -178,14 +178,14 @@
             letter-spacing: 0.5px;
         }
         
-        /* FIXED: Regular text cells with enhanced visibility */
+        /* Regular text cells with enhanced visibility */
         .preview-table td {
             color: #212529 !important;
             font-weight: 500;
             position: relative;
         }
         
-        /* FIXED: Add subtle background to all cells for better contrast */
+        /* Add subtle background to all cells for better contrast */
         .preview-table tbody td {
             background-color: rgba(255, 255, 255, 0.7) !important;
         }
@@ -194,7 +194,7 @@
             background-color: rgba(248, 249, 250, 0.9) !important;
         }
         
-        /* FIXED: Status and license cells with stronger backgrounds */
+        /* Status and license cells with stronger backgrounds */
         .status-cell, .license-cell {
             background-color: rgba(0, 0, 0, 0.05) !important;
             position: relative;
@@ -205,7 +205,7 @@
             background-color: rgba(0, 0, 0, 0.08) !important;
         }
         
-        /* FIXED: Date cells with distinct styling */
+        /* Date cells with distinct styling */
         .date-cell {
             font-weight: 600 !important;
             color: #2c3e50 !important;
@@ -216,7 +216,7 @@
             border: 1px solid #dee2e6;
         }
         
-        /* FIXED: Empty/placeholder cells */
+        /* Empty/placeholder cells */
         .empty-cell {
             color: #6c757d !important;
             font-weight: 600 !important;
@@ -227,7 +227,7 @@
             border: 1px dashed #adb5bd;
         }
         
-        /* FIXED: Column headers with better contrast */
+        /* Column headers with better contrast */
         .preview-table thead th {
             background: linear-gradient(135deg, #2c3e50, #1c2833) !important;
             color: #ffffff !important;
@@ -240,7 +240,7 @@
             padding: 12px 10px !important;
         }
         
-        /* FIXED: Table row hover with visibility */
+        /* Table row hover with visibility */
         .preview-table tbody tr:hover td {
             background-color: rgba(44, 90, 160, 0.15) !important;
             transform: translateX(2px);
@@ -252,29 +252,6 @@
             background-color: rgba(44, 90, 160, 0.2) !important;
         }
         
-        /* Progressive Loading Styles */
-        .loading-skeleton {
-            animation: skeleton-loading 1.5s infinite ease-in-out;
-        }
-
-        @keyframes skeleton-loading {
-            0% { opacity: 0.5; }
-            50% { opacity: 0.8; }
-            100% { opacity: 0.5; }
-        }
-
-        .skeleton-row {
-            height: 40px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-        }
-
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        
         .main-container {
             padding: 15px;
             max-width: 1400px;
@@ -282,7 +259,7 @@
             width: 100%;
         }
         
-        /* Enhanced Header Styles with better contrast */
+        /* Enhanced Header Styles */
         .page-header {
             background: var(--bg-white);
             border-radius: var(--border-radius);
@@ -307,7 +284,7 @@
             font-weight: 500;
         }
         
-        /* Enhanced Stats Cards with better responsiveness */
+        /* Enhanced Stats Cards */
         .stats-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -366,26 +343,6 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         
-        @media (max-width: 768px) {
-            .stat-icon {
-                width: 45px;
-                height: 45px;
-                font-size: 18px;
-            }
-        }
-        
-        .stat-card:nth-child(2) .stat-icon {
-            background: linear-gradient(135deg, var(--success-color), #1e7e34);
-        }
-        
-        .stat-card:nth-child(3) .stat-icon {
-            background: linear-gradient(135deg, var(--warning-color), #d39e00);
-        }
-        
-        .stat-card:nth-child(4) .stat-icon {
-            background: linear-gradient(135deg, var(--secondary-color), #1c2833);
-        }
-        
         .stat-card h3 {
             font-size: 1.8rem;
             font-weight: 800;
@@ -393,12 +350,6 @@
             color: var(--secondary-color);
             text-shadow: 0 1px 2px rgba(0,0,0,0.1);
             line-height: 1;
-        }
-        
-        @media (max-width: 768px) {
-            .stat-card h3 {
-                font-size: 1.6rem;
-            }
         }
         
         .stat-card p {
@@ -426,7 +377,7 @@
             font-size: 0.75rem;
         }
         
-        /* Enhanced Main Content Layout */
+        /* Main Content Layout */
         .content-wrapper {
             display: grid;
             grid-template-columns: 1fr 1.5fr;
@@ -440,7 +391,7 @@
             }
         }
         
-        /* Enhanced Configuration Panel */
+        /* Configuration Panel */
         .config-panel {
             background: var(--bg-white);
             border-radius: var(--border-radius);
@@ -470,7 +421,7 @@
             gap: 10px;
         }
         
-        /* Enhanced Field Categories with better visibility */
+        /* Field Categories */
         .field-categories-container {
             margin-bottom: 25px;
         }
@@ -576,10 +527,6 @@
             border-color: var(--primary-color);
         }
         
-        .field-item:last-child {
-            margin-bottom: 0;
-        }
-        
         .form-check {
             display: flex;
             align-items: center;
@@ -598,19 +545,6 @@
             border-color: var(--primary-color);
         }
         
-        .form-check-input:focus {
-            box-shadow: 0 0 0 0.25rem rgba(44, 90, 160, 0.25);
-            border-color: var(--primary-color);
-        }
-        
-        .form-check-label {
-            font-size: 0.85rem;
-            color: var(--text-primary);
-            cursor: pointer;
-            flex: 1;
-            font-weight: 500;
-        }
-        
         .default-badge {
             background: var(--success-color);
             color: white;
@@ -622,7 +556,7 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        /* Enhanced Filters Section */
+        /* Filters Section */
         .filters-section {
             margin-bottom: 25px;
         }
@@ -666,7 +600,7 @@
             box-shadow: 0 0 0 0.25rem rgba(44, 90, 160, 0.25);
         }
         
-        /* Enhanced Sorting Section */
+        /* Sorting Section */
         .sorting-section {
             margin-bottom: 25px;
         }
@@ -681,7 +615,7 @@
             gap: 10px;
         }
         
-        /* Enhanced Action Buttons */
+        /* Action Buttons */
         .action-buttons {
             display: flex;
             flex-direction: column;
@@ -700,13 +634,6 @@
             justify-content: center;
             gap: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        @media (max-width: 768px) {
-            .btn {
-                padding: 10px 15px;
-                font-size: 0.9rem;
-            }
         }
         
         .btn-primary {
@@ -733,7 +660,7 @@
             color: var(--primary-color);
         }
         
-        /* Enhanced Preview Panel */
+        /* Preview Panel */
         .preview-panel {
             background: var(--bg-white);
             border-radius: var(--border-radius);
@@ -765,23 +692,6 @@
             gap: 15px;
         }
         
-        @media (max-width: 768px) {
-            .preview-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .preview-header h3 {
-                width: 100%;
-            }
-            
-            .preview-actions {
-                width: 100%;
-                justify-content: flex-start;
-            }
-        }
-        
         .preview-header h3 {
             font-size: 1.1rem;
             font-weight: 700;
@@ -798,11 +708,6 @@
             flex-wrap: wrap;
         }
         
-        .preview-actions .btn {
-            padding: 6px 12px;
-            font-size: 0.8rem;
-        }
-        
         .preview-content {
             padding: 20px;
             min-height: 300px;
@@ -810,14 +715,7 @@
             overflow-y: auto;
         }
         
-        @media (max-width: 768px) {
-            .preview-content {
-                padding: 15px;
-                max-height: 400px;
-            }
-        }
-        
-        /* FIXED: Enhanced Preview Table with maximum contrast for ALL items */
+        /* Enhanced Preview Table */
         .preview-table {
             width: 100%;
             border-collapse: separate;
@@ -827,61 +725,6 @@
             border-radius: 6px;
             overflow: hidden;
             background: white;
-        }
-        
-        @media (max-width: 768px) {
-            .preview-table {
-                font-size: 0.8rem;
-            }
-        }
-        
-        .preview-table thead th {
-            background: linear-gradient(135deg, #2c3e50, #1c2833) !important;
-            padding: 12px 10px;
-            text-align: left;
-            font-weight: 700;
-            color: #ffffff !important;
-            border-bottom: 3px solid var(--primary-color);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
-        }
-        
-        .preview-table tbody td {
-            padding: 10px;
-            border-bottom: 1px solid var(--border-color);
-            color: #212529 !important;
-            font-weight: 500;
-            background-color: rgba(255, 255, 255, 0.7) !important;
-        }
-        
-        .preview-table tbody tr:nth-child(even) td {
-            background-color: rgba(248, 249, 250, 0.9) !important;
-        }
-        
-        .preview-table tbody tr:hover td {
-            background-color: rgba(44, 90, 160, 0.15) !important;
-            transform: translateX(2px);
-            transition: var(--transition);
-        }
-        
-        /* FIXED: gender cell styles with enhanced badges */
-        .gender-cell {
-            text-align: center;
-            min-width: 90px;
-        }
-        
-        /* Status cell styles */
-        .status-cell .preview-badge,
-        .license-cell .preview-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            padding: 6px 12px;
-            font-weight: 700 !important;
-            min-width: 90px;
         }
         
         .empty-preview {
@@ -903,7 +746,7 @@
             color: var(--secondary-color);
         }
         
-        /* Enhanced Saved Reports */
+        /* Saved Reports */
         .saved-reports-section {
             background: var(--bg-white);
             border-radius: var(--border-radius);
@@ -964,17 +807,6 @@
             gap: 15px;
         }
         
-        @media (max-width: 576px) {
-            .report-info {
-                flex-direction: column;
-            }
-            
-            .report-actions {
-                width: 100%;
-                justify-content: flex-start;
-            }
-        }
-        
         .report-main-info h4 {
             font-size: 1rem;
             font-weight: 700;
@@ -1003,13 +835,6 @@
             flex-wrap: wrap;
         }
         
-        .report-actions .btn {
-            padding: 5px 10px;
-            font-size: 0.8rem;
-            border-radius: 6px;
-            font-weight: 600;
-        }
-        
         .report-fields {
             display: flex;
             flex-wrap: wrap;
@@ -1027,7 +852,7 @@
             font-weight: 500;
         }
         
-        /* Enhanced Badges */
+        /* Badges */
         .badge {
             padding: 5px 8px;
             border-radius: 4px;
@@ -1064,7 +889,7 @@
             display: block;
         }
         
-        /* Quick Actions Styling */
+        /* Quick Actions */
         .quick-actions {
             background: linear-gradient(to right, #f8f9fa, #ffffff);
             border-radius: 8px;
@@ -1089,12 +914,6 @@
             gap: 8px;
         }
         
-        .quick-actions .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.8rem;
-            border-radius: 6px;
-        }
-        
         /* Mobile-specific optimizations */
         @media (max-width: 576px) {
             .main-container {
@@ -1103,10 +922,6 @@
             
             .page-header {
                 padding: 15px;
-            }
-            
-            .page-header h1 {
-                font-size: 1.4rem;
             }
             
             .config-panel,
@@ -1119,85 +934,19 @@
                 width: 100%;
             }
             
-            .category-actions .btn {
-                width: 100%;
-                justify-content: center;
-            }
-            
             .preview-table {
                 display: block;
                 overflow-x: auto;
                 white-space: nowrap;
             }
             
-            .preview-table thead th,
-            .preview-table tbody td {
-                padding: 8px;
-                font-size: 0.8rem;
-            }
-            
             .action-buttons .btn {
                 width: 100%;
-                text-align: center;
-            }
-            
-            /* Adjust badge sizes for mobile */
-            .preview-badge {
-                min-width: 70px !important;
-                padding: 4px 8px !important;
-                font-size: 0.7rem !important;
-            }
-            
-            .quick-actions .btn-group {
-                flex-direction: column;
-                width: 100%;
-            }
-            
-            .quick-actions .btn-sm {
-                width: 100%;
-                text-align: left;
-                justify-content: flex-start;
-            }
-        }
-        
-        /* High contrast mode support */
-        @media (prefers-contrast: high) {
-            .stat-card,
-            .config-panel,
-            .preview-panel,
-            .saved-reports-section {
-                border: 2px solid var(--secondary-color);
-            }
-            
-            .preview-table {
-                border: 2px solid var(--secondary-color);
-            }
-            
-            .preview-table th {
-                background-color: var(--secondary-color);
-                color: white;
-            }
-            
-            .preview-table td {
-                border: 1px solid #000;
-            }
-            
-            .preview-badge {
-                border: 2px solid #000 !important;
-            }
-            
-            .btn {
-                border: 2px solid currentColor;
             }
         }
         
         /* Print styles */
         @media print {
-            body {
-                background-color: white !important;
-                color: black !important;
-            }
-            
             .btn,
             .preview-actions,
             .config-panel,
@@ -1213,34 +962,6 @@
                 border: 1px solid #000 !important;
                 display: block !important;
                 page-break-inside: avoid;
-            }
-            
-            .preview-table {
-                border: 1px solid #000 !important;
-                font-size: 10pt !important;
-            }
-            
-            .preview-table th {
-                background-color: #000 !important;
-                color: #fff !important;
-                -webkit-print-color-adjust: exact;
-            }
-            
-            .preview-table td {
-                background-color: #fff !important;
-                border: 1px solid #ddd !important;
-            }
-            
-            .preview-badge {
-                border: 1px solid #000 !important;
-                background-color: #fff !important;
-                color: #000 !important;
-                -webkit-print-color-adjust: exact;
-            }
-            
-            .preview-content {
-                max-height: none !important;
-                overflow: visible !important;
             }
         }
     </style>
@@ -1262,7 +983,7 @@
             </div>
         </div>
 
-        <!-- Statistics Cards - Made Responsive -->
+        <!-- Statistics Cards -->
         <div class="stats-container">
             <div class="stat-card">
                 <div class="stat-icon">
@@ -1320,7 +1041,6 @@
                 
                 <!-- UPDATED FORM: Using the correct CSRF token variable -->
                 <form id="reportForm" method="POST" action="/admin/nominal-roll/generate-report" target="_blank">
-                    <!-- FIXED CSRF Token: Using $this->data['csrf_token'] -->
                     <input type="hidden" name="csrf_token" value="<?php echo $this->data['csrf_token'] ?? ''; ?>">
                     
                     <!-- Field Selection -->
@@ -1421,7 +1141,6 @@
                                     <select name="filter_state" id="filter_state" class="form-select filter-select" onchange="updateFilterCount()">
                                         <option value="">All States</option>
                                         <?php
-                                        // You should populate this from your database
                                         $states = ['Lagos', 'Abuja', 'Rivers', 'Kano', 'Oyo', 'Kaduna', 'Edo', 'Delta', 'Ogun', 'Enugu'];
                                         foreach ($states as $state): ?>
                                         <option value="<?= htmlspecialchars($state) ?>"><?= htmlspecialchars($state) ?></option>
@@ -1498,7 +1217,6 @@
                                                 </option>
                                             <?php endforeach; ?>
                                         <?php else: ?>
-                                            <!-- Fallback options if status_options is not available -->
                                             <option value="active">Active</option>
                                             <option value="inactive">Inactive</option>
                                             <option value="draft">Draft</option>
@@ -1567,7 +1285,6 @@
                                                 </option>
                                             <?php endforeach; ?>
                                         <?php else: ?>
-                                            <!-- Fallback options -->
                                             <option value="PhD">PhD</option>
                                             <option value="MSc">MSc</option>
                                             <option value="BSc">BSc</option>
@@ -1595,7 +1312,6 @@
                                                 </option>
                                             <?php endforeach; ?>
                                         <?php else: ?>
-                                            <!-- Fallback options -->
                                             <option value="TRCN">TRCN</option>
                                             <option value="RN">RN</option>
                                             <option value="RM">RM</option>
@@ -1617,6 +1333,70 @@
                                            class="form-control" 
                                            placeholder="e.g., PGDE, MSC, PGD"
                                            oninput="updateFilterCount()">
+                                </div>
+                            </div>
+                            
+                            <!-- NEW: Qualification Quick Filters Section -->
+                            <div class="col-12 mt-3">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white">
+                                        <i class="fas fa-graduation-cap me-2"></i> Quick Qualification Filters
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Highest Qualification:</label>
+                                                <div class="btn-group-vertical w-100" role="group">
+                                                    <button type="button" class="btn btn-outline-info text-start" onclick="applyQualificationFilter('highest_qualification', 'PhD')">
+                                                        <i class="fas fa-user-graduate me-2"></i> PhD Holders
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-info text-start" onclick="applyQualificationFilter('highest_qualification', 'MSc')">
+                                                        <i class="fas fa-user-graduate me-2"></i> MSc Holders
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-info text-start" onclick="applyQualificationFilter('highest_qualification', 'BSc')">
+                                                        <i class="fas fa-user-graduate me-2"></i> BSc Holders
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-info text-start" onclick="applyQualificationFilter('highest_qualification', 'HND')">
+                                                        <i class="fas fa-user-graduate me-2"></i> HND Holders
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Professional Certifications:</label>
+                                                <div class="btn-group-vertical w-100" role="group">
+                                                    <button type="button" class="btn btn-outline-success text-start" onclick="applyQualificationFilter('professional_certifications', 'TRCN')">
+                                                        <i class="fas fa-id-card me-2"></i> TRCN Licensed
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-success text-start" onclick="applyQualificationFilter('professional_certifications', 'RN')">
+                                                        <i class="fas fa-user-nurse me-2"></i> Registered Nurses
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-success text-start" onclick="applyQualificationFilter('professional_certifications', 'RM')">
+                                                        <i class="fas fa-user-nurse me-2"></i> Registered Midwives
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-success text-start" onclick="applyQualificationFilter('professional_certifications', 'RPHN')">
+                                                        <i class="fas fa-user-nurse me-2"></i> RPHN Certified
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Additional Qualification Search -->
+                                        <div class="mt-3">
+                                            <label class="form-label fw-bold">Search Additional Qualifications:</label>
+                                            <div class="input-group">
+                                                <input type="text" 
+                                                       id="additionalQualSearch" 
+                                                       class="form-control" 
+                                                       placeholder="e.g., PGDE, Certificate, Diploma..."
+                                                       onkeypress="if(event.keyCode==13) searchAdditionalQualifications()">
+                                                <button class="btn btn-info" type="button" onclick="searchAdditionalQualifications()">
+                                                    <i class="fas fa-search"></i> Search
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">Search in additional qualifications field</small>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1644,7 +1424,7 @@
                         </div>
                     </div>
                     
-                    <!-- FIXED: Sorting Section -->
+                    <!-- Sorting Section -->
                     <div class="sorting-section">
                         <h3><i class="fas fa-sort-amount-down"></i> Sort Results</h3>
                         <select name="sort_order" class="form-select">
@@ -1658,12 +1438,10 @@
                             <option value="state_desc">State (Z to A)</option>
                             <option value="date_of_first_appointment_asc">Date of Appointment (Oldest First)</option>
                             <option value="date_of_first_appointment_desc">Date of Appointment (Newest First)</option>
-                            <!-- License status sorting options -->
                             <option value="nmcn_status_asc">NMCN Status (A to Z)</option>
                             <option value="nmcn_status_desc">NMCN Status (Z to A)</option>
                             <option value="trcn_status_asc">TRCN Status (A to Z)</option>
                             <option value="trcn_status_desc">TRCN Status (Z to A)</option>
-                            <!-- NEW: Qualification sorting options -->
                             <option value="highest_qualification_asc">Highest Qualification (A to Z)</option>
                             <option value="highest_qualification_desc">Highest Qualification (Z to A)</option>
                         </select>
@@ -1849,12 +1627,10 @@
         </div>
     </div>
 
-    <!-- Modals -->
     <!-- Save Report Modal -->
     <div class="modal fade" id="saveReportModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <!-- UPDATED: Using correct CSRF token variable -->
                 <form id="saveReportForm" method="POST" action="/admin/nominal-roll/save-report">
                     <div class="modal-header">
                         <h5 class="modal-title">
@@ -1863,7 +1639,6 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <!-- FIXED CSRF Token: Using $this->data['csrf_token'] -->
                         <input type="hidden" name="csrf_token" value="<?php echo $this->data['csrf_token'] ?? ''; ?>">
                         <input type="hidden" name="selected_fields" id="saveSelectedFields">
                         <input type="hidden" name="filters" id="saveFilters">
@@ -1900,10 +1675,7 @@
     <script>
         // Global variables
         let totalFields = <?= $totalFields ?>;
-        let currentReportData = null; // Store current report data for export
-        let fieldCache = {}; // Cache for field data
-        let lastRequestTime = 0;
-        const REQUEST_DELAY = 500; // Debounce delay in ms
+        let currentReportData = null;
         let previewGenerationInProgress = false;
         
         document.addEventListener('DOMContentLoaded', function() {
@@ -1911,12 +1683,6 @@
             updateCounts();
             updateFilterCount();
             document.getElementById('totalFieldsCount').textContent = totalFields;
-            
-            // Initialize tooltips
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
             
             // Check if there's a preview in session
             checkForPreview();
@@ -1941,16 +1707,13 @@
         
         // Check if preview data exists
         function checkPreviewDataExists() {
-            // Check if we have preview data in localStorage or if preview panel is visible
             const previewPanel = document.getElementById('previewPanel');
             const hasLocalPreview = localStorage.getItem('lastPreviewData');
-            
             return previewPanel.classList.contains('show') || hasLocalPreview;
         }
         
         // Check if there's preview data in session
         function checkForPreview() {
-            // Check if we have preview data from a previous generation
             if (localStorage.getItem('lastPreviewData')) {
                 try {
                     const previewData = JSON.parse(localStorage.getItem('lastPreviewData'));
@@ -2012,16 +1775,7 @@
             updateCounts();
         }
         
-        // Optimize updateCounts function
         function updateCounts() {
-            // Debounce rapid updates
-            const now = Date.now();
-            if (now - lastRequestTime < 100) {
-                return;
-            }
-            lastRequestTime = now;
-            
-            // Use requestAnimationFrame for smooth UI updates
             requestAnimationFrame(() => {
                 const selectedCount = document.querySelectorAll('.field-checkbox:checked').length;
                 
@@ -2034,7 +1788,7 @@
                 document.getElementById('fieldProgress').style.width = progressPercent + '%';
                 document.getElementById('fieldProgressText').textContent = progressPercent + '% selected';
                 
-                // Update category counts efficiently
+                // Update category counts
                 const categories = <?= json_encode(array_keys($availableFields)) ?>;
                 categories.forEach(categoryId => {
                     const checkboxes = document.querySelectorAll('.field-checkbox[data-category="' + categoryId + '"]');
@@ -2057,7 +1811,55 @@
             });
         }
         
-        // UPDATED: Update filter count function with new qualification filters
+        // NEW: Function to apply qualification filter
+        function applyQualificationFilter(type, value) {
+            // Clear other filters first
+            clearFilters();
+            
+            // Set the specific qualification filter
+            if (type === 'highest_qualification') {
+                const select = document.getElementById('filter_highest_qualification');
+                if (select) {
+                    Array.from(select.options).forEach(opt => opt.selected = false);
+                    const option = Array.from(select.options).find(opt => opt.value === value);
+                    if (option) option.selected = true;
+                }
+            } else if (type === 'professional_certifications') {
+                document.getElementById('filter_professional_certification').value = value;
+            }
+            
+            // Update counts and generate preview
+            updateFilterCount();
+            showAlert(`Filter applied: ${value} holders`, 'info');
+            
+            // Auto-generate preview
+            setTimeout(() => generatePreview(), 500);
+        }
+        
+        // NEW: Function to search in additional qualifications
+        function searchAdditionalQualifications() {
+            const searchTerm = document.getElementById('additionalQualSearch').value.trim();
+            
+            if (!searchTerm) {
+                showAlert('Please enter a search term', 'warning');
+                return;
+            }
+            
+            // Clear other filters first
+            clearFilters();
+            
+            // Set additional qualification filter
+            document.getElementById('filter_additional_qualification').value = searchTerm;
+            
+            // Update counts and generate preview
+            updateFilterCount();
+            showAlert(`Searching for: ${searchTerm}`, 'info');
+            
+            // Auto-generate preview
+            setTimeout(() => generatePreview(), 500);
+        }
+        
+        // Update filter count function with new qualification filters
         function updateFilterCount() {
             let activeCount = 0;
             const activeFilters = [];
@@ -2076,17 +1878,16 @@
                 'filter_grade_level',
                 'filter_sex',
                 'filter_rank',
-                'filter_status',        // Employment status
-                'filter_nmcn_status',   // NMCN status
-                'filter_trcn_status',   // TRCN status
-                'filter_professional_certification' // Professional certification
+                'filter_status',
+                'filter_nmcn_status',
+                'filter_trcn_status',
+                'filter_professional_certification'
             ];
             
             filterSelects.forEach(filterName => {
                 const select = document.querySelector(`[name="${filterName}"]`);
                 if (select && select.value) {
                     activeCount++;
-                    // Format filter name for display
                     const displayName = filterName.replace('filter_', '')
                         .replace('_', ' ')
                         .replace(/\b\w/g, l => l.toUpperCase());
@@ -2128,9 +1929,8 @@
             }
         }
         
-        // NEW: Function to generate qualification-specific reports
+        // Function to generate qualification-specific reports
         function generateQualificationReport(qualificationType, value) {
-            // This can be called from quick action buttons
             const form = document.getElementById('reportForm');
             
             // Clear existing filters
@@ -2139,7 +1939,6 @@
             // Set the specific qualification filter
             if (qualificationType === 'highest_qualification') {
                 const select = document.getElementById('filter_highest_qualification');
-                // Clear and set value
                 Array.from(select.options).forEach(opt => opt.selected = false);
                 const option = Array.from(select.options).find(opt => opt.value === value);
                 if (option) option.selected = true;
@@ -2153,7 +1952,7 @@
             generatePreview();
         }
         
-        // FIXED: generatePreview function with FormData fix
+        // generatePreview function
         async function generatePreview() {
             if (previewGenerationInProgress) {
                 showAlert('Please wait for the current preview to finish', 'info');
@@ -2174,21 +1973,13 @@
             submitBtn.disabled = true;
             
             try {
-                // Get the form element
                 const form = document.getElementById('reportForm');
                 
                 if (!form) {
                     throw new Error('Report form not found');
                 }
                 
-                // Create FormData from the ACTUAL form (this includes all fields including CSRF token)
                 const formData = new FormData(form);
-                
-                // Debug: Show what's in formData
-                console.log('FormData entries:');
-                for (let pair of formData.entries()) {
-                    console.log(pair[0] + ': ' + pair[1]);
-                }
                 
                 // Show loading state
                 document.getElementById('previewPanel').classList.add('show');
@@ -2236,14 +2027,12 @@
             } catch (error) {
                 console.error('Preview generation error:', error);
                 
-                // More specific error messages
                 if (error.message.includes('CSRF')) {
                     showAlert('CSRF token error. Please refresh the page and try again.', 'danger');
                 } else if (error.message.includes('Network') || error.message.includes('Failed to fetch')) {
                     showAlert('Network error. Please check your connection.', 'danger');
                 } else {
                     showAlert('Error generating preview: ' + error.message, 'danger');
-                    // Fallback to sample data
                     fallbackToSampleData();
                 }
             } finally {
@@ -2255,15 +2044,13 @@
             }
         }
         
-        // FIXED: Fallback to sample data function with NMCN, TRCN status, and new qualification fields handling
+        // Fallback to sample data function
         function fallbackToSampleData() {
-            // Get selected fields
             const selectedFields = [];
             document.querySelectorAll('.field-checkbox:checked').forEach(cb => {
                 selectedFields.push(cb.value);
             });
             
-            // Get field labels
             const fieldLabels = {};
             selectedFields.forEach(field => {
                 const label = document.querySelector(`label[for="field_${field}"]`)?.textContent || 
@@ -2271,7 +2058,6 @@
                 fieldLabels[field] = label.replace('Default', '').trim();
             });
             
-            // Get filter values
             const filters = {
                 search: document.querySelector('[name="search"]').value,
                 state: document.querySelector('[name="filter_state"]').value,
@@ -2294,7 +2080,6 @@
             for (let i = 1; i <= 10; i++) {
                 const row = { id: i };
                 selectedFields.forEach(field => {
-                    // Try to get real field types based on field name
                     if (field.includes('date')) {
                         row[field] = '2024-01-' + (i < 10 ? '0' + i : i);
                     } else if (field === 'sex') {
@@ -2302,15 +2087,12 @@
                     } else if (field === 'employee_number') {
                         row[field] = 'EMP' + (20240000 + i);
                     } else if (field === 'nmcn_status') {
-                        // Use the NMCN status filter or default to Active
                         const nmcnFilter = filters.nmcn_status || 'Active';
                         row[field] = nmcnFilter;
                     } else if (field === 'trcn_status') {
-                        // Use the TRCN status filter or default to Active
                         const trcnFilter = filters.trcn_status || 'Active';
                         row[field] = trcnFilter;
                     } else if (field === 'status') {
-                        // Use the status filter or default to active
                         const statusFilter = filters.status || 'active';
                         row[field] = statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1);
                     } else if (field === 'grade_level') {
@@ -2350,9 +2132,7 @@
                 }
             };
             
-            // Store in global variable for export
             currentReportData = previewData;
-            // Store in localStorage
             localStorage.setItem('lastPreviewData', JSON.stringify(previewData));
             localStorage.setItem('lastPreviewId', Date.now());
             
@@ -2360,16 +2140,14 @@
             showAlert('Showing sample data. Real data could not be loaded.', 'warning');
         }
         
-        // FIXED: showPreviewWithData function with enhanced contrast for ALL items including qualification fields
+        // showPreviewWithData function with enhanced formatting
         function showPreviewWithData(previewData) {
             const previewContent = document.getElementById('previewContent');
             
-            // Calculate stats
             const totalRecords = previewData.totalRecords || 0;
             const previewRecords = previewData.previewRecords || 0;
             const previewLimit = previewData.previewLimit || 20;
             
-            // Create table HTML
             let tableHTML = `
                 <div class="table-responsive">
                     <table class="preview-table">
@@ -2420,7 +2198,7 @@
                             }
                         }
                         
-                        // Format NMCN and TRCN license status - ALL TYPES
+                        // Format NMCN and TRCN license status
                         else if (field === 'nmcn_status' || field === 'trcn_status') {
                             const valueLower = value.toString().toLowerCase();
                             if (valueLower.includes('active')) {
@@ -2438,7 +2216,7 @@
                             }
                         }
                         
-                        // Format employment status - ALL TYPES
+                        // Format employment status
                         else if (field === 'status') {
                             const valueLower = value.toString().toLowerCase();
                             if (valueLower.includes('active')) {
@@ -2471,7 +2249,43 @@
                         // Format highest qualification with styling
                         else if (field === 'highest_qualification') {
                             if (value) {
-                                value = `<span style="font-weight: 700; color: #2c5aa0; background: rgba(44, 90, 160, 0.1); padding: 4px 8px; border-radius: 3px; border: 1px solid rgba(44, 90, 160, 0.2);">${value}</span>`;
+                                // Color code based on qualification level
+                                let bgColor, textColor, borderColor;
+                                
+                                switch(value.toUpperCase()) {
+                                    case 'PHD':
+                                        bgColor = 'rgba(155, 89, 182, 0.15)'; // Purple
+                                        textColor = '#9B59B6';
+                                        borderColor = 'rgba(155, 89, 182, 0.3)';
+                                        break;
+                                    case 'MSC':
+                                    case 'M.SC':
+                                    case 'MASTERS':
+                                        bgColor = 'rgba(52, 152, 219, 0.15)'; // Blue
+                                        textColor = '#3498DB';
+                                        borderColor = 'rgba(52, 152, 219, 0.3)';
+                                        break;
+                                    case 'BSC':
+                                    case 'B.SC':
+                                    case 'BACHELORS':
+                                        bgColor = 'rgba(46, 204, 113, 0.15)'; // Green
+                                        textColor = '#2ECC71';
+                                        borderColor = 'rgba(46, 204, 113, 0.3)';
+                                        break;
+                                    case 'HND':
+                                        bgColor = 'rgba(241, 196, 15, 0.15)'; // Yellow
+                                        textColor = '#F1C40F';
+                                        borderColor = 'rgba(241, 196, 15, 0.3)';
+                                        break;
+                                    default:
+                                        bgColor = 'rgba(149, 165, 166, 0.15)'; // Gray
+                                        textColor = '#95A5A6';
+                                        borderColor = 'rgba(149, 165, 166, 0.3)';
+                                }
+                                
+                                value = `<span style="font-weight: 700; color: ${textColor}; background: ${bgColor}; padding: 4px 8px; border-radius: 3px; border: 1px solid ${borderColor};">
+                                            <i class="fas fa-graduation-cap me-1"></i>${value}
+                                        </span>`;
                             } else {
                                 value = '<span class="empty-cell">-</span>';
                             }
@@ -2480,7 +2294,39 @@
                         // Format professional certifications with styling
                         else if (field === 'professional_certifications' || field === 'professional_certification') {
                             if (value) {
-                                value = `<span style="font-weight: 600; color: #28a745; background: rgba(40, 167, 69, 0.1); padding: 4px 8px; border-radius: 3px; border: 1px solid rgba(40, 167, 69, 0.2);">${value}</span>`;
+                                // Color code based on certification type
+                                let bgColor, textColor, borderColor, icon;
+                                
+                                if (value.includes('TRCN')) {
+                                    bgColor = 'rgba(231, 76, 60, 0.15)'; // Red
+                                    textColor = '#E74C3C';
+                                    borderColor = 'rgba(231, 76, 60, 0.3)';
+                                    icon = 'fas fa-chalkboard-teacher';
+                                } else if (value.includes('RN')) {
+                                    bgColor = 'rgba(52, 152, 219, 0.15)'; // Blue
+                                    textColor = '#3498DB';
+                                    borderColor = 'rgba(52, 152, 219, 0.3)';
+                                    icon = 'fas fa-user-nurse';
+                                } else if (value.includes('RM')) {
+                                    bgColor = 'rgba(155, 89, 182, 0.15)'; // Purple
+                                    textColor = '#9B59B6';
+                                    borderColor = 'rgba(155, 89, 182, 0.3)';
+                                    icon = 'fas fa-baby';
+                                } else if (value.includes('RPHN')) {
+                                    bgColor = 'rgba(46, 204, 113, 0.15)'; // Green
+                                    textColor = '#2ECC71';
+                                    borderColor = 'rgba(46, 204, 113, 0.3)';
+                                    icon = 'fas fa-user-md';
+                                } else {
+                                    bgColor = 'rgba(149, 165, 166, 0.15)'; // Gray
+                                    textColor = '#95A5A6';
+                                    borderColor = 'rgba(149, 165, 166, 0.3)';
+                                    icon = 'fas fa-certificate';
+                                }
+                                
+                                value = `<span style="font-weight: 700; color: ${textColor}; background: ${bgColor}; padding: 4px 8px; border-radius: 3px; border: 1px solid ${borderColor};">
+                                            <i class="${icon} me-1"></i>${value}
+                                        </span>`;
                             } else {
                                 value = '<span class="empty-cell">-</span>';
                             }
@@ -2488,15 +2334,21 @@
                         
                         // Format additional qualifications
                         else if (field === 'additional_qualifications') {
-                            // Try to format JSON as readable text
                             try {
                                 if (value && value !== '') {
                                     const quals = JSON.parse(value);
-                                    if (Array.isArray(quals)) {
-                                        const formattedQuals = quals.map(q => 
-                                            `${q.qualification} (${q.year})`
-                                        ).join(', ');
-                                        value = `<span title="${formattedQuals}" class="text-truncate d-inline-block" style="max-width: 300px; font-weight: 500; color: #495057;">${formattedQuals}</span>`;
+                                    if (Array.isArray(quals) && quals.length > 0) {
+                                        const formattedQuals = quals.map((q, index) => {
+                                            const qualName = q.qualification || 'Unknown Qualification';
+                                            const year = q.year ? ` (${q.year})` : '';
+                                            const badgeColor = index % 2 === 0 ? 'primary' : 'info';
+                                            
+                                            return `<span class="badge bg-${badgeColor} me-1 mb-1" style="font-size: 0.75rem;">
+                                                        <i class="fas fa-award me-1"></i>${qualName}${year}
+                                                    </span>`;
+                                        }).join('');
+                                        
+                                        value = `<div class="d-flex flex-wrap">${formattedQuals}</div>`;
                                     } else {
                                         value = `<span style="font-weight: 500; color: #495057;">${value}</span>`;
                                     }
@@ -2504,9 +2356,18 @@
                                     value = '<span class="empty-cell">-</span>';
                                 }
                             } catch (e) {
-                                // If not JSON, display as is
                                 if (value && value !== '') {
-                                    value = `<span style="font-weight: 500; color: #495057;">${value}</span>`;
+                                    if (value.includes(',') || value.includes(';')) {
+                                        const items = value.split(/[,;]/).map(item => item.trim()).filter(item => item);
+                                        const formattedItems = items.map((item, index) => {
+                                            const badgeColor = index % 2 === 0 ? 'secondary' : 'light text-dark';
+                                            return `<span class="badge bg-${badgeColor} me-1 mb-1">${item}</span>`;
+                                        }).join('');
+                                        
+                                        value = `<div class="d-flex flex-wrap">${formattedItems}</div>`;
+                                    } else {
+                                        value = `<span style="font-weight: 500; color: #495057;">${value}</span>`;
+                                    }
                                 } else {
                                     value = '<span class="empty-cell">-</span>';
                                 }
@@ -2533,14 +2394,12 @@
                             value = '<span class="empty-cell">-</span>';
                         }
                         
-                        // Add CSS classes for special cells
                         let cellClass = '';
                         if (field === 'sex') cellClass = 'gender-cell';
                         if (field.includes('status') || field.includes('license')) cellClass += ' status-cell license-cell';
                         if (field.includes('date')) cellClass += ' date-cell';
                         if (field.includes('qualification') || field.includes('certification')) cellClass += ' qualification-cell';
                         
-                        // Remove extra spaces from cellClass
                         cellClass = cellClass.trim();
                         
                         tableHTML += `<td class="${cellClass}">${value}</td>`;
@@ -2600,7 +2459,7 @@
             }
         }
         
-        // FIXED: Helper function to clear filters (updated with new filters)
+        // Helper function to clear filters (updated with new filters)
         function clearFilters() {
             // Clear all filter inputs
             document.querySelector('[name="search"]').value = '';
@@ -2619,7 +2478,7 @@
             ];
             
             filterSelects.forEach(filterName => {
-                const select = document.querySelector(`[name="${filterName}]`);
+                const select = document.querySelector(`[name="${filterName}"]`);
                 if (select) {
                     select.value = '';
                 }
@@ -2634,6 +2493,9 @@
             // Clear additional qualification
             document.getElementById('filter_additional_qualification').value = '';
             
+            // Clear additional qualification search
+            document.getElementById('additionalQualSearch').value = '';
+            
             updateFilterCount();
             showAlert('All filters cleared', 'info');
         }
@@ -2641,19 +2503,11 @@
         // Update preview statistics
         function updatePreviewStats(previewData) {
             if (previewData.statistics) {
-                // Update the stats cards with real data
                 const statsContainer = document.querySelector('.stats-container');
                 if (statsContainer && previewData.totalRecords !== undefined) {
-                    // Update total records count
                     const totalRecordsEl = statsContainer.querySelector('.stat-card:nth-child(1) h3');
                     if (totalRecordsEl) {
                         totalRecordsEl.textContent = previewData.totalRecords;
-                    }
-                    
-                    // Update other stats if available
-                    if (previewData.statistics.summary && previewData.statistics.summary.by_sex) {
-                        const genderStats = previewData.statistics.summary.by_sex;
-                        // You can update gender-specific stats here
                     }
                 }
             }
@@ -2664,7 +2518,7 @@
             document.getElementById('reportForm').submit();
         }
         
-        // FIXED: Prepare data for saving report (updated with new filters)
+        // Prepare data for saving report (updated with new filters)
         function prepareSaveData() {
             // Get selected fields
             const selectedFields = [];
@@ -2701,7 +2555,7 @@
             document.getElementById('saveExcelOptions').value = JSON.stringify(exportOptions);
         }
         
-        // Professional Excel Export using HTML method
+        // Professional Excel Export
         function exportExcel() {
             try {
                 const exportBtn = document.querySelector('[onclick="exportExcel()"]');
@@ -2709,7 +2563,6 @@
                 exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Creating Report...';
                 exportBtn.disabled = true;
 
-                // Check if preview has been generated
                 const previewPanel = document.getElementById('previewPanel');
                 if (!previewPanel.classList.contains('show')) {
                     showAlert('Please generate a preview first before exporting', 'warning');
@@ -2718,40 +2571,33 @@
                     return;
                 }
 
-                // Get format options
                 const autoFormat = document.getElementById('autoFormat').checked;
                 const includeSummary = document.getElementById('includeSummary').checked;
                 
-                // Get the form
                 const form = document.getElementById('reportForm');
                 if (!form) {
                     throw new Error('Form not found');
                 }
                 
-                // Create FormData
                 const formData = new FormData(form);
                 formData.append('export_type', 'excel');
                 formData.append('auto_format', autoFormat ? '1' : '0');
                 formData.append('include_summary', includeSummary ? '1' : '0');
                 
-                // Show preparing message
                 showAlert('Creating professionally formatted Excel report...', 'info');
                 
-                // Submit form to export endpoint
                 const exportForm = document.createElement('form');
                 exportForm.method = 'POST';
                 exportForm.action = '/admin/nominal-roll/export-excel';
                 exportForm.target = '_blank';
                 exportForm.style.display = 'none';
                 
-                // Add CSRF token
                 const csrfInput = document.createElement('input');
                 csrfInput.type = 'hidden';
                 csrfInput.name = 'csrf_token';
                 csrfInput.value = document.querySelector('input[name="csrf_token"]').value;
                 exportForm.appendChild(csrfInput);
                 
-                // Add other form data
                 for (let [key, value] of formData.entries()) {
                     if (key !== 'csrf_token') {
                         const input = document.createElement('input');
@@ -2766,7 +2612,6 @@
                 exportForm.submit();
                 document.body.removeChild(exportForm);
                 
-                // Reset button after delay
                 setTimeout(() => {
                     exportBtn.innerHTML = originalBtnText;
                     exportBtn.disabled = false;
@@ -2777,7 +2622,6 @@
                 console.error('Excel export error:', error);
                 showAlert('Error creating Excel report: ' + error.message, 'danger');
                 
-                // Reset button
                 const exportBtn = document.querySelector('[onclick="exportExcel()"]');
                 exportBtn.innerHTML = '<i class="fas fa-file-excel me-1"></i> Excel';
                 exportBtn.disabled = false;
@@ -2792,7 +2636,6 @@
                 exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Creating CSV...';
                 exportBtn.disabled = true;
 
-                // Check if preview has been generated
                 const previewPanel = document.getElementById('previewPanel');
                 if (!previewPanel.classList.contains('show')) {
                     showAlert('Please generate a preview first before exporting', 'warning');
@@ -2801,31 +2644,26 @@
                     return;
                 }
 
-                // Get the form
                 const form = document.getElementById('reportForm');
                 if (!form) {
                     throw new Error('Form not found');
                 }
                 
-                // Create FormData
                 const formData = new FormData(form);
                 formData.append('export_type', 'csv');
                 
-                // Create and submit form
                 const exportForm = document.createElement('form');
                 exportForm.method = 'POST';
                 exportForm.action = '/admin/nominal-roll/export-csv';
                 exportForm.target = '_blank';
                 exportForm.style.display = 'none';
                 
-                // Add CSRF token
                 const csrfInput = document.createElement('input');
                 csrfInput.type = 'hidden';
                 csrfInput.name = 'csrf_token';
                 csrfInput.value = document.querySelector('input[name="csrf_token"]').value;
                 exportForm.appendChild(csrfInput);
                 
-                // Add other form data
                 for (let [key, value] of formData.entries()) {
                     if (key !== 'csrf_token') {
                         const input = document.createElement('input');
@@ -2840,7 +2678,6 @@
                 exportForm.submit();
                 document.body.removeChild(exportForm);
                 
-                // Reset button after delay
                 setTimeout(() => {
                     exportBtn.innerHTML = originalBtnText;
                     exportBtn.disabled = false;
@@ -2850,7 +2687,6 @@
                 console.error('CSV export error:', error);
                 showAlert('Error creating CSV: ' + error.message, 'danger');
                 
-                // Reset button
                 const exportBtn = document.querySelector('[onclick="exportCSV()"]');
                 exportBtn.innerHTML = '<i class="fas fa-file-csv me-1"></i> CSV';
                 exportBtn.disabled = false;
@@ -2883,7 +2719,6 @@
             const reportName = `Report ${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
             document.getElementById('report_name').value = reportName;
             
-            // Show modal
             new bootstrap.Modal(document.getElementById('saveReportModal')).show();
         }
         
@@ -2905,7 +2740,6 @@
         
         // Alert function
         function showAlert(message, type = 'info') {
-            // Create alert element
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
             alertDiv.style.cssText = `
@@ -2917,7 +2751,6 @@
                 border: 2px solid;
             `;
             
-            // Set icon based on type
             let icon = 'info-circle';
             if (type === 'success') icon = 'check-circle';
             if (type === 'warning') icon = 'exclamation-triangle';
@@ -2931,10 +2764,8 @@
                 </div>
             `;
             
-            // Add to body
             document.body.appendChild(alertDiv);
             
-            // Auto remove after 5 seconds
             setTimeout(() => {
                 if (alertDiv.parentNode) {
                     alertDiv.remove();
@@ -2944,7 +2775,6 @@
         
         // Handle window resize for better responsiveness
         window.addEventListener('resize', function() {
-            // Update stats layout on resize
             const statsContainer = document.querySelector('.stats-container');
             if (statsContainer) {
                 if (window.innerWidth < 768) {

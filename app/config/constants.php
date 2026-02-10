@@ -439,6 +439,12 @@ if (file_exists($functionsFile)) {
     require_once $functionsFile;
 }
 
+// Load image helper
+$imageHelperFile = APP_PATH . '/helpers/image_helper.php';
+if (file_exists($imageHelperFile)) {
+    require_once $imageHelperFile;
+}
+
 // ============================================================================
 // INITIALIZATION COMPLETE
 // ============================================================================

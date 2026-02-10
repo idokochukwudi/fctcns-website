@@ -14,6 +14,11 @@ class NominalRollController extends Controller {
     private $model;
     
     /**
+     * @var QualificationModel
+     */
+    protected $qualificationModel;
+    
+    /**
      * @var array User role permissions
      */
     private $allowedRoles = ['admin', 'editor', 'viewer', 'nominal_roll_user']; // ADDED nominal_roll_user
@@ -48,6 +53,12 @@ class NominalRollController extends Controller {
         // Load model
         require_once __DIR__ . '/../models/NominalRollModel.php';
         $this->model = new NominalRollModel();
+        
+        // ============================================
+        // STEP 3: Add QualificationModel to constructor
+        // ============================================
+        require_once APP_PATH . '/models/nominalroll/QualificationModel.php';
+        $this->qualificationModel = new QualificationModel();
         
         // ============================================
         // FIX: Update CSRF token generation to use multi-token system
@@ -734,6 +745,164 @@ class NominalRollController extends Controller {
             error_log("NominalRollController licenseSummary error: " . $e->getMessage());
             $this->flash('error', 'An error occurred while generating license summary report.');
             $this->redirect('/admin/nominal-roll');
+        }
+    }
+    
+    /**
+     * ============================================
+     * STEP 4 & STEP 6: QUALIFICATION REPORT METHODS
+     * ============================================
+     */
+    
+    /**
+     * Generate quick qualification report
+     */
+    public function generateQualificationReport($qualificationType, $qualificationValue) {
+        try {
+            $selectedFields = [
+                'employee_number',
+                'surname',
+                'first_name',
+                'rank',
+                'department',
+                'grade_level',
+                'highest_qualification',
+                'professional_certifications'
+            ];
+            
+            // Build filters based on qualification type
+            $filters = [];
+            
+            switch ($qualificationType) {
+                case 'highest_qualification':
+                    $filters['highest_qualification'] = [$qualificationValue];
+                    break;
+                    
+                case 'professional_certification':
+                    $filters['professional_certification'] = $qualificationValue;
+                    break;
+                    
+                case 'additional_qualification':
+                    $filters['additional_qualification'] = $qualificationValue;
+                    break;
+            }
+            
+            // Get report data
+            $reportData = $this->model->getReportData($selectedFields, $filters, 'surname_asc', 0);
+            
+            // Get field labels
+            $availableFields = $this->model->getAvailableReportFields();
+            $fieldLabels = [];
+            foreach ($availableFields as $category) {
+                foreach ($category['fields'] as $key => $label) {
+                    $fieldLabels[$key] = $label;
+                }
+            }
+            
+            // Prepare data for export
+            $exportData = [
+                'title' => "{$qualificationValue} Holders Report",
+                'headers' => [],
+                'rows' => $reportData['full_data'],
+                'summary' => [
+                    'Total Records' => $reportData['total_records'],
+                    'Generated On' => date('Y-m-d H:i:s'),
+                    'Filter' => "{$qualificationType}: {$qualificationValue}"
+                ]
+            ];
+            
+            // Set headers based on selected fields
+            foreach ($selectedFields as $field) {
+                $exportData['headers'][$field] = $fieldLabels[$field] ?? $field;
+            }
+            
+            // You can return this for Excel export or display
+            return $exportData;
+            
+        } catch (Exception $e) {
+            error_log("Qualification report error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
+    /**
+     * Quick qualification report endpoint
+     */
+    public function quickQualificationReport($type, $value) {
+        try {
+            $allowedTypes = ['highest_qualification', 'professional_certification', 'additional_qualification'];
+            
+            if (!in_array($type, $allowedTypes)) {
+                throw new Exception('Invalid qualification type');
+            }
+            
+            $reportData = $this->generateQualificationReport($type, $value);
+            
+            // Set headers for Excel download
+            header('Content-Type: application/vnd.ms-excel');
+            header('Content-Disposition: attachment; filename="' . $reportData['title'] . ' - ' . date('Y-m-d') . '.xls"');
+            header('Cache-Control: max-age=0');
+            
+            // Output Excel HTML
+            echo '<!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>' . htmlspecialchars($reportData['title']) . '</title>
+                <style>
+                    body { font-family: Arial, sans-serif; }
+                    table { border-collapse: collapse; width: 100%; }
+                    th { background-color: #4CAF50; color: white; font-weight: bold; padding: 8px; border: 1px solid #ddd; }
+                    td { padding: 8px; border: 1px solid #ddd; }
+                    tr:nth-child(even) { background-color: #f2f2f2; }
+                    .summary { background-color: #e8f4f8; padding: 10px; margin-bottom: 20px; }
+                </style>
+            </head>
+            <body>
+                <h1>' . htmlspecialchars($reportData['title']) . '</h1>';
+            
+            // Output summary
+            echo '<div class="summary">';
+            foreach ($reportData['summary'] as $key => $val) {
+                echo '<p><strong>' . htmlspecialchars($key) . ':</strong> ' . htmlspecialchars($val) . '</p>';
+            }
+            echo '</div>';
+            
+            // Output table
+            echo '<table>';
+            echo '<thead><tr>';
+            foreach ($reportData['headers'] as $header) {
+                echo '<th>' . htmlspecialchars($header) . '</th>';
+            }
+            echo '</tr></thead>';
+            
+            echo '<tbody>';
+            foreach ($reportData['rows'] as $row) {
+                echo '<tr>';
+                foreach ($reportData['headers'] as $field => $header) {
+                    $value = $row[$field] ?? '';
+                    // Format qualification fields
+                    if ($field === 'additional_qualifications' && !empty($value)) {
+                        $quals = $this->qualificationModel->parseAdditionalQualifications($value);
+                        $formatted = [];
+                        foreach ($quals as $qual) {
+                            $formatted[] = $qual['qualification'] . ' (' . $qual['year'] . ')';
+                        }
+                        $value = implode(', ', $formatted);
+                    }
+                    echo '<td>' . htmlspecialchars($value) . '</td>';
+                }
+                echo '</tr>';
+            }
+            echo '</tbody></table>';
+            
+            echo '</body></html>';
+            exit;
+            
+        } catch (Exception $e) {
+            error_log("Quick qualification report error: " . $e->getMessage());
+            $this->flash('error', 'Failed to generate report: ' . $e->getMessage());
+            $this->redirect('/admin/nominal-roll/reports');
         }
     }
     

@@ -1,782 +1,1022 @@
 <?php
-// Get the absolute path to the root
-$rootPath = dirname(__DIR__, 3);
-require_once $rootPath . '/app/config/constants.php';
-require_once APP_PATH . '/config/session.php';
-require_once APP_PATH . '/middleware/AuthMiddleware.php';
-AuthMiddleware::authenticate();
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-$userRole = $_SESSION['user_role'] ?? 'viewer';
-$error = $error ?? '';
+// Check if $data array exists and extract variables
+$baseUrl = isset($data['baseUrl']) ? $data['baseUrl'] : '';
+
+// If baseUrl is empty, try to get it from BASE_URL constant
+if (empty($baseUrl) && defined('BASE_URL')) {
+    $baseUrl = BASE_URL;
+}
+
+// Fallback to empty string if still empty
+$baseUrl = $baseUrl ?? '';
+
+$categories = isset($data['categories']) ? $data['categories'] : [];
+$news = isset($data['news']) ? $data['news'] : [];
+$error = isset($data['error']) ? $data['error'] : '';
+
+// Generate CSRF token using Session class
+require_once APP_PATH . '/config/session.php';
+$csrfToken = Session::generateCSRFTokenMulti();
+
+// Define standard nursing college categories if none are provided
+$standardCategories = [
+    'Academic News',
+    'Research & Publications',
+    'Clinical Updates',
+    'Student Achievements',
+    'Faculty News',
+    'Continuing Education',
+    'Community Outreach',
+    'Health Policy',
+    'Nursing Education',
+    'Patient Care',
+    'Technology in Nursing',
+    'International Nursing',
+    'Alumni News',
+    'Events & Conferences',
+    'Accreditation Updates',
+    'Scholarships & Awards',
+    'Mental Health Nursing',
+    'Pediatric Nursing',
+    'Geriatric Nursing',
+    'Emergency Nursing',
+    'Public Health Nursing',
+    'Nursing Leadership',
+    'Simulation Training',
+    'Interprofessional Education'
+];
+
+// Use provided categories or standard ones
+$displayCategories = !empty($categories) ? $categories : $standardCategories;
+
+// Get form data from session if available (for restoring after error)
+$sessionFormData = [];
+if (isset($_SESSION['form_data'])) {
+    $sessionFormData = $_SESSION['form_data'];
+} elseif (isset($_SESSION['old'])) {
+    $sessionFormData = $_SESSION['old'];
+}
+
+// Get flash errors using Session class
+$flashError = Session::getFlash('error');
+if ($flashError) {
+    $error = $flashError;
+}
+
+// If we have session form data, merge it with existing news data
+if (!empty($sessionFormData)) {
+    $news = array_merge($news, $sessionFormData);
+}
+
+// Ensure all expected fields exist with default values
+$news = array_merge([
+    'id' => 0,
+    'title' => '',
+    'slug' => '',
+    'excerpt' => '',
+    'content' => '',
+    'category' => '',
+    'tags' => '',
+    'featured_image' => '',
+    'is_published' => 1,
+    'is_featured' => 0,
+    'is_breaking' => 0,
+    'meta_title' => '',
+    'meta_description' => '',
+    'meta_keywords' => '',
+    'type' => isset($news['type']) ? $news['type'] : 'news',
+    'event_date' => date('Y-m-d'),
+    'event_end_date' => '',
+    'event_time' => '',
+    'event_location' => ''
+], $news);
+
+// Get the correct image URL using the fixed helper function
+$featuredImageUrl = !empty($news['featured_image']) ? getImageUrl($news['featured_image'], $news['type']) : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create News Article - FCT CNS Admin</title>
+    <title>Create <?php echo $news['type'] === 'event' ? 'Event' : 'News Article'; ?> - Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <style>
         :root {
-            --primary: #2c5282;
-            --primary-dark: #1a365d;
-            --success: #38a169;
-            --warning: #d69e2e;
-            --danger: #e53e3e;
-            --gray-50: #f7fafc;
-            --gray-100: #edf2f7;
-            --gray-200: #e2e8f0;
-            --gray-600: #718096;
-            --gray-700: #4a5568;
-            --gray-800: #2d3748;
+            --primary-color: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary-color: #6b7280;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #3b82f6;
+            --light-bg: #f9fafb;
+            --border-color: #e5e7eb;
+            --text-dark: #111827;
+            --text-light: #6b7280;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--gray-100);
-            margin: 0;
-            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--text-dark);
+            line-height: 1.5;
         }
         
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
+        .admin-container {
             padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
         
-        .header {
+        /* Header */
+        .page-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 20px;
         }
         
-        .header h1 {
-            color: var(--gray-800);
-            margin: 0;
-            font-size: 1.75rem;
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-dark);
         }
         
-        .btn {
-            padding: 10px 20px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-        
-        .btn-secondary {
-            background: var(--gray-600);
-            color: white;
-        }
-        
-        .btn-success {
-            background: var(--success);
-            color: white;
-            padding: 12px 30px;
-            font-size: 1rem;
-        }
-        
-        .btn-warning {
-            background: var(--warning);
-            color: white;
-        }
-        
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-        
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn-primary:hover { background: var(--primary-dark); }
-        .btn-secondary:hover { background: var(--gray-700); }
-        
+        /* Form */
         .form-container {
             background: white;
-            border-radius: 8px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content {
+            display: none;
             padding: 30px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
+            min-height: 500px;
+        }
+        
+        .tab-content.active {
+            display: block;
         }
         
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 24px;
         }
         
         .form-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
         }
         
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        label {
+        .form-label {
             display: block;
-            margin-bottom: 8px;
             font-weight: 500;
-            color: var(--gray-700);
+            margin-bottom: 8px;
+            color: var(--text-dark);
         }
         
-        .required:after {
-            content: " *";
-            color: var(--danger);
+        .form-label .required {
+            color: var(--danger-color);
         }
         
-        input, select, textarea {
+        .form-control {
             width: 100%;
             padding: 12px;
-            border: 1px solid var(--gray-200);
+            border: 1px solid var(--border-color);
             border-radius: 6px;
-            font-size: 16px;
-            transition: all 0.2s;
-            box-sizing: border-box;
-            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.3s ease;
         }
         
-        input:focus, select:focus, textarea:focus {
+        .form-control:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.1);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
         
-        .form-help {
-            font-size: 0.875rem;
-            color: var(--gray-600);
-            margin-top: 6px;
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
         }
         
-        .error-message {
-            background: rgba(229, 62, 62, 0.1);
-            color: var(--danger);
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(229, 62, 62, 0.2);
+        /* Editor */
+        .editor-container {
+            height: 400px;
+            margin-bottom: 20px;
         }
         
+        /* Checkboxes */
         .checkbox-group {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .checkbox-group input[type="checkbox"] {
-            width: auto;
-        }
-        
-        .checkbox-group label {
-            margin-bottom: 0;
-            cursor: pointer;
-        }
-        
-        .checkbox-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .editor-toolbar {
-            background: var(--gray-50);
-            border: 1px solid var(--gray-200);
-            border-bottom: none;
-            border-radius: 6px 6px 0 0;
-            padding: 10px;
-            display: flex;
-            gap: 10px;
+            gap: 20px;
             flex-wrap: wrap;
         }
         
-        .editor-toolbar button {
-            padding: 8px 12px;
-            background: white;
-            border: 1px solid var(--gray-200);
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
+        .checkbox-label {
             display: flex;
             align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
+            gap: 8px;
+            cursor: pointer;
         }
         
-        .editor-toolbar button:hover {
-            background: var(--gray-100);
-            border-color: var(--gray-300);
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
         }
         
-        #editor {
-            min-height: 400px;
-            border: 1px solid var(--gray-200);
-            border-radius: 0 0 6px 6px;
-            padding: 20px;
-            font-size: 16px;
-            line-height: 1.6;
-            outline: none;
-        }
-        
-        #editor:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.1);
-        }
-        
-        .form-actions {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 1px solid var(--gray-200);
-            flex-wrap: wrap;
-        }
-        
-        @media (max-width: 768px) {
-            .form-actions {
-                flex-direction: column;
-            }
-            
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-        
-        .character-count {
-            text-align: right;
-            font-size: 0.875rem;
-            color: var(--gray-600);
-            margin-top: 8px;
-        }
-        
-        .slug-preview {
-            background: var(--gray-50);
-            border: 1px solid var(--gray-200);
-            border-radius: 6px;
-            padding: 10px 15px;
-            margin-top: 10px;
-            font-family: monospace;
-            font-size: 14px;
-            word-break: break-all;
-        }
-        
-        .preview-area {
-            background: var(--gray-50);
-            border: 1px solid var(--gray-200);
-            border-radius: 6px;
-            padding: 20px;
-            margin-top: 20px;
-            display: none;
-        }
-        
-        .preview-area h3 {
-            margin-top: 0;
-            color: var(--gray-800);
-        }
-        
+        /* Image Upload */
         .image-upload {
-            border: 2px dashed var(--gray-300);
+            border: 2px dashed var(--border-color);
             border-radius: 8px;
-            padding: 40px 20px;
+            padding: 40px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 10px;
+            transition: all 0.3s ease;
         }
         
         .image-upload:hover {
-            border-color: var(--primary);
-            background: rgba(44, 82, 130, 0.05);
-        }
-        
-        .image-upload input[type="file"] {
-            display: none;
-        }
-        
-        .upload-prompt {
-            color: var(--gray-600);
-            margin-bottom: 10px;
+            border-color: var(--primary-color);
+            background: rgba(79, 70, 229, 0.05);
         }
         
         .upload-icon {
             font-size: 48px;
-            margin-bottom: 15px;
-            color: var(--gray-400);
+            color: var(--text-light);
+            margin-bottom: 16px;
+        }
+        
+        .image-preview {
+            max-width: 300px;
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .image-preview img {
+            width: 100%;
+            height: auto;
+            max-height: 200px;
+            object-fit: cover;
+        }
+        
+        /* Tab Navigation Buttons */
+        .tab-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .btn-outline {
+            background-color: white;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--light-bg);
+        }
+        
+        /* Error */
+        .error-message {
+            background-color: #fee2e2;
+            color: var(--danger-color);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .field-error {
+            color: var(--danger-color);
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: block;
+        }
+        
+        .form-control.error {
+            border-color: var(--danger-color);
+        }
+        
+        /* Progress Indicator */
+        .tab-progress {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .tab-progress::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-color);
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+        
+        .progress-step {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+        
+        .progress-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+        
+        .progress-step.active .progress-dot {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .progress-step.completed .progress-dot {
+            background: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+        
+        .progress-label {
+            font-size: 12px;
+            color: var(--text-light);
+            text-align: center;
+        }
+        
+        .progress-step.active .progress-label {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        /* Image Preview Container */
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .image-info {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        /* Remove Image Button */
+        .remove-image-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .remove-image-btn:hover {
+            background: #dc3545;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📝 Create News Article</h1>
-            <div>
-                <a href="<?php echo BASE_URL; ?>/admin/news" class="btn btn-secondary">
-                    ← Back to News
-                </a>
-            </div>
-        </div>
-        
+    <div class="admin-container">
+        <!-- Error Message -->
         <?php if ($error): ?>
         <div class="error-message">
-            <strong>Error:</strong> <?php echo htmlspecialchars($error); ?>
+            <i class="fas fa-exclamation-circle"></i>
+            <span><?php echo htmlspecialchars($error); ?></span>
         </div>
         <?php endif; ?>
         
-        <form method="POST" action="<?php echo BASE_URL; ?>/admin/news/store" class="form-container" id="newsForm">
-            <!-- Title and Slug -->
-            <div class="form-group">
-                <label for="title" class="required">Article Title</label>
-                <input type="text" id="title" name="title" required 
-                    placeholder="Enter a compelling title for your article"
-                    onkeyup="generateSlug(this.value)"
-                    maxlength="300">
-                <div class="character-count">
-                    <span id="titleCount">0</span>/300 characters
-                </div>
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Create <?php echo $news['type'] === 'event' ? 'Event' : 'News Article'; ?></h1>
+            <a href="<?php echo $baseUrl; ?>/admin/news" class="btn btn-outline">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+        
+        <!-- Progress Indicator -->
+        <div class="tab-progress">
+            <div class="progress-step active" data-step="content">
+                <div class="progress-dot">1</div>
+                <div class="progress-label">Content</div>
             </div>
-            
-            <div class="form-group">
-                <label for="slug">URL Slug</label>
-                <input type="text" id="slug" name="slug" 
-                    placeholder="auto-generated-slug"
-                    pattern="[a-z0-9-]+"
-                    title="Only lowercase letters, numbers, and hyphens allowed">
-                <div class="slug-preview" id="slugPreview">
-                    <strong>Preview URL:</strong> <?php echo BASE_URL; ?>/news/<span id="slugPreviewText">your-slug-here</span>
-                </div>
-                <div class="form-help">
-                    Optional. Use lowercase letters, numbers, and hyphens only. Leave blank for auto-generation.
-                </div>
+            <div class="progress-step" data-step="media">
+                <div class="progress-dot">2</div>
+                <div class="progress-label">Media</div>
             </div>
+            <div class="progress-step" data-step="seo">
+                <div class="progress-dot">3</div>
+                <div class="progress-label">SEO</div>
+            </div>
+            <div class="progress-step" data-step="settings">
+                <div class="progress-dot">4</div>
+                <div class="progress-label">Settings</div>
+            </div>
+        </div>
+        
+        <!-- Form -->
+        <form method="POST" action="<?php echo $baseUrl; ?>/admin/news/store" class="form-container" id="newsForm" enctype="multipart/form-data">
+            <!-- CSRF Token Field -->
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+            <input type="hidden" name="type" id="form-type" value="<?php echo htmlspecialchars($news['type']); ?>">
             
-            <!-- Category and Tags -->
-            <div class="form-row">
+            <!-- Content Tab -->
+            <div class="tab-content active" id="content-tab">
                 <div class="form-group">
-                    <label for="category">Category</label>
-                    <select id="category" name="category">
-                        <option value="">Select Category</option>
-                        <option value="Announcements">Announcements</option>
-                        <option value="Research">Research</option>
-                        <option value="Events">Events</option>
-                        <option value="General">General</option>
-                        <option value="Student Life">Student Life</option>
-                        <option value="Faculty">Faculty</option>
-                        <option value="Alumni">Alumni</option>
-                    </select>
+                    <label class="form-label">Title <span class="required">*</span></label>
+                    <input type="text" name="title" class="form-control" 
+                           value="<?php echo htmlspecialchars($news['title']); ?>" 
+                           required placeholder="Enter article title" id="title-input">
+                    <div class="field-error" id="title-error" style="display: none;"></div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="tags">Tags (comma separated)</label>
-                    <input type="text" id="tags" name="tags" 
-                        placeholder="nursing, education, research, healthcare">
-                    <div class="form-help">Separate tags with commas</div>
+                    <label class="form-label">Slug</label>
+                    <input type="text" name="slug" class="form-control" 
+                           value="<?php echo htmlspecialchars($news['slug']); ?>" 
+                           placeholder="Auto-generated from title" id="slug-input">
+                    <small style="color: var(--text-light); margin-top: 4px; display: block;">
+                        URL-friendly version of the title (auto-generates if left blank)
+                    </small>
                 </div>
-            </div>
-            
-            <!-- Excerpt -->
-            <div class="form-group">
-                <label for="excerpt" class="required">Article Excerpt</label>
-                <textarea id="excerpt" name="excerpt" rows="3" required 
-                    placeholder="Write a brief summary of your article (this appears in article lists)"
-                    maxlength="500"
-                    onkeyup="updateCharacterCount('excerpt', 'excerptCount', 500)"></textarea>
-                <div class="character-count">
-                    <span id="excerptCount">0</span>/500 characters
+                
+                <div class="form-group">
+                    <label class="form-label">Excerpt</label>
+                    <textarea name="excerpt" class="form-control" 
+                              placeholder="Brief summary of the article (optional)"
+                              rows="3"><?php echo htmlspecialchars($news['excerpt']); ?></textarea>
                 </div>
-            </div>
-            
-            <!-- Featured Image -->
-            <div class="form-group">
-                <label for="featured_image">Featured Image</label>
-                <div class="image-upload" onclick="document.getElementById('imageUpload').click()">
-                    <div class="upload-icon">📷</div>
-                    <div class="upload-prompt">Click to upload featured image</div>
-                    <div style="font-size: 0.875rem; color: var(--gray-500);">
-                        Recommended: 1200×630 pixels
-                    </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Content <span class="required">*</span></label>
+                    <div id="editor" class="editor-container"></div>
+                    <textarea name="content" id="content" style="display: none;" required>
+                        <?php echo htmlspecialchars($news['content']); ?>
+                    </textarea>
+                    <div class="field-error" id="content-error" style="display: none;"></div>
                 </div>
-                <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(this)">
-                <input type="hidden" id="featured_image" name="featured_image">
-                <div id="imagePreview" style="display: none; margin-top: 15px;">
-                    <img src="" alt="Preview" style="max-width: 200px; border-radius: 6px;">
-                    <button type="button" onclick="removeImage()" class="btn btn-danger" style="margin-left: 10px; padding: 5px 10px;">
-                        Remove
+                
+                <div class="tab-navigation">
+                    <div></div>
+                    <button type="button" class="btn btn-primary next-btn" data-next="media-tab">
+                        Next <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
             </div>
             
-            <!-- Content Editor -->
-            <div class="form-group">
-                <label for="content" class="required">Article Content</label>
-                <div class="editor-toolbar">
-                    <button type="button" onclick="formatText('bold')"><b>B</b></button>
-                    <button type="button" onclick="formatText('italic')"><i>I</i></button>
-                    <button type="button" onclick="formatText('underline')"><u>U</u></button>
-                    <div style="width: 1px; background: var(--gray-200); margin: 0 5px;"></div>
-                    <button type="button" onclick="formatText('h2')">H2</button>
-                    <button type="button" onclick="formatText('h3')">H3</button>
-                    <button type="button" onclick="formatText('paragraph')">¶</button>
-                    <div style="width: 1px; background: var(--gray-200); margin: 0 5px;"></div>
-                    <button type="button" onclick="formatText('ul')">• List</button>
-                    <button type="button" onclick="formatText('ol')">1. List</button>
-                    <button type="button" onclick="formatText('link')">🔗 Link</button>
-                    <button type="button" onclick="formatText('image')">🖼️ Image</button>
-                    <div style="flex: 1;"></div>
-                    <button type="button" onclick="togglePreview()">👁️ Preview</button>
-                </div>
-                <div id="editor" contenteditable="true" oninput="updateContentField()"></div>
-                <textarea id="content" name="content" style="display: none;" required></textarea>
-                <div class="character-count">
-                    <span id="contentCount">0</span> characters
-                </div>
-            </div>
-            
-            <!-- Publish Options -->
-            <div class="form-group">
-                <h3 style="margin-top: 0; margin-bottom: 15px; color: var(--gray-800);">🚀 Publish Options</h3>
-                <div class="checkbox-container">
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="is_published" name="is_published" value="1" checked>
-                        <label for="is_published">Publish immediately</label>
-                    </div>
-                    
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="is_featured" name="is_featured" value="1">
-                        <label for="is_featured">Feature this article</label>
-                    </div>
-                    
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="is_breaking" name="is_breaking" value="1">
-                        <label for="is_breaking">Breaking news</label>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- SEO Options -->
-            <div class="form-group">
-                <h3 style="margin-top: 0; margin-bottom: 15px; color: var(--gray-800);">🔍 SEO Options</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="meta_title">Meta Title</label>
-                        <input type="text" id="meta_title" name="meta_title" 
-                            placeholder="Optional meta title for SEO"
-                            maxlength="300">
-                        <div class="character-count">
-                            <span id="metaTitleCount">0</span>/300 characters
+            <!-- Media Tab -->
+            <div class="tab-content" id="media-tab">
+                <div class="form-group">
+                    <label class="form-label">Featured Image</label>
+                    <div class="image-upload" onclick="document.getElementById('image-input').click()">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
                         </div>
+                        <p>Click to upload featured image</p>
+                        <p style="color: var(--text-light); font-size: 14px;">
+                            Recommended size: 1200x630px (Max 5MB)<br>
+                            Images will be saved to: /uploads/news/ directory
+                        </p>
                     </div>
+                    <input type="file" id="image-input" accept="image/*" style="display: none;" 
+                           onchange="previewImage(event)" name="featured_image_upload">
+                    <input type="hidden" name="featured_image" id="featured-image" 
+                           value="<?php echo htmlspecialchars($news['featured_image']); ?>">
                     
-                    <div class="form-group">
-                        <label for="meta_description">Meta Description</label>
-                        <textarea id="meta_description" name="meta_description" rows="2"
-                            placeholder="Optional meta description for SEO"
-                            maxlength="500"
-                            onkeyup="updateCharacterCount('meta_description', 'metaDescCount', 500)"></textarea>
-                        <div class="character-count">
-                            <span id="metaDescCount">0</span>/500 characters
-                        </div>
+                    <!-- Hidden fields for base64 image data -->
+                    <input type="hidden" name="featured_image_data" id="featured-image-data" value="">
+                    <input type="hidden" name="featured_image_filename" id="featured-image-filename" value="">
+                    
+                    <!-- Image Preview -->
+                    <div class="image-preview" id="image-preview" style="<?php echo !empty($featuredImageUrl) ? 'display: block;' : 'display: none;'; ?>">
+                        <?php if (!empty($featuredImageUrl)): ?>
+                            <div class="preview-container">
+                                <div>
+                                    <img src="<?php echo htmlspecialchars($featuredImageUrl); ?>" alt="Preview" 
+                                         onerror="this.style.display='none'; document.getElementById('image-error').style.display='block';">
+                                    <p id="image-error" style="color: red; display: none;">Image failed to load. It may have been moved or deleted.</p>
+                                </div>
+                                <div class="image-info">
+                                    <p><strong>Current Image:</strong></p>
+                                    <p><small>Path: <?php echo htmlspecialchars($news['featured_image']); ?></small></p>
+                                    <p><small>URL: <?php echo htmlspecialchars($featuredImageUrl); ?></small></p>
+                                    <button type="button" onclick="removeImage()" class="remove-image-btn">
+                                        <i class="fas fa-trash"></i> Remove Image
+                                    </button>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="meta_keywords">Meta Keywords</label>
-                    <textarea id="meta_keywords" name="meta_keywords" rows="2"
-                        placeholder="Optional keywords for SEO (comma separated)"></textarea>
+                    <label class="form-label">Tags</label>
+                    <input type="text" name="tags" class="form-control" 
+                           value="<?php 
+                           $tagsValue = $news['tags'] ?? '';
+                           if (!empty($tagsValue) && $tagsValue[0] === '[') {
+                               $tagsArray = json_decode($tagsValue, true);
+                               echo htmlspecialchars(is_array($tagsArray) ? implode(', ', $tagsArray) : $tagsValue);
+                           } else {
+                               echo htmlspecialchars($tagsValue);
+                           }
+                           ?>" 
+                           placeholder="e.g., nursing, education, research (comma separated)">
+                </div>
+                
+                <div class="tab-navigation">
+                    <button type="button" class="btn btn-outline prev-btn" data-prev="content-tab">
+                        <i class="fas fa-arrow-left"></i> Previous
+                    </button>
+                    <button type="button" class="btn btn-primary next-btn" data-next="seo-tab">
+                        Next <i class="fas fa-arrow-right"></i>
+                    </button>
                 </div>
             </div>
             
-            <!-- Preview Area -->
-            <div class="preview-area" id="previewArea">
-                <h3>Article Preview</h3>
-                <div id="articlePreview"></div>
+            <!-- SEO Tab -->
+            <div class="tab-content" id="seo-tab">
+                <div class="form-group">
+                    <label class="form-label">Meta Title</label>
+                    <input type="text" name="meta_title" class="form-control" 
+                           value="<?php echo htmlspecialchars($news['meta_title']); ?>" 
+                           placeholder="Title for search engines (optional)">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Meta Description</label>
+                    <textarea name="meta_description" class="form-control" 
+                              placeholder="Description for search engines (optional)"
+                              rows="3"><?php echo htmlspecialchars($news['meta_description']); ?></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Meta Keywords</label>
+                    <input type="text" name="meta_keywords" class="form-control" 
+                           value="<?php echo htmlspecialchars($news['meta_keywords']); ?>" 
+                           placeholder="Keywords for search engines (optional)">
+                </div>
+                
+                <div class="tab-navigation">
+                    <button type="button" class="btn btn-outline prev-btn" data-prev="media-tab">
+                        <i class="fas fa-arrow-left"></i> Previous
+                    </button>
+                    <button type="button" class="btn btn-primary next-btn" data-next="settings-tab">
+                        Next <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
             </div>
             
-            <!-- Form Actions -->
-            <div class="form-actions">
-                <button type="submit" class="btn btn-success">
-                    💾 Save & Publish
-                </button>
-                <button type="button" class="btn btn-warning" onclick="saveDraft()">
-                    💾 Save as Draft
-                </button>
-                <a href="<?php echo BASE_URL; ?>/admin/news" class="btn btn-secondary">
-                    Cancel
-                </a>
-                <button type="button" class="btn btn-primary" onclick="togglePreview()">
-                    👁️ Toggle Preview
-                </button>
+            <!-- Settings Tab -->
+            <div class="tab-content" id="settings-tab">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Category <span class="required">*</span></label>
+                        <select name="category" class="form-control" required id="category-select">
+                            <option value="">Select Category</option>
+                            <?php foreach ($displayCategories as $category): ?>
+                            <option value="<?php echo htmlspecialchars($category); ?>" 
+                                <?php echo ($news['category'] === $category) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($category); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="field-error" id="category-error" style="display: none;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Article Type</label>
+                        <select name="article_type" class="form-control" id="type-select">
+                            <option value="news" <?php echo $news['type'] === 'news' ? 'selected' : ''; ?>>News Article</option>
+                            <option value="event" <?php echo $news['type'] === 'event' ? 'selected' : ''; ?>>Event</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Event Fields (hidden by default) -->
+                <div id="event-fields" style="<?php echo $news['type'] === 'event' ? 'display: block;' : 'display: none;'; ?>">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Event Date <span class="required">*</span></label>
+                            <input type="date" name="event_date" class="form-control" 
+                                   value="<?php echo htmlspecialchars($news['event_date']); ?>" 
+                                   id="event-date-input">
+                            <div class="field-error" id="event-date-error" style="display: none;"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Event End Date</label>
+                            <input type="date" name="event_end_date" class="form-control" 
+                                   value="<?php echo htmlspecialchars($news['event_end_date']); ?>">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Event Time</label>
+                            <input type="time" name="event_time" class="form-control" 
+                                   value="<?php echo htmlspecialchars($news['event_time']); ?>">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Event Location</label>
+                        <input type="text" name="event_location" class="form-control" 
+                               value="<?php echo htmlspecialchars($news['event_location']); ?>" 
+                               placeholder="e.g., Main Auditorium, Online">
+                    </div>
+                </div>
+                
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_published" value="1" 
+                               <?php echo $news['is_published'] ? 'checked' : 'checked'; ?>>
+                        <span>Publish immediately</span>
+                    </label>
+                    
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_featured" value="1" 
+                               <?php echo $news['is_featured'] ? 'checked' : ''; ?>>
+                        <span>Featured article</span>
+                    </label>
+                    
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_breaking" value="1" 
+                               <?php echo $news['is_breaking'] ? 'checked' : ''; ?>>
+                        <span>Breaking news</span>
+                    </label>
+                </div>
+                
+                <div class="tab-navigation">
+                    <button type="button" class="btn btn-outline prev-btn" data-prev="seo-tab">
+                        <i class="fas fa-arrow-left"></i> Previous
+                    </button>
+                    <div style="display: flex; gap: 12px;">
+                        <button type="submit" name="save_draft" value="1" class="btn btn-secondary">
+                            <i class="fas fa-save"></i> Save as Draft
+                        </button>
+                        <button type="submit" name="publish" value="1" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Publish
+                        </button>
+                    </div>
+                </div>
             </div>
         </form>
-        
-        <!-- Writing Tips -->
-        <div style="background: #f0f9ff; border: 1px solid #bee3f8; border-radius: 8px; padding: 20px;">
-            <h3 style="margin-top: 0; color: var(--primary);">💡 Writing Tips</h3>
-            <ul style="margin: 10px 0; padding-left: 20px; color: var(--gray-700);">
-                <li><strong>Title:</strong> Keep it under 60 characters for best SEO results</li>
-                <li><strong>Excerpt:</strong> Write a compelling summary that encourages clicks</li>
-                <li><strong>Content:</strong> Use headings, bullet points, and images for readability</li>
-                <li><strong>Images:</strong> Always include relevant, high-quality images</li>
-                <li><strong>SEO:</strong> Include keywords naturally in title and content</li>
-                <li><strong>Tags:</strong> Use 5-10 relevant tags for better categorization</li>
-            </ul>
-        </div>
     </div>
     
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script>
-        // Character counters
-        function updateCharacterCount(fieldId, countId, max) {
-            const field = document.getElementById(fieldId);
-            const count = document.getElementById(countId);
-            const length = field.value.length;
-            count.textContent = length;
-            
-            if (length > max * 0.9) {
-                count.style.color = 'var(--danger)';
-            } else if (length > max * 0.75) {
-                count.style.color = 'var(--warning)';
-            } else {
-                count.style.color = 'var(--gray-600)';
-            }
-        }
-        
-        // Initialize counters
-        document.addEventListener('DOMContentLoaded', function() {
-            updateCharacterCount('title', 'titleCount', 300);
-            updateCharacterCount('excerpt', 'excerptCount', 500);
-            updateCharacterCount('meta_title', 'metaTitleCount', 300);
-            updateCharacterCount('meta_description', 'metaDescCount', 500);
-            
-            // Auto-update content count
-            setInterval(() => {
-                const content = document.getElementById('editor').textContent;
-                document.getElementById('contentCount').textContent = content.length;
-            }, 1000);
+        // Initialize Quill editor
+        const quill = new Quill('#editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'script': 'sub'}, { 'script': 'super' }],
+                    [{ 'indent': '-1'}, { 'indent': '+1' }],
+                    [{ 'direction': 'rtl' }],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'font': [] }],
+                    [{ 'align': [] }],
+                    ['link', 'image', 'video', 'blockquote', 'code-block'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Write your article content here...'
         });
         
-        // Slug generation
-        function generateSlug(title) {
-            const slugInput = document.getElementById('slug');
-            const previewText = document.getElementById('slugPreviewText');
-            
-            if (!slugInput.value) {
-                let slug = title.toLowerCase()
-                    .replace(/[^a-z0-9\s-]/g, '')
-                    .replace(/\s+/g, '-')
-                    .replace(/-+/g, '-')
-                    .trim();
-                
-                slugInput.value = slug;
-                previewText.textContent = slug;
-            }
-            
-            updateCharacterCount('title', 'titleCount', 300);
+        // Set initial content
+        const contentField = document.getElementById('content');
+        const initialContent = contentField.value.trim();
+        if (initialContent && initialContent !== '') {
+            quill.root.innerHTML = initialContent;
         }
         
-        // Update slug preview
-        document.getElementById('slug').addEventListener('input', function() {
-            const previewText = document.getElementById('slugPreviewText');
-            previewText.textContent = this.value || 'your-slug-here';
+        // Update hidden content field
+        quill.on('text-change', function() {
+            contentField.value = quill.root.innerHTML;
         });
         
-        // Content editor functions
-        function formatText(command) {
-            const editor = document.getElementById('editor');
-            document.execCommand(command, false, null);
-            editor.focus();
-            updateContentField();
-        }
-        
-        function updateContentField() {
-            const editor = document.getElementById('editor');
-            const contentField = document.getElementById('content');
-            contentField.value = editor.innerHTML;
-        }
-        
-        // Image upload handling
-        function handleImageUpload(input) {
-            const file = input.files[0];
-            if (!file) return;
+        // Image upload functions
+        function previewImage(event) {
+            const input = event.target;
+            const preview = document.getElementById('image-preview');
+            const imageUrl = document.getElementById('featured-image');
             
-            if (!file.type.startsWith('image/')) {
-                alert('Please select an image file.');
-                return;
-            }
-            
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                alert('Image size must be less than 5MB.');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                // In a real implementation, you would upload to server
-                // For now, we'll just show a preview
-                const preview = document.getElementById('imagePreview');
-                const img = preview.querySelector('img');
-                img.src = e.target.result;
-                preview.style.display = 'block';
+            if (input.files && input.files[0]) {
+                if (input.files[0].size > 5 * 1024 * 1024) {
+                    alert('File size must be less than 5MB');
+                    input.value = '';
+                    return;
+                }
                 
-                document.getElementById('featured_image').value = 'uploaded-image-path.jpg';
-            };
-            reader.readAsDataURL(file);
+                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                if (!validTypes.includes(input.files[0].type)) {
+                    alert('Please select a valid image file (JPEG, PNG, GIF, WebP)');
+                    input.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    // Create preview container if it doesn't exist
+                    if (!preview.querySelector('img')) {
+                        preview.innerHTML = `
+                            <div class="preview-container">
+                                <div>
+                                    <img src="" alt="Preview">
+                                    <p id="image-error" style="color: red; display: none;">Image failed to load</p>
+                                </div>
+                                <div class="image-info">
+                                    <p><strong>New Image Preview:</strong></p>
+                                    <p><small>File: ${input.files[0].name}</small></p>
+                                    <p><small>Size: ${Math.round(input.files[0].size / 1024)} KB</small></p>
+                                    <button type="button" onclick="removeImage()" class="remove-image-btn">
+                                        <i class="fas fa-trash"></i> Remove Image
+                                    </button>
+                                </div>
+                            </div>`;
+                    }
+                    
+                    // Set the image source
+                    const img = preview.querySelector('img');
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        document.getElementById('image-error').style.display = 'none';
+                    };
+                    img.onerror = function() {
+                        document.getElementById('image-error').style.display = 'block';
+                    };
+                    
+                    preview.style.display = 'block';
+                    imageUrl.value = '';
+                    
+                    // Store the base64 data and filename for form submission
+                    document.getElementById('featured-image-data').value = e.target.result;
+                    document.getElementById('featured-image-filename').value = input.files[0].name;
+                };
+                
+                reader.readAsDataURL(input.files[0]);
+            }
         }
         
         function removeImage() {
-            document.getElementById('imageUpload').value = '';
-            document.getElementById('imagePreview').style.display = 'none';
-            document.getElementById('featured_image').value = '';
+            const preview = document.getElementById('image-preview');
+            const imageUrl = document.getElementById('featured-image');
+            const fileInput = document.getElementById('image-input');
+            const imageDataField = document.getElementById('featured-image-data');
+            const imageFilenameField = document.getElementById('featured-image-filename');
+            
+            preview.style.display = 'none';
+            preview.innerHTML = '';
+            imageUrl.value = '';
+            fileInput.value = '';
+            imageDataField.value = '';
+            imageFilenameField.value = '';
         }
         
-        // Preview toggle
-        function togglePreview() {
-            const previewArea = document.getElementById('previewArea');
-            const articlePreview = document.getElementById('articlePreview');
+        // Tab navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            const nextButtons = document.querySelectorAll('.next-btn');
+            const prevButtons = document.querySelectorAll('.prev-btn');
             
-            if (previewArea.style.display === 'none') {
-                // Generate preview
-                const title = document.getElementById('title').value || 'Untitled Article';
-                const excerpt = document.getElementById('excerpt').value || 'No excerpt provided';
-                const content = document.getElementById('editor').innerHTML || '<p>No content yet.</p>';
-                const category = document.getElementById('category').value || 'Uncategorized';
-                
-                articlePreview.innerHTML = `
-                    <div style="margin-bottom: 30px;">
-                        <h2 style="color: var(--gray-800); margin-bottom: 15px;">${title}</h2>
-                        <div style="color: var(--gray-600); margin-bottom: 20px;">${excerpt}</div>
-                        <div style="display: flex; gap: 15px; font-size: 0.875rem; color: var(--gray-500);">
-                            <span>Category: ${category}</span>
-                            <span>•</span>
-                            <span>Published: Just now</span>
-                        </div>
-                    </div>
-                    <hr style="border: none; border-top: 1px solid var(--gray-200); margin: 20px 0;">
-                    <div style="line-height: 1.8;">
-                        ${content}
-                    </div>
-                `;
-                
-                previewArea.style.display = 'block';
-            } else {
-                previewArea.style.display = 'none';
-            }
-        }
-        
-        // Save draft
-        function saveDraft() {
-            document.getElementById('is_published').checked = false;
-            document.getElementById('newsForm').submit();
-        }
-        
-        // Form validation
-        document.getElementById('newsForm').addEventListener('submit', function(e) {
-            const title = document.getElementById('title').value.trim();
-            const excerpt = document.getElementById('excerpt').value.trim();
-            const content = document.getElementById('content').value.trim();
+            // Event type toggle
+            const typeSelect = document.getElementById('type-select');
+            const formType = document.getElementById('form-type');
+            const eventFields = document.getElementById('event-fields');
             
-            if (!title) {
-                e.preventDefault();
-                alert('Please enter a title for the article.');
-                document.getElementById('title').focus();
-                return;
-            }
-            
-            if (!excerpt) {
-                e.preventDefault();
-                alert('Please enter an excerpt for the article.');
-                document.getElementById('excerpt').focus();
-                return;
-            }
-            
-            if (!content || content === '<br>') {
-                e.preventDefault();
-                alert('Please enter content for the article.');
-                document.getElementById('editor').focus();
-                return;
-            }
-            
-            // Validate slug format
-            const slug = document.getElementById('slug').value;
-            if (slug && !/^[a-z0-9-]+$/.test(slug)) {
-                e.preventDefault();
-                alert('Slug can only contain lowercase letters, numbers, and hyphens.');
-                document.getElementById('slug').focus();
-                return;
-            }
-        });
-        
-        // Auto-save draft every 30 seconds
-        let autoSaveTimer;
-        function startAutoSave() {
-            autoSaveTimer = setInterval(() => {
-                if (document.getElementById('title').value || 
-                    document.getElementById('editor').textContent) {
-                    console.log('Auto-saving draft...');
-                    // In a real implementation, this would make an AJAX call
+            typeSelect.addEventListener('change', function() {
+                formType.value = this.value;
+                if (this.value === 'event') {
+                    eventFields.style.display = 'block';
+                    // Set event date to today if empty
+                    const eventDateInput = document.getElementById('event-date-input');
+                    if (!eventDateInput.value) {
+                        const today = new Date().toISOString().split('T')[0];
+                        eventDateInput.value = today;
+                    }
+                } else {
+                    eventFields.style.display = 'none';
                 }
-            }, 30000);
-        }
-        
-        // Warn before leaving unsaved changes
-        let hasUnsavedChanges = false;
-        
-        document.querySelectorAll('input, textarea, #editor').forEach(element => {
-            element.addEventListener('input', () => {
-                hasUnsavedChanges = true;
+            });
+            
+            // Next buttons
+            nextButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const currentTab = this.closest('.tab-content');
+                    const nextTabId = this.getAttribute('data-next');
+                    const nextTab = document.getElementById(nextTabId);
+                    
+                    if (validateTab(currentTab)) {
+                        currentTab.classList.remove('active');
+                        nextTab.classList.add('active');
+                        updateProgressIndicator(nextTabId);
+                    }
+                });
+            });
+            
+            // Previous buttons
+            prevButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const currentTab = this.closest('.tab-content');
+                    const prevTabId = this.getAttribute('data-prev');
+                    const prevTab = document.getElementById(prevTabId);
+                    
+                    currentTab.classList.remove('active');
+                    prevTab.classList.add('active');
+                    updateProgressIndicator(prevTabId);
+                });
             });
         });
         
-        window.addEventListener('beforeunload', (e) => {
-            if (hasUnsavedChanges) {
+        // Form validation before submission
+        const newsForm = document.getElementById('newsForm');
+        newsForm.addEventListener('submit', function(e) {
+            // Validate all tabs
+            const tabs = ['content-tab', 'settings-tab'];
+            let allValid = true;
+            
+            tabs.forEach(tabId => {
+                const tab = document.getElementById(tabId);
+                if (!validateTab(tab)) {
+                    allValid = false;
+                    // Show the tab with errors
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    updateProgressIndicator(tabId);
+                }
+            });
+            
+            if (!allValid) {
                 e.preventDefault();
-                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                alert('Please fix all errors before submitting.');
+                return false;
             }
+            
+            // Ensure content is updated
+            contentField.value = quill.root.innerHTML;
+            
+            // Update type field
+            const typeSelect = document.getElementById('type-select');
+            const hiddenType = document.getElementById('form-type');
+            hiddenType.value = typeSelect.value;
+            
+            return true;
         });
         
-        // Start auto-save
-        startAutoSave();
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            // Ctrl/Cmd + S to save
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                e.preventDefault();
-                if (document.getElementById('is_published').checked) {
-                    document.getElementById('newsForm').submit();
+        // Helper functions
+        function validateTab(tab) {
+            if (!tab) return true;
+            
+            let isValid = true;
+            const requiredFields = tab.querySelectorAll('[required]');
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.classList.add('error');
+                    
+                    let errorDiv = field.nextElementSibling;
+                    if (!errorDiv || !errorDiv.classList.contains('field-error')) {
+                        errorDiv = document.createElement('div');
+                        errorDiv.className = 'field-error';
+                        errorDiv.style.color = 'red';
+                        errorDiv.style.fontSize = '0.8rem';
+                        errorDiv.style.marginTop = '5px';
+                        errorDiv.textContent = 'This field is required';
+                        field.parentNode.insertBefore(errorDiv, field.nextSibling);
+                    } else {
+                        errorDiv.style.display = 'block';
+                    }
                 } else {
-                    saveDraft();
+                    field.classList.remove('error');
+                    const errorDiv = field.nextElementSibling;
+                    if (errorDiv && errorDiv.classList.contains('field-error')) {
+                        errorDiv.style.display = 'none';
+                    }
                 }
-            }
+            });
             
-            // Ctrl/Cmd + P to preview
-            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                e.preventDefault();
-                togglePreview();
-            }
+            return isValid;
+        }
+        
+        function updateProgressIndicator(tabId) {
+            const stepMap = {
+                'content-tab': 'content',
+                'media-tab': 'media',
+                'seo-tab': 'seo',
+                'settings-tab': 'settings'
+            };
             
-            // Ctrl/Cmd + Enter to publish
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                e.preventDefault();
-                document.getElementById('is_published').checked = true;
-                document.getElementById('newsForm').submit();
+            const currentStep = stepMap[tabId];
+            const progressSteps = document.querySelectorAll('.progress-step');
+            
+            progressSteps.forEach(step => {
+                const stepName = step.getAttribute('data-step');
+                step.classList.remove('active', 'completed');
+                
+                if (stepName === currentStep) {
+                    step.classList.add('active');
+                } else if (
+                    (stepName === 'content' && ['media', 'seo', 'settings'].includes(currentStep)) ||
+                    (stepName === 'media' && ['seo', 'settings'].includes(currentStep)) ||
+                    (stepName === 'seo' && currentStep === 'settings')
+                ) {
+                    step.classList.add('completed');
+                }
+            });
+        }
+        
+        // Auto-generate slug
+        const titleInput = document.getElementById('title-input');
+        const slugInput = document.getElementById('slug-input');
+        
+        titleInput.addEventListener('blur', function() {
+            if (!slugInput.value) {
+                const slug = this.value
+                    .toLowerCase()
+                    .trim()
+                    .replace(/[^a-z0-9\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-')
+                    .replace(/^-|-$/g, '');
+                slugInput.value = slug;
             }
         });
     </script>

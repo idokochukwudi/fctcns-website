@@ -1295,8 +1295,7 @@ class NominalRollModel {
     }
     
     /**
-     * Get distinct values for filters - UPDATED
-     * FIXED: Added backticks around rank in SELECT clause
+     * Get distinct values for filters - UPDATED with qualification options
      */
     public function getFilterOptions() {
         try {
@@ -1378,6 +1377,29 @@ class NominalRollModel {
             // TRCN Status options
             $options['trcn_status_options'] = ['Active', 'Expired', 'Pending'];
             
+            // NEW: Add qualification options
+            $qualificationModel = new QualificationModel();
+            $options['highest_qualification_options'] = $qualificationModel->getHighestQualificationOptions();
+            $options['professional_certification_options'] = $qualificationModel->getProfessionalCertificationOptions();
+            
+            // NEW: Common qualification patterns for quick filtering
+            $options['common_qualifications'] = [
+                'PhD' => 'PhD Holders',
+                'MSc' => 'MSc Holders',
+                'BSc' => 'BSc Holders',
+                'PGDE' => 'PGDE Holders',
+                'HND' => 'HND Holders'
+            ];
+            
+            // NEW: Common certification patterns for quick filtering
+            $options['common_certifications'] = [
+                'TRCN' => 'TRCN Certified',
+                'RN' => 'Registered Nurse',
+                'RM' => 'Registered Midwife',
+                'RPHN' => 'Registered Public Health Nurse',
+                'NMCN' => 'NMCN Licensed'
+            ];
+            
             return $options;
             
         } catch (PDOException $e) {
@@ -1387,7 +1409,7 @@ class NominalRollModel {
     }
     
     /**
-     * Update the getUniqueValues() method to include new fields if needed - NEW METHOD
+     * Get unique values
      */
     public function getUniqueValues($column) {
         try {
@@ -4044,55 +4066,33 @@ class NominalRollModel {
     
     /**
      * ============================================
-     * REPORT DATA METHOD - NEWLY ADDED
+     * REPORT DATA METHOD - UPDATED WITH QUALIFICATION FILTERS
      * ============================================
      */
     
     /**
-     * Get report data with selected fields and filters
-     * Compatible with both MySQLi and PDO
+     * Get report data with selected fields and filters - UPDATED VERSION with qualification filters
      */
-    public function getReportData($selectedFields = [], $filters = [], $sortOrder = 'surname_asc', $limit = 20) {
-        error_log("=== getReportData() called ===");
-        error_log("Selected Fields: " . print_r($selectedFields, true));
-        error_log("Filters: " . print_r($filters, true));
-        error_log("Sort Order: $sortOrder");
-        error_log("Limit: $limit");
-        
+    public function getReportData($selectedFields, $filters, $sortOrder, $limit = 20) {
         try {
+            error_log("=== getReportData() called (UPDATED VERSION) ===");
+            error_log("Selected Fields: " . print_r($selectedFields, true));
+            error_log("Filters: " . print_r($filters, true));
+            error_log("Sort Order: $sortOrder");
+            error_log("Limit: $limit");
+            
             // Build SELECT clause
-            if (empty($selectedFields)) {
-                $selectFields = '*';
-            } else {
-                // Escape field names for PDO
-                $escapedFields = array_map(function($field) {
-                    // Handle reserved keywords like 'rank'
-                    if ($field === 'rank') {
-                        return '`rank`';
-                    }
-                    // Handle other potentially problematic fields
-                    if (in_array($field, ['order', 'group', 'key', 'date'])) {
-                        return "`$field`";
-                    }
-                    return $field;
-                }, $selectedFields);
-                $selectFields = implode(', ', $escapedFields);
-            }
+            $selectFields = empty($selectedFields) ? '*' : implode(', ', $selectedFields);
             
-            error_log("Select Fields: $selectFields");
-            
-            // Build WHERE clause
+            // Build WHERE clause with new filters
             $whereConditions = [];
             $params = [];
             
             // Search filter
             if (!empty($filters['search'])) {
-                $whereConditions[] = "(surname LIKE ? OR first_name LIKE ? OR employee_number LIKE ? OR CONCAT(surname, ' ', first_name) LIKE ?)";
-                $searchTerm = "%{$filters['search']}%";
-                $params[] = $searchTerm;
-                $params[] = $searchTerm;
-                $params[] = $searchTerm;
-                $params[] = $searchTerm;
+                $searchTerm = '%' . $filters['search'] . '%';
+                $whereConditions[] = "(surname LIKE ? OR first_name LIKE ? OR employee_number LIKE ?)";
+                $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm]);
             }
             
             // State filter
@@ -4113,90 +4113,101 @@ class NominalRollModel {
                 $params[] = $filters['grade_level'];
             }
             
-            // Gender filter
+            // Sex filter
             if (!empty($filters['sex'])) {
                 $whereConditions[] = "sex = ?";
                 $params[] = $filters['sex'];
             }
             
-            // Rank filter - FIXED: Added backticks
+            // Rank filter
             if (!empty($filters['rank'])) {
                 $whereConditions[] = "`rank` = ?";
                 $params[] = $filters['rank'];
             }
             
-            // Employment Status filter
+            // Employment status filter
             if (!empty($filters['status'])) {
                 $whereConditions[] = "status = ?";
                 $params[] = $filters['status'];
             }
             
-            // NMCN Status filter
+            // NMCN status filter
             if (!empty($filters['nmcn_status'])) {
                 $whereConditions[] = "nmcn_status = ?";
                 $params[] = $filters['nmcn_status'];
             }
             
-            // TRCN Status filter
+            // TRCN status filter
             if (!empty($filters['trcn_status'])) {
                 $whereConditions[] = "trcn_status = ?";
                 $params[] = $filters['trcn_status'];
             }
             
-            // Combine WHERE conditions
-            $whereClause = '';
-            if (!empty($whereConditions)) {
-                $whereClause = 'WHERE ' . implode(' AND ', $whereConditions);
+            // NEW: Highest qualification filter (multiple select)
+            if (!empty($filters['highest_qualification']) && is_array($filters['highest_qualification'])) {
+                $qualPlaceholders = implode(',', array_fill(0, count($filters['highest_qualification']), '?'));
+                $whereConditions[] = "highest_qualification IN ($qualPlaceholders)";
+                $params = array_merge($params, $filters['highest_qualification']);
             }
+            
+            // NEW: Professional certification filter
+            if (!empty($filters['professional_certification'])) {
+                $whereConditions[] = "professional_certifications LIKE ?";
+                $params[] = '%' . $filters['professional_certification'] . '%';
+            }
+            
+            // NEW: Additional qualification filter
+            if (!empty($filters['additional_qualification'])) {
+                $whereConditions[] = "additional_qualifications LIKE ?";
+                $params[] = '%' . $filters['additional_qualification'] . '%';
+            }
+            
+            // Build WHERE clause
+            $whereClause = empty($whereConditions) ? '' : 'WHERE ' . implode(' AND ', $whereConditions);
             
             // Build ORDER BY clause
-            $orderBy = $this->getOrderByClause($sortOrder);
+            $orderBy = $this->getSortOrder($sortOrder);
             
             // Get total count
-            $countQuery = "SELECT COUNT(*) as total FROM " . self::TABLE_EMPLOYEES . " $whereClause";
-            error_log("Count Query: $countQuery");
-            error_log("Count Params: " . print_r($params, true));
+            $countSql = "SELECT COUNT(*) as total FROM " . self::TABLE_EMPLOYEES . " $whereClause";
+            $countStmt = $this->db->prepare($countSql);
+            $countStmt->execute($params);
+            $totalRecords = $countStmt->fetch()['total'];
             
-            $countStmt = $this->db->prepare($countQuery);
-            if (!empty($params)) {
-                $countStmt->execute($params);
-            } else {
-                $countStmt->execute();
-            }
-            $countResult = $countStmt->fetch(PDO::FETCH_ASSOC);
-            $totalCount = $countResult['total'] ?? 0;
-            $countStmt->closeCursor();
-            
-            error_log("Total Count: $totalCount");
-            
-            // Get data with limit
-            $limitClause = $limit > 0 ? "LIMIT $limit" : "";
-            $dataQuery = "SELECT $selectFields FROM " . self::TABLE_EMPLOYEES . " $whereClause $orderBy $limitClause";
-            error_log("Data Query: $dataQuery");
-            error_log("Data Params: " . print_r($params, true));
-            
-            $dataStmt = $this->db->prepare($dataQuery);
-            if (!empty($params)) {
-                $dataStmt->execute($params);
-            } else {
-                $dataStmt->execute();
+            // Get limited data for preview
+            $dataSql = "SELECT $selectFields FROM " . self::TABLE_EMPLOYEES . " $whereClause $orderBy";
+            if ($limit > 0) {
+                $dataSql .= " LIMIT $limit";
             }
             
-            // Fetch data
-            $previewData = [];
-            $fullData = [];
+            $dataStmt = $this->db->prepare($dataSql);
+            $dataStmt->execute($params);
+            $previewData = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
             
-            while ($row = $dataStmt->fetch(PDO::FETCH_ASSOC)) {
-                $previewData[] = $row;
-                $fullData[] = $row;
+            // Get full data (without limit) for export
+            $fullDataSql = "SELECT $selectFields FROM " . self::TABLE_EMPLOYEES . " $whereClause $orderBy";
+            $fullDataStmt = $this->db->prepare($fullDataSql);
+            $fullDataStmt->execute($params);
+            $fullData = $fullDataStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Format additional qualifications if they are in the selected fields
+            if (in_array('additional_qualifications', $selectedFields) || empty($selectedFields)) {
+                foreach ($previewData as &$row) {
+                    if (!empty($row['additional_qualifications'])) {
+                        $row['additional_qualifications'] = $this->formatAdditionalQualifications($row['additional_qualifications']);
+                    }
+                }
+                foreach ($fullData as &$row) {
+                    if (!empty($row['additional_qualifications'])) {
+                        $row['additional_qualifications'] = $this->formatAdditionalQualifications($row['additional_qualifications']);
+                    }
+                }
             }
-            
-            $dataStmt->closeCursor();
             
             $result = [
                 'preview_data' => $previewData,
                 'full_data' => $fullData,
-                'total_records' => $totalCount
+                'total_records' => $totalRecords
             ];
             
             error_log("Result preview count: " . count($previewData));
@@ -4218,7 +4229,39 @@ class NominalRollModel {
     }
     
     /**
-     * Get ORDER BY clause for sorting
+     * Get sort order clause - NEWLY ADDED METHOD
+     */
+    private function getSortOrder($sortOrder) {
+        $orderMap = [
+            'surname_asc' => 'ORDER BY surname ASC',
+            'surname_desc' => 'ORDER BY surname DESC',
+            'employee_number_asc' => 'ORDER BY employee_number ASC',
+            'employee_number_desc' => 'ORDER BY employee_number DESC',
+            'grade_level_asc' => 'ORDER BY CAST(grade_level AS UNSIGNED) ASC',
+            'grade_level_desc' => 'ORDER BY CAST(grade_level AS UNSIGNED) DESC',
+            'state_asc' => 'ORDER BY state ASC',
+            'state_desc' => 'ORDER BY state DESC',
+            'date_of_first_appointment_asc' => 'ORDER BY date_of_first_appointment ASC',
+            'date_of_first_appointment_desc' => 'ORDER BY date_of_first_appointment DESC',
+            'nmcn_status_asc' => 'ORDER BY nmcn_status ASC',
+            'nmcn_status_desc' => 'ORDER BY nmcn_status DESC',
+            'trcn_status_asc' => 'ORDER BY trcn_status ASC',
+            'trcn_status_desc' => 'ORDER BY trcn_status DESC',
+            'highest_qualification_asc' => 'ORDER BY highest_qualification ASC',
+            'highest_qualification_desc' => 'ORDER BY highest_qualification DESC',
+            'professional_certification_asc' => 'ORDER BY professional_certifications ASC',
+            'professional_certification_desc' => 'ORDER BY professional_certifications DESC',
+            'rank_asc' => 'ORDER BY `rank` ASC',
+            'rank_desc' => 'ORDER BY `rank` DESC',
+            'department_asc' => 'ORDER BY department ASC',
+            'department_desc' => 'ORDER BY department DESC'
+        ];
+        
+        return $orderMap[$sortOrder] ?? 'ORDER BY surname ASC';
+    }
+    
+    /**
+     * Get ORDER BY clause for sorting (legacy method)
      */
     private function getOrderByClause($sortOrder) {
         $orderBy = 'ORDER BY ';
