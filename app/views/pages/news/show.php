@@ -9,6 +9,7 @@
 $baseUrl = $baseUrl ?? BASE_URL ?? '';
 $news = $news ?? [];
 $relatedNews = $relatedNews ?? [];
+$popularNews = $popularNews ?? []; // Ensure popularNews is available
 $currentPage = $currentPage ?? 'news';
 $pageTitle = $pageTitle ?? ($news['title'] ?? 'News Article') . ' - FCT College of Nursing Sciences';
 $pageDescription = $pageDescription ?? ($news['excerpt'] ?? 'Read this news article from FCT College of Nursing Sciences');
@@ -20,9 +21,14 @@ $newsTime = !empty($news['created_at']) ? date('h:i A', strtotime($news['created
 // Get author name
 $authorName = $news['author_name'] ?? 'FCT Nursing College';
 
-// Calculate reading time
+// Calculate reading time - FIXED: Ensure minimum 1 minute
 $wordCount = !empty($news['content']) ? str_word_count(strip_tags($news['content'])) : 0;
-$readingTime = ceil($wordCount / 200);
+// Set minimum reading time to 1 minute
+if ($wordCount <= 50) {
+    $readingTime = 1; // Very short articles
+} else {
+    $readingTime = max(1, ceil($wordCount / 200));
+}
 
 // Breadcrumb navigation
 $breadcrumb = [
@@ -1260,7 +1266,9 @@ a:hover {
     }
 }
 
-/* Popular Articles */
+/* ==========================================
+   POPULAR ARTICLES - DYNAMIC VERSION WITH FIXED READING TIME
+   ========================================== */
 .popular-list {
     list-style: none;
     width: 100%;
@@ -2209,7 +2217,7 @@ a:hover {
 
             <!-- Sidebar -->
             <aside class="article-sidebar">
-                <!-- Author -->
+                <!-- Author Section -->
                 <div class="sidebar-section">
                     <h2 class="sidebar-title">About the Author</h2>
                     <div class="author-card">
@@ -2224,41 +2232,87 @@ a:hover {
                     </div>
                 </div>
 
-                <!-- Popular Articles -->
+                <!-- ==========================================
+                     SIDEBAR - POPULAR ARTICLES - DYNAMIC VERSION WITH FIXED READING TIME
+                     ========================================== -->
                 <div class="sidebar-section">
                     <h2 class="sidebar-title">Popular Articles</h2>
-                    <ul class="popular-list">
-                        <li class="popular-item">
-                            <a href="<?php echo $baseUrl; ?>/news/sample" class="popular-link">
-                                <h3 class="popular-title">Latest Nursing Research Findings 2024</h3>
-                                <div class="popular-meta">
-                                    <span><i class="far fa-calendar"></i> Jan 15, 2024</span>
-                                    <span><i class="far fa-clock"></i> 5 min</span>
-                                </div>
+                    
+                    <?php if (!empty($popularNews)): ?>
+                        <ul class="popular-list">
+                            <?php 
+                            // Limit to top 5
+                            $displayCount = 0;
+                            $maxDisplay = 5;
+                            foreach ($popularNews as $popular): 
+                                if ($displayCount >= $maxDisplay) break;
+                                $displayCount++;
+                                
+                                // Format date
+                                $popularDate = !empty($popular['created_at']) 
+                                    ? date('M j, Y', strtotime($popular['created_at'])) 
+                                    : '';
+                                
+                                // Calculate reading time - FIXED: Always at least 1 minute
+                                $popularWordCount = !empty($popular['content']) 
+                                    ? str_word_count(strip_tags($popular['content'])) 
+                                    : 0;
+                                
+                                // Ensure minimum reading time is 1 minute
+                                $popularReadingTime = max(1, ceil($popularWordCount / 200));
+                            ?>
+                            <li class="popular-item">
+                                <a href="<?php echo $baseUrl; ?>/news/<?php echo htmlspecialchars($popular['slug'] ?? ''); ?>" 
+                                   class="popular-link">
+                                    <h3 class="popular-title">
+                                        <?php echo htmlspecialchars($popular['title'] ?? 'Untitled'); ?>
+                                    </h3>
+                                    <div class="popular-meta">
+                                        <span>
+                                            <i class="far fa-calendar"></i> 
+                                            <?php echo $popularDate; ?>
+                                        </span>
+                                        <span>
+                                            <i class="far fa-clock"></i> 
+                                            <?php echo $popularReadingTime; ?> min read
+                                        </span>
+                                        <?php if (!empty($popular['views_count'])): ?>
+                                        <span>
+                                            <i class="far fa-eye"></i> 
+                                            <?php echo number_format($popular['views_count']); ?>
+                                        </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </a>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        
+                        <!-- View All Popular Link -->
+                        <div style="margin-top: var(--space-4); text-align: center;">
+                            <a href="<?php echo $baseUrl; ?>/news?sort=popular" 
+                               class="tag-link" 
+                               style="display: inline-block;">
+                                <i class="fas fa-fire"></i>
+                                View All Popular
                             </a>
-                        </li>
-                        <li class="popular-item">
-                            <a href="<?php echo $baseUrl; ?>/news/sample" class="popular-link">
-                                <h3 class="popular-title">New Healthcare Initiatives in Nigeria</h3>
-                                <div class="popular-meta">
-                                    <span><i class="far fa-calendar"></i> Jan 10, 2024</span>
-                                    <span><i class="far fa-clock"></i> 4 min</span>
-                                </div>
+                        </div>
+                        
+                    <?php else: ?>
+                        <!-- Fallback: Show message when no popular articles -->
+                        <div style="text-align: center; padding: var(--space-4);">
+                            <i class="fas fa-newspaper" style="font-size: 2rem; color: var(--gray-400); margin-bottom: var(--space-2);"></i>
+                            <p style="color: var(--gray-600); margin-bottom: var(--space-3);">
+                                No popular articles yet
+                            </p>
+                            <a href="<?php echo $baseUrl; ?>/news" class="tag-link">
+                                Browse All News
                             </a>
-                        </li>
-                        <li class="popular-item">
-                            <a href="<?php echo $baseUrl; ?>/news/sample" class="popular-link">
-                                <h3 class="popular-title">Student Achievements and Awards</h3>
-                                <div class="popular-meta">
-                                    <span><i class="far fa-calendar"></i> Dec 28, 2023</span>
-                                    <span><i class="far fa-clock"></i> 6 min</span>
-                                </div>
-                            </a>
-                        </li>
-                    </ul>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
-                <!-- Newsletter -->
+                <!-- Newsletter Section -->
                 <div class="sidebar-section">
                     <h2 class="sidebar-title">Stay Updated</h2>
                     <p class="newsletter-description">
@@ -2321,7 +2375,8 @@ a:hover {
                             <span><i class="far fa-clock"></i> 
                                 <?php 
                                 $relatedWordCount = !empty($related['content']) ? str_word_count(strip_tags($related['content'])) : 0;
-                                echo ceil($relatedWordCount / 200); 
+                                $relatedReadingTime = max(1, ceil($relatedWordCount / 200));
+                                echo $relatedReadingTime; 
                                 ?> min
                             </span>
                         </div>

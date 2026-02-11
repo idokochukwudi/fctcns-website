@@ -60,6 +60,7 @@ class NewsController extends Controller {
             error_log("Featured news: " . count($featuredNews));
             error_log("Categories: " . count($categories));
             error_log("Archive months: " . count($archiveMonths));
+            error_log("Popular news: " . count($popularNews));
             
             $totalPages = ceil($total / $limit);
             
@@ -158,11 +159,23 @@ class NewsController extends Controller {
             // Get other data for sidebar
             $categories = $this->newsModel->getCategoriesWithCounts();
             $archiveMonths = $this->newsModel->getArchiveMonths();
+            
+            // ✅ FIXED: Explicitly get popular news and ensure it's passed to view
             $popularNews = $this->newsModel->getPopularNews(5);
+            
+            // Add debug logging to verify
+            error_log("=== POPULAR NEWS DATA ===");
+            error_log("Popular news count: " . count($popularNews));
+            if (count($popularNews) > 0) {
+                error_log("First popular article: " . json_encode($popularNews[0]));
+            } else {
+                error_log("WARNING: No popular news found - check database for published articles with views_count");
+            }
             
             error_log("Found article: " . ($news['title'] ?? 'No title'));
             error_log("Related news: " . count($relatedNews));
             error_log("Categories: " . count($categories));
+            error_log("Archive months: " . count($archiveMonths));
             
             $viewData = [
                 'baseUrl' => BASE_URL,
@@ -171,7 +184,7 @@ class NewsController extends Controller {
                 'relatedNews' => $relatedNews,
                 'categories' => $categories,
                 'archiveMonths' => $archiveMonths,
-                'popularNews' => $popularNews,
+                'popularNews' => $popularNews, // ✅ CRITICAL: This must be here
                 'pageTitle' => ($news['title'] ?? 'News Article') . ' - FCT College of Nursing Sciences',
                 'pageDescription' => $news['excerpt'] ?? substr(strip_tags($news['content'] ?? ''), 0, 150) . '...'
             ];
@@ -187,7 +200,7 @@ class NewsController extends Controller {
             } elseif (file_exists($regularViewPath)) {
                 error_log("Using regular show view");
                 $this->data = array_merge($this->data, $viewData);
-                $this->render('pages/news/show');
+                $this->render('pages/news/show'); // ✅ This renders YOUR show.php file
             } else {
                 error_log("No show view found, rendering inline");
                 $this->renderInlineShow($viewData);
@@ -222,6 +235,9 @@ class NewsController extends Controller {
                 .article-meta { color: #666; margin-bottom: 20px; }
                 .article-content { font-size: 1.1rem; }
                 .back-link { display: inline-block; margin-top: 30px; padding: 10px 20px; background: #5D4A8A; color: white; text-decoration: none; border-radius: 5px; }
+                .sidebar { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; }
+                .popular-news { margin-top: 20px; }
+                .popular-news-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
             </style>
         </head>
         <body>
@@ -235,6 +251,9 @@ class NewsController extends Controller {
                         <?php if (!empty($news['category'])): ?>
                             <span> | Category: <?php echo htmlspecialchars($news['category']); ?></span>
                         <?php endif; ?>
+                        <?php if (!empty($news['views_count'])): ?>
+                            <span> | Views: <?php echo number_format($news['views_count']); ?></span>
+                        <?php endif; ?>
                     </div>
                 </header>
                 
@@ -247,6 +266,24 @@ class NewsController extends Controller {
                 <div class="article-content">
                     <?php echo !empty($news['content']) ? $news['content'] : 'Content not available.'; ?>
                 </div>
+                
+                <?php if (!empty($popularNews)): ?>
+                <div class="sidebar">
+                    <h3>Popular News</h3>
+                    <div class="popular-news">
+                        <?php foreach ($popularNews as $popular): ?>
+                        <div class="popular-news-item">
+                            <a href="<?php echo $baseUrl; ?>/news/<?php echo $popular['slug']; ?>">
+                                <?php echo htmlspecialchars($popular['title']); ?>
+                            </a>
+                            <small style="color: #666; display: block;">
+                                Views: <?php echo number_format($popular['views_count'] ?? 0); ?>
+                            </small>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
                 
                 <a href="<?php echo $baseUrl; ?>/news" class="back-link">← Back to News</a>
             </article>
@@ -589,10 +626,15 @@ class NewsController extends Controller {
             echo "<h3>getArchiveMonths()</h3>";
             $archiveMonths = $this->newsModel->getArchiveMonths();
             echo "<p>Archive months: " . count($archiveMonths) . "</p>";
+            echo "<pre>" . print_r($archiveMonths, true) . "</pre>";
             
             echo "<h3>getFeaturedNews()</h3>";
             $featuredNews = $this->newsModel->getFeaturedNews(3);
             echo "<p>Featured news: " . count($featuredNews) . "</p>";
+            
+            echo "<h3>getPopularNews()</h3>";
+            $popularNews = $this->newsModel->getPopularNews(5);
+            echo "<p>Popular news: " . count($popularNews) . "</p>";
             
             echo "<h3>getBySlug() test</h3>";
             if (count($news) > 0) {
