@@ -60,7 +60,22 @@ $breadcrumb = [
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <style>
+    /* EMERGENCY FULL WIDTH OVERRIDE */
+body .main-content {
+    padding: 0 !important;
+    max-width: 100vw !important;
+}
+
+.hero-section {
+    width: 100vw !important;
+    position: relative !important;
+    left: 50% !important;
+    right: 50% !important;
+    margin-left: -50vw !important;
+    margin-right: -50vw !important;
+}
+    </style>
     <style>
 /* ==========================================
    CSS VARIABLES - Editorial Magazine Theme
