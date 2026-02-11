@@ -1,6 +1,8 @@
 <?php
 /**
  * Newsletter Model - Handle newsletter subscriptions WITH WELCOME EMAIL AND SPAM NOTIFICATION
+ * FIXED: Email template syntax error resolved
+ * FIXED: Debug logging added for troubleshooting
  */
 class NewsletterModel {
     private $db;
@@ -20,10 +22,32 @@ class NewsletterModel {
         require_once APP_PATH . '/helpers/EmailHelper.php';
         $this->emailHelper = new EmailHelper();
         
-        // Email configuration for spam tips
-        $this->config = [
-            'from_email' => defined('NEWSLETTER_FROM_EMAIL') ? NEWSLETTER_FROM_EMAIL : 'newsletter@fctcns.edu.ng'
-        ];
+        // Initialize email configuration
+        $this->loadEmailConfig();
+    }
+    
+    /**
+     * Load email configuration
+     */
+    private function loadEmailConfig() {
+        try {
+            if (file_exists(APP_PATH . '/config/email.php')) {
+                require_once APP_PATH . '/config/email.php';
+                $allConfig = require APP_PATH . '/config/email.php';
+                $env = (defined('IS_LOCALHOST') && IS_LOCALHOST) ? 'development' : 'production';
+                $this->config = $allConfig[$env] ?? $allConfig['production'] ?? [];
+            }
+            
+            // Set default from email if not configured
+            if (!isset($this->config['from_email'])) {
+                $this->config['from_email'] = defined('NEWSLETTER_FROM_EMAIL') 
+                    ? NEWSLETTER_FROM_EMAIL 
+                    : 'newsletter@fctcns.edu.ng';
+            }
+        } catch (Exception $e) {
+            error_log("Error loading email config: " . $e->getMessage());
+            $this->config = ['from_email' => 'newsletter@fctcns.edu.ng'];
+        }
     }
     
     /**
@@ -64,7 +88,6 @@ class NewsletterModel {
                     // SEND WELCOME EMAIL (Reactivated)
                     $this->sendWelcomeEmail($email, true);
                     
-                    // ✅ UPDATED: Add spam box notification
                     return [
                         'success' => true,
                         'message' => '✅ Your subscription has been reactivated! 📧 Please check your inbox AND spam folder for our welcome email.'
@@ -111,7 +134,6 @@ class NewsletterModel {
                 $updateStmt = $this->db->prepare($updateSql);
                 $updateStmt->execute([$id]);
                 
-                // ✅ UPDATED: Add spam box notification
                 return [
                     'success' => true,
                     'message' => '✅ Thank you for subscribing! 📧 Please check your inbox AND spam folder for our welcome email.',
@@ -134,24 +156,48 @@ class NewsletterModel {
     }
     
     /**
-     * Send welcome email to new subscribers
+     * Send welcome email to new subscribers - WITH DEBUG LOGGING
      */
     private function sendWelcomeEmail($email, $isReactivated = false) {
         try {
+            // DEBUG LOGGING
+            error_log("=== SENDING WELCOME EMAIL ===");
+            error_log("To: $email");
+            error_log("Reactivated: " . ($isReactivated ? 'Yes' : 'No'));
+            error_log("Server time: " . date('Y-m-d H:i:s'));
+            
+            // Ensure config is loaded
+            if (!isset($this->config) || empty($this->config)) {
+                $this->loadEmailConfig();
+            }
+            
             if ($isReactivated) {
                 $subject = "🎉 Welcome Back to FCT Nursing College Newsletter!";
                 $heading = "You're Back!";
-                $message = "Your subscription has been reactivated successfully.";
+                $message = "Your subscription has been reactivated successfully. We're glad to have you with us again!";
             } else {
                 $subject = "🎉 Welcome to FCT College of Nursing Sciences Newsletter!";
                 $heading = "Thank You for Subscribing!";
-                $message = "You've successfully subscribed to our newsletter.";
+                $message = "You've successfully subscribed to our newsletter. Welcome to the FCT Nursing family!";
             }
             
-            // Build HTML email template with spam notifications
+            // Build HTML email template
             $htmlContent = $this->buildWelcomeEmailTemplate($heading, $message, $email);
             
+            // Log template details
+            error_log("Email template built successfully");
+            error_log("Subject: " . $subject);
+            error_log("Email template length: " . strlen($htmlContent) . " characters");
+            error_log("Template preview (first 200 chars): " . substr($htmlContent, 0, 200) . "...");
+            
+            // Verify EmailHelper exists
+            if (!$this->emailHelper) {
+                error_log("❌ EmailHelper not initialized!");
+                return false;
+            }
+            
             // Send email
+            error_log("Attempting to send email via EmailHelper...");
             $sent = $this->emailHelper->sendEmail(
                 $email,
                 $subject,
@@ -159,26 +205,41 @@ class NewsletterModel {
             );
             
             if ($sent) {
-                error_log("✅ Welcome email sent to: $email");
+                error_log("✅ Welcome email sent successfully to: $email");
             } else {
-                error_log("❌ Failed to send welcome email to: $email");
+                error_log("❌ FAILED to send welcome email to: $email");
+                // Log EmailHelper errors if available
+                if (method_exists($this->emailHelper, 'getLastError')) {
+                    error_log("EmailHelper last error: " . $this->emailHelper->getLastError());
+                }
             }
             
             return $sent;
             
         } catch (Exception $e) {
-            error_log("sendWelcomeEmail error: " . $e->getMessage());
+            error_log("❌❌❌ sendWelcomeEmail EXCEPTION: " . $e->getMessage());
+            error_log("Exception type: " . get_class($e));
+            error_log("File: " . $e->getFile() . ":" . $e->getLine());
+            error_log("Stack trace: " . $e->getTraceAsString());
             return false;
         }
     }
     
     /**
-     * Build welcome email HTML template WITH SPAM NOTIFICATION
+     * Build welcome email HTML template - FIXED VERSION
+     * CRITICAL FIX: No PHP concatenation inside HEREDOC
+     * CRITICAL FIX: Unsubscribe link properly built before HEREDOC
      */
     private function buildWelcomeEmailTemplate($heading, $message, $email) {
+        // Get base URL
         $baseUrl = defined('BASE_URL') ? BASE_URL : 'https://fctcns.edu.ng';
         $year = date('Y');
-        $fromEmail = $this->config['from_email'];
+        
+        // CRITICAL FIX: Build the unsubscribe link BEFORE the HEREDOC
+        $fromEmail = $this->config['from_email'] ?? 'newsletter@fctcns.edu.ng';
+        $unsubscribeLink = $baseUrl . '/newsletter/unsubscribe?email=' . urlencode($email);
+        $newsLink = $baseUrl . '/news';
+        $privacyLink = $baseUrl . '/privacy';
         
         return <<<HTML
 <!DOCTYPE html>
@@ -223,7 +284,6 @@ class NewsletterModel {
             border-radius: 5px;
             text-align: center;
             font-weight: 600;
-            font-size: 15px;
         }
         .content {
             padding: 30px 25px;
@@ -247,31 +307,9 @@ class NewsletterModel {
             border-radius: 5px;
             font-weight: 600;
             margin: 20px 0;
-            transition: background 0.3s ease;
         }
         .button:hover {
             background: #4A3A6F;
-        }
-        .deliverability-tips {
-            margin-top: 30px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-left: 4px solid #5D4A8A;
-            font-size: 14px;
-            border-radius: 0 5px 5px 0;
-        }
-        .deliverability-tips p {
-            margin: 0 0 10px 0;
-            color: #495057;
-            font-weight: 600;
-        }
-        .deliverability-tips ul {
-            margin: 0;
-            color: #6c757d;
-            padding-left: 20px;
-        }
-        .deliverability-tips li {
-            margin-bottom: 5px;
         }
         .footer {
             background: #f8f8f8;
@@ -285,9 +323,6 @@ class NewsletterModel {
             color: #5D4A8A;
             text-decoration: none;
         }
-        .footer a:hover {
-            text-decoration: underline;
-        }
         .social-links {
             margin-top: 15px;
         }
@@ -300,6 +335,14 @@ class NewsletterModel {
             margin-top: 15px;
             font-size: 12px;
         }
+        .deliverability-tips {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #5D4A8A;
+            font-size: 13px;
+            border-radius: 0 5px 5px 0;
+        }
         .emoji {
             font-size: 1.2em;
         }
@@ -311,11 +354,9 @@ class NewsletterModel {
             <h1>🏥 FCT College of Nursing Sciences</h1>
         </div>
         
-        <!-- ✅ ADDED: Spam folder notice - Prominent placement -->
         <div class="spam-notice">
-            ⚠️ <strong>DIDN'T SEE THIS EMAIL?</strong><br>
-            Please check your <strong>SPAM/JUNK folder</strong> and mark us as "Not Spam"<br>
-            <span style="font-size: 13px;">This ensures you receive all future updates from us!</span>
+            ⚠️ <strong>Didn't see this email?</strong> Please check your <strong>SPAM/JUNK folder</strong> 
+            and mark us as "Not Spam" to ensure you receive future updates.
         </div>
         
         <div class="content">
@@ -324,10 +365,10 @@ class NewsletterModel {
             <p>You'll now receive the latest news, events, and updates from our institution directly in your inbox.</p>
             
             <div style="background: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p style="margin: 0 0 10px 0; color: #333; font-size: 14px;">
-                    <strong>📧 What to expect in our newsletters:</strong>
+                <p style="margin: 0; color: #333; font-size: 14px;">
+                    <strong>📧 What to expect:</strong>
                 </p>
-                <ul style="margin-bottom: 0; color: #555; padding-left: 20px;">
+                <ul style="margin-bottom: 0; color: #555;">
                     <li>📢 Latest news and announcements</li>
                     <li>📅 Upcoming events and deadlines</li>
                     <li>🔬 Research breakthroughs</li>
@@ -337,26 +378,24 @@ class NewsletterModel {
             </div>
             
             <center>
-                <a href="{$baseUrl}/news" class="button">📰 View Latest News →</a>
+                <a href="{$newsLink}" class="button">📰 View Latest News →</a>
             </center>
             
             <p style="font-size: 14px; color: #777; font-style: italic;">
                 We're committed to keeping you informed about the latest developments in nursing education and healthcare at FCT College of Nursing Sciences.
             </p>
             
-            <!-- ✅ ADDED: Email deliverability tips - Comprehensive -->
             <div class="deliverability-tips">
-                <p>📌 <strong>To ensure our emails always reach your inbox:</strong></p>
-                <ul>
-                    <li>➕ Add <strong>{$fromEmail}</strong> to your email address book or contacts</li>
-                    <li>📨 If this email landed in your spam/junk folder, mark it as <strong>"Not Spam"</strong></li>
-                    <li>📋 Check your <strong>Promotions tab</strong> if using Gmail</li>
-                    <li>⭐ Move our emails to your Primary inbox for priority</li>
-                    <li>🔔 Enable notifications for emails from our domain</li>
+                <p style="margin: 0 0 10px 0; color: #495057; font-weight: 600;">
+                    📌 To ensure our emails reach your inbox:
+                </p>
+                <ul style="margin-bottom: 0; color: #6c757d; padding-left: 20px;">
+                    <li>➕ Add <strong>{$fromEmail}</strong> to your address book</li>
+                    <li>📨 Mark this email as "Not Spam" if it landed in your junk folder</li>
+                    <li>📋 Check your promotions tab if using Gmail</li>
                 </ul>
             </div>
             
-            <!-- Quick tip box -->
             <div style="margin-top: 20px; padding: 12px; background: #e8f4f8; border-radius: 5px; font-size: 13px; color: #2c3e50; text-align: center;">
                 <span class="emoji">💡</span> <strong>Quick tip:</strong> Dragging this email from spam to inbox automatically marks us as safe!
             </div>
@@ -374,9 +413,8 @@ class NewsletterModel {
             </div>
             
             <div class="unsubscribe">
-                <a href="{$baseUrl}/newsletter/unsubscribe?email=" . urlencode('{$email}') . "">📧 Unsubscribe</a> |
-                <a href="{$baseUrl}/privacy">🔒 Privacy Policy</a> |
-                <a href="{$baseUrl}/contact">📞 Contact Us</a>
+                <a href="{$unsubscribeLink}">📧 Unsubscribe</a> |
+                <a href="{$privacyLink}">🔒 Privacy Policy</a>
             </div>
             
             <p style="margin-top: 20px; font-size: 11px; color: #999;">
@@ -412,7 +450,6 @@ HTML;
             $success = $stmt->execute($params);
             
             if ($success && $stmt->rowCount() > 0) {
-                // ✅ UPDATED: Added emojis and clearer message
                 return [
                     'success' => true,
                     'message' => '✅ You have been successfully unsubscribed. We\'re sorry to see you go! 👋'
@@ -517,5 +554,22 @@ HTML;
             error_log("Newsletter deleteSubscriber error: " . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Test email sending - For debugging only
+     */
+    public function testEmailSending($email) {
+        error_log("=== TEST EMAIL SENDING ===");
+        error_log("Testing email to: $email");
+        
+        $result = $this->sendWelcomeEmail($email, false);
+        
+        error_log("Test email result: " . ($result ? "SUCCESS" : "FAILED"));
+        
+        return [
+            'success' => $result,
+            'message' => $result ? '✅ Test email sent successfully' : '❌ Test email failed'
+        ];
     }
 }
