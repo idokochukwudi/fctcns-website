@@ -1,6 +1,6 @@
 <?php
 /**
- * Public News Controller - COMPLETE FIXED VERSION WITH AUTHOR DATA
+ * Public News Controller - COMPLETE FIXED VERSION WITH AUTHOR DATA AND TOPIC COUNTS
  * Handles /news routes for public visitors
  */
 class NewsController extends Controller {
@@ -163,6 +163,38 @@ class NewsController extends Controller {
             // Get popular news
             $popularNews = $this->newsModel->getPopularNews(5);
             
+            // =============================================
+            // NEW: Get ALL published news to count topics across the entire site
+            // =============================================
+            $allPublishedNews = $this->newsModel->getPublishedNews(1000, 0); // Get many articles
+            
+            // Build topic counts array
+            $allNewsTopics = [];
+            foreach ($allPublishedNews as $article) {
+                if (!empty($article['tags'])) {
+                    $tags = [];
+                    if (is_string($article['tags'])) {
+                        $decoded = json_decode($article['tags'], true);
+                        $tags = json_last_error() === JSON_ERROR_NONE ? $decoded : array_map('trim', explode(',', $article['tags']));
+                    } elseif (is_array($article['tags'])) {
+                        $tags = $article['tags'];
+                    }
+                    
+                    foreach ($tags as $tag) {
+                        $tagLower = strtolower(trim($tag));
+                        $allNewsTopics[$tagLower] = ($allNewsTopics[$tagLower] ?? 0) + 1;
+                    }
+                }
+            }
+            
+            // Sort topics by count (descending)
+            arsort($allNewsTopics);
+            
+            error_log("=== TOPIC COUNTS GENERATED ===");
+            error_log("Total unique topics found: " . count($allNewsTopics));
+            error_log("Top 5 topics: " . json_encode(array_slice($allNewsTopics, 0, 5, true)));
+            // =============================================
+            
             // ✅ DEBUG: Log author information
             error_log("=== AUTHOR INFORMATION ===");
             error_log("Author ID: " . ($news['author_id'] ?? 'NULL'));
@@ -201,6 +233,7 @@ class NewsController extends Controller {
                 'categories' => $categories,
                 'archiveMonths' => $archiveMonths,
                 'popularNews' => $popularNews,
+                'allNewsTopics' => $allNewsTopics, // Pass topic counts to view
                 'pageTitle' => ($news['title'] ?? 'News Article') . ' - FCT College of Nursing Sciences',
                 'pageDescription' => $news['excerpt'] ?? substr(strip_tags($news['content'] ?? ''), 0, 150) . '...'
             ];
@@ -245,7 +278,10 @@ class NewsController extends Controller {
             <title><?php echo htmlspecialchars($pageTitle); ?></title>
             <meta name="description" content="<?php echo htmlspecialchars($pageDescription); ?>">
             <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; }
+                body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 1200px; margin: 0 auto; padding: 20px; }
+                .content-wrapper { display: flex; gap: 30px; }
+                .article-main { flex: 2; }
+                .sidebar { flex: 1; }
                 .article-header { margin-bottom: 30px; }
                 .article-title { font-size: 2rem; margin-bottom: 10px; }
                 .article-meta { color: #666; margin-bottom: 20px; }
@@ -254,69 +290,97 @@ class NewsController extends Controller {
                 .author-role { color: #666; font-style: italic; }
                 .article-content { font-size: 1.1rem; }
                 .back-link { display: inline-block; margin-top: 30px; padding: 10px 20px; background: #5D4A8A; color: white; text-decoration: none; border-radius: 5px; }
-                .sidebar { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; }
-                .popular-news { margin-top: 20px; }
-                .popular-news-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+                .sidebar-section { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #ddd; }
+                .topic-list { list-style: none; padding: 0; }
+                .topic-item { display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 10px; background: #f9f9f9; border-radius: 3px; }
+                .topic-name { text-transform: capitalize; }
+                .topic-count { background: #5D4A8A; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem; }
+                .popular-news-item { margin-bottom: 15px; }
+                .popular-news-item a { font-weight: 500; color: #333; text-decoration: none; }
+                .popular-news-item a:hover { color: #5D4A8A; text-decoration: underline; }
             </style>
         </head>
         <body>
-            <article>
-                <header class="article-header">
-                    <h1 class="article-title"><?php echo htmlspecialchars($news['title'] ?? 'News Article'); ?></h1>
-                    <div class="article-meta">
-                        <?php if (!empty($news['created_at'])): ?>
-                            <span>Published: <?php echo date('F j, Y', strtotime($news['created_at'])); ?></span>
+            <div class="content-wrapper">
+                <div class="article-main">
+                    <article>
+                        <header class="article-header">
+                            <h1 class="article-title"><?php echo htmlspecialchars($news['title'] ?? 'News Article'); ?></h1>
+                            <div class="article-meta">
+                                <?php if (!empty($news['created_at'])): ?>
+                                    <span>Published: <?php echo date('F j, Y', strtotime($news['created_at'])); ?></span>
+                                <?php endif; ?>
+                                <?php if (!empty($news['category'])): ?>
+                                    <span> | Category: <?php echo htmlspecialchars($news['category']); ?></span>
+                                <?php endif; ?>
+                                <?php if (!empty($news['views_count'])): ?>
+                                    <span> | Views: <?php echo number_format($news['views_count']); ?></span>
+                                <?php endif; ?>
+                            </div>
+                        </header>
+                        
+                        <?php if (!empty($news['full_name']) || !empty($news['author_name'])): ?>
+                        <div class="author-info">
+                            <span class="author-name">
+                                <?php echo htmlspecialchars($news['full_name'] ?? $news['author_name'] ?? 'Author'); ?>
+                            </span>
+                            <?php if (!empty($news['author_role'])): ?>
+                                <span class="author-role">(<?php echo htmlspecialchars($news['author_role']); ?>)</span>
+                            <?php endif; ?>
+                        </div>
                         <?php endif; ?>
-                        <?php if (!empty($news['category'])): ?>
-                            <span> | Category: <?php echo htmlspecialchars($news['category']); ?></span>
+                        
+                        <?php if (!empty($news['featured_image'])): ?>
+                        <div class="featured-image">
+                            <img src="<?php echo $news['featured_image']; ?>" alt="<?php echo htmlspecialchars($news['title'] ?? ''); ?>" style="width: 100%; height: auto;">
+                        </div>
                         <?php endif; ?>
-                        <?php if (!empty($news['views_count'])): ?>
-                            <span> | Views: <?php echo number_format($news['views_count']); ?></span>
-                        <?php endif; ?>
-                    </div>
-                </header>
+                        
+                        <div class="article-content">
+                            <?php echo !empty($news['content']) ? $news['content'] : 'Content not available.'; ?>
+                        </div>
+                        
+                        <a href="<?php echo $baseUrl; ?>/news" class="back-link">← Back to News</a>
+                    </article>
+                </div>
                 
-                <?php if (!empty($news['full_name']) || !empty($news['author_name'])): ?>
-                <div class="author-info">
-                    <span class="author-name">
-                        <?php echo htmlspecialchars($news['full_name'] ?? $news['author_name'] ?? 'Author'); ?>
-                    </span>
-                    <?php if (!empty($news['author_role'])): ?>
-                        <span class="author-role">(<?php echo htmlspecialchars($news['author_role']); ?>)</span>
+                <div class="sidebar">
+                    <?php if (!empty($allNewsTopics)): ?>
+                    <div class="sidebar-section">
+                        <h3>Popular Topics</h3>
+                        <ul class="topic-list">
+                            <?php 
+                            $topTopics = array_slice($allNewsTopics, 0, 10, true);
+                            foreach ($topTopics as $topic => $count): 
+                            ?>
+                            <li class="topic-item">
+                                <span class="topic-name"><?php echo htmlspecialchars($topic); ?></span>
+                                <span class="topic-count"><?php echo $count; ?></span>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <?php if (!empty($popularNews)): ?>
+                    <div class="sidebar-section">
+                        <h3>Popular News</h3>
+                        <div class="popular-news">
+                            <?php foreach ($popularNews as $popular): ?>
+                            <div class="popular-news-item">
+                                <a href="<?php echo $baseUrl; ?>/news/<?php echo $popular['slug']; ?>">
+                                    <?php echo htmlspecialchars($popular['title']); ?>
+                                </a>
+                                <small style="color: #666; display: block;">
+                                    Views: <?php echo number_format($popular['views_count'] ?? 0); ?>
+                                </small>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
                     <?php endif; ?>
                 </div>
-                <?php endif; ?>
-                
-                <?php if (!empty($news['featured_image'])): ?>
-                <div class="featured-image">
-                    <img src="<?php echo $news['featured_image']; ?>" alt="<?php echo htmlspecialchars($news['title'] ?? ''); ?>" style="width: 100%; height: auto;">
-                </div>
-                <?php endif; ?>
-                
-                <div class="article-content">
-                    <?php echo !empty($news['content']) ? $news['content'] : 'Content not available.'; ?>
-                </div>
-                
-                <?php if (!empty($popularNews)): ?>
-                <div class="sidebar">
-                    <h3>Popular News</h3>
-                    <div class="popular-news">
-                        <?php foreach ($popularNews as $popular): ?>
-                        <div class="popular-news-item">
-                            <a href="<?php echo $baseUrl; ?>/news/<?php echo $popular['slug']; ?>">
-                                <?php echo htmlspecialchars($popular['title']); ?>
-                            </a>
-                            <small style="color: #666; display: block;">
-                                Views: <?php echo number_format($popular['views_count'] ?? 0); ?>
-                            </small>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
-                
-                <a href="<?php echo $baseUrl; ?>/news" class="back-link">← Back to News</a>
-            </article>
+            </div>
         </body>
         </html>
         <?php
@@ -671,6 +735,30 @@ class NewsController extends Controller {
                     echo "<p style='color: red;'>getBySlug() failed for slug: $firstSlug</p>";
                 }
             }
+            
+            // Test topic count generation
+            echo "<h3>Topic Counts Test</h3>";
+            $allPublishedNews = $this->newsModel->getPublishedNews(100, 0);
+            $allNewsTopics = [];
+            foreach ($allPublishedNews as $article) {
+                if (!empty($article['tags'])) {
+                    $tags = [];
+                    if (is_string($article['tags'])) {
+                        $decoded = json_decode($article['tags'], true);
+                        $tags = json_last_error() === JSON_ERROR_NONE ? $decoded : array_map('trim', explode(',', $article['tags']));
+                    } elseif (is_array($article['tags'])) {
+                        $tags = $article['tags'];
+                    }
+                    
+                    foreach ($tags as $tag) {
+                        $tagLower = strtolower(trim($tag));
+                        $allNewsTopics[$tagLower] = ($allNewsTopics[$tagLower] ?? 0) + 1;
+                    }
+                }
+            }
+            arsort($allNewsTopics);
+            echo "<p>Found " . count($allNewsTopics) . " unique topics</p>";
+            echo "<pre>" . print_r(array_slice($allNewsTopics, 0, 10, true), true) . "</pre>";
             
             // Test other methods
             echo "<h3>getCategoriesWithCounts()</h3>";

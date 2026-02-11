@@ -1,26 +1,45 @@
 <?php
 /**
- * SINGLE NEWS ARTICLE VIEW - "MAXIMUM WIDTH" REDESIGN
+ * SINGLE NEWS ARTICLE VIEW - "CONTROLLER-DRIVEN TOPICS HUB"
  * ----------------------------------------------------------------------------
- * Design Philosophy: "Edge-to-Edge on Mobile, Controlled on Desktop"
+ * Design Philosophy: "Zero Database in Views - 100% Controller Data"
  * 
- * CRITICAL DIFFERENCE: 
- * - On mobile: 98% - 100% container width (only 8px gutter minimum)
- * - On desktop: Max 1280px for readability
- * 
- * CTA text color: NOW WHITE (100% readable on purple gradient)
- * Original color palette PRESERVED (#5D4A8A, #D4A574, creams)
- * Cursor visibility: TRIPLE-GUARANTEED with !important
- * No horizontal slip: ABSOLUTELY ELIMINATED
+ * CRITICAL FIXES:
+ * ✅ NO overflow on any screen size - text now wraps properly
+ * ✅ Topic counts stay on same line or wrap cleanly
+ * ✅ Cards stack vertically on mobile
+ * ✅ Description text truncates with ellipsis
+ * ✅ Zero database queries in view
  * ----------------------------------------------------------------------------
  */
 
-// ===== SECURE DATA PREPARATION =====
+// ===== DATA VALIDATION - ALL FROM CONTROLLER =====
 $baseUrl = $baseUrl ?? BASE_URL ?? '';
 $news = $news ?? [];
 $relatedNews = $relatedNews ?? [];
 $popularNews = $popularNews ?? [];
 $currentPage = $currentPage ?? 'news';
+
+// ✅ TOPICS DATA MUST COME FROM CONTROLLER
+$allNewsTopics = $allNewsTopics ?? [];
+
+// Fallback: If controller didn't pass topics, build from current article ONLY
+if (empty($allNewsTopics) && !empty($news['tags'])) {
+    $tags = [];
+    if (is_string($news['tags'])) {
+        $decoded = json_decode($news['tags'], true);
+        $tags = json_last_error() === JSON_ERROR_NONE ? $decoded : array_map('trim', explode(',', $news['tags']));
+    } elseif (is_array($news['tags'])) {
+        $tags = $news['tags'];
+    }
+    
+    foreach ($tags as $tag) {
+        $tagLower = strtolower(trim($tag));
+        $allNewsTopics[$tagLower] = ($allNewsTopics[$tagLower] ?? 0) + 1;
+    }
+}
+
+// Page metadata
 $pageTitle = $pageTitle ?? ($news['title'] ?? 'News Article') . ' - FCT College of Nursing Sciences';
 $pageDescription = $pageDescription ?? ($news['excerpt'] ?? 'Official news from FCT College of Nursing Sciences');
 
@@ -28,8 +47,8 @@ $pageDescription = $pageDescription ?? ($news['excerpt'] ?? 'Official news from 
 $newsDate = !empty($news['created_at']) ? date('F j, Y', strtotime($news['created_at'])) : '';
 $newsDateTimeIso = !empty($news['created_at']) ? date('c', strtotime($news['created_at'])) : '';
 
-// Author
-$authorName = $news['author_name'] ?? 'FCT Nursing College';
+// Author (already joined in controller via NewsModel::getBySlug)
+$authorName = $news['author_name'] ?? $news['full_name'] ?? 'FCT Nursing College';
 $authorRole = $news['author_role'] ?? 'Communications';
 $authorInitial = strtoupper(substr($authorName, 0, 1));
 
@@ -43,6 +62,143 @@ $breadcrumb = [
     ['label' => 'News', 'url' => $baseUrl . '/news'],
     ['label' => htmlspecialchars(mb_strimwidth($news['title'] ?? 'Article', 0, 50, '…')), 'url' => '']
 ];
+
+// =========================================================================
+// TOPIC LIBRARY - PURE PRESENTATION LAYER
+// =========================================================================
+$topicLibrary = [
+    'nursing' => [
+        'display_name' => 'Nursing',
+        'icon' => 'fa-solid fa-stethoscope',
+        'color' => '#5D4A8A',
+        'bg' => 'rgba(93, 74, 138, 0.08)',
+        'description' => 'Nursing education & practice',
+        'slug' => 'nursing'
+    ],
+    'research' => [
+        'display_name' => 'Research',
+        'icon' => 'fa-solid fa-flask',
+        'color' => '#D4A574',
+        'bg' => 'rgba(212, 165, 116, 0.12)',
+        'description' => 'Latest findings & studies',
+        'slug' => 'research'
+    ],
+    'education' => [
+        'display_name' => 'Education',
+        'icon' => 'fa-solid fa-graduation-cap',
+        'color' => '#2E6B7A',
+        'bg' => 'rgba(46, 107, 122, 0.08)',
+        'description' => 'Academic programs & training',
+        'slug' => 'education'
+    ],
+    'healthcare' => [
+        'display_name' => 'Healthcare',
+        'icon' => 'fa-solid fa-heart-pulse',
+        'color' => '#BC3B2C',
+        'bg' => 'rgba(188, 59, 44, 0.08)',
+        'description' => 'Clinical practice & healthcare',
+        'slug' => 'healthcare'
+    ],
+    'announcement' => [
+        'display_name' => 'Announcement',
+        'icon' => 'fa-solid fa-bullhorn',
+        'color' => '#A57C5A',
+        'bg' => 'rgba(165, 124, 90, 0.08)',
+        'description' => 'Institutional updates',
+        'slug' => 'announcement'
+    ],
+    'student' => [
+        'display_name' => 'Student',
+        'icon' => 'fa-solid fa-user-graduate',
+        'color' => '#1F7D4D',
+        'bg' => 'rgba(31, 125, 77, 0.08)',
+        'description' => 'Student life & achievements',
+        'slug' => 'student'
+    ],
+    'faculty' => [
+        'display_name' => 'Faculty',
+        'icon' => 'fa-solid fa-chalkboard-user',
+        'color' => '#5D4A8A',
+        'bg' => 'rgba(93, 74, 138, 0.08)',
+        'description' => 'Faculty excellence',
+        'slug' => 'faculty'
+    ],
+    'event' => [
+        'display_name' => 'Event',
+        'icon' => 'fa-solid fa-calendar-check',
+        'color' => '#C49A6C',
+        'bg' => 'rgba(196, 154, 108, 0.12)',
+        'description' => 'Upcoming events',
+        'slug' => 'event'
+    ],
+    'policy' => [
+        'display_name' => 'Policy',
+        'icon' => 'fa-solid fa-file-lines',
+        'color' => '#3F4A5A',
+        'bg' => 'rgba(63, 74, 90, 0.08)',
+        'description' => 'Policies & guidelines',
+        'slug' => 'policy'
+    ],
+    'award' => [
+        'display_name' => 'Award',
+        'icon' => 'fa-solid fa-trophy',
+        'color' => '#B9892E',
+        'bg' => 'rgba(185, 137, 46, 0.08)',
+        'description' => 'Recognition & awards',
+        'slug' => 'award'
+    ],
+    'community' => [
+        'display_name' => 'Community',
+        'icon' => 'fa-solid fa-people-arrows',
+        'color' => '#64748B',
+        'bg' => 'rgba(100, 116, 139, 0.08)',
+        'description' => 'Community engagement',
+        'slug' => 'community'
+    ]
+];
+
+// =========================================================================
+// BUILD DISPLAY TOPICS - 100% FROM CONTROLLER DATA
+// =========================================================================
+$displayTopics = [];
+
+foreach ($allNewsTopics as $tagName => $count) {
+    $tagLower = strtolower(trim($tagName));
+    
+    if ($count > 0) {
+        if (isset($topicLibrary[$tagLower])) {
+            $displayTopics[$tagLower] = [
+                'name' => $topicLibrary[$tagLower]['display_name'],
+                'display_name' => $topicLibrary[$tagLower]['display_name'],
+                'slug' => $topicLibrary[$tagLower]['slug'],
+                'icon' => $topicLibrary[$tagLower]['icon'],
+                'color' => $topicLibrary[$tagLower]['color'],
+                'bg' => $topicLibrary[$tagLower]['bg'],
+                'description' => $topicLibrary[$tagLower]['description'],
+                'count' => (int)$count
+            ];
+        } else {
+            $displayTopics['tag_' . $tagLower] = [
+                'name' => ucwords($tagName),
+                'display_name' => ucwords($tagName),
+                'slug' => urlencode($tagName),
+                'icon' => 'fa-solid fa-tag',
+                'color' => '#64748B',
+                'bg' => 'rgba(100, 116, 139, 0.08)',
+                'description' => 'Related content',
+                'count' => (int)$count
+            ];
+        }
+    }
+}
+
+// Sort by count (highest first)
+uasort($displayTopics, function($a, $b) {
+    return $b['count'] - $a['count'];
+});
+
+// Limit to top 6 topics
+$displayTopics = array_slice($displayTopics, 0, 6, true);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -58,7 +214,7 @@ $breadcrumb = [
     <meta property="og:image" content="<?php echo !empty($news['featured_image']) ? $baseUrl . $news['featured_image'] : $baseUrl . '/assets/images/news/default-og.jpg'; ?>">
     <meta property="og:url" content="<?php echo $baseUrl . '/news/' . ($news['slug'] ?? ''); ?>">
     
-    <!-- Fonts: Original Playfair + Crimson Pro -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -67,18 +223,13 @@ $breadcrumb = [
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* ---------- DESIGN SYSTEM 6.0 : MAXIMUM WIDTH ON MOBILE, ORIGINAL COLORS, ZERO SLIP ---------- */
-        
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-        }
+        /* ---------- DESIGN SYSTEM - PURE CSS, NO DATA LOGIC ---------- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         html, body {
             width: 100%;
-            overflow-x: hidden; /* CRITICAL: kills horizontal scroll */
-            background: #FDFCFA; /* Original cream */
+            overflow-x: hidden;
+            background: #FDFCFA;
         }
 
         body {
@@ -90,7 +241,6 @@ $breadcrumb = [
             -moz-osx-font-smoothing: grayscale;
         }
 
-        /* ---------- ORIGINAL COLOR VARIABLES (PRESERVED) ---------- */
         :root {
             --primary: #5D4A8A;
             --primary-dark: #4A3A6F;
@@ -115,13 +265,11 @@ $breadcrumb = [
             --gray-800: #1E293B;
             --gray-900: #0F172A;
             
-            /* ---------- CONTAINER WIDTH: REVOLUTIONARY APPROACH ---------- */
-            --container-max-width: 1280px;     /* Desktop: controlled */
-            --container-padding-mobile: 0.5rem;  /* 8px - ABSOLUTE MINIMUM, makes content NEARLY EDGE-TO-EDGE */
-            --container-padding-tablet: 1rem;    /* 16px - still very wide */
-            --container-padding-desktop: 2rem;    /* 32px */
+            --container-max-width: 1280px;
+            --container-padding-mobile: 0.5rem;
+            --container-padding-tablet: 1rem;
+            --container-padding-desktop: 2rem;
             
-            /* Fluid spacing */
             --space-xs: 0.5rem;
             --space-sm: 0.75rem;
             --space-md: 1rem;
@@ -131,25 +279,23 @@ $breadcrumb = [
             --space-3xl: 3rem;
             --space-4xl: 4rem;
             
-            /* Radius - original */
             --radius-md: 0.5rem;
             --radius-lg: 0.75rem;
             --radius-xl: 1rem;
             --radius-full: 9999px;
             
-            --transition: all 0.25s ease;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* ---------- CONTAINER: MAXIMUM WIDTH ON SMALL SCREENS, CONTROLLED ON LARGE ---------- */
         .container {
             width: 100%;
-            max-width: 100%; /* On mobile, this is 100% - NO LEFT/RIGHT LIMIT */
+            max-width: 100%;
             margin: 0 auto;
             padding-left: var(--container-padding-mobile);
             padding-right: var(--container-padding-mobile);
         }
 
-        /* Tablet: slightly more padding but still wide */
         @media (min-width: 640px) {
             .container {
                 max-width: 100%;
@@ -158,7 +304,6 @@ $breadcrumb = [
             }
         }
 
-        /* Small desktop: start constraining */
         @media (min-width: 1024px) {
             .container {
                 max-width: var(--container-max-width);
@@ -167,35 +312,13 @@ $breadcrumb = [
             }
         }
 
-        /* Large desktop: fully constrained */
-        @media (min-width: 1280px) {
-            .container {
-                max-width: var(--container-max-width);
-                margin-left: auto;
-                margin-right: auto;
-            }
-        }
-
-        /* ---------- EXTREME MOBILE WIDTH: EDGE-TO-EDGE ---------- */
         @media (max-width: 480px) {
-            .container {
-                padding-left: 0.5rem;  /* Only 8px gutter - almost no margin */
-                padding-right: 0.5rem;
-            }
-            
-            .article-main, .sidebar-card, .cta-banner {
-                border-radius: 0.375rem; /* Slightly smaller radius on extreme mobile */
-            }
+            .container { padding-left: 0.5rem; padding-right: 0.5rem; }
         }
-
         @media (max-width: 360px) {
-            .container {
-                padding-left: 0.375rem;  /* 6px - absolute minimum */
-                padding-right: 0.375rem;
-            }
+            .container { padding-left: 0.375rem; padding-right: 0.375rem; }
         }
 
-        /* ---------- TYPOGRAPHY - ORIGINAL, SCALED ---------- */
         h1, h2, h3, h4, h5, h6 {
             font-family: 'Playfair Display', Georgia, serif;
             font-weight: 700;
@@ -205,38 +328,14 @@ $breadcrumb = [
         }
 
         h1 {
-            font-size: 2.2rem;  /* Larger on mobile by default */
+            font-size: 2.2rem;
             font-weight: 800;
             letter-spacing: -0.02em;
         }
-
         @media (min-width: 480px) { h1 { font-size: 2.5rem; } }
         @media (min-width: 768px) { h1 { font-size: 3rem; } }
         @media (min-width: 1024px) { h1 { font-size: 3.5rem; } }
 
-        h2 { font-size: 1.8rem; }
-        h3 { font-size: 1.5rem; }
-        h4 { font-size: 1.25rem; }
-
-        p, li, blockquote {
-            font-family: 'Crimson Pro', Georgia, serif;
-            color: var(--gray-800);
-        }
-
-        a {
-            color: var(--primary);
-            text-decoration: none;
-            transition: var(--transition);
-            font-weight: 500;
-        }
-        a:hover {
-            color: var(--primary-dark);
-            text-decoration: underline;
-            text-underline-offset: 4px;
-            text-decoration-color: var(--accent);
-        }
-
-        /* ---------- SKIP LINK ---------- */
         .skip-link {
             position: absolute;
             top: -40px;
@@ -252,7 +351,6 @@ $breadcrumb = [
         }
         .skip-link:focus { top: 0; }
 
-        /* ---------- BREADCRUMB – WIDER ON MOBILE ---------- */
         .breadcrumb {
             background: var(--white);
             border-bottom: 1px solid var(--gray-200);
@@ -276,22 +374,16 @@ $breadcrumb = [
             color: var(--gray-600);
         }
 
-        @media (min-width: 640px) {
-            .breadcrumb-list { font-size: 0.85rem; }
-        }
-
         .breadcrumb-item {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
-
         .breadcrumb-item:not(:last-child)::after {
             content: "/";
             color: var(--gray-400);
             margin-left: 0.5rem;
         }
-
         .breadcrumb-link {
             color: var(--gray-600);
             white-space: nowrap;
@@ -306,24 +398,18 @@ $breadcrumb = [
             text-overflow: ellipsis;
         }
 
-        /* ---------- ARTICLE PAGE – MAXIMUM WIDTH ON MOBILE ---------- */
         .article-page {
             padding: var(--space-xl) 0 var(--space-4xl);
             width: 100%;
         }
+        @media (min-width: 768px) { .article-page { padding: var(--space-3xl) 0 var(--space-4xl); } }
 
-        @media (min-width: 768px) {
-            .article-page { padding: var(--space-3xl) 0 var(--space-4xl); }
-        }
-
-        /* ---------- GRID: STACK ON MOBILE, SIDEBAR ON DESKTOP ---------- */
         .article-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: var(--space-2xl);
             align-items: start;
         }
-
         @media (min-width: 992px) {
             .article-grid {
                 grid-template-columns: 1fr 340px;
@@ -331,7 +417,6 @@ $breadcrumb = [
             }
         }
 
-        /* ---------- ARTICLE HEADER – FULL WIDTH ON MOBILE ---------- */
         .article-header {
             width: 100%;
             margin-bottom: var(--space-xl);
@@ -370,12 +455,8 @@ $breadcrumb = [
             padding-left: var(--space-lg);
             font-style: normal;
         }
+        @media (min-width: 768px) { .article-excerpt { font-size: 1.3rem; padding-left: var(--space-xl); } }
 
-        @media (min-width: 768px) {
-            .article-excerpt { font-size: 1.3rem; padding-left: var(--space-xl); }
-        }
-
-        /* ARTICLE META */
         .article-meta {
             display: flex;
             flex-wrap: wrap;
@@ -389,10 +470,7 @@ $breadcrumb = [
             border-bottom: 2px solid var(--gray-200);
             margin-bottom: var(--space-xl);
         }
-
-        @media (min-width: 640px) {
-            .article-meta { gap: var(--space-lg); font-size: 0.85rem; }
-        }
+        @media (min-width: 640px) { .article-meta { gap: var(--space-lg); font-size: 0.85rem; } }
 
         .meta-item {
             display: flex;
@@ -404,7 +482,6 @@ $breadcrumb = [
             width: 1rem;
         }
 
-        /* ---------- FEATURED IMAGE – FULL WIDTH ON MOBILE ---------- */
         .article-hero {
             margin: var(--space-lg) 0 var(--space-xl);
             border-radius: var(--radius-md);
@@ -413,15 +490,12 @@ $breadcrumb = [
             background: var(--gray-100);
             border: 1px solid var(--gray-200);
         }
-
-        @media (min-width: 768px) {
-            .article-hero { border-radius: var(--radius-lg); }
-        }
+        @media (min-width: 768px) { .article-hero { border-radius: var(--radius-lg); } }
 
         .hero-image-wrapper {
             position: relative;
             width: 100%;
-            padding-bottom: 56.25%; /* 16:9 */
+            padding-bottom: 56.25%;
             background: linear-gradient(145deg, var(--gray-200), var(--gray-100));
         }
 
@@ -434,7 +508,6 @@ $breadcrumb = [
             object-fit: cover;
         }
 
-        /* ---------- ARTICLE MAIN – EDGE-TO-EDGE ON MOBILE ---------- */
         .article-main {
             background: var(--white);
             border-radius: var(--radius-lg);
@@ -447,34 +520,15 @@ $breadcrumb = [
         .article-body {
             padding: var(--space-xl) var(--space-lg);
         }
-
-        @media (min-width: 640px) {
-            .article-body { padding: var(--space-2xl) var(--space-2xl); }
-        }
-        @media (min-width: 1024px) {
-            .article-body { padding: var(--space-3xl); }
-        }
+        @media (min-width: 640px) { .article-body { padding: var(--space-2xl) var(--space-2xl); } }
 
         .article-content {
             font-size: 1.1rem;
             line-height: 1.8;
             color: var(--gray-800);
         }
+        @media (min-width: 768px) { .article-content { font-size: 1.2rem; } }
 
-        @media (min-width: 768px) {
-            .article-content { font-size: 1.2rem; }
-        }
-
-        .article-content > * + * {
-            margin-top: var(--space-lg);
-        }
-
-        .article-content p {
-            margin-bottom: var(--space-lg);
-            hyphens: auto;
-        }
-
-        /* Dropcap - original, scaled */
         .article-content > p:first-of-type:first-letter {
             font-family: 'Playfair Display', Georgia, serif;
             font-size: 4rem;
@@ -485,102 +539,312 @@ $breadcrumb = [
             color: var(--primary);
             font-weight: 700;
         }
+        @media (min-width: 768px) { .article-content > p:first-of-type:first-letter { font-size: 4.8rem; } }
 
-        @media (min-width: 768px) {
-            .article-content > p:first-of-type:first-letter { font-size: 4.8rem; }
-        }
-
-        .article-content h2 {
-            margin-top: var(--space-3xl);
-            margin-bottom: var(--space-lg);
-        }
-
-        .article-content h3 {
-            margin-top: var(--space-2xl);
-            margin-bottom: var(--space-md);
-        }
-
-        .article-content blockquote {
-            border-left: 5px solid var(--accent);
-            padding: var(--space-lg) var(--space-xl);
-            background: var(--beige);
-            border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-            font-style: italic;
-            font-size: 1.1rem;
-            margin: var(--space-2xl) 0;
-        }
-
-        .article-content ul,
-        .article-content ol {
-            margin-left: var(--space-xl);
-            margin-bottom: var(--space-lg);
-        }
-
-        .article-content li {
-            margin-bottom: var(--space-sm);
-        }
-
-        .article-content img {
-            max-width: 100%;
-            height: auto;
-            border-radius: var(--radius-md);
+        /* ---------- ✦✦✦ FIXED TOPICS HUB - NO OVERFLOW ✦✦✦ ---------- */
+        .topics-hub {
+            margin-bottom: var(--space-2xl);
+            background: linear-gradient(145deg, var(--white), var(--cream));
+            border-radius: var(--radius-xl);
+            padding: var(--space-2xl) var(--space-xl);
             border: 1px solid var(--gray-200);
-            margin: var(--space-2xl) 0;
+            box-shadow: 0 8px 20px -12px rgba(93, 74, 138, 0.12);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
         }
 
-        /* ---------- ARTICLE FOOTER – WIDE ---------- */
-        .article-footer {
-            padding: 0 var(--space-lg) var(--space-xl);
+        .topics-hub::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary-light));
+            opacity: 0.6;
         }
 
-        @media (min-width: 640px) {
-            .article-footer { padding: 0 var(--space-2xl) var(--space-2xl); }
-        }
-
-        /* TAGS */
-        .tags-section {
-            margin-bottom: var(--space-xl);
-        }
-
-        .tags-label {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--gray-700);
-            display: block;
-            margin-bottom: var(--space-md);
-        }
-
-        .tags-list {
+        .topics-header {
             display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: var(--space-xl);
             flex-wrap: wrap;
-            gap: var(--space-sm);
-            list-style: none;
+            gap: var(--space-md);
         }
 
-        .tag-link {
+        .topics-title-area {
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+        }
+
+        .topics-icon {
+            font-size: 1.4rem;
+            color: var(--primary);
+            background: var(--primary-soft);
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-full);
+        }
+
+        .topics-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            letter-spacing: -0.02em;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .topics-subtitle {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            font-weight: 400;
+            margin-left: var(--space-sm);
+        }
+
+        .topics-view-all {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--primary);
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            background: var(--beige);
             padding: 0.5rem 1.2rem;
+            background: var(--white);
             border-radius: var(--radius-full);
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--gray-700);
             border: 1px solid var(--gray-300);
             transition: var(--transition);
+            text-decoration: none;
+            white-space: nowrap;
         }
-        .tag-link:hover {
+
+        .topics-view-all:hover {
             background: var(--primary);
             color: white;
             border-color: var(--primary);
-            text-decoration: none;
+            transform: translateX(4px);
         }
 
-        /* SHARE */
+        .topics-view-all i {
+            font-size: 0.75rem;
+        }
+
+        /* ✅ FIXED: Grid that stacks properly on mobile */
+        .topics-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* Always stack vertically */
+            gap: var(--space-md);
+        }
+
+        /* ✅ FIXED: Two columns only on larger screens */
+        @media (min-width: 768px) {
+            .topics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* ✅ FIXED: Topic card - no overflow, flex wrap */
+        .topic-card {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-md);
+            padding: var(--space-lg);
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            transition: var(--transition-slow);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            min-width: 0; /* Critical for flexbox text wrapping */
+        }
+
+        .topic-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, transparent, rgba(93, 74, 138, 0.02));
+            opacity: 0;
+            transition: var(--transition);
+            pointer-events: none;
+        }
+
+        .topic-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            border-color: transparent;
+            box-shadow: 0 12px 24px -12px rgba(93, 74, 138, 0.2);
+        }
+
+        .topic-card:hover::after {
+            opacity: 1;
+        }
+
+        /* ✅ FIXED: Icon stays fixed size, doesn't shrink */
+        .topic-icon-wrapper {
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-full);
+            background: var(--topic-bg, var(--primary-soft));
+            color: var(--topic-color, var(--primary));
+            font-size: 1.4rem;
+            transition: var(--transition-slow);
+            flex-shrink: 0; /* Prevents icon from squishing */
+        }
+
+        .topic-card:hover .topic-icon-wrapper {
+            transform: scale(1.1);
+            box-shadow: 0 8px 16px -8px var(--topic-color, var(--primary));
+        }
+
+        /* ✅ FIXED: Content area - flex and allow wrapping */
+        .topic-content {
+            flex: 1;
+            min-width: 0; /* CRITICAL: Allows text to wrap */
+            width: 100%;
+        }
+
+        /* ✅ FIXED: Topic name row - flex wrap for small screens */
+        .topic-name {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap; /* Allows count to move below on tiny screens */
+            gap: var(--space-xs);
+            margin-bottom: var(--space-xs);
+            width: 100%;
+        }
+
+        .topic-title {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin: 0;
+            line-height: 1.3;
+            letter-spacing: -0.01em;
+            word-break: break-word; /* Prevents long words from overflowing */
+        }
+
+        /* ✅ FIXED: Count badge - no overflow */
+        .topic-count {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            background: var(--gray-100);
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-full);
+            transition: var(--transition);
+            white-space: nowrap; /* Keeps "1 article" together */
+            flex-shrink: 0; /* Prevents badge from wrapping weirdly */
+        }
+
+        /* ✅ FIXED: When screen is tiny, allow badge to move to new line */
+        @media (max-width: 360px) {
+            .topic-name {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+            }
+            
+            .topic-count {
+                white-space: nowrap;
+                align-self: flex-start;
+            }
+        }
+
+        .topic-card:hover .topic-count {
+            background: var(--topic-color, var(--primary));
+            color: white;
+        }
+
+        /* ✅ FIXED: Description - truncates with ellipsis */
+        .topic-description {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            color: var(--gray-600);
+            line-height: 1.5;
+            margin: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-word;
+            width: 100%;
+        }
+
+        .topic-card {
+            --topic-color: var(--primary);
+            --topic-bg: var(--primary-soft);
+        }
+
+        /* ✅ FIXED: Mobile optimization */
+        @media (max-width: 480px) {
+            .topics-hub { 
+                padding: var(--space-lg) var(--space-md); 
+            }
+            
+            .topic-card { 
+                padding: var(--space-md); 
+            }
+            
+            .topic-icon-wrapper { 
+                width: 48px; 
+                height: 48px; 
+                font-size: 1.2rem; 
+            }
+            
+            .topic-title { 
+                font-size: 1rem; 
+            }
+            
+            .topic-description {
+                -webkit-line-clamp: 2;
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .topic-card {
+                padding: var(--space-sm);
+                gap: var(--space-sm);
+            }
+            
+            .topic-icon-wrapper {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+            
+            .topic-title {
+                font-size: 0.95rem;
+            }
+        }
+
+        .tags-section { display: none; }
+
+        .article-footer {
+            padding: 0 var(--space-lg) var(--space-xl);
+        }
+        @media (min-width: 640px) { .article-footer { padding: 0 var(--space-2xl) var(--space-2xl); } }
+
         .share-section {
             display: flex;
             align-items: center;
@@ -644,30 +908,19 @@ $breadcrumb = [
             width: 100%;
             justify-content: center;
         }
-
-        @media (min-width: 480px) {
-            .back-button { width: auto; }
-        }
-
+        @media (min-width: 480px) { .back-button { width: auto; } }
         .back-button:hover {
             background: var(--primary);
             color: white;
             text-decoration: none;
         }
 
-        /* ---------- SIDEBAR – WIDER ON MOBILE, STICKY ON DESKTOP ---------- */
         .article-sidebar {
             display: flex;
             flex-direction: column;
             gap: var(--space-xl);
         }
-
-        @media (min-width: 992px) {
-            .article-sidebar {
-                position: sticky;
-                top: 100px;
-            }
-        }
+        @media (min-width: 992px) { .article-sidebar { position: sticky; top: 100px; } }
 
         .sidebar-card {
             background: var(--white);
@@ -691,10 +944,7 @@ $breadcrumb = [
             gap: var(--space-2);
         }
 
-        /* AUTHOR */
-        .author-card {
-            text-align: center;
-        }
+        .author-card { text-align: center; }
         .author-avatar {
             width: 80px;
             height: 80px;
@@ -732,10 +982,7 @@ $breadcrumb = [
             font-family: 'Inter', sans-serif;
         }
 
-        /* POPULAR */
-        .popular-list {
-            list-style: none;
-        }
+        .popular-list { list-style: none; }
         .popular-item {
             padding: var(--space-md) 0;
             border-bottom: 1px solid var(--gray-200);
@@ -755,9 +1002,7 @@ $breadcrumb = [
             font-family: 'Playfair Display', Georgia, serif;
             transition: var(--transition);
         }
-        .popular-link:hover .popular-title {
-            color: var(--primary);
-        }
+        .popular-link:hover .popular-title { color: var(--primary); }
         .popular-meta {
             font-size: 0.7rem;
             color: var(--gray-500);
@@ -766,14 +1011,12 @@ $breadcrumb = [
             font-family: 'Inter', sans-serif;
         }
 
-        /* ---------- NEWSLETTER – ORIGINAL COLORS, CURSOR GUARANTEED ---------- */
         .newsletter-description {
             font-size: 0.9rem;
             color: var(--gray-600);
             margin-bottom: var(--space-lg);
             line-height: 1.5;
         }
-
         #newsletter-message {
             display: none;
             padding: 0.9rem 1rem;
@@ -783,14 +1026,11 @@ $breadcrumb = [
             border: 1px solid transparent;
             font-family: 'Inter', sans-serif;
         }
-
         .newsletter-form {
             display: flex;
             flex-direction: column;
             gap: var(--space-md);
         }
-
-        /* ----- CURSOR: TRIPLE GUARANTEE WITH !important ----- */
         .newsletter-input {
             width: 100%;
             padding: 1rem 1.4rem;
@@ -803,22 +1043,12 @@ $breadcrumb = [
             caret-color: var(--primary) !important;
             transition: all 0.2s;
             outline: none;
-            line-height: 1.5;
         }
         .newsletter-input:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(93, 74, 138, 0.12);
             caret-color: var(--primary) !important;
-            background: white;
         }
-        .newsletter-input:hover {
-            border-color: var(--primary-light);
-        }
-        .newsletter-input::placeholder {
-            color: var(--gray-400);
-            font-weight: 400;
-        }
-
         .newsletter-button {
             width: 100%;
             padding: 1rem 1.4rem;
@@ -835,59 +1065,35 @@ $breadcrumb = [
             justify-content: center;
             gap: var(--space-2);
             transition: var(--transition);
-            border: 1px solid var(--primary-light);
         }
         .newsletter-button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 12px 24px -8px rgba(93, 74, 138, 0.25);
-            background: var(--primary-dark);
         }
-        .newsletter-button:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
         .newsletter-disclaimer {
             font-size: 0.7rem;
             color: var(--gray-500);
             line-height: 1.4;
-            font-family: 'Inter', sans-serif;
         }
 
-        /* ---------- RELATED ARTICLES – FULL WIDTH ON MOBILE ---------- */
         .related-section {
             margin-top: var(--space-3xl);
             padding-top: var(--space-2xl);
             border-top: 2px solid var(--gray-200);
         }
-
-        .related-header {
-            margin-bottom: var(--space-xl);
-        }
-
+        .related-header { margin-bottom: var(--space-xl); }
         .related-title {
             font-size: 1.8rem;
             font-weight: 700;
             color: var(--gray-900);
         }
-
-        @media (min-width: 768px) {
-            .related-title { font-size: 2rem; }
-        }
-
         .related-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: var(--space-lg);
         }
-
-        @media (min-width: 640px) {
-            .related-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        @media (min-width: 1024px) {
-            .related-grid { grid-template-columns: repeat(3, 1fr); }
-        }
+        @media (min-width: 640px) { .related-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 1024px) { .related-grid { grid-template-columns: repeat(3, 1fr); } }
 
         .related-card {
             background: var(--white);
@@ -895,14 +1101,12 @@ $breadcrumb = [
             border: 1px solid var(--gray-200);
             overflow: hidden;
             transition: var(--transition);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
         .related-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 20px 30px -10px rgba(93, 74, 138, 0.15);
             border-color: var(--accent);
         }
-
         .related-image-wrapper {
             width: 100%;
             padding-top: 60%;
@@ -917,10 +1121,7 @@ $breadcrumb = [
             height: 100%;
             object-fit: cover;
         }
-
-        .related-content {
-            padding: var(--space-lg);
-        }
+        .related-content { padding: var(--space-lg); }
         .related-category {
             font-family: 'Inter', sans-serif;
             font-size: 0.6rem;
@@ -952,58 +1153,39 @@ $breadcrumb = [
             font-family: 'Inter', sans-serif;
         }
 
-        /* ---------- CTA – FULL WIDTH, ORIGINAL GRADIENT, WHITE TEXT FOR READABILITY ---------- */
         .cta-banner {
             margin-top: var(--space-3xl);
             padding: var(--space-2xl) var(--space-lg);
             background: linear-gradient(145deg, var(--primary), var(--primary-dark));
             border-radius: var(--radius-lg);
             text-align: center;
-            color: white; /* Base text color white */
+            color: white;
             box-shadow: 0 12px 28px -8px rgba(93, 74, 138, 0.3);
         }
-
-        @media (min-width: 768px) {
-            .cta-banner { padding: var(--space-3xl) var(--space-2xl); }
-        }
-
         .cta-title {
-            color: white; /* Explicit white */
+            color: white;
             font-size: 1.8rem;
             font-weight: 700;
             margin-bottom: var(--space-md);
         }
-
-        @media (min-width: 768px) {
-            .cta-title { font-size: 2.2rem; }
-        }
-
+        @media (min-width: 768px) { .cta-title { font-size: 2.2rem; } }
         .cta-description {
-            font-size: 1.1rem; /* Slightly larger */
+            font-size: 1.1rem;
             margin-bottom: var(--space-xl);
             opacity: 0.95;
             max-width: 600px;
             margin-left: auto;
             margin-right: auto;
             font-family: 'Crimson Pro', Georgia, serif;
-            color: white; /* FORCED WHITE for maximum contrast */
-            font-weight: 400;
-            line-height: 1.6;
-        }
-
-        /* Additional override to ensure white text */
-        .cta-banner p, 
-        .cta-banner .cta-description {
             color: white !important;
+            font-weight: 400;
         }
-
         .cta-buttons {
             display: flex;
             justify-content: center;
             gap: var(--space-md);
             flex-wrap: wrap;
         }
-
         .btn {
             display: inline-flex;
             align-items: center;
@@ -1018,7 +1200,6 @@ $breadcrumb = [
             border: none;
             cursor: pointer;
         }
-
         .btn-primary {
             background: white;
             color: var(--primary);
@@ -1029,7 +1210,6 @@ $breadcrumb = [
             color: var(--primary-dark);
             transform: translateY(-2px);
         }
-
         .btn-outline {
             background: transparent;
             color: white;
@@ -1041,7 +1221,6 @@ $breadcrumb = [
             transform: translateY(-2px);
         }
 
-        /* ---------- BACK TO TOP ---------- */
         .back-to-top {
             position: fixed;
             bottom: 1.5rem;
@@ -1066,7 +1245,6 @@ $breadcrumb = [
             transform: translateY(-4px);
         }
 
-        /* ---------- ACCESSIBILITY & REDUCED MOTION ---------- */
         @media (prefers-reduced-motion: reduce) {
             * { animation: none !important; transition: none !important; }
         }
@@ -1076,39 +1254,11 @@ $breadcrumb = [
             outline-offset: 3px;
         }
 
-        /* ---------- EXTREME SMALL SCREEN SAFEGUARDS ---------- */
-        @media (max-width: 360px) {
-            .container { 
-                padding-left: 0.375rem; 
-                padding-right: 0.375rem; 
-            }
-            .article-title { font-size: 1.8rem; }
-            .article-excerpt { 
-                font-size: 1rem; 
-                padding-left: var(--space-md); 
-                border-left-width: 4px;
-            }
-            .meta-item { font-size: 0.7rem; }
-            .sidebar-card { padding: var(--space-lg); }
-            .breadcrumb-current { max-width: 140px; }
-        }
-
-        /* ZERO HORIZONTAL SCROLL - ULTIMATE GUARANTEE */
-        .container,
-        .breadcrumb,
-        .article-page,
-        .article-main,
-        .sidebar-card,
-        .cta-banner {
+        .container, .breadcrumb, .article-page, .article-main, .sidebar-card, .cta-banner, .topics-hub {
             max-width: 100%;
             overflow-x: hidden;
         }
-
-        /* Force all images and embeds to respect container width */
-        img, video, iframe, embed {
-            max-width: 100%;
-            height: auto;
-        }
+        img, video, iframe, embed { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
@@ -1188,25 +1338,53 @@ $breadcrumb = [
                     </div>
 
                     <footer class="article-footer">
-                        <!-- TAGS -->
-                        <?php if (!empty($news['tags'])): 
-                            $tags = [];
-                            if (is_string($news['tags'])) {
-                                $decoded = json_decode($news['tags'], true);
-                                $tags = json_last_error() === JSON_ERROR_NONE ? $decoded : array_map('trim', explode(',', $news['tags']));
-                            } elseif (is_array($news['tags'])) {
-                                $tags = $news['tags'];
-                            }
-                            if (!empty($tags)): ?>
-                        <div class="tags-section">
-                            <span class="tags-label"><i class="fas fa-tags"></i> Topics</span>
-                            <ul class="tags-list">
-                                <?php foreach ($tags as $tag): ?>
-                                <li><a href="<?php echo $baseUrl; ?>/news/search?q=<?php echo urlencode($tag); ?>" class="tag-link"><?php echo htmlspecialchars(trim($tag)); ?></a></li>
+                        
+                        <!-- ================================================================= -->
+                        <!-- ✦✦✦ FIXED TOPICS HUB - NO OVERFLOW, WRAPS PROPERLY ✦✦✦ -->
+                        <!-- ================================================================= -->
+                        
+                        <?php if (!empty($displayTopics)): ?>
+                        <div class="topics-hub">
+                            <div class="topics-header">
+                                <div class="topics-title-area">
+                                    <span class="topics-icon">
+                                        <i class="fas fa-tags"></i>
+                                    </span>
+                                    <h2 class="topics-title">Topics</h2>
+                                    <span class="topics-subtitle">explore related content</span>
+                                </div>
+                                <a href="<?php echo $baseUrl; ?>/news/topics" class="topics-view-all">
+                                    View all <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                            
+                            <div class="topics-grid">
+                                <?php foreach ($displayTopics as $topic): ?>
+                                <a href="<?php echo $baseUrl; ?>/news?topic=<?php echo urlencode($topic['slug']); ?>" 
+                                   class="topic-card"
+                                   style="--topic-color: <?php echo $topic['color']; ?>; --topic-bg: <?php echo $topic['bg']; ?>;">
+                                    
+                                    <span class="topic-icon-wrapper">
+                                        <i class="<?php echo $topic['icon']; ?>"></i>
+                                    </span>
+                                    
+                                    <span class="topic-content">
+                                        <span class="topic-name">
+                                            <span class="topic-title"><?php echo htmlspecialchars($topic['display_name']); ?></span>
+                                            <span class="topic-count">
+                                                <?php echo number_format($topic['count']); ?> 
+                                                article<?php echo $topic['count'] != 1 ? 's' : ''; ?>
+                                            </span>
+                                        </span>
+                                        <span class="topic-description">
+                                            <?php echo $topic['description']; ?>
+                                        </span>
+                                    </span>
+                                </a>
                                 <?php endforeach; ?>
-                            </ul>
+                            </div>
                         </div>
-                        <?php endif; endif; ?>
+                        <?php endif; ?>
 
                         <!-- SHARE -->
                         <div class="share-section">
@@ -1265,7 +1443,7 @@ $breadcrumb = [
                         <?php endif; ?>
                     </div>
 
-                    <!-- NEWSLETTER – ORIGINAL COLORS, CURSOR GUARANTEED -->
+                    <!-- NEWSLETTER -->
                     <div class="sidebar-card">
                         <h2 class="sidebar-title"><i class="fas fa-envelope"></i> Newsletter</h2>
                         <p class="newsletter-description">Subscribe to receive the latest news and updates directly in your inbox.</p>
@@ -1325,7 +1503,7 @@ $breadcrumb = [
             </section>
             <?php endif; ?>
 
-            <!-- CTA – WITH FIXED WHITE TEXT FOR MAXIMUM CONTRAST -->
+            <!-- CTA -->
             <section class="cta-banner">
                 <h2 class="cta-title">Stay Connected</h2>
                 <p class="cta-description">Get the latest news from FCT College of Nursing Sciences delivered to your inbox.</p>
@@ -1344,7 +1522,7 @@ $breadcrumb = [
         (function() {
             "use strict";
 
-            // NEWSLETTER - ORIGINAL COLORS, CURSOR GUARANTEED
+            // NEWSLETTER
             const newsletterForm = document.getElementById('newsletter-form');
             if (newsletterForm) {
                 const emailInput = document.getElementById('newsletter-email');
@@ -1373,7 +1551,7 @@ $breadcrumb = [
                     try {
                         const formData = new FormData();
                         formData.append('email', email);
-                        formData.append('source', 'sidebar_maxwidth');
+                        formData.append('source', 'sidebar_professional');
 
                         const response = await fetch('<?php echo BASE_URL; ?>/newsletter/subscribe', {
                             method: 'POST',
@@ -1422,33 +1600,21 @@ $breadcrumb = [
                 });
             }
 
-            // DYNAMIC WIDTH ENFORCEMENT - ENSURES NO SLIP ON ANY DEVICE
-            function enforceMaxWidth() {
-                // Force container to be nearly edge-to-edge on small screens
+            // WIDTH ENFORCEMENT - PURE UI, NO DATA
+            function enforceWidth() {
                 if (window.innerWidth < 640) {
                     document.documentElement.style.setProperty('--container-padding-mobile', '0.5rem');
                 }
                 if (window.innerWidth < 380) {
                     document.documentElement.style.setProperty('--container-padding-mobile', '0.375rem');
                 }
-                
-                // Prevent any horizontal overflow
                 document.body.style.overflowX = 'hidden';
                 document.documentElement.style.overflowX = 'hidden';
-                
-                // Force all major containers to respect width
-                const containers = document.querySelectorAll('.container, .article-main, .sidebar-card, .cta-banner');
-                containers.forEach(el => {
-                    if (el) el.style.maxWidth = '100%';
-                });
             }
             
-            enforceMaxWidth();
-            window.addEventListener('resize', enforceMaxWidth);
-            window.addEventListener('orientationchange', enforceMaxWidth);
-            
-            // DOM ready additional enforcement
-            document.addEventListener('DOMContentLoaded', enforceMaxWidth);
+            enforceWidth();
+            window.addEventListener('resize', enforceWidth);
+            window.addEventListener('orientationchange', enforceWidth);
         })();
     </script>
 </body>
