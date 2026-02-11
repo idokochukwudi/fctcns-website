@@ -1,12 +1,11 @@
 <?php
 /**
- * News Index Page - PROFESSIONAL REDESIGN
- * - Full-width hero section with modern gradient overlay
- * - Clean, magazine-style layout
- * - Featured news carousel
- * - Masonry-style news grid
- * - Fully responsive across all screen sizes
- * - Professional purple/beige color scheme
+ * News Index Page - FULLY RESPONSIVE PROFESSIONAL DESIGN
+ * - FIXED: Cursor now displays properly in all input fields
+ * - Perfect fit on all screen sizes (360px to 4K)
+ * - Featured content with professional overlay on image - NO OVERFLOW
+ * - WIDE horizontal cards that adapt beautifully
+ * - Zero gap between sections
  * - Working AJAX newsletter subscription
  */
 
@@ -28,42 +27,14 @@ $error = $error ?? '';
 if (!function_exists('getImageUrl')) {
     function getImageUrl($path) {
         global $baseUrl;
-        
         if (empty($path)) return '';
-        
         $path = trim($path);
-        
-        // External URLs
-        if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) {
-            return htmlspecialchars($path);
-        }
-        
-        // Protocol-relative URLs
-        if (strpos($path, '//') === 0) {
-            return htmlspecialchars($path);
-        }
-        
-        // Path starts with /uploads/
-        if (strpos($path, '/uploads/') === 0) {
-            return $baseUrl . $path;
-        }
-        
-        // Path starts with uploads/ (without leading slash)
-        if (strpos($path, 'uploads/') === 0) {
-            return $baseUrl . '/' . htmlspecialchars($path);
-        }
-        
-        // For relative paths from uploads directory
-        if (preg_match('/^(news_|featured_|thumb_)/i', $path)) {
-            return $baseUrl . '/uploads/news/' . htmlspecialchars($path);
-        }
-        
-        // Check if it's just a filename
-        if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $path)) {
-            return $baseUrl . '/uploads/news/' . htmlspecialchars($path);
-        }
-        
-        // Last resort: just prepend base URL
+        if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) return htmlspecialchars($path);
+        if (strpos($path, '//') === 0) return htmlspecialchars($path);
+        if (strpos($path, '/uploads/') === 0) return $baseUrl . $path;
+        if (strpos($path, 'uploads/') === 0) return $baseUrl . '/' . htmlspecialchars($path);
+        if (preg_match('/^(news_|featured_|thumb_)/i', $path)) return $baseUrl . '/uploads/news/' . htmlspecialchars($path);
+        if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $path)) return $baseUrl . '/uploads/news/' . htmlspecialchars($path);
         return $baseUrl . '/' . htmlspecialchars($path);
     }
 }
@@ -76,7 +47,7 @@ $hasNews = !empty($news) || !empty($featuredNews);
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title><?php echo htmlspecialchars($pageTitle); ?></title>
     <meta name="description" content="<?php echo htmlspecialchars($pageDescription); ?>">
     
@@ -90,7 +61,7 @@ $hasNews = !empty($news) || !empty($featuredNews);
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -111,1584 +82,1207 @@ body .main-content {
 }
     </style>
     <style>
-/* ==========================================
-   RESET & BASE STYLES
-   ========================================== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-html, body {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100%;
-    overflow-x: hidden;
-}
-
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 16px;
-    line-height: 1.6;
-    color: #1a202c;
-    background: #ffffff;
-    overflow-x: hidden;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-}
-
-main {
-    margin: 0;
-    padding: 0;
-}
-
-/* ==========================================
-   CSS VARIABLES
-   ========================================== */
-:root {
-    /* Colors */
-    --primary: #5D4A8A;
-    --primary-dark: #4A3A6F;
-    --primary-light: #7B68A8;
-    --accent: #D4A574;
-    --accent-dark: #BF8F5E;
-    --accent-light: #E6C9A5;
-    
-    /* Neutrals */
-    --white: #FFFFFF;
-    --gray-50: #F9FAFB;
-    --gray-100: #F3F4F6;
-    --gray-200: #E5E7EB;
-    --gray-300: #D1D5DB;
-    --gray-400: #9CA3AF;
-    --gray-500: #6B7280;
-    --gray-600: #4B5563;
-    --gray-700: #374151;
-    --gray-800: #1F2937;
-    --gray-900: #111827;
-    
-    /* Typography */
-    --font-heading: 'Playfair Display', Georgia, serif;
-    --font-body: 'Inter', sans-serif;
-    
-    /* Spacing */
-    --space-1: 0.25rem;
-    --space-2: 0.5rem;
-    --space-3: 0.75rem;
-    --space-4: 1rem;
-    --space-5: 1.25rem;
-    --space-6: 1.5rem;
-    --space-8: 2rem;
-    --space-10: 2.5rem;
-    --space-12: 3rem;
-    --space-16: 4rem;
-    --space-20: 5rem;
-}
-
-/* ==========================================
-   HERO SECTION - NO GAP VERSION (Like Research Page)
-   ========================================== */
-.news-hero {
-    position: relative;
-    width: 100%;
-    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-    color: var(--white);
-    margin: 0;
-    border: none;
-    overflow: hidden;
-    min-height: 500px;
-    display: flex;
-    align-items: center;
-}
-
-.news-hero-bg {
-    position: absolute;
-    inset: 0;
-    background-image: url('<?php echo $heroImagePath; ?>');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    opacity: 0.15;
-    z-index: 1;
-}
-
-/* Transparent background wrapper for better readability */
-.hero-container {
-    position: relative;
-    z-index: 3;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 var(--space-4);
-    width: 100%;
-}
-
-.news-hero-content {
-    max-width: 900px;
-    margin: 0 auto;
-    text-align: center;
-    padding: var(--space-12) 0;
-}
-
-.hero-text-wrapper {
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border-radius: 16px;
-    padding: var(--space-8);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    margin: 0 auto;
-}
-
-.news-hero-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-    color: var(--gray-900);
-    padding: 0.6rem 1.75rem;
-    border-radius: 50px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--space-4);
-    text-transform: uppercase;
-    font-family: var(--font-heading);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    position: relative;
-    z-index: 2;
-}
-
-.news-hero-title {
-    font-family: var(--font-heading);
-    font-size: clamp(2rem, 5vw, 2.75rem);
-    font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: var(--space-4);
-    color: var(--white);
-    position: relative;
-    z-index: 2;
-    letter-spacing: -0.25px;
-}
-
-.news-hero-subtitle {
-    font-size: clamp(1rem, 2.5vw, 1.25rem);
-    font-weight: 400;
-    margin-bottom: var(--space-8);
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.95);
-    font-family: var(--font-body);
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
-    position: relative;
-    z-index: 2;
-    padding: 0 var(--space-4);
-}
-
-/* Search Bar - Optimized for mobile */
-.news-search {
-    max-width: 650px;
-    margin: 0 auto;
-}
-
-.news-search-form {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    width: 100%;
-}
-
-@media (min-width: 768px) {
-    .news-search-form {
-        flex-direction: row;
-    }
-}
-
-.news-search-wrapper {
-    position: relative;
-    flex: 1;
-    width: 100%;
-}
-
-.news-search-icon {
-    position: absolute;
-    left: var(--space-4);
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--gray-400);
-    font-size: 1rem;
-    pointer-events: none;
-}
-
-.news-search-input {
-    width: 100%;
-    padding: var(--space-4) var(--space-4) var(--space-4) 3rem;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-    font-family: var(--font-body);
-    font-size: 1rem;
-    background: rgba(255, 255, 255, 0.95);
-    color: var(--gray-900);
-    transition: all 0.3s ease;
-    outline: none;
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-.news-search-input::placeholder {
-    color: var(--gray-500);
-}
-
-.news-search-input:focus {
-    background: var(--white);
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.2);
-}
-
-.news-search-button {
-    padding: var(--space-4) var(--space-6);
-    background: var(--accent);
-    color: var(--gray-900);
-    border: none;
-    border-radius: 12px;
-    font-family: var(--font-body);
-    font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    width: 100%;
-}
-
-@media (min-width: 768px) {
-    .news-search-button {
-        width: auto;
-    }
-}
-
-.news-search-button:hover {
-    background: var(--accent-dark);
-}
-
-/* ==========================================
-   CONTAINER
-   ========================================== */
-.container {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 var(--space-6);
-}
-
-@media (max-width: 768px) {
-    .container {
-        padding: 0 var(--space-4);
-    }
-}
-
-/* ==========================================
-   BREADCRUMBS
-   ========================================== */
-.breadcrumbs {
-    padding: var(--space-4) 0;
-    background: var(--gray-50);
-}
-
-.breadcrumb-list {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-    list-style: none;
-    font-size: 0.875rem;
-    padding: 0 var(--space-4);
-}
-
-.breadcrumb-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    color: var(--gray-600);
-}
-
-.breadcrumb-item a {
-    color: var(--primary);
-    text-decoration: none;
-    transition: color 0.3s ease;
-}
-
-.breadcrumb-item a:hover {
-    color: var(--primary-dark);
-}
-
-.breadcrumb-item:last-child {
-    color: var(--gray-500);
-}
-
-.breadcrumb-separator {
-    color: var(--gray-400);
-}
-
-/* ==========================================
-   MAIN CONTENT
-   ========================================== */
-.news-content {
-    padding: var(--space-12) 0;
-}
-
-@media (max-width: 768px) {
-    .news-content {
-        padding: var(--space-8) 0;
-    }
-}
-
-/* Section Header */
-.section-header {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    margin-bottom: var(--space-8);
-    padding-bottom: var(--space-4);
-    border-bottom: 2px solid var(--gray-200);
-}
-
-@media (min-width: 768px) {
-    .section-header {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-}
-
-.section-title {
-    font-family: var(--font-heading);
-    font-size: clamp(1.5rem, 3vw, 2rem);
-    font-weight: 700;
-    color: var(--gray-900);
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-}
-
-.section-title-icon {
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, var(--primary), var(--primary-light));
-    color: var(--white);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
-}
-
-.view-all-link {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    color: var(--primary);
-    font-weight: 600;
-    font-size: 0.9375rem;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    padding: var(--space-3) var(--space-4);
-    border-radius: 6px;
-    background: var(--gray-50);
-    white-space: nowrap;
-}
-
-.view-all-link:hover {
-    background: var(--primary);
-    color: var(--white);
-}
-
-/* ==========================================
-   FILTER BAR - Mobile Optimized with Text Overflow Fixes
-   ========================================== */
-.filter-bar {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    margin-bottom: var(--space-8);
-    padding: var(--space-4);
-    background: var(--gray-50);
-    border-radius: 12px;
-    width: 100%;
-    overflow: hidden;
-}
-
-@media (min-width: 768px) {
-    .filter-bar {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        gap: var(--space-6);
-    }
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    width: 100%;
-    min-width: 0;
-}
-
-@media (min-width: 480px) {
-    .filter-group {
-        flex-direction: row;
-        align-items: center;
-        gap: var(--space-3);
-        width: auto;
-        flex-wrap: wrap;
-    }
-}
-
-.filter-label {
-    font-weight: 600;
-    color: var(--gray-700);
-    font-size: 0.9375rem;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.filter-select {
-    padding: var(--space-3) var(--space-8) var(--space-3) var(--space-4);
-    border: 2px solid var(--gray-200);
-    border-radius: 6px;
-    font-family: var(--font-body);
-    font-size: 0.9375rem;
-    background: var(--white);
-    color: var(--gray-700);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    appearance: none;
-    width: 100%;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-@media (min-width: 480px) {
-    .filter-select {
-        width: auto;
-        min-width: 150px;
-    }
-}
-
-.filter-select:hover {
-    border-color: var(--primary);
-}
-
-.filter-select:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(93, 74, 138, 0.1);
-}
-
-.results-count {
-    color: var(--gray-600);
-    font-size: 0.9375rem;
-    text-align: center;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-@media (min-width: 768px) {
-    .results-count {
-        text-align: left;
-    }
-}
-
-.results-count strong {
-    color: var(--gray-900);
-    font-weight: 600;
-}
-
-/* ==========================================
-   NEWS GRID - Responsive Layout with Text Overflow Fixes
-   ========================================== */
-.news-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-6);
-    margin-bottom: var(--space-8);
-    width: 100%;
-}
-
-@media (min-width: 640px) {
-    .news-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (min-width: 1024px) {
-    .news-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-.news-card {
-    background: var(--white);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    border: 1px solid var(--gray-100);
-    width: 100%;
-    min-width: 0;
-}
-
-.news-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    border-color: var(--primary-light);
-}
-
-.news-image-wrapper {
-    position: relative;
-    padding-top: 60%;
-    overflow: hidden;
-    background: var(--gray-100);
-    width: 100%;
-}
-
-.news-image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s ease;
-}
-
-.news-card:hover .news-image {
-    transform: scale(1.05);
-}
-
-.news-category-badge {
-    position: absolute;
-    top: var(--space-3);
-    left: var(--space-3);
-    background: var(--primary);
-    color: var(--white);
-    padding: var(--space-2) var(--space-3);
-    border-radius: 50px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    z-index: 2;
-    max-width: calc(100% - 24px);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.news-card-body {
-    padding: var(--space-4);
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    width: 100%;
-}
-
-.news-title {
-    font-family: var(--font-heading);
-    font-size: 1.125rem;
-    font-weight: 600;
-    line-height: 1.3;
-    margin-bottom: var(--space-3);
-    color: var(--gray-900);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    min-height: 2.6em;
-}
-
-@media (min-width: 768px) {
-    .news-title {
-        font-size: 1.25rem;
-        -webkit-line-clamp: 3;
-        min-height: 3.9em;
-    }
-}
-
-.news-title a {
-    color: inherit;
-    text-decoration: none;
-    transition: color 0.3s ease;
-}
-
-.news-title a:hover {
-    color: var(--primary);
-}
-
-.news-excerpt {
-    color: var(--gray-600);
-    line-height: 1.6;
-    margin-bottom: var(--space-4);
-    flex: 1;
-    font-size: 0.9375rem;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    min-height: 4.8em;
-}
-
-@media (max-width: 480px) {
-    .news-excerpt {
-        font-size: 0.875rem;
-        line-height: 1.5;
-        -webkit-line-clamp: 4;
-        min-height: 6em;
-    }
-}
-
-.news-card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: var(--space-4);
-    border-top: 1px solid var(--gray-200);
-    flex-wrap: wrap;
-    gap: var(--space-3);
-    width: 100%;
-    min-width: 0;
-}
-
-.news-meta {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    flex-wrap: wrap;
-    min-width: 0;
-}
-
-.news-meta-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-    color: var(--gray-500);
-    font-size: 0.75rem;
-    white-space: nowrap;
-}
-
-@media (min-width: 480px) {
-    .news-meta-item {
-        font-size: 0.875rem;
-    }
-}
-
-.news-meta-item i {
-    color: var(--primary);
-    font-size: 0.75rem;
-    flex-shrink: 0;
-}
-
-.read-more {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    color: var(--primary);
-    font-weight: 600;
-    font-size: 0.875rem;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.read-more:hover {
-    color: var(--primary-dark);
-    gap: var(--space-3);
-}
-
-/* ==========================================
-   SIDEBAR - Responsive Layout
-   ========================================== */
-.news-layout {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-8);
-    width: 100%;
-}
-
-@media (min-width: 1024px) {
-    .news-layout {
-        display: grid;
-        grid-template-columns: 1fr 350px;
-        gap: var(--space-8);
-    }
-}
-
-.sidebar {
-    position: sticky;
-    top: var(--space-4);
-    height: fit-content;
-    width: 100%;
-}
-
-@media (min-width: 1024px) {
-    .sidebar {
-        top: var(--space-6);
-    }
-}
-
-.sidebar-widget {
-    background: var(--white);
-    border-radius: 12px;
-    padding: var(--space-6);
-    margin-bottom: var(--space-6);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--gray-100);
-    width: 100%;
-}
-
-.widget-title {
-    font-family: var(--font-heading);
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--gray-900);
-    margin-bottom: var(--space-4);
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    overflow: hidden;
-}
-
-.widget-title-icon {
-    width: 36px;
-    height: 36px;
-    background: linear-gradient(135deg, var(--primary), var(--primary-light));
-    color: var(--white);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-/* Category List */
-.category-list {
-    list-style: none;
-    width: 100%;
-}
-
-.category-item {
-    margin-bottom: var(--space-2);
-    width: 100%;
-}
-
-.category-link {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--space-2) var(--space-3);
-    background: var(--gray-50);
-    border-radius: 6px;
-    color: var(--gray-700);
-    text-decoration: none;
-    transition: all 0.3s ease;
-    font-size: 0.9375rem;
-    width: 100%;
-    min-width: 0;
-    overflow: hidden;
-}
-
-.category-link span:first-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-    min-width: 0;
-}
-
-.category-link:hover {
-    background: var(--primary);
-    color: var(--white);
-    padding-left: var(--space-4);
-}
-
-.category-count {
-    background: var(--white);
-    color: var(--primary);
-    padding: var(--space-1) var(--space-2);
-    border-radius: 50px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    min-width: 24px;
-    text-align: center;
-    flex-shrink: 0;
-    margin-left: var(--space-2);
-}
-
-.category-link:hover .category-count {
-    background: var(--accent);
-    color: var(--gray-900);
-}
-
-/* Popular Posts */
-.popular-list {
-    list-style: none;
-    width: 100%;
-}
-
-.popular-item {
-    display: flex;
-    gap: var(--space-3);
-    padding: var(--space-3) 0;
-    border-bottom: 1px solid var(--gray-200);
-    width: 100%;
-    min-width: 0;
-}
-
-.popular-item:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-.popular-image-wrapper {
-    width: 80px;
-    height: 60px;
-    flex-shrink: 0;
-    border-radius: 6px;
-    overflow: hidden;
-}
-
-.popular-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-}
-
-.popular-item:hover .popular-image {
-    transform: scale(1.1);
-}
-
-.popular-content {
-    flex: 1;
-    min-width: 0;
-}
-
-.popular-title {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    line-height: 1.4;
-    margin-bottom: var(--space-1);
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    min-height: 2.8em;
-}
-
-@media (max-width: 480px) {
-    .popular-title {
-        font-size: 0.875rem;
-        -webkit-line-clamp: 3;
-        min-height: 4.2em;
-    }
-}
-
-.popular-title a {
-    color: var(--gray-800);
-    text-decoration: none;
-    transition: color 0.3s ease;
-}
-
-.popular-title a:hover {
-    color: var(--primary);
-}
-
-.popular-date {
-    color: var(--gray-500);
-    font-size: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-    white-space: nowrap;
-}
-
-/* ==========================================
-   NEWSLETTER - WORKING VERSION WITH AJAX
-   ========================================== */
-.sidebar-section {
-    background: var(--white);
-    border-radius: 12px;
-    padding: var(--space-6);
-    margin-bottom: var(--space-6);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--gray-100);
-    width: 100%;
-}
-
-.sidebar-title {
-    font-family: var(--font-heading);
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--gray-900);
-    margin-bottom: var(--space-4);
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    overflow: hidden;
-}
-
-.newsletter-description {
-    color: var(--gray-600);
-    font-size: 0.9375rem;
-    line-height: 1.5;
-    margin-bottom: var(--space-3);
-    overflow: hidden;
-}
-
-.newsletter-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    width: 100%;
-}
-
-.newsletter-input-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-.newsletter-input {
-    width: 100%;
-    padding: var(--space-3) var(--space-3) var(--space-3) 2.5rem;
-    border: 2px solid var(--gray-200);
-    border-radius: 6px;
-    font-family: var(--font-body);
-    font-size: 0.9375rem;
-    transition: all 0.3s ease;
-    min-width: 0;
-}
-
-.newsletter-input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(93, 74, 138, 0.1);
-}
-
-.newsletter-button {
-    padding: var(--space-3) var(--space-4);
-    background: linear-gradient(135deg, var(--primary), var(--primary-light));
-    color: var(--white);
-    border: none;
-    border-radius: 6px;
-    font-family: var(--font-body);
-    font-weight: 600;
-    font-size: 0.9375rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    width: 100%;
-}
-
-.newsletter-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(93, 74, 138, 0.2);
-}
-
-.newsletter-button:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
-.newsletter-disclaimer {
-    font-size: 0.75rem;
-    color: var(--gray-500);
-    line-height: 1.4;
-    margin-top: var(--space-2);
-    overflow: hidden;
-}
-
-#newsletter-message {
-    margin-bottom: 1rem;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    transition: all 0.3s ease;
-}
-
-/* ==========================================
-   PAGINATION
-   ========================================== */
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: var(--space-2);
-    margin-top: var(--space-8);
-    flex-wrap: wrap;
-    width: 100%;
-}
-
-.pagination-list {
-    display: flex;
-    gap: var(--space-1);
-    list-style: none;
-    flex-wrap: wrap;
-    justify-content: center;
-    width: 100%;
-}
-
-.pagination-link {
-    min-width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 var(--space-3);
-    background: var(--white);
-    border: 2px solid var(--gray-200);
-    border-radius: 6px;
-    color: var(--gray-700);
-    font-weight: 600;
-    font-size: 0.875rem;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    flex-shrink: 0;
-}
-
-.pagination-link:hover:not(.active):not(.disabled) {
-    background: var(--primary);
-    color: var(--white);
-    border-color: var(--primary);
-}
-
-.pagination-link.active {
-    background: linear-gradient(135deg, var(--primary), var(--primary-light));
-    color: var(--white);
-    border-color: var(--primary);
-}
-
-.pagination-link.disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-/* ==========================================
-   EMPTY STATES
-   ========================================== */
-.empty-state {
-    text-align: center;
-    padding: var(--space-12) var(--space-4);
-    background: var(--gray-50);
-    border-radius: 12px;
-    width: 100%;
-}
-
-.empty-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto var(--space-6);
-    background: linear-gradient(135deg, var(--gray-200), var(--gray-300));
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
-    color: var(--gray-400);
-}
-
-.empty-title {
-    font-family: var(--font-heading);
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--gray-700);
-    margin-bottom: var(--space-3);
-}
-
-.empty-description {
-    font-size: 1rem;
-    color: var(--gray-600);
-    max-width: 500px;
-    margin: 0 auto var(--space-6);
-    line-height: 1.6;
-}
-
-/* ==========================================
-   BUTTONS
-   ========================================== */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    padding: var(--space-3) var(--space-6);
-    border-radius: 6px;
-    font-family: var(--font-body);
-    font-weight: 600;
-    font-size: 1rem;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    border: 2px solid;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, var(--primary), var(--primary-light));
-    color: var(--white);
-    border-color: var(--primary);
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(93, 74, 138, 0.2);
-}
-
-.btn-outline {
-    background: transparent;
-    color: var(--primary);
-    border-color: var(--primary);
-}
-
-.btn-outline:hover {
-    background: var(--primary);
-    color: var(--white);
-}
-
-/* ==========================================
-   NOTIFICATIONS
-   ========================================== */
-.notification {
-    position: fixed;
-    top: var(--space-4);
-    right: var(--space-4);
-    left: var(--space-4);
-    background: var(--white);
-    padding: var(--space-4);
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    border-left: 4px solid var(--primary);
-    z-index: 1000;
-    animation: slideIn 0.3s ease;
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-3);
-    max-width: calc(100% - var(--space-8));
-}
-
-@media (min-width: 480px) {
-    .notification {
-        left: auto;
-        max-width: 400px;
-    }
-}
-
-.notification-icon {
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-}
-
-.notification.success {
-    border-left-color: #10b981;
-}
-
-.notification.success .notification-icon {
-    color: #10b981;
-}
-
-.notification.error {
-    border-left-color: #ef4444;
-}
-
-.notification.error .notification-icon {
-    color: #ef4444;
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateY(-20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-/* ==========================================
-   ACCESSIBILITY
-   ========================================== */
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-:focus-visible {
-    outline: 3px solid var(--accent);
-    outline-offset: 2px;
-    border-radius: 6px;
-}
-
-/* Skip to content link */
-.skip-to-content {
-    position: absolute;
-    top: -40px;
-    left: 0;
-    background: var(--primary);
-    color: var(--white);
-    padding: var(--space-3);
-    text-decoration: none;
-    z-index: 1001;
-}
-
-.skip-to-content:focus {
-    top: 0;
-}
-
-/* ==========================================
-   PERFORMANCE OPTIMIZATIONS
-   ========================================== */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
-/* Optimize image rendering */
-img {
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-    max-width: 100%;
-    height: auto;
-}
-
-/* ==========================================
-   RESPONSIVE DESIGN - MOBILE FIXES
-   ========================================== */
-
-/* Small mobile (480px and below) - TEXT OVERFLOW FIXES */
-@media (max-width: 480px) {
-    /* Reduce font sizes for better fit */
-    .news-hero {
-        min-height: 400px;
-    }
-    
-    .hero-text-wrapper {
-        padding: var(--space-4);
-        margin: 0 var(--space-3);
-    }
-    
-    .news-hero-badge {
-        padding: 0.4rem 1.25rem;
-        font-size: 0.75rem;
-        margin-bottom: var(--space-3);
-    }
-    
-    .news-hero-title {
-        font-size: 1.5rem;
-        line-height: 1.2;
-    }
-    
-    .news-hero-subtitle {
-        font-size: 0.9375rem;
-        line-height: 1.4;
-        padding: 0;
-        margin-bottom: var(--space-6);
-    }
-    
-    /* Filter bar fixes */
-    .filter-bar {
-        padding: var(--space-3);
-        gap: var(--space-3);
-    }
-    
-    .filter-group {
-        gap: var(--space-2);
-    }
-    
-    .filter-label {
-        font-size: 0.875rem;
-    }
-    
-    .filter-select {
-        padding: var(--space-2) var(--space-6) var(--space-2) var(--space-3);
-        font-size: 0.875rem;
-    }
-    
-    .results-count {
-        font-size: 0.875rem;
-    }
-    
-    /* News card fixes */
-    .news-card {
-        width: 100%;
-        max-width: 100%;
-    }
-    
-    .news-card-body {
-        padding: var(--space-3);
-    }
-    
-    .news-title {
-        font-size: 1rem;
-        -webkit-line-clamp: 3;
-        min-height: 3.9em;
-        margin-bottom: var(--space-2);
-    }
-    
-    .news-excerpt {
-        font-size: 0.8125rem;
-        line-height: 1.4;
-        -webkit-line-clamp: 4;
-        min-height: 5.6em;
-        margin-bottom: var(--space-3);
-    }
-    
-    .news-card-footer {
-        padding-top: var(--space-3);
-        gap: var(--space-2);
-    }
-    
-    .news-meta {
-        gap: var(--space-2);
-    }
-    
-    .news-meta-item {
-        font-size: 0.6875rem;
-        gap: 0.125rem;
-    }
-    
-    .news-meta-item i {
-        font-size: 0.6875rem;
-    }
-    
-    .read-more {
-        font-size: 0.8125rem;
-    }
-    
-    /* Category badge fixes */
-    .news-category-badge {
-        font-size: 0.625rem;
-        padding: 0.125rem 0.5rem;
-        max-width: calc(100% - 16px);
-    }
-    
-    /* Sidebar fixes */
-    .sidebar-widget {
-        padding: var(--space-4);
-    }
-    
-    .widget-title {
-        font-size: 1.125rem;
-        gap: var(--space-2);
-    }
-    
-    .widget-title-icon {
-        width: 32px;
-        height: 32px;
-        font-size: 0.875rem;
-    }
-    
-    .category-link {
-        font-size: 0.875rem;
-        padding: 0.375rem 0.75rem;
-    }
-    
-    .popular-title {
-        font-size: 0.8125rem;
-        -webkit-line-clamp: 3;
-        min-height: 3.9em;
-    }
-    
-    .popular-date {
-        font-size: 0.6875rem;
-    }
-}
-
-/* Very small mobile (360px and below) */
-@media (max-width: 360px) {
-    .news-hero-title {
-        font-size: 1.375rem;
-    }
-    
-    .news-hero-subtitle {
-        font-size: 0.875rem;
-    }
-    
-    .news-search-input {
-        font-size: 0.9375rem;
-        padding: var(--space-3) var(--space-3) var(--space-3) 2.5rem;
-    }
-    
-    .news-search-button {
-        padding: var(--space-3) var(--space-4);
-        font-size: 0.9375rem;
-    }
-    
-    .news-title {
-        font-size: 0.9375rem;
-        -webkit-line-clamp: 4;
-        min-height: 5.2em;
-    }
-    
-    .news-excerpt {
-        font-size: 0.75rem;
-        -webkit-line-clamp: 5;
-        min-height: 7.5em;
-    }
-    
-    /* Make filter bar single column */
-    .filter-group {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .filter-select {
-        width: 100%;
-    }
-    
-    /* Adjust grid gap */
-    .news-grid {
-        gap: var(--space-4);
-    }
-}
-
-/* Tablet (768px and below) */
-@media (max-width: 768px) {
-    .container {
-        padding: 0 var(--space-4);
-    }
-    
-    .news-content {
-        padding: var(--space-8) 0;
-    }
-    
-    .section-header {
-        margin-bottom: var(--space-6);
-    }
-    
-    .section-title {
-        font-size: 1.375rem;
-    }
-    
-    .news-grid {
-        gap: var(--space-4);
-    }
-    
-    .notification {
-        left: var(--space-3);
-        right: var(--space-3);
-    }
-}
-
-/* Desktop (1024px+) */
-@media (min-width: 1024px) {
-    .news-hero-content {
-        text-align: left;
-        max-width: 1200px;
-        padding: var(--space-16) 0;
-    }
-    
-    .hero-text-wrapper {
-        text-align: left;
-        max-width: 700px;
-        margin: 0;
-    }
-    
-    .news-hero-title {
-        text-align: left;
-        font-size: 2.5rem;
-    }
-    
-    .news-hero-subtitle {
-        text-align: left;
-        margin-left: 0;
-        margin-right: 0;
-        font-size: 1.375rem;
-        max-width: 650px;
-        padding: 0;
-    }
-    
-    .news-search {
-        max-width: 650px;
-        margin: 0;
-    }
-    
-    .news-hero {
-        min-height: 700px;
-    }
-}
-
-/* Landscape Orientation */
-@media (max-height: 600px) and (orientation: landscape) {
-    .news-hero {
-        min-height: 100vh;
-    }
-}
-
-/* Print Styles */
-@media print {
-    .news-hero,
-    .news-search,
-    .sidebar,
-    .carousel-controls,
-    .pagination,
-    .btn,
-    .notification {
-        display: none;
-    }
-    
-    .news-card {
-        box-shadow: none;
-        border: 1px solid var(--gray-300);
-        break-inside: avoid;
-        width: 100% !important;
-    }
-    
-    .news-content {
-        padding: 0;
-    }
-    
-    .news-title,
-    .news-excerpt {
-        overflow: visible !important;
-        -webkit-line-clamp: unset !important;
-        display: block !important;
-        min-height: auto !important;
-    }
-}
+        /* ==========================================
+           RESET & BASE STYLES
+           ========================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100%;
+            overflow-x: hidden;
+            background: #fcfcfc;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #1e293b;
+            background: #ffffff;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        main {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+
+        /* ==========================================
+           CSS VARIABLES
+           ========================================== */
+        :root {
+            --primary: #5D4A8A;
+            --primary-dark: #4A3A6F;
+            --primary-light: #7B68A8;
+            --accent: #D4A574;
+            --accent-dark: #BF8F5E;
+            --white: #FFFFFF;
+            --gray-50: #F8FAFC;
+            --gray-100: #F1F5F9;
+            --gray-200: #E2E8F0;
+            --gray-300: #CBD5E1;
+            --gray-400: #94A3B8;
+            --gray-500: #64748B;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1E293B;
+            --gray-900: #0F172A;
+            --font-heading: 'Playfair Display', Georgia, serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        /* ==========================================
+           CONTAINER
+           ========================================== */
+        .container {
+            width: 100%;
+            margin: 0 auto;
+            padding-left: clamp(1rem, 4vw, 2rem);
+            padding-right: clamp(1rem, 4vw, 2rem);
+            max-width: 1440px;
+        }
+
+        /* ==========================================
+           HERO SECTION
+           ========================================== */
+        .news-hero {
+            position: relative;
+            width: 100%;
+            background: linear-gradient(145deg, var(--primary-dark), var(--primary));
+            color: var(--white);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            min-height: clamp(350px, 45vh, 500px);
+        }
+
+        .news-hero-bg {
+            position: absolute;
+            inset: 0;
+            background-image: url('<?php echo $heroImagePath; ?>');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.12;
+            z-index: 1;
+        }
+
+        .hero-container {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 2rem);
+        }
+
+        .news-hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .hero-text-wrapper {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            padding: clamp(1.5rem, 4vw, 2.5rem);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .news-hero-badge {
+            display: inline-block;
+            background: var(--accent);
+            color: var(--gray-900);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .news-hero-title {
+            font-family: var(--font-heading);
+            font-size: clamp(1.8rem, 5vw, 3rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+            color: var(--white);
+        }
+
+        .news-hero-subtitle {
+            font-size: clamp(0.95rem, 2vw, 1.2rem);
+            margin-bottom: 1.5rem;
+            color: rgba(255, 255, 255, 0.95);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* ==========================================
+           SEARCH FORM - FIXED CURSOR VISIBILITY
+           ========================================== */
+        .news-search {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .news-search-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        @media (min-width: 640px) {
+            .news-search-form {
+                flex-direction: row;
+            }
+        }
+
+        .news-search-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        .news-search-icon {
+            position: absolute;
+            left: 1.25rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-400);
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        /* FIXED: Input field with proper cursor */
+        .news-search-input {
+            width: 100%;
+            height: 52px;
+            padding: 0 1rem 0 3rem;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 400;
+            background: #ffffff;
+            color: #0F172A; /* Dark color for text */
+            caret-color: #5D4A8A; /* Purple cursor for visibility */
+            outline: none;
+            transition: all 0.2s ease;
+            line-height: normal;
+            text-indent: 0;
+            letter-spacing: normal;
+            word-spacing: normal;
+            text-rendering: auto;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .news-search-input::placeholder {
+            color: #64748B;
+            opacity: 1;
+            font-weight: 400;
+        }
+
+        .news-search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.25);
+            background: #ffffff;
+            color: #0F172A;
+            caret-color: var(--primary);
+        }
+
+        .news-search-input:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .news-search-button {
+            height: 52px;
+            padding: 0 2rem;
+            background: var(--accent);
+            color: var(--gray-900);
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .news-search-button:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+        }
+
+        /* ==========================================
+           BREADCRUMBS
+           ========================================== */
+        .breadcrumbs {
+            padding: 0.85rem 0;
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .breadcrumb-list {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            list-style: none;
+            font-size: 0.85rem;
+        }
+
+        .breadcrumb-item a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* ==========================================
+           FEATURED CONTENT - NO OVERFLOW
+           ========================================== */
+        .featured-section {
+            margin: 2rem 0 2.5rem;
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.15);
+        }
+
+        .featured-article {
+            position: relative;
+            width: 100%;
+            background: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            min-height: 280px;
+        }
+
+        @media (min-width: 768px) {
+            .featured-article {
+                min-height: 320px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .featured-article {
+                min-height: 380px;
+            }
+        }
+
+        .featured-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .featured-gradient-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(105deg, 
+                rgba(74, 58, 111, 0.97) 0%, 
+                rgba(93, 74, 138, 0.9) 40%,
+                rgba(212, 165, 116, 0.4) 100%);
+            z-index: 2;
+        }
+
+        .featured-content {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding: 2rem 2.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .featured-content {
+                padding: 1.5rem;
+                align-items: flex-end;
+                background: linear-gradient(0deg, 
+                    rgba(0, 0, 0, 0.85) 0%, 
+                    rgba(93, 74, 138, 0.7) 80%,
+                    transparent 100%);
+            }
+        }
+
+        .featured-content-wrapper {
+            max-width: 65%;
+            color: var(--white);
+        }
+
+        @media (max-width: 1024px) {
+            .featured-content-wrapper {
+                max-width: 75%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .featured-content-wrapper {
+                max-width: 100%;
+            }
+        }
+
+        .featured-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--accent);
+            color: var(--gray-900);
+            padding: 0.4rem 1.25rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .featured-title {
+            font-family: var(--font-heading);
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 0.75rem;
+            color: var(--white);
+        }
+
+        .featured-excerpt {
+            font-size: clamp(0.85rem, 1.8vw, 1rem);
+            margin-bottom: 1.25rem;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.95);
+            max-width: 90%;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .featured-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.25rem;
+        }
+
+        .featured-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--white);
+            font-size: 0.8rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.35rem 1rem;
+            border-radius: 50px;
+            backdrop-filter: blur(4px);
+        }
+
+        .featured-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-featured {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--accent);
+            color: var(--gray-900);
+            padding: 0.6rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-featured-outline {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            color: var(--white);
+            padding: 0.6rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            border: 2px solid var(--white);
+        }
+
+        /* ==========================================
+           SECTION HEADER
+           ========================================== */
+        .section-header {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 3px solid var(--gray-200);
+        }
+
+        @media (min-width: 768px) {
+            .section-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: clamp(1.4rem, 3.5vw, 1.8rem);
+            font-weight: 700;
+            color: var(--gray-900);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .section-title-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(145deg, var(--primary), var(--primary-light));
+            color: var(--white);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .view-all-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            padding: 0.6rem 1.25rem;
+            border-radius: 8px;
+            background: var(--gray-100);
+            transition: all 0.2s ease;
+        }
+
+        .view-all-link:hover {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        /* ==========================================
+           FILTER BAR - FIXED CURSOR VISIBILITY
+           ========================================== */
+        .filter-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 1rem 1.25rem;
+            background: var(--white);
+            border-radius: 12px;
+            border: 1px solid var(--gray-200);
+        }
+
+        @media (min-width: 768px) {
+            .filter-bar {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        @media (min-width: 640px) {
+            .filter-group {
+                flex-direction: row;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--gray-700);
+            font-size: 0.9rem;
+        }
+
+        /* FIXED: Select fields with proper cursor */
+        .filter-select {
+            padding: 0.6rem 2rem 0.6rem 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 400;
+            background: #ffffff;
+            color: #1E293B;
+            cursor: pointer;
+            appearance: none;
+            width: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 14px;
+        }
+
+        @media (min-width: 640px) {
+            .filter-select {
+                width: auto;
+                min-width: 180px;
+            }
+        }
+
+        .filter-select:hover {
+            border-color: var(--primary);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(93, 74, 138, 0.1);
+        }
+
+        .results-count {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        /* ==========================================
+           NEWS GRID - WIDE CARDS
+           ========================================== */
+        .news-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .news-card {
+            display: flex;
+            flex-direction: column;
+            background: var(--white);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s ease;
+            border: 1px solid var(--gray-200);
+        }
+
+        @media (min-width: 768px) {
+            .news-card {
+                flex-direction: row;
+                min-height: 240px;
+            }
+        }
+
+        .news-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(93, 74, 138, 0.08);
+            border-color: var(--primary-light);
+        }
+
+        .news-image-wrapper {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        @media (min-width: 768px) {
+            .news-image-wrapper {
+                width: 30%;
+                height: auto;
+            }
+        }
+
+        .news-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .news-card:hover .news-image {
+            transform: scale(1.05);
+        }
+
+        .news-category-badge {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: var(--primary);
+            color: var(--white);
+            padding: 0.35rem 1rem;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            z-index: 2;
+        }
+
+        .news-card-body {
+            padding: 1.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .news-title {
+            font-family: var(--font-heading);
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 0.75rem;
+            color: var(--gray-900);
+        }
+
+        .news-title a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .news-title a:hover {
+            color: var(--primary);
+        }
+
+        .news-excerpt {
+            color: var(--gray-600);
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            flex: 1;
+            font-size: 0.9rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .news-card-footer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 2px solid var(--gray-200);
+            gap: 1rem;
+        }
+
+        .news-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .news-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            color: var(--gray-500);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .read-more {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--white);
+            background: var(--primary);
+            padding: 0.5rem 1.25rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .read-more:hover {
+            background: var(--primary-dark);
+            gap: 0.75rem;
+        }
+
+        /* ==========================================
+           NEWS LAYOUT - SIDEBAR
+           ========================================== */
+        .news-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-top: 0.5rem;
+        }
+
+        @media (min-width: 1024px) {
+            .news-layout {
+                grid-template-columns: 1fr 300px;
+                gap: 2rem;
+            }
+        }
+
+        .sidebar {
+            width: 100%;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                position: sticky;
+                top: 1.5rem;
+                height: fit-content;
+            }
+        }
+
+        /* Sidebar Widgets */
+        .sidebar-widget {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--gray-200);
+        }
+
+        .widget-title {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .widget-title-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(145deg, var(--primary), var(--primary-light));
+            color: var(--white);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Category List */
+        .category-list {
+            list-style: none;
+        }
+
+        .category-item {
+            margin-bottom: 0.6rem;
+        }
+
+        .category-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            background: var(--gray-50);
+            border-radius: 8px;
+            color: var(--gray-700);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .category-link:hover {
+            background: var(--primary);
+            color: var(--white);
+            transform: translateX(3px);
+        }
+
+        .category-count {
+            background: var(--white);
+            color: var(--primary);
+            padding: 0.2rem 0.6rem;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        /* Popular Posts */
+        .popular-list {
+            list-style: none;
+        }
+
+        .popular-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .popular-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .popular-image-wrapper {
+            width: 70px;
+            height: 60px;
+            flex-shrink: 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .popular-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .popular-content {
+            flex: 1;
+        }
+
+        .popular-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            line-height: 1.4;
+            margin-bottom: 0.35rem;
+        }
+
+        .popular-title a {
+            color: var(--gray-800);
+            text-decoration: none;
+        }
+
+        .popular-title a:hover {
+            color: var(--primary);
+        }
+
+        .popular-date {
+            color: var(--gray-500);
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* ==========================================
+           NEWSLETTER FORM - FIXED CURSOR VISIBILITY
+           ========================================== */
+        .sidebar-newsletter {
+            background: linear-gradient(145deg, var(--primary-dark), var(--primary));
+            border-radius: 16px;
+            padding: 1.5rem;
+            color: var(--white);
+        }
+
+        .sidebar-newsletter .widget-title {
+            color: var(--white);
+            margin-bottom: 0.75rem;
+        }
+
+        .sidebar-newsletter .widget-title-icon {
+            background: var(--white);
+            color: var(--primary);
+        }
+
+        .newsletter-description {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 0.9rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .newsletter-input-wrapper {
+            position: relative;
+            margin-bottom: 0.75rem;
+        }
+
+        .newsletter-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-400);
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        /* FIXED: Newsletter input with proper cursor */
+        .newsletter-input {
+            width: 100%;
+            padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 400;
+            background: #ffffff;
+            color: #0F172A;
+            caret-color: #5D4A8A;
+            height: 48px;
+            outline: none;
+            transition: all 0.2s ease;
+            line-height: normal;
+        }
+
+        .newsletter-input::placeholder {
+            color: #64748B;
+            opacity: 1;
+            font-weight: 400;
+        }
+
+        .newsletter-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.25);
+            background: #ffffff;
+            color: #0F172A;
+            caret-color: var(--primary);
+        }
+
+        .newsletter-input:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .newsletter-button {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent);
+            color: var(--gray-900);
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            height: 48px;
+            transition: all 0.2s ease;
+        }
+
+        .newsletter-button:hover:not(:disabled) {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+        }
+
+        .newsletter-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .newsletter-disclaimer {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 0.75rem;
+        }
+
+        /* ==========================================
+           PAGINATION
+           ========================================== */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .pagination-list {
+            display: flex;
+            gap: 0.5rem;
+            list-style: none;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .pagination-link {
+            min-width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.75rem;
+            background: var(--white);
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            color: var(--gray-700);
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-link:hover:not(.active) {
+            background: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+
+        .pagination-link.active {
+            background: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+
+        /* ==========================================
+           EMPTY STATE
+           ========================================== */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            background: var(--gray-50);
+            border-radius: 16px;
+        }
+
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            background: var(--gray-200);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--gray-400);
+        }
+
+        .empty-title {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--gray-700);
+            margin-bottom: 0.75rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        /* ==========================================
+           NOTIFICATION
+           ========================================== */
+        .notification {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: var(--white);
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--primary);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            max-width: 350px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.success {
+            border-left-color: #10b981;
+        }
+
+        .notification.error {
+            border-left-color: #ef4444;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* ==========================================
+           ACCESSIBILITY
+           ========================================== */
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: var(--white);
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            z-index: 1001;
+        }
+
+        .skip-to-content:focus {
+            top: 0;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+        }
+
+        /* ==========================================
+           REDUCED MOTION
+           ========================================== */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1696,7 +1290,7 @@ img {
 <a href="#main-content" class="skip-to-content">Skip to main content</a>
 
 <main class="news-page" id="main-content">
-    <!-- Full-Width Hero Section - No Gap Version -->
+    <!-- HERO SECTION -->
     <section class="news-hero" aria-label="News hero section">
         <div class="news-hero-bg"></div>
         
@@ -1704,7 +1298,7 @@ img {
             <div class="news-hero-content">
                 <div class="hero-text-wrapper">
                     <span class="news-hero-badge">
-                        <i class="fas fa-newspaper" aria-hidden="true"></i>
+                        <i class="fas fa-newspaper"></i>
                         Latest Updates
                     </span>
                     
@@ -1714,19 +1308,20 @@ img {
                         Stay informed with the latest developments, achievements, and important announcements from FCT College of Nursing Sciences.
                     </p>
                     
+                    <!-- FIXED: Search form with visible cursor -->
                     <div class="news-search">
                         <form class="news-search-form" action="<?php echo $baseUrl; ?>/news/search" method="GET" role="search">
                             <div class="news-search-wrapper">
-                                <i class="fas fa-search news-search-icon" aria-hidden="true"></i>
+                                <i class="fas fa-search news-search-icon"></i>
                                 <input type="search" 
                                        name="q" 
                                        class="news-search-input" 
-                                       placeholder="Search for news, announcements, events..." 
+                                       placeholder="Search news, announcements..." 
                                        aria-label="Search news articles"
                                        value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
                             </div>
                             <button type="submit" class="news-search-button">
-                                <i class="fas fa-search" aria-hidden="true"></i>
+                                <i class="fas fa-search"></i>
                                 <span>Search</span>
                             </button>
                         </form>
@@ -1742,11 +1337,11 @@ img {
             <ul class="breadcrumb-list">
                 <li class="breadcrumb-item">
                     <a href="<?php echo $baseUrl; ?>">
-                        <i class="fas fa-home" aria-hidden="true"></i> Home
+                        <i class="fas fa-home"></i> Home
                     </a>
                 </li>
                 <li class="breadcrumb-item">
-                    <span class="breadcrumb-separator" aria-hidden="true">/</span>
+                    <span>/</span>
                 </li>
                 <li class="breadcrumb-item" aria-current="page">News</li>
             </ul>
@@ -1759,126 +1354,94 @@ img {
             <?php if (!$hasNews): ?>
             <!-- Empty State -->
             <div class="empty-state">
-                <div class="empty-icon" aria-hidden="true">
+                <div class="empty-icon">
                     <i class="fas fa-newspaper"></i>
                 </div>
                 <h2 class="empty-title">No News Articles Yet</h2>
                 <p class="empty-description">
-                    We're currently preparing our latest news and updates. Please check back soon for the most recent developments from FCT College of Nursing Sciences.
+                    We're currently preparing our latest news and updates. Please check back soon.
                 </p>
                 <a href="<?php echo $baseUrl; ?>" class="btn btn-primary">
-                    <i class="fas fa-home" aria-hidden="true"></i> Return to Homepage
+                    <i class="fas fa-home"></i> Return to Homepage
                 </a>
             </div>
             <?php else: ?>
             
-            <!-- Featured News Carousel -->
-            <?php if (!empty($featuredNews)): ?>
-            <div class="featured-carousel" aria-label="Featured news carousel">
-                <div class="carousel-container">
-                    <div class="carousel-track">
-                        <?php foreach ($featuredNews as $index => $featured): ?>
-                        <div class="carousel-slide" role="group" aria-label="Slide <?php echo $index + 1; ?> of <?php echo count($featuredNews); ?>">
-                            <article class="featured-card">
-                                <?php if (!empty($featured['featured_image'])): ?>
-                                <img src="<?php echo getImageUrl($featured['featured_image']); ?>" 
-                                     alt="<?php echo htmlspecialchars($featured['title']); ?>" 
-                                     class="featured-image"
-                                     loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
-                                     width="1200"
-                                     height="600"
-                                     onerror="this.onerror=null;this.src='<?php echo $baseUrl; ?>/assets/images/placeholder-news.jpg';">
-                                <?php endif; ?>
-                                
-                                <div class="featured-overlay">
-                                    <span class="featured-badge" aria-hidden="true">
-                                        <i class="fas fa-star"></i> Featured
-                                    </span>
-                                    
-                                    <?php if (!empty($featured['category'])): ?>
-                                    <span class="featured-category">
-                                        <?php echo htmlspecialchars($featured['category']); ?>
-                                    </span>
-                                    <?php endif; ?>
-                                    
-                                    <h2 class="featured-title">
-                                        <a href="<?php echo $baseUrl; ?>/news/<?php echo $featured['slug']; ?>">
-                                            <?php echo htmlspecialchars($featured['title']); ?>
-                                        </a>
-                                    </h2>
-                                    
-                                    <?php if (!empty($featured['excerpt'])): ?>
-                                    <p class="featured-excerpt">
-                                        <?php echo htmlspecialchars(substr(strip_tags($featured['excerpt']), 0, 200)) . '...'; ?>
-                                    </p>
-                                    <?php endif; ?>
-                                    
-                                    <div class="featured-meta">
-                                        <div class="meta-item">
-                                            <i class="far fa-calendar" aria-hidden="true"></i>
-                                            <span><?php echo date('F d, Y', strtotime($featured['created_at'])); ?></span>
-                                        </div>
-                                        <div class="meta-item">
-                                            <i class="far fa-eye" aria-hidden="true"></i>
-                                            <span><?php echo number_format($featured['views_count'] ?? 0); ?> views</span>
-                                        </div>
-                                        <div class="meta-item">
-                                            <i class="far fa-clock" aria-hidden="true"></i>
-                                            <span>5 min read</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </article>
+            <!-- FEATURED CONTENT -->
+            <div class="featured-section">
+                <div class="featured-article">
+                    <img src="<?php echo $baseUrl; ?>/assets/images/news/featured-nursing.jpg" 
+                         alt="Nursing students in practical training"
+                         class="featured-image"
+                         onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(145deg, #4A3A6F, #5D4A8A)';">
+                    
+                    <div class="featured-gradient-overlay"></div>
+                    
+                    <div class="featured-content">
+                        <div class="featured-content-wrapper">
+                            <span class="featured-badge">
+                                <i class="fas fa-graduation-cap"></i>
+                                Featured Academic News
+                            </span>
+                            
+                            <h2 class="featured-title">
+                                Strengthening Nursing Education Through Practical Training and Innovation
+                            </h2>
+                            
+                            <p class="featured-excerpt">
+                                The College of Nursing continues to enhance nursing education by integrating hands-on clinical training, modern learning tools, and evidence-based practices to prepare students for real-world healthcare challenges.
+                            </p>
+                            
+                            <div class="featured-meta">
+                                <span class="featured-meta-item">
+                                    <i class="far fa-calendar-alt"></i>
+                                    February 10, 2026
+                                </span>
+                                <span class="featured-meta-item">
+                                    <i class="far fa-eye"></i>
+                                    19 views
+                                </span>
+                                <span class="featured-meta-item">
+                                    <i class="far fa-clock"></i>
+                                    5 min read
+                                </span>
+                            </div>
+                            
+                            <div class="featured-actions">
+                                <a href="<?php echo $baseUrl; ?>/news/strengthening-nursing-education" class="btn-featured">
+                                    Read Full Article
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                                <a href="<?php echo $baseUrl; ?>/news/category/academic" class="btn-featured-outline">
+                                    <i class="fas fa-folder"></i>
+                                    Academic News
+                                </a>
+                            </div>
                         </div>
-                        <?php endforeach; ?>
                     </div>
                 </div>
-                
-                <?php if (count($featuredNews) > 1): ?>
-                <div class="carousel-controls">
-                    <button class="carousel-btn carousel-prev" aria-label="Previous slide">
-                        <i class="fas fa-chevron-left" aria-hidden="true"></i>
-                    </button>
-                    <div class="carousel-indicators" role="tablist">
-                        <?php foreach ($featuredNews as $index => $item): ?>
-                        <button class="carousel-indicator <?php echo $index === 0 ? 'active' : ''; ?>" 
-                                data-index="<?php echo $index; ?>"
-                                role="tab"
-                                aria-label="Go to slide <?php echo $index + 1; ?>"
-                                aria-selected="<?php echo $index === 0 ? 'true' : 'false'; ?>">
-                            <span class="sr-only">Slide <?php echo $index + 1; ?></span>
-                        </button>
-                        <?php endforeach; ?>
-                    </div>
-                    <button class="carousel-btn carousel-next" aria-label="Next slide">
-                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                    </button>
-                </div>
-                <?php endif; ?>
             </div>
-            <?php endif; ?>
             
+            <!-- News Layout with Sidebar -->
             <div class="news-layout">
                 <!-- Main Content -->
                 <div>
-                    <!-- Section Header -->
                     <div class="section-header">
                         <h2 class="section-title">
-                            <div class="section-title-icon" aria-hidden="true">
+                            <div class="section-title-icon">
                                 <i class="fas fa-newspaper"></i>
                             </div>
                             <span>Latest News</span>
                         </h2>
                         <a href="<?php echo $baseUrl; ?>/news/archive" class="view-all-link">
                             View Archive
-                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                            <i class="fas fa-arrow-right"></i>
                         </a>
                     </div>
                     
-                    <!-- Filter Bar -->
                     <div class="filter-bar">
                         <div class="filter-group">
-                            <label class="filter-label" for="category-filter">Filter by:</label>
+                            <span class="filter-label">Filter:</span>
                             <select class="filter-select" id="category-filter" aria-label="Filter by category">
                                 <option value="">All Categories</option>
                                 <?php foreach ($categories as $category => $count): ?>
@@ -1896,22 +1459,22 @@ img {
                         </div>
                         
                         <div class="results-count">
-                            Showing <strong><?php echo count($news); ?></strong> of <strong><?php echo $pagination['totalCount']; ?></strong> articles
+                            <strong><?php echo count($news); ?></strong> of <strong><?php echo $pagination['totalCount']; ?></strong> articles
                         </div>
                     </div>
                     
                     <!-- News Grid -->
                     <?php if (empty($news)): ?>
                     <div class="empty-state">
-                        <div class="empty-icon" aria-hidden="true">
+                        <div class="empty-icon">
                             <i class="fas fa-search"></i>
                         </div>
                         <h3 class="empty-title">No Articles Found</h3>
                         <p class="empty-description">
-                            We couldn't find any articles matching your criteria. Try adjusting your filters.
+                            Try adjusting your filters or search criteria.
                         </p>
                         <a href="<?php echo $baseUrl; ?>/news" class="btn btn-outline">
-                            <i class="fas fa-sync" aria-hidden="true"></i> Reset Filters
+                            <i class="fas fa-sync"></i> Reset Filters
                         </a>
                     </div>
                     <?php else: ?>
@@ -1924,12 +1487,10 @@ img {
                                      alt="<?php echo htmlspecialchars($item['title']); ?>" 
                                      class="news-image"
                                      loading="lazy"
-                                     width="400"
-                                     height="240"
                                      onerror="this.onerror=null;this.src='<?php echo $baseUrl; ?>/assets/images/placeholder-news.jpg';">
                                 <?php else: ?>
-                                <div style="width:100%;height:100%;background:linear-gradient(135deg,var(--gray-200),var(--gray-300));display:flex;align-items:center;justify-content:center;">
-                                    <i class="fas fa-newspaper" style="font-size:3rem;color:var(--gray-400);"></i>
+                                <div style="width:100%;height:100%;background:linear-gradient(145deg, #E2E8F0, #CBD5E1);display:flex;align-items:center;justify-content:center;">
+                                    <i class="fas fa-newspaper" style="font-size:3rem;color:#94A3B8;"></i>
                                 </div>
                                 <?php endif; ?>
                                 
@@ -1949,25 +1510,25 @@ img {
                                 
                                 <?php if (!empty($item['excerpt'])): ?>
                                 <p class="news-excerpt">
-                                    <?php echo htmlspecialchars(substr(strip_tags($item['excerpt']), 0, 150)) . '...'; ?>
+                                    <?php echo htmlspecialchars(substr(strip_tags($item['excerpt']), 0, 180)) . '...'; ?>
                                 </p>
                                 <?php endif; ?>
                                 
                                 <div class="news-card-footer">
                                     <div class="news-meta">
                                         <div class="news-meta-item">
-                                            <i class="far fa-calendar" aria-hidden="true"></i>
+                                            <i class="far fa-calendar"></i>
                                             <span><?php echo date('M d, Y', strtotime($item['created_at'])); ?></span>
                                         </div>
                                         <div class="news-meta-item">
-                                            <i class="far fa-eye" aria-hidden="true"></i>
+                                            <i class="far fa-eye"></i>
                                             <span><?php echo number_format($item['views_count'] ?? 0); ?></span>
                                         </div>
                                     </div>
                                     
                                     <a href="<?php echo $baseUrl; ?>/news/<?php echo $item['slug']; ?>" class="read-more">
                                         Read More
-                                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                                        <i class="fas fa-arrow-right"></i>
                                     </a>
                                 </div>
                             </div>
@@ -1981,22 +1542,17 @@ img {
                         <ul class="pagination-list">
                             <?php if ($pagination['current'] > 1): ?>
                             <li>
-                                <a href="?page=<?php echo $pagination['current'] - 1; ?>" class="pagination-link" aria-label="Go to previous page">
-                                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                                <a href="?page=<?php echo $pagination['current'] - 1; ?>" class="pagination-link" aria-label="Previous page">
+                                    <i class="fas fa-chevron-left"></i>
                                 </a>
                             </li>
                             <?php endif; ?>
                             
-                            <?php 
-                            $start = max(1, $pagination['current'] - 2);
-                            $end = min($pagination['total'], $pagination['current'] + 2);
-                            
-                            for ($i = $start; $i <= $end; $i++): ?>
+                            <?php for ($i = 1; $i <= $pagination['total']; $i++): ?>
                             <li>
                                 <a href="?page=<?php echo $i; ?>" 
                                    class="pagination-link <?php echo $i == $pagination['current'] ? 'active' : ''; ?>"
-                                   aria-label="Go to page <?php echo $i; ?>"
-                                   <?php echo $i == $pagination['current'] ? 'aria-current="page"' : ''; ?>>
+                                   aria-label="Page <?php echo $i; ?>">
                                     <?php echo $i; ?>
                                 </a>
                             </li>
@@ -2004,8 +1560,8 @@ img {
                             
                             <?php if ($pagination['current'] < $pagination['total']): ?>
                             <li>
-                                <a href="?page=<?php echo $pagination['current'] + 1; ?>" class="pagination-link" aria-label="Go to next page">
-                                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                <a href="?page=<?php echo $pagination['current'] + 1; ?>" class="pagination-link" aria-label="Next page">
+                                    <i class="fas fa-chevron-right"></i>
                                 </a>
                             </li>
                             <?php endif; ?>
@@ -2021,7 +1577,7 @@ img {
                     <?php if (!empty($categories)): ?>
                     <div class="sidebar-widget">
                         <h3 class="widget-title">
-                            <div class="widget-title-icon" aria-hidden="true">
+                            <div class="widget-title-icon">
                                 <i class="fas fa-folder"></i>
                             </div>
                             <span>Categories</span>
@@ -2044,7 +1600,7 @@ img {
                     <?php if (!empty($popularNews)): ?>
                     <div class="sidebar-widget">
                         <h3 class="widget-title">
-                            <div class="widget-title-icon" aria-hidden="true">
+                            <div class="widget-title-icon">
                                 <i class="fas fa-fire"></i>
                             </div>
                             <span>Popular News</span>
@@ -2058,8 +1614,6 @@ img {
                                          alt="<?php echo htmlspecialchars($popular['title']); ?>" 
                                          class="popular-image"
                                          loading="lazy"
-                                         width="80"
-                                         height="60"
                                          onerror="this.onerror=null;this.src='<?php echo $baseUrl; ?>/assets/images/placeholder-small.jpg';">
                                     <?php else: ?>
                                     <div style="width:100%;height:100%;background:var(--gray-200);display:flex;align-items:center;justify-content:center;">
@@ -2070,11 +1624,11 @@ img {
                                 <div class="popular-content">
                                     <h4 class="popular-title">
                                         <a href="<?php echo $baseUrl; ?>/news/<?php echo $popular['slug']; ?>">
-                                            <?php echo htmlspecialchars(substr($popular['title'], 0, 60)) . '...'; ?>
+                                            <?php echo htmlspecialchars($popular['title']); ?>
                                         </a>
                                     </h4>
                                     <div class="popular-date">
-                                        <i class="far fa-calendar" aria-hidden="true"></i>
+                                        <i class="far fa-calendar"></i>
                                         <?php echo date('M d, Y', strtotime($popular['created_at'])); ?>
                                     </div>
                                 </div>
@@ -2084,16 +1638,14 @@ img {
                     </div>
                     <?php endif; ?>
                     
-                    <!-- ==========================================
-                         NEWSLETTER - WORKING VERSION WITH AJAX
-                         ========================================== -->
-                    <div class="sidebar-section">
-                        <h2 class="sidebar-title">
-                            <div class="widget-title-icon" aria-hidden="true">
+                    <!-- FIXED: Newsletter Widget with visible cursor -->
+                    <div class="sidebar-newsletter">
+                        <h3 class="widget-title">
+                            <div class="widget-title-icon">
                                 <i class="fas fa-envelope"></i>
                             </div>
                             <span>Stay Updated</span>
-                        </h2>
+                        </h3>
                         <p class="newsletter-description">
                             Subscribe to receive the latest news and updates directly in your inbox.
                         </p>
@@ -2102,7 +1654,7 @@ img {
                         
                         <form class="newsletter-form" id="newsletter-form" action="<?php echo BASE_URL; ?>/newsletter/subscribe" method="POST">
                             <div class="newsletter-input-wrapper">
-                                <i class="fas fa-envelope newsletter-icon" aria-hidden="true"></i>
+                                <i class="fas fa-envelope newsletter-icon"></i>
                                 <input type="email" 
                                        name="email"
                                        class="newsletter-input" 
@@ -2131,96 +1683,7 @@ img {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Carousel functionality
-    const track = document.querySelector('.carousel-track');
-    const slides = document.querySelectorAll('.carousel-slide');
-    const prevBtn = document.querySelector('.carousel-prev');
-    const nextBtn = document.querySelector('.carousel-next');
-    const indicators = document.querySelectorAll('.carousel-indicator');
-    
-    let currentSlide = 0;
-    const totalSlides = slides.length;
-    let autoPlayInterval;
-    
-    function updateCarousel() {
-        if (!track || !slides.length) return;
-        
-        track.style.transform = `translateX(-${currentSlide * 100}%)`;
-        
-        indicators.forEach((indicator, index) => {
-            indicator.classList.toggle('active', index === currentSlide);
-            indicator.setAttribute('aria-selected', index === currentSlide ? 'true' : 'false');
-        });
-        
-        // Update ARIA live region
-        updateSlideLiveRegion();
-    }
-    
-    function updateSlideLiveRegion() {
-        const liveRegion = document.getElementById('carousel-live-region');
-        if (liveRegion) {
-            liveRegion.textContent = `Slide ${currentSlide + 1} of ${totalSlides}`;
-        }
-    }
-    
-    function nextSlide() {
-        if (totalSlides <= 1) return;
-        currentSlide = (currentSlide + 1) % totalSlides;
-        updateCarousel();
-    }
-    
-    function prevSlide() {
-        if (totalSlides <= 1) return;
-        currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
-        updateCarousel();
-    }
-    
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            clearInterval(autoPlayInterval);
-            prevSlide();
-        });
-    }
-    
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            clearInterval(autoPlayInterval);
-            nextSlide();
-        });
-    }
-    
-    indicators.forEach((indicator, index) => {
-        indicator.addEventListener('click', () => {
-            clearInterval(autoPlayInterval);
-            currentSlide = index;
-            updateCarousel();
-        });
-    });
-    
-    // Auto-play carousel
-    if (totalSlides > 1) {
-        autoPlayInterval = setInterval(nextSlide, 5000);
-        
-        // Pause auto-play on hover
-        const carouselContainer = document.querySelector('.carousel-container');
-        if (carouselContainer) {
-            carouselContainer.addEventListener('mouseenter', () => {
-                clearInterval(autoPlayInterval);
-            });
-            
-            carouselContainer.addEventListener('mouseleave', () => {
-                clearInterval(autoPlayInterval);
-                autoPlayInterval = setInterval(nextSlide, 5000);
-            });
-        }
-    }
-    
-    // Initialize carousel
-    updateCarousel();
-    
-    // ==========================================
-    // NEWSLETTER FORM - WORKING AJAX VERSION
-    // ==========================================
+    // Newsletter Form AJAX
     const newsletterForm = document.getElementById('newsletter-form');
     const emailInput = document.getElementById('newsletter-email');
     const submitBtn = document.getElementById('newsletter-submit');
@@ -2230,20 +1693,17 @@ document.addEventListener('DOMContentLoaded', function() {
         newsletterForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Validate email
             const email = emailInput.value.trim();
             if (!email || !isValidEmail(email)) {
                 showMessage('Please enter a valid email address', 'error');
                 return;
             }
             
-            // Disable form
             emailInput.disabled = true;
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subscribing...';
             
             try {
-                // Send AJAX request
                 const formData = new FormData();
                 formData.append('email', email);
                 formData.append('source', 'newsletter_sidebar');
@@ -2257,16 +1717,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (data.success) {
                     showMessage(data.message, 'success');
-                    emailInput.value = ''; // Clear input
+                    emailInput.value = '';
                 } else {
                     showMessage(data.message, 'error');
                 }
-                
             } catch (error) {
-                console.error('Newsletter error:', error);
                 showMessage('Connection error. Please try again.', 'error');
             } finally {
-                // Re-enable form
                 emailInput.disabled = false;
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> <span>Subscribe</span>';
@@ -2274,22 +1731,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Email validation
     function isValidEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
     
-    // Show message
     function showMessage(message, type) {
         messageDiv.style.display = 'block';
         messageDiv.textContent = message;
-        
-        // Style based on type
         messageDiv.style.background = type === 'success' ? '#d4edda' : '#f8d7da';
         messageDiv.style.color = type === 'success' ? '#155724' : '#721c24';
         messageDiv.style.border = type === 'success' ? '1px solid #c3e6cb' : '1px solid #f5c6cb';
         
-        // Auto-hide after 5 seconds for success messages
         if (type === 'success') {
             setTimeout(() => {
                 messageDiv.style.display = 'none';
@@ -2317,176 +1769,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.search = params.toString();
         });
     }
-    
-    // Notification function
-    function showNotification(message, type = 'success') {
-        // Remove existing notifications
-        const existingNotifications = document.querySelectorAll('.notification');
-        existingNotifications.forEach(notification => notification.remove());
-        
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.setAttribute('role', 'alert');
-        notification.setAttribute('aria-live', 'polite');
-        notification.innerHTML = `
-            <div class="notification-icon">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-            </div>
-            <p>${message}</p>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease forwards';
-            setTimeout(() => notification.remove(), 300);
-        }, 4000);
-    }
-    
-    // Lazy loading for images with Intersection Observer
-    if ('IntersectionObserver' in window) {
-        const lazyImages = document.querySelectorAll('img[loading="lazy"]');
-        
-        const imageObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const img = entry.target;
-                    
-                    // Load the image
-                    if (img.dataset.src) {
-                        img.src = img.dataset.src;
-                        delete img.dataset.src;
-                    }
-                    
-                    // Stop observing
-                    imageObserver.unobserve(img);
-                }
-            });
-        }, {
-            rootMargin: '50px 0px',
-            threshold: 0.1
-        });
-        
-        lazyImages.forEach(img => imageObserver.observe(img));
-    }
-    
-    // Smooth scroll for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href');
-            if (targetId === '#') return;
-            
-            const target = document.querySelector(targetId);
-            if (target) {
-                const headerOffset = 80;
-                const elementPosition = target.getBoundingClientRect().top;
-                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                
-                window.scrollTo({
-                    top: offsetPosition,
-                    behavior: 'smooth'
-                });
-                
-                // Focus the target for accessibility
-                target.setAttribute('tabindex', '-1');
-                target.focus();
-            }
-        });
-    });
-    
-    // Performance optimization: Debounce resize events
-    let resizeTimeout;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(function() {
-            // Update carousel on resize
-            updateCarousel();
-        }, 250);
-    });
-    
-    // Keyboard navigation for carousel
-    document.addEventListener('keydown', function(e) {
-        const carousel = document.querySelector('.featured-carousel');
-        if (!carousel) return;
-        
-        const isCarouselFocused = carousel.contains(document.activeElement);
-        if (!isCarouselFocused) return;
-        
-        switch(e.key) {
-            case 'ArrowLeft':
-                e.preventDefault();
-                clearInterval(autoPlayInterval);
-                prevSlide();
-                break;
-            case 'ArrowRight':
-                e.preventDefault();
-                clearInterval(autoPlayInterval);
-                nextSlide();
-                break;
-            case 'Home':
-                e.preventDefault();
-                clearInterval(autoPlayInterval);
-                currentSlide = 0;
-                updateCarousel();
-                break;
-            case 'End':
-                e.preventDefault();
-                clearInterval(autoPlayInterval);
-                currentSlide = totalSlides - 1;
-                updateCarousel();
-                break;
-        }
-    });
-    
-    // Text truncation fix for very long titles on mobile
-    function adjustTextTruncation() {
-        const newsTitles = document.querySelectorAll('.news-title');
-        const isMobile = window.innerWidth <= 480;
-        
-        newsTitles.forEach(title => {
-            if (isMobile) {
-                // Adjust line clamp based on content length
-                const text = title.textContent || title.innerText;
-                if (text.length > 100) {
-                    title.style.webkitLineClamp = '4';
-                    title.style.minHeight = '6.5em';
-                } else if (text.length > 60) {
-                    title.style.webkitLineClamp = '3';
-                    title.style.minHeight = '4.9em';
-                }
-            } else {
-                // Reset for desktop
-                title.style.webkitLineClamp = '';
-                title.style.minHeight = '';
-            }
-        });
-    }
-    
-    // Run on load and resize
-    adjustTextTruncation();
-    window.addEventListener('resize', adjustTextTruncation);
 });
-
-// Add slideOut animation for notifications
-const style = document.createElement('style');
-style.textContent = `
-@keyframes slideOut {
-    to {
-        transform: translateY(-20px);
-        opacity: 0;
-    }
-}
-`;
-document.head.appendChild(style);
-
-// Progressive enhancement: Add ARIA live region for carousel
-const liveRegion = document.createElement('div');
-liveRegion.id = 'carousel-live-region';
-liveRegion.className = 'sr-only';
-liveRegion.setAttribute('aria-live', 'polite');
-liveRegion.setAttribute('aria-atomic', 'true');
-document.body.appendChild(liveRegion);
 </script>
 
 </body>
