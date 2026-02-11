@@ -1,7 +1,8 @@
 <?php
 /**
- * News Model - COMPLETE FIXED VERSION WITH IMAGE HANDLING
+ * News Model - COMPLETE FIXED VERSION WITH IMAGE HANDLING AND AUTHOR NAME FIXES
  * All methods working correctly - EVENTS NOW INSERT INTO NEWS TABLE
+ * ✅ FIXED: All author references now use full_name instead of username
  */
 class NewsModel {
     private $db;
@@ -365,6 +366,7 @@ class NewsModel {
     
     /**
      * Get all content from news table with filters (for admin)
+     * ✅ FIXED: Changed username to full_name for author display
      */
     public function getAllWithFilters($filters = [], $limit = 20, $offset = 0) {
         error_log("=== NewsModel getAllWithFilters CALLED ===");
@@ -416,7 +418,7 @@ class NewsModel {
             $whereClause = implode(' AND ', $where);
             error_log("WHERE clause: " . $whereClause);
             
-            // Build the query
+            // ✅ FIXED: Changed from username to full_name
             $sql = "SELECT 
                         n.id,
                         n.title,
@@ -433,7 +435,7 @@ class NewsModel {
                         n.event_date,
                         n.event_time,
                         n.event_location,
-                        COALESCE(u.username, 'System') as author_name
+                        COALESCE(u.full_name, 'System') as author_name
                     FROM news n 
                     LEFT JOIN users u ON n.author_id = u.id 
                     WHERE {$whereClause} 
@@ -539,7 +541,7 @@ class NewsModel {
     
     /**
      * Get published news only (for public display) - FIXED VERSION
-     * DEBUGGED: The issue was with integer casting and parameter binding
+     * ✅ FIXED: Added JOIN to users table to get author full_name
      */
     public function getPublishedNews($limit = 10, $offset = 0, $category = '') {
         try {
@@ -548,60 +550,64 @@ class NewsModel {
             
             if ($category) {
                 $sql = "SELECT 
-                    id,
-                    title,
-                    slug,
-                    excerpt,
-                    content,
-                    category,
-                    type,
-                    featured_image,
-                    is_published,
-                    is_featured,
-                    is_breaking,
-                    COALESCE(views_count, 0) as views_count,
-                    author_id,
-                    created_at,
-                    'news' as content_type
-                FROM news 
-                WHERE is_published = 1 AND category = ? 
-                ORDER BY created_at DESC 
-                LIMIT ? OFFSET ?";
+                        n.id,
+                        n.title,
+                        n.slug,
+                        n.excerpt,
+                        n.content,
+                        n.category,
+                        n.type,
+                        n.featured_image,
+                        n.is_published,
+                        n.is_featured,
+                        n.is_breaking,
+                        COALESCE(n.views_count, 0) as views_count,
+                        n.author_id,
+                        n.created_at,
+                        u.full_name as author_name,
+                        u.role as author_role,
+                        'news' as content_type
+                    FROM news n
+                    LEFT JOIN users u ON n.author_id = u.id
+                    WHERE n.is_published = 1 AND n.category = ? 
+                    ORDER BY n.created_at DESC 
+                    LIMIT ? OFFSET ?";
                 
                 error_log("SQL with category: " . $sql);
                 
                 $stmt = $this->db->prepare($sql);
-                // IMPORTANT: Bind parameters correctly - don't cast to int here
                 $stmt->bindParam(1, $category, PDO::PARAM_STR);
                 $stmt->bindParam(2, $limit, PDO::PARAM_INT);
                 $stmt->bindParam(3, $offset, PDO::PARAM_INT);
                 $stmt->execute();
             } else {
                 $sql = "SELECT 
-                    id,
-                    title,
-                    slug,
-                    excerpt,
-                    content,
-                    category,
-                    type,
-                    featured_image,
-                    is_published,
-                    is_featured,
-                    is_breaking,
-                    COALESCE(views_count, 0) as views_count,
-                    author_id,
-                    created_at,
-                    'news' as content_type
-                FROM news 
-                WHERE is_published = 1 
-                ORDER BY created_at DESC 
-                LIMIT ? OFFSET ?";
+                        n.id,
+                        n.title,
+                        n.slug,
+                        n.excerpt,
+                        n.content,
+                        n.category,
+                        n.type,
+                        n.featured_image,
+                        n.is_published,
+                        n.is_featured,
+                        n.is_breaking,
+                        COALESCE(n.views_count, 0) as views_count,
+                        n.author_id,
+                        n.created_at,
+                        u.full_name as author_name,
+                        u.role as author_role,
+                        'news' as content_type
+                    FROM news n
+                    LEFT JOIN users u ON n.author_id = u.id
+                    WHERE n.is_published = 1 
+                    ORDER BY n.created_at DESC 
+                    LIMIT ? OFFSET ?";
                 
                 error_log("SQL without category: " . $sql);
                 
                 $stmt = $this->db->prepare($sql);
-                // Bind parameters correctly
                 $stmt->bindParam(1, $limit, PDO::PARAM_INT);
                 $stmt->bindParam(2, $offset, PDO::PARAM_INT);
                 $stmt->execute();
@@ -631,32 +637,35 @@ class NewsModel {
             error_log("=== getPublishedNewsSimple CALLED ===");
             
             // Build query
-            $where = "WHERE is_published = 1";
+            $where = "WHERE n.is_published = 1";
             $params = [];
             
             if ($category) {
-                $where .= " AND category = ?";
+                $where .= " AND n.category = ?";
                 $params[] = $category;
             }
             
+            // ✅ FIXED: Added JOIN to get author full_name
             $sql = "SELECT 
-                    id,
-                    title,
-                    slug,
-                    excerpt,
-                    content,
-                    category,
-                    type,
-                    featured_image,
-                    is_published,
-                    is_featured,
-                    is_breaking,
-                    COALESCE(views_count, 0) as views_count,
-                    author_id,
-                    created_at
-                FROM news 
+                    n.id,
+                    n.title,
+                    n.slug,
+                    n.excerpt,
+                    n.content,
+                    n.category,
+                    n.type,
+                    n.featured_image,
+                    n.is_published,
+                    n.is_featured,
+                    n.is_breaking,
+                    COALESCE(n.views_count, 0) as views_count,
+                    n.author_id,
+                    n.created_at,
+                    u.full_name as author_name
+                FROM news n
+                LEFT JOIN users u ON n.author_id = u.id
                 {$where}
-                ORDER BY created_at DESC 
+                ORDER BY n.created_at DESC 
                 LIMIT ? OFFSET ?";
             
             $params[] = (int)$limit;
@@ -692,6 +701,7 @@ class NewsModel {
         try {
             error_log("=== getPublishedNewsDirect CALLED ===");
             
+            // Note: This method doesn't show author names - consider using getPublishedNews or getPublishedNewsSimple instead
             if ($category) {
                 $sql = "SELECT * FROM news 
                         WHERE is_published = 1 AND category = '{$category}' 
@@ -753,26 +763,30 @@ class NewsModel {
     
     /**
      * Get featured news - FIXED
+     * ✅ FIXED: Added JOIN to get author full_name
      */
     public function getFeaturedNews($limit = 3) {
         try {
             error_log("=== getFeaturedNews CALLED ===");
             
             $sql = "SELECT 
-                id,
-                title,
-                slug,
-                excerpt,
-                content,
-                category,
-                featured_image,
-                is_featured,
-                COALESCE(views_count, 0) as views_count,
-                created_at
-            FROM news 
-            WHERE is_published = 1 AND is_featured = 1 
-            ORDER BY created_at DESC 
-            LIMIT ?";
+                    n.id,
+                    n.title,
+                    n.slug,
+                    n.excerpt,
+                    n.content,
+                    n.category,
+                    n.featured_image,
+                    n.is_featured,
+                    COALESCE(n.views_count, 0) as views_count,
+                    n.created_at,
+                    u.full_name as author_name,
+                    u.role as author_role
+                FROM news n
+                LEFT JOIN users u ON n.author_id = u.id
+                WHERE n.is_published = 1 AND n.is_featured = 1 
+                ORDER BY n.created_at DESC 
+                LIMIT ?";
             
             error_log("Featured SQL: " . $sql);
             
@@ -793,24 +807,28 @@ class NewsModel {
     
     /**
      * Get popular news - FIXED
+     * ✅ FIXED: Added JOIN to get author full_name (changed from username)
      */
     public function getPopularNews($limit = 5) {
         try {
             error_log("=== getPopularNews CALLED ===");
             
             $sql = "SELECT 
-                id,
-                title,
-                slug,
-                excerpt,
-                category,
-                featured_image,
-                COALESCE(views_count, 0) as views_count,
-                created_at
-            FROM news 
-            WHERE is_published = 1 
-            ORDER BY views_count DESC, created_at DESC 
-            LIMIT ?";
+                    n.id,
+                    n.title,
+                    n.slug,
+                    n.excerpt,
+                    n.category,
+                    n.featured_image,
+                    n.content,
+                    COALESCE(n.views_count, 0) as views_count,
+                    n.created_at,
+                    u.full_name as author_name
+                FROM news n 
+                LEFT JOIN users u ON n.author_id = u.id
+                WHERE n.is_published = 1 
+                ORDER BY n.views_count DESC, n.created_at DESC 
+                LIMIT ?";
             
             error_log("Popular SQL: " . $sql);
             
@@ -896,17 +914,29 @@ class NewsModel {
     
     /**
      * Get news by slug
+     * ✅ FIXED: Get full_name instead of username, added role and fallback
      */
     public function getBySlug($slug) {
         try {
-            $sql = "SELECT n.*, u.username as author_name 
-                    FROM news n 
-                    LEFT JOIN users u ON n.author_id = u.id 
-                    WHERE n.slug = ? AND n.is_published = 1";
+            // ✅ FIXED: Get full_name instead of username
+            $sql = "SELECT n.*, 
+                       u.full_name as author_name,
+                       u.role as author_role
+                FROM news n 
+                LEFT JOIN users u ON n.author_id = u.id 
+                WHERE n.slug = ? AND n.is_published = 1";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$slug]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Fallback if no author found
+            if ($result && empty($result['author_name'])) {
+                $result['author_name'] = 'FCT Nursing College';
+                $result['author_role'] = 'Administration';
+            }
+            
+            return $result;
             
         } catch (Exception $e) {
             error_log("NewsModel getBySlug error: " . $e->getMessage());
@@ -916,6 +946,7 @@ class NewsModel {
     
     /**
      * Get related news
+     * No changes needed - doesn't display author
      */
     public function getRelatedNews($newsId, $category, $limit = 3) {
         try {
@@ -940,10 +971,13 @@ class NewsModel {
     
     /**
      * Get news by archive month
+     * ✅ FIXED: Added JOIN to get author full_name
      */
     public function getByArchiveMonth($year, $month, $limit = 10, $offset = 0) {
         try {
-            $sql = "SELECT n.* FROM news n 
+            $sql = "SELECT n.*, u.full_name as author_name 
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
                     WHERE n.is_published = 1 
                     AND YEAR(n.created_at) = ? 
                     AND MONTH(n.created_at) = ?
@@ -984,10 +1018,13 @@ class NewsModel {
     
     /**
      * Search news
+     * ✅ FIXED: Added JOIN to get author full_name
      */
     public function searchNews($query, $limit = 10, $offset = 0) {
         try {
-            $sql = "SELECT n.* FROM news n 
+            $sql = "SELECT n.*, u.full_name as author_name 
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
                     WHERE n.is_published = 1 
                     AND (n.title LIKE ? OR n.content LIKE ? OR n.excerpt LIKE ?)
                     ORDER BY n.created_at DESC 
@@ -1100,6 +1137,7 @@ class NewsModel {
     
     /**
      * Get all news only (not events)
+     * ✅ FIXED: Changed username to full_name
      */
     public function getAllNewsOnly($filters = [], $limit = 20, $offset = 0) {
         $where = ['1=1'];
@@ -1138,7 +1176,8 @@ class NewsModel {
         
         $whereClause = implode(' AND ', $where);
         
-        $sql = "SELECT n.*, u.username as author_name 
+        // ✅ FIXED: Changed from username to full_name
+        $sql = "SELECT n.*, u.full_name as author_name 
                 FROM news n 
                 LEFT JOIN users u ON n.author_id = u.id 
                 WHERE {$whereClause} 
@@ -1155,6 +1194,7 @@ class NewsModel {
     
     /**
      * Get ALL content (news + events) with filters - SIMPLIFIED FIXED VERSION
+     * ✅ FIXED: Changed username to full_name
      */
     public function getAll($filters = [], $limit = 20, $offset = 0) {
         try {
@@ -1202,7 +1242,8 @@ class NewsModel {
             
             $whereClause = implode(' AND ', $where);
             
-            $sql = "SELECT n.*, u.username as author_name 
+            // ✅ FIXED: Changed from username to full_name
+            $sql = "SELECT n.*, u.full_name as author_name 
                     FROM news n 
                     LEFT JOIN users u ON n.author_id = u.id 
                     WHERE {$whereClause} 
@@ -1283,11 +1324,12 @@ class NewsModel {
     
     /**
      * Get news by ID (from news table only now)
+     * ✅ FIXED: Changed username to full_name
      */
     public function getById($id) {
         try {
             // Get from news table only (events are now in news table too)
-            $sql = "SELECT n.*, u.username as author_name 
+            $sql = "SELECT n.*, u.full_name as author_name, u.role as author_role
                     FROM news n 
                     LEFT JOIN users u ON n.author_id = u.id 
                     WHERE n.id = ?";
@@ -1298,6 +1340,13 @@ class NewsModel {
             if ($result) {
                 // Set content_type based on type field
                 $result['content_type'] = $result['type'] ?? 'news';
+                
+                // Fallback if no author found
+                if (empty($result['author_name'])) {
+                    $result['author_name'] = 'FCT Nursing College';
+                    $result['author_role'] = 'Administration';
+                }
+                
                 return $result;
             }
             
@@ -1403,10 +1452,11 @@ class NewsModel {
     
     /**
      * Get events specifically (for backwards compatibility)
+     * ✅ FIXED: Changed username to full_name
      */
     public function getEvents($limit = 10, $offset = 0) {
         try {
-            $sql = "SELECT n.*, u.username as author_name 
+            $sql = "SELECT n.*, u.full_name as author_name 
                     FROM news n 
                     LEFT JOIN users u ON n.author_id = u.id 
                     WHERE n.type = 'event' AND n.is_published = 1 
@@ -1445,10 +1495,11 @@ class NewsModel {
     
     /**
      * Get upcoming events
+     * ✅ FIXED: Changed username to full_name
      */
     public function getUpcomingEvents($limit = 5) {
         try {
-            $sql = "SELECT n.*, u.username as author_name 
+            $sql = "SELECT n.*, u.full_name as author_name 
                     FROM news n 
                     LEFT JOIN users u ON n.author_id = u.id 
                     WHERE n.type = 'event' 
@@ -1492,12 +1543,17 @@ class NewsModel {
             $results['type_counts'] = $typeCounts;
             error_log("Type distribution: " . json_encode($typeCounts));
             
-            // Test 3: Check actual data
-            $sql3 = "SELECT id, title, type, is_published, category, event_date FROM news ORDER BY created_at DESC LIMIT 10";
+            // Test 3: Check actual data with author names
+            $sql3 = "SELECT n.id, n.title, n.type, n.is_published, n.category, n.event_date, 
+                            u.full_name as author_name 
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
+                    ORDER BY n.created_at DESC 
+                    LIMIT 10";
             $stmt3 = $this->db->query($sql3);
             $allNews = $stmt3->fetchAll(PDO::FETCH_ASSOC);
             $results['recent_items'] = $allNews;
-            error_log("Recent items: " . json_encode($allNews));
+            error_log("Recent items with author names: " . json_encode($allNews));
             
             return $results;
             

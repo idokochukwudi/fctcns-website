@@ -140,7 +140,7 @@ body .main-content {
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.06);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     
     /* Transitions */
@@ -2217,17 +2217,55 @@ a:hover {
 
             <!-- Sidebar -->
             <aside class="article-sidebar">
-                <!-- Author Section -->
+                <!-- ==========================================
+                     SIDEBAR - AUTHOR CARD - DYNAMIC WITH FULL NAME AND ROLE
+                     ========================================== -->
                 <div class="sidebar-section">
                     <h2 class="sidebar-title">About the Author</h2>
                     <div class="author-card">
+                        <?php 
+                        // Get author name from database, fallback to default
+                        $authorFullName = !empty($news['author_name']) 
+                            ? $news['author_name'] 
+                            : 'FCT Nursing College';
+                        
+                        // Get author role from database, fallback to default
+                        $authorRole = !empty($news['author_role']) 
+                            ? $news['author_role'] 
+                            : 'Healthcare Writer';
+                        
+                        // Format role for display (capitalize, replace underscores)
+                        $authorRole = ucwords(str_replace('_', ' ', $authorRole));
+                        
+                        // Get first letter for avatar
+                        $firstLetter = strtoupper(substr($authorFullName, 0, 1));
+                        ?>
+                        
                         <div class="author-avatar">
-                            <?php echo strtoupper(substr($authorName, 0, 1)); ?>
+                            <?php echo $firstLetter; ?>
                         </div>
-                        <h3 class="author-name"><?php echo htmlspecialchars($authorName); ?></h3>
-                        <p class="author-role">Healthcare Writer</p>
+                        
+                        <h3 class="author-name">
+                            <?php echo htmlspecialchars($authorFullName); ?>
+                        </h3>
+                        
+                        <p class="author-role">
+                            <?php echo htmlspecialchars($authorRole); ?>
+                        </p>
+                        
                         <p class="author-bio">
-                            Dedicated to sharing the latest developments in nursing education and healthcare advancements.
+                            <?php 
+                            // Optional: Add dynamic bio based on role or department
+                            if (strpos($authorRole, 'Admin') !== false) {
+                                echo 'Administrator at FCT College of Nursing Sciences, dedicated to excellence in nursing education and institutional development.';
+                            } elseif (strpos($authorRole, 'Editor') !== false) {
+                                echo 'Content editor specializing in healthcare education and institutional communications.';
+                            } elseif (strpos($authorRole, 'Nominal Roll User') !== false) {
+                                echo 'Staff member at FCT College of Nursing Sciences.';
+                            } else {
+                                echo 'Dedicated to sharing the latest developments in nursing education and healthcare advancements.';
+                            }
+                            ?>
                         </p>
                     </div>
                 </div>

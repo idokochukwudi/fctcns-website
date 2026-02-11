@@ -1,6 +1,6 @@
 <?php
 /**
- * Public News Controller - COMPLETE FIXED VERSION
+ * Public News Controller - COMPLETE FIXED VERSION WITH AUTHOR DATA
  * Handles /news routes for public visitors
  */
 class NewsController extends Controller {
@@ -127,7 +127,7 @@ class NewsController extends Controller {
         error_log("=== PUBLIC NEWS SHOW METHOD CALLED for slug: $slug ===");
         
         try {
-            // Get news article by slug using model
+            // Get news article by slug using model - NOW INCLUDES full_name and role
             $news = $this->newsModel->getBySlug($slug);
             
             if (!$news) {
@@ -160,10 +160,26 @@ class NewsController extends Controller {
             $categories = $this->newsModel->getCategoriesWithCounts();
             $archiveMonths = $this->newsModel->getArchiveMonths();
             
-            // ✅ FIXED: Explicitly get popular news and ensure it's passed to view
+            // Get popular news
             $popularNews = $this->newsModel->getPopularNews(5);
             
-            // Add debug logging to verify
+            // ✅ DEBUG: Log author information
+            error_log("=== AUTHOR INFORMATION ===");
+            error_log("Author ID: " . ($news['author_id'] ?? 'NULL'));
+            error_log("Author Name: " . ($news['author_name'] ?? 'NOT SET'));
+            error_log("Author Full Name: " . ($news['full_name'] ?? 'NOT SET'));
+            error_log("Author Role: " . ($news['author_role'] ?? 'NOT SET'));
+            
+            // ✅ DEBUG: Verify full author data structure
+            if (!empty($news['full_name'])) {
+                error_log("✓ Full author data present: {$news['full_name']} ({$news['author_role']})");
+            } elseif (!empty($news['author_name'])) {
+                error_log("⚠ Only legacy author_name field present: {$news['author_name']}");
+            } else {
+                error_log("✗ No author information available");
+            }
+            
+            // ✅ DEBUG: Log popular news data
             error_log("=== POPULAR NEWS DATA ===");
             error_log("Popular news count: " . count($popularNews));
             if (count($popularNews) > 0) {
@@ -184,7 +200,7 @@ class NewsController extends Controller {
                 'relatedNews' => $relatedNews,
                 'categories' => $categories,
                 'archiveMonths' => $archiveMonths,
-                'popularNews' => $popularNews, // ✅ CRITICAL: This must be here
+                'popularNews' => $popularNews,
                 'pageTitle' => ($news['title'] ?? 'News Article') . ' - FCT College of Nursing Sciences',
                 'pageDescription' => $news['excerpt'] ?? substr(strip_tags($news['content'] ?? ''), 0, 150) . '...'
             ];
@@ -200,7 +216,7 @@ class NewsController extends Controller {
             } elseif (file_exists($regularViewPath)) {
                 error_log("Using regular show view");
                 $this->data = array_merge($this->data, $viewData);
-                $this->render('pages/news/show'); // ✅ This renders YOUR show.php file
+                $this->render('pages/news/show');
             } else {
                 error_log("No show view found, rendering inline");
                 $this->renderInlineShow($viewData);
@@ -233,6 +249,9 @@ class NewsController extends Controller {
                 .article-header { margin-bottom: 30px; }
                 .article-title { font-size: 2rem; margin-bottom: 10px; }
                 .article-meta { color: #666; margin-bottom: 20px; }
+                .author-info { background: #f5f5f5; padding: 15px; border-left: 4px solid #5D4A8A; margin-bottom: 20px; }
+                .author-name { font-weight: bold; color: #5D4A8A; }
+                .author-role { color: #666; font-style: italic; }
                 .article-content { font-size: 1.1rem; }
                 .back-link { display: inline-block; margin-top: 30px; padding: 10px 20px; background: #5D4A8A; color: white; text-decoration: none; border-radius: 5px; }
                 .sidebar { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; }
@@ -256,6 +275,17 @@ class NewsController extends Controller {
                         <?php endif; ?>
                     </div>
                 </header>
+                
+                <?php if (!empty($news['full_name']) || !empty($news['author_name'])): ?>
+                <div class="author-info">
+                    <span class="author-name">
+                        <?php echo htmlspecialchars($news['full_name'] ?? $news['author_name'] ?? 'Author'); ?>
+                    </span>
+                    <?php if (!empty($news['author_role'])): ?>
+                        <span class="author-role">(<?php echo htmlspecialchars($news['author_role']); ?>)</span>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
                 
                 <?php if (!empty($news['featured_image'])): ?>
                 <div class="featured-image">
@@ -617,6 +647,31 @@ class NewsController extends Controller {
                 echo "</table>";
             }
             
+            // Test getBySlug with author data
+            echo "<h3>getBySlug() with Author Data Test</h3>";
+            if (count($news) > 0) {
+                $firstSlug = $news[0]['slug'];
+                $singleNews = $this->newsModel->getBySlug($firstSlug);
+                if ($singleNews) {
+                    echo "<p>Found article by slug '$firstSlug': " . htmlspecialchars($singleNews['title']) . "</p>";
+                    echo "<p><strong>Author Information:</strong></p>";
+                    echo "<ul>";
+                    echo "<li>Author ID: " . ($singleNews['author_id'] ?? 'NULL') . "</li>";
+                    echo "<li>Author Name: " . ($singleNews['author_name'] ?? 'NOT SET') . "</li>";
+                    echo "<li>Author Full Name: " . ($singleNews['full_name'] ?? 'NOT SET') . "</li>";
+                    echo "<li>Author Role: " . ($singleNews['author_role'] ?? 'NOT SET') . "</li>";
+                    echo "</ul>";
+                    
+                    if (!empty($singleNews['full_name'])) {
+                        echo "<p style='color: green;'>✓ Full author data present: {$singleNews['full_name']} ({$singleNews['author_role']})</p>";
+                    } else {
+                        echo "<p style='color: orange;'>⚠ Author data incomplete</p>";
+                    }
+                } else {
+                    echo "<p style='color: red;'>getBySlug() failed for slug: $firstSlug</p>";
+                }
+            }
+            
             // Test other methods
             echo "<h3>getCategoriesWithCounts()</h3>";
             $categories = $this->newsModel->getCategoriesWithCounts();
@@ -635,17 +690,6 @@ class NewsController extends Controller {
             echo "<h3>getPopularNews()</h3>";
             $popularNews = $this->newsModel->getPopularNews(5);
             echo "<p>Popular news: " . count($popularNews) . "</p>";
-            
-            echo "<h3>getBySlug() test</h3>";
-            if (count($news) > 0) {
-                $firstSlug = $news[0]['slug'];
-                $singleNews = $this->newsModel->getBySlug($firstSlug);
-                if ($singleNews) {
-                    echo "<p>Found article by slug '$firstSlug': " . htmlspecialchars($singleNews['title']) . "</p>";
-                } else {
-                    echo "<p style='color: red;'>getBySlug() failed for slug: $firstSlug</p>";
-                }
-            }
             
         } catch (Exception $e) {
             echo "<p style='color: red;'>Error: " . $e->getMessage() . "</p>";
