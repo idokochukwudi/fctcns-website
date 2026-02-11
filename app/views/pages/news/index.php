@@ -7,6 +7,7 @@
  * - Masonry-style news grid
  * - Fully responsive across all screen sizes
  * - Professional purple/beige color scheme
+ * - Working AJAX newsletter subscription
  */
 
 // Check if variables are set, if not set defaults
@@ -1024,12 +1025,29 @@ main {
     white-space: nowrap;
 }
 
-/* Newsletter Widget */
-.newsletter-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
+/* ==========================================
+   NEWSLETTER - WORKING VERSION WITH AJAX
+   ========================================== */
+.sidebar-section {
+    background: var(--white);
+    border-radius: 12px;
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--gray-100);
     width: 100%;
+}
+
+.sidebar-title {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    overflow: hidden;
 }
 
 .newsletter-description {
@@ -1038,6 +1056,13 @@ main {
     line-height: 1.5;
     margin-bottom: var(--space-3);
     overflow: hidden;
+}
+
+.newsletter-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    width: 100%;
 }
 
 .newsletter-input-wrapper {
@@ -1062,15 +1087,6 @@ main {
     box-shadow: 0 0 0 3px rgba(93, 74, 138, 0.1);
 }
 
-.newsletter-icon {
-    position: absolute;
-    left: var(--space-3);
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--gray-400);
-    font-size: 1rem;
-}
-
 .newsletter-button {
     padding: var(--space-3) var(--space-4);
     background: linear-gradient(135deg, var(--primary), var(--primary-light));
@@ -1089,9 +1105,14 @@ main {
     width: 100%;
 }
 
-.newsletter-button:hover {
+.newsletter-button:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(93, 74, 138, 0.2);
+}
+
+.newsletter-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .newsletter-disclaimer {
@@ -1100,6 +1121,14 @@ main {
     line-height: 1.4;
     margin-top: var(--space-2);
     overflow: hidden;
+}
+
+#newsletter-message {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
 }
 
 /* ==========================================
@@ -2055,30 +2084,39 @@ img {
                     </div>
                     <?php endif; ?>
                     
-                    <!-- Newsletter Widget -->
-                    <div class="sidebar-widget">
-                        <h3 class="widget-title">
+                    <!-- ==========================================
+                         NEWSLETTER - WORKING VERSION WITH AJAX
+                         ========================================== -->
+                    <div class="sidebar-section">
+                        <h2 class="sidebar-title">
                             <div class="widget-title-icon" aria-hidden="true">
                                 <i class="fas fa-envelope"></i>
                             </div>
-                            <span>Newsletter</span>
-                        </h3>
+                            <span>Stay Updated</span>
+                        </h2>
                         <p class="newsletter-description">
                             Subscribe to receive the latest news and updates directly in your inbox.
                         </p>
-                        <form class="newsletter-form" id="newsletter-form" aria-label="Newsletter subscription form">
+                        
+                        <div id="newsletter-message" style="display: none; margin-bottom: 1rem; padding: 0.75rem; border-radius: 0.5rem; font-size: 0.875rem;"></div>
+                        
+                        <form class="newsletter-form" id="newsletter-form" action="<?php echo BASE_URL; ?>/newsletter/subscribe" method="POST">
                             <div class="newsletter-input-wrapper">
                                 <i class="fas fa-envelope newsletter-icon" aria-hidden="true"></i>
                                 <input type="email" 
+                                       name="email"
                                        class="newsletter-input" 
                                        placeholder="Your email address" 
                                        required
-                                       aria-label="Email address for newsletter">
+                                       aria-label="Email for newsletter"
+                                       id="newsletter-email">
                             </div>
-                            <button type="submit" class="newsletter-button">
-                                <i class="fas fa-paper-plane" aria-hidden="true"></i>
-                                Subscribe Now
+                            
+                            <button type="submit" class="newsletter-button" id="newsletter-submit">
+                                <i class="fas fa-paper-plane"></i>
+                                <span>Subscribe</span>
                             </button>
+                            
                             <p class="newsletter-disclaimer">
                                 We respect your privacy. Unsubscribe anytime.
                             </p>
@@ -2180,28 +2218,83 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize carousel
     updateCarousel();
     
-    // Newsletter form
+    // ==========================================
+    // NEWSLETTER FORM - WORKING AJAX VERSION
+    // ==========================================
     const newsletterForm = document.getElementById('newsletter-form');
+    const emailInput = document.getElementById('newsletter-email');
+    const submitBtn = document.getElementById('newsletter-submit');
+    const messageDiv = document.getElementById('newsletter-message');
+    
     if (newsletterForm) {
-        newsletterForm.addEventListener('submit', function(e) {
+        newsletterForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            const emailInput = this.querySelector('input[type="email"]');
-            const email = emailInput.value.trim();
             
+            // Validate email
+            const email = emailInput.value.trim();
             if (!email || !isValidEmail(email)) {
-                showNotification('Please enter a valid email address', 'error');
+                showMessage('Please enter a valid email address', 'error');
                 return;
             }
             
-            // Simulate API call
-            showNotification('Thank you for subscribing!', 'success');
-            this.reset();
+            // Disable form
+            emailInput.disabled = true;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subscribing...';
+            
+            try {
+                // Send AJAX request
+                const formData = new FormData();
+                formData.append('email', email);
+                formData.append('source', 'newsletter_sidebar');
+                
+                const response = await fetch('<?php echo BASE_URL; ?>/newsletter/subscribe', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    emailInput.value = ''; // Clear input
+                } else {
+                    showMessage(data.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Newsletter error:', error);
+                showMessage('Connection error. Please try again.', 'error');
+            } finally {
+                // Re-enable form
+                emailInput.disabled = false;
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> <span>Subscribe</span>';
+            }
         });
     }
     
+    // Email validation
     function isValidEmail(email) {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+    
+    // Show message
+    function showMessage(message, type) {
+        messageDiv.style.display = 'block';
+        messageDiv.textContent = message;
+        
+        // Style based on type
+        messageDiv.style.background = type === 'success' ? '#d4edda' : '#f8d7da';
+        messageDiv.style.color = type === 'success' ? '#155724' : '#721c24';
+        messageDiv.style.border = type === 'success' ? '1px solid #c3e6cb' : '1px solid #f5c6cb';
+        
+        // Auto-hide after 5 seconds for success messages
+        if (type === 'success') {
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
     }
     
     // Filter functionality

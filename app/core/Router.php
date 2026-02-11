@@ -119,6 +119,13 @@ class Router {
         });
         
         // ============================================
+        // NEWSLETTER ROUTES - ADDED
+        // ============================================
+        $this->post('/newsletter/subscribe', 'NewsletterController@subscribe');
+        $this->get('/newsletter/confirm', 'NewsletterController@confirm');
+        $this->get('/newsletter/unsubscribe', 'NewsletterController@unsubscribe');
+        
+        // ============================================
         // ADMIN AUTHENTICATION ROUTES - ADDED
         // ============================================
         $this->get('/admin/login', 'AdminController@login');
