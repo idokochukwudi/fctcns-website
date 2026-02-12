@@ -1,9 +1,11 @@
 <?php
 /**
  * Contact Page View Template - Updated with Consistent Color Scheme
+ * Fixed: HTML tags now properly displayed as plain text in FAQ answers
+ * Fixed: Added prominent admissions button in FAQ
  * 
  * @package FCTCNS
- * @version 5.7
+ * @version 6.0
  */
 
 extract($data ?? []);
@@ -25,6 +27,8 @@ $flash_error = $flash_error ?? '';
 $csrf_token = $csrf_token ?? '';
 
 // Updated FAQ with accurate program information
+// FIXED: All HTML tags are now escaped to display as plain text
+// FIXED: Added prominent admissions button in FAQ
 $faqs = [
     [
         'question' => 'What programs does the college currently offer?',
@@ -36,7 +40,7 @@ $faqs = [
     ],
     [
         'question' => 'What are the admission requirements for the ND/HND Nursing Programme?',
-        'answer' => 'Candidates must:<br>• Score a minimum of 170 in the current UTME<br>• Select FCT College of Nursing Sciences, Gwagwalada as First Choice institution<br>• Have at least 5 O\'Level credits (English Language, Mathematics, Biology, Chemistry, Physics) in not more than 2 sittings (WAEC/NECO/NABTEB)<br>• Be 16 years of age or above'
+        'answer' => 'Candidates must: • Score a minimum of 170 in the current UTME • Select FCT College of Nursing Sciences, Gwagwalada as First Choice institution • Have at least 5 O\'Level credits (English Language, Mathematics, Biology, Chemistry, Physics) in not more than 2 sittings (WAEC/NECO/NABTEB) • Be 16 years of age or above'
     ],
     [
         'question' => 'When is the application period?',
@@ -44,7 +48,7 @@ $faqs = [
     ],
     [
         'question' => 'How do I apply?',
-        'answer' => 'Applications are submitted online via the official portal: <a href="https://consap.fcthhss.abj.gov.ng" target="_blank">https://consap.fcthhss.abj.gov.ng</a>.<br>Follow the step-by-step guide on the portal.'
+        'answer' => 'Applications are submitted online via the official portal. Visit our admissions page for the complete step-by-step application guide, portal access, and detailed instructions.'
     ],
     [
         'question' => 'Is there accommodation on campus?',
@@ -383,6 +387,73 @@ body {
 }
 
 /* ==========================================================================
+   ADMISSIONS BUTTON - PROMINENT STYLING FOR FAQ SECTION
+   ========================================================================== */
+.btn-admissions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: var(--color-white);
+    padding: 1rem 2.25rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 700;
+    border: 2px solid var(--color-accent);
+    font-family: var(--font-heading);
+    font-size: 1.125rem;
+    letter-spacing: 0.5px;
+    min-height: 60px;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    text-transform: uppercase;
+}
+
+.btn-admissions:hover {
+    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+    border-color: var(--color-accent-light);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-elevated);
+}
+
+.btn-admissions i {
+    font-size: 1.25rem;
+    color: var(--color-accent);
+}
+
+.admissions-cta-container {
+    text-align: center;
+    margin-top: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, rgba(93, 74, 138, 0.05), rgba(212, 165, 116, 0.05));
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-gray-100);
+}
+
+.admissions-cta-title {
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.admissions-cta-text {
+    font-size: 1rem;
+    color: var(--color-gray-800);
+    margin-bottom: var(--spacing-lg);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ==========================================================================
    SECTIONS & CARDS - SIMPLIFIED DESIGN
    ========================================================================== */
 .section { 
@@ -560,7 +631,7 @@ body {
 }
 
 /* ==========================================================================
-   FAQ - SIMPLIFIED
+   FAQ - SIMPLIFIED AND FIXED - HTML TAGS NOW DISPLAYED AS PLAIN TEXT
    ========================================================================== */
 .faq-item {
     background: var(--color-white);
@@ -594,11 +665,20 @@ body {
     padding: 0 var(--spacing-lg);
     max-height: 0;
     overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
 }
 
 .faq-answer.open {
     padding: var(--spacing-lg);
     max-height: 800px;
+}
+
+.faq-answer p {
+    white-space: pre-line;
+    line-height: 1.7;
+    color: var(--color-gray-800);
+    font-family: var(--font-body);
+    font-size: 0.975rem;
 }
 
 .faq-toggle { 
@@ -774,6 +854,13 @@ body {
         min-height: 46px;
     }
     
+    .btn-admissions {
+        padding: 0.875rem 1.75rem;
+        font-size: 1rem;
+        min-height: 54px;
+        max-width: 100%;
+    }
+    
     .success-message,
     .error-message {
         padding: var(--spacing-lg);
@@ -795,6 +882,15 @@ body {
     .hero-cta .btn-call {
         width: 100%;
         max-width: 280px;
+    }
+    
+    .admissions-cta-container {
+        padding: var(--spacing-md);
+        margin-top: var(--spacing-lg);
+    }
+    
+    .admissions-cta-title {
+        font-size: 1.2rem;
     }
 }
 
@@ -860,6 +956,11 @@ body {
     .hero-cta .btn-call {
         max-width: 100%;
     }
+    
+    .btn-admissions {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.95rem;
+    }
 }
 
 /* Desktop (1024px+) */
@@ -911,7 +1012,9 @@ body {
 @media print {
     .contact-hero,
     .btn-call,
-    .hero-cta {
+    .hero-cta,
+    .btn-admissions,
+    .admissions-cta-container {
         display: none !important;
     }
     
@@ -990,7 +1093,7 @@ body {
                     <div class="card-body">
                         <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
                         <h3 class="card-title">Address</h3>
-                        <p><?php echo e($settings['address'] ?? 'FCT College of Nursing Sciences<br>Gwagwalada, Abuja'); ?></p>
+                        <p><?php echo nl2br(e($settings['address'] ?? 'FCT College of Nursing Sciences<br>Gwagwalada, Abuja')); ?></p>
                     </div>
                 </div>
 
@@ -1101,7 +1204,7 @@ body {
             <div>
                 <?php foreach ($faqs as $faq): ?>
                 <div class="faq-item">
-                    <div class="faq-question" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.faq-toggle').classList.toggle('open');">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
                         <span><?php echo e($faq['question']); ?></span>
                         <span class="faq-toggle">+</span>
                     </div>
@@ -1110,6 +1213,21 @@ body {
                     </div>
                 </div>
                 <?php endforeach; ?>
+            </div>
+            
+            <!-- PROMINENT ADMISSIONS BUTTON - Direct link to admissions page -->
+            <div class="admissions-cta-container">
+                <div class="admissions-cta-title">
+                    <i class="fas fa-graduation-cap" style="color: var(--color-accent); margin-right: 0.5rem;"></i>
+                    Ready to Start Your Journey?
+                </div>
+                <p class="admissions-cta-text">
+                    Visit our comprehensive admissions page for complete information on programs, requirements, application deadlines, and the step-by-step application process.
+                </p>
+                <a href="https://fctcns.edu.ng/admissions" class="btn-admissions" target="_blank">
+                    <i class="fas fa-external-link-alt"></i> Go to Admissions Page
+                    <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
+                </a>
             </div>
         </div>
     </section>
@@ -1129,6 +1247,23 @@ body {
 </main>
 
 <script>
+// Toggle FAQ function
+function toggleFAQ(element) {
+    const answer = element.nextElementSibling;
+    const toggle = element.querySelector('.faq-toggle');
+    
+    // Toggle classes
+    answer.classList.toggle('open');
+    toggle.classList.toggle('open');
+    
+    // Change + to -
+    if (toggle.textContent === '+') {
+        toggle.textContent = '−';
+    } else {
+        toggle.textContent = '+';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Fix for background flashing - simple load
     const heroSection = document.getElementById('contactHero');
@@ -1154,6 +1289,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.querySelectorAll('.faq-toggle').forEach(toggle => {
         toggle.classList.remove('open');
+        toggle.textContent = '+';
     });
     
     // Form validation
