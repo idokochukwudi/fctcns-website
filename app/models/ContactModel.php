@@ -1,6 +1,7 @@
 <?php
 /**
- * Contact Model - Updated with Reply-to Email functionality and Webmail Compose Links
+ * Contact Model
+ * Handles contact form data operations and CRUD
  * 
  * @package FCTCNS
  */
@@ -35,9 +36,8 @@ class ContactModel {
             ':agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown'
         ]);
         
-        // Send auto-response if submission was successful
         if ($result) {
-            $submissionId = $this->db->lastInsertId();
+            $submissionId = $this->getLastInsertId();
             $this->sendAutoResponse($submissionId);
         }
         
@@ -45,16 +45,46 @@ class ContactModel {
     }
     
     /**
-     * Get the appropriate reply-to email address for a submission
+     * Get the ID of the last inserted record
+     * Used to generate reference number on success page
      * 
-     * @param array $submission The submission data
-     * @return string The email address to use for replies
+     * @return string Last insert ID
      */
-    public function getReplyToEmail($submission) {
-        // Get contact settings
+    public function getLastInsertId() {
+        return $this->db->lastInsertId();
+    }
+    
+    /**
+     * Auto-responder Feature
+     */
+    public function sendAutoResponse($submissionId) {
+        $submission = $this->getSubmission($submissionId);
         $settings = $this->getContactSettings();
         
-        // Determine which email to use based on department
+        $to = $submission['email'];
+        $subject = "We've received your message - FCT College of Nursing Sciences";
+        
+        $message = "Dear {$submission['name']},\n\n";
+        $message .= "Thank you for contacting FCT College of Nursing Sciences. ";
+        $message .= "We have received your inquiry and will respond within 24-48 hours.\n\n";
+        $message .= "Reference: #{$submission['id']}\n";
+        $message .= "Submitted: " . date('F j, Y', strtotime($submission['created_at'])) . "\n\n";
+        $message .= "Best regards,\nThe FCT CNS Team";
+        
+        $headers = "From: " . ($settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng') . "\r\n";
+        $headers .= "Reply-To: " . $this->getReplyToEmail($submission) . "\r\n";
+        $headers .= "X-Mailer: PHP/" . phpversion();
+        
+        mail($to, $subject, $message, $headers);
+        
+        return true;
+    }
+    
+    /**
+     * Get the appropriate reply-to email address for a submission
+     */
+    public function getReplyToEmail($submission) {
+        $settings = $this->getContactSettings();
         $department = strtolower($submission['department'] ?? 'general');
         
         switch ($department) {
@@ -78,233 +108,42 @@ class ContactModel {
     }
     
     /**
-     * Generate Gmail web compose URL
-     * 
-     * @param array $submission The submission data
-     * @return string Gmail compose URL
-     */
-    public function generateGmailComposeUrl($submission) {
-        $replyToEmail = $this->getReplyToEmail($submission);
-        $settings = $this->getContactSettings();
-        
-        // Build email components
-        $to = $submission['email'];
-        $subject = "RE: " . $submission['subject'];
-        
-        // Build email body with proper line breaks
-        $body = "Dear " . $submission['name'] . ",\n\n";
-        $body .= "Thank you for contacting FCT College of Nursing Sciences.\n\n";
-        $body .= "Regarding your inquiry about: " . $submission['subject'] . "\n\n";
-        $body .= "Reference ID: #" . $submission['id'] . "\n\n\n";
-        $body .= "Best regards,\n";
-        $body .= "FCT College of Nursing Sciences\n";
-        $body .= $settings['phone'] ?? "+234 XXX XXX XXXX";
-        $body .= "\n" . ($settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng');
-        
-        // Gmail uses different parameters:
-        // view=cm - compose mode
-        // to=recipient
-        // su=subject  
-        // body=message
-        // cc=cc address
-        // bcc=bcc address
-        
-        $params = [
-            'view' => 'cm',
-            'fs' => '1', // full screen
-            'to' => $to,
-            'su' => $subject,
-            'body' => $body,
-            'cc' => $replyToEmail,
-            'replyto' => $replyToEmail
-        ];
-        
-        // Build Gmail URL
-        $gmailUrl = 'https://mail.google.com/mail/?';
-        
-        // Add parameters - manually build to ensure proper encoding
-        $queryParts = [];
-        foreach ($params as $key => $value) {
-            $queryParts[] = $key . '=' . rawurlencode($value);
-        }
-        
-        $gmailUrl .= implode('&', $queryParts);
-        
-        return $gmailUrl;
-    }
-    
-    /**
-     * Generate Outlook.com compose URL
-     * 
-     * @param array $submission The submission data
-     * @return string Outlook compose URL
-     */
-    public function generateOutlookComposeUrl($submission) {
-        $replyToEmail = $this->getReplyToEmail($submission);
-        $settings = $this->getContactSettings();
-        
-        $to = $submission['email'];
-        $subject = "RE: " . $submission['subject'];
-        
-        $body = "Dear " . $submission['name'] . ",\n\n";
-        $body .= "Thank you for contacting FCT College of Nursing Sciences.\n\n";
-        $body .= "Regarding your inquiry about: " . $submission['subject'] . "\n\n";
-        $body .= "Reference ID: #" . $submission['id'] . "\n\n\n";
-        $body .= "Best regards,\n";
-        $body .= "FCT College of Nursing Sciences\n";
-        $body .= $settings['phone'] ?? "+234 XXX XXX XXXX";
-        $body .= "\n" . ($settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng');
-        
-        $params = [
-            'to' => $to,
-            'subject' => $subject,
-            'body' => $body,
-            'cc' => $replyToEmail
-        ];
-        
-        return 'https://outlook.live.com/mail/0/deeplink/compose?' . http_build_query($params);
-    }
-    
-    /**
-     * Generate Yahoo Mail compose URL
-     * 
-     * @param array $submission The submission data
-     * @return string Yahoo compose URL
-     */
-    public function generateYahooComposeUrl($submission) {
-        $replyToEmail = $this->getReplyToEmail($submission);
-        $settings = $this->getContactSettings();
-        
-        $to = $submission['email'];
-        $subject = "RE: " . $submission['subject'];
-        
-        $body = "Dear " . $submission['name'] . ",\n\n";
-        $body .= "Thank you for contacting FCT College of Nursing Sciences.\n\n";
-        $body .= "Regarding your inquiry about: " . $submission['subject'] . "\n\n";
-        $body .= "Reference ID: #" . $submission['id'] . "\n\n\n";
-        $body .= "Best regards,\n";
-        $body .= "FCT College of Nursing Sciences\n";
-        $body .= $settings['phone'] ?? "+234 XXX XXX XXXX";
-        $body .= "\n" . ($settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng');
-        
-        $params = [
-            'to' => $to,
-            'sub' => $subject,
-            'body' => $body,
-            'cc' => $replyToEmail
-        ];
-        
-        return 'https://compose.mail.yahoo.com/?' . http_build_query($params);
-    }
-    
-    /**
-     * Generate Proton Mail compose URL
-     * 
-     * @param array $submission The submission data
-     * @return string Proton Mail compose URL
-     */
-    public function generateProtonMailComposeUrl($submission) {
-        $replyToEmail = $this->getReplyToEmail($submission);
-        $settings = $this->getContactSettings();
-        
-        $to = $submission['email'];
-        $subject = "RE: " . $submission['subject'];
-        
-        $body = "Dear " . $submission['name'] . ",\n\n";
-        $body .= "Thank you for contacting FCT College of Nursing Sciences.\n\n";
-        $body .= "Regarding your inquiry about: " . $submission['subject'] . "\n\n";
-        $body .= "Reference ID: #" . $submission['id'] . "\n\n\n";
-        $body .= "Best regards,\n";
-        $body .= "FCT College of Nursing Sciences\n";
-        $body .= $settings['phone'] ?? "+234 XXX XXX XXXX";
-        
-        $params = [
-            'to' => $to,
-            'subject' => $subject,
-            'body' => $body,
-            'cc' => $replyToEmail
-        ];
-        
-        return 'https://mail.proton.me/u/0/inbox?compose=1&' . http_build_query($params);
-    }
-    
-    /**
-     * Generate mailto link for reply with webmail options
-     * 
-     * @param array $submission The submission data
-     * @return array Mailto link components and webmail links
+     * Generate mailto link for reply
+     * FIXED: Added Yahoo Mail link generation
      */
     public function generateMailtoLink($submission) {
         $replyToEmail = $this->getReplyToEmail($submission);
         $settings = $this->getContactSettings();
         
-        // Email components
         $to = $submission['email'];
         $subject = "RE: " . $submission['subject'];
         
-        // Build email body with template
         $body = "Dear " . $submission['name'] . ",\n\n";
         $body .= "Thank you for contacting FCT College of Nursing Sciences.\n\n";
         $body .= "Regarding your inquiry about: " . $submission['subject'] . "\n\n";
-        $body .= "Reference ID: #" . $submission['id'] . "\n\n\n\n";
+        $body .= "Reference ID: #" . $submission['id'] . "\n\n\n";
         $body .= "Best regards,\n";
         $body .= "FCT College of Nursing Sciences\n";
         $body .= $settings['phone'] ?? "+234 XXX XXX XXXX";
         $body .= "\n" . ($settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng');
         
-        // Build mailto URL
-        $params = [
-            'subject' => $subject,
-            'body' => $body,
-            'cc' => $replyToEmail,
-            'reply-to' => $replyToEmail
-        ];
-        
-        $queryString = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
-        $mailtoLink = "mailto:" . rawurlencode($to) . "?" . $queryString;
+        // Encode for URLs
+        $encodedTo = rawurlencode($to);
+        $encodedSubject = rawurlencode($subject);
+        $encodedBody = rawurlencode($body);
+        $encodedReplyTo = rawurlencode($replyToEmail);
         
         return [
-            'link' => $mailtoLink,
-            'gmail_link' => $this->generateGmailComposeUrl($submission),
-            'outlook_link' => $this->generateOutlookComposeUrl($submission),
-            'yahoo_link' => $this->generateYahooComposeUrl($submission),
-            'proton_link' => $this->generateProtonMailComposeUrl($submission),
+            'link' => "mailto:{$encodedTo}?subject={$encodedSubject}&body={$encodedBody}&cc={$encodedReplyTo}",
+            'gmail_link' => "https://mail.google.com/mail/?view=cm&fs=1&to={$encodedTo}&su={$encodedSubject}&body={$encodedBody}&cc={$encodedReplyTo}",
+            'outlook_link' => "https://outlook.live.com/mail/0/deeplink/compose?to={$encodedTo}&subject={$encodedSubject}&body={$encodedBody}&cc={$encodedReplyTo}",
+            'yahoo_link' => "https://compose.mail.yahoo.com/?to={$encodedTo}&sub={$encodedSubject}&body={$encodedBody}&cc={$encodedReplyTo}",
             'to' => $to,
             'subject' => $subject,
             'body' => $body,
             'reply_to' => $replyToEmail,
             'department' => $submission['department'] ?? 'general'
         ];
-    }
-    
-    /**
-     * Send auto-response to user
-     */
-    public function sendAutoResponse($submissionId) {
-        $submission = $this->getSubmission($submissionId);
-        $settings = $this->getContactSettings();
-        
-        $to = $submission['email'];
-        $subject = "We've received your message - FCT College of Nursing Sciences";
-        
-        $message = "Dear {$submission['name']},\n\n";
-        $message .= "Thank you for contacting FCT College of Nursing Sciences. ";
-        $message .= "We have received your inquiry and will respond within 24-48 hours.\n\n";
-        $message .= "Reference: #{$submission['id']}\n";
-        $message .= "Department: " . ucfirst($submission['department']) . "\n";
-        $message .= "Submitted: " . date('F j, Y', strtotime($submission['created_at'])) . "\n\n";
-        $message .= "Best regards,\nThe FCT CNS Team\n";
-        $message .= $settings['phone'] ?? "+234 XXX XXX XXXX";
-        
-        // Headers
-        $headers = "From: " . ($settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng') . "\r\n";
-        $headers .= "Reply-To: " . $this->getReplyToEmail($submission) . "\r\n";
-        $headers .= "X-Mailer: PHP/" . phpversion();
-        
-        // Send email
-        mail($to, $subject, $message, $headers);
-        
-        return true;
     }
     
     /**
@@ -339,6 +178,25 @@ class ContactModel {
     }
     
     /**
+     * Get submissions filtered by department
+     */
+    public function getSubmissionsByDepartment($department, $limit = 50) {
+        $sql = "SELECT cs.*, u.username as responder_name
+                FROM contact_submissions cs
+                LEFT JOIN users u ON cs.responded_by = u.id
+                WHERE cs.department = :department
+                ORDER BY created_at DESC
+                LIMIT :limit";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':department', $department, PDO::PARAM_STR);
+        $stmt->bindValue(':limit',      (int) $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
      * Get single submission by ID
      */
     public function getSubmission($id) {
@@ -355,36 +213,44 @@ class ContactModel {
     
     /**
      * Update submission status and notes
+     * FIXED: Added rowCount() check to confirm actual changes
      */
     public function updateSubmission($id, $data) {
         $updates = [];
-        $params = [':id' => $id];
-        
+        $params  = [':id' => $id];
+
         if (isset($data['status'])) {
             $updates[] = "status = :status";
             $params[':status'] = $data['status'];
-            
-            // If marking as responded, set response info
+
             if ($data['status'] === 'responded') {
                 $updates[] = "responded_at = NOW()";
-                $updates[] = "responded_by = :responded_by";
-                $params[':responded_by'] = $_SESSION['user_id'] ?? null;
+
+                $userId = $_SESSION['user_id'] ?? null;
+                if (!empty($userId)) {
+                    $updates[] = "responded_by = :responded_by";
+                    $params[':responded_by'] = (int) $userId;
+                }
             }
         }
-        
+
         if (isset($data['admin_notes'])) {
             $updates[] = "admin_notes = :admin_notes";
             $params[':admin_notes'] = $data['admin_notes'];
         }
-        
+
         if (empty($updates)) {
             return false;
         }
-        
-        $sql = "UPDATE contact_submissions SET " . implode(', ', $updates) . " WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        
-        return $stmt->execute($params);
+
+        $sql  = "UPDATE contact_submissions SET ";
+        $sql .= implode(', ', $updates);
+        $sql .= " WHERE id = :id";
+
+        $stmt   = $this->db->prepare($sql);
+        $result = $stmt->execute($params);
+
+        return $result && $stmt->rowCount() > 0;
     }
     
     /**
@@ -405,7 +271,14 @@ class ContactModel {
                 COUNT(*) as total,
                 SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
                 SUM(CASE WHEN status = 'responded' THEN 1 ELSE 0 END) as responded,
-                SUM(CASE WHEN status = 'archived' THEN 1 ELSE 0 END) as archived,
+                SUM(CASE WHEN status = 'archived' THEN 1 ELSE 0 END) as archived
+                FROM contact_submissions";
+        
+        $stmt = $this->db->query($sql);
+        $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Get daily stats
+        $sql = "SELECT 
                 DATE(created_at) as date,
                 COUNT(*) as daily_count
                 FROM contact_submissions 
@@ -414,7 +287,32 @@ class ContactModel {
                 LIMIT 30";
         
         $stmt = $this->db->query($sql);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $daily = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        return array_merge($stats, ['daily' => $daily]);
+    }
+    
+    /**
+     * Bulk update status for multiple submissions
+     */
+    public function bulkUpdateStatus($ids, $status) {
+        if (empty($ids)) {
+            return false;
+        }
+        
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        
+        $sql = "UPDATE contact_submissions 
+                SET status = ?, 
+                    responded_at = CASE WHEN ? = 'responded' THEN NOW() ELSE responded_at END,
+                    responded_by = CASE WHEN ? = 'responded' THEN ? ELSE responded_by END
+                WHERE id IN ({$placeholders})";
+        
+        $params = [$status, $status, $status, $_SESSION['user_id'] ?? null];
+        $params = array_merge($params, $ids);
+        
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
     }
     
     /**
@@ -432,7 +330,6 @@ class ContactModel {
             $settings[$row['setting_key']] = $row['setting_value'];
         }
         
-        // Default values if not set
         return [
             'phone' => $settings['contact_phone'] ?? '+234 XXX XXX XXXX',
             'email' => $settings['contact_email'] ?? 'info@fctcns.edu.ng',
@@ -457,10 +354,8 @@ class ContactModel {
             $this->db->beginTransaction();
             
             foreach ($settings as $key => $value) {
-                // Determine the setting key
                 $settingKey = 'contact_' . $key;
                 
-                // Special handling for certain keys
                 $specialKeys = ['admissions_email', 'reply_to_email', 'support_email', 
                               'billing_email', 'academic_email', 'map_latitude', 'map_longitude'];
                 
@@ -506,46 +401,5 @@ class ContactModel {
         $stmt->execute([':search' => "%{$searchTerm}%"]);
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    
-    /**
-     * Get submissions by department
-     */
-    public function getSubmissionsByDepartment($department, $limit = 50) {
-        $sql = "SELECT cs.*, u.username as responder_name 
-                FROM contact_submissions cs 
-                LEFT JOIN users u ON cs.responded_by = u.id 
-                WHERE cs.department = :department 
-                ORDER BY created_at DESC 
-                LIMIT :limit";
-        
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':department', $department);
-        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-        $stmt->execute();
-        
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    
-    /**
-     * Bulk update status
-     */
-    public function bulkUpdateStatus($ids, $status) {
-        if (empty($ids)) {
-            return false;
-        }
-        
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        
-        $sql = "UPDATE contact_submissions SET 
-                status = ?, 
-                responded_at = CASE WHEN ? = 'responded' THEN NOW() ELSE responded_at END,
-                responded_by = CASE WHEN ? = 'responded' THEN ? ELSE responded_by END
-                WHERE id IN ({$placeholders})";
-        
-        $params = array_merge([$status, $status, $status, $_SESSION['user_id'] ?? null], $ids);
-        
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute($params);
     }
 }

@@ -12,7 +12,6 @@
 class PageController extends Controller {
     private $carouselModel;
     private $newsModel;
-    private $contactModel;
     private $db;
     
     /**
@@ -39,7 +38,6 @@ class PageController extends Controller {
         $this->db = $database->getConnection();
         
         // Initialize models
-        $this->contactModel = $this->getContactModel();
         $this->newsModel = $this->getNewsModel();
     }
     
@@ -235,40 +233,6 @@ class PageController extends Controller {
     }
     
     /**
-     * Display contact page
-     */
-    public function contact() {
-        try {
-            $contactSettings = $this->contactModel->getContactSettings();
-            
-            // Get departments for contact form
-            $departments = $this->getContactDepartments();
-            
-            // Get office hours
-            $officeHours = $this->getOfficeHours();
-            
-            $viewData = [
-                'page_title' => 'Contact Us - FCT College of Nursing Sciences',
-                'page_description' => 'Get in touch with our administration. We\'re here to help you with admissions, programs, and general inquiries.',
-                'currentPage' => 'contact',
-                'csrf_token' => $this->csrfToken(),
-                'flash_success' => $this->getFlash('success'),
-                'flash_error' => $this->getFlash('error'),
-                'contact_settings' => $contactSettings,
-                'departments' => $departments,
-                'office_hours' => $officeHours
-            ];
-            
-            $this->data = array_merge($this->data, $viewData);
-            $this->render('contact');
-            
-        } catch (Exception $e) {
-            error_log("PageController contact error: " . $e->getMessage());
-            $this->renderError('Failed to load contact page');
-        }
-    }
-    
-    /**
      * Display news page (redirects to NewsController)
      */
     public function news() {
@@ -401,121 +365,21 @@ class PageController extends Controller {
     }
     
     /**
-     * Handle contact form submission
+     * Display privacy policy page
      */
-    public function submitContact() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->flash('error', 'Invalid request method.');
-            $this->redirect('/contact');
-        }
-        
-        // Enable error reporting temporarily for debugging
-        error_reporting(E_ALL);
-        ini_set('display_errors', 1);
-        
-        try {
-            // Debug: Log the POST data
-            error_log("Contact form submitted: " . print_r($_POST, true));
-            
-            $this->validateCsrf();
-            
-            $data = [
-                'name' => $this->input('name', ''),
-                'email' => $this->input('email', ''),
-                'phone' => $this->input('phone', ''),
-                'subject' => $this->input('subject', ''),
-                'message' => $this->input('message', ''),
-                'department' => $this->input('department', 'general')
-            ];
-            
-            // Debug: Log the processed data
-            error_log("Processed data: " . print_r($data, true));
-            
-            // Validate required fields
-            $required = ['name', 'email', 'subject', 'message'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    $this->flash('error', ucfirst($field) . ' is required.');
-                    error_log("Validation failed: $field is empty");
-                    $this->redirect('/contact');
-                }
-            }
-            
-            // Validate email
-            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                $this->flash('error', 'Please enter a valid email address.');
-                error_log("Validation failed: Invalid email");
-                $this->redirect('/contact');
-            }
-            
-            // Validate message length
-            if (strlen($data['message']) < 10) {
-                $this->flash('error', 'Message must be at least 10 characters.');
-                error_log("Validation failed: Message too short");
-                $this->redirect('/contact');
-            }
-            
-            // Optional phone validation if provided
-            if (!empty($data['phone'])) {
-                // Enhanced phone validation
-                $cleanPhone = preg_replace('/[^\d+]/', '', $data['phone']);
-                if ($cleanPhone !== '') {
-                    if (str_starts_with($cleanPhone, '+')) {
-                        // International format: + followed by 10-15 digits
-                        if (!preg_match('/^\+\d{10,15}$/', $cleanPhone)) {
-                            $this->flash('error', 'Please enter a valid international phone number (10-15 digits after +).');
-                            error_log("Validation failed: Invalid international phone format");
-                            $this->redirect('/contact');
-                        }
-                    } else {
-                        // Local format: 10 or 11 digits
-                        if (!preg_match('/^\d{10,11}$/', $cleanPhone)) {
-                            $this->flash('error', 'Please enter a valid phone number (10-11 digits).');
-                            error_log("Validation failed: Invalid local phone format");
-                            $this->redirect('/contact');
-                        }
-                    }
-                }
-            }
-            
-            // Save to database
-            error_log("Attempting to save to database...");
-            $saved = $this->contactModel->saveSubmission($data);
-            
-            if ($saved) {
-                error_log("Database save successful");
-                
-                // Optional: Send email notification
-                try {
-                    $this->sendContactEmail($data);
-                    error_log("Contact email sent successfully");
-                } catch (Exception $emailError) {
-                    error_log("Email sending failed: " . $emailError->getMessage());
-                    // Continue even if email fails
-                }
-                
-                // Log activity
-                $this->logActivity("Contact form submitted by {$data['name']}");
-                
-                $this->flash('success', 'Thank you for your message! We will respond within 24-48 hours.');
-                error_log("Flash message set: Success");
-            } else {
-                error_log("Database save failed - saveSubmission returned false");
-                $this->flash('error', 'Unable to submit your message. Please try again.');
-            }
-            
-            error_log("Redirecting to contact page...");
-            $this->redirect('/contact');
-            
-        } catch (Exception $e) {
-            error_log("Contact form error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
-            $this->flash('error', 'An error occurred. Please try again later.');
-            $this->redirect('/contact');
-        } finally {
-            // Restore error reporting to default
-            error_reporting(0);
-            ini_set('display_errors', 0);
-        }
+    public function privacy() {
+        $this->data['page_title'] = 'Privacy Policy - FCT College of Nursing Sciences';
+        $this->data['currentPage'] = 'privacy';
+        $this->render('pages/privacy');
+    }
+    
+    /**
+     * Display terms of service page
+     */
+    public function terms() {
+        $this->data['page_title'] = 'Terms of Service - FCT College of Nursing Sciences';
+        $this->data['currentPage'] = 'terms';
+        $this->render('pages/terms');
     }
     
     /**
@@ -769,31 +633,6 @@ class PageController extends Controller {
     }
     
     /**
-     * Get contact departments
-     */
-    private function getContactDepartments() {
-        return [
-            'general' => 'General Inquiry',
-            'admissions' => 'Admissions Office',
-            'academics' => 'Academic Affairs',
-            'finance' => 'Finance/Bursary',
-            'library' => 'Library Services',
-            'student_affairs' => 'Student Affairs'
-        ];
-    }
-    
-    /**
-     * Get office hours
-     */
-    private function getOfficeHours() {
-        return [
-            ['day' => 'Monday - Friday', 'time' => '8:00 AM - 5:00 PM'],
-            ['day' => 'Saturday', 'time' => '9:00 AM - 1:00 PM'],
-            ['day' => 'Sunday', 'time' => 'Closed']
-        ];
-    }
-    
-    /**
      * Format slide URLs by adding base URL to image paths
      */
     private function formatSlideUrls($slides) {
@@ -856,88 +695,6 @@ class PageController extends Controller {
     }
     
     /**
-     * Helper method for sending emails
-     */
-    private function sendContactEmail($data) {
-        $contactSettings = $this->contactModel->getContactSettings();
-        $to = isset($contactSettings['email']) ? $contactSettings['email'] : 'info@fctcns.edu.ng';
-        
-        $subject = "New Contact Form: " . $data['subject'];
-        $phoneDisplay = isset($data['phone']) && !empty($data['phone']) ? $data['phone'] : 'Not provided';
-        
-        $message = <<<HTML
-<html>
-<head>
-    <title>New Contact Form Submission</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #6B4E9B; color: white; padding: 20px; }
-        .content { padding: 20px; border: 1px solid #ddd; }
-        .field { margin-bottom: 15px; }
-        .field-label { font-weight: bold; color: #555; }
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h2>New Contact Form Submission</h2>
-        </div>
-        <div class='content'>
-            <div class='field'>
-                <div class='field-label'>From:</div>
-                <div>{$data['name']} &lt;{$data['email']}&gt;</div>
-            </div>
-            
-            <div class='field'>
-                <div class='field-label'>Phone:</div>
-                <div>$phoneDisplay</div>
-            </div>
-            
-            <div class='field'>
-                <div class='field-label'>Department:</div>
-                <div>
-HTML . ucfirst($data['department']) . <<<HTML
-</div>
-            </div>
-            
-            <div class='field'>
-                <div class='field-label'>Subject:</div>
-                <div>{$data['subject']}</div>
-            </div>
-            
-            <div class='field'>
-                <div class='field-label'>Message:</div>
-                <div>
-HTML . nl2br(htmlspecialchars($data['message'])) . <<<HTML
-</div>
-            </div>
-            
-            <div class='field'>
-                <div class='field-label'>Submitted:</div>
-                <div>
-HTML . date('Y-m-d H:i:s') . <<<HTML
-</div>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
-HTML;
-        
-        $headers = "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-        $headers .= "From: " . $data['email'] . "\r\n";
-        $headers .= "Reply-To: " . $data['email'] . "\r\n";
-        
-        // Uncomment to send email
-        // mail($to, $subject, $message, $headers);
-        
-        // For debugging, log email attempt
-        error_log("Email prepared to: $to, Subject: $subject");
-    }
-    
-    /**
      * Lazy-load CarouselModel
      */
     private function getCarouselModel() {
@@ -946,14 +703,6 @@ HTML;
             $this->carouselModel = new CarouselModel();
         }
         return $this->carouselModel;
-    }
-    
-    /**
-     * Lazy-load ContactModel
-     */
-    private function getContactModel() {
-        require_once APP_PATH . '/models/ContactModel.php';
-        return new ContactModel();
     }
     
     /**
@@ -1039,4 +788,28 @@ HTML;
         $this->data = array_merge($this->data, $errorData);
         $this->render('pages/500');
     }
+    
+    // ============================================
+    // DEPRECATED METHODS - MOVED TO CONTACTPAGECONTROLLER
+    // ============================================
+    
+    /**
+     * @deprecated Since v2.0 - Use ContactPageController@index instead
+     * @see ContactPageController::index()
+     */
+    /*
+    public function contact() {
+        $this->redirect('/contact');
+    }
+    */
+    
+    /**
+     * @deprecated Since v2.0 - Use ContactPageController@submit instead
+     * @see ContactPageController::submit()
+     */
+    /*
+    public function submitContact() {
+        $this->redirect('/contact');
+    }
+    */
 }

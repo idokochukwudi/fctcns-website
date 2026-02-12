@@ -123,36 +123,42 @@ class ContactController extends Controller {
     }
     
     /**
-     * Quick update - Mark as responded and add notes
+     * Quick update - AJAX endpoint for marking as responded
      */
     public function quickUpdate($id) {
+        header('Content-Type: application/json');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->flash('error', 'Invalid request method.');
-            $this->redirect('/admin/contact');
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+            exit;
         }
-        
+
         try {
-            $this->validateCsrf();
-            
+            // JavaScript sends JSON body, not form data
+            $raw   = file_get_contents('php://input');
+            $input = json_decode($raw, true);
+
+            $status = $input['status'] ?? 'responded';
+            $notes  = 'Replied via email on ' . date('Y-m-d H:i:s');
+
             $data = [
-                'status' => 'responded',
-                'admin_notes' => $this->input('admin_notes', 'Replied via email on ' . date('Y-m-d H:i:s'))
+                'status'      => $status,
+                'admin_notes' => $notes
             ];
-            
+
             $updated = $this->contactModel->updateSubmission($id, $data);
-            
-            if ($updated) {
-                $this->flash('success', 'Submission marked as responded.');
-            } else {
-                $this->flash('error', 'Failed to update submission.');
-            }
-            
+
+            echo json_encode([
+                'success' => (bool) $updated,
+                'message' => $updated ? 'Status updated successfully' : 'Failed to update status'
+            ]);
+            exit;
+
         } catch (Exception $e) {
-            error_log("Contact quick update error: " . $e->getMessage());
-            $this->flash('error', 'An error occurred.');
+            error_log("quickUpdate error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Server error occurred']);
+            exit;
         }
-        
-        $this->redirect('/admin/contact/view/' . $id);
     }
     
     /**

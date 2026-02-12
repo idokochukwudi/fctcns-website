@@ -3,9 +3,11 @@
  * Contact Page View Template - Updated with Consistent Color Scheme
  * Fixed: HTML tags now properly displayed as plain text in FAQ answers
  * Fixed: Added prominent admissions button in FAQ
+ * Fixed: Removed success/error messages from main view (now on dedicated page)
+ * Fixed: Upload functionality commented out for now
  * 
  * @package FCTCNS
- * @version 6.0
+ * @version 7.0
  */
 
 extract($data ?? []);
@@ -22,8 +24,6 @@ $page_description = $page_description ?? 'Get in touch with us for inquiries abo
 
 // Preserve all backend variables
 $settings = $contact_settings ?? [];
-$flash_success = $flash_success ?? '';
-$flash_error = $flash_error ?? '';
 $csrf_token = $csrf_token ?? '';
 
 // Updated FAQ with accurate program information
@@ -572,65 +572,6 @@ body {
 }
 
 /* ==========================================================================
-   SUCCESS/ERROR MESSAGES
-   ========================================================================== */
-.success-message, .error-message {
-    background: var(--color-white);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
-    box-shadow: var(--shadow-soft);
-    text-align: center;
-    margin: var(--spacing-xl) auto;
-    max-width: 800px;
-    border-left: 6px solid;
-    position: relative;
-    overflow: hidden;
-}
-
-.success-message::before, .error-message::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--color-accent), transparent);
-}
-
-.success-message {
-    border-left-color: var(--color-accent);
-}
-
-.success-message i { 
-    color: var(--color-accent); 
-    font-size: 3.5rem; 
-    margin-bottom: var(--spacing-lg); 
-    display: block; 
-}
-
-.error-message {
-    border-left-color: #dc3545;
-}
-
-.error-message::before {
-    background: linear-gradient(90deg, #dc3545, transparent);
-}
-
-.error-message i { 
-    color: #dc3545; 
-    font-size: 3.5rem; 
-    margin-bottom: var(--spacing-lg); 
-    display: block; 
-}
-
-.success-message h3, .error-message h3 { 
-    font-family: var(--font-heading); 
-    font-size: 1.5rem; 
-    margin-bottom: var(--spacing-md); 
-    color: var(--color-primary); 
-}
-
-/* ==========================================================================
    FAQ - SIMPLIFIED AND FIXED - HTML TAGS NOW DISPLAYED AS PLAIN TEXT
    ========================================================================== */
 .faq-item {
@@ -861,17 +802,6 @@ body {
         max-width: 100%;
     }
     
-    .success-message,
-    .error-message {
-        padding: var(--spacing-lg);
-        margin: var(--spacing-lg) var(--spacing-md);
-    }
-    
-    .success-message h3,
-    .error-message h3 {
-        font-size: 1.375rem;
-    }
-    
     .hero-cta {
         flex-direction: column;
         align-items: center;
@@ -1056,30 +986,6 @@ body {
         </div>
     </section>
 
-    <!-- Success Message (Form Hidden) -->
-    <?php if (!empty($flash_success)): ?>
-    <div class="container">
-        <div class="success-message">
-            <i class="fas fa-check-circle"></i>
-            <h3>Message Sent Successfully!</h3>
-            <p><?php echo e($flash_success); ?></p>
-            <p>Thank you for contacting us. We have received your message and will respond within 24-48 hours.</p>
-        </div>
-    </div>
-    <?php endif; ?>
-
-    <!-- Error Message (Form Still Visible Below) -->
-    <?php if (!empty($flash_error)): ?>
-    <div class="container">
-        <div class="error-message">
-            <i class="fas fa-exclamation-triangle"></i>
-            <h3>There was an error sending your message</h3>
-            <p><?php echo e($flash_error); ?></p>
-            <p>Please review the form and try again, or contact us directly using the information below.</p>
-        </div>
-    </div>
-    <?php endif; ?>
-
     <!-- Contact Information -->
     <section class="section section-alt">
         <div class="container">
@@ -1126,8 +1032,7 @@ body {
         </div>
     </section>
 
-    <!-- Contact Form - Only shown if NO success message -->
-    <?php if (empty($flash_success)): ?>
+    <!-- Contact Form -->
     <section class="section" id="contact-form">
         <div class="container">
             <div class="section-header">
@@ -1158,7 +1063,7 @@ body {
                         <div class="form-group">
                             <label class="form-label">Inquiry Type</label>
                             <select name="department" class="form-select">
-                                <option value="general">General Inquiry</option>
+                                <option value="general" <?php echo (($_POST['department'] ?? '') === 'general') ? 'selected' : ''; ?>>General Inquiry</option>
                                 <option value="admissions" <?php echo (($_POST['department'] ?? '') === 'admissions') ? 'selected' : ''; ?>>Admissions</option>
                                 <option value="academic" <?php echo (($_POST['department'] ?? '') === 'academic') ? 'selected' : ''; ?>>Academic Programs</option>
                                 <option value="student" <?php echo (($_POST['department'] ?? '') === 'student') ? 'selected' : ''; ?>>Student Services</option>
@@ -1177,10 +1082,13 @@ body {
                         <textarea name="message" class="form-textarea" rows="6" required><?php echo e($_POST['message'] ?? ''); ?></textarea>
                     </div>
 
+                    <!-- Attachment field commented out for now -->
+                    <!--
                     <div class="form-group">
                         <label class="form-label">Attachment (Optional)</label>
                         <input type="file" name="attachment" class="form-input">
                     </div>
+                    -->
 
                     <div style="text-align:center;">
                         <button type="submit" class="btn-primary">
@@ -1191,7 +1099,6 @@ body {
             </div>
         </div>
     </section>
-    <?php endif; ?>
 
     <!-- Frequently Asked Questions -->
     <section class="section section-alt">
@@ -1224,7 +1131,7 @@ body {
                 <p class="admissions-cta-text">
                     Visit our comprehensive admissions page for complete information on programs, requirements, application deadlines, and the step-by-step application process.
                 </p>
-                <a href="https://fctcns.edu.ng/admissions" class="btn-admissions" target="_blank">
+                <a href="<?php echo $baseUrl; ?>/admissions" class="btn-admissions">
                     <i class="fas fa-external-link-alt"></i> Go to Admissions Page
                     <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
                 </a>

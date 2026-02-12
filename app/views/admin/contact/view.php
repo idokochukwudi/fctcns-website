@@ -1,4 +1,16 @@
 <?php
+// Ensure all mailto array keys exist with defaults
+$mailto = $mailto ?? [];
+$mailto['link'] = $mailto['link'] ?? '#';
+$mailto['gmail_link'] = $mailto['gmail_link'] ?? '#';
+$mailto['outlook_link'] = $mailto['outlook_link'] ?? '#';
+$mailto['yahoo_link'] = $mailto['yahoo_link'] ?? '#';
+$mailto['to'] = $mailto['to'] ?? '';
+$mailto['subject'] = $mailto['subject'] ?? '';
+$mailto['body'] = $mailto['body'] ?? '';
+$mailto['reply_to'] = $mailto['reply_to'] ?? $reply_to_email ?? 'noreply@fctcns.edu.ng';
+$mailto['department'] = $mailto['department'] ?? $submission['department'] ?? 'general';
+
 // Get the absolute path to the root
 $rootPath = dirname(__DIR__, 4);
 require_once $rootPath . '/app/config/constants.php';
@@ -16,7 +28,7 @@ $_SESSION['csrf_token'] = $csrf_token;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Submission #<?php echo htmlspecialchars($submission['id']); ?> - FCT CNS Admin</title>
+    <title>View Submission #<?php echo htmlspecialchars($submission['id'] ?? '0'); ?> - FCT CNS Admin</title>
     <style>
         :root {
             --admin-primary: #2c5282;
@@ -104,6 +116,15 @@ $_SESSION['csrf_token'] = $csrf_token;
             color: white;
         }
         
+        .btn-gmail {
+            background: #EA4335;
+            color: white;
+        }
+        
+        .btn-gmail:hover {
+            background: #d33426;
+        }
+        
         .btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -113,16 +134,6 @@ $_SESSION['csrf_token'] = $csrf_token;
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
-        }
-        
-        /* Gmail Button Style */
-        .btn-gmail {
-            background: #EA4335;
-            color: white;
-        }
-        
-        .btn-gmail:hover {
-            background: #d33426;
         }
         
         /* Submission Info */
@@ -222,6 +233,33 @@ $_SESSION['csrf_token'] = $csrf_token;
             border: 1px solid var(--admin-gray-200);
         }
         
+        /* Status Badge */
+        .status-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .status-pending { 
+            background: rgba(214, 158, 46, 0.1); 
+            color: var(--admin-warning); 
+            border: 1px solid rgba(214, 158, 46, 0.2);
+        }
+        
+        .status-responded { 
+            background: rgba(56, 161, 105, 0.1); 
+            color: var(--admin-success); 
+            border: 1px solid rgba(56, 161, 105, 0.2);
+        }
+        
+        .status-archived { 
+            background: rgba(113, 128, 150, 0.1); 
+            color: var(--admin-gray-600); 
+            border: 1px solid rgba(113, 128, 150, 0.2);
+        }
+        
         /* Message Container */
         .message-container {
             background: white;
@@ -253,31 +291,39 @@ $_SESSION['csrf_token'] = $csrf_token;
             border: 1px solid var(--admin-gray-200);
         }
         
-        /* Status Badge */
-        .status-badge {
-            padding: 6px 16px;
-            border-radius: 20px;
+        /* Email Preview */
+        .email-preview {
+            background: white;
+            border: 1px solid var(--admin-gray-200);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
             font-size: 0.875rem;
+        }
+        
+        .email-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed var(--admin-gray-200);
+        }
+        
+        .email-preview-label {
             font-weight: 600;
-            display: inline-block;
+            color: var(--admin-gray-700);
         }
         
-        .status-pending { 
-            background: rgba(214, 158, 46, 0.1); 
-            color: var(--admin-warning); 
-            border: 1px solid rgba(214, 158, 46, 0.2);
-        }
-        
-        .status-responded { 
-            background: rgba(56, 161, 105, 0.1); 
-            color: var(--admin-success); 
-            border: 1px solid rgba(56, 161, 105, 0.2);
-        }
-        
-        .status-archived { 
-            background: rgba(113, 128, 150, 0.1); 
-            color: var(--admin-gray-600); 
-            border: 1px solid rgba(113, 128, 150, 0.2);
+        .email-preview-content {
+            background: var(--admin-gray-50);
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 0.8125rem;
+            max-height: 200px;
+            overflow-y: auto;
         }
         
         /* Admin Actions */
@@ -427,39 +473,13 @@ $_SESSION['csrf_token'] = $csrf_token;
             to { transform: translateX(0); opacity: 1; }
         }
         
-        /* Email Preview */
-        .email-preview {
-            background: white;
-            border: 1px solid var(--admin-gray-200);
+        /* Danger Zone */
+        .danger-zone {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
             border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
-            font-size: 0.875rem;
-        }
-        
-        .email-preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px dashed var(--admin-gray-200);
-        }
-        
-        .email-preview-label {
-            font-weight: 600;
-            color: var(--admin-gray-700);
-        }
-        
-        .email-preview-content {
-            background: var(--admin-gray-50);
-            padding: 10px;
-            border-radius: 4px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            font-size: 0.8125rem;
-            max-height: 200px;
-            overflow-y: auto;
+            padding: 20px;
+            margin-top: 30px;
         }
         
         /* Responsive */
@@ -478,10 +498,12 @@ $_SESSION['csrf_token'] = $csrf_token;
         <!-- Page Header -->
         <div class="page-header">
             <h1>
-                📨 Contact Submission #<?php echo htmlspecialchars($submission['id']); ?>
-                <?php if ($submission['status'] === 'pending'): ?>
+                📨 Contact Submission #<?php echo htmlspecialchars($submission['id'] ?? '0'); ?>
+                <?php 
+                $status = $submission['status'] ?? 'pending';
+                if ($status === 'pending'): ?>
                     <span class="status-badge status-pending" style="margin-left: 15px;">Pending</span>
-                <?php elseif ($submission['status'] === 'responded'): ?>
+                <?php elseif ($status === 'responded'): ?>
                     <span class="status-badge status-responded" style="margin-left: 15px;">Responded</span>
                 <?php else: ?>
                     <span class="status-badge status-archived" style="margin-left: 15px;">Archived</span>
@@ -491,32 +513,47 @@ $_SESSION['csrf_token'] = $csrf_token;
                 <a href="<?php echo BASE_URL; ?>/admin/contact" class="btn btn-secondary">
                     ← Back to List
                 </a>
-                <?php if ($submission['status'] !== 'archived'): ?>
-                    <!-- Gmail Quick Reply Button (Primary) -->
-                    <a href="<?php echo htmlspecialchars($mailto['gmail_link']); ?>" 
+                <?php if (($submission['status'] ?? 'pending') !== 'archived'): ?>
+                    <!-- Top Gmail Button - FIXED: Now calls replyViaGmail() -->
+                    <?php $primaryGmailLink = isset($mailto['gmail_link']) ? $mailto['gmail_link'] : '#'; ?>
+                    <a href="<?php echo htmlspecialchars($primaryGmailLink ?? '#', ENT_QUOTES, 'UTF-8'); ?>" 
                        target="_blank"
-                       class="btn btn-gmail" 
-                       onclick="trackReply('gmail', <?php echo $submission['id']; ?>); setTimeout(() => markAsRespondedPrompt(<?php echo $submission['id']; ?>), 2000);">
+                       class="btn btn-gmail"
+                       onclick="replyViaGmail(<?php echo (int)($submission['id'] ?? 0); ?>); return true;">
                         📧 Reply via Gmail
                     </a>
                     
-                    <!-- Dropdown for Other Email Options -->
-                    <div style="position: relative;">
-                        <button class="btn btn-primary" id="replyDropdownBtn" onclick="toggleReplyDropdown()">
-                            ✉️ More Options ▼
+                    <!-- Email Client Dropdown -->
+                    <div style="position: relative; display: inline-block;">
+                        <button class="btn btn-primary" id="replyDropdownBtn" onclick="toggleReplyDropdown()" style="display: flex; align-items: center; gap: 8px;">
+                            ✉️ Reply via Email <span style="font-size: 12px;">▼</span>
                         </button>
+                        
                         <div id="replyDropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 5px; background: white; border: 1px solid var(--admin-gray-200); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 280px; z-index: 1000;">
-                            <div style="padding: 12px 16px; border-bottom: 1px solid var(--admin-gray-200); background: var(--admin-gray-50); border-radius: 8px 8px 0 0;">
-                                <span style="font-weight: 600; color: var(--admin-gray-700);">Choose Email Client</span>
-                            </div>
+                            
+                            <!-- Gmail (Primary) -->
+                            <?php $gmailLink = isset($mailto['gmail_link']) ? $mailto['gmail_link'] : '#'; ?>
+                            <a href="<?php echo htmlspecialchars($gmailLink ?? '#', ENT_QUOTES, 'UTF-8'); ?>" 
+                               target="_blank"
+                               style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; text-decoration: none; color: var(--admin-gray-800); border-bottom: 1px solid var(--admin-gray-100); transition: background 0.2s; background: #fef3c7; border-radius: 8px 8px 0 0;"
+                               onmouseover="this.style.background='#fde68a'"
+                               onmouseout="this.style.background='#fef3c7'"
+                               onclick="trackReply('gmail', <?php echo (int)($submission['id'] ?? 0); ?>); toggleReplyDropdown();">
+                                <span style="font-size: 22px;">📧</span>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: #92400e;">Gmail (Recommended)</div>
+                                    <div style="font-size: 12px; color: #6b7280;">Open in Gmail web</div>
+                                </div>
+                            </a>
                             
                             <!-- Outlook.com -->
-                            <a href="<?php echo htmlspecialchars($mailto['outlook_link']); ?>" 
+                            <?php $outlookLink = isset($mailto['outlook_link']) ? $mailto['outlook_link'] : '#'; ?>
+                            <a href="<?php echo htmlspecialchars($outlookLink ?? '#', ENT_QUOTES, 'UTF-8'); ?>" 
                                target="_blank"
                                style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; text-decoration: none; color: var(--admin-gray-800); border-bottom: 1px solid var(--admin-gray-100); transition: background 0.2s;"
                                onmouseover="this.style.background='var(--admin-gray-50)'"
                                onmouseout="this.style.background='white'"
-                               onclick="trackReply('outlook', <?php echo $submission['id']; ?>); toggleReplyDropdown();">
+                               onclick="trackReply('outlook', <?php echo (int)($submission['id'] ?? 0); ?>); toggleReplyDropdown();">
                                 <span style="font-size: 20px;">📨</span>
                                 <div style="flex: 1;">
                                     <div style="font-weight: 600;">Outlook.com</div>
@@ -525,12 +562,13 @@ $_SESSION['csrf_token'] = $csrf_token;
                             </a>
                             
                             <!-- Yahoo Mail -->
-                            <a href="<?php echo htmlspecialchars($mailto['yahoo_link']); ?>" 
+                            <?php $yahooLink = isset($mailto['yahoo_link']) ? $mailto['yahoo_link'] : '#'; ?>
+                            <a href="<?php echo htmlspecialchars($yahooLink ?? '#', ENT_QUOTES, 'UTF-8'); ?>" 
                                target="_blank"
                                style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; text-decoration: none; color: var(--admin-gray-800); border-bottom: 1px solid var(--admin-gray-100); transition: background 0.2s;"
                                onmouseover="this.style.background='var(--admin-gray-50)'"
                                onmouseout="this.style.background='white'"
-                               onclick="trackReply('yahoo', <?php echo $submission['id']; ?>); toggleReplyDropdown();">
+                               onclick="trackReply('yahoo', <?php echo (int)($submission['id'] ?? 0); ?>); toggleReplyDropdown();">
                                 <span style="font-size: 20px;">📫</span>
                                 <div style="flex: 1;">
                                     <div style="font-weight: 600;">Yahoo Mail</div>
@@ -538,16 +576,17 @@ $_SESSION['csrf_token'] = $csrf_token;
                                 </div>
                             </a>
                             
-                            <!-- Default Email App (mailto) -->
-                            <a href="<?php echo htmlspecialchars($mailto['link']); ?>" 
-                               style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; text-decoration: none; color: var(--admin-gray-800); transition: background 0.2s;"
+                            <!-- Default Email App -->
+                            <?php $defaultLink = isset($mailto['link']) ? $mailto['link'] : '#'; ?>
+                            <a href="<?php echo htmlspecialchars($defaultLink ?? '#', ENT_QUOTES, 'UTF-8'); ?>" 
+                               style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; text-decoration: none; color: var(--admin-gray-800); transition: background 0.2s; border-radius: 0 0 8px 8px;"
                                onmouseover="this.style.background='var(--admin-gray-50)'"
                                onmouseout="this.style.background='white'"
-                               onclick="trackReply('default', <?php echo $submission['id']; ?>); toggleReplyDropdown(); setTimeout(() => checkReplySent(<?php echo $submission['id']; ?>), 1000);">
+                               onclick="trackReply('default', <?php echo (int)($submission['id'] ?? 0); ?>); toggleReplyDropdown(); setTimeout(() => checkReplySent(<?php echo (int)($submission['id'] ?? 0); ?>), 1000);">
                                 <span style="font-size: 20px;">💻</span>
                                 <div style="flex: 1;">
                                     <div style="font-weight: 600;">Default Email App</div>
-                                    <div style="font-size: 12px; color: var(--admin-gray-600);">Outlook, Thunderbird, Mail</div>
+                                    <div style="font-size: 12px; color: var(--admin-gray-600);">Outlook, Thunderbird, Windows Mail</div>
                                 </div>
                             </a>
                         </div>
@@ -557,10 +596,11 @@ $_SESSION['csrf_token'] = $csrf_token;
         </div>
         
         <!-- Reply Information Banner -->
+        <?php $replyToEmail = $mailto['reply_to'] ?? 'noreply@fctcns.edu.ng'; ?>
         <div class="reply-info-banner">
             <div class="reply-info-content">
                 <span class="reply-email-badge">
-                    📧 Reply-To: <?php echo htmlspecialchars($reply_to_email); ?>
+                    📧 Reply-To: <?php echo htmlspecialchars($replyToEmail); ?>
                 </span>
                 <span class="reply-department">
                     🏢 Department: <?php echo ucfirst(htmlspecialchars($submission['department'] ?? 'General')); ?>
@@ -578,13 +618,13 @@ $_SESSION['csrf_token'] = $csrf_token;
                 <h3>👤 Sender Information</h3>
                 <div class="info-item">
                     <div class="info-label">Full Name</div>
-                    <div class="info-value"><?php echo htmlspecialchars($submission['name']); ?></div>
+                    <div class="info-value"><?php echo htmlspecialchars($submission['name'] ?? 'N/A'); ?></div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Email Address</div>
                     <div class="info-value">
-                        <a href="mailto:<?php echo htmlspecialchars($submission['email']); ?>">
-                            <?php echo htmlspecialchars($submission['email']); ?>
+                        <a href="mailto:<?php echo htmlspecialchars($submission['email'] ?? ''); ?>">
+                            <?php echo htmlspecialchars($submission['email'] ?? 'N/A'); ?>
                         </a>
                     </div>
                 </div>
@@ -613,15 +653,15 @@ $_SESSION['csrf_token'] = $csrf_token;
                 </div>
                 <div class="info-item">
                     <div class="info-label">Subject</div>
-                    <div class="info-value"><?php echo htmlspecialchars($submission['subject']); ?></div>
+                    <div class="info-value"><?php echo htmlspecialchars($submission['subject'] ?? 'No Subject'); ?></div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Submitted</div>
                     <div class="info-value">
-                        <?php echo date('F j, Y \a\t g:i A', strtotime($submission['created_at'])); ?>
+                        <?php echo isset($submission['created_at']) ? date('F j, Y \a\t g:i A', strtotime($submission['created_at'])) : 'N/A'; ?>
                     </div>
                 </div>
-                <?php if ($submission['responded_at']): ?>
+                <?php if (!empty($submission['responded_at'])): ?>
                 <div class="info-item">
                     <div class="info-label">Responded</div>
                     <div class="info-value">
@@ -643,7 +683,7 @@ $_SESSION['csrf_token'] = $csrf_token;
                 </div>
                 <div class="info-item">
                     <div class="info-label">Reference ID</div>
-                    <div class="info-value" style="font-family: monospace;">#<?php echo htmlspecialchars($submission['id']); ?></div>
+                    <div class="info-value" style="font-family: monospace;">#<?php echo htmlspecialchars($submission['id'] ?? '0'); ?></div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">User Agent</div>
@@ -663,11 +703,11 @@ $_SESSION['csrf_token'] = $csrf_token;
                 </button>
             </h2>
             <div class="message-content" id="messageContent">
-                <?php echo nl2br(htmlspecialchars($submission['message'])); ?>
+                <?php echo nl2br(htmlspecialchars($submission['message'] ?? 'No message content')); ?>
             </div>
         </div>
         
-        <!-- Email Preview (Optional - can be toggled) -->
+        <!-- Email Preview -->
         <div style="margin-bottom: 20px;">
             <button class="btn btn-secondary" onclick="toggleEmailPreview()" style="width: 100%; justify-content: center;">
                 📧 Show/Hide Email Preview
@@ -680,15 +720,15 @@ $_SESSION['csrf_token'] = $csrf_token;
                     </button>
                 </div>
                 <div class="email-preview-content">
-To: <?php echo htmlspecialchars($submission['email']); ?>
+To: <?php echo htmlspecialchars($submission['email'] ?? ''); ?>
 
-Subject: <?php echo htmlspecialchars($mailto['subject']); ?>
+Subject: <?php echo htmlspecialchars($mailto['subject'] ?? ''); ?>
 
-<?php echo htmlspecialchars($mailto['body']); ?>
+<?php echo htmlspecialchars($mailto['body'] ?? ''); ?>
                 </div>
                 <div style="margin-top: 10px; font-size: 0.75rem; color: var(--admin-gray-600);">
-                    <strong>Reply-To:</strong> <?php echo htmlspecialchars($reply_to_email); ?><br>
-                    <strong>CC:</strong> <?php echo htmlspecialchars($reply_to_email); ?> (for tracking)
+                    <strong>Reply-To:</strong> <?php echo htmlspecialchars($replyToEmail); ?><br>
+                    <strong>CC:</strong> <?php echo htmlspecialchars($replyToEmail); ?> (for tracking)
                 </div>
             </div>
         </div>
@@ -708,16 +748,16 @@ Subject: <?php echo htmlspecialchars($mailto['subject']); ?>
             <?php endif; ?>
             
             <!-- Update Form -->
-            <form method="POST" action="<?php echo BASE_URL; ?>/admin/contact/update/<?php echo $submission['id']; ?>" 
+            <form method="POST" action="<?php echo BASE_URL; ?>/admin/contact/update/<?php echo $submission['id'] ?? 0; ?>" 
                   class="action-form" id="updateForm">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                 
                 <div class="form-group">
                     <label for="status">Update Status</label>
                     <select id="status" name="status" required>
-                        <option value="pending" <?php echo $submission['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                        <option value="responded" <?php echo $submission['status'] === 'responded' ? 'selected' : ''; ?>>Responded</option>
-                        <option value="archived" <?php echo $submission['status'] === 'archived' ? 'selected' : ''; ?>>Archived</option>
+                        <option value="pending" <?php echo ($submission['status'] ?? 'pending') === 'pending' ? 'selected' : ''; ?>>Pending</option>
+                        <option value="responded" <?php echo ($submission['status'] ?? '') === 'responded' ? 'selected' : ''; ?>>Responded</option>
+                        <option value="archived" <?php echo ($submission['status'] ?? '') === 'archived' ? 'selected' : ''; ?>>Archived</option>
                     </select>
                 </div>
                 
@@ -736,7 +776,7 @@ Subject: <?php echo htmlspecialchars($mailto['subject']); ?>
                     <button type="submit" class="btn btn-primary">
                         💾 Update Submission
                     </button>
-                    <?php if ($submission['status'] === 'pending'): ?>
+                    <?php if (($submission['status'] ?? 'pending') === 'pending'): ?>
                     <button type="button" class="btn btn-success" onclick="markAsRespondedAndReply()">
                         ✅ Reply & Mark Responded
                     </button>
@@ -745,7 +785,7 @@ Subject: <?php echo htmlspecialchars($mailto['subject']); ?>
             </form>
             
             <!-- Quick Reply Templates -->
-            <?php if ($submission['status'] === 'pending'): ?>
+            <?php if (($submission['status'] ?? 'pending') === 'pending'): ?>
             <div class="quick-reply">
                 <h3>
                     💬 Quick Reply Templates
@@ -779,13 +819,13 @@ Subject: <?php echo htmlspecialchars($mailto['subject']); ?>
         
         <!-- Danger Zone -->
         <?php if (in_array($userRole, ['admin', 'editor'])): ?>
-        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin-top: 30px;">
+        <div class="danger-zone">
             <h3 style="margin-top: 0; color: #dc2626;">⚠️ Danger Zone</h3>
             <p style="color: #7f1d1d; margin-bottom: 15px;">
                 These actions cannot be undone. Please proceed with caution.
             </p>
             <form method="POST" 
-                  action="<?php echo BASE_URL; ?>/admin/contact/delete/<?php echo $submission['id']; ?>" 
+                  action="<?php echo BASE_URL; ?>/admin/contact/delete/<?php echo $submission['id'] ?? 0; ?>" 
                   onsubmit="return confirm('Are you sure you want to delete this submission? This action cannot be undone.')">
                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                 <button type="submit" class="btn btn-danger">
@@ -801,375 +841,207 @@ Subject: <?php echo htmlspecialchars($mailto['subject']); ?>
         ✓ Copied to clipboard!
     </div>
     
+    <!-- FIXED: Complete JavaScript with proper functions -->
     <script>
-        // Configuration
         const CONFIG = {
-            submissionId: <?php echo json_encode($submission['id']); ?>,
-            userEmail: <?php echo json_encode($submission['email']); ?>,
-            userName: <?php echo json_encode($submission['name']); ?>,
-            replyToEmail: <?php echo json_encode($reply_to_email); ?>,
-            department: <?php echo json_encode($submission['department'] ?? 'general'); ?>,
-            baseUrl: <?php echo json_encode(BASE_URL); ?>,
-            csrfToken: <?php echo json_encode($csrf_token); ?>
+            submissionId:  <?php echo json_encode($submission['id'] ?? 0); ?>,
+            userEmail:     <?php echo json_encode($submission['email'] ?? ''); ?>,
+            userName:      <?php echo json_encode($submission['name'] ?? ''); ?>,
+            replyToEmail:  <?php echo json_encode($replyToEmail); ?>,
+            department:    <?php echo json_encode($submission['department'] ?? 'general'); ?>,
+            baseUrl:       <?php echo json_encode(BASE_URL); ?>,
+            csrfToken:     <?php echo json_encode($csrf_token); ?>,
+            gmailLink:     <?php echo json_encode($mailto['gmail_link'] ?? '#'); ?>,
+            subject:       <?php echo json_encode($submission['subject'] ?? ''); ?>,
+            currentStatus: <?php echo json_encode($submission['status'] ?? 'pending'); ?>
         };
-        
-        // ============================================
-        // DROPDOWN FUNCTIONS
-        // ============================================
-        
-        // Toggle reply dropdown
+
+        // ── Dropdown ──────────────────────────────────────────────────────────────
         function toggleReplyDropdown() {
-            const dropdown = document.getElementById('replyDropdown');
-            if (dropdown) {
-                if (dropdown.style.display === 'none' || dropdown.style.display === '') {
-                    dropdown.style.display = 'block';
-                } else {
-                    dropdown.style.display = 'none';
-                }
+            const d = document.getElementById('replyDropdown');
+            if (d) {
+                d.style.display = (d.style.display === 'block') ? 'none' : 'block';
             }
         }
-        
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            const dropdown = document.getElementById('replyDropdown');
-            const button = document.getElementById('replyDropdownBtn');
-            
-            if (dropdown && button && !button.contains(event.target) && !dropdown.contains(event.target)) {
-                dropdown.style.display = 'none';
+
+        document.addEventListener('click', function(e) {
+            const d = document.getElementById('replyDropdown');
+            const b = document.getElementById('replyDropdownBtn');
+            if (d && b && !b.contains(e.target) && !d.contains(e.target)) {
+                d.style.display = 'none';
             }
         });
-        
-        // ============================================
-        // EMAIL REPLY FUNCTIONS
-        // ============================================
-        
-        // Track which email client was used
+
+        // ── Mark as responded via AJAX ────────────────────────────────────────────
+        function markAsResponded(submissionId, notes) {
+            fetch(CONFIG.baseUrl + '/admin/contact/quick-update/' + submissionId, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'responded',
+                    admin_notes: notes || ('Replied via email on ' + new Date().toLocaleString())
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    // Update the status select dropdown
+                    var sel = document.getElementById('status');
+                    if (sel) sel.value = 'responded';
+
+                    // Update the badge next to the heading
+                    var badge = document.querySelector('.status-badge');
+                    if (badge) {
+                        badge.className   = 'status-badge status-responded';
+                        badge.textContent = 'Responded';
+                    }
+
+                    showNotification('✓ Marked as responded');
+                } else {
+                    alert('Could not update status: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(function(err) {
+                console.error('AJAX error:', err);
+                alert('Network error. Please update the status manually using the form below.');
+            });
+        }
+
+        // ── Reply tracking ────────────────────────────────────────────────────────
         function trackReply(client, submissionId) {
-            console.log(`Reply initiated via ${client} for submission #${submissionId}`);
             sessionStorage.setItem('reply_client_' + submissionId, client);
-            sessionStorage.setItem('reply_timestamp_' + submissionId, new Date().toISOString());
             sessionStorage.setItem('replied_to_' + submissionId, 'true');
-            
-            // For non-webmail clients, check if they were sent
-            if (client !== 'gmail' && client !== 'outlook' && client !== 'yahoo') {
-                setTimeout(() => checkReplySent(submissionId), 1500);
-            }
         }
-        
-        // Check if mailto actually opened an app
-        function checkReplySent(submissionId) {
-            if (!document.hidden) {
-                // Still on page - mailto didn't open an app
-                if (confirm('Email client did not open automatically. Would you like to:\n\n1. Copy email details to clipboard\n2. Try Gmail web instead\n3. Mark as responded anyway')) {
-                    showEmailFallback();
-                }
-            }
-        }
-        
-        // Show fallback options
-        function showEmailFallback() {
-            const action = prompt('Choose option:\n1 - Copy to clipboard\n2 - Open Gmail\n3 - Mark as responded');
-            
-            if (action === '1') {
-                copyEmailPreview();
-                showCopyNotification('📋 Email preview copied to clipboard!');
-            } else if (action === '2') {
-                window.open(<?php echo json_encode($mailto['gmail_link']); ?>, '_blank');
-            } else if (action === '3') {
-                markAsResponded(true, `Marked as responded via fallback on ${new Date().toLocaleString()}`);
-            }
-        }
-        
-        // Prompt to mark as responded
-        function markAsRespondedPrompt(submissionId) {
-            setTimeout(() => {
-                if (confirm('📧 Did you send your email? Mark this submission as responded?')) {
-                    const client = sessionStorage.getItem('reply_client_' + submissionId) || 'gmail';
-                    markAsResponded(true, `Replied via ${client} on ${new Date().toLocaleString()}`);
-                }
-            }, 2000);
-        }
-        
-        /**
-         * Main reply function - opens email client with proper settings
-         */
-        function openEmailClient(mailtoLink) {
-            // Track that we're replying
-            sessionStorage.setItem('replied_to_' + CONFIG.submissionId, 'true');
-            sessionStorage.setItem('reply_timestamp_' + CONFIG.submissionId, new Date().toISOString());
-            sessionStorage.setItem('reply_email_' + CONFIG.submissionId, CONFIG.replyToEmail);
-            
-            // Open email client
-            window.location.href = mailtoLink;
-            
-            // Fallback for browsers that don't support mailto:
+
+        // ── Gmail button function ────────────────────────────────────────────
+        function replyViaGmail(submissionId) {
+            trackReply('gmail', submissionId);
+            window.open(CONFIG.gmailLink, '_blank');
+
             setTimeout(function() {
-                if (!document.hidden) {
-                    showCopyNotification('📧 Email client opened? If not, copy the address manually.', 5000);
+                if (confirm('Did you send your email? Click OK to mark this submission as responded.')) {
+                    markAsResponded(submissionId, 'Replied via Gmail on ' + new Date().toLocaleString());
                 }
-            }, 500);
-            
-            // Ask if they want to mark as responded
-            setTimeout(function() {
-                if (confirm('Did you send your email? Would you like to mark this submission as "Responded"?')) {
-                    markAsResponded(true, 'Replied via email using ' + CONFIG.replyToEmail);
-                }
-            }, 1000);
+            }, 3000);
         }
-        
-        /**
-         * Use a quick reply template - Opens in Gmail
-         */
-        function useTemplate(type) {
-            const templates = {
-                acknowledge: `Dear ${CONFIG.userName},\n\nThank you for contacting FCT College of Nursing Sciences. We have received your inquiry and will review it shortly. A member of our team will respond to you within 24-48 hours during working days.\n\nReference ID: #${CONFIG.submissionId}\n\nBest regards,\nThe FCT CNS Team`,
-                
-                admissions: `Dear ${CONFIG.userName},\n\nThank you for your interest in our nursing programs. Our admissions requirements and application process are detailed on our website. You can find more information here: ${CONFIG.baseUrl}/admissions\n\nFor specific questions about your eligibility, please provide your academic qualifications and we'll be happy to assist you further.\n\nReference ID: #${CONFIG.submissionId}\n\nBest regards,\nAdmissions Office\n${CONFIG.replyToEmail}`,
-                
-                schedule: `Dear ${CONFIG.userName},\n\nThank you for your inquiry. We would be happy to schedule a meeting or campus tour for you. Please let us know your preferred dates and times, and we'll coordinate accordingly.\n\nReference ID: #${CONFIG.submissionId}\n\nBest regards,\nThe FCT CNS Team`,
-                
-                thanks: `Dear ${CONFIG.userName},\n\nThank you for your message and your interest in FCT College of Nursing Sciences. We appreciate you taking the time to reach out to us.\n\nReference ID: #${CONFIG.submissionId}\n\nBest regards,\nThe FCT CNS Team`,
-                
-                technical: `Dear ${CONFIG.userName},\n\nThank you for contacting our technical support team. We have received your inquiry and are looking into the issue you reported.\n\nReference ID: #${CONFIG.submissionId}\n\nWe will update you as soon as we have more information.\n\nBest regards,\nSupport Team\n${CONFIG.replyToEmail}`
-            };
-            
-            const subject = `RE: ${<?php echo json_encode($submission['subject']); ?>}`;
-            const body = templates[type] || templates.acknowledge;
-            
-            // Build Gmail link
-            const gmailLink = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(CONFIG.userEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}&cc=${encodeURIComponent(CONFIG.replyToEmail)}&replyto=${encodeURIComponent(CONFIG.replyToEmail)}`;
-            
-            // Track usage
-            trackReply('gmail-template', CONFIG.submissionId);
-            
-            // Open Gmail
-            window.open(gmailLink, '_blank');
-            
-            // Pre-fill admin notes
-            const notesField = document.getElementById('admin_notes');
-            if (notesField) {
-                notesField.value = `[${new Date().toLocaleString()}] Replied using ${type} template via Gmail\n\n${notesField.value}`;
-            }
-            
-            // Prompt to mark as responded
-            setTimeout(() => {
-                if (confirm('Did you send your email? Mark this submission as responded?')) {
-                    markAsResponded(true, `Replied using ${type} template via Gmail on ${new Date().toLocaleString()}`);
-                }
-            }, 2000);
-        }
-        
-        /**
-         * Mark as responded and optionally add notes
-         */
-        function markAsResponded(autoSave = true, notes = '') {
-            const statusField = document.getElementById('status');
-            const notesField = document.getElementById('admin_notes');
-            
-            if (statusField) {
-                statusField.value = 'responded';
-            }
-            
-            if (notes && notesField) {
-                if (notesField.value.trim()) {
-                    notesField.value = notes + '\n\n' + notesField.value;
-                } else {
-                    notesField.value = notes;
-                }
-            }
-            
-            if (autoSave) {
-                document.getElementById('updateForm').submit();
-            }
-            
-            showCopyNotification('✓ Marked as responded');
-        }
-        
-        /**
-         * Reply and automatically mark as responded
-         */
+
+        // ── Reply & Mark Responded button ─────────────────────────────────────────
         function markAsRespondedAndReply() {
-            // First open Gmail with default reply
-            const gmailLink = <?php echo json_encode($mailto['gmail_link']); ?>;
             trackReply('gmail', CONFIG.submissionId);
-            window.open(gmailLink, '_blank');
-            
-            // Then mark as responded after a delay
+            window.open(CONFIG.gmailLink, '_blank');
+
             setTimeout(function() {
-                markAsResponded(true, `Replied via Gmail on ${new Date().toLocaleString()}`);
+                markAsResponded(CONFIG.submissionId, 'Replied via Gmail on ' + new Date().toLocaleString());
             }, 2000);
         }
-        
-        // ============================================
-        // UTILITY FUNCTIONS
-        // ============================================
-        
-        /**
-         * Copy text to clipboard
-         */
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(function() {
-                showCopyNotification();
-            }).catch(function(err) {
-                // Fallback
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                showCopyNotification();
-            });
-        }
-        
-        /**
-         * Copy reply email to clipboard
-         */
-        function copyReplyEmail() {
-            copyToClipboard(CONFIG.replyToEmail);
-        }
-        
-        /**
-         * Copy message content to clipboard
-         */
-        function copyMessage() {
-            const message = <?php echo json_encode($submission['message']); ?>;
-            copyToClipboard(message);
-        }
-        
-        /**
-         * Copy email preview to clipboard
-         */
-        function copyEmailPreview() {
-            const preview = document.querySelector('.email-preview-content')?.innerText;
-            if (preview) {
-                copyToClipboard(preview);
+
+        // ── Quick reply templates ─────────────────────────────────────────────────
+        function useTemplate(type) {
+            var templates = {
+                acknowledge: 'Dear ' + CONFIG.userName + ',\n\nThank you for contacting FCT College of Nursing Sciences. We have received your inquiry and will review it shortly. A member of our team will respond to you within 24-48 hours during working days.\n\nReference ID: #' + CONFIG.submissionId + '\n\nBest regards,\nThe FCT CNS Team',
+                admissions:  'Dear ' + CONFIG.userName + ',\n\nThank you for your interest in our nursing programs. Please visit ' + CONFIG.baseUrl + '/admissions for full details.\n\nReference ID: #' + CONFIG.submissionId + '\n\nBest regards,\nAdmissions Office\n' + CONFIG.replyToEmail,
+                schedule:    'Dear ' + CONFIG.userName + ',\n\nThank you for your inquiry. We would be happy to schedule a meeting. Please let us know your preferred dates and times.\n\nReference ID: #' + CONFIG.submissionId + '\n\nBest regards,\nThe FCT CNS Team',
+                thanks:      'Dear ' + CONFIG.userName + ',\n\nThank you for your message and your interest in FCT College of Nursing Sciences.\n\nReference ID: #' + CONFIG.submissionId + '\n\nBest regards,\nThe FCT CNS Team',
+                technical:   'Dear ' + CONFIG.userName + ',\n\nThank you for contacting our support team. We are looking into the issue you reported.\n\nReference ID: #' + CONFIG.submissionId + '\n\nBest regards,\nSupport Team\n' + CONFIG.replyToEmail
+            };
+
+            var body     = templates[type] || templates.acknowledge;
+            var subject  = 'RE: ' + CONFIG.subject;
+            var link     = 'https://mail.google.com/mail/?view=cm&fs=1'
+                         + '&to='      + encodeURIComponent(CONFIG.userEmail)
+                         + '&su='      + encodeURIComponent(subject)
+                         + '&body='    + encodeURIComponent(body)
+                         + '&cc='      + encodeURIComponent(CONFIG.replyToEmail)
+                         + '&replyto=' + encodeURIComponent(CONFIG.replyToEmail);
+
+            trackReply('gmail-template', CONFIG.submissionId);
+            window.open(link, '_blank');
+
+            // Pre-fill notes
+            var notesField = document.getElementById('admin_notes');
+            if (notesField) {
+                notesField.value = '[' + new Date().toLocaleString() + '] Replied using '
+                                 + type + ' template via Gmail\n\n' + notesField.value;
             }
-        }
-        
-        /**
-         * Toggle email preview
-         */
-        function toggleEmailPreview() {
-            const preview = document.getElementById('emailPreview');
-            if (preview) {
-                if (preview.style.display === 'none' || preview.style.display === '') {
-                    preview.style.display = 'block';
-                } else {
-                    preview.style.display = 'none';
+
+            setTimeout(function() {
+                if (confirm('Did you send your email? Click OK to mark this submission as responded.')) {
+                    markAsResponded(CONFIG.submissionId, 'Replied using ' + type + ' template via Gmail on ' + new Date().toLocaleString());
                 }
+            }, 3000);
+        }
+
+        // ── Clipboard helpers ─────────────────────────────────────────────────────
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text)
+                .then(function() { showNotification('✓ Copied to clipboard!'); })
+                .catch(function() {
+                    var t = document.createElement('textarea');
+                    t.value = text;
+                    document.body.appendChild(t);
+                    t.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(t);
+                    showNotification('✓ Copied to clipboard!');
+                });
+        }
+
+        function copyReplyEmail()   { copyToClipboard(CONFIG.replyToEmail); }
+        function copyMessage()      { copyToClipboard(<?php echo json_encode($submission['message'] ?? ''); ?>); }
+        function copyEmailPreview() {
+            var p = document.querySelector('.email-preview-content');
+            if (p) copyToClipboard(p.innerText);
+        }
+
+        function toggleEmailPreview() {
+            var p = document.getElementById('emailPreview');
+            if (p) p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+        }
+
+        // ── Notification toast ────────────────────────────────────────────────────
+        function showNotification(message, duration) {
+            duration = duration || 2500;
+            var n = document.getElementById('copyNotification');
+            if (n) {
+                n.textContent    = message;
+                n.style.display  = 'block';
+                setTimeout(function() { n.style.display = 'none'; }, duration);
             }
         }
-        
-        /**
-         * Show copy notification
-         */
-        function showCopyNotification(message = '✓ Copied to clipboard!', duration = 2000) {
-            const notification = document.getElementById('copyNotification');
-            if (notification) {
-                notification.textContent = message;
-                notification.style.display = 'block';
-                
-                setTimeout(function() {
-                    notification.style.display = 'none';
-                }, duration);
-            }
-        }
-        
-        // ============================================
-        // AUTO-SAVE FUNCTIONALITY
-        // ============================================
-        
-        // Auto-save notes
-        let notesTimeout;
-        const notesField = document.getElementById('admin_notes');
-        
-        if (notesField) {
-            notesField.addEventListener('input', function() {
-                clearTimeout(notesTimeout);
-                notesTimeout = setTimeout(function() {
-                    // In a real implementation, this would auto-save via AJAX
-                    console.log('Auto-saving notes for submission #' + CONFIG.submissionId);
-                    showCopyNotification('✏️ Notes auto-saved', 1000);
-                }, 2000);
-            });
-        }
-        
-        // ============================================
-        // KEYBOARD SHORTCUTS
-        // ============================================
-        
+
+        // ── Keyboard shortcuts ────────────────────────────────────────────────────
         document.addEventListener('keydown', function(e) {
-            // Ctrl/Cmd + Enter to submit
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault();
-                document.getElementById('updateForm')?.submit();
+                document.getElementById('updateForm').submit();
             }
-            
-            // Ctrl/Cmd + R to reply (opens Gmail)
-            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-                e.preventDefault();
-                const gmailLink = <?php echo json_encode($mailto['gmail_link']); ?>;
-                trackReply('gmail', CONFIG.submissionId);
-                window.open(gmailLink, '_blank');
-            }
-            
-            // Ctrl/Cmd + M to mark as responded
             if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
                 e.preventDefault();
-                markAsResponded(true, `Marked as responded via keyboard shortcut on ${new Date().toLocaleString()}`);
+                markAsResponded(CONFIG.submissionId, 'Marked as responded via keyboard shortcut on ' + new Date().toLocaleString());
             }
-            
-            // Ctrl/Cmd + Shift + C to copy reply email
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
-                e.preventDefault();
-                copyReplyEmail();
-            }
-            
-            // Esc to go back
             if (e.key === 'Escape') {
-                if (confirm('Go back to contact list? Any unsaved changes will be lost.')) {
-                    window.location.href = '<?php echo BASE_URL; ?>/admin/contact';
+                if (confirm('Go back to contact list? Unsaved changes will be lost.')) {
+                    window.location.href = CONFIG.baseUrl + '/admin/contact';
                 }
             }
-            
-            // Ctrl/Cmd + P to print
-            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                e.preventDefault();
-                window.print();
-            }
         });
-        
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-        
+
+        // ── On load: check if user just came back from sending email ──────────────
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if we just came back from sending an email
-            const replied = sessionStorage.getItem('replied_to_' + CONFIG.submissionId);
-            
-            if (replied === 'true' && <?php echo $submission['status'] === 'pending' ? 'true' : 'false'; ?>) {
-                const replyEmail = sessionStorage.getItem('reply_email_' + CONFIG.submissionId) || CONFIG.replyToEmail;
-                const replyClient = sessionStorage.getItem('reply_client_' + CONFIG.submissionId) || 'email client';
-                
+            var replied = sessionStorage.getItem('replied_to_' + CONFIG.submissionId);
+
+            if (replied === 'true' && CONFIG.currentStatus === 'pending') {
+                var client = sessionStorage.getItem('reply_client_' + CONFIG.submissionId) || 'email client';
+
+                sessionStorage.removeItem('replied_to_'   + CONFIG.submissionId);
+                sessionStorage.removeItem('reply_client_' + CONFIG.submissionId);
+
                 setTimeout(function() {
-                    if (confirm('📧 You just replied to this submission. Would you like to mark it as "Responded"?')) {
-                        markAsResponded(true, `Replied via ${replyClient} on ${new Date().toLocaleString()} using ${replyEmail}`);
+                    if (confirm('You recently replied to this submission. Mark it as responded?')) {
+                        markAsResponded(CONFIG.submissionId, 'Replied via ' + client + ' on ' + new Date().toLocaleString());
                     }
-                    
-                    // Clean up session storage
-                    sessionStorage.removeItem('replied_to_' + CONFIG.submissionId);
-                    sessionStorage.removeItem('reply_timestamp_' + CONFIG.submissionId);
-                    sessionStorage.removeItem('reply_email_' + CONFIG.submissionId);
-                    sessionStorage.removeItem('reply_client_' + CONFIG.submissionId);
                 }, 500);
             }
-            
-            // Log reply info for debugging
-            console.log('Reply configured for submission #' + CONFIG.submissionId);
-            console.log('Reply-To Email:', CONFIG.replyToEmail);
-            console.log('Department:', CONFIG.department);
-            console.log('Gmail is the default option');
         });
     </script>
 </body>
