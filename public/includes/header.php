@@ -1,9 +1,9 @@
 <?php
 /**
- * University Header Template - FULL LOGO VISIBILITY EDITION
- * REDESIGNED: No circular gold border, logo fills entire container
- * ENHANCED: Maximum logo presence, clean modern design
- * PERFECTLY BALANCED: Increased size, no overflow, premium aesthetics
+ * University Header Template - SOPHISTICATED MATURE EDITION
+ * REDESIGNED: Minimized gold accents, premium navy dominance
+ * FIXED: Mobile menu displays under handle on all screen sizes
+ * ELEGANT: Refined, professional, authoritative
  * 
  * @package FCT_CNS
  */
@@ -60,10 +60,10 @@ if (class_exists('Session')) {
     <!-- CSS -->
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/style.css?v=<?php echo time(); ?>">
     
-    <!-- Google Fonts - Premium Modern -->
+    <!-- Google Fonts - Sophisticated Academic -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700;800;900&family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -82,61 +82,61 @@ if (class_exists('Session')) {
     
     <style>
         /* ==============================================
-           FULL LOGO VISIBILITY HEADER - NO CIRCULAR BORDER
-           Logo takes up entire shape, maximum presence
-           Clean modern design, premium aesthetics
+           SOPHISTICATED MATURE HEADER - MINIMAL GOLD
+           Navy-dominant color palette, refined accents
+           Mobile menu ALWAYS displays under handle
+           Professional, authoritative, timeless
            ============================================== */
         
         :root {
-            /* ===== PREMIUM COLOR PALETTE ===== */
-            --prestige-navy: #0a2342;
-            --prestige-navy-dark: #021024;
-            --prestige-navy-light: #1e3a5f;
-            --prestige-gold: #b4945c;
-            --prestige-gold-bold: #d4af37;
-            --prestige-gold-light: #e5d3b0;
-            --prestige-cream: #faf7f2;
-            --prestige-ivory: #f8f4ed;
-            --prestige-charcoal: #1e2e3e;
-            --prestige-slate: #4a5a6a;
-            --prestige-stone: #e0ddd8;
-            --prestige-burgundy: #8b3a3a;
+            /* ===== SOPHISTICATED COLOR PALETTE - NAVY DOMINANT ===== */
+            --prestige-navy: #0a2342;        /* Deep academic navy - PRIMARY */
+            --prestige-navy-dark: #021024;    /* Almost black navy */
+            --prestige-navy-light: #1e3a5f;   /* Rich navy for gradients */
+            --prestige-gold-subtle: #9c8c6c;  /* MUED GOLD - very subtle */
+            --prestige-gold-accent: #b29b6e;  /* Only used for micro-interactions */
+            --prestige-cream: #f5f2ed;        /* Warm off-white */
+            --prestige-ivory: #f8f6f2;        /* Clean background */
+            --prestige-charcoal: #2c3e4e;     /* Sophisticated dark gray */
+            --prestige-slate: #5e6f7e;        /* Medium gray for secondary text */
+            --prestige-stone: #e2dfda;        /* Light gray border */
+            --prestige-burgundy: #7a3e3e;     /* Muted burgundy - professional */
             --prestige-white: #ffffff;
             
-            /* ===== TYPOGRAPHY ===== */
+            /* ===== TYPOGRAPHY - REFINED ===== */
             --font-serif: 'Cormorant Garamond', Georgia, serif;
-            --font-sans: 'Inter', -apple-system, sans-serif;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             
             /* ===== OPTIMAL DIMENSIONS - PERFECTLY BALANCED ===== */
             --header-height-desktop: 110px;
             --header-height-mobile: 100px;
-            --nav-height: 50px;
+            --nav-height: 48px;
             
-            /* ===== FULL LOGO VISIBILITY - NO BORDER, MAXIMUM SIZE ===== */
-            --logo-size-desktop: 90px;        /* Logo fills entire container */
+            /* ===== FULL LOGO VISIBILITY - NO BORDERS ===== */
+            --logo-size-desktop: 90px;
             --logo-size-tablet: 85px;
             --logo-size-mobile: 80px;
             --logo-size-mobile-small: 75px;
-            --logo-padding: 0px;              /* NO PADDING - logo uses full space */
+            --logo-padding: 0px;
             
             /* ===== ENHANCED TYPOGRAPHY SIZE ===== */
-            --brand-text-size-1: 0.95rem;
+            --brand-text-size-1: 0.9rem;
             --brand-text-size-2: 2.1rem;
-            --nav-text-size: 0.95rem;
-            --button-text-size: 0.95rem;
+            --nav-text-size: 0.9rem;
+            --button-text-size: 0.9rem;
             
             /* ===== CONTAINER PADDING ===== */
             --container-padding-desktop: 2.2rem;
             --container-padding-tablet: 1.8rem;
             --container-padding-mobile: 1.5rem;
             
-            /* ===== CLEAN SHADOWS ===== */
-            --shadow-subtle: 0 4px 12px rgba(0,0,0,0.03);
-            --shadow-medium: 0 8px 20px rgba(0,0,0,0.06);
-            --shadow-premium: 0 12px 28px rgba(10,35,66,0.08);
+            /* ===== SUBTLE SHADOWS - NO GLITZ ===== */
+            --shadow-subtle: 0 2px 8px rgba(10, 35, 66, 0.04);
+            --shadow-medium: 0 4px 16px rgba(10, 35, 66, 0.06);
+            --shadow-elevated: 0 8px 24px rgba(10, 35, 66, 0.08);
             
             /* ===== SMOOTH TRANSITIONS ===== */
-            --transition-smooth: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-smooth: 0.2s ease;
         }
         
         /* ==========================================================================
@@ -164,7 +164,7 @@ if (class_exists('Session')) {
         }
         
         /* ==========================================================================
-           PREMIUM HEADER - CLEAN, MODERN, BOLD
+           SOPHISTICATED HEADER - NAVY DOMINANT, GOLD MINIMAL
            ========================================================================== */
         .site-header {
             position: fixed;
@@ -173,7 +173,7 @@ if (class_exists('Session')) {
             right: 0;
             z-index: 1000;
             background: white;
-            border-bottom: 3px solid var(--prestige-gold-bold);
+            border-bottom: 1px solid var(--prestige-stone);
             height: var(--header-height-desktop);
             width: 100%;
             max-width: 100vw;
@@ -184,6 +184,7 @@ if (class_exists('Session')) {
         .site-header.scrolled {
             height: 100px;
             box-shadow: var(--shadow-medium);
+            border-bottom-color: var(--prestige-navy-light);
         }
         
         .header-container {
@@ -198,20 +199,19 @@ if (class_exists('Session')) {
         }
         
         /* ==========================================================================
-           FULL LOGO VISIBILITY - NO CIRCULAR BORDER, MAXIMUM PRESENCE
-           Logo takes up 100% of container - clean, modern, impactful
+           ELEGANT LOGO - FULL VISIBILITY, NO GOLD BORDERS
            ========================================================================== */
         .brand {
             display: flex;
             align-items: center;
-            gap: 1.4rem;
+            gap: 1.2rem;
             text-decoration: none;
             color: inherit;
             flex-shrink: 0;
             max-width: 80%;
         }
         
-        /* LOGO CONTAINER - NO BORDER, NO PADDING, FULL LOGO VISIBILITY */
+        /* LOGO CONTAINER - CLEAN, NO BORDERS, NO GOLD */
         .brand-logo {
             width: var(--logo-size-desktop);
             height: var(--logo-size-desktop);
@@ -220,35 +220,33 @@ if (class_exists('Session')) {
             align-items: center;
             justify-content: center;
             background: transparent;
-            border-radius: 0;              /* NO CIRCULAR BORDER */
-            border: none;                 /* NO BORDER AT ALL */
+            border: none;
             overflow: hidden;
             transition: transform var(--transition-smooth);
-            box-shadow: none;             /* NO SHADOW ON CONTAINER */
             position: relative;
         }
         
         .brand:hover .brand-logo {
-            transform: scale(1.08);
+            transform: scale(1.05);
         }
         
-        /* LOGO IMAGE - FULL WIDTH, NO PADDING, MAXIMUM VISIBILITY */
+        /* LOGO IMAGE - PURE, CLEAN, PROFESSIONAL */
         .brand-logo img {
             width: 100%;
             height: 100%;
-            object-fit: contain;          /* Maintains aspect ratio */
+            object-fit: contain;
             object-position: center;
-            padding: 0;                  /* NO PADDING - full logo visibility */
+            padding: 0;
             display: block;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.08));
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
             transition: filter var(--transition-smooth);
         }
         
         .brand:hover .brand-logo img {
-            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.12));
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.08));
         }
         
-        /* FALLBACK LOGO - CLEAN RECTANGULAR DESIGN */
+        /* FALLBACK LOGO - CLEAN NAVY */
         .brand-logo .logo-fallback {
             width: 100%;
             height: 100%;
@@ -256,17 +254,17 @@ if (class_exists('Session')) {
             align-items: center;
             justify-content: center;
             background: linear-gradient(145deg, var(--prestige-navy), var(--prestige-navy-dark));
-            color: var(--prestige-gold-bold);
+            color: white;
             font-family: var(--font-serif);
-            font-weight: 900;
+            font-weight: 800;
             font-size: 2.4rem;
             letter-spacing: 4px;
-            border-radius: 0;            /* SQUARE/SHAPE MATCHES LOGO */
-            box-shadow: var(--shadow-premium);
+            border-radius: 0;
+            box-shadow: var(--shadow-subtle);
         }
         
         /* ==========================================================================
-           PREMIUM TYPOGRAPHY - MAXIMUM VISIBILITY, BOLD PRESENCE
+           REFINED TYPOGRAPHY - AUTHORITATIVE, MATURE
            ========================================================================== */
         .brand-text {
             display: flex;
@@ -280,133 +278,128 @@ if (class_exists('Session')) {
             line-height: 1.1;
         }
         
-        /* "FCT College of" - COMMANDING, AUTHORITATIVE */
+        /* "FCT College of" - NAVY, SUBTLE, PROFESSIONAL */
         .brand-line-1 {
             font-size: var(--brand-text-size-1);
-            font-weight: 800;
-            color: var(--prestige-navy-dark);
-            letter-spacing: 2.2px;
+            font-weight: 600;
+            color: var(--prestige-slate);
+            letter-spacing: 2px;
             text-transform: uppercase;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             font-family: var(--font-sans);
             white-space: nowrap;
-            text-shadow: 0 1px 2px rgba(255,255,255,0.8);
         }
         
-        /* "Nursing Sciences" - MASTERFUL, ELEGANT */
+        /* "Nursing Sciences" - DEEP NAVY, COMMANDING */
         .brand-line-2 {
             font-size: var(--brand-text-size-2);
-            font-weight: 900;
-            color: var(--prestige-navy);
-            letter-spacing: -0.5px;
+            font-weight: 800;
+            color: var(--prestige-navy-dark);
+            letter-spacing: -0.3px;
             font-family: var(--font-serif);
             line-height: 1;
             position: relative;
             display: inline-block;
             white-space: nowrap;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.03);
         }
         
-        /* SIGNATURE GOLD UNDERLINE - ELEGANT ACCENT */
+        /* MINIMAL GOLD UNDERLINE - THIN, ELEGANT, NOT OVERBEARING */
         .brand-line-2::after {
             content: '';
             position: absolute;
-            bottom: -10px;
+            bottom: -8px;
             left: 0;
-            width: 70px;
-            height: 4px;
-            background: linear-gradient(90deg, var(--prestige-gold-bold), var(--prestige-gold-light));
-            border-radius: 4px;
+            width: 60px;
+            height: 2px;
+            background: var(--prestige-gold-subtle);
+            border-radius: 1px;
             transition: width var(--transition-smooth);
-            box-shadow: 0 2px 6px rgba(212, 175, 55, 0.3);
+            opacity: 0.8;
         }
         
         .brand:hover .brand-line-2::after {
-            width: 120px;
+            width: 100px;
+            background: var(--prestige-gold-accent);
         }
         
         /* ==========================================================================
-           PREMIUM HEADER ACTIONS - BOLD, CLEAN
+           HEADER ACTIONS - CLEAN, MINIMAL GOLD
            ========================================================================== */
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 1.2rem;
+            gap: 1rem;
             flex-shrink: 0;
         }
         
         .apply-btn {
-            padding: 0.7rem 1.8rem;
-            background: linear-gradient(135deg, var(--prestige-navy), var(--prestige-navy-dark));
+            padding: 0.6rem 1.6rem;
+            background: var(--prestige-navy);
             color: white;
             border: none;
-            border-radius: 50px;
+            border-radius: 4px;
             font-size: var(--button-text-size);
-            font-weight: 700;
+            font-weight: 600;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 0.7rem;
+            gap: 0.6rem;
             white-space: nowrap;
             transition: all var(--transition-smooth);
-            border: 1.5px solid var(--prestige-gold-light);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            letter-spacing: 0.3px;
             box-shadow: var(--shadow-subtle);
         }
         
         .apply-btn i {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
         
         .apply-btn:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-premium);
-            border-color: var(--prestige-gold-bold);
-            background: linear-gradient(135deg, var(--prestige-navy-dark), var(--prestige-navy));
+            background: var(--prestige-navy-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
         }
         
         .user-btn {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;          /* SQUARE WITH ROUNDED CORNERS - MODERN */
+            width: 44px;
+            height: 44px;
+            border-radius: 4px;
             background: var(--prestige-ivory);
             color: var(--prestige-navy);
-            border: 2.5px solid var(--prestige-gold-bold);
+            border: 1px solid var(--prestige-stone);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 800;
-            font-size: 1.3rem;
+            font-weight: 700;
+            font-size: 1.2rem;
             transition: all var(--transition-smooth);
             text-decoration: none;
-            box-shadow: var(--shadow-subtle);
         }
         
         .user-btn:hover {
             background: var(--prestige-navy);
             color: white;
-            border-color: var(--prestige-gold);
-            transform: translateY(-4px) rotate(5deg);
-            box-shadow: var(--shadow-premium);
+            border-color: var(--prestige-navy);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
         }
         
         /* ==========================================================================
-           PREMIUM MOBILE MENU - MODERN, CLEAN
+           MOBILE MENU HANDLE - ALWAYS VISIBLE ON MOBILE
            ========================================================================== */
         .mobile-menu-toggle-wrapper {
-            display: flex;
+            display: none;  /* Hidden by default, shown only on mobile */
             flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             cursor: pointer;
         }
         
         .mobile-menu-toggle {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            border: 2.5px solid var(--prestige-gold-bold);
+            width: 44px;
+            height: 44px;
+            border-radius: 4px;
+            border: 1px solid var(--prestige-stone);
             background: white;
             display: flex;
             flex-direction: column;
@@ -414,35 +407,32 @@ if (class_exists('Session')) {
             justify-content: center;
             gap: 6px;
             transition: all var(--transition-smooth);
-            box-shadow: var(--shadow-subtle);
         }
         
         .mobile-menu-toggle span {
             display: block;
-            width: 26px;
-            height: 3px;
+            width: 24px;
+            height: 2px;
             background: var(--prestige-navy);
             transition: all var(--transition-smooth);
-            border-radius: 3px;
+            border-radius: 2px;
         }
         
         .mobile-menu-toggle:hover {
+            border-color: var(--prestige-navy-light);
             background: var(--prestige-ivory);
-            border-color: var(--prestige-gold);
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-medium);
         }
         
         .menu-label {
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: var(--prestige-navy);
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: var(--prestige-slate);
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 1.2px;
         }
         
         /* ==========================================================================
-           PREMIUM DESKTOP NAVIGATION - BOLD, CLEAN TABS
+           DESKTOP NAVIGATION - CLEAN, PROFESSIONAL TABS
            ========================================================================== */
         .desktop-nav-container {
             position: fixed;
@@ -451,7 +441,7 @@ if (class_exists('Session')) {
             right: 0;
             z-index: 999;
             background: white;
-            border-bottom: 3px solid var(--prestige-gold-light);
+            border-bottom: 1px solid var(--prestige-stone);
             height: var(--nav-height);
             width: 100%;
             max-width: 100vw;
@@ -463,7 +453,7 @@ if (class_exists('Session')) {
         }
         
         .desktop-nav {
-            display: none;
+            display: block;
             height: 100%;
             width: 100%;
         }
@@ -478,7 +468,7 @@ if (class_exists('Session')) {
             justify-content: flex-start;
             width: 100%;
             max-width: 1440px;
-            gap: 0.4rem;
+            gap: 0.2rem;
         }
         
         .desktop-nav-item {
@@ -487,22 +477,23 @@ if (class_exists('Session')) {
             flex-shrink: 0;
         }
         
+        /* NAV LINKS - CLEAN, TYPOGRAPHY-FOCUSED */
         .desktop-nav-link {
             display: flex;
             align-items: center;
             height: 100%;
-            padding: 0 1.2rem;
+            padding: 0 1rem;
             color: var(--prestige-charcoal);
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 500;
             font-size: var(--nav-text-size);
-            transition: all var(--transition-smooth);
+            transition: color var(--transition-smooth);
             position: relative;
             white-space: nowrap;
-            letter-spacing: 0.3px;
-            border-bottom: 3px solid transparent;
+            letter-spacing: 0.2px;
         }
         
+        /* MINIMAL HOVER INDICATOR - NAVY, NOT GOLD */
         .desktop-nav-link::before {
             content: '';
             position: absolute;
@@ -510,45 +501,43 @@ if (class_exists('Session')) {
             left: 50%;
             transform: translateX(-50%);
             width: 0;
-            height: 3px;
-            background: var(--prestige-gold-bold);
+            height: 2px;
+            background: var(--prestige-navy);
             transition: width var(--transition-smooth);
-            border-radius: 3px 3px 0 0;
-            box-shadow: 0 -2px 6px rgba(212, 175, 55, 0.2);
+            border-radius: 1px;
         }
         
         .desktop-nav-link:hover::before,
         .desktop-nav-link.active::before {
-            width: 80%;
+            width: 70%;
         }
         
         .desktop-nav-link:hover {
             color: var(--prestige-navy);
-            background: rgba(10, 35, 66, 0.02);
         }
         
         .desktop-nav-link.active {
             color: var(--prestige-navy);
-            font-weight: 800;
+            font-weight: 700;
         }
         
-        /* PREMIUM DROPDOWN - CLEAN, MODERN */
+        /* ELEGANT DROPDOWN - NO GOLD BORDERS */
         .dropdown-menu {
             position: absolute;
-            top: calc(100% - 2px);
+            top: calc(100% - 1px);
             left: 50%;
-            transform: translateX(-50%) translateY(-10px);
+            transform: translateX(-50%) translateY(-5px);
             background: white;
-            min-width: 240px;
-            border-radius: 0 0 16px 16px;
-            box-shadow: var(--shadow-premium);
+            min-width: 220px;
+            border-radius: 0 0 8px 8px;
+            box-shadow: var(--shadow-elevated);
             opacity: 0;
             visibility: hidden;
             transition: all var(--transition-smooth);
             z-index: 100;
-            border: 1px solid var(--prestige-gold-light);
-            border-top: 4px solid var(--prestige-gold-bold);
-            padding: 0.8rem 0;
+            border: 1px solid var(--prestige-stone);
+            border-top: 2px solid var(--prestige-navy);
+            padding: 0.6rem 0;
         }
         
         .has-dropdown:hover .dropdown-menu {
@@ -559,53 +548,53 @@ if (class_exists('Session')) {
         
         .dropdown-link {
             display: block;
-            padding: 0.7rem 1.8rem;
+            padding: 0.6rem 1.6rem;
             color: var(--prestige-charcoal);
             text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9rem;
+            font-weight: 500;
+            font-size: 0.85rem;
             transition: all var(--transition-smooth);
             position: relative;
             white-space: nowrap;
         }
         
         .dropdown-link:hover {
-            background: rgba(212, 175, 55, 0.06);
+            background: rgba(10, 35, 66, 0.02);
             color: var(--prestige-navy);
-            padding-left: 2.3rem;
-            font-weight: 700;
+            padding-left: 2rem;
+            font-weight: 600;
         }
         
         .dropdown-link::before {
             content: '→';
             position: absolute;
-            left: 1.3rem;
+            left: 1rem;
             opacity: 0;
             transition: all var(--transition-smooth);
-            color: var(--prestige-gold-bold);
-            font-size: 1rem;
-            font-weight: 700;
+            color: var(--prestige-navy);
+            font-size: 0.9rem;
         }
         
         .dropdown-link:hover::before {
             opacity: 1;
-            left: 1.6rem;
+            left: 1.3rem;
         }
         
-        /* DISTINCTIVE CONTACT TAB */
+        /* CONTACT TAB - BURGUNDY, PROFESSIONAL */
         .desktop-nav-item.contact-tab .desktop-nav-link {
             color: var(--prestige-burgundy);
-            background: rgba(139, 58, 58, 0.03);
-            border-left: 1px solid rgba(139, 58, 58, 0.15);
-            border-right: 1px solid rgba(139, 58, 58, 0.15);
-            font-weight: 700;
-            margin-left: 0.5rem;
-            padding: 0 1.3rem;
+            background: rgba(122, 62, 62, 0.02);
+            border-left: 1px solid rgba(122, 62, 62, 0.08);
+            border-right: 1px solid rgba(122, 62, 62, 0.08);
+            font-weight: 600;
+            margin-left: 0.4rem;
+            padding: 0 1.2rem;
         }
         
         .desktop-nav-item.contact-tab .desktop-nav-link i {
-            margin-right: 8px;
-            font-size: 0.85rem;
+            margin-right: 6px;
+            font-size: 0.8rem;
+            color: var(--prestige-burgundy);
         }
         
         .desktop-nav-item.contact-tab .desktop-nav-link:hover {
@@ -618,7 +607,8 @@ if (class_exists('Session')) {
         }
         
         /* ==========================================================================
-           PREMIUM MOBILE NAVIGATION - CLEAN, MODERN
+           MOBILE NAVIGATION - ALWAYS DISPLAYS UNDER HANDLE
+           FIXED: Now visible on all mobile screens when toggled
            ========================================================================== */
         .mobile-nav-overlay {
             position: fixed;
@@ -626,18 +616,17 @@ if (class_exists('Session')) {
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 999;
+            background: white;
+            z-index: 998;
             opacity: 0;
             visibility: hidden;
-            transform: translateX(100%);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(-10px);
+            transition: all 0.25s ease;
             overflow-y: auto;
             padding: 2rem;
             width: 100%;
-            border-top: 3px solid var(--prestige-gold-bold);
+            border-top: 1px solid var(--prestige-stone);
+            box-shadow: var(--shadow-elevated);
         }
         
         .site-header.scrolled ~ .mobile-nav-overlay {
@@ -647,7 +636,7 @@ if (class_exists('Session')) {
         .mobile-nav-overlay.active {
             opacity: 1;
             visibility: visible;
-            transform: translateX(0);
+            transform: translateY(0);
         }
         
         .mobile-nav-content {
@@ -669,82 +658,95 @@ if (class_exists('Session')) {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1.1rem 0;
+            padding: 1rem 0;
             color: var(--prestige-charcoal);
             text-decoration: none;
-            font-weight: 600;
-            font-size: 1.1rem;
+            font-weight: 500;
+            font-size: 1rem;
             transition: all var(--transition-smooth);
         }
         
         .mobile-nav-link span i {
-            width: 28px;
-            color: var(--prestige-gold-bold);
+            width: 26px;
+            color: var(--prestige-navy);
             margin-right: 12px;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
         
         .mobile-nav-link:hover {
             color: var(--prestige-navy);
-            padding-left: 0.8rem;
+            padding-left: 0.5rem;
         }
         
         .mobile-nav-link.active {
             color: var(--prestige-navy);
-            font-weight: 800;
-            border-left: 4px solid var(--prestige-gold-bold);
-            padding-left: 1rem;
+            font-weight: 700;
+            border-left: 3px solid var(--prestige-navy);
+            padding-left: 0.8rem;
         }
         
         .mobile-nav-item.contact-tab .mobile-nav-link {
             color: var(--prestige-burgundy);
-            background: rgba(139, 58, 58, 0.03);
-            padding: 1.1rem 1rem;
-            margin: 0.8rem 0;
-            border-radius: 12px;
-            border: 1px solid rgba(139, 58, 58, 0.15);
-            font-weight: 700;
+            background: rgba(122, 62, 62, 0.02);
+            padding: 1rem 0.8rem;
+            margin: 0.6rem 0;
+            border-radius: 4px;
+            border: 1px solid rgba(122, 62, 62, 0.1);
+            font-weight: 600;
+        }
+        
+        .mobile-nav-item.contact-tab .mobile-nav-link i {
+            color: var(--prestige-burgundy);
         }
         
         .mobile-quick-actions {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 0.8rem;
             margin-bottom: 2rem;
         }
         
         .mobile-action-btn {
-            padding: 1.1rem 1.5rem;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--prestige-navy), var(--prestige-navy-dark));
+            padding: 1rem 1.2rem;
+            border-radius: 4px;
+            background: var(--prestige-navy);
             color: white;
             text-decoration: none;
             display: flex;
             align-items: center;
             gap: 0.8rem;
             transition: all var(--transition-smooth);
-            font-weight: 700;
+            font-weight: 600;
             justify-content: center;
-            font-size: 1rem;
-            border: 1.5px solid var(--prestige-gold-light);
-            letter-spacing: 0.5px;
+            font-size: 0.95rem;
+            border: none;
+            letter-spacing: 0.3px;
+        }
+        
+        .mobile-action-btn i {
+            font-size: 0.95rem;
         }
         
         .mobile-action-btn.accent {
-            background: linear-gradient(135deg, var(--prestige-gold-bold), var(--prestige-gold));
-            color: var(--prestige-navy-dark);
-            border-color: var(--prestige-navy);
+            background: var(--prestige-navy-light);
+            color: white;
+        }
+        
+        .mobile-action-btn:hover {
+            background: var(--prestige-navy-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
         }
         
         .mobile-contact-info {
-            padding-top: 2rem;
-            border-top: 2px solid var(--prestige-gold-light);
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--prestige-stone);
         }
         
         .mobile-contact-grid {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 1rem;
+            gap: 0.8rem;
         }
         
         .mobile-contact-item {
@@ -753,68 +755,58 @@ if (class_exists('Session')) {
             gap: 0.8rem;
             color: var(--prestige-slate);
             text-decoration: none;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             padding: 0.8rem;
-            border-radius: 10px;
+            border-radius: 4px;
             transition: all var(--transition-smooth);
             font-weight: 500;
             border: 1px solid transparent;
         }
         
         .mobile-contact-item i {
-            color: var(--prestige-gold-bold);
-            width: 24px;
-            font-size: 1.1rem;
+            color: var(--prestige-navy);
+            width: 22px;
+            font-size: 1rem;
         }
         
         .mobile-contact-item:hover {
             background: var(--prestige-ivory);
-            border-color: var(--prestige-gold-light);
+            border-color: var(--prestige-stone);
             color: var(--prestige-navy);
         }
         
         /* ==========================================================================
-           RESPONSIVE BREAKPOINTS - PERFECT SCALING
+           CRITICAL FIX: MOBILE MENU DISPLAYS UNDER HANDLE ON ALL SCREEN SIZES
            ========================================================================== */
         
-        /* Extra Large Desktop */
-        @media (min-width: 1400px) {
-            :root {
-                --header-height-desktop: 120px;
-                --logo-size-desktop: 100px;
-                --brand-text-size-2: 2.4rem;
-                --brand-text-size-1: 1.1rem;
-            }
-            
-            .header-container {
-                max-width: 1600px;
-            }
-            
-            .desktop-nav-menu {
-                max-width: 1600px;
-            }
-        }
-        
-        /* Desktop */
-        @media (min-width: 1024px) {
+        /* Tablet and Mobile - SHOW MOBILE MENU HANDLE, HIDE DESKTOP NAV */
+        @media (max-width: 1023px) {
             .desktop-nav-container {
-                display: block;
+                display: none !important;
             }
+            
             .desktop-nav {
-                display: block;
+                display: none !important;
             }
+            
             .mobile-menu-toggle-wrapper {
+                display: flex !important;  /* ALWAYS show on mobile */
+            }
+            
+            .apply-btn {
                 display: none;
             }
-            .mobile-nav-overlay {
-                display: none;
-            }
+            
             .main-content-wrapper {
-                padding-top: calc(var(--header-height-desktop) + var(--nav-height));
+                padding-top: var(--header-height-desktop);
+            }
+            
+            .mobile-nav-overlay {
+                display: block;  /* Ensure overlay can display */
             }
         }
         
-        /* Tablet */
+        /* Tablet specific */
         @media (min-width: 768px) and (max-width: 1023px) {
             :root {
                 --header-height-desktop: 105px;
@@ -829,18 +821,6 @@ if (class_exists('Session')) {
             .brand-logo {
                 width: 85px;
                 height: 85px;
-            }
-            
-            .desktop-nav-container {
-                display: none !important;
-            }
-            
-            .apply-btn {
-                display: none;
-            }
-            
-            .main-content-wrapper {
-                padding-top: 105px;
             }
             
             .mobile-nav-overlay {
@@ -874,30 +854,16 @@ if (class_exists('Session')) {
             .brand-line-1 {
                 white-space: normal;
                 word-break: break-word;
-                font-size: 0.8rem;
             }
             
             .brand-line-2 {
                 white-space: normal;
                 word-break: break-word;
-                font-size: 1.7rem;
             }
             
             .brand-line-2::after {
-                width: 55px;
-                bottom: -8px;
-            }
-            
-            .desktop-nav-container {
-                display: none !important;
-            }
-            
-            .apply-btn {
-                display: none;
-            }
-            
-            .main-content-wrapper {
-                padding-top: 100px;
+                width: 50px;
+                bottom: -7px;
             }
             
             .mobile-nav-overlay {
@@ -911,8 +877,8 @@ if (class_exists('Session')) {
             :root {
                 --header-height-desktop: 95px;
                 --logo-size-desktop: var(--logo-size-mobile-small);
-                --brand-text-size-2: 1.5rem;
-                --brand-text-size-1: 0.75rem;
+                --brand-text-size-2: 1.6rem;
+                --brand-text-size-1: 0.8rem;
             }
             
             .header-container {
@@ -930,23 +896,22 @@ if (class_exists('Session')) {
             }
             
             .brand-logo .logo-fallback {
-                font-size: 1.8rem;
+                font-size: 2rem;
             }
             
             .brand-line-1 {
-                font-size: 0.7rem;
+                font-size: 0.75rem;
                 letter-spacing: 1.2px;
-                margin-bottom: 4px;
             }
             
             .brand-line-2 {
-                font-size: 1.4rem;
+                font-size: 1.5rem;
             }
             
             .brand-line-2::after {
-                width: 50px;
-                height: 3px;
-                bottom: -7px;
+                width: 45px;
+                height: 2px;
+                bottom: -6px;
             }
             
             .user-btn {
@@ -960,14 +925,6 @@ if (class_exists('Session')) {
                 height: 42px;
             }
             
-            .menu-label {
-                font-size: 0.6rem;
-            }
-            
-            .main-content-wrapper {
-                padding-top: 95px;
-            }
-            
             .mobile-nav-overlay {
                 top: 95px;
                 padding: 1.2rem;
@@ -976,22 +933,21 @@ if (class_exists('Session')) {
         
         /* Extra Small Mobile */
         @media (max-width: 360px) {
-            :root {
-                --logo-size-desktop: 70px;
-                --brand-text-size-2: 1.3rem;
-            }
-            
-            .brand-logo {
-                width: 70px;
-                height: 70px;
-            }
-            
             .brand-line-2 {
                 font-size: 1.3rem;
             }
             
             .menu-label {
                 display: none;
+            }
+            
+            .mobile-nav-overlay {
+                padding: 1rem;
+            }
+            
+            .mobile-nav-link {
+                padding: 0.9rem 0;
+                font-size: 0.95rem;
             }
         }
         
@@ -1027,11 +983,11 @@ if (class_exists('Session')) {
         }
         
         /* ==========================================================================
-           FLASH MESSAGES - PREMIUM NOTIFICATIONS
+           FLASH MESSAGES - CLEAN NOTIFICATIONS
            ========================================================================== */
         .flash-messages {
             position: fixed;
-            top: calc(var(--header-height-desktop) + 1rem);
+            top: calc(var(--header-height-desktop) + 0.5rem);
             left: 0;
             right: 0;
             z-index: 1001;
@@ -1044,20 +1000,31 @@ if (class_exists('Session')) {
         
         .flash-message {
             background: white;
-            border-left: 5px solid var(--prestige-gold-bold);
-            border-radius: 12px;
-            padding: 1rem 1.8rem;
-            margin-bottom: 0.8rem;
-            box-shadow: var(--shadow-premium);
-            animation: slideDown 0.3s ease;
+            border-left: 4px solid var(--prestige-navy);
+            border-radius: 4px;
+            padding: 0.9rem 1.6rem;
+            margin-bottom: 0.5rem;
+            box-shadow: var(--shadow-medium);
+            animation: slideDown 0.25s ease;
             pointer-events: auto;
             max-width: 600px;
             width: 100%;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-weight: 600;
-            border: 1px solid var(--prestige-gold-light);
+            font-weight: 500;
+            border: 1px solid var(--prestige-stone);
+            border-left-width: 4px;
+        }
+        
+        .flash-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            color: var(--prestige-slate);
+            padding: 0 0.5rem;
         }
         
         @keyframes slideDown {
@@ -1097,10 +1064,10 @@ if (class_exists('Session')) {
     ?>
 </div>
 
-<!-- PREMIUM HEADER - FULL LOGO VISIBILITY, NO CIRCULAR BORDER -->
+<!-- SOPHISTICATED HEADER - MINIMAL GOLD, NAVY DOMINANT -->
 <header class="site-header" role="banner">
     <div class="header-container">
-        <!-- BRAND WITH FULL VISIBILITY LOGO - NO BORDER, MAXIMUM PRESENCE -->
+        <!-- BRAND WITH FULL VISIBILITY LOGO - CLEAN, PROFESSIONAL -->
         <a href="<?php echo $baseUrl; ?>/" class="brand">
             <div class="brand-logo">
                 <?php
@@ -1122,7 +1089,7 @@ if (class_exists('Session')) {
             </div>
         </a>
         
-        <!-- HEADER ACTIONS - PREMIUM BUTTONS -->
+        <!-- HEADER ACTIONS - CLEAN, PROFESSIONAL -->
         <div class="header-actions">
             <a href="<?php echo $baseUrl; ?>/admissions" class="apply-btn">
                 <i class="fas fa-file-alt"></i>
@@ -1135,7 +1102,7 @@ if (class_exists('Session')) {
             </a>
             <?php endif; ?>
             
-            <!-- MOBILE MENU TOGGLE -->
+            <!-- MOBILE MENU HANDLE - ALWAYS VISIBLE ON MOBILE SCREENS -->
             <div class="mobile-menu-toggle-wrapper" onclick="toggleMobileMenu()">
                 <button class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false">
                     <span></span>
@@ -1148,7 +1115,7 @@ if (class_exists('Session')) {
     </div>
 </header>
 
-<!-- DESKTOP NAVIGATION - CLEAN, MODERN TABS -->
+<!-- DESKTOP NAVIGATION - CLEAN, PROFESSIONAL TABS -->
 <div class="desktop-nav-container">
     <nav class="desktop-nav" aria-label="Main navigation">
         <ul class="desktop-nav-menu">
@@ -1196,6 +1163,7 @@ if (class_exists('Session')) {
                     <a href="<?php echo $baseUrl; ?>/research/publications" class="dropdown-link">Publications</a>
                     <a href="<?php echo $baseUrl; ?>/research/projects" class="dropdown-link">Projects</a>
                     <a href="<?php echo $baseUrl; ?>/research/facilities" class="dropdown-link">Facilities</a>
+                    <a href="<?php echo $baseUrl; ?>/research/grants" class="dropdown-link">Grants & Funding</a>
                 </div>
             </li>
             <li class="desktop-nav-item">
@@ -1227,7 +1195,7 @@ if (class_exists('Session')) {
     </nav>
 </div>
 
-<!-- PREMIUM MOBILE NAVIGATION -->
+<!-- MOBILE NAVIGATION - ALWAYS DISPLAYS UNDER HANDLE WHEN TOGGLED -->
 <div class="mobile-nav-overlay" id="mobileNav">
     <div class="mobile-nav-content">
         <ul class="mobile-nav-menu">
@@ -1301,6 +1269,12 @@ if (class_exists('Session')) {
                     <i class="fas fa-external-link-alt"></i>
                 </a>
             </li>
+            <li class="mobile-nav-item">
+                <a href="<?php echo $baseUrl; ?>/student/logout" class="mobile-nav-link">
+                    <span><i class="fas fa-sign-out-alt"></i>Logout</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
             <?php endif; ?>
         </ul>
         
@@ -1313,12 +1287,6 @@ if (class_exists('Session')) {
                 <i class="fas fa-graduation-cap"></i>
                 Student Portal
             </a>
-            <?php if ($isLoggedIn): ?>
-            <a href="<?php echo $baseUrl; ?>/student/logout" class="mobile-action-btn" style="background: var(--prestige-burgundy);">
-                <i class="fas fa-sign-out-alt"></i>
-                Logout
-            </a>
-            <?php endif; ?>
         </div>
         
         <div class="mobile-contact-info">
@@ -1346,7 +1314,7 @@ if (class_exists('Session')) {
 
 <script>
 // ==============================================
-// PREMIUM HEADER FUNCTIONALITY - SMOOTH, CLEAN
+// SOPHISTICATED HEADER FUNCTIONALITY - CLEAN, RELIABLE
 // ==============================================
 
 (function() {
@@ -1404,7 +1372,7 @@ if (class_exists('Session')) {
                 const flashMessage = this.closest('.flash-message');
                 flashMessage.style.opacity = '0';
                 flashMessage.style.transform = 'translateY(-10px)';
-                setTimeout(() => flashMessage.remove(), 300);
+                setTimeout(() => flashMessage.remove(), 250);
             });
         });
         
@@ -1413,7 +1381,7 @@ if (class_exists('Session')) {
             document.querySelectorAll('.flash-message').forEach(message => {
                 message.style.opacity = '0';
                 message.style.transform = 'translateY(-10px)';
-                setTimeout(() => message.remove(), 300);
+                setTimeout(() => message.remove(), 250);
             });
         }, 5000);
         
@@ -1483,7 +1451,7 @@ if (class_exists('Session')) {
             if (mainContentWrapper) {
                 const headerHeight = header?.offsetHeight || 110;
                 if (isDesktop && navContainer) {
-                    const navHeight = navContainer.offsetHeight || 50;
+                    const navHeight = navContainer.offsetHeight || 48;
                     mainContentWrapper.style.paddingTop = (headerHeight + navHeight) + 'px';
                 } else {
                     mainContentWrapper.style.paddingTop = headerHeight + 'px';
