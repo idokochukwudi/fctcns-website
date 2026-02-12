@@ -1262,7 +1262,6 @@ $displayTopics = array_slice($displayTopics, 0, 6, true);
     </style>
 </head>
 <body>
-    <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <!-- BREADCRUMB -->
     <nav class="breadcrumb" aria-label="Breadcrumb">
