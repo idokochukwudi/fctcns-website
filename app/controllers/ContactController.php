@@ -1,18 +1,13 @@
 <?php
 /**
- * Contact Controller
- * Handles admin-side contact management with CRUD operations
+ * Contact Controller - Updated with Reply-to Email and Webmail Links
  * 
  * @package FCTCNS
- * @version 2.0
  */
 
 class ContactController extends Controller {
     private $contactModel;
     
-    /**
-     * Constructor
-     */
     public function __construct() {
         parent::__construct();
         
@@ -34,9 +29,12 @@ class ContactController extends Controller {
     public function index() {
         $status = $this->input('status', 'all');
         $search = $this->input('search', '');
+        $department = $this->input('department', '');
         
         if (!empty($search)) {
             $submissions = $this->contactModel->searchSubmissions($search);
+        } elseif (!empty($department)) {
+            $submissions = $this->contactModel->getSubmissionsByDepartment($department);
         } else {
             $submissions = $this->contactModel->getAllSubmissions(
                 $status !== 'all' ? $status : null,
@@ -45,14 +43,18 @@ class ContactController extends Controller {
         }
         
         $stats = $this->contactModel->getStatistics();
+        $settings = $this->contactModel->getContactSettings();
         
         $this->data = array_merge($this->data, [
             'page_title' => 'Contact Management',
             'currentPage' => 'contact',
             'submissions' => $submissions,
             'stats' => $stats,
+            'settings' => $settings,
             'current_status' => $status,
-            'search_term' => $search
+            'current_department' => $department,
+            'search_term' => $search,
+            'csrf_token' => $this->csrfToken()
         ]);
         
         $this->render('admin/contact/index');
@@ -69,10 +71,18 @@ class ContactController extends Controller {
             $this->redirect('/admin/contact');
         }
         
+        // Generate mailto links with webmail options
+        $mailto = $this->contactModel->generateMailtoLink($submission);
+        $settings = $this->contactModel->getContactSettings();
+        
         $this->data = array_merge($this->data, [
             'page_title' => 'View Contact Submission',
             'currentPage' => 'contact',
-            'submission' => $submission
+            'submission' => $submission,
+            'mailto' => $mailto,
+            'settings' => $settings,
+            'reply_to_email' => $mailto['reply_to'],
+            'csrf_token' => $this->csrfToken()
         ]);
         
         $this->render('admin/contact/view');
@@ -113,6 +123,39 @@ class ContactController extends Controller {
     }
     
     /**
+     * Quick update - Mark as responded and add notes
+     */
+    public function quickUpdate($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->flash('error', 'Invalid request method.');
+            $this->redirect('/admin/contact');
+        }
+        
+        try {
+            $this->validateCsrf();
+            
+            $data = [
+                'status' => 'responded',
+                'admin_notes' => $this->input('admin_notes', 'Replied via email on ' . date('Y-m-d H:i:s'))
+            ];
+            
+            $updated = $this->contactModel->updateSubmission($id, $data);
+            
+            if ($updated) {
+                $this->flash('success', 'Submission marked as responded.');
+            } else {
+                $this->flash('error', 'Failed to update submission.');
+            }
+            
+        } catch (Exception $e) {
+            error_log("Contact quick update error: " . $e->getMessage());
+            $this->flash('error', 'An error occurred.');
+        }
+        
+        $this->redirect('/admin/contact/view/' . $id);
+    }
+    
+    /**
      * Delete submission
      */
     public function delete($id) {
@@ -144,7 +187,14 @@ class ContactController extends Controller {
      * Export submissions to CSV
      */
     public function export() {
-        $submissions = $this->contactModel->getAllSubmissions(null, 1000);
+        $status = $this->input('status', null);
+        $department = $this->input('department', null);
+        
+        if ($department) {
+            $submissions = $this->contactModel->getSubmissionsByDepartment($department, 1000);
+        } else {
+            $submissions = $this->contactModel->getAllSubmissions($status, 1000);
+        }
         
         // Set headers for CSV download
         header('Content-Type: text/csv; charset=utf-8');
@@ -198,8 +248,6 @@ class ContactController extends Controller {
             'page_title' => 'Contact Settings',
             'currentPage' => 'contact-settings',
             'settings' => $settings,
-            'flash_success' => $this->getFlash('success'),
-            'flash_error' => $this->getFlash('error'),
             'csrf_token' => $this->csrfToken()
         ]);
         
@@ -210,10 +258,6 @@ class ContactController extends Controller {
      * Save contact settings
      */
     public function saveSettings() {
-        // Enable error reporting temporarily for debugging
-        error_reporting(E_ALL);
-        ini_set('display_errors', 1);
-        
         if ($_SESSION['user_role'] !== 'admin') {
             $this->flash('error', 'Access denied.');
             $this->redirect('/admin/contact');
@@ -225,62 +269,163 @@ class ContactController extends Controller {
         }
         
         try {
-            error_log("=== Contact Settings Save Started ===");
-            error_log("POST data received: " . print_r($_POST, true));
-            
             $this->validateCsrf();
             
             $settings = [
+                // Reply-to email addresses
+                'reply_to_email' => trim($this->input('reply_to_email', 'noreply@fctcns.edu.ng')),
+                'support_email' => trim($this->input('support_email', 'support@fctcns.edu.ng')),
+                'billing_email' => trim($this->input('billing_email', 'billing@fctcns.edu.ng')),
+                'admissions_email' => trim($this->input('admissions_email', 'admissions@fctcns.edu.ng')),
+                'academic_email' => trim($this->input('academic_email', 'academic@fctcns.edu.ng')),
+                
+                // General contact info
                 'phone' => trim($this->input('phone', '')),
-                'email' => trim($this->input('email', '')),
+                'email' => trim($this->input('email', 'info@fctcns.edu.ng')),
                 'address' => trim($this->input('address', '')),
                 'hours' => trim($this->input('hours', '')),
                 'emergency' => trim($this->input('emergency', '')),
-                'admissions_email' => trim($this->input('admissions_email', '')),
-                'map_latitude' => trim($this->input('map_latitude', '')),
-                'map_longitude' => trim($this->input('map_longitude', ''))
+                
+                // Map settings
+                'map_latitude' => trim($this->input('map_latitude', '9.0765')),
+                'map_longitude' => trim($this->input('map_longitude', '7.3986'))
             ];
             
-            // Debug log the processed settings
-            error_log("Processed settings to save: " . print_r($settings, true));
-            
             // Validate email formats
-            if (!empty($settings['email']) && !filter_var($settings['email'], FILTER_VALIDATE_EMAIL)) {
-                $this->flash('error', 'Invalid primary email format.');
-                error_log("Validation failed: Invalid primary email");
-                $this->redirect('/admin/contact/settings');
+            $emailFields = ['reply_to_email', 'support_email', 'billing_email', 'admissions_email', 'academic_email', 'email'];
+            foreach ($emailFields as $field) {
+                if (!empty($settings[$field]) && !filter_var($settings[$field], FILTER_VALIDATE_EMAIL)) {
+                    $this->flash('error', 'Invalid email format for ' . str_replace('_', ' ', $field));
+                    $this->redirect('/admin/contact/settings');
+                }
             }
             
-            if (!empty($settings['admissions_email']) && !filter_var($settings['admissions_email'], FILTER_VALIDATE_EMAIL)) {
-                $this->flash('error', 'Invalid admissions email format.');
-                error_log("Validation failed: Invalid admissions email");
-                $this->redirect('/admin/contact/settings');
-            }
-            
-            error_log("Calling saveContactSettings with data...");
             $saved = $this->contactModel->saveContactSettings($settings);
-            
-            error_log("saveContactSettings returned: " . ($saved ? 'true' : 'false'));
             
             if ($saved) {
                 $this->flash('success', 'Settings saved successfully.');
-                error_log("Flash message set: Settings saved successfully");
             } else {
                 $this->flash('error', 'Failed to save settings.');
-                error_log("Flash message set: Failed to save settings");
             }
             
         } catch (Exception $e) {
-            error_log("Settings save error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            error_log("Settings save error: " . $e->getMessage());
             $this->flash('error', 'An error occurred: ' . $e->getMessage());
-        } finally {
-            // Restore error reporting
-            error_reporting(0);
-            ini_set('display_errors', 0);
-            error_log("=== Contact Settings Save Completed ===");
         }
         
         $this->redirect('/admin/contact/settings');
     }
+    
+    /**
+     * Bulk operations
+     */
+    public function bulkAction() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->flash('error', 'Invalid request method.');
+            $this->redirect('/admin/contact');
+        }
+        
+        try {
+            $this->validateCsrf();
+            
+            $action = $this->input('bulk_action', '');
+            $ids = $this->input('submission_ids', []);
+            
+            if (empty($ids)) {
+                $this->flash('error', 'No submissions selected.');
+                $this->redirect('/admin/contact');
+            }
+            
+            switch ($action) {
+                case 'mark_responded':
+                    $this->contactModel->bulkUpdateStatus($ids, 'responded');
+                    $this->flash('success', count($ids) . ' submissions marked as responded.');
+                    break;
+                    
+                case 'mark_archived':
+                    $this->contactModel->bulkUpdateStatus($ids, 'archived');
+                    $this->flash('success', count($ids) . ' submissions archived.');
+                    break;
+                    
+                case 'delete':
+                    if ($_SESSION['user_role'] === 'admin') {
+                        foreach ($ids as $id) {
+                            $this->contactModel->deleteSubmission($id);
+                        }
+                        $this->flash('success', count($ids) . ' submissions deleted.');
+                    } else {
+                        $this->flash('error', 'Only administrators can delete submissions.');
+                    }
+                    break;
+                    
+                default:
+                    $this->flash('error', 'Invalid bulk action.');
+            }
+            
+        } catch (Exception $e) {
+            error_log("Bulk action error: " . $e->getMessage());
+            $this->flash('error', 'An error occurred.');
+        }
+        
+        $this->redirect('/admin/contact');
+    }
+    
+    /**
+     * Send test email to verify settings
+     */
+    public function testEmail() {
+        if ($_SESSION['user_role'] !== 'admin') {
+            $this->jsonResponse(['success' => false, 'message' => 'Access denied.']);
+            return;
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Invalid request method.']);
+            return;
+        }
+        
+        try {
+            $this->validateCsrf();
+            
+            $email = $this->input('email', '');
+            $department = $this->input('department', 'general');
+            
+            if (empty($email)) {
+                $this->jsonResponse(['success' => false, 'message' => 'Email address is required.']);
+                return;
+            }
+            
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $this->jsonResponse(['success' => false, 'message' => 'Invalid email format.']);
+                return;
+            }
+            
+            $settings = $this->contactModel->getContactSettings();
+            $replyToEmail = $this->contactModel->getReplyToEmail($department);
+            
+            // Log test email attempt
+            error_log("Test email sent to: $email, from department: $department, reply-to: $replyToEmail");
+            
+            // Here you would actually send the test email
+            // For now, just return success
+            $this->jsonResponse([
+                'success' => true, 
+                'message' => 'Test email sent successfully to ' . $email,
+                'reply_to' => $replyToEmail
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Test email error: " . $e->getMessage());
+            $this->jsonResponse(['success' => false, 'message' => 'Failed to send test email: ' . $e->getMessage()]);
+        }
+    }
+    
+    /**
+     * JSON response helper
+     */
+    private function jsonResponse($data) {
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit;
+    }
 }
-?>

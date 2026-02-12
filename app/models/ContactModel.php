@@ -1,10 +1,8 @@
 <?php
 /**
- * Contact Model
- * Handles contact form data operations and CRUD
+ * Contact Model - Updated with Reply-to Email functionality and Webmail Compose Links
  * 
  * @package FCTCNS
- * @version 2.0
  */
 
 class ContactModel {
@@ -47,8 +45,240 @@ class ContactModel {
     }
     
     /**
-     * Auto-responder Feature
-     * Purpose: Send automatic acknowledgment emails to users.
+     * Get the appropriate reply-to email address for a submission
+     * 
+     * @param array $submission The submission data
+     * @return string The email address to use for replies
+     */
+    public function getReplyToEmail($submission) {
+        // Get contact settings
+        $settings = $this->getContactSettings();
+        
+        // Determine which email to use based on department
+        $department = strtolower($submission['department'] ?? 'general');
+        
+        switch ($department) {
+            case 'admissions':
+                return $settings['admissions_email'] ?? 'admissions@fctcns.edu.ng';
+            case 'support':
+            case 'technical':
+            case 'it':
+                return $settings['support_email'] ?? 'support@fctcns.edu.ng';
+            case 'billing':
+            case 'finance':
+            case 'accounts':
+                return $settings['billing_email'] ?? 'billing@fctcns.edu.ng';
+            case 'academic':
+            case 'registrar':
+                return $settings['academic_email'] ?? 'academic@fctcns.edu.ng';
+            case 'general':
+            default:
+                return $settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng';
+        }
+    }
+    
+    /**
+     * Generate Gmail web compose URL
+     * 
+     * @param array $submission The submission data
+     * @return string Gmail compose URL
+     */
+    public function generateGmailComposeUrl($submission) {
+        $replyToEmail = $this->getReplyToEmail($submission);
+        $settings = $this->getContactSettings();
+        
+        // Build email components
+        $to = $submission['email'];
+        $subject = "RE: " . $submission['subject'];
+        
+        // Build email body with proper line breaks
+        $body = "Dear " . $submission['name'] . ",\n\n";
+        $body .= "Thank you for contacting FCT College of Nursing Sciences.\n\n";
+        $body .= "Regarding your inquiry about: " . $submission['subject'] . "\n\n";
+        $body .= "Reference ID: #" . $submission['id'] . "\n\n\n";
+        $body .= "Best regards,\n";
+        $body .= "FCT College of Nursing Sciences\n";
+        $body .= $settings['phone'] ?? "+234 XXX XXX XXXX";
+        $body .= "\n" . ($settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng');
+        
+        // Gmail uses different parameters:
+        // view=cm - compose mode
+        // to=recipient
+        // su=subject  
+        // body=message
+        // cc=cc address
+        // bcc=bcc address
+        
+        $params = [
+            'view' => 'cm',
+            'fs' => '1', // full screen
+            'to' => $to,
+            'su' => $subject,
+            'body' => $body,
+            'cc' => $replyToEmail,
+            'replyto' => $replyToEmail
+        ];
+        
+        // Build Gmail URL
+        $gmailUrl = 'https://mail.google.com/mail/?';
+        
+        // Add parameters - manually build to ensure proper encoding
+        $queryParts = [];
+        foreach ($params as $key => $value) {
+            $queryParts[] = $key . '=' . rawurlencode($value);
+        }
+        
+        $gmailUrl .= implode('&', $queryParts);
+        
+        return $gmailUrl;
+    }
+    
+    /**
+     * Generate Outlook.com compose URL
+     * 
+     * @param array $submission The submission data
+     * @return string Outlook compose URL
+     */
+    public function generateOutlookComposeUrl($submission) {
+        $replyToEmail = $this->getReplyToEmail($submission);
+        $settings = $this->getContactSettings();
+        
+        $to = $submission['email'];
+        $subject = "RE: " . $submission['subject'];
+        
+        $body = "Dear " . $submission['name'] . ",\n\n";
+        $body .= "Thank you for contacting FCT College of Nursing Sciences.\n\n";
+        $body .= "Regarding your inquiry about: " . $submission['subject'] . "\n\n";
+        $body .= "Reference ID: #" . $submission['id'] . "\n\n\n";
+        $body .= "Best regards,\n";
+        $body .= "FCT College of Nursing Sciences\n";
+        $body .= $settings['phone'] ?? "+234 XXX XXX XXXX";
+        $body .= "\n" . ($settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng');
+        
+        $params = [
+            'to' => $to,
+            'subject' => $subject,
+            'body' => $body,
+            'cc' => $replyToEmail
+        ];
+        
+        return 'https://outlook.live.com/mail/0/deeplink/compose?' . http_build_query($params);
+    }
+    
+    /**
+     * Generate Yahoo Mail compose URL
+     * 
+     * @param array $submission The submission data
+     * @return string Yahoo compose URL
+     */
+    public function generateYahooComposeUrl($submission) {
+        $replyToEmail = $this->getReplyToEmail($submission);
+        $settings = $this->getContactSettings();
+        
+        $to = $submission['email'];
+        $subject = "RE: " . $submission['subject'];
+        
+        $body = "Dear " . $submission['name'] . ",\n\n";
+        $body .= "Thank you for contacting FCT College of Nursing Sciences.\n\n";
+        $body .= "Regarding your inquiry about: " . $submission['subject'] . "\n\n";
+        $body .= "Reference ID: #" . $submission['id'] . "\n\n\n";
+        $body .= "Best regards,\n";
+        $body .= "FCT College of Nursing Sciences\n";
+        $body .= $settings['phone'] ?? "+234 XXX XXX XXXX";
+        $body .= "\n" . ($settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng');
+        
+        $params = [
+            'to' => $to,
+            'sub' => $subject,
+            'body' => $body,
+            'cc' => $replyToEmail
+        ];
+        
+        return 'https://compose.mail.yahoo.com/?' . http_build_query($params);
+    }
+    
+    /**
+     * Generate Proton Mail compose URL
+     * 
+     * @param array $submission The submission data
+     * @return string Proton Mail compose URL
+     */
+    public function generateProtonMailComposeUrl($submission) {
+        $replyToEmail = $this->getReplyToEmail($submission);
+        $settings = $this->getContactSettings();
+        
+        $to = $submission['email'];
+        $subject = "RE: " . $submission['subject'];
+        
+        $body = "Dear " . $submission['name'] . ",\n\n";
+        $body .= "Thank you for contacting FCT College of Nursing Sciences.\n\n";
+        $body .= "Regarding your inquiry about: " . $submission['subject'] . "\n\n";
+        $body .= "Reference ID: #" . $submission['id'] . "\n\n\n";
+        $body .= "Best regards,\n";
+        $body .= "FCT College of Nursing Sciences\n";
+        $body .= $settings['phone'] ?? "+234 XXX XXX XXXX";
+        
+        $params = [
+            'to' => $to,
+            'subject' => $subject,
+            'body' => $body,
+            'cc' => $replyToEmail
+        ];
+        
+        return 'https://mail.proton.me/u/0/inbox?compose=1&' . http_build_query($params);
+    }
+    
+    /**
+     * Generate mailto link for reply with webmail options
+     * 
+     * @param array $submission The submission data
+     * @return array Mailto link components and webmail links
+     */
+    public function generateMailtoLink($submission) {
+        $replyToEmail = $this->getReplyToEmail($submission);
+        $settings = $this->getContactSettings();
+        
+        // Email components
+        $to = $submission['email'];
+        $subject = "RE: " . $submission['subject'];
+        
+        // Build email body with template
+        $body = "Dear " . $submission['name'] . ",\n\n";
+        $body .= "Thank you for contacting FCT College of Nursing Sciences.\n\n";
+        $body .= "Regarding your inquiry about: " . $submission['subject'] . "\n\n";
+        $body .= "Reference ID: #" . $submission['id'] . "\n\n\n\n";
+        $body .= "Best regards,\n";
+        $body .= "FCT College of Nursing Sciences\n";
+        $body .= $settings['phone'] ?? "+234 XXX XXX XXXX";
+        $body .= "\n" . ($settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng');
+        
+        // Build mailto URL
+        $params = [
+            'subject' => $subject,
+            'body' => $body,
+            'cc' => $replyToEmail,
+            'reply-to' => $replyToEmail
+        ];
+        
+        $queryString = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+        $mailtoLink = "mailto:" . rawurlencode($to) . "?" . $queryString;
+        
+        return [
+            'link' => $mailtoLink,
+            'gmail_link' => $this->generateGmailComposeUrl($submission),
+            'outlook_link' => $this->generateOutlookComposeUrl($submission),
+            'yahoo_link' => $this->generateYahooComposeUrl($submission),
+            'proton_link' => $this->generateProtonMailComposeUrl($submission),
+            'to' => $to,
+            'subject' => $subject,
+            'body' => $body,
+            'reply_to' => $replyToEmail,
+            'department' => $submission['department'] ?? 'general'
+        ];
+    }
+    
+    /**
+     * Send auto-response to user
      */
     public function sendAutoResponse($submissionId) {
         $submission = $this->getSubmission($submissionId);
@@ -61,12 +291,14 @@ class ContactModel {
         $message .= "Thank you for contacting FCT College of Nursing Sciences. ";
         $message .= "We have received your inquiry and will respond within 24-48 hours.\n\n";
         $message .= "Reference: #{$submission['id']}\n";
+        $message .= "Department: " . ucfirst($submission['department']) . "\n";
         $message .= "Submitted: " . date('F j, Y', strtotime($submission['created_at'])) . "\n\n";
-        $message .= "Best regards,\nThe FCT CNS Team";
+        $message .= "Best regards,\nThe FCT CNS Team\n";
+        $message .= $settings['phone'] ?? "+234 XXX XXX XXXX";
         
-        // Additional headers for better email formatting
-        $headers = "From: noreply@fctcns.edu.ng\r\n";
-        $headers .= "Reply-To: " . $settings['email'] . "\r\n";
+        // Headers
+        $headers = "From: " . ($settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng') . "\r\n";
+        $headers .= "Reply-To: " . $this->getReplyToEmail($submission) . "\r\n";
         $headers .= "X-Mailer: PHP/" . phpversion();
         
         // Send email
@@ -186,10 +418,13 @@ class ContactModel {
     }
     
     /**
-     * Get contact settings (store in site_settings table)
+     * Get contact settings
      */
     public function getContactSettings() {
-        $sql = "SELECT setting_key, setting_value FROM site_settings WHERE setting_key LIKE 'contact_%' OR setting_key = 'admissions_email' OR setting_key LIKE 'map_%'";
+        $sql = "SELECT setting_key, setting_value FROM site_settings 
+                WHERE setting_key LIKE 'contact_%' 
+                OR setting_key IN ('admissions_email', 'reply_to_email', 'support_email', 'billing_email', 'academic_email', 'map_latitude', 'map_longitude')";
+        
         $stmt = $this->db->query($sql);
         
         $settings = [];
@@ -197,13 +432,18 @@ class ContactModel {
             $settings[$row['setting_key']] = $row['setting_value'];
         }
         
+        // Default values if not set
         return [
             'phone' => $settings['contact_phone'] ?? '+234 XXX XXX XXXX',
             'email' => $settings['contact_email'] ?? 'info@fctcns.edu.ng',
+            'reply_to_email' => $settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng',
+            'support_email' => $settings['support_email'] ?? 'support@fctcns.edu.ng',
+            'billing_email' => $settings['billing_email'] ?? 'billing@fctcns.edu.ng',
+            'admissions_email' => $settings['admissions_email'] ?? 'admissions@fctcns.edu.ng',
+            'academic_email' => $settings['academic_email'] ?? 'academic@fctcns.edu.ng',
             'address' => $settings['contact_address'] ?? 'FCT College of Nursing Sciences, Abuja, Nigeria',
             'working_hours' => $settings['contact_hours'] ?? 'Monday - Friday: 8:00 AM - 5:00 PM',
             'emergency_contact' => $settings['contact_emergency'] ?? '+234 XXX XXX XXXX',
-            'admissions_email' => $settings['admissions_email'] ?? 'admissions@fctcns.edu.ng',
             'map_latitude' => $settings['map_latitude'] ?? '9.0765',
             'map_longitude' => $settings['map_longitude'] ?? '7.3986'
         ];
@@ -214,41 +454,37 @@ class ContactModel {
      */
     public function saveContactSettings($settings) {
         try {
-            error_log("ContactModel::saveContactSettings called with: " . print_r($settings, true));
+            $this->db->beginTransaction();
             
             foreach ($settings as $key => $value) {
                 // Determine the setting key
                 $settingKey = 'contact_' . $key;
                 
                 // Special handling for certain keys
-                if ($key === 'admissions_email' || $key === 'map_latitude' || $key === 'map_longitude') {
-                    $settingKey = $key; // Keep as is for these keys
-                }
+                $specialKeys = ['admissions_email', 'reply_to_email', 'support_email', 
+                              'billing_email', 'academic_email', 'map_latitude', 'map_longitude'];
                 
-                error_log("Saving setting: $settingKey = '$value'");
+                if (in_array($key, $specialKeys)) {
+                    $settingKey = $key;
+                }
                 
                 $sql = "INSERT INTO site_settings (setting_key, setting_value) 
-                        VALUES (?, ?) 
-                        ON DUPLICATE KEY UPDATE setting_value = ?";
+                        VALUES (:key, :value) 
+                        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)";
                 
                 $stmt = $this->db->prepare($sql);
-                $result = $stmt->execute([$settingKey, $value, $value]);
-                
-                if (!$result) {
-                    $errorInfo = $stmt->errorInfo();
-                    error_log("Failed to save setting '$settingKey': " . print_r($errorInfo, true));
-                    throw new Exception("Database error for setting '$settingKey': " . $errorInfo[2]);
-                }
-                
-                error_log("Successfully saved setting: $settingKey");
+                $stmt->execute([
+                    ':key' => $settingKey,
+                    ':value' => $value
+                ]);
             }
             
-            error_log("All contact settings saved successfully");
+            $this->db->commit();
             return true;
             
         } catch (Exception $e) {
+            $this->db->rollBack();
             error_log("Contact settings save error: " . $e->getMessage());
-            error_log("Stack trace: " . $e->getTraceAsString());
             return false;
         }
     }
@@ -271,5 +507,45 @@ class ContactModel {
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    
+    /**
+     * Get submissions by department
+     */
+    public function getSubmissionsByDepartment($department, $limit = 50) {
+        $sql = "SELECT cs.*, u.username as responder_name 
+                FROM contact_submissions cs 
+                LEFT JOIN users u ON cs.responded_by = u.id 
+                WHERE cs.department = :department 
+                ORDER BY created_at DESC 
+                LIMIT :limit";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':department', $department);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * Bulk update status
+     */
+    public function bulkUpdateStatus($ids, $status) {
+        if (empty($ids)) {
+            return false;
+        }
+        
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        
+        $sql = "UPDATE contact_submissions SET 
+                status = ?, 
+                responded_at = CASE WHEN ? = 'responded' THEN NOW() ELSE responded_at END,
+                responded_by = CASE WHEN ? = 'responded' THEN ? ELSE responded_by END
+                WHERE id IN ({$placeholders})";
+        
+        $params = array_merge([$status, $status, $status, $_SESSION['user_id'] ?? null], $ids);
+        
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
+    }
 }
-?>

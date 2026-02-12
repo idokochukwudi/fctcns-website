@@ -240,7 +240,7 @@ class Router {
         $this->get('/apply/reset', 'PublicApplicationController@resetApplication');
         
         // ============================================
-        // ADMIN CONTACT MANAGEMENT ROUTES - ADDED
+        // ADMIN CONTACT MANAGEMENT ROUTES - COMPLETE
         // ============================================
         $this->get('/admin/contact', 'ContactController@index');
         $this->get('/admin/contact/view/{id}', 'ContactController@view');
@@ -763,6 +763,16 @@ class Router {
      * Add any route
      */
     private function addRoute($method, $path, $handler) {
+        // Check for duplicate routes before adding
+        foreach ($this->routes as $route) {
+            if ($route['method'] === $method && $route['path'] === $path) {
+                if (defined('APP_DEBUG') && APP_DEBUG) {
+                    error_log("Router: DUPLICATE ROUTE SKIPPED - $method $path");
+                }
+                return; // Skip duplicate route
+            }
+        }
+        
         // Convert route to regex pattern using the FIXED version
         $pattern = $this->pathToRegex($path);
         

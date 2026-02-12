@@ -31,6 +31,101 @@ class Router {
      */
     private function registerRoutes() {
         // ============================================
+        // DEBUG ROUTES - ADD THESE FIRST
+        // ============================================
+        $this->get('/router-test', function() {
+            echo "<h1>Router Test</h1>";
+            echo "<p>If you see this, the router is working!</p>";
+            
+            // Show all routes
+            echo "<h3>All Registered Routes:</h3>";
+            echo "<table border='1' cellpadding='5'>";
+            echo "<tr><th>Method</th><th>Path</th><th>Handler</th></tr>";
+            
+            $routes = $this->getRoutes();
+            foreach ($routes as $route) {
+                echo "<tr>";
+                echo "<td>" . $route['method'] . "</td>";
+                echo "<td>" . htmlspecialchars($route['path']) . "</td>";
+                echo "<td>" . (is_string($route['handler']) ? htmlspecialchars($route['handler']) : 'Closure') . "</td>";
+                echo "</tr>";
+            }
+            echo "</table>";
+            
+            // Show current request info
+            echo "<h3>Current Request:</h3>";
+            echo "<pre>";
+            echo "REQUEST_URI: " . $_SERVER['REQUEST_URI'] . "\n";
+            echo "SCRIPT_NAME: " . $_SERVER['SCRIPT_NAME'] . "\n";
+            echo "PHP_SELF: " . $_SERVER['PHP_SELF'] . "\n";
+            echo "BASE_URL: " . (defined('BASE_URL') ? BASE_URL : 'NOT DEFINED') . "\n";
+            echo "</pre>";
+            
+            exit;
+        });
+        
+        $this->get('/ultra-simple-test', function() {
+            echo "<h1>ULTRA SIMPLE TEST</h1>";
+            echo "<p>This is a closure, not a controller method.</p>";
+            echo "<p>If this works but /news/simple-test doesn't, the issue is with the Controller.</p>";
+            
+            // Try to instantiate NewsController
+            echo "<h3>Testing NewsController instantiation:</h3>";
+            try {
+                require_once APP_PATH . '/controllers/NewsController.php';
+                
+                if (class_exists('NewsController')) {
+                    echo "<p style='color: green;'>✓ NewsController class exists</p>";
+                    
+                    $controller = new NewsController();
+                    echo "<p style='color: green;'>✓ NewsController instantiated</p>";
+                    
+                    if (method_exists($controller, 'simpleTest')) {
+                        echo "<p style='color: green;'>✓ simpleTest() method exists</p>";
+                    } else {
+                        echo "<p style='color: red;'>✗ simpleTest() method NOT found</p>";
+                    }
+                    
+                    if (method_exists($controller, 'directTest')) {
+                        echo "<p style='color: green;'>✓ directTest() method exists</p>";
+                    } else {
+                        echo "<p style='color: red;'>✗ directTest() method NOT found</p>";
+                    }
+                } else {
+                    echo "<p style='color: red;'>✗ NewsController class NOT found</p>";
+                }
+            } catch (Exception $e) {
+                echo "<p style='color: red;'>✗ Error: " . $e->getMessage() . "</p>";
+            }
+            
+            exit;
+        });
+        
+        // Add this test route to debug POST issues
+        $this->post('/admin/news/debug-post', function() {
+            error_log("=== DEBUG POST ROUTE HIT ===");
+            error_log("POST data: " . print_r($_POST, true));
+            error_log("FILES data: " . print_r($_FILES, true));
+            error_log("Session data: " . print_r($_SESSION, true));
+            
+            echo json_encode([
+                'status' => 'success',
+                'post_data' => $_POST,
+                'files_data' => array_keys($_FILES),
+                'csrf_token_exists' => isset($_POST['csrf_token']),
+                'csrf_token_length' => isset($_POST['csrf_token']) ? strlen($_POST['csrf_token']) : 0
+            ]);
+            exit;
+        });
+        
+        // ============================================
+        // NEWSLETTER ROUTES - ADDED
+        // ============================================
+        $this->post('/newsletter/subscribe', 'NewsletterController@subscribe');
+        $this->get('/newsletter/confirm', 'NewsletterController@confirm');
+        $this->get('/newsletter/unsubscribe', 'NewsletterController@unsubscribe');
+        
+        // ============================================
         // ADMIN AUTHENTICATION ROUTES - ADDED
         // ============================================
         $this->get('/admin/login', 'AdminController@login');
@@ -64,6 +159,61 @@ class Router {
         $this->get('/research/{id}/download', 'ResearchController@download');
 
         // ============================================
+        // ADMIN NEWS MODULE ROUTES - FIXED VERSION
+        // ============================================
+        $this->get('/admin/news', 'AdminNewsController@index');
+        $this->get('/admin/news/create', 'AdminNewsController@create');
+        $this->post('/admin/news/store', 'AdminNewsController@store');
+        $this->get('/admin/news/{id}', 'AdminNewsController@show');
+        $this->get('/admin/news/{id}/edit', 'AdminNewsController@edit');
+        $this->post('/admin/news/update/{id}', 'AdminNewsController@update');       // FIXED: Changed to POST with /update/{id}
+        $this->post('/admin/news/delete/{id}', 'AdminNewsController@destroy');      // FIXED: Changed to POST with /delete/{id}
+        $this->post('/admin/news/bulk-action', 'AdminNewsController@bulkAction');
+        $this->get('/admin/news/export', 'AdminNewsController@export');
+        $this->get('/admin/news/test-edit-direct', 'AdminNewsController@testEditDirect');
+        $this->get('/admin/news/test-data-flow', 'AdminNewsController@testDataFlow');
+        $this->get('/admin/news/test-both', 'AdminNewsController@testBothInserts');
+        $this->get('/admin/news/test-create', 'AdminNewsController@testDirectCreate');
+        // Add these test routes (keep existing ones too)
+        $this->post('/admin/news/test-endpoint', 'AdminNewsController@testEndpoint');
+        $this->get('/admin/news/test-simple-query', 'AdminNewsController@testSimpleQuery');
+        $this->get('/admin/news/test-fixes', 'AdminNewsController@testFixes');       // ADD THIS
+        $this->get('/admin/news/test-images', 'AdminNewsController@testImagePaths'); // ADD THIS for testing image uploads
+
+        // ============================================
+        // ADMIN EVENTS MODULE ROUTES - FIXED TO MATCH YOUR SPECIFICATION
+        // ============================================
+        $this->get('/admin/events', 'EventsController@index');
+        $this->get('/admin/events/create', 'EventsController@create');
+        $this->post('/admin/events', 'EventsController@store');
+        $this->get('/admin/events/{id}', 'EventsController@show');
+        $this->get('/admin/events/{id}/edit', 'EventsController@edit');
+        $this->put('/admin/events/{id}', 'EventsController@update');
+        $this->delete('/admin/events/{id}', 'EventsController@destroy');
+        $this->post('/admin/events/{id}/register', 'EventsController@register');
+        $this->get('/admin/events/registrations/{id}', 'EventsController@registrations');
+
+        // ============================================
+        // PUBLIC NEWS & EVENTS ROUTES - FIXED ORDER
+        // ============================================
+        // CRITICAL: Specific routes MUST come before {slug} route
+        $this->get('/news', 'NewsController@index');
+        $this->get('/news/search', 'NewsController@search');               // ✅ BEFORE {slug}
+        $this->get('/news/category/{category}', 'NewsController@category'); // ✅ BEFORE {slug}
+        $this->get('/news/archive/{year}/{month}', 'NewsController@archive'); // ✅ BEFORE {slug}
+        $this->get('/news/debug', 'NewsController@debug');
+        $this->get('/news/test', 'NewsController@test');
+        $this->get('/news/direct-test', 'NewsController@directTest');
+        $this->get('/news/simple-test', 'NewsController@simpleTest');
+        $this->get('/news/{slug}', 'NewsController@show');                 // ✅ THIS MUST BE LAST
+        
+        // Events routes
+        $this->get('/events', 'EventsController@publicIndex');
+        $this->get('/events/calendar', 'EventsController@calendar');        // ✅ Specific route first
+        $this->get('/events/{slug}', 'EventsController@publicShow');        // ✅ Generic route last
+        $this->post('/events/{id}/register', 'EventsController@publicRegister');
+
+        // ============================================
         // PUBLIC PAGES ROUTES - ADDED
         // ============================================
         $this->get('/', 'PageController@home');
@@ -71,7 +221,6 @@ class Router {
         $this->get('/programs', 'PageController@programs');
         $this->get('/admissions', 'PageController@admissions');
         $this->get('/contact', 'PageController@contact');
-        $this->get('/news', 'PageController@news');
         $this->get('/faculty', 'PageController@faculty');
         $this->get('/alumni', 'PageController@alumni');
         $this->get('/student-life', 'PageController@studentLife');
@@ -173,10 +322,6 @@ class Router {
         $this->post('/admin/nominal-roll/validate-bulk-upload', 'NominalRollController@validateBulkUpload');
         $this->post('/admin/nominal-roll/bulk-upload-process', 'NominalRollController@processBulkUpload');
         
-        // REMOVED: The following conflicting routes have been deleted as per instructions:
-        // $this->post('/nominal-roll/validate-bulk-upload', 'NominalRollController@validateBulkUpload');
-        // $this->post('/nominal-roll/bulk-upload-process', 'NominalRollController@processBulkUpload');
-        
         $this->get('/admin/nominal-roll/download-template', 'NominalRollController@downloadTemplate');
         $this->get('/admin/nominal-roll/export', 'NominalRollController@export');
         
@@ -194,6 +339,11 @@ class Router {
 
         // Print with options
         $this->get('/admin/nominal-roll/print/with-audit/{id}', 'NominalRollController@printWithAudit');
+        
+        // ============================================
+        // QUALIFICATION REPORT ROUTE - ADDED AS REQUESTED
+        // ============================================
+        $this->get('/admin/nominal-roll/qualification-report/(:any)/(:any)', 'NominalRollController@quickQualificationReport/$1/$2');
         
         // ============================================
         // TEST DATABASE INSERT ROUTE - ADDED AS REQUESTED
@@ -467,11 +617,6 @@ class Router {
         $this->get('/admin/applications/edit/{id}', 'ApplicationsController@edit');
         $this->post('/admin/applications/update-status/{id}', 'ApplicationsController@updateStatus');
         
-        // News routes
-        $this->get('/admin/news', 'NewsController@index');
-        $this->get('/admin/news/create', 'NewsController@create');
-        $this->post('/admin/news/store', 'NewsController@store');
-        
         // ============================================
         // API ROUTES - ADDED
         // ============================================
@@ -582,27 +727,7 @@ class Router {
         $this->get('/404', 'PageController@notFound');
         
         if (defined('APP_DEBUG') && APP_DEBUG) {
-            error_log("Router: All routes registered including RESEARCH MODULE routes");
-            error_log("Router: Admin Authentication Routes:");
-            error_log("Router:   /admin/login -> AdminController@login");
-            error_log("Router:   POST /admin/login -> AdminController@processLogin");
-            error_log("Router:   /admin/logout -> AdminController@logout");
-            error_log("Router:   /admin/dashboard -> AdminController@dashboard");
-            error_log("Router: Nominal Roll routes FIXED - removed conflicting routes:");
-            error_log("Router:   ✓ POST /admin/nominal-roll/validate-bulk-upload -> NominalRollController@validateBulkUpload");
-            error_log("Router:   ✓ POST /admin/nominal-roll/bulk-upload-process -> NominalRollController@processBulkUpload");
-            error_log("Router:   ✗ DELETED: POST /nominal-roll/validate-bulk-upload (conflicting)");
-            error_log("Router:   ✗ DELETED: POST /nominal-roll/bulk-upload-process (conflicting)");
-            error_log("Router:   ✓ ADDED GET /admin/nominal-roll/test-db-insert -> NominalRollController@testDatabaseInsert");
-            error_log("Router:   ✓ ADDED GET /admin/nominal-roll/test-exact-csv -> NominalRollController@testExactCSV");
-            error_log("Router:   ✓ ADDED GET /admin/users/change-password -> UserManagementController@changePassword");
-            error_log("Router:   ✓ ADDED POST /admin/users/change-password -> UserManagementController@processPasswordChange");
-            error_log("Router:   ✓ ADDED GET /debug-bulk-upload-test -> Debug route for bulk upload testing");
-            error_log("Router:   ✓ ADDED POST /admin/nominal-roll/bulk-upload -> NominalRollController@processBulkUpload");
-            error_log("Router:   ✓ ADDED POST /admin/nominal-roll/export-excel -> NominalRollController@exportExcel");
-            error_log("Router:   ✓ ADDED POST /admin/nominal-roll/export-csv -> NominalRollController@exportCsv");
-            error_log("Router:   ✓ ADDED POST /admin/nominal-roll/generate-report -> NominalRollController@generateReport");
-            error_log("Router:   ✓ ADDED POST /admin/nominal-roll/save-report -> NominalRollController@saveReport");
+            error_log("Router: All routes registered");
         }
     }
 
@@ -618,6 +743,20 @@ class Router {
      */
     public function post($path, $handler) {
         $this->addRoute('POST', $path, $handler);
+    }
+
+    /**
+     * Add a PUT route
+     */
+    public function put($path, $handler) {
+        $this->addRoute('PUT', $path, $handler);
+    }
+
+    /**
+     * Add a DELETE route
+     */
+    public function delete($path, $handler) {
+        $this->addRoute('DELETE', $path, $handler);
     }
 
     /**
@@ -718,33 +857,68 @@ class Router {
     }
 
     /**
-     * Match current request to a route
+     * Match current request to a route - FIXED VERSION
      */
     public function match() {
         $requestMethod = $_SERVER['REQUEST_METHOD'];
 
-        // Get clean request URI - SIMPLIFIED
+        // Get clean request URI - FIXED VERSION
         $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        
+        // Remove base path if exists (for subdirectory installations)
+        $scriptDir = dirname($_SERVER['SCRIPT_NAME']);
+        if ($scriptDir !== '/' && strpos($requestUri, $scriptDir) === 0) {
+            $requestUri = substr($requestUri, strlen($scriptDir));
+        }
+        
+        // Ensure request URI starts with /
+        if ($requestUri === '') {
+            $requestUri = '/';
+        }
         
         // Remove trailing slash (except for root)
         if ($requestUri !== '/') {
             $requestUri = rtrim($requestUri, '/');
         }
         
-        // Debug logging - ADDED
-        error_log("Router matching: $requestMethod $requestUri");
+        // Debug logging - ENHANCED
+        error_log("==========================================");
+        error_log("ROUTER MATCHING:");
+        error_log("  Request Method: $requestMethod");
+        error_log("  Request URI: $requestUri");
+        error_log("  SCRIPT_NAME: " . $_SERVER['SCRIPT_NAME']);
+        error_log("  PHP_SELF: " . $_SERVER['PHP_SELF']);
+        error_log("  Routes count: " . count($this->routes));
         
         foreach ($this->routes as $route) {
-            if ($route['method'] !== $requestMethod) {
+            // Handle PUT and DELETE methods via POST with _method parameter
+            if ($route['method'] === 'PUT' || $route['method'] === 'DELETE') {
+                if ($requestMethod === 'POST' && isset($_POST['_method'])) {
+                    if ($_POST['_method'] === $route['method']) {
+                        error_log("  Method override: POST -> {$route['method']}");
+                        $methodMatches = true;
+                    } else {
+                        $methodMatches = false;
+                    }
+                } else {
+                    $methodMatches = ($requestMethod === $route['method']);
+                }
+            } else {
+                $methodMatches = ($requestMethod === $route['method']);
+            }
+            
+            if (!$methodMatches) {
                 continue;
             }
             
-            // Debug: log each route being checked - ADDED
-            error_log("Checking route: {$route['path']} against $requestUri");
+            // Debug: log each route being checked
+            error_log("  Checking route: {$route['method']} {$route['path']}");
+            error_log("    Pattern: {$route['pattern']}");
             
             if (preg_match($route['pattern'], $requestUri, $matches)) {
-                // Debug: log when matched - ADDED
-                error_log("MATCHED: {$route['path']} with pattern {$route['pattern']}");
+                // Debug: log when matched
+                error_log("  ✓ MATCHED: {$route['path']}");
+                error_log("    Matches: " . print_r($matches, true));
                 
                 array_shift($matches);
                 $this->params = $matches;
@@ -757,8 +931,9 @@ class Router {
             }
         }
         
-        // Debug: log when no match found - ADDED
-        error_log("NO ROUTE MATCHED for: $requestUri");
+        // Debug: log when no match found
+        error_log("  ✗ NO ROUTE MATCHED");
+        error_log("==========================================");
         return null;
     }
 
@@ -781,6 +956,7 @@ class Router {
      */
     public function dispatch($match) {
         if ($match === null) {
+            error_log("ROUTER: No match found, showing 404");
             $this->notFound();
             return;
         }
@@ -810,21 +986,28 @@ class Router {
         $handler = $match['handler'];
         $params = $match['params'] ?? [];
 
+        error_log("ROUTER: Dispatching handler: " . (is_string($handler) ? $handler : 'Closure'));
+        error_log("ROUTER: Params: " . print_r($params, true));
+
         try {
             if (is_callable($handler)) {
                 // Call the closure directly
+                error_log("ROUTER: Calling closure");
                 call_user_func_array($handler, $params);
             } elseif (is_string($handler)) {
                 // Check if it's a controller method
                 if (strpos($handler, '@') !== false) {
                     list($controller, $method) = explode('@', $handler);
+                    error_log("ROUTER: Calling controller: $controller::$method()");
                     $this->callController($controller, $method, $params);
                 } else {
                     // Assume it's a file path - render view
+                    error_log("ROUTER: Rendering view: $handler");
                     $this->renderView($handler, $params);
                 }
             }
         } catch (Exception $e) {
+            error_log("ROUTER ERROR: " . $e->getMessage());
             $this->handleError($e);
         }
     }
@@ -841,10 +1024,8 @@ class Router {
             $controllerClass .= 'Controller';
         }
         
-        if (defined('APP_DEBUG') && APP_DEBUG) {
-            error_log("Router: Loading controller: $controllerClass::$method()");
-            error_log("Router: With params: " . print_r($params, true));
-        }
+        error_log("ROUTER: Loading controller: $controllerClass::$method()");
+        error_log("ROUTER: With params: " . print_r($params, true));
         
         // Find controller file
         $controllerFile = APP_PATH . "/controllers/{$controllerClass}.php";
@@ -855,6 +1036,7 @@ class Router {
         }
         
         if (file_exists($controllerFile)) {
+            error_log("ROUTER: Controller file found: $controllerFile");
             require_once $controllerFile;
             
             // Check if class exists
@@ -864,6 +1046,7 @@ class Router {
             
             $instance = new $controllerClass();
             if (method_exists($instance, $method)) {
+                error_log("ROUTER: Method exists, calling it");
                 call_user_func_array([$instance, $method], $params);
                 return;
             } else {
@@ -878,6 +1061,8 @@ class Router {
      * Render a view file
      */
     private function renderView($viewPath, $data = []) {
+        error_log("ROUTER: Rendering view: $viewPath");
+        
         // Try multiple possible locations
         $possiblePaths = [
             PUBLIC_PATH . '/' . $viewPath,
@@ -886,22 +1071,27 @@ class Router {
             $viewPath,
         ];
         
+        error_log("ROUTER: Looking for view in paths: " . implode(', ', $possiblePaths));
+        
         foreach ($possiblePaths as $fullPath) {
             if (file_exists($fullPath)) {
+                error_log("ROUTER: View found at: $fullPath");
                 extract($data);
                 include $fullPath;
                 return;
             }
         }
         
-        throw new Exception("View not found: $viewPath");
+        throw new Exception("View not found: $viewPath. Searched paths: " . implode(', ', $possiblePaths));
     }
 
     /**
-     * Handle 404 Not Found
+     * Handle 404 Not Found - FIXED VERSION
      */
     private function notFound() {
         http_response_code(404);
+        
+        error_log("ROUTER: Showing 404 page");
         
         // Try to use MVC 404 page
         if (class_exists('PageController')) {
@@ -911,13 +1101,16 @@ class Router {
                 return;
             } catch (Exception $e) {
                 // Fall through to default
+                error_log("PageController notFound failed: " . $e->getMessage());
             }
         }
         
-        // Try to find 404 view
+        // Try to find 404 view in multiple locations
         $possiblePaths = [
             APP_PATH . '/views/pages/404.php',
+            APP_PATH . '/views/404.php',
             PUBLIC_PATH . '/pages/404.php',
+            PUBLIC_PATH . '/404.php',
         ];
         
         foreach ($possiblePaths as $errorPage) {
@@ -940,6 +1133,7 @@ class Router {
         <body>
             <h1>404 - Page Not Found</h1>
             <p>The page you requested could not be found.</p>
+            <p>Requested URL: " . htmlspecialchars($_SERVER['REQUEST_URI']) . "</p>
             <p><a href='" . (defined('BASE_URL') ? BASE_URL : '/') . "'>Return to Homepage</a></p>
         </body>
         </html>";
@@ -948,16 +1142,33 @@ class Router {
     }
 
     /**
-     * Handle errors
+     * Handle errors - FIXED VERSION
      */
     private function handleError($exception) {
         error_log("Router Error: " . $exception->getMessage());
         
         if (defined('APP_DEBUG') && APP_DEBUG) {
+            // Show detailed error in debug mode
             echo "<h1>Router Error</h1>";
             echo "<p>" . htmlspecialchars($exception->getMessage()) . "</p>";
             echo "<pre>" . htmlspecialchars($exception->getTraceAsString()) . "</pre>";
         } else {
+            // Try to show a user-friendly error page
+            $possiblePaths = [
+                APP_PATH . '/views/pages/error.php',
+                APP_PATH . '/views/error.php',
+                PUBLIC_PATH . '/pages/error.php',
+                PUBLIC_PATH . '/error.php',
+            ];
+            
+            foreach ($possiblePaths as $errorPage) {
+                if (file_exists($errorPage)) {
+                    include $errorPage;
+                    return;
+                }
+            }
+            
+            // Default error page
             http_response_code(500);
             echo "<h1>Internal Server Error</h1>";
             echo "<p>Please try again later.</p>";
