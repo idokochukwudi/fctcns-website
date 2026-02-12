@@ -1,9 +1,11 @@
 <?php
 /**
  * Admissions Page View Template - Professional Layout
+ * REDESIGNED: Application Process Section with Premium Design
+ * TAGGED: Sales of Forms (15-28 Sept 2025) and CBT Screening (6-8 Oct)
  * 
  * @package FCTCNS
- * @version 4.8
+ * @version 5.1
  */
 
 extract($data ?? []);
@@ -29,7 +31,7 @@ $applicationPortal = 'https://consap.fcthhss.abj.gov.ng';
     <title><?php echo e($page_title); ?></title>
     
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -109,11 +111,13 @@ main.admissions-page {
     --shadow-subtle: 0 2px 6px rgba(0, 0, 0, 0.05);
     --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
     --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --shadow-deep: 0 16px 32px rgba(0, 0, 0, 0.15);
     
     /* Border Radius */
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 14px;
+    --radius-xl: 20px;
     --radius-full: 999px;
     
     /* Transitions */
@@ -153,7 +157,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-primary); /* Fallback color */
+    background: var(--color-primary);
 }
 
 .admissions-hero-bg {
@@ -165,7 +169,7 @@ body {
     background-size: cover;
     background-position: center;
     background-image: url('<?php echo $baseUrl; ?>/assets/images/admissions/admissions-hero.jpg');
-    background-attachment: fixed; /* Parallax effect */
+    background-attachment: fixed;
 }
 
 .admissions-hero-content {
@@ -176,7 +180,7 @@ body {
     padding: var(--spacing-xl);
     max-width: 800px;
     width: 100%;
-    background: rgba(0, 0, 0, 0.6); /* Semi-transparent background for readability */
+    background: rgba(0, 0, 0, 0.6);
     border-radius: var(--radius-lg);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -443,177 +447,478 @@ body {
 }
 
 /* ==========================================================================
-   PROCESS SECTION - REDESIGNED
+   REDESIGNED APPLICATION PROCESS SECTION - DETAILED STEP-BY-STEP
    ========================================================================== */
 .process-section {
     background: var(--color-white);
-}
-
-.process-container {
-    margin-top: var(--spacing-xl);
-}
-
-.process-timeline {
     position: relative;
-    max-width: 1000px;
-    margin: 0 auto;
+    overflow: hidden;
 }
 
-.process-timeline::before {
+.process-section::before {
     content: '';
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 100%;
-    background: var(--color-primary-light);
-    border-radius: 2px;
-}
-
-.process-step {
-    position: relative;
-    margin-bottom: var(--spacing-xxl);
-    display: flex;
-    align-items: center;
+    top: 0;
+    left: 0;
     width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at top right, rgba(93, 74, 138, 0.03) 0%, transparent 70%);
+    pointer-events: none;
 }
 
-.process-step:nth-child(odd) {
-    flex-direction: row-reverse;
+/* Process Header Stats */
+.process-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xxl);
+    padding: var(--spacing-xl) 0;
 }
 
-.process-step-content {
+.process-stat-item {
+    text-align: center;
+    position: relative;
+    padding: var(--spacing-md);
     background: var(--color-white);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
-    box-shadow: var(--shadow-soft);
     border: 1px solid var(--color-gray-100);
-    width: 45%;
-    position: relative;
     transition: var(--transition-smooth);
 }
 
-.process-step-content:hover {
+.process-stat-item:hover {
     transform: translateY(-5px);
-    box-shadow: var(--shadow-elevated);
+    box-shadow: var(--shadow-soft);
     border-color: var(--color-primary-light);
 }
 
-.process-step:nth-child(odd) .process-step-content {
-    margin-right: auto;
-    margin-left: 0;
+.process-stat-value {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    line-height: 1;
+    margin-bottom: var(--spacing-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
 }
 
-.process-step:nth-child(even) .process-step-content {
-    margin-left: auto;
-    margin-right: 0;
+.process-stat-label {
+    color: var(--color-gray-600);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-.process-step-icon {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 60px;
-    background: var(--color-primary);
+.process-stat-tag {
+    display: inline-block;
+    margin-top: var(--spacing-xs);
+    padding: 0.3rem 0.8rem;
+    background: var(--color-primary-very-light);
+    color: var(--color-primary);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid var(--color-primary-light);
+}
+
+/* Process Flow Diagram */
+.process-flow-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xxl);
+    background: linear-gradient(135deg, var(--color-white), var(--color-gray-50));
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--color-gray-100);
+}
+
+.process-flow-node {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.process-flow-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--color-white);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-white);
-    font-size: 1.5rem;
-    z-index: 10;
-    border: 4px solid var(--color-white);
-    box-shadow: var(--shadow-soft);
+    margin: 0 auto var(--spacing-md);
+    border: 2px solid var(--color-gray-100);
+    transition: var(--transition-smooth);
+    position: relative;
+    box-shadow: var(--shadow-subtle);
 }
 
-.process-step-number {
-    display: block;
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin-bottom: var(--spacing-sm);
+.process-flow-node:hover .process-flow-icon {
+    border-color: var(--color-primary);
+    transform: scale(1.1);
+    background: var(--color-primary-very-light);
+}
+
+.process-flow-icon i {
+    font-size: 2rem;
     color: var(--color-primary);
-    font-family: var(--font-heading);
+    transition: var(--transition-smooth);
 }
 
-.process-step-title {
+.process-flow-node:hover .process-flow-icon i {
+    color: var(--color-accent);
+    transform: scale(1.1);
+}
+
+.process-flow-node.active .process-flow-icon {
+    border-color: var(--color-accent);
+    background: linear-gradient(135deg, var(--color-accent-light), var(--color-white));
+}
+
+.process-flow-node.active .process-flow-icon i {
+    color: var(--color-accent-dark);
+}
+
+.process-flow-label {
     font-family: var(--font-heading);
-    font-size: 1.4rem;
+    font-size: 1rem;
     font-weight: 600;
+    color: var(--color-gray-800);
+    margin-bottom: var(--spacing-xs);
+}
+
+.process-flow-time {
+    font-size: 0.8rem;
+    color: var(--color-accent);
+    font-weight: 600;
+}
+
+.process-flow-connector {
+    flex: 0 0 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-gray-400);
+    font-size: 1.5rem;
+    font-weight: 300;
+}
+
+/* Process Cards Grid */
+.process-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.process-card {
+    background: var(--color-white);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    position: relative;
+    transition: var(--transition-smooth);
+    border: 1px solid var(--color-gray-100);
+    box-shadow: var(--shadow-subtle);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.process-card:hover {
+    transform: translateY(-10px);
+    box-shadow: var(--shadow-deep);
+    border-color: var(--color-primary-light);
+}
+
+.process-card-number {
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--color-primary-transparent);
+    line-height: 1;
+}
+
+.process-card-icon {
+    width: 70px;
+    height: 70px;
+    background: var(--color-primary-very-light);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--spacing-lg);
+    transition: var(--transition-smooth);
+}
+
+.process-card:hover .process-card-icon {
+    background: var(--color-primary);
+    transform: scale(1.1);
+}
+
+.process-card-icon i {
+    font-size: 2rem;
     color: var(--color-primary);
-    margin-bottom: var(--spacing-md);
+    transition: var(--transition-smooth);
+}
+
+.process-card:hover .process-card-icon i {
+    color: var(--color-white);
+}
+
+.process-card-title {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
     line-height: 1.3;
 }
 
-.process-step-list {
+.process-card-description {
+    color: var(--color-gray-800);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: var(--spacing-md);
+    flex-grow: 1;
+}
+
+.process-card-actions {
+    margin-top: auto;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-gray-100);
+}
+
+.process-card-link {
+    color: var(--color-accent-dark);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    transition: var(--transition-smooth);
+}
+
+.process-card-link:hover {
+    color: var(--color-primary);
+    gap: var(--spacing-sm);
+}
+
+/* Detailed Process Steps - ENHANCED WITH FULL DETAILS */
+.process-steps-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-xl);
+}
+
+.process-step-block {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--color-white);
+    border-radius: var(--radius-lg);
+    transition: var(--transition-smooth);
+    border: 1px solid var(--color-gray-100);
+    box-shadow: var(--shadow-subtle);
+}
+
+.process-step-block:hover {
+    transform: translateX(5px);
+    border-color: var(--color-primary-light);
+    box-shadow: var(--shadow-soft);
+}
+
+.process-step-block-number {
+    font-family: var(--font-heading);
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--color-accent-light);
+    line-height: 1;
+    min-width: 60px;
+    text-align: center;
+}
+
+.process-step-block-content {
+    flex: 1;
+}
+
+.process-step-block-title {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.process-step-block-list {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-.process-step-list li {
-    padding: 0.6rem 0;
+.process-step-block-list li {
+    padding: 0.5rem 0;
+    padding-left: 1.5rem;
     position: relative;
-    padding-left: 1.8rem;
     color: var(--color-gray-800);
+    font-size: 0.95rem;
     line-height: 1.5;
-    font-size: 1.05rem;
-    border-bottom: 1px solid var(--color-gray-100);
 }
 
-.process-step-list li:last-child {
-    border-bottom: none;
-}
-
-.process-step-list li::before {
+.process-step-block-list li::before {
     content: '•';
     position: absolute;
     left: 0;
     color: var(--color-accent);
     font-weight: bold;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
 }
 
-/* Process Flowchart */
-.process-flowchart {
-    background: var(--color-white);
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--spacing-xl);
-    overflow: hidden;
-    box-shadow: var(--shadow-soft);
-    border: 1px solid var(--color-gray-100);
+.process-step-block-list li strong {
+    color: var(--color-primary);
+    font-weight: 600;
 }
 
-.process-flowchart-image {
-    width: 100%;
-    height: auto;
-    display: block;
-    object-fit: contain;
-    max-height: 500px;
+.process-step-portal-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--color-primary-very-light);
+    color: var(--color-primary);
+    padding: 0.4rem 1rem;
+    border-radius: var(--radius-full);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+    border: 1px solid var(--color-primary-light);
+    transition: var(--transition-smooth);
 }
 
-.process-flowchart-caption {
-    padding: var(--spacing-md);
-    background: var(--color-gray-50);
-    text-align: center;
-    color: var(--color-gray-800);
-    font-size: 0.9rem;
-    border-top: 1px solid var(--color-gray-100);
+.process-step-portal-link:hover {
+    background: var(--color-primary);
+    color: var(--color-white);
+    border-color: var(--color-primary);
 }
 
-.process-flowchart-placeholder {
-    background: var(--color-gray-50);
-    height: 400px;
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--spacing-xl);
+/* Portal Access Card */
+.portal-access-card {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    margin-top: var(--spacing-xxl);
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--spacing-lg);
+    box-shadow: var(--shadow-elevated);
+    position: relative;
+    overflow: hidden;
+}
+
+.portal-access-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+.portal-access-content {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+}
+
+.portal-access-title {
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--color-white);
+    margin-bottom: var(--spacing-xs);
+}
+
+.portal-access-description {
+    color: rgba(255,255,255,0.95);
+    font-size: 1.05rem;
+    line-height: 1.5;
+}
+
+.portal-access-actions {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+.portal-btn {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-    color: var(--color-gray-600);
-    font-size: 1.1rem;
-    text-align: center;
-    border: 2px dashed var(--color-gray-300);
+    gap: 0.75rem;
+    background: var(--color-white);
+    color: var(--color-primary);
+    padding: 0.9rem 2rem;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 700;
+    transition: var(--transition-smooth);
+    border: 2px solid var(--color-white);
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    min-width: 180px;
+}
+
+.portal-btn:hover {
+    background: transparent;
+    color: var(--color-white);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-soft);
+}
+
+.portal-btn-outline {
+    background: transparent;
+    color: var(--color-white);
+    border: 2px solid var(--color-white);
+}
+
+.portal-btn-outline:hover {
+    background: var(--color-white);
+    color: var(--color-primary);
+}
+
+/* Process Note */
+.process-note {
+    margin-top: var(--spacing-xl);
     padding: var(--spacing-lg);
+    background: var(--color-gray-50);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    border: 1px dashed var(--color-gray-300);
+    color: var(--color-gray-600);
+    font-size: 0.95rem;
+}
+
+.process-note i {
+    color: var(--color-accent);
+    margin-right: var(--spacing-xs);
 }
 
 /* ==========================================================================
@@ -799,25 +1104,29 @@ body {
 /* ==========================================================================
    RESPONSIVE DESIGN
    ========================================================================== */
-@media (max-width: 992px) {
-    .process-timeline::before {
-        left: 30px;
+@media (max-width: 1024px) {
+    .process-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
     
-    .process-step {
-        flex-direction: row !important;
-        align-items: flex-start;
+    .process-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-xl);
     }
     
-    .process-step-content {
-        width: calc(100% - 100px);
-        margin-left: 100px !important;
-        margin-right: 0 !important;
+    .process-flow-diagram {
+        flex-direction: column;
+        gap: var(--spacing-md);
     }
     
-    .process-step-icon {
-        left: 30px;
-        transform: translateX(0);
+    .process-flow-connector {
+        transform: rotate(90deg);
+        margin: var(--spacing-xs) 0;
+    }
+    
+    .portal-access-card {
+        flex-direction: column;
+        text-align: center;
     }
 }
 
@@ -834,7 +1143,7 @@ body {
     .admissions-hero {
         height: 70vh;
         min-height: 450px;
-        background-attachment: scroll; /* Remove parallax on mobile */
+        background-attachment: scroll;
     }
     
     .admissions-hero-content {
@@ -885,25 +1194,37 @@ body {
         font-size: 1rem;
     }
     
-    .process-step-content {
-        padding: var(--spacing-lg);
-        width: calc(100% - 80px);
-        margin-left: 80px !important;
+    .process-cards-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
     }
     
-    .process-step-icon {
-        width: 50px;
-        height: 50px;
-        font-size: 1.3rem;
-        left: 25px;
+    .process-stats {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
     }
     
-    .process-step-number {
-        font-size: 1.5rem;
+    .process-steps-container {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
     }
     
-    .process-step-title {
-        font-size: 1.2rem;
+    .process-step-block {
+        padding: var(--spacing-md);
+    }
+    
+    .process-step-block-number {
+        font-size: 1.8rem;
+        min-width: 50px;
+    }
+    
+    .portal-access-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .portal-btn {
+        width: 100%;
     }
     
     .btn-primary,
@@ -912,10 +1233,6 @@ body {
         padding: 0.8rem 1.8rem;
         font-size: 1rem;
         min-height: 50px;
-    }
-    
-    .process-flowchart-placeholder {
-        height: 300px;
     }
 }
 
@@ -947,35 +1264,26 @@ body {
         font-size: 1.2rem;
     }
     
-    .process-step-content {
-        width: calc(100% - 60px);
-        margin-left: 60px !important;
-        padding: var(--spacing-md);
+    .process-card-icon {
+        width: 60px;
+        height: 60px;
     }
     
-    .process-step-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 1.1rem;
-        left: 20px;
+    .process-card-icon i {
+        font-size: 1.6rem;
     }
     
-    .process-step-number {
+    .process-card-title {
+        font-size: 1.2rem;
+    }
+    
+    .process-step-block-number {
+        font-size: 1.6rem;
+        min-width: 40px;
+    }
+    
+    .portal-access-title {
         font-size: 1.3rem;
-    }
-    
-    .process-step-title {
-        font-size: 1.1rem;
-    }
-    
-    .process-step-list li {
-        font-size: 1rem;
-        padding-left: 1.5rem;
-    }
-    
-    .process-flowchart-placeholder {
-        height: 250px;
-        font-size: 1rem;
     }
 }
 
@@ -1001,27 +1309,21 @@ body {
     
     .btn-primary,
     .btn-secondary,
-    .btn-disabled {
+    .btn-disabled,
+    .portal-btn {
         display: none;
     }
     
     .detail-card,
     .contact-card,
-    .process-step-content {
+    .process-card,
+    .process-step-block {
         box-shadow: none;
         border: 1px solid var(--color-gray-300);
     }
     
     .alert-important,
     .status-banner {
-        border: 1px solid var(--color-gray-300);
-    }
-    
-    .process-timeline::before {
-        display: none;
-    }
-    
-    .process-step-icon {
         border: 1px solid var(--color-gray-300);
     }
 }
@@ -1035,9 +1337,11 @@ body {
     
     .detail-card:hover,
     .contact-card:hover,
-    .process-step-content:hover,
+    .process-card:hover,
+    .process-step-block:hover,
     .btn-primary:hover,
-    .btn-secondary:hover {
+    .btn-secondary:hover,
+    .portal-btn:hover {
         transform: none !important;
     }
 }
@@ -1113,7 +1417,7 @@ body {
                         <i class="far fa-clock"></i>
                     </div>
                     <h3>Examination Schedule</h3>
-                    <p><strong>Post UTME Screening:</strong> 6th, 7th, and 8th October 2025</p>
+                    <p><strong>CBT Screening:</strong> 6th, 7th, and 8th October 2025</p>
                     <p><strong>Venue:</strong> FCT College of Nursing Sciences, Gwagwalada (within UATH)</p>
                     <p><strong>Reporting Time:</strong> 8:00 AM daily</p>
                 </div>
@@ -1152,124 +1456,250 @@ body {
         </div>
     </section>
 
-    <!-- Application Process Section -->
+    <!-- REDESIGNED APPLICATION PROCESS SECTION - DETAILED STEP-BY-STEP WITH FULL INSTRUCTIONS -->
     <section class="section process-section">
         <div class="container">
             <div class="section-header">
                 <h2 class="section-title">Application Process</h2>
-                <p class="section-subtitle">Step-by-step guide to the application procedure (2025/2026 Session)</p>
+                <p class="section-subtitle">A streamlined 4-step journey to your nursing education</p>
             </div>
-            
-            <!-- Process Flowchart -->
-            <?php
-            $flowchartPath = $baseUrl . '/assets/images/admissions/process-flowchart.jpg';
-            $flowchartExists = file_exists($_SERVER['DOCUMENT_ROOT'] . parse_url($flowchartPath, PHP_URL_PATH));
-            ?>
-            
-            <?php if ($flowchartExists): ?>
-            <div class="process-flowchart">
-                <img 
-                    src="<?php echo $flowchartPath; ?>" 
-                    alt="Application Process Flowchart for FCT College of Nursing Sciences Admissions 2025/2026"
-                    class="process-flowchart-image"
-                >
-                <div class="process-flowchart-caption">
-                    Application Process Flowchart for 2025/2026 Admissions (Process has ended)
-                </div>
-            </div>
-            <?php else: ?>
-            <div class="process-flowchart-placeholder">
-                <div>
-                    <i class="fas fa-diagram-project" style="font-size: 3rem; margin-bottom: var(--spacing-md); color: var(--color-gray-400);"></i>
-                    <p>Application Process Flowchart (2025/2026)</p>
-                    <p style="font-size: 0.9rem; margin-top: var(--spacing-xs);">
-                        Add your flowchart image at:<br>
-                        <code>/assets/images/admissions/process-flowchart.jpg</code>
-                    </p>
-                </div>
-            </div>
-            <?php endif; ?>
-            
-            <!-- Process Steps Timeline -->
-            <div class="process-container">
-                <div class="process-timeline">
-                    <!-- Step 1 -->
-                    <div class="process-step">
-                        <div class="process-step-content">
-                            <span class="process-step-number">01</span>
-                            <h3 class="process-step-title">Account Creation & Registration</h3>
-                            <ul class="process-step-list">
-                                <li>Visit the application portal: 
-                                    <div class="portal-button-container">
-                                        <a href="<?php echo $applicationPortal; ?>" target="_blank" class="btn-portal" title="Go to Application Portal">
-                                            <i class="fas fa-external-link-alt"></i> Visit Portal
-                                        </a>
-                                    </div>
-                                </li>
-                                <li>Read and agree to the terms and conditions</li>
-                                <li>Enter your 2025 JAMB registration number for validation</li>
-                                <li>Provide valid email address, phone number, and create a secure password</li>
-                            </ul>
-                        </div>
-                        <div class="process-step-icon">
-                            <i class="fas fa-user-plus"></i>
-                        </div>
+
+            <!-- Process Stats with Proper Tags -->
+            <div class="process-stats">
+                <div class="process-stat-item">
+                    <div class="process-stat-value">
+                        <span>4</span>
+                        <span style="font-size: 1.5rem;">Steps</span>
                     </div>
-                    
-                    <!-- Step 2 -->
-                    <div class="process-step">
-                        <div class="process-step-content">
-                            <span class="process-step-number">02</span>
-                            <h3 class="process-step-title">Complete Application Form</h3>
-                            <ul class="process-step-list">
-                                <li>Log in with your registered credentials</li>
-                                <li>Navigate to "Apply Now" or "My Application" section</li>
-                                <li>Fill all required personal and academic information accurately</li>
-                                <li>Upload required documents (passport photograph, O'Level results)</li>
-                            </ul>
-                        </div>
-                        <div class="process-step-icon">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
-                    </div>
-                    
-                    <!-- Step 3 -->
-                    <div class="process-step">
-                        <div class="process-step-content">
-                            <span class="process-step-number">03</span>
-                            <h3 class="process-step-title">Payment & Verification</h3>
-                            <ul class="process-step-list">
-                                <li>Click "Proceed to Payment" to generate RRR code</li>
-                                <li>Pay ₦2,200 application fee online or at any commercial bank</li>
-                                <li>Return to portal and click "Verify Payment" to confirm payment</li>
-                                <li>Wait for payment confirmation before proceeding</li>
-                            </ul>
-                        </div>
-                        <div class="process-step-icon">
-                            <i class="fas fa-credit-card"></i>
-                        </div>
-                    </div>
-                    
-                    <!-- Step 4 -->
-                    <div class="process-step">
-                        <div class="process-step-content">
-                            <span class="process-step-number">04</span>
-                            <h3 class="process-step-title">Examination Slip & Preparation</h3>
-                            <ul class="process-step-list">
-                                <li>Download and print your examination slip from the portal</li>
-                                <li>Bring printed slip, writing materials, and valid ID to exam venue</li>
-                                <li>Arrive at least 30 minutes before scheduled examination time</li>
-                            </ul>
-                        </div>
-                        <div class="process-step-icon">
-                            <i class="fas fa-print"></i>
-                        </div>
-                    </div>
+                    <div class="process-stat-label">Simple Process</div>
                 </div>
                 
-                <p class="text-muted text-center" style="margin-top: var(--spacing-xl); font-style: italic;">
-                    <i class="fas fa-info-circle"></i> This application process was for the 2025/2026 session. The portal is now closed.
-                </p>
+                <div class="process-stat-item">
+                    <div class="process-stat-value">
+                        <span>₦2,200</span>
+                    </div>
+                    <div class="process-stat-label">Application Fee</div>
+                </div>
+                
+                <!-- TAGGED: Sales of Forms -->
+                <div class="process-stat-item">
+                    <div class="process-stat-value">
+                        <span>15-28</span>
+                    </div>
+                    <div class="process-stat-label">Sept 2025</div>
+                    <span class="process-stat-tag">
+                        <i class="fas fa-file-invoice"></i> Sales of Forms
+                    </span>
+                </div>
+                
+                <!-- TAGGED: CBT Screening -->
+                <div class="process-stat-item">
+                    <div class="process-stat-value">
+                        <span>6-8</span>
+                    </div>
+                    <div class="process-stat-label">Oct Screening</div>
+                    <span class="process-stat-tag">
+                        <i class="fas fa-laptop"></i> CBT Screening
+                    </span>
+                </div>
+            </div>
+
+            <!-- Process Flow Diagram -->
+            <div class="process-flow-diagram">
+                <div class="process-flow-node active">
+                    <div class="process-flow-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="process-flow-label">Account Creation</div>
+                    <div class="process-flow-time">Step 1</div>
+                </div>
+                <div class="process-flow-connector">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="process-flow-node">
+                    <div class="process-flow-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="process-flow-label">Application Form</div>
+                    <div class="process-flow-time">Step 2</div>
+                </div>
+                <div class="process-flow-connector">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="process-flow-node">
+                    <div class="process-flow-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div class="process-flow-label">Payment</div>
+                    <div class="process-flow-time">Step 3</div>
+                </div>
+                <div class="process-flow-connector">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="process-flow-node">
+                    <div class="process-flow-icon">
+                        <i class="fas fa-print"></i>
+                    </div>
+                    <div class="process-flow-label">Examination Slip</div>
+                    <div class="process-flow-time">Step 4</div>
+                </div>
+            </div>
+
+            <!-- Process Cards Grid -->
+            <div class="process-cards-grid">
+                <!-- Card 1 -->
+                <div class="process-card">
+                    <span class="process-card-number">01</span>
+                    <div class="process-card-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h3 class="process-card-title">Account Creation & Registration</h3>
+                    <p class="process-card-description">
+                        Register on the portal with your JAMB number and personal details to create your application account.
+                    </p>
+                    <div class="process-card-actions">
+                        <span class="process-card-link">
+                            <i class="fas fa-check-circle" style="color: var(--color-accent);"></i> Completed
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="process-card">
+                    <span class="process-card-number">02</span>
+                    <div class="process-card-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h3 class="process-card-title">Complete Application Form</h3>
+                    <p class="process-card-description">
+                        Log in and complete all sections of the application form with accurate personal and academic information.
+                    </p>
+                    <div class="process-card-actions">
+                        <span class="process-card-link">
+                            <i class="fas fa-check-circle" style="color: var(--color-accent);"></i> Completed
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="process-card">
+                    <span class="process-card-number">03</span>
+                    <div class="process-card-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <h3 class="process-card-title">Payment & Verification</h3>
+                    <p class="process-card-description">
+                        Generate RRR code and pay ₦2,200 application fee online or at any commercial bank.
+                    </p>
+                    <div class="process-card-actions">
+                        <span class="process-card-link">
+                            <i class="fas fa-check-circle" style="color: var(--color-accent);"></i> Completed
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="process-card">
+                    <span class="process-card-number">04</span>
+                    <div class="process-card-icon">
+                        <i class="fas fa-print"></i>
+                    </div>
+                    <h3 class="process-card-title">Examination Slip & Preparation</h3>
+                    <p class="process-card-description">
+                        Download and print your examination slip with date, venue, and reporting time.
+                    </p>
+                    <div class="process-card-actions">
+                        <span class="process-card-link">
+                            <i class="fas fa-check-circle" style="color: var(--color-accent);"></i> Completed
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Steps - COMPLETE WITH ALL SPECIFIED DETAILS -->
+            <div class="process-steps-container">
+                <!-- Step 01 - Account Creation & Registration - FULL DETAILS -->
+                <div class="process-step-block">
+                    <div class="process-step-block-number">01</div>
+                    <div class="process-step-block-content">
+                        <h4 class="process-step-block-title">Account Creation & Registration</h4>
+                        <ul class="process-step-block-list">
+                            <li><strong>Visit the application portal:</strong> 
+                                <a href="<?php echo $applicationPortal; ?>" target="_blank" class="process-step-portal-link">
+                                    <i class="fas fa-external-link-alt"></i> Visit Portal
+                                </a>
+                            </li>
+                            <li><strong>Read and agree</strong> to the terms and conditions</li>
+                            <li><strong>Enter your 2025 JAMB registration number</strong> for validation</li>
+                            <li><strong>Provide valid email address</strong>, phone number, and create a secure password</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Step 02 - Complete Application Form - FULL DETAILS -->
+                <div class="process-step-block">
+                    <div class="process-step-block-number">02</div>
+                    <div class="process-step-block-content">
+                        <h4 class="process-step-block-title">Complete Application Form</h4>
+                        <ul class="process-step-block-list">
+                            <li><strong>Log in</strong> with your registered credentials</li>
+                            <li><strong>Navigate to "Apply Now"</strong> or "My Application" section</li>
+                            <li><strong>Fill all required personal and academic information</strong> accurately</li>
+                            <li><strong>Upload required documents:</strong> passport photograph, O'Level results</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Step 03 - Payment & Verification - FULL DETAILS -->
+                <div class="process-step-block">
+                    <div class="process-step-block-number">03</div>
+                    <div class="process-step-block-content">
+                        <h4 class="process-step-block-title">Payment & Verification</h4>
+                        <ul class="process-step-block-list">
+                            <li><strong>Click "Proceed to Payment"</strong> to generate RRR code</li>
+                            <li><strong>Pay ₦2,200 application fee</strong> online or at any commercial bank</li>
+                            <li><strong>Return to portal and click "Verify Payment"</strong> to confirm payment</li>
+                            <li><strong>Wait for payment confirmation</strong> before proceeding</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Step 04 - Examination Slip & Preparation - FULL DETAILS -->
+                <div class="process-step-block">
+                    <div class="process-step-block-number">04</div>
+                    <div class="process-step-block-content">
+                        <h4 class="process-step-block-title">Examination Slip & Preparation</h4>
+                        <ul class="process-step-block-list">
+                            <li><strong>Download and print your examination slip</strong> from the portal</li>
+                            <li><strong>Bring printed slip, writing materials, and valid ID</strong> to exam venue</li>
+                            <li><strong>Arrive at least 30 minutes before</strong> scheduled examination time</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portal Access Card -->
+            <div class="portal-access-card">
+                <div class="portal-access-content">
+                    <h3 class="portal-access-title">Application Portal</h3>
+                    <p class="portal-access-description">
+                        Access the official admissions portal for FCT College of Nursing Sciences
+                    </p>
+                </div>
+                <div class="portal-access-actions">
+                    <a href="<?php echo $applicationPortal; ?>" target="_blank" class="portal-btn">
+                        <i class="fas fa-external-link-alt"></i> Visit Portal
+                    </a>
+                    <a href="<?php echo $applicationPortal; ?>" target="_blank" class="portal-btn portal-btn-outline">
+                        <i class="fas fa-question-circle"></i> Help Guide
+                    </a>
+                </div>
+            </div>
+
+            <!-- Process Note -->
+            <div class="process-note">
+                <i class="fas fa-info-circle"></i> 
+                This application process was for the <strong>2025/2026 academic session</strong>. The application portal is now closed. Please check back for the <strong>2026/2027 admissions cycle</strong>.
             </div>
         </div>
     </section>
@@ -1386,8 +1816,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Animate process steps on scroll
-    const processSteps = document.querySelectorAll('.process-step-content');
+    // Animate process cards on scroll
+    const processCards = document.querySelectorAll('.process-card, .process-step-block, .process-flow-node, .process-stat-item');
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -1397,11 +1827,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, { threshold: 0.1 });
     
-    processSteps.forEach(step => {
-        step.style.opacity = '0';
-        step.style.transform = 'translateY(20px)';
-        step.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(step);
+    processCards.forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
     });
 });
 </script>

@@ -1,6 +1,9 @@
 <?php
 /**
  * Footer Template - Professional Purple Theme with Gold Accents
+ * FIXED: Unique class names to prevent conflicts with page content
+ * FIXED: Social icons now show on hover (NOT BLANK) - COMPLETELY REWRITTEN
+ * UPDATED: Main campus address to P. O. Box 507 Gwagwalada – Abuja, Nigeria
  *
  * @package FCT_CNS
  */
@@ -9,14 +12,6 @@
 $baseUrl = $baseUrl ?? (defined('BASE_URL') ? BASE_URL : '');
 $currentPage = $currentPage ?? 'home';
 $currentYear = date('Y');
-
-// Accurate institutional statistics
-$institutionStats = [
-    ['value' => '800+', 'label' => 'Active Students', 'icon' => 'users'],
-    ['value' => '6+', 'label' => 'Partner Hospitals', 'icon' => 'hospital'],
-    ['value' => '2+', 'label' => 'Academic Programs', 'icon' => 'graduation-cap'],
-    ['value' => '95%', 'label' => 'Graduate Success', 'icon' => 'chart-line'],
-];
 
 // Navigation data
 $quickLinks = [
@@ -72,9 +67,8 @@ $socialLinks = [
                                  class="footer-logo"
                                  width="200"
                                  height="67"
-                                 loading="lazy"
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <div class="footer-logo-fallback">
+                                 loading="lazy">
+                            <div class="footer-logo-fallback" style="display: none;">
                                 <span class="logo-fallback-acronym">FCT</span>
                                 <span class="logo-fallback-full">College of Nursing Sciences</span>
                             </div>
@@ -84,17 +78,17 @@ $socialLinks = [
                             <h2 class="footer-institution-title">FCT College of Nursing Sciences</h2>
                             <p class="footer-mission-text">
                                 Excellence in nursing education and healthcare training in Nigeria's Federal Capital Territory.
-                                Committed to developing compassionate, competent nursing professionals.
                             </p>
                         </div>
 
-                        <div class="footer-accreditation">
-                            <span class="accreditation-badge">
-                                <span class="badge-dot"></span>
+                        <!-- FIXED: Changed class names to prevent conflict with About page -->
+                        <div class="footer-accreditation-badges">
+                            <span class="footer-accred-badge">
+                                <span class="footer-badge-dot"></span>
                                 NMCN Accredited
                             </span>
-                            <span class="accreditation-badge">
-                                <span class="badge-dot"></span>
+                            <span class="footer-accred-badge">
+                                <span class="footer-badge-dot"></span>
                                 NBTE Approved
                             </span>
                         </div>
@@ -128,7 +122,6 @@ $socialLinks = [
                                 <li class="footer-list-item">
                                     <a href="<?= htmlspecialchars($baseUrl) ?>/<?= $link['url'] ?>" 
                                        class="footer-link">
-                                        <!-- Gold SVG Icons -->
                                         <svg class="footer-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                             <?php if ($link['icon'] === 'sign-in-alt'): ?>
                                                 <path d="M16 7L21 12M21 12L16 17M21 12H9M12 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -167,7 +160,7 @@ $socialLinks = [
                                 </svg>
                                 <span>
                                     <span class="contact-label">Main Campus:</span>
-                                    Plot 123, Garki District, Abuja, FCT
+                                    P. O. Box 507 Gwagwalada – Abuja, Nigeria
                                 </span>
                             </div>
                             
@@ -238,35 +231,33 @@ $socialLinks = [
                 </div>
             </div>
 
-            <!-- Institutional Stats - Gold Accents -->
+            <!-- Institutional Stats - FIXED: Changed to unique class names -->
             <div class="footer-stats">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value">800+</div>
-                        <div class="stat-label">Active Students</div>
-                        <div class="stat-trend positive">
+                <div class="footer-stats-grid">
+                    <div class="footer-stat-card">
+                        <div class="footer-stat-value">800+</div>
+                        <div class="footer-stat-label">Active Students</div>
+                        <div class="footer-stat-trend">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 5L12 19M12 5L5 12M12 5L19 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                             +12% this year
                         </div>
                     </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-value">6+</div>
-                        <div class="stat-label">Partner Hospitals</div>
-                        <div class="stat-trend">
+                    <div class="footer-stat-card">
+                        <div class="footer-stat-value">6+</div>
+                        <div class="footer-stat-label">Partner Hospitals</div>
+                        <div class="footer-stat-trend">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M19 10L14 5M19 10L22 7L17 2L14 5M19 10L12 17M5 19L8 16M3 21L7 17L5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                             Clinical affiliations
                         </div>
                     </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-value">2+</div>
-                        <div class="stat-label">Academic Programs</div>
-                        <div class="stat-trend">
+                    <div class="footer-stat-card">
+                        <div class="footer-stat-value">2+</div>
+                        <div class="footer-stat-label">Academic Programs</div>
+                        <div class="footer-stat-trend">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 14L2 9L12 4L22 9L12 14Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                 <path d="M18 12.5V16.5C18 17.2956 17.6839 18.0587 17.1213 18.6213C16.5587 19.1839 15.7956 19.5 15 19.5H9C8.20435 19.5 7.44129 19.1839 6.87868 18.6213C6.31607 18.0587 6 17.2956 6 16.5V12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -274,11 +265,10 @@ $socialLinks = [
                             Expanding
                         </div>
                     </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-value">95%</div>
-                        <div class="stat-label">Graduate Success</div>
-                        <div class="stat-trend positive">
+                    <div class="footer-stat-card">
+                        <div class="footer-stat-value">95%</div>
+                        <div class="footer-stat-label">Graduate Success</div>
+                        <div class="footer-stat-trend">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
@@ -315,8 +305,8 @@ $socialLinks = [
             </div>
         </div>
 
-        <!-- Back to Top Button - FIXED VERSION -->
-        <button class="back-to-top" id="backToTopBtn" aria-label="Back to top of page" title="Back to top">
+        <!-- Back to Top Button -->
+        <button class="back-to-top" id="footerBackToTop" aria-label="Back to top of page" title="Back to top">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M12 4L12 20M12 4L6 10M12 4L18 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -324,188 +314,184 @@ $socialLinks = [
         </button>
     </footer>
 
-    <!-- Scripts -->
+    <!-- Scripts - FULLY ISOLATED, NO BODY AFFECTIONS -->
     <script src="<?= htmlspecialchars($baseUrl) ?>/assets/js/main.js" defer></script>
     <?php if ($currentPage === 'home'): ?>
         <script src="<?= htmlspecialchars($baseUrl) ?>/assets/js/carousel.js" defer></script>
     <?php endif; ?>
 
-    <!-- Footer JavaScript - FIXED BACK TO TOP -->
+    <!-- FOOTER ONLY JAVASCRIPT - COMPLETELY ISOLATED, NO GLOBAL LEAKS -->
     <script>
         (function() {
-            'use strict';
+            "use strict";
             
-            // ===== FIXED BACK TO TOP FUNCTIONALITY =====
-            function initBackToTop() {
-                const backToTopButton = document.getElementById('backToTopBtn');
+            // Wait for DOM to be ready - using local scope only
+            function initializeFooterFeatures() {
+                // ===== BACK TO TOP - ISOLATED =====
+                const backToTopBtn = document.getElementById('footerBackToTop');
                 
-                // If button doesn't exist, exit
-                if (!backToTopButton) return;
-                
-                // Show/hide based on scroll position
-                function toggleBackToTop() {
-                    if (window.scrollY > 400) {
-                        backToTopButton.classList.add('visible');
-                        backToTopButton.style.display = 'flex';
-                        backToTopButton.setAttribute('aria-hidden', 'false');
-                    } else {
-                        backToTopButton.classList.remove('visible');
-                        backToTopButton.style.display = 'none';
-                        backToTopButton.setAttribute('aria-hidden', 'true');
+                if (backToTopBtn) {
+                    // Initially hidden
+                    backToTopBtn.style.display = 'none';
+                    backToTopBtn.classList.remove('visible');
+                    
+                    // Scroll handler - isolated
+                    function toggleBackToTop() {
+                        if (!backToTopBtn) return;
+                        try {
+                            if (window.scrollY > 400) {
+                                backToTopBtn.style.display = 'flex';
+                                backToTopBtn.classList.add('visible');
+                                backToTopBtn.setAttribute('aria-hidden', 'false');
+                            } else {
+                                backToTopBtn.style.display = 'none';
+                                backToTopBtn.classList.remove('visible');
+                                backToTopBtn.setAttribute('aria-hidden', 'true');
+                            }
+                        } catch(e) {
+                            // Fail silently - no global impact
+                        }
                     }
+                    
+                    // Scroll to top - isolated
+                    function scrollToTop(e) {
+                        if (e) e.preventDefault();
+                        try {
+                            window.scrollTo({
+                                top: 0,
+                                behavior: 'smooth'
+                            });
+                        } catch(e) {
+                            // Fallback for older browsers
+                            window.scrollTo(0, 0);
+                        }
+                    }
+                    
+                    // Add event listeners with cleanup capability
+                    window.addEventListener('scroll', toggleBackToTop, { passive: true });
+                    backToTopBtn.addEventListener('click', scrollToTop);
+                    
+                    // Initial check
+                    toggleBackToTop();
                 }
                 
-                // Scroll to top function
-                function scrollToTop(e) {
-                    e.preventDefault();
-                    window.scrollTo({
-                        top: 0,
-                        behavior: 'smooth'
-                    });
-                }
+                // ===== LOGO FALLBACK - ISOLATED =====
+                const footerLogo = document.querySelector('.footer .footer-logo');
+                const fallbackContainer = document.querySelector('.footer .footer-logo-fallback');
                 
-                // Initial check
-                toggleBackToTop();
-                
-                // Add event listeners
-                window.addEventListener('scroll', toggleBackToTop, { passive: true });
-                backToTopButton.addEventListener('click', scrollToTop);
-            }
-            
-            // ===== Logo Fallback =====
-            function initLogoFallback() {
-                const footerLogo = document.querySelector('.footer-logo');
-                if (footerLogo) {
-                    footerLogo.addEventListener('error', function() {
-                        this.style.display = 'none';
-                        const fallback = this.nextElementSibling;
-                        if (fallback) fallback.style.display = 'flex';
-                    });
+                if (footerLogo && fallbackContainer) {
+                    // Simple error handler
+                    footerLogo.onerror = function() {
+                        try {
+                            this.style.display = 'none';
+                            if (fallbackContainer) {
+                                fallbackContainer.style.display = 'flex';
+                            }
+                        } catch(e) {
+                            // Fail silently
+                        }
+                    };
                     
                     // Check if already errored
                     if (footerLogo.complete && footerLogo.naturalHeight === 0) {
-                        footerLogo.dispatchEvent(new Event('error'));
+                        footerLogo.onerror();
                     }
                 }
             }
             
-            // ===== Initialize on DOM Ready =====
+            // Initialize when DOM is ready - but DON'T attach to window
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function() {
-                    initBackToTop();
-                    initLogoFallback();
-                });
+                document.addEventListener('DOMContentLoaded', initializeFooterFeatures);
             } else {
-                initBackToTop();
-                initLogoFallback();
+                initializeFooterFeatures();
             }
         })();
     </script>
 
-    <!-- Footer Styles - Professional Muted Purple with Gold Accents -->
+    <!-- FOOTER STYLES - COMPLETELY FIXED SOCIAL ICONS HOVER -->
     <style>
         /* ==========================================================================
-           FOOTER DESIGN SYSTEM v3.2
-           Professional Muted Purple with Elegant Gold Accents
+           FOOTER ONLY - NO IMPACT ON BODY OR OTHER SECTIONS
+           FIXED: Changed generic class names to footer-specific names
+           FIXED: Renamed .accreditation-badge → .footer-accred-badge
+           FIXED: Social icons hover - COMPLETELY REWRITTEN, now 100% visible
            ========================================================================== */
         
-        /* Color System - Sophisticated Muted Purple with Gold */
-        :root {
-            /* Background - Professional, Muted, Sophisticated Purple */
-            --footer-bg: #2a2538;        /* Muted eggplant - professional, not shouty */
-            --footer-bg-light: #322c42;   /* Slightly lighter muted purple */
+        /* Color System - Footer Only */
+        .footer {
+            --footer-bg: #2a2538;
+            --footer-bg-light: #322c42;
             --footer-bg-gradient: linear-gradient(145deg, #2a2538 0%, #322c42 100%);
-            
-            /* Gold - Elegant, Professional Accent Color */
-            --gold: #c6a15b;            /* Warm, sophisticated gold */
-            --gold-light: #d4b47c;      /* Lighter gold for hover states */
-            --gold-dark: #a88646;        /* Darker gold for active states */
-            --gold-soft: rgba(198, 161, 91, 0.12); /* Transparent gold for backgrounds */
-            --gold-glow: rgba(198, 161, 91, 0.25); /* Glow effect */
-            
-            /* Text Colors - High Contrast on Muted Purple */
-            --footer-text-primary: #ffffff;     /* Pure white */
-            --footer-text-secondary: #e8e2f0;   /* Soft lavender white */
-            --footer-text-muted: #c2b8d0;       /* Muted lavender */
-            --footer-text-dim: #9e92b0;         /* Dimmed lavender */
-            
-            /* UI Elements */
+            --gold: #c6a15b;
+            --gold-light: #d4b47c;
+            --gold-dark: #a88646;
+            --gold-soft: rgba(198, 161, 91, 0.12);
+            --footer-text-primary: #ffffff;
+            --footer-text-secondary: #e8e2f0;
+            --footer-text-muted: #c2b8d0;
+            --footer-text-dim: #9e92b0;
             --footer-border: rgba(255, 255, 255, 0.08);
-            --footer-border-strong: rgba(198, 161, 91, 0.3); /* Gold border */
-            --footer-hover-bg: rgba(198, 161, 91, 0.1); /* Gold hover */
-            --footer-card-bg: rgba(255, 255, 255, 0.03);
-            
-            /* Stats Colors */
-            --stat-primary: #c6a15b;        /* Gold - primary stat color */
-            --stat-positive: #c6a15b;       /* Gold for positive trends */
-            --stat-bg: rgba(42, 37, 56, 0.95); /* Semi-transparent muted purple */
-            
-            /* Transitions */
+            --footer-hover-bg: rgba(198, 161, 91, 0.1);
             --transition: all 0.2s ease;
         }
 
-        /* ===== Base Footer ===== */
+        /* Footer Container - Isolated */
         .footer {
             background-color: var(--footer-bg);
             background-image: var(--footer-bg-gradient);
             color: var(--footer-text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: 'Montserrat', 'Open Sans', sans-serif;
             position: relative;
             margin-top: 3rem;
             border-top: none;
             width: 100%;
+            clear: both;
         }
 
-        /* Elegant Gold Top Border */
-        .footer-top-border {
+        /* Top Border */
+        .footer .footer-top-border {
             height: 3px;
             background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-dark));
             width: 100%;
             opacity: 0.8;
         }
 
-        .footer-container {
+        /* Container */
+        .footer .footer-container {
             max-width: 1280px;
             margin: 0 auto;
             padding: 3rem 2rem 1.5rem;
         }
 
-        /* ===== Main Grid ===== */
-        .footer-grid {
+        /* Grid Layout */
+        .footer .footer-grid {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 1.5fr;
             gap: 2.5rem;
             margin-bottom: 2.5rem;
         }
 
-        /* ===== Brand Column ===== */
-        .footer-brand {
+        /* Brand Section */
+        .footer .footer-brand {
             display: flex;
             flex-direction: column;
             gap: 1.25rem;
         }
 
-        .footer-logo-container {
-            position: relative;
-            min-height: 67px;
-        }
-
-        .footer-logo {
+        .footer .footer-logo {
             height: 67px;
             width: auto;
             max-width: 200px;
             display: block;
         }
 
-        .footer-logo-fallback {
+        .footer .footer-logo-fallback {
             display: none;
             align-items: baseline;
             gap: 0.5rem;
-            background: transparent;
-            padding: 0;
         }
 
-        .logo-fallback-acronym {
+        .footer .logo-fallback-acronym {
             font-size: 2.2rem;
             font-weight: 800;
             color: var(--footer-text-primary);
@@ -513,39 +499,36 @@ $socialLinks = [
             line-height: 1;
         }
 
-        .logo-fallback-full {
+        .footer .logo-fallback-full {
             font-size: 0.95rem;
             color: var(--footer-text-secondary);
             font-weight: 400;
             line-height: 1.2;
-            max-width: 200px;
         }
 
-        .footer-institution-title {
+        .footer .footer-institution-title {
             font-size: 1.1rem;
             font-weight: 700;
             color: var(--footer-text-primary);
             margin: 0 0 0.5rem 0;
-            letter-spacing: -0.01em;
         }
 
-        .footer-mission-text {
+        .footer .footer-mission-text {
             color: var(--footer-text-secondary);
             line-height: 1.6;
             font-size: 0.95rem;
             margin: 0;
-            opacity: 0.95;
         }
 
-        /* ===== Accreditation Badges ===== */
-        .footer-accreditation {
+        /* Accreditation Badges */
+        .footer .footer-accreditation-badges {
             display: flex;
             flex-wrap: wrap;
             gap: 1rem;
             margin-top: 0.5rem;
         }
 
-        .accreditation-badge {
+        .footer .footer-accred-badge {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
@@ -560,7 +543,7 @@ $socialLinks = [
             letter-spacing: 0.5px;
         }
 
-        .badge-dot {
+        .footer .footer-badge-dot {
             width: 8px;
             height: 8px;
             background-color: var(--gold);
@@ -568,8 +551,8 @@ $socialLinks = [
             display: inline-block;
         }
 
-        /* ===== Navigation Columns ===== */
-        .footer-heading {
+        /* Headings */
+        .footer .footer-heading {
             font-size: 1rem;
             font-weight: 700;
             color: var(--footer-text-primary);
@@ -581,17 +564,18 @@ $socialLinks = [
             text-transform: uppercase;
         }
 
-        .footer-list {
+        /* Lists */
+        .footer .footer-list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
 
-        .footer-list-item {
+        .footer .footer-list-item {
             margin-bottom: 0.75rem;
         }
 
-        .footer-link {
+        .footer .footer-link {
             display: inline-flex;
             align-items: center;
             gap: 0.6rem;
@@ -603,52 +587,44 @@ $socialLinks = [
             border-bottom: 1px solid transparent;
         }
 
-        /* Gold Icons */
-        .footer-icon,
-        .footer-link svg {
+        .footer .footer-icon,
+        .footer .footer-link svg {
             color: var(--gold);
             width: 16px;
             height: 16px;
             stroke: var(--gold);
             stroke-width: 2;
             flex-shrink: 0;
-            transition: var(--transition);
         }
 
-        .link-arrow {
+        .footer .link-arrow {
             color: var(--gold);
             font-weight: 600;
-            transition: transform 0.2s;
         }
 
-        .footer-link:hover {
+        .footer .footer-link:hover {
             color: var(--footer-text-primary);
             border-bottom-color: var(--gold);
             transform: translateX(4px);
         }
 
-        .footer-link:hover .footer-icon,
-        .footer-link:hover svg {
+        .footer .footer-link:hover svg {
             stroke: var(--gold-light);
         }
 
-        .footer-link:hover .link-arrow {
-            transform: translateX(3px);
-        }
-
-        /* ===== Contact Column ===== */
-        .footer-address {
+        /* Contact Section */
+        .footer .footer-address {
             font-style: normal;
             margin-bottom: 1.5rem;
         }
 
-        .contact-group {
+        .footer .contact-group {
             display: flex;
             flex-direction: column;
             gap: 0.9rem;
         }
 
-        .contact-item {
+        .footer .contact-item {
             display: flex;
             align-items: flex-start;
             gap: 0.8rem;
@@ -657,7 +633,7 @@ $socialLinks = [
             line-height: 1.5;
         }
 
-        .contact-icon {
+        .footer .contact-icon {
             color: var(--gold);
             width: 18px;
             height: 18px;
@@ -665,34 +641,27 @@ $socialLinks = [
             stroke-width: 2;
             margin-top: 0.2rem;
             flex-shrink: 0;
-            transition: var(--transition);
         }
 
-        .contact-item:hover .contact-icon {
-            stroke: var(--gold-light);
-            transform: scale(1.05);
-        }
-
-        .contact-label {
+        .footer .contact-label {
             font-weight: 600;
             color: var(--footer-text-primary);
             margin-right: 0.25rem;
         }
 
-        .contact-link {
+        .footer .contact-link {
             color: var(--footer-text-secondary);
             text-decoration: none;
             border-bottom: 1px solid transparent;
-            transition: var(--transition);
         }
 
-        .contact-link:hover {
+        .footer .contact-link:hover {
             color: var(--footer-text-primary);
             border-bottom-color: var(--gold);
         }
 
-        /* ===== Social Links - Elegant Gold ===== */
-        .footer-social {
+        /* ===== SOCIAL LINKS - COMPLETELY REWRITTEN - 100% VISIBLE ON HOVER ===== */
+        .footer .footer-social {
             display: flex;
             align-items: center;
             gap: 1rem;
@@ -700,7 +669,7 @@ $socialLinks = [
             margin-top: 0.5rem;
         }
 
-        .social-label {
+        .footer .social-label {
             color: var(--footer-text-primary);
             font-size: 0.9rem;
             font-weight: 600;
@@ -708,79 +677,90 @@ $socialLinks = [
             letter-spacing: 0.5px;
         }
 
-        .social-links {
+        .footer .social-links {
             display: flex;
-            gap: 0.6rem;
+            gap: 0.75rem;
         }
 
-        .social-link {
+        .footer .social-link {
             display: flex;
             align-items: center;
             justify-content: center;
             width: 36px;
             height: 36px;
-            background-color: rgba(198, 161, 91, 0.1);
-            color: var(--gold);
+            background-color: rgba(198, 161, 91, 0.12);
             border-radius: 8px;
-            transition: var(--transition);
-            border: 1px solid rgba(198, 161, 91, 0.2);
+            border: 1px solid rgba(198, 161, 91, 0.3);
+            transition: all 0.25s ease;
             text-decoration: none;
         }
 
-        .social-icon {
+        .footer .social-icon {
             width: 16px;
             height: 16px;
+            display: block;
+        }
+
+        /* Target ALL SVG elements directly */
+        .footer .social-icon path,
+        .footer .social-icon rect,
+        .footer .social-icon circle,
+        .footer .social-icon polygon,
+        .footer .social-icon polyline {
             stroke: var(--gold);
             stroke-width: 2;
-            transition: var(--transition);
+            fill: none;
+            transition: stroke 0.2s ease, stroke-width 0.2s ease;
         }
 
-        .social-link:hover {
-            background-color: var(--gold);
-            border-color: var(--gold);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--gold-glow);
+        /* CRITICAL FIX: Hover state with maximum specificity */
+        .footer .social-link:hover {
+            background-color: var(--gold) !important;
+            border-color: var(--gold) !important;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 12px rgba(198, 161, 91, 0.3);
         }
 
-        .social-link:hover .social-icon {
-            stroke: white;
+        /* Force white stroke on ALL hovered SVG elements */
+        .footer .social-link:hover .social-icon path,
+        .footer .social-link:hover .social-icon rect,
+        .footer .social-link:hover .social-icon circle,
+        .footer .social-link:hover .social-icon polygon,
+        .footer .social-link:hover .social-icon polyline {
+            stroke: #ffffff !important;
+            stroke-width: 2.2 !important;
+            fill: none !important;
         }
 
-        /* ===== Stats Section - Gold Accents ===== */
-        .footer-stats {
+        /* Stats Section */
+        .footer .footer-stats {
             margin: 2.5rem 0 2rem;
             padding: 1.75rem 0;
             border-top: 1px solid var(--footer-border);
             border-bottom: 1px solid var(--footer-border);
         }
 
-        .stats-grid {
+        .footer .footer-stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 2rem;
         }
 
-        .stat-card {
+        .footer .footer-stat-card {
             text-align: center;
             padding: 0.5rem;
-            transition: var(--transition);
         }
 
-        .stat-card:hover {
-            transform: translateY(-2px);
-        }
-
-        .stat-value {
+        .footer .footer-stat-value {
             font-size: 2.5rem;
             font-weight: 800;
             color: var(--footer-text-primary);
             line-height: 1;
             margin-bottom: 0.4rem;
             letter-spacing: -0.02em;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .stat-label {
+        .footer .footer-stat-label {
             font-size: 0.9rem;
             font-weight: 600;
             color: var(--footer-text-secondary);
@@ -789,7 +769,7 @@ $socialLinks = [
             margin-bottom: 0.5rem;
         }
 
-        .stat-trend {
+        .footer .footer-stat-trend {
             font-size: 0.75rem;
             color: var(--footer-text-muted);
             display: flex;
@@ -798,23 +778,19 @@ $socialLinks = [
             gap: 0.3rem;
         }
 
-        .stat-trend svg {
+        .footer .footer-stat-trend svg {
             width: 12px;
             height: 12px;
             stroke: var(--gold);
             stroke-width: 2;
         }
 
-        .stat-trend.positive svg {
-            stroke: var(--gold);
-        }
-
-        /* ===== Footer Bottom ===== */
-        .footer-bottom {
+        /* Footer Bottom */
+        .footer .footer-bottom {
             padding-top: 1.5rem;
         }
 
-        .footer-bottom-content {
+        .footer .footer-bottom-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -822,23 +798,23 @@ $socialLinks = [
             gap: 1rem;
         }
 
-        .footer-copyright {
+        .footer .footer-copyright {
             color: var(--footer-text-dim);
             font-size: 0.85rem;
         }
 
-        .footer-copyright p {
+        .footer .footer-copyright p {
             margin: 0;
         }
 
-        .footer-legal {
+        .footer .footer-legal {
             display: flex;
             align-items: center;
             flex-wrap: wrap;
             gap: 0.5rem;
         }
 
-        .legal-link {
+        .footer .legal-link {
             color: var(--footer-text-dim);
             text-decoration: none;
             font-size: 0.8rem;
@@ -846,19 +822,19 @@ $socialLinks = [
             padding: 0.2rem 0.4rem;
         }
 
-        .legal-link:hover {
+        .footer .legal-link:hover {
             color: var(--footer-text-primary);
             background-color: var(--gold-soft);
             border-radius: 4px;
         }
 
-        .legal-separator {
+        .footer .legal-separator {
             color: var(--gold);
             font-size: 0.8rem;
             opacity: 0.5;
         }
 
-        .footer-credit {
+        .footer .footer-credit {
             color: var(--footer-text-dim);
             font-size: 0.8rem;
             display: flex;
@@ -866,11 +842,7 @@ $socialLinks = [
             gap: 0.4rem;
         }
 
-        .credit-text {
-            color: var(--footer-text-dim);
-        }
-
-        .credit-link {
+        .footer .credit-link {
             color: var(--gold);
             text-decoration: none;
             font-weight: 600;
@@ -878,12 +850,12 @@ $socialLinks = [
             border-bottom: 1px solid transparent;
         }
 
-        .credit-link:hover {
+        .footer .credit-link:hover {
             color: var(--gold-light);
             border-bottom-color: var(--gold);
         }
 
-        .credit-badge {
+        .footer .credit-badge {
             background-color: var(--gold);
             color: var(--footer-bg);
             padding: 0.2rem 0.6rem;
@@ -894,12 +866,12 @@ $socialLinks = [
             margin-left: 0.25rem;
         }
 
-        /* ===== BACK TO TOP - FIXED VERSION ===== */
-        .back-to-top {
+        /* BACK TO TOP - FOOTER ONLY */
+        .footer .back-to-top {
             position: fixed;
             bottom: 2rem;
             right: 2rem;
-            display: none; /* Hidden by default, shown via JS */
+            display: none;
             align-items: center;
             gap: 0.5rem;
             padding: 0.7rem 1.2rem;
@@ -916,201 +888,114 @@ $socialLinks = [
             border: 1px solid rgba(255, 255, 255, 0.2);
             opacity: 0;
             visibility: hidden;
-            transform: translateY(10px);
         }
 
-        .back-to-top.visible {
+        .footer .back-to-top.visible {
             display: flex !important;
             opacity: 1;
             visibility: visible;
-            transform: translateY(0);
         }
 
-        .back-to-top:hover {
+        .footer .back-to-top:hover {
             background-color: var(--gold-light);
-            transform: translateY(-3px) !important;
-            box-shadow: 0 8px 20px rgba(198, 161, 91, 0.4);
+            transform: translateY(-3px);
         }
 
-        .back-to-top svg {
+        .footer .back-to-top svg {
             width: 18px;
             height: 18px;
             stroke: var(--footer-bg);
             stroke-width: 2.5;
         }
 
-        .back-to-top-text {
+        .footer .back-to-top-text {
             display: inline-block;
             color: var(--footer-bg);
             font-weight: 700;
         }
 
-        /* ===== Responsive Design ===== */
+        /* ===== RESPONSIVE - FOOTER ONLY ===== */
         @media (max-width: 1024px) {
-            .footer-grid {
+            .footer .footer-grid {
                 grid-template-columns: 1fr 1fr;
                 gap: 2rem;
             }
-            
-            .footer-column-brand {
+            .footer .footer-column-brand {
                 grid-column: 1 / -1;
             }
-            
-            .stats-grid {
+            .footer .footer-stats-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 1.5rem;
             }
         }
 
         @media (max-width: 768px) {
-            .footer-container {
+            .footer .footer-container {
                 padding: 2rem 1.5rem 1rem;
             }
-            
-            .footer-grid {
+            .footer .footer-grid {
                 grid-template-columns: 1fr;
                 gap: 2rem;
             }
-            
-            .stats-grid {
+            .footer .footer-stats-grid {
                 grid-template-columns: 1fr;
                 gap: 1.5rem;
             }
-            
-            .stat-card {
-                padding: 0.75rem;
-                background: rgba(198, 161, 91, 0.05);
-                border-radius: 8px;
-            }
-            
-            .footer-bottom-content {
+            .footer .footer-bottom-content {
                 flex-direction: column;
                 text-align: center;
                 gap: 1rem;
             }
-            
-            .footer-legal {
+            .footer .footer-legal {
                 justify-content: center;
             }
-            
-            .footer-credit {
+            .footer .footer-credit {
                 justify-content: center;
             }
-            
-            .back-to-top {
+            .footer .back-to-top {
                 bottom: 1.5rem;
                 right: 1.5rem;
-                padding: 0.6rem 1rem;
-            }
-            
-            .back-to-top-text {
-                display: none;
-            }
-            
-            .back-to-top {
                 padding: 0.7rem;
                 border-radius: 50%;
             }
-            
-            .back-to-top svg {
-                width: 20px;
-                height: 20px;
+            .footer .back-to-top-text {
+                display: none;
             }
         }
 
         @media (max-width: 480px) {
-            .footer-container {
+            .footer .footer-container {
                 padding: 1.5rem 1rem 1rem;
             }
-            
-            .footer-social {
+            .footer .footer-social {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 0.75rem;
             }
-            
-            .social-links {
+            .footer .social-links {
                 width: 100%;
                 justify-content: space-between;
             }
-            
-            .stat-value {
+            .footer .footer-stat-value {
                 font-size: 2rem;
-            }
-            
-            .footer-credit {
-                width: 100%;
-                flex-wrap: wrap;
-            }
-            
-            .footer-heading {
-                display: block;
-            }
-            
-            .back-to-top {
-                bottom: 1rem;
-                right: 1rem;
             }
         }
 
-        /* ===== Print Styles ===== */
+        /* Print Styles - Footer Only */
         @media print {
             .footer {
                 background: white;
                 color: black;
             }
-            
-            .footer-top-border,
-            .footer-stats,
-            .back-to-top,
-            .social-links {
+            .footer .footer-top-border,
+            .footer .footer-stats,
+            .footer .back-to-top,
+            .footer .social-links {
                 display: none !important;
             }
-            
-            .footer-link,
-            .contact-link,
-            .legal-link {
+            .footer .footer-link,
+            .footer .contact-link,
+            .footer .legal-link {
                 color: black !important;
-            }
-            
-            .footer-icon,
-            .contact-icon,
-            .social-icon {
-                stroke: black !important;
-            }
-            
-            .credit-link {
-                color: black !important;
-            }
-            
-            .credit-badge {
-                background: #ccc !important;
-                color: black !important;
-            }
-        }
-
-        /* ===== Reduced Motion ===== */
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                transition-duration: 0.01ms !important;
-                animation-duration: 0.01ms !important;
-            }
-            
-            .back-to-top {
-                transition: none !important;
-            }
-        }
-
-        /* ===== High Contrast Windows Support ===== */
-        @media (forced-colors: active) {
-            .footer {
-                border-top: 2px solid CanvasText;
-            }
-            
-            .accreditation-badge,
-            .social-link,
-            .back-to-top {
-                border: 2px solid CanvasText;
             }
         }
     </style>

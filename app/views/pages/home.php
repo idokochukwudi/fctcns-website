@@ -5,7 +5,7 @@
  * Complete Redesign with Professional Sections & Image Support
  * 
  * @package FCTCNS
- * @version 4.0
+ * @version 4.1 - Enhanced with Touch of Gold styling for card headings
  */
 
 extract($data ?? []);
@@ -62,7 +62,22 @@ if (empty($carouselSlides)) {
     
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    /* EMERGENCY FULL WIDTH OVERRIDE */
+body .main-content {
+    padding: 0 !important;
+    max-width: 100vw !important;
+}
 
+.hero-section {
+    width: 100vw !important;
+    position: relative !important;
+    left: 50% !important;
+    right: 50% !important;
+    margin-left: -50vw !important;
+    margin-right: -50vw !important;
+}
+    </style>
 <style>
 /* ==========================================================================
    CRITICAL: NO GAP BETWEEN BODY AND HEADER & FOOTER
@@ -127,7 +142,6 @@ button, .btn,
 .carousel-slide-title,
 .accreditation-text h3,
 .environment-content h3,
-.community-content h3,
 .attribute-card h3,
 .hub-card h3,
 .cta-title,
@@ -154,6 +168,13 @@ button, .btn,
     --color-accent-dark: #BF8F5E;
     --color-accent-light: #E6C9A5;
     --color-accent-very-light: #F2E4D4;
+    
+    /* TOUCH OF GOLD - Premium gradients for headings */
+    --gold-gradient: linear-gradient(135deg, #BF8F5E 0%, #D4A574 40%, #E6C9A5 70%, #D4A574 100%);
+    --gold-gradient-hover: linear-gradient(135deg, #B3864A 0%, #D4A574 50%, #F2E4D4 80%, #D4A574 100%);
+    --gold-text-shadow: 0 2px 4px rgba(191, 143, 94, 0.2);
+    --gold-border-glow: 0 0 0 1px rgba(212, 165, 116, 0.3);
+    --gold-underline: linear-gradient(to right, #D4A574, #E6C9A5, #D4A574);
     
     /* Status Colors */
     --color-closed: #dc3545;
@@ -203,6 +224,146 @@ button, .btn,
     
     /* Transitions */
     --transition-smooth: all 0.3s ease;
+}
+
+/* ==========================================================================
+   TOUCH OF GOLD - PROFESSIONAL CARD HEADING STYLING
+   Applies premium gold gradient to all section card headings
+   ========================================================================== */
+
+/* Program Card Headings - Touch of Gold */
+.program-content h3,
+.environment-content h3,
+.accreditation-text h3,
+.accreditation-badge .badge-text strong,
+.application-status-banner h3 i,
+.stat-item:hover .stat-number,
+.cta-title {
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+    display: inline-block;
+    position: relative;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-shadow: var(--gold-text-shadow);
+    transition: var(--transition-smooth);
+}
+
+/* Hover effect for cards - enhanced gold */
+.program-card:hover .program-content h3,
+.environment-card:hover .environment-content h3,
+.accreditation-badge:hover .badge-text strong {
+    background: var(--gold-gradient-hover);
+    -webkit-background-clip: text;
+    background-clip: text;
+    transform: scale(1.02);
+}
+
+/* Decorative gold underline for headings */
+.program-content h3::after,
+.environment-content h3::after,
+.accreditation-text h3::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: var(--gold-underline);
+    border-radius: var(--radius-full);
+    opacity: 0.7;
+    transition: width 0.3s ease;
+}
+
+.program-card:hover .program-content h3::after,
+.environment-card:hover .environment-content h3::after,
+.accreditation-badge:hover .badge-text strong::after {
+    width: 80px;
+    opacity: 1;
+}
+
+/* Accreditation badge strong styling */
+.accreditation-badge .badge-text strong {
+    font-size: 1.3rem;
+    margin-bottom: 0.35rem;
+    position: relative;
+    display: inline-block;
+}
+
+.accreditation-badge .badge-text strong::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 40px;
+    height: 2px;
+    background: var(--gold-underline);
+    border-radius: var(--radius-full);
+    transition: width 0.3s ease;
+}
+
+.accreditation-badge:hover .badge-text strong::after {
+    width: 100%;
+}
+
+/* Application status banner icon - gold */
+.application-status-banner h3 i {
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+    font-size: 1.2em;
+}
+
+/* Stat numbers - gold on hover */
+.stat-number {
+    font-family: var(--font-heading);
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: var(--color-primary);
+    line-height: 1;
+    transition: var(--transition-smooth);
+}
+
+.stat-item:hover .stat-number {
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* CTA Title - Premium Gold */
+.cta-title {
+    background: linear-gradient(135deg, #E6C9A5 0%, #FFFFFF 40%, #E6C9A5 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+    text-shadow: 0 2px 10px rgba(212, 165, 116, 0.3);
+    font-weight: 800;
+}
+
+/* Section Titles - subtle gold accent */
+.section-title {
+    position: relative;
+    display: inline-block;
+    padding-bottom: 0.5rem;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: var(--gold-underline);
+    border-radius: var(--radius-full);
+    opacity: 0.8;
 }
 
 /* ==========================================================================
@@ -760,6 +921,7 @@ button, .btn,
     margin-bottom: 0.25rem;
     color: var(--color-primary);
     line-height: 1;
+    transition: var(--transition-smooth);
 }
 
 .stat-label {
