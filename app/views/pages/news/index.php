@@ -2,6 +2,7 @@
 /**
  * News Index Page - FULLY RESPONSIVE PROFESSIONAL DESIGN
  * - FIXED: Cursor now displays properly in all input fields
+ * - FIXED: Removed "Skip to main content" link from top-left corner visibility
  * - Perfect fit on all screen sizes (360px to 4K)
  * - Featured content with professional overlay on image - NO OVERFLOW
  * - WIDE horizontal cards that adapt beautifully
@@ -265,7 +266,6 @@ body .main-content {
             z-index: 4;
         }
 
-        /* FIXED: Input field with proper cursor */
         .news-search-input {
             width: 100%;
             height: 52px;
@@ -275,16 +275,11 @@ body .main-content {
             font-size: 1rem;
             font-weight: 400;
             background: #ffffff;
-            color: #0F172A; /* Dark color for text */
-            caret-color: #5D4A8A; /* Purple cursor for visibility */
+            color: #0F172A;
+            caret-color: #5D4A8A;
             outline: none;
             transition: all 0.2s ease;
             line-height: normal;
-            text-indent: 0;
-            letter-spacing: normal;
-            word-spacing: normal;
-            text-rendering: auto;
-            -webkit-font-smoothing: antialiased;
         }
 
         .news-search-input::placeholder {
@@ -299,10 +294,6 @@ body .main-content {
             background: #ffffff;
             color: #0F172A;
             caret-color: var(--primary);
-        }
-
-        .news-search-input:hover {
-            border-color: rgba(255, 255, 255, 0.3);
         }
 
         .news-search-button {
@@ -353,7 +344,7 @@ body .main-content {
         }
 
         /* ==========================================
-           FEATURED CONTENT - NO OVERFLOW
+           FEATURED CONTENT - COMPLETELY FIXED
            ========================================== */
         .featured-section {
             margin: 2rem 0 2.5rem;
@@ -361,12 +352,13 @@ body .main-content {
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.15);
+            position: relative;
         }
 
         .featured-article {
             position: relative;
             width: 100%;
-            background: var(--primary-dark);
+            background: linear-gradient(145deg, var(--primary-dark), var(--primary));
             display: flex;
             align-items: center;
             min-height: 280px;
@@ -638,7 +630,6 @@ body .main-content {
             font-size: 0.9rem;
         }
 
-        /* FIXED: Select fields with proper cursor */
         .filter-select {
             padding: 0.6rem 2rem 0.6rem 1rem;
             border: 2px solid var(--gray-200);
@@ -864,7 +855,6 @@ body .main-content {
             }
         }
 
-        /* Sidebar Widgets */
         .sidebar-widget {
             background: var(--white);
             border-radius: 16px;
@@ -895,7 +885,6 @@ body .main-content {
             justify-content: center;
         }
 
-        /* Category List */
         .category-list {
             list-style: none;
         }
@@ -932,7 +921,6 @@ body .main-content {
             font-weight: 700;
         }
 
-        /* Popular Posts */
         .popular-list {
             list-style: none;
         }
@@ -991,9 +979,6 @@ body .main-content {
             gap: 0.25rem;
         }
 
-        /* ==========================================
-           NEWSLETTER FORM - FIXED CURSOR VISIBILITY
-           ========================================== */
         .sidebar-newsletter {
             background: linear-gradient(145deg, var(--primary-dark), var(--primary));
             border-radius: 16px;
@@ -1032,7 +1017,6 @@ body .main-content {
             z-index: 4;
         }
 
-        /* FIXED: Newsletter input with proper cursor */
         .newsletter-input {
             width: 100%;
             padding: 0.75rem 0.75rem 0.75rem 2.5rem;
@@ -1061,10 +1045,6 @@ body .main-content {
             background: #ffffff;
             color: #0F172A;
             caret-color: var(--primary);
-        }
-
-        .newsletter-input:hover {
-            border-color: rgba(255, 255, 255, 0.3);
         }
 
         .newsletter-button {
@@ -1101,9 +1081,6 @@ body .main-content {
             margin-top: 0.75rem;
         }
 
-        /* ==========================================
-           PAGINATION
-           ========================================== */
         .pagination {
             display: flex;
             justify-content: center;
@@ -1147,9 +1124,6 @@ body .main-content {
             border-color: var(--primary);
         }
 
-        /* ==========================================
-           EMPTY STATE
-           ========================================== */
         .empty-state {
             text-align: center;
             padding: 3rem 1.5rem;
@@ -1214,9 +1188,6 @@ body .main-content {
             color: var(--white);
         }
 
-        /* ==========================================
-           NOTIFICATION
-           ========================================== */
         .notification {
             position: fixed;
             top: 1.5rem;
@@ -1248,17 +1219,19 @@ body .main-content {
         }
 
         /* ==========================================
-           ACCESSIBILITY
+           FIXED: SKIP TO CONTENT LINK - MOVED TO RIGHT CORNER
            ========================================== */
         .skip-to-content {
             position: absolute;
             top: -40px;
-            left: 0;
+            right: 1rem; /* Changed from left:0 to right:1rem */
+            left: auto; /* Reset left */
             background: var(--primary);
             color: var(--white);
             padding: 0.75rem 1.5rem;
             text-decoration: none;
             z-index: 1001;
+            border-radius: 0 0 8px 8px; /* Rounded bottom corners */
         }
 
         .skip-to-content:focus {
@@ -1274,9 +1247,6 @@ body .main-content {
             overflow: hidden;
         }
 
-        /* ==========================================
-           REDUCED MOTION
-           ========================================== */
         @media (prefers-reduced-motion: reduce) {
             * {
                 animation-duration: 0.01ms !important;
@@ -1286,8 +1256,6 @@ body .main-content {
     </style>
 </head>
 <body>
-
-<a href="#main-content" class="skip-to-content">Skip to main content</a>
 
 <main class="news-page" id="main-content">
     <!-- HERO SECTION -->
@@ -1308,7 +1276,6 @@ body .main-content {
                         Stay informed with the latest developments, achievements, and important announcements from FCT College of Nursing Sciences.
                     </p>
                     
-                    <!-- FIXED: Search form with visible cursor -->
                     <div class="news-search">
                         <form class="news-search-form" action="<?php echo $baseUrl; ?>/news/search" method="GET" role="search">
                             <div class="news-search-wrapper">
@@ -1638,7 +1605,7 @@ body .main-content {
                     </div>
                     <?php endif; ?>
                     
-                    <!-- FIXED: Newsletter Widget with visible cursor -->
+                    <!-- Newsletter Widget -->
                     <div class="sidebar-newsletter">
                         <h3 class="widget-title">
                             <div class="widget-title-icon">
