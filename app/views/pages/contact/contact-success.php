@@ -15,7 +15,22 @@ $reference  = $submission['id'] ?? date('Ymd') . rand(100, 999);
 $name       = $submission['name'] ?? 'there';
 $subject    = $submission['subject'] ?? '';
 ?>
+<style>
+    /* EMERGENCY FULL WIDTH OVERRIDE */
+body .main-content {
+    padding: 0 !important;
+    max-width: 100vw !important;
+}
 
+.hero-section {
+    width: 100vw !important;
+    position: relative !important;
+    left: 50% !important;
+    right: 50% !important;
+    margin-left: -50vw !important;
+    margin-right: -50vw !important;
+}
+    </style>
 <style>
     /* ── TOKENS ─────────────────────────────────────────────── */
     :root {
