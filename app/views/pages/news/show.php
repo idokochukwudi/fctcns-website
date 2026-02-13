@@ -1,1333 +1,1279 @@
 <?php
 /**
- * SINGLE NEWS ARTICLE VIEW - "CONTROLLER-DRIVEN TOPICS HUB"
- * ----------------------------------------------------------------------------
- * Design Philosophy: "Zero Database in Views - 100% Controller Data"
- * 
- * CRITICAL FIXES:
- * ✅ NO overflow on any screen size - text now wraps properly
- * ✅ Topic counts stay on same line or wrap cleanly
- * ✅ Cards stack vertically on mobile
- * ✅ Description text truncates with ellipsis
- * ✅ Zero database queries in view
- * ----------------------------------------------------------------------------
+ * Single News Article — Show Page
+ * File: /app/views/pages/news/show.php
+ * Rendered inside main layout (header + footer already present).
  */
 
-// ===== DATA VALIDATION - ALL FROM CONTROLLER =====
-$baseUrl = $baseUrl ?? BASE_URL ?? '';
-$news = $news ?? [];
-$relatedNews = $relatedNews ?? [];
-$popularNews = $popularNews ?? [];
-$currentPage = $currentPage ?? 'news';
+$baseUrl        = $baseUrl        ?? (defined('BASE_URL') ? BASE_URL : '');
+$news           = $news           ?? [];
+$relatedNews    = $relatedNews    ?? [];
+$popularNews    = $popularNews    ?? [];
+$allNewsTopics  = $allNewsTopics  ?? [];
 
-// ✅ TOPICS DATA MUST COME FROM CONTROLLER
-$allNewsTopics = $allNewsTopics ?? [];
+// Dates
+$newsDate        = !empty($news['created_at']) ? date('F j, Y',  strtotime($news['created_at'])) : '';
+$newsDateIso     = !empty($news['created_at']) ? date('c',       strtotime($news['created_at'])) : '';
 
-// Fallback: If controller didn't pass topics, build from current article ONLY
-if (empty($allNewsTopics) && !empty($news['tags'])) {
-    $tags = [];
-    if (is_string($news['tags'])) {
-        $decoded = json_decode($news['tags'], true);
-        $tags = json_last_error() === JSON_ERROR_NONE ? $decoded : array_map('trim', explode(',', $news['tags']));
-    } elseif (is_array($news['tags'])) {
-        $tags = $news['tags'];
-    }
-    
-    foreach ($tags as $tag) {
-        $tagLower = strtolower(trim($tag));
-        $allNewsTopics[$tagLower] = ($allNewsTopics[$tagLower] ?? 0) + 1;
-    }
-}
-
-// Page metadata
-$pageTitle = $pageTitle ?? ($news['title'] ?? 'News Article') . ' - FCT College of Nursing Sciences';
-$pageDescription = $pageDescription ?? ($news['excerpt'] ?? 'Official news from FCT College of Nursing Sciences');
-
-// Format dates
-$newsDate = !empty($news['created_at']) ? date('F j, Y', strtotime($news['created_at'])) : '';
-$newsDateTimeIso = !empty($news['created_at']) ? date('c', strtotime($news['created_at'])) : '';
-
-// Author (already joined in controller via NewsModel::getBySlug)
-$authorName = $news['author_name'] ?? $news['full_name'] ?? 'FCT Nursing College';
-$authorRole = $news['author_role'] ?? 'Communications';
-$authorInitial = strtoupper(substr($authorName, 0, 1));
+// Author
+$authorName      = $news['author_name'] ?? $news['full_name'] ?? 'FCT Nursing College';
+$authorRole      = $news['author_role'] ?? 'Communications';
+$authorInitial   = strtoupper(substr($authorName, 0, 1));
 
 // Reading time
-$wordCount = !empty($news['content']) ? str_word_count(strip_tags($news['content'])) : 0;
-$readingTime = max(1, ceil($wordCount / 200));
+$wordCount       = !empty($news['content']) ? str_word_count(strip_tags($news['content'])) : 0;
+$readingTime     = max(1, ceil($wordCount / 200));
 
 // Breadcrumb
 $breadcrumb = [
     ['label' => 'Home', 'url' => $baseUrl],
     ['label' => 'News', 'url' => $baseUrl . '/news'],
-    ['label' => htmlspecialchars(mb_strimwidth($news['title'] ?? 'Article', 0, 50, '…')), 'url' => '']
+    ['label' => htmlspecialchars(mb_strimwidth($news['title'] ?? 'Article', 0, 52, '…')), 'url' => ''],
 ];
 
-// =========================================================================
-// TOPIC LIBRARY - PURE PRESENTATION LAYER
-// =========================================================================
+// Topics (same logic as original, kept intact)
 $topicLibrary = [
-    'nursing' => [
-        'display_name' => 'Nursing',
-        'icon' => 'fa-solid fa-stethoscope',
-        'color' => '#5D4A8A',
-        'bg' => 'rgba(93, 74, 138, 0.08)',
-        'description' => 'Nursing education & practice',
-        'slug' => 'nursing'
-    ],
-    'research' => [
-        'display_name' => 'Research',
-        'icon' => 'fa-solid fa-flask',
-        'color' => '#D4A574',
-        'bg' => 'rgba(212, 165, 116, 0.12)',
-        'description' => 'Latest findings & studies',
-        'slug' => 'research'
-    ],
-    'education' => [
-        'display_name' => 'Education',
-        'icon' => 'fa-solid fa-graduation-cap',
-        'color' => '#2E6B7A',
-        'bg' => 'rgba(46, 107, 122, 0.08)',
-        'description' => 'Academic programs & training',
-        'slug' => 'education'
-    ],
-    'healthcare' => [
-        'display_name' => 'Healthcare',
-        'icon' => 'fa-solid fa-heart-pulse',
-        'color' => '#BC3B2C',
-        'bg' => 'rgba(188, 59, 44, 0.08)',
-        'description' => 'Clinical practice & healthcare',
-        'slug' => 'healthcare'
-    ],
-    'announcement' => [
-        'display_name' => 'Announcement',
-        'icon' => 'fa-solid fa-bullhorn',
-        'color' => '#A57C5A',
-        'bg' => 'rgba(165, 124, 90, 0.08)',
-        'description' => 'Institutional updates',
-        'slug' => 'announcement'
-    ],
-    'student' => [
-        'display_name' => 'Student',
-        'icon' => 'fa-solid fa-user-graduate',
-        'color' => '#1F7D4D',
-        'bg' => 'rgba(31, 125, 77, 0.08)',
-        'description' => 'Student life & achievements',
-        'slug' => 'student'
-    ],
-    'faculty' => [
-        'display_name' => 'Faculty',
-        'icon' => 'fa-solid fa-chalkboard-user',
-        'color' => '#5D4A8A',
-        'bg' => 'rgba(93, 74, 138, 0.08)',
-        'description' => 'Faculty excellence',
-        'slug' => 'faculty'
-    ],
-    'event' => [
-        'display_name' => 'Event',
-        'icon' => 'fa-solid fa-calendar-check',
-        'color' => '#C49A6C',
-        'bg' => 'rgba(196, 154, 108, 0.12)',
-        'description' => 'Upcoming events',
-        'slug' => 'event'
-    ],
-    'policy' => [
-        'display_name' => 'Policy',
-        'icon' => 'fa-solid fa-file-lines',
-        'color' => '#3F4A5A',
-        'bg' => 'rgba(63, 74, 90, 0.08)',
-        'description' => 'Policies & guidelines',
-        'slug' => 'policy'
-    ],
-    'award' => [
-        'display_name' => 'Award',
-        'icon' => 'fa-solid fa-trophy',
-        'color' => '#B9892E',
-        'bg' => 'rgba(185, 137, 46, 0.08)',
-        'description' => 'Recognition & awards',
-        'slug' => 'award'
-    ],
-    'community' => [
-        'display_name' => 'Community',
-        'icon' => 'fa-solid fa-people-arrows',
-        'color' => '#64748B',
-        'bg' => 'rgba(100, 116, 139, 0.08)',
-        'description' => 'Community engagement',
-        'slug' => 'community'
-    ]
+    'nursing'      => ['display_name'=>'Nursing',      'icon'=>'fa-solid fa-stethoscope',    'color'=>'#7C6FAB','bg'=>'rgba(124,111,171,0.1)', 'description'=>'Nursing education & practice',    'slug'=>'nursing'],
+    'research'     => ['display_name'=>'Research',     'icon'=>'fa-solid fa-flask',           'color'=>'#B8860B','bg'=>'rgba(184,134,11,0.1)',  'description'=>'Latest findings & studies',       'slug'=>'research'],
+    'education'    => ['display_name'=>'Education',    'icon'=>'fa-solid fa-graduation-cap',  'color'=>'#5A4F8A','bg'=>'rgba(90,79,138,0.08)',  'description'=>'Academic programs & training',    'slug'=>'education'],
+    'healthcare'   => ['display_name'=>'Healthcare',   'icon'=>'fa-solid fa-heart-pulse',     'color'=>'#7C6FAB','bg'=>'rgba(124,111,171,0.1)', 'description'=>'Clinical practice & healthcare',  'slug'=>'healthcare'],
+    'announcement' => ['display_name'=>'Announcement', 'icon'=>'fa-solid fa-bullhorn',        'color'=>'#9B8FCC','bg'=>'rgba(155,143,204,0.1)', 'description'=>'Institutional updates',           'slug'=>'announcement'],
+    'student'      => ['display_name'=>'Student',      'icon'=>'fa-solid fa-user-graduate',   'color'=>'#B8860B','bg'=>'rgba(184,134,11,0.08)', 'description'=>'Student life & achievements',     'slug'=>'student'],
+    'faculty'      => ['display_name'=>'Faculty',      'icon'=>'fa-solid fa-chalkboard-user', 'color'=>'#7C6FAB','bg'=>'rgba(124,111,171,0.1)', 'description'=>'Faculty excellence',              'slug'=>'faculty'],
+    'event'        => ['display_name'=>'Event',        'icon'=>'fa-solid fa-calendar-check',  'color'=>'#D4A520','bg'=>'rgba(212,165,32,0.1)',  'description'=>'Upcoming events',                 'slug'=>'event'],
+    'policy'       => ['display_name'=>'Policy',       'icon'=>'fa-solid fa-file-lines',      'color'=>'#64748B','bg'=>'rgba(100,116,139,0.08)','description'=>'Policies & guidelines',           'slug'=>'policy'],
+    'award'        => ['display_name'=>'Award',        'icon'=>'fa-solid fa-trophy',          'color'=>'#B8860B','bg'=>'rgba(184,134,11,0.1)',  'description'=>'Recognition & awards',            'slug'=>'award'],
+    'community'    => ['display_name'=>'Community',    'icon'=>'fa-solid fa-people-arrows',   'color'=>'#9B8FCC','bg'=>'rgba(155,143,204,0.1)', 'description'=>'Community engagement',            'slug'=>'community'],
 ];
 
-// =========================================================================
-// BUILD DISPLAY TOPICS - 100% FROM CONTROLLER DATA
-// =========================================================================
-$displayTopics = [];
-
-foreach ($allNewsTopics as $tagName => $count) {
-    $tagLower = strtolower(trim($tagName));
-    
-    if ($count > 0) {
-        if (isset($topicLibrary[$tagLower])) {
-            $displayTopics[$tagLower] = [
-                'name' => $topicLibrary[$tagLower]['display_name'],
-                'display_name' => $topicLibrary[$tagLower]['display_name'],
-                'slug' => $topicLibrary[$tagLower]['slug'],
-                'icon' => $topicLibrary[$tagLower]['icon'],
-                'color' => $topicLibrary[$tagLower]['color'],
-                'bg' => $topicLibrary[$tagLower]['bg'],
-                'description' => $topicLibrary[$tagLower]['description'],
-                'count' => (int)$count
-            ];
-        } else {
-            $displayTopics['tag_' . $tagLower] = [
-                'name' => ucwords($tagName),
-                'display_name' => ucwords($tagName),
-                'slug' => urlencode($tagName),
-                'icon' => 'fa-solid fa-tag',
-                'color' => '#64748B',
-                'bg' => 'rgba(100, 116, 139, 0.08)',
-                'description' => 'Related content',
-                'count' => (int)$count
-            ];
-        }
+if (empty($allNewsTopics) && !empty($news['tags'])) {
+    $tags = is_string($news['tags'])
+        ? (json_decode($news['tags'], true) ?: array_map('trim', explode(',', $news['tags'])))
+        : (array)$news['tags'];
+    foreach ($tags as $tag) {
+        $k = strtolower(trim($tag));
+        $allNewsTopics[$k] = ($allNewsTopics[$k] ?? 0) + 1;
     }
 }
 
-// Sort by count (highest first)
-uasort($displayTopics, function($a, $b) {
-    return $b['count'] - $a['count'];
-});
-
-// Limit to top 6 topics
+$displayTopics = [];
+foreach ($allNewsTopics as $tagName => $count) {
+    if ($count < 1) continue;
+    $k = strtolower(trim($tagName));
+    $lib = $topicLibrary[$k] ?? null;
+    $displayTopics[$k] = [
+        'display_name' => $lib ? $lib['display_name'] : ucwords($tagName),
+        'slug'         => $lib ? $lib['slug']         : urlencode($tagName),
+        'icon'         => $lib ? $lib['icon']         : 'fa-solid fa-tag',
+        'color'        => $lib ? $lib['color']        : '#7C6FAB',
+        'bg'           => $lib ? $lib['bg']           : 'rgba(124,111,171,0.1)',
+        'description'  => $lib ? $lib['description']  : 'Related content',
+        'count'        => (int)$count,
+    ];
+}
+uasort($displayTopics, fn($a,$b) => $b['count'] - $a['count']);
 $displayTopics = array_slice($displayTopics, 0, 6, true);
+
+// Featured image src
+$heroImgSrc = '';
+if (!empty($news['featured_image'])) {
+    $p = $news['featured_image'];
+    if (strpos($p, 'http') === 0 || strpos($p, '//') === 0) {
+        $heroImgSrc = htmlspecialchars($p);
+    } elseif (strpos($p, '/uploads/') === 0) {
+        $heroImgSrc = $baseUrl . htmlspecialchars($p);
+    } else {
+        $heroImgSrc = $baseUrl . '/uploads/news/' . htmlspecialchars($p);
+    }
+}
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-    <title><?php echo htmlspecialchars($pageTitle); ?></title>
-    <meta name="description" content="<?php echo htmlspecialchars($pageDescription); ?>">
-    
-    <!-- Open Graph -->
-    <meta property="og:title" content="<?php echo htmlspecialchars($news['title'] ?? $pageTitle); ?>">
-    <meta property="og:description" content="<?php echo htmlspecialchars($pageDescription); ?>">
-    <meta property="og:image" content="<?php echo !empty($news['featured_image']) ? $baseUrl . $news['featured_image'] : $baseUrl . '/assets/images/news/default-og.jpg'; ?>">
-    <meta property="og:url" content="<?php echo $baseUrl . '/news/' . ($news['slug'] ?? ''); ?>">
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome 6 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        /* ---------- DESIGN SYSTEM - PURE CSS, NO DATA LOGIC ---------- */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        html, body {
-            width: 100%;
-            overflow-x: hidden;
-            background: #FDFCFA;
-        }
 
-        body {
-            font-family: 'Crimson Pro', Georgia, serif;
-            font-size: 16px;
-            line-height: 1.7;
-            color: #1E293B;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        :root {
-            --primary: #5D4A8A;
-            --primary-dark: #4A3A6F;
-            --primary-light: #7B68A8;
-            --primary-soft: rgba(93, 74, 138, 0.08);
-            
-            --accent: #D4A574;
-            --accent-dark: #BF8F5E;
-            --accent-light: #E6C9A5;
-            --accent-soft: rgba(212, 165, 116, 0.12);
-            
-            --white: #FFFFFF;
-            --cream: #FDFCFA;
-            --beige: #F7F5F2;
-            --gray-100: #F1F5F9;
-            --gray-200: #E2E8F0;
-            --gray-300: #CBD5E1;
-            --gray-400: #94A3B8;
-            --gray-500: #64748B;
-            --gray-600: #475569;
-            --gray-700: #334155;
-            --gray-800: #1E293B;
-            --gray-900: #0F172A;
-            
-            --container-max-width: 1280px;
-            --container-padding-mobile: 0.5rem;
-            --container-padding-tablet: 1rem;
-            --container-padding-desktop: 2rem;
-            
-            --space-xs: 0.5rem;
-            --space-sm: 0.75rem;
-            --space-md: 1rem;
-            --space-lg: 1.5rem;
-            --space-xl: 2rem;
-            --space-2xl: 2.5rem;
-            --space-3xl: 3rem;
-            --space-4xl: 4rem;
-            
-            --radius-md: 0.5rem;
-            --radius-lg: 0.75rem;
-            --radius-xl: 1rem;
-            --radius-full: 9999px;
-            
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-slow: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .container {
-            width: 100%;
-            max-width: 100%;
-            margin: 0 auto;
-            padding-left: var(--container-padding-mobile);
-            padding-right: var(--container-padding-mobile);
-        }
-
-        @media (min-width: 640px) {
-            .container {
-                max-width: 100%;
-                padding-left: var(--container-padding-tablet);
-                padding-right: var(--container-padding-tablet);
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .container {
-                max-width: var(--container-max-width);
-                padding-left: var(--container-padding-desktop);
-                padding-right: var(--container-padding-desktop);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container { padding-left: 0.5rem; padding-right: 0.5rem; }
-        }
-        @media (max-width: 360px) {
-            .container { padding-left: 0.375rem; padding-right: 0.375rem; }
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Playfair Display', Georgia, serif;
-            font-weight: 700;
-            line-height: 1.2;
-            color: var(--gray-900);
-            letter-spacing: -0.01em;
-        }
-
-        h1 {
-            font-size: 2.2rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-        }
-        @media (min-width: 480px) { h1 { font-size: 2.5rem; } }
-        @media (min-width: 768px) { h1 { font-size: 3rem; } }
-        @media (min-width: 1024px) { h1 { font-size: 3.5rem; } }
-
-        .skip-link {
-            position: absolute;
-            top: -40px;
-            left: 1rem;
-            background: var(--primary);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0 0 var(--radius-md) var(--radius-md);
-            z-index: 1000;
-            text-decoration: none;
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-        }
-        .skip-link:focus { top: 0; }
-
-        .breadcrumb {
-            background: var(--white);
-            border-bottom: 1px solid var(--gray-200);
-            padding: 0.85rem 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(12px);
-            background: rgba(255, 255, 255, 0.95);
-            width: 100%;
-        }
-
-        .breadcrumb-list {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            list-style: none;
-            gap: 0.5rem;
-            font-size: 0.8rem;
-            font-family: 'Inter', sans-serif;
-            color: var(--gray-600);
-        }
-
-        .breadcrumb-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .breadcrumb-item:not(:last-child)::after {
-            content: "/";
-            color: var(--gray-400);
-            margin-left: 0.5rem;
-        }
-        .breadcrumb-link {
-            color: var(--gray-600);
-            white-space: nowrap;
-        }
-        .breadcrumb-link:hover { color: var(--primary); }
-        .breadcrumb-current {
-            color: var(--gray-900);
-            font-weight: 600;
-            white-space: nowrap;
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .article-page {
-            padding: var(--space-xl) 0 var(--space-4xl);
-            width: 100%;
-        }
-        @media (min-width: 768px) { .article-page { padding: var(--space-3xl) 0 var(--space-4xl); } }
-
-        .article-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: var(--space-2xl);
-            align-items: start;
-        }
-        @media (min-width: 992px) {
-            .article-grid {
-                grid-template-columns: 1fr 340px;
-                gap: var(--space-3xl);
-            }
-        }
-
-        .article-header {
-            width: 100%;
-            margin-bottom: var(--space-xl);
-        }
-
-        .article-category {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: var(--primary-dark);
-            background: var(--primary-soft);
-            padding: 0.4rem 1.2rem;
-            border-radius: var(--radius-full);
-            margin-bottom: var(--space-lg);
-            border: 1px solid var(--primary-light);
-        }
-
-        .article-title {
-            margin-bottom: var(--space-lg);
-            color: var(--gray-900);
-            line-height: 1.1;
-        }
-
-        .article-excerpt {
-            font-size: 1.2rem;
-            line-height: 1.6;
-            color: var(--gray-700);
-            font-weight: 350;
-            margin-bottom: var(--space-xl);
-            border-left: 5px solid var(--accent);
-            padding-left: var(--space-lg);
-            font-style: normal;
-        }
-        @media (min-width: 768px) { .article-excerpt { font-size: 1.3rem; padding-left: var(--space-xl); } }
-
-        .article-meta {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: var(--space-md);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.8rem;
-            color: var(--gray-600);
-            padding: var(--space-md) 0;
-            border-top: 2px solid var(--gray-200);
-            border-bottom: 2px solid var(--gray-200);
-            margin-bottom: var(--space-xl);
-        }
-        @media (min-width: 640px) { .article-meta { gap: var(--space-lg); font-size: 0.85rem; } }
-
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .meta-item i {
-            color: var(--accent-dark);
-            width: 1rem;
-        }
-
-        .article-hero {
-            margin: var(--space-lg) 0 var(--space-xl);
-            border-radius: var(--radius-md);
-            overflow: hidden;
-            box-shadow: 0 8px 20px -8px rgba(93, 74, 138, 0.15);
-            background: var(--gray-100);
-            border: 1px solid var(--gray-200);
-        }
-        @media (min-width: 768px) { .article-hero { border-radius: var(--radius-lg); } }
-
-        .hero-image-wrapper {
-            position: relative;
-            width: 100%;
-            padding-bottom: 56.25%;
-            background: linear-gradient(145deg, var(--gray-200), var(--gray-100));
-        }
-
-        .hero-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .article-main {
-            background: var(--white);
-            border-radius: var(--radius-lg);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-            border: 1px solid var(--gray-200);
-            overflow: hidden;
-            width: 100%;
-        }
-
-        .article-body {
-            padding: var(--space-xl) var(--space-lg);
-        }
-        @media (min-width: 640px) { .article-body { padding: var(--space-2xl) var(--space-2xl); } }
-
-        .article-content {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: var(--gray-800);
-        }
-        @media (min-width: 768px) { .article-content { font-size: 1.2rem; } }
-
-        .article-content > p:first-of-type:first-letter {
-            font-family: 'Playfair Display', Georgia, serif;
-            font-size: 4rem;
-            float: left;
-            line-height: 0.8;
-            margin-right: var(--space-md);
-            padding-top: 0.2rem;
-            color: var(--primary);
-            font-weight: 700;
-        }
-        @media (min-width: 768px) { .article-content > p:first-of-type:first-letter { font-size: 4.8rem; } }
-
-        /* ---------- ✦✦✦ FIXED TOPICS HUB - NO OVERFLOW ✦✦✦ ---------- */
-        .topics-hub {
-            margin-bottom: var(--space-2xl);
-            background: linear-gradient(145deg, var(--white), var(--cream));
-            border-radius: var(--radius-xl);
-            padding: var(--space-2xl) var(--space-xl);
-            border: 1px solid var(--gray-200);
-            box-shadow: 0 8px 20px -12px rgba(93, 74, 138, 0.12);
-            position: relative;
-            overflow: hidden;
-            width: 100%;
-        }
-
-        .topics-hub::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary-light));
-            opacity: 0.6;
-        }
-
-        .topics-header {
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            margin-bottom: var(--space-xl);
-            flex-wrap: wrap;
-            gap: var(--space-md);
-        }
-
-        .topics-title-area {
-            display: flex;
-            align-items: baseline;
-            gap: var(--space-sm);
-            flex-wrap: wrap;
-        }
-
-        .topics-icon {
-            font-size: 1.4rem;
-            color: var(--primary);
-            background: var(--primary-soft);
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: var(--radius-full);
-        }
-
-        .topics-title {
-            font-family: 'Playfair Display', Georgia, serif;
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: var(--gray-900);
-            letter-spacing: -0.02em;
-            margin: 0;
-            line-height: 1.2;
-        }
-
-        .topics-subtitle {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.85rem;
-            color: var(--gray-600);
-            font-weight: 400;
-            margin-left: var(--space-sm);
-        }
-
-        .topics-view-all {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--primary);
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1.2rem;
-            background: var(--white);
-            border-radius: var(--radius-full);
-            border: 1px solid var(--gray-300);
-            transition: var(--transition);
-            text-decoration: none;
-            white-space: nowrap;
-        }
-
-        .topics-view-all:hover {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-            transform: translateX(4px);
-        }
-
-        .topics-view-all i {
-            font-size: 0.75rem;
-        }
-
-        /* ✅ FIXED: Grid that stacks properly on mobile */
-        .topics-grid {
-            display: grid;
-            grid-template-columns: 1fr; /* Always stack vertically */
-            gap: var(--space-md);
-        }
-
-        /* ✅ FIXED: Two columns only on larger screens */
-        @media (min-width: 768px) {
-            .topics-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        /* ✅ FIXED: Topic card - no overflow, flex wrap */
-        .topic-card {
-            display: flex;
-            align-items: flex-start;
-            gap: var(--space-md);
-            padding: var(--space-lg);
-            background: var(--white);
-            border: 1px solid var(--gray-200);
-            border-radius: var(--radius-lg);
-            transition: var(--transition-slow);
-            text-decoration: none;
-            position: relative;
-            overflow: hidden;
-            width: 100%;
-            min-width: 0; /* Critical for flexbox text wrapping */
-        }
-
-        .topic-card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(145deg, transparent, rgba(93, 74, 138, 0.02));
-            opacity: 0;
-            transition: var(--transition);
-            pointer-events: none;
-        }
-
-        .topic-card:hover {
-            transform: translateY(-4px) scale(1.02);
-            border-color: transparent;
-            box-shadow: 0 12px 24px -12px rgba(93, 74, 138, 0.2);
-        }
-
-        .topic-card:hover::after {
-            opacity: 1;
-        }
-
-        /* ✅ FIXED: Icon stays fixed size, doesn't shrink */
-        .topic-icon-wrapper {
-            width: 56px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: var(--radius-full);
-            background: var(--topic-bg, var(--primary-soft));
-            color: var(--topic-color, var(--primary));
-            font-size: 1.4rem;
-            transition: var(--transition-slow);
-            flex-shrink: 0; /* Prevents icon from squishing */
-        }
-
-        .topic-card:hover .topic-icon-wrapper {
-            transform: scale(1.1);
-            box-shadow: 0 8px 16px -8px var(--topic-color, var(--primary));
-        }
-
-        /* ✅ FIXED: Content area - flex and allow wrapping */
-        .topic-content {
-            flex: 1;
-            min-width: 0; /* CRITICAL: Allows text to wrap */
-            width: 100%;
-        }
-
-        /* ✅ FIXED: Topic name row - flex wrap for small screens */
-        .topic-name {
-            display: flex;
-            align-items: baseline;
-            flex-wrap: wrap; /* Allows count to move below on tiny screens */
-            gap: var(--space-xs);
-            margin-bottom: var(--space-xs);
-            width: 100%;
-        }
-
-        .topic-title {
-            font-family: 'Inter', sans-serif;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin: 0;
-            line-height: 1.3;
-            letter-spacing: -0.01em;
-            word-break: break-word; /* Prevents long words from overflowing */
-        }
-
-        /* ✅ FIXED: Count badge - no overflow */
-        .topic-count {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--gray-600);
-            background: var(--gray-100);
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--radius-full);
-            transition: var(--transition);
-            white-space: nowrap; /* Keeps "1 article" together */
-            flex-shrink: 0; /* Prevents badge from wrapping weirdly */
-        }
-
-        /* ✅ FIXED: When screen is tiny, allow badge to move to new line */
-        @media (max-width: 360px) {
-            .topic-name {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.25rem;
-            }
-            
-            .topic-count {
-                white-space: nowrap;
-                align-self: flex-start;
-            }
-        }
-
-        .topic-card:hover .topic-count {
-            background: var(--topic-color, var(--primary));
-            color: white;
-        }
-
-        /* ✅ FIXED: Description - truncates with ellipsis */
-        .topic-description {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.8rem;
-            color: var(--gray-600);
-            line-height: 1.5;
-            margin: 0;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            word-break: break-word;
-            width: 100%;
-        }
-
-        .topic-card {
-            --topic-color: var(--primary);
-            --topic-bg: var(--primary-soft);
-        }
-
-        /* ✅ FIXED: Mobile optimization */
-        @media (max-width: 480px) {
-            .topics-hub { 
-                padding: var(--space-lg) var(--space-md); 
-            }
-            
-            .topic-card { 
-                padding: var(--space-md); 
-            }
-            
-            .topic-icon-wrapper { 
-                width: 48px; 
-                height: 48px; 
-                font-size: 1.2rem; 
-            }
-            
-            .topic-title { 
-                font-size: 1rem; 
-            }
-            
-            .topic-description {
-                -webkit-line-clamp: 2;
-                font-size: 0.75rem;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .topic-card {
-                padding: var(--space-sm);
-                gap: var(--space-sm);
-            }
-            
-            .topic-icon-wrapper {
-                width: 40px;
-                height: 40px;
-                font-size: 1rem;
-            }
-            
-            .topic-title {
-                font-size: 0.95rem;
-            }
-        }
-
-        .tags-section { display: none; }
-
-        .article-footer {
-            padding: 0 var(--space-lg) var(--space-xl);
-        }
-        @media (min-width: 640px) { .article-footer { padding: 0 var(--space-2xl) var(--space-2xl); } }
-
-        .share-section {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: var(--space-md) var(--space-lg);
-            background: var(--beige);
-            border-radius: var(--radius-xl);
-            border: 1px solid var(--gray-200);
-            flex-wrap: wrap;
-            gap: var(--space-md);
-            margin-bottom: var(--space-xl);
-        }
-
-        .share-label {
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            color: var(--gray-800);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            font-size: 0.9rem;
-        }
-
-        .share-buttons {
-            display: flex;
-            gap: var(--space-sm);
-            flex-wrap: wrap;
-        }
-
-        .share-btn {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            color: white;
-            transition: var(--transition);
-        }
-        .share-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-        }
-        .share-btn.facebook { background: #1877F2; }
-        .share-btn.twitter { background: #1DA1F2; }
-        .share-btn.linkedin { background: #0A66C2; }
-        .share-btn.whatsapp { background: #25D366; }
-        .share-btn.email { background: var(--gray-700); }
-
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: var(--space-md) var(--space-xl);
-            border: 2px solid var(--primary);
-            border-radius: var(--radius-full);
-            color: var(--primary);
-            font-weight: 700;
-            font-size: 0.9rem;
-            transition: var(--transition);
-            width: 100%;
-            justify-content: center;
-        }
-        @media (min-width: 480px) { .back-button { width: auto; } }
-        .back-button:hover {
-            background: var(--primary);
-            color: white;
-            text-decoration: none;
-        }
-
-        .article-sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-xl);
-        }
-        @media (min-width: 992px) { .article-sidebar { position: sticky; top: 100px; } }
-
-        .sidebar-card {
-            background: var(--white);
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--gray-200);
-            padding: var(--space-xl);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            width: 100%;
-        }
-
-        .sidebar-title {
-            font-family: 'Playfair Display', Georgia, serif;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: var(--space-lg);
-            padding-bottom: var(--space-md);
-            border-bottom: 2px solid var(--accent-light);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-
-        .author-card { text-align: center; }
-        .author-avatar {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto var(--space-md);
-            border-radius: 50%;
-            background: linear-gradient(145deg, var(--primary), var(--primary-light));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Playfair Display', Georgia, serif;
-            font-size: 2rem;
-            font-weight: 700;
-            color: white;
-            box-shadow: 0 8px 16px rgba(93, 74, 138, 0.2);
-            border: 3px solid var(--white);
-        }
-        .author-name {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 0.2rem;
-            color: var(--gray-900);
-        }
-        .author-role {
-            font-size: 0.75rem;
-            color: var(--accent-dark);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: var(--space-md);
-        }
-        .author-bio {
-            font-size: 0.9rem;
-            color: var(--gray-600);
-            line-height: 1.6;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .popular-list { list-style: none; }
-        .popular-item {
-            padding: var(--space-md) 0;
-            border-bottom: 1px solid var(--gray-200);
-        }
-        .popular-item:last-child { border-bottom: none; padding-bottom: 0; }
-        .popular-item:first-child { padding-top: 0; }
-        .popular-link {
-            display: block;
-            text-decoration: none;
-        }
-        .popular-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--gray-800);
-            margin-bottom: var(--space-xs);
-            line-height: 1.4;
-            font-family: 'Playfair Display', Georgia, serif;
-            transition: var(--transition);
-        }
-        .popular-link:hover .popular-title { color: var(--primary); }
-        .popular-meta {
-            font-size: 0.7rem;
-            color: var(--gray-500);
-            display: flex;
-            gap: var(--space-md);
-            font-family: 'Inter', sans-serif;
-        }
-
-        .newsletter-description {
-            font-size: 0.9rem;
-            color: var(--gray-600);
-            margin-bottom: var(--space-lg);
-            line-height: 1.5;
-        }
-        #newsletter-message {
-            display: none;
-            padding: 0.9rem 1rem;
-            border-radius: var(--radius-md);
-            font-size: 0.85rem;
-            margin-bottom: var(--space-md);
-            border: 1px solid transparent;
-            font-family: 'Inter', sans-serif;
-        }
-        .newsletter-form {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-md);
-        }
-        .newsletter-input {
-            width: 100%;
-            padding: 1rem 1.4rem;
-            border: 2px solid var(--gray-300);
-            border-radius: var(--radius-full);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.95rem;
-            background: white;
-            color: var(--gray-900);
-            caret-color: var(--primary) !important;
-            transition: all 0.2s;
-            outline: none;
-        }
-        .newsletter-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(93, 74, 138, 0.12);
-            caret-color: var(--primary) !important;
-        }
-        .newsletter-button {
-            width: 100%;
-            padding: 1rem 1.4rem;
-            background: linear-gradient(145deg, var(--primary), var(--primary-dark));
-            color: white;
-            border: none;
-            border-radius: var(--radius-full);
-            font-family: 'Inter', sans-serif;
-            font-weight: 700;
-            font-size: 0.95rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--space-2);
-            transition: var(--transition);
-        }
-        .newsletter-button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 24px -8px rgba(93, 74, 138, 0.25);
-        }
-        .newsletter-disclaimer {
-            font-size: 0.7rem;
-            color: var(--gray-500);
-            line-height: 1.4;
-        }
-
-        .related-section {
-            margin-top: var(--space-3xl);
-            padding-top: var(--space-2xl);
-            border-top: 2px solid var(--gray-200);
-        }
-        .related-header { margin-bottom: var(--space-xl); }
-        .related-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--gray-900);
-        }
-        .related-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: var(--space-lg);
-        }
-        @media (min-width: 640px) { .related-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (min-width: 1024px) { .related-grid { grid-template-columns: repeat(3, 1fr); } }
-
-        .related-card {
-            background: var(--white);
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--gray-200);
-            overflow: hidden;
-            transition: var(--transition);
-        }
-        .related-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 30px -10px rgba(93, 74, 138, 0.15);
-            border-color: var(--accent);
-        }
-        .related-image-wrapper {
-            width: 100%;
-            padding-top: 60%;
-            position: relative;
-            background: var(--gray-200);
-        }
-        .related-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .related-content { padding: var(--space-lg); }
-        .related-category {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.6rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: var(--accent-dark);
-            letter-spacing: 0.08em;
-        }
-        .related-card-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin: var(--space-sm) 0 var(--space-sm);
-            line-height: 1.4;
-        }
-        .related-card-title a {
-            color: var(--gray-900);
-            text-decoration: none;
-        }
-        .related-card-title a:hover {
-            color: var(--primary);
-            text-decoration: underline;
-            text-decoration-color: var(--accent);
-        }
-        .related-card-meta {
-            font-size: 0.7rem;
-            color: var(--gray-600);
-            display: flex;
-            gap: var(--space-md);
-            font-family: 'Inter', sans-serif;
-        }
-
-        .cta-banner {
-            margin-top: var(--space-3xl);
-            padding: var(--space-2xl) var(--space-lg);
-            background: linear-gradient(145deg, var(--primary), var(--primary-dark));
-            border-radius: var(--radius-lg);
-            text-align: center;
-            color: white;
-            box-shadow: 0 12px 28px -8px rgba(93, 74, 138, 0.3);
-        }
-        .cta-title {
-            color: white;
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: var(--space-md);
-        }
-        @media (min-width: 768px) { .cta-title { font-size: 2.2rem; } }
-        .cta-description {
-            font-size: 1.1rem;
-            margin-bottom: var(--space-xl);
-            opacity: 0.95;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-            font-family: 'Crimson Pro', Georgia, serif;
-            color: white !important;
-            font-weight: 400;
-        }
-        .cta-buttons {
-            display: flex;
-            justify-content: center;
-            gap: var(--space-md);
-            flex-wrap: wrap;
-        }
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            padding: 0.8rem 1.8rem;
-            font-family: 'Inter', sans-serif;
-            font-weight: 700;
-            font-size: 0.9rem;
-            border-radius: var(--radius-full);
-            transition: var(--transition);
-            border: none;
-            cursor: pointer;
-        }
-        .btn-primary {
-            background: white;
-            color: var(--primary);
-            border: 2px solid transparent;
-        }
-        .btn-primary:hover {
-            background: var(--accent-light);
-            color: var(--primary-dark);
-            transform: translateY(-2px);
-        }
-        .btn-outline {
-            background: transparent;
-            color: white;
-            border: 2px solid white;
-        }
-        .btn-outline:hover {
-            background: white;
-            color: var(--primary);
-            transform: translateY(-2px);
-        }
-
-        .back-to-top {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            width: 48px;
-            height: 48px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 8px 20px rgba(212, 165, 116, 0.3);
-            transition: var(--transition);
-            z-index: 99;
-            font-size: 1.2rem;
-        }
-        .back-to-top:hover {
-            background: var(--accent-dark);
-            transform: translateY(-4px);
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            * { animation: none !important; transition: none !important; }
-        }
-
-        :focus-visible {
-            outline: 3px solid var(--accent);
-            outline-offset: 3px;
-        }
-
-        .container, .breadcrumb, .article-page, .article-main, .sidebar-card, .cta-banner, .topics-hub {
-            max-width: 100%;
-            overflow-x: hidden;
-        }
-        img, video, iframe, embed { max-width: 100%; height: auto; }
+<!-- Fonts (same as index) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    /* EMERGENCY FULL WIDTH OVERRIDE */
+body .main-content {
+    padding: 0 !important;
+    max-width: 100vw !important;
+}
+
+.hero-section {
+    width: 100vw !important;
+    position: relative !important;
+    left: 50% !important;
+    right: 50% !important;
+    margin-left: -50vw !important;
+    margin-right: -50vw !important;
+}
     </style>
-</head>
-<body>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN TOKENS  — identical to news index
+═══════════════════════════════════════════════════════════ */
+:root{
+    --ink:         #0E1117;
+    --ink-mid:     #1C2333;
+    --ink-soft:    #2D3748;
+    --slate:       #64748B;
+    --mist:        #94A3B8;
+    --border:      #E2E8F0;
+    --surface:     #F8FAFC;
+    --white:       #FFFFFF;
 
-    <!-- BREADCRUMB -->
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-        <div class="container">
-            <ol class="breadcrumb-list">
-                <?php foreach ($breadcrumb as $item): ?>
-                <li class="breadcrumb-item">
-                    <?php if (!empty($item['url'])): ?>
-                    <a href="<?php echo $item['url']; ?>" class="breadcrumb-link"><?php echo $item['label']; ?></a>
-                    <?php else: ?>
-                    <span class="breadcrumb-current"><?php echo $item['label']; ?></span>
-                    <?php endif; ?>
-                </li>
-                <?php endforeach; ?>
-            </ol>
-        </div>
-    </nav>
+    --purple:      #7C6FAB;
+    --purple-dark: #5A4F8A;
+    --purple-pale: #F0EEF9;
+    --purple-mid:  #9B8FCC;
 
-    <main id="main-content" class="article-page">
-        <div class="container">
+    --gold:        #B8860B;
+    --gold-light:  #D4A520;
+    --gold-pale:   #FFFBEB;
 
-            <!-- HEADER -->
-            <header class="article-header">
+    --font-display:'Cormorant Garamond', Georgia, serif;
+    --font-body:   'Outfit', system-ui, sans-serif;
+    --font-mono:   'JetBrains Mono', monospace;
+
+    --radius-sm:   6px;
+    --radius-md:   12px;
+    --radius-lg:   20px;
+    --radius-xl:   28px;
+
+    --shadow-sm:   0 2px 8px  rgba(0,0,0,0.07);
+    --shadow-md:   0 6px 24px rgba(0,0,0,0.08);
+    --shadow-lg:   0 16px 48px rgba(0,0,0,0.10);
+    --shadow-xl:   0 32px 80px rgba(0,0,0,0.12);
+}
+
+/* ── Scoped reset ── */
+.ns-root *, .ns-root *::before, .ns-root *::after { box-sizing: border-box; }
+.ns-root {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--white);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    width: 100%;
+}
+
+/* ── Container ── */
+.ns-container {
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding-left:  clamp(1rem, 4vw, 2.5rem);
+    padding-right: clamp(1rem, 4vw, 2.5rem);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BREADCRUMB
+═══════════════════════════════════════════════════════════ */
+.ns-breadcrumb {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0.8rem 0;
+}
+.ns-breadcrumb-list {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    flex-wrap: wrap;
+}
+.ns-breadcrumb-list a         { color: var(--purple-dark); text-decoration: none; font-weight: 500; }
+.ns-breadcrumb-list a:hover   { color: var(--purple); text-decoration: underline; }
+.ns-bc-sep     { color: var(--mist); }
+.ns-bc-current { color: var(--slate); }
+
+/* ═══════════════════════════════════════════════════════════
+   ARTICLE HERO  — mirrors the featured card on the index:
+   image on left, dark-panel text on right (split grid).
+   On mobile: image on top, text below — never overlapping.
+═══════════════════════════════════════════════════════════ */
+.ns-hero-wrap {
+    background: linear-gradient(145deg, #16152A 0%, #1A1B30 35%, var(--ink-mid) 100%);
+    padding: clamp(2rem, 5vw, 3.5rem) 0 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Same diagonal stripe texture as index hero */
+.ns-hero-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+        -55deg, transparent, transparent 40px,
+        rgba(255,255,255,0.016) 40px, rgba(255,255,255,0.016) 41px
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Purple radial glow — top-left */
+.ns-hero-wrap::after {
+    content: '';
+    position: absolute;
+    top: -80px; left: -60px;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,111,171,0.22) 0%, transparent 65%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ── Split card ── */
+.ns-hero-card {
+    position: relative;
+    z-index: 1;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    overflow: hidden;
+    background: var(--ink-mid);
+    box-shadow: var(--shadow-xl);
+    display: grid;
+    grid-template-columns: 1fr;          /* mobile: stacked */
+    grid-template-rows: 260px auto;
+}
+
+@media (min-width: 680px) {
+    .ns-hero-card {
+        grid-template-columns: 52% 48%;
+        grid-template-rows: unset;
+        min-height: 400px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .ns-hero-card {
+        grid-template-columns: 58% 42%;
+        min-height: 460px;
+    }
+}
+
+/* Image cell */
+.ns-hero-img-cell {
+    position: relative;
+    overflow: hidden;
+    background: var(--ink);
+    min-height: 260px;
+}
+
+@media (min-width: 680px) { .ns-hero-img-cell { min-height: unset; } }
+
+.ns-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 6s ease;
+}
+.ns-hero-card:hover .ns-hero-img { transform: scale(1.04); }
+
+/* Right-fade blending into text panel on desktop */
+.ns-hero-img-cell::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, transparent 45%, rgba(28,35,51,0.75) 100%);
+    pointer-events: none;
+}
+
+@media (max-width: 679px) {
+    /* Bottom fade on mobile so text panel reads clearly */
+    .ns-hero-img-cell::after {
+        background: linear-gradient(to bottom, transparent 35%, rgba(14,17,23,0.9) 100%);
+    }
+}
+
+/* Image placeholder (no image) */
+.ns-hero-img-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1A1B30, #2A2540);
+    color: rgba(255,255,255,0.12);
+    font-size: 5rem;
+}
+
+/* Text cell */
+.ns-hero-text {
+    background: linear-gradient(160deg, #1C2333 40%, #201E38 100%);
+    padding: clamp(1.75rem, 4vw, 2.75rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+    position: relative;
+}
+
+/* Left purple border accent — desktop only */
+.ns-hero-text::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 12%; bottom: 12%;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--purple-mid), var(--purple));
+    border-radius: 3px;
+}
+@media (max-width: 679px) { .ns-hero-text::before { display: none; } }
+
+/* Tag / category badge */
+.ns-hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--purple);
+    color: var(--white);
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    width: fit-content;
+}
+
+/* Article title */
+.ns-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 3vw, 2.2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--white);
+    margin-bottom: 0.875rem;
+    letter-spacing: -0.01em;
+}
+
+/* Excerpt — hidden on mobile (full content below) */
+.ns-hero-excerpt {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.62);
+    line-height: 1.65;
+    margin-bottom: 1.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+@media (max-width: 679px) { .ns-hero-excerpt { display: none; } }
+
+/* Meta row */
+.ns-hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.125rem;
+    flex-wrap: wrap;
+}
+.ns-hero-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.04em;
+}
+.ns-hero-meta-item i { color: var(--gold-light); font-size: 0.62rem; }
+
+/* Caption strip below the hero card */
+.ns-hero-caption {
+    background: var(--ink-mid);
+    padding: 0.75rem clamp(1rem, 4vw, 2.5rem);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.ns-hero-author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.ns-hero-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--purple), var(--purple-mid));
+    color: var(--white);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.ns-hero-author-text { display: flex; flex-direction: column; gap: 1px; }
+.ns-hero-author-name {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+}
+.ns-hero-author-role {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+}
+
+.ns-share-mini {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.ns-share-label {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    margin-right: 4px;
+}
+.ns-share-btn {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--white);
+    font-size: 0.7rem;
+    transition: transform 0.2s, opacity 0.2s;
+    opacity: 0.75;
+}
+.ns-share-btn:hover { transform: translateY(-2px); opacity: 1; }
+.ns-share-btn.fb   { background: #1877F2; }
+.ns-share-btn.tw   { background: #1DA1F2; }
+.ns-share-btn.li   { background: #0A66C2; }
+.ns-share-btn.wa   { background: #25D366; }
+.ns-share-btn.em   { background: var(--slate); }
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE BODY  (article + sidebar)
+═══════════════════════════════════════════════════════════ */
+.ns-body {
+    background: var(--surface);
+    padding: clamp(2rem, 5vw, 3.5rem) 0 clamp(3rem, 6vw, 5rem);
+}
+
+.ns-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+}
+@media (min-width: 1080px) {
+    .ns-layout { grid-template-columns: 1fr 308px; }
+}
+
+/* ── Article content card ── */
+.ns-article-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.ns-article-body {
+    padding: clamp(1.5rem, 5vw, 3rem);
+}
+
+/* Drop cap */
+.ns-article-content {
+    font-family: var(--font-body);
+    font-size: clamp(1rem, 1.8vw, 1.1rem);
+    line-height: 1.85;
+    color: var(--ink-soft);
+}
+
+.ns-article-content > p:first-of-type::first-letter {
+    font-family: var(--font-display);
+    font-size: 4.2rem;
+    font-weight: 700;
+    float: left;
+    line-height: 0.82;
+    margin-right: 0.15em;
+    padding-top: 0.12em;
+    color: var(--purple);
+}
+
+.ns-article-content p            { margin-bottom: 1.4em; }
+.ns-article-content h2           { font-family: var(--font-display); font-size: clamp(1.4rem,3vw,1.8rem); color: var(--ink); margin: 2em 0 0.6em; }
+.ns-article-content h3           { font-family: var(--font-display); font-size: clamp(1.15rem,2.5vw,1.4rem); color: var(--ink); margin: 1.75em 0 0.5em; }
+.ns-article-content blockquote   { border-left: 3px solid var(--gold-light); padding: 1em 1.5em; margin: 1.5em 0; background: var(--gold-pale); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; font-style: italic; color: var(--ink-soft); }
+.ns-article-content ul, .ns-article-content ol { padding-left: 1.5em; margin-bottom: 1.4em; }
+.ns-article-content li           { margin-bottom: 0.4em; }
+.ns-article-content img          { max-width: 100%; border-radius: var(--radius-md); margin: 1em 0; }
+.ns-article-content a            { color: var(--purple); text-decoration: underline; text-decoration-color: rgba(124,111,171,0.4); }
+.ns-article-content a:hover      { color: var(--purple-dark); }
+
+/* ── Article footer ── */
+.ns-article-footer {
+    padding: 1.5rem clamp(1.5rem, 5vw, 3rem);
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Topics hub */
+.ns-topics {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+.ns-topics::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--purple) 80px, var(--border) 80px);
+}
+.ns-topics-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.125rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.ns-topics-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--ink);
+    display: flex; align-items: center; gap: 8px;
+}
+.ns-topics-title-pip {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--purple);
+    flex-shrink: 0;
+}
+.ns-topics-link {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--purple-dark);
+    text-decoration: none;
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    transition: all 0.2s;
+}
+.ns-topics-link:hover { background: var(--purple); color: var(--white); border-color: var(--purple); }
+
+.ns-topics-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+@media (min-width: 560px) { .ns-topics-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.ns-topic-card {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    transition: all 0.25s ease;
+    min-width: 0;
+}
+.ns-topic-card:hover {
+    border-color: rgba(124,111,171,0.3);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+.ns-topic-icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+.ns-topic-card:hover .ns-topic-icon { transform: scale(1.1); }
+.ns-topic-body { flex: 1; min-width: 0; }
+.ns-topic-name {
+    display: flex; align-items: baseline; gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+}
+.ns-topic-title {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ns-topic-count {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--slate);
+    background: var(--surface);
+    padding: 2px 7px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.ns-topic-card:hover .ns-topic-count { background: var(--purple-pale); color: var(--purple-dark); border-color: rgba(124,111,171,0.25); }
+.ns-topic-desc {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--mist);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Share row */
+.ns-share-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--purple);
+    border-radius: var(--radius-md);
+}
+.ns-share-row-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--slate);
+    display: flex; align-items: center; gap: 6px;
+}
+.ns-share-row-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.ns-share-row-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--white);
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+.ns-share-row-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.ns-share-row-btn.fb  { background: #1877F2; }
+.ns-share-row-btn.tw  { background: #1DA1F2; }
+.ns-share-row-btn.li  { background: #0A66C2; }
+.ns-share-row-btn.wa  { background: #25D366; }
+.ns-share-row-btn.em  { background: var(--slate); }
+
+/* Back button */
+.ns-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--purple-dark);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 0.6rem 1.25rem;
+    border: 1.5px solid var(--purple);
+    border-radius: var(--radius-sm);
+    transition: all 0.22s;
+    width: fit-content;
+}
+.ns-back:hover { background: var(--purple); color: var(--white); }
+
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════════════ */
+.ns-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+@media (min-width: 1080px) {
+    .ns-sidebar { position: sticky; top: 1.5rem; align-self: start; }
+}
+
+.ns-widget {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.ns-widget-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 1.125rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+.ns-widget-icon {
+    width: 30px; height: 30px;
+    background: var(--purple-pale);
+    color: var(--purple);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* Author widget */
+.ns-author {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+}
+.ns-author-avatar {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--purple), var(--purple-mid));
+    color: var(--white);
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 20px rgba(124,111,171,0.25);
+    border: 3px solid var(--white);
+    margin-bottom: 0.25rem;
+}
+.ns-author-name {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+.ns-author-role {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+}
+.ns-author-bio {
+    font-size: 0.82rem;
+    color: var(--slate);
+    line-height: 1.6;
+    margin-top: 0.25rem;
+}
+
+/* Popular list */
+.ns-popular-list { list-style: none; display: flex; flex-direction: column; }
+.ns-popular-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.ns-popular-item:first-child { padding-top: 0; }
+.ns-popular-item:last-child  { border-bottom: none; padding-bottom: 0; }
+.ns-popular-thumb {
+    width: 64px; height: 52px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--surface);
+}
+.ns-popular-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.ns-popular-body { flex:1; min-width:0; }
+.ns-popular-title {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.ns-popular-title a { color: inherit; text-decoration: none; transition: color 0.2s; }
+.ns-popular-title a:hover { color: var(--purple); }
+.ns-popular-date {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--mist);
+    display: flex; align-items: center; gap: 4px;
+}
+
+/* Newsletter widget */
+.ns-widget--nl {
+    background: linear-gradient(155deg, #1C2333 40%, #221F3A 100%);
+    border-color: rgba(124,111,171,0.2);
+    position: relative;
+    overflow: hidden;
+}
+.ns-widget--nl::before {
+    content: '';
+    position: absolute;
+    bottom: -50px; right: -50px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,111,171,0.18) 0%, transparent 70%);
+    pointer-events: none;
+}
+.ns-widget--nl .ns-widget-title { color: var(--white); border-color: rgba(255,255,255,0.08); }
+.ns-widget--nl .ns-widget-icon  { background: rgba(124,111,171,0.22); color: var(--gold-light); }
+
+.ns-nl-desc { font-size: 0.82rem; color: rgba(255,255,255,0.6); line-height: 1.65; margin-bottom: 1rem; position:relative; z-index:1; }
+
+.ns-nl-form { display:flex; flex-direction:column; gap:0.75rem; position:relative; z-index:1; }
+
+.ns-nl-input-wrap { position: relative; }
+.ns-nl-icon {
+    position: absolute; left: 0.875rem; top:50%; transform:translateY(-50%);
+    color: var(--mist); font-size: 0.78rem; pointer-events:none; z-index:2;
+}
+.ns-nl-input {
+    width: 100%;
+    height: 44px;
+    padding: 0 1rem 0 2.5rem;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.06);
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    caret-color: var(--gold-light);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+}
+.ns-nl-input::placeholder { color: rgba(255,255,255,0.28); }
+.ns-nl-input:focus {
+    border-color: var(--gold-light);
+    background: rgba(255,255,255,0.09);
+    box-shadow: 0 0 0 3px rgba(212,165,32,0.12);
+}
+.ns-nl-btn {
+    width: 100%; height: 42px;
+    background: var(--purple);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: background 0.2s, transform 0.2s;
+    letter-spacing: 0.02em;
+}
+.ns-nl-btn:hover:not(:disabled) { background: var(--purple-dark); transform: translateY(-1px); }
+.ns-nl-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.ns-nl-disclaimer { font-size: 0.65rem; color: rgba(255,255,255,0.3); line-height: 1.5; }
+#ns-nl-msg {
+    display: none;
+    padding: 0.625rem 0.875rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 500;
+    position: relative; z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RELATED ARTICLES
+═══════════════════════════════════════════════════════════ */
+.ns-related {
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+}
+.ns-related-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.ns-related-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    color: var(--ink);
+    display: flex; align-items: center; gap: 10px;
+}
+.ns-related-pip { width: 8px; height: 8px; border-radius: 50%; background: var(--purple); flex-shrink: 0; }
+
+.ns-related-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+@media (min-width: 600px)  { .ns-related-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .ns-related-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.ns-related-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+    position: relative;
+}
+.ns-related-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--purple);
+    transform: scaleY(0);
+    transform-origin: center;
+    transition: transform 0.28s ease;
+    border-radius: 3px 0 0 3px;
+    z-index: 1;
+}
+.ns-related-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: rgba(124,111,171,0.25); }
+.ns-related-card:hover::before { transform: scaleY(1); }
+
+.ns-related-img-wrap {
+    position: relative;
+    padding-top: 58%;
+    overflow: hidden;
+    background: var(--surface);
+}
+.ns-related-img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease;
+}
+.ns-related-card:hover .ns-related-img { transform: scale(1.05); }
+.ns-related-img-placeholder {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--surface), var(--border));
+    color: var(--mist); font-size: 2.5rem;
+}
+
+.ns-related-cat {
+    position: absolute; top: 0.75rem; left: 0.75rem;
+    background: var(--purple);
+    color: var(--white);
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 4px;
+    z-index: 2;
+}
+
+.ns-related-body { padding: 1.25rem 1.5rem; }
+.ns-related-card-title {
+    font-family: var(--font-display);
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--ink);
+    margin-bottom: 0.75rem;
+}
+.ns-related-card-title a { color: inherit; text-decoration: none; transition: color 0.2s; }
+.ns-related-card-title a:hover { color: var(--purple); }
+.ns-related-card-meta {
+    display: flex; align-items: center; gap: 0.875rem; flex-wrap: wrap;
+    font-family: var(--font-mono); font-size: 0.62rem; color: var(--mist);
+}
+.ns-related-card-meta i { color: var(--slate); font-size: 0.58rem; }
+
+/* ═══════════════════════════════════════════════════════════
+   CTA BANNER - FIXED FOR CENTERING
+═══════════════════════════════════════════════════════════ */
+.ns-cta {
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    padding: clamp(2.5rem, 6vw, 4rem) clamp(1.5rem, 5vw, 3rem);
+    background: linear-gradient(145deg, #16152A 0%, #1A1B30 35%, var(--ink-mid) 100%);
+    border-radius: var(--radius-xl);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-xl);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.ns-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(-55deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px);
+    pointer-events: none;
+}
+.ns-cta-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    margin-bottom: 0.75rem;
+    position: relative; 
+    z-index: 1;
+    text-align: center;
+    width: 100%;
+}
+.ns-cta-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.1;
+    margin-bottom: 0.875rem;
+    position: relative; 
+    z-index: 1;
+    text-align: center;
+    width: 100%;
+}
+.ns-cta-desc {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: rgba(255,255,255,0.75);
+    max-width: 600px;
+    margin: 0 auto 2rem;
+    line-height: 1.7;
+    position: relative; 
+    z-index: 1;
+    text-align: center;
+    width: 100%;
+}
+.ns-cta-btns {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    position: relative; 
+    z-index: 1;
+    width: 100%;
+}
+.ns-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0.875rem 2rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    letter-spacing: 0.02em;
+    min-width: 160px;
+}
+.ns-cta-btn--purple { 
+    background: var(--purple); 
+    color: var(--white); 
+}
+.ns-cta-btn--purple:hover { 
+    background: var(--purple-dark); 
+    color: var(--white); 
+    transform: translateY(-2px); 
+    box-shadow: 0 8px 20px rgba(124,111,171,0.4); 
+}
+.ns-cta-btn--ghost  { 
+    background: transparent; 
+    color: var(--white); 
+    border: 2px solid rgba(255,255,255,0.35); 
+}
+.ns-cta-btn--ghost:hover  { 
+    border-color: var(--white); 
+    background: rgba(255,255,255,0.08); 
+    color: var(--white);
+    transform: translateY(-2px);
+}
+
+/* ── Back to top ── */
+.ns-back-top {
+    position: fixed;
+    bottom: 1.5rem; right: 1.5rem;
+    width: 44px; height: 44px;
+    background: var(--purple);
+    color: var(--white);
+    border: none;
+    border-radius: 50%;
+    display: none;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(124,111,171,0.3);
+    transition: all 0.2s;
+    z-index: 99;
+    font-size: 1rem;
+}
+.ns-back-top:hover { background: var(--purple-dark); transform: translateY(-3px); }
+
+/* ── Animations ── */
+@keyframes ns-fadeUp {
+    from { opacity:0; transform: translateY(14px); }
+    to   { opacity:1; transform: translateY(0); }
+}
+.ns-article-card { animation: ns-fadeUp 0.45s ease both; }
+.ns-widget       { animation: ns-fadeUp 0.45s ease both; }
+.ns-widget:nth-child(2) { animation-delay: 0.08s; }
+.ns-widget:nth-child(3) { animation-delay: 0.16s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .ns-article-card, .ns-widget, .ns-hero-img { animation: none !important; transition: none !important; }
+}
+
+/* ── Overflow guard ── */
+.ns-root img, .ns-root video, .ns-root iframe { max-width: 100%; height: auto; }
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE ROOT
+═══════════════════════════════════════════════════════════ -->
+<div class="ns-root">
+
+<!-- ── BREADCRUMB ── -->
+<nav class="ns-breadcrumb" aria-label="Breadcrumb">
+    <div class="ns-container">
+        <ol class="ns-breadcrumb-list">
+            <?php foreach ($breadcrumb as $item): ?>
+            <li>
+                <?php if (!empty($item['url'])): ?>
+                    <a href="<?php echo $item['url']; ?>"><?php echo $item['label']; ?></a>
+                    <span class="ns-bc-sep">/</span>
+                <?php else: ?>
+                    <span class="ns-bc-current"><?php echo $item['label']; ?></span>
+                <?php endif; ?>
+            </li>
+            <?php endforeach; ?>
+        </ol>
+    </div>
+</nav>
+
+<!-- ════════════════════════════════════════════════
+     ARTICLE HERO  (image-left / text-right card)
+════════════════════════════════════════════════ -->
+<div class="ns-hero-wrap">
+    <div class="ns-container">
+        <div class="ns-hero-card">
+
+            <!-- Image cell -->
+            <div class="ns-hero-img-cell">
+                <?php if (!empty($heroImgSrc)): ?>
+                <img src="<?php echo $heroImgSrc; ?>"
+                     alt="<?php echo htmlspecialchars($news['title'] ?? ''); ?>"
+                     class="ns-hero-img"
+                     loading="eager"
+                     onerror="this.onerror=null; this.style.opacity='0.2';">
+                <?php else: ?>
+                <div class="ns-hero-img-placeholder">
+                    <i class="fas fa-newspaper" aria-hidden="true"></i>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Text cell -->
+            <div class="ns-hero-text">
                 <?php if (!empty($news['category'])): ?>
-                <div class="article-category">
-                    <i class="fas fa-folder-open"></i>
+                <span class="ns-hero-tag">
+                    <i class="fas fa-folder" aria-hidden="true"></i>
                     <?php echo htmlspecialchars($news['category']); ?>
-                </div>
+                </span>
                 <?php endif; ?>
-                
-                <h1 class="article-title"><?php echo htmlspecialchars($news['title'] ?? 'News Article'); ?></h1>
-                
+
+                <h1 class="ns-hero-title">
+                    <?php echo htmlspecialchars($news['title'] ?? 'News Article'); ?>
+                </h1>
+
                 <?php if (!empty($news['excerpt'])): ?>
-                <p class="article-excerpt"><?php echo htmlspecialchars($news['excerpt']); ?></p>
+                <p class="ns-hero-excerpt">
+                    <?php echo htmlspecialchars($news['excerpt']); ?>
+                </p>
                 <?php endif; ?>
-                
-                <div class="article-meta">
-                    <span class="meta-item"><i class="far fa-calendar-alt"></i> <time datetime="<?php echo $newsDateTimeIso; ?>"><?php echo $newsDate; ?></time></span>
-                    <span class="meta-item"><i class="far fa-clock"></i> <?php echo $readingTime; ?> min read</span>
-                    <?php if (!empty($news['views_count'])): ?>
-                    <span class="meta-item"><i class="far fa-eye"></i> <?php echo number_format($news['views_count']); ?> views</span>
+
+                <div class="ns-hero-meta">
+                    <?php if ($newsDate): ?>
+                    <span class="ns-hero-meta-item">
+                        <i class="far fa-calendar-alt" aria-hidden="true"></i>
+                        <time datetime="<?php echo $newsDateIso; ?>"><?php echo $newsDate; ?></time>
+                    </span>
                     <?php endif; ?>
-                    <span class="meta-item"><i class="far fa-user"></i> <?php echo htmlspecialchars($authorName); ?></span>
+                    <span class="ns-hero-meta-item">
+                        <i class="far fa-clock" aria-hidden="true"></i>
+                        <?php echo $readingTime; ?> min read
+                    </span>
+                    <?php if (!empty($news['views_count'])): ?>
+                    <span class="ns-hero-meta-item">
+                        <i class="far fa-eye" aria-hidden="true"></i>
+                        <?php echo number_format($news['views_count']); ?> views
+                    </span>
+                    <?php endif; ?>
                 </div>
-            </header>
+            </div>
 
-            <!-- FEATURED IMAGE -->
-            <?php if (!empty($news['featured_image'])): ?>
-            <figure class="article-hero">
-                <div class="hero-image-wrapper">
-                    <img src="<?php echo $baseUrl . $news['featured_image']; ?>" 
-                         alt="<?php echo htmlspecialchars($news['title'] ?? ''); ?>" 
-                         class="hero-image"
-                         loading="eager"
-                         onerror="this.parentElement.innerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--gray-200);color:var(--gray-500);font-size:3rem;\'><i class=\'fas fa-newspaper\'></i></div>';">
-                </div>
-            </figure>
-            <?php endif; ?>
+        </div>
+    </div>
 
-            <!-- GRID: MAIN + SIDEBAR -->
-            <div class="article-grid">
+    <!-- Caption / author + share strip -->
+    <div class="ns-hero-caption">
+        <div class="ns-hero-author">
+            <div class="ns-hero-avatar"><?php echo $authorInitial; ?></div>
+            <div class="ns-hero-author-text">
+                <span class="ns-hero-author-name"><?php echo htmlspecialchars($authorName); ?></span>
+                <span class="ns-hero-author-role"><?php echo htmlspecialchars($authorRole); ?></span>
+            </div>
+        </div>
 
-                <!-- MAIN ARTICLE -->
-                <article class="article-main">
-                    <div class="article-body">
-                        <div class="article-content">
+        <div class="ns-share-mini">
+            <span class="ns-share-label">Share</span>
+            <?php
+            $articleUrl  = urlencode($baseUrl . '/news/' . ($news['slug'] ?? ''));
+            $articleTitle = urlencode($news['title'] ?? '');
+            ?>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo $articleUrl; ?>" class="ns-share-btn fb" target="_blank" rel="noopener" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a href="https://twitter.com/intent/tweet?url=<?php echo $articleUrl; ?>&text=<?php echo $articleTitle; ?>" class="ns-share-btn tw" target="_blank" rel="noopener" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=<?php echo $articleUrl; ?>" class="ns-share-btn li" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            <a href="https://wa.me/?text=<?php echo $articleTitle . ' ' . $articleUrl; ?>" class="ns-share-btn wa" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+            <a href="mailto:?subject=<?php echo $articleTitle; ?>&body=<?php echo $articleUrl; ?>" class="ns-share-btn em" aria-label="Email"><i class="far fa-envelope"></i></a>
+        </div>
+    </div>
+</div>
+<!-- /ns-hero-wrap -->
+
+<!-- ════════════════════════════════════════════════
+     BODY: ARTICLE CONTENT + SIDEBAR
+════════════════════════════════════════════════ -->
+<div class="ns-body">
+    <div class="ns-container">
+        <div class="ns-layout">
+
+            <!-- MAIN ARTICLE -->
+            <main id="main-content">
+
+                <article class="ns-article-card">
+                    <div class="ns-article-body">
+                        <div class="ns-article-content">
                             <?php if (!empty($news['content'])): ?>
                                 <?php echo $news['content']; ?>
                             <?php else: ?>
@@ -1336,48 +1282,34 @@ $displayTopics = array_slice($displayTopics, 0, 6, true);
                         </div>
                     </div>
 
-                    <footer class="article-footer">
-                        
-                        <!-- ================================================================= -->
-                        <!-- ✦✦✦ FIXED TOPICS HUB - NO OVERFLOW, WRAPS PROPERLY ✦✦✦ -->
-                        <!-- ================================================================= -->
-                        
+                    <footer class="ns-article-footer">
+
+                        <!-- Topics hub -->
                         <?php if (!empty($displayTopics)): ?>
-                        <div class="topics-hub">
-                            <div class="topics-header">
-                                <div class="topics-title-area">
-                                    <span class="topics-icon">
-                                        <i class="fas fa-tags"></i>
-                                    </span>
-                                    <h2 class="topics-title">Topics</h2>
-                                    <span class="topics-subtitle">explore related content</span>
-                                </div>
-                                <a href="<?php echo $baseUrl; ?>/news/topics" class="topics-view-all">
-                                    View all <i class="fas fa-arrow-right"></i>
+                        <div class="ns-topics">
+                            <div class="ns-topics-header">
+                                <h2 class="ns-topics-title">
+                                    <span class="ns-topics-title-pip"></span>
+                                    Topics
+                                </h2>
+                                <a href="<?php echo $baseUrl; ?>/news/topics" class="ns-topics-link">
+                                    All topics <i class="fas fa-arrow-right" aria-hidden="true"></i>
                                 </a>
                             </div>
-                            
-                            <div class="topics-grid">
+                            <div class="ns-topics-grid">
                                 <?php foreach ($displayTopics as $topic): ?>
-                                <a href="<?php echo $baseUrl; ?>/news?topic=<?php echo urlencode($topic['slug']); ?>" 
-                                   class="topic-card"
-                                   style="--topic-color: <?php echo $topic['color']; ?>; --topic-bg: <?php echo $topic['bg']; ?>;">
-                                    
-                                    <span class="topic-icon-wrapper">
-                                        <i class="<?php echo $topic['icon']; ?>"></i>
+                                <a href="<?php echo $baseUrl; ?>/news?topic=<?php echo urlencode($topic['slug']); ?>"
+                                   class="ns-topic-card">
+                                    <span class="ns-topic-icon"
+                                          style="background:<?php echo $topic['bg']; ?>; color:<?php echo $topic['color']; ?>;">
+                                        <i class="<?php echo $topic['icon']; ?>" aria-hidden="true"></i>
                                     </span>
-                                    
-                                    <span class="topic-content">
-                                        <span class="topic-name">
-                                            <span class="topic-title"><?php echo htmlspecialchars($topic['display_name']); ?></span>
-                                            <span class="topic-count">
-                                                <?php echo number_format($topic['count']); ?> 
-                                                article<?php echo $topic['count'] != 1 ? 's' : ''; ?>
-                                            </span>
+                                    <span class="ns-topic-body">
+                                        <span class="ns-topic-name">
+                                            <span class="ns-topic-title"><?php echo htmlspecialchars($topic['display_name']); ?></span>
+                                            <span class="ns-topic-count"><?php echo $topic['count']; ?> article<?php echo $topic['count'] != 1 ? 's' : ''; ?></span>
                                         </span>
-                                        <span class="topic-description">
-                                            <?php echo $topic['description']; ?>
-                                        </span>
+                                        <span class="ns-topic-desc"><?php echo $topic['description']; ?></span>
                                     </span>
                                 </a>
                                 <?php endforeach; ?>
@@ -1385,236 +1317,250 @@ $displayTopics = array_slice($displayTopics, 0, 6, true);
                         </div>
                         <?php endif; ?>
 
-                        <!-- SHARE -->
-                        <div class="share-section">
-                            <span class="share-label"><i class="fas fa-share-alt"></i> Share</span>
-                            <div class="share-buttons">
-                                <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode($baseUrl . '/news/' . ($news['slug'] ?? '')); ?>" class="share-btn facebook" target="_blank" rel="noopener" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                                <a href="https://twitter.com/intent/tweet?url=<?php echo urlencode($baseUrl . '/news/' . ($news['slug'] ?? '')); ?>&text=<?php echo urlencode($news['title'] ?? ''); ?>" class="share-btn twitter" target="_blank" rel="noopener" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
-                                <a href="https://www.linkedin.com/shareArticle?mini=true&url=<?php echo urlencode($baseUrl . '/news/' . ($news['slug'] ?? '')); ?>" class="share-btn linkedin" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-                                <a href="https://wa.me/?text=<?php echo urlencode($news['title'] . ' - ' . $baseUrl . '/news/' . ($news['slug'] ?? '')); ?>" class="share-btn whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                                <a href="mailto:?subject=<?php echo urlencode($news['title'] ?? ''); ?>&body=<?php echo urlencode($baseUrl . '/news/' . ($news['slug'] ?? '')); ?>" class="share-btn email" aria-label="Email"><i class="far fa-envelope"></i></a>
+                        <!-- Share row -->
+                        <div class="ns-share-row">
+                            <span class="ns-share-row-label">
+                                <i class="fas fa-share-nodes" aria-hidden="true"></i>
+                                Share this article
+                            </span>
+                            <div class="ns-share-row-btns">
+                                <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo $articleUrl; ?>" class="ns-share-row-btn fb" target="_blank" rel="noopener" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                                <a href="https://twitter.com/intent/tweet?url=<?php echo $articleUrl; ?>&text=<?php echo $articleTitle; ?>" class="ns-share-row-btn tw" target="_blank" rel="noopener" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                                <a href="https://www.linkedin.com/shareArticle?mini=true&url=<?php echo $articleUrl; ?>" class="ns-share-row-btn li" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                                <a href="https://wa.me/?text=<?php echo $articleTitle . ' ' . $articleUrl; ?>" class="ns-share-row-btn wa" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                                <a href="mailto:?subject=<?php echo $articleTitle; ?>&body=<?php echo $articleUrl; ?>" class="ns-share-row-btn em" aria-label="Email"><i class="far fa-envelope"></i></a>
                             </div>
                         </div>
 
-                        <!-- BACK -->
-                        <a href="<?php echo $baseUrl; ?>/news" class="back-button"><i class="fas fa-arrow-left"></i> All News</a>
+                        <!-- Back to news -->
+                        <a href="<?php echo $baseUrl; ?>/news" class="ns-back">
+                            <i class="fas fa-arrow-left" aria-hidden="true"></i> All News
+                        </a>
+
                     </footer>
                 </article>
 
-                <!-- SIDEBAR -->
-                <aside class="article-sidebar">
-                    
-                    <!-- AUTHOR -->
-                    <div class="sidebar-card">
-                        <h2 class="sidebar-title"><i class="fas fa-user-circle"></i> Author</h2>
-                        <div class="author-card">
-                            <div class="author-avatar"><?php echo $authorInitial; ?></div>
-                            <div class="author-name"><?php echo htmlspecialchars($authorName); ?></div>
-                            <div class="author-role"><?php echo htmlspecialchars($authorRole); ?></div>
-                            <p class="author-bio">
-                                <?php echo ($authorRole === 'Communications') 
-                                    ? 'Official news and announcements from FCT College of Nursing Sciences.' 
-                                    : 'Contributor to FCT College news.'; ?>
-                            </p>
-                        </div>
+                <!-- Related articles -->
+                <?php if (!empty($relatedNews)): ?>
+                <section class="ns-related">
+                    <div class="ns-related-header">
+                        <h2 class="ns-related-title">
+                            <span class="ns-related-pip"></span>
+                            Related Articles
+                        </h2>
                     </div>
-
-                    <!-- POPULAR -->
-                    <div class="sidebar-card">
-                        <h2 class="sidebar-title"><i class="fas fa-fire" style="color: var(--accent);"></i> Popular</h2>
-                        <?php if (!empty($popularNews)): ?>
-                        <ul class="popular-list">
-                            <?php $i = 0; foreach ($popularNews as $popular): if (++$i > 5) break; ?>
-                            <li class="popular-item">
-                                <a href="<?php echo $baseUrl; ?>/news/<?php echo htmlspecialchars($popular['slug'] ?? ''); ?>" class="popular-link">
-                                    <h3 class="popular-title"><?php echo htmlspecialchars($popular['title'] ?? ''); ?></h3>
-                                    <div class="popular-meta">
-                                        <span><i class="far fa-calendar-alt"></i> <?php echo date('M j, Y', strtotime($popular['created_at'] ?? '')); ?></span>
-                                        <span><i class="far fa-clock"></i> <?php echo max(1, ceil(str_word_count(strip_tags($popular['content'] ?? ''))/200)); ?> min</span>
-                                    </div>
-                                </a>
-                            </li>
-                            <?php endforeach; ?>
-                        </ul>
-                        <?php else: ?>
-                        <p style="color: var(--gray-500); font-family: 'Inter', sans-serif;">Popular articles will appear here.</p>
-                        <?php endif; ?>
-                    </div>
-
-                    <!-- NEWSLETTER -->
-                    <div class="sidebar-card">
-                        <h2 class="sidebar-title"><i class="fas fa-envelope"></i> Newsletter</h2>
-                        <p class="newsletter-description">Subscribe to receive the latest news and updates directly in your inbox.</p>
-                        <div id="newsletter-message"></div>
-                        <form class="newsletter-form" id="newsletter-form" action="<?php echo BASE_URL; ?>/newsletter/subscribe" method="POST">
-                            <div class="newsletter-input-wrapper">
-                                <input type="email" 
-                                       name="email" 
-                                       id="newsletter-email" 
-                                       class="newsletter-input" 
-                                       placeholder="Your email address" 
-                                       required 
-                                       aria-label="Email for newsletter">
+                    <div class="ns-related-grid">
+                        <?php foreach ($relatedNews as $rel): ?>
+                        <article class="ns-related-card">
+                            <div class="ns-related-img-wrap">
+                                <?php if (!empty($rel['featured_image'])): ?>
+                                <img src="<?php echo $baseUrl . htmlspecialchars($rel['featured_image']); ?>"
+                                     alt=""
+                                     class="ns-related-img"
+                                     loading="lazy"
+                                     onerror="this.style.display='none'">
+                                <?php else: ?>
+                                <div class="ns-related-img-placeholder">
+                                    <i class="fas fa-newspaper" aria-hidden="true"></i>
+                                </div>
+                                <?php endif; ?>
+                                <?php if (!empty($rel['category'])): ?>
+                                <span class="ns-related-cat"><?php echo htmlspecialchars($rel['category']); ?></span>
+                                <?php endif; ?>
                             </div>
-                            <button type="submit" class="newsletter-button" id="newsletter-submit">
-                                <i class="fas fa-paper-plane"></i> Subscribe
-                            </button>
-                            <p class="newsletter-disclaimer">We respect your privacy. Unsubscribe anytime.</p>
-                        </form>
-                    </div>
-                </aside>
-            </div>
-
-            <!-- RELATED ARTICLES -->
-            <?php if (!empty($relatedNews)): ?>
-            <section class="related-section">
-                <div class="related-header">
-                    <h2 class="related-title">Related Articles</h2>
-                </div>
-                <div class="related-grid">
-                    <?php foreach ($relatedNews as $related): ?>
-                    <article class="related-card">
-                        <div class="related-image-wrapper">
-                            <?php if (!empty($related['featured_image'])): ?>
-                            <img src="<?php echo $baseUrl . $related['featured_image']; ?>" alt="" class="related-image" loading="lazy">
-                            <?php else: ?>
-                            <div style="width:100%;height:100%;background:var(--gray-200);display:flex;align-items:center;justify-content:center;color:var(--gray-500);"><i class="fas fa-newspaper fa-3x"></i></div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="related-content">
-                            <?php if (!empty($related['category'])): ?>
-                            <span class="related-category"><?php echo htmlspecialchars($related['category']); ?></span>
-                            <?php endif; ?>
-                            <h3 class="related-card-title">
-                                <a href="<?php echo $baseUrl; ?>/news/<?php echo htmlspecialchars($related['slug'] ?? ''); ?>">
-                                    <?php echo htmlspecialchars($related['title'] ?? ''); ?>
-                                </a>
-                            </h3>
-                            <div class="related-card-meta">
-                                <span><i class="far fa-calendar-alt"></i> <?php echo date('M j, Y', strtotime($related['created_at'] ?? '')); ?></span>
-                                <span><i class="far fa-clock"></i> <?php echo max(1, ceil(str_word_count(strip_tags($related['content'] ?? ''))/200)); ?> min</span>
+                            <div class="ns-related-body">
+                                <h3 class="ns-related-card-title">
+                                    <a href="<?php echo $baseUrl; ?>/news/<?php echo htmlspecialchars($rel['slug'] ?? ''); ?>">
+                                        <?php echo htmlspecialchars($rel['title'] ?? ''); ?>
+                                    </a>
+                                </h3>
+                                <div class="ns-related-card-meta">
+                                    <span><i class="far fa-calendar-alt" aria-hidden="true"></i> <?php echo date('M j, Y', strtotime($rel['created_at'] ?? 'now')); ?></span>
+                                    <span><i class="far fa-clock" aria-hidden="true"></i> <?php echo max(1, ceil(str_word_count(strip_tags($rel['content'] ?? ''))/200)); ?> min</span>
+                                </div>
                             </div>
-                        </div>
-                    </article>
-                    <?php endforeach; ?>
-                </div>
-            </section>
-            <?php endif; ?>
+                        </article>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+                <?php endif; ?>
 
-            <!-- CTA -->
-            <section class="cta-banner">
-                <h2 class="cta-title">Stay Connected</h2>
-                <p class="cta-description">Get the latest news from FCT College of Nursing Sciences delivered to your inbox.</p>
-                <div class="cta-buttons">
-                    <a href="<?php echo $baseUrl; ?>/news" class="btn btn-primary"><i class="fas fa-newspaper"></i> All News</a>
-                    <a href="<?php echo $baseUrl; ?>/contact" class="btn btn-outline"><i class="fas fa-envelope"></i> Contact</a>
+                <!-- CTA banner - NOW PROPERLY CENTERED -->
+                <section class="ns-cta" aria-label="Stay connected">
+                    <p class="ns-cta-eyebrow">FCT College of Nursing Sciences</p>
+                    <h2 class="ns-cta-title">Stay Connected</h2>
+                    <p class="ns-cta-desc">Get the latest news and updates delivered directly to your inbox.</p>
+                    <div class="ns-cta-btns">
+                        <a href="<?php echo $baseUrl; ?>/news" class="ns-cta-btn ns-cta-btn--purple">
+                            <i class="fas fa-newspaper" aria-hidden="true"></i> All News
+                        </a>
+                        <a href="<?php echo $baseUrl; ?>/contact" class="ns-cta-btn ns-cta-btn--ghost">
+                            <i class="fas fa-envelope" aria-hidden="true"></i> Contact Us
+                        </a>
+                    </div>
+                </section>
+
+            </main>
+
+            <!-- SIDEBAR -->
+            <aside class="ns-sidebar" aria-label="Article sidebar">
+
+                <!-- Author -->
+                <div class="ns-widget">
+                    <h2 class="ns-widget-title">
+                        <span class="ns-widget-icon"><i class="fas fa-user" aria-hidden="true"></i></span>
+                        Author
+                    </h2>
+                    <div class="ns-author">
+                        <div class="ns-author-avatar"><?php echo $authorInitial; ?></div>
+                        <div class="ns-author-name"><?php echo htmlspecialchars($authorName); ?></div>
+                        <div class="ns-author-role"><?php echo htmlspecialchars($authorRole); ?></div>
+                        <p class="ns-author-bio">
+                            <?php echo ($authorRole === 'Communications')
+                                ? 'Official news and announcements from FCT College of Nursing Sciences.'
+                                : 'Contributor to FCT College news and publications.'; ?>
+                        </p>
+                    </div>
                 </div>
-            </section>
+
+                <!-- Popular -->
+                <?php if (!empty($popularNews)): ?>
+                <div class="ns-widget">
+                    <h2 class="ns-widget-title">
+                        <span class="ns-widget-icon"><i class="fas fa-fire" aria-hidden="true"></i></span>
+                        Popular
+                    </h2>
+                    <ul class="ns-popular-list">
+                        <?php $i = 0; foreach ($popularNews as $pop): if (++$i > 5) break; ?>
+                        <li class="ns-popular-item">
+                            <?php
+                            $popImg = '';
+                            if (!empty($pop['featured_image'])) {
+                                $pp = $pop['featured_image'];
+                                $popImg = (strpos($pp,'http')===0||strpos($pp,'//')===0)
+                                    ? htmlspecialchars($pp)
+                                    : $baseUrl . (strpos($pp,'/uploads/')===0 ? htmlspecialchars($pp) : '/uploads/news/' . htmlspecialchars($pp));
+                            }
+                            ?>
+                            <div class="ns-popular-thumb">
+                                <?php if ($popImg): ?>
+                                <img src="<?php echo $popImg; ?>" alt="" loading="lazy" onerror="this.style.display='none'">
+                                <?php endif; ?>
+                            </div>
+                            <div class="ns-popular-body">
+                                <h3 class="ns-popular-title">
+                                    <a href="<?php echo $baseUrl; ?>/news/<?php echo htmlspecialchars($pop['slug'] ?? ''); ?>">
+                                        <?php echo htmlspecialchars($pop['title'] ?? ''); ?>
+                                    </a>
+                                </h3>
+                                <span class="ns-popular-date">
+                                    <i class="far fa-calendar" aria-hidden="true"></i>
+                                    <?php echo date('M j, Y', strtotime($pop['created_at'] ?? 'now')); ?>
+                                </span>
+                            </div>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
+
+                <!-- Newsletter -->
+                <div class="ns-widget ns-widget--nl">
+                    <h2 class="ns-widget-title">
+                        <span class="ns-widget-icon"><i class="fas fa-envelope" aria-hidden="true"></i></span>
+                        Newsletter
+                    </h2>
+                    <p class="ns-nl-desc">Subscribe for the latest news and updates from FCT College.</p>
+                    <div id="ns-nl-msg" role="alert"></div>
+                    <form class="ns-nl-form" id="ns-nl-form" novalidate>
+                        <div class="ns-nl-input-wrap">
+                            <i class="fas fa-envelope ns-nl-icon" aria-hidden="true"></i>
+                            <input type="email"
+                                   id="ns-nl-email"
+                                   name="email"
+                                   class="ns-nl-input"
+                                   placeholder="your@email.com"
+                                   required
+                                   aria-label="Email address for newsletter">
+                        </div>
+                        <button type="submit" class="ns-nl-btn" id="ns-nl-submit">
+                            <i class="fas fa-paper-plane" aria-hidden="true"></i> Subscribe
+                        </button>
+                        <p class="ns-nl-disclaimer">No spam. Unsubscribe any time.</p>
+                    </form>
+                </div>
+
+            </aside>
         </div>
-    </main>
+    </div>
+</div>
 
-    <!-- BACK TO TOP -->
-    <button class="back-to-top" id="backToTop" aria-label="Back to top"><i class="fas fa-chevron-up"></i></button>
+</div><!-- /ns-root -->
 
-    <script>
-        (function() {
-            "use strict";
+<!-- Back to top -->
+<button class="ns-back-top" id="ns-back-top" aria-label="Back to top">
+    <i class="fas fa-chevron-up" aria-hidden="true"></i>
+</button>
 
-            // NEWSLETTER
-            const newsletterForm = document.getElementById('newsletter-form');
-            if (newsletterForm) {
-                const emailInput = document.getElementById('newsletter-email');
-                const submitBtn = document.getElementById('newsletter-submit');
-                const msgDiv = document.getElementById('newsletter-message');
+<script>
+(function () {
+    'use strict';
 
-                newsletterForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    const email = emailInput.value.trim();
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    
-                    if (!email || !emailRegex.test(email)) {
-                        msgDiv.style.display = 'block';
-                        msgDiv.textContent = 'Please enter a valid email address.';
-                        msgDiv.style.background = '#fee9e7';
-                        msgDiv.style.color = '#BF8F5E';
-                        msgDiv.style.border = '1px solid #f5c2b7';
-                        return;
-                    }
+    /* ── Newsletter ── */
+    var form  = document.getElementById('ns-nl-form');
+    var email = document.getElementById('ns-nl-email');
+    var btn   = document.getElementById('ns-nl-submit');
+    var msg   = document.getElementById('ns-nl-msg');
 
-                    emailInput.disabled = true;
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subscribing...';
-
-                    try {
-                        const formData = new FormData();
-                        formData.append('email', email);
-                        formData.append('source', 'sidebar_professional');
-
-                        const response = await fetch('<?php echo BASE_URL; ?>/newsletter/subscribe', {
-                            method: 'POST',
-                            body: formData,
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        const data = await response.json();
-
-                        msgDiv.style.display = 'block';
-                        if (data.success) {
-                            msgDiv.textContent = data.message || 'Subscription confirmed!';
-                            msgDiv.style.background = '#e2f0e2';
-                            msgDiv.style.color = '#4A3A6F';
-                            msgDiv.style.border = '1px solid #b8d9b8';
-                            emailInput.value = '';
-                            setTimeout(() => { msgDiv.style.display = 'none'; }, 5000);
-                        } else {
-                            msgDiv.textContent = data.message || 'Subscription failed.';
-                            msgDiv.style.background = '#fee9e7';
-                            msgDiv.style.color = '#BF8F5E';
-                            msgDiv.style.border = '1px solid #f5c2b7';
-                        }
-                    } catch (error) {
-                        msgDiv.style.display = 'block';
-                        msgDiv.textContent = 'Connection error. Please try again.';
-                        msgDiv.style.background = '#fee9e7';
-                        msgDiv.style.color = '#BF8F5E';
-                        msgDiv.style.border = '1px solid #f5c2b7';
-                    } finally {
-                        emailInput.disabled = false;
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Subscribe';
-                    }
-                });
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var val = email.value.trim();
+            if (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                showMsg('Please enter a valid email address.', 'error');
+                return;
             }
+            email.disabled = true;
+            btn.disabled   = true;
+            btn.innerHTML  = '<i class="fas fa-spinner fa-spin"></i> Subscribing…';
 
-            // BACK TO TOP
-            const backBtn = document.getElementById('backToTop');
-            if (backBtn) {
-                window.addEventListener('scroll', function() {
-                    backBtn.style.display = window.scrollY > 500 ? 'flex' : 'none';
-                });
-                backBtn.addEventListener('click', function() {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                });
-            }
+            var fd = new FormData();
+            fd.append('email', val);
+            fd.append('source', 'news_article_sidebar');
 
-            // WIDTH ENFORCEMENT - PURE UI, NO DATA
-            function enforceWidth() {
-                if (window.innerWidth < 640) {
-                    document.documentElement.style.setProperty('--container-padding-mobile', '0.5rem');
-                }
-                if (window.innerWidth < 380) {
-                    document.documentElement.style.setProperty('--container-padding-mobile', '0.375rem');
-                }
-                document.body.style.overflowX = 'hidden';
-                document.documentElement.style.overflowX = 'hidden';
-            }
-            
-            enforceWidth();
-            window.addEventListener('resize', enforceWidth);
-            window.addEventListener('orientationchange', enforceWidth);
-        })();
-    </script>
-</body>
-</html>
+            fetch('<?php echo $baseUrl; ?>/newsletter/subscribe', { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    showMsg(d.message || (d.success ? 'Subscribed!' : 'Something went wrong.'), d.success ? 'success' : 'error');
+                    if (d.success) email.value = '';
+                })
+                .catch(function () { showMsg('Connection error. Please try again.', 'error'); })
+                .finally(function () {
+                    email.disabled = false;
+                    btn.disabled   = false;
+                    btn.innerHTML  = '<i class="fas fa-paper-plane"></i> Subscribe';
+                });
+        });
+    }
+
+    function showMsg(text, type) {
+        msg.style.display    = 'block';
+        msg.textContent      = text;
+        msg.style.background = type === 'success' ? 'rgba(5,150,105,0.15)'  : 'rgba(220,38,38,0.15)';
+        msg.style.color      = type === 'success' ? '#D1FAE5' : '#FEE2E2';
+        msg.style.border     = type === 'success' ? '1px solid rgba(5,150,105,0.3)' : '1px solid rgba(220,38,38,0.3)';
+        if (type === 'success') setTimeout(function () { msg.style.display = 'none'; }, 5000);
+    }
+
+    /* ── Back to top ── */
+    var topBtn = document.getElementById('ns-back-top');
+    if (topBtn) {
+        window.addEventListener('scroll', function () {
+            topBtn.style.display = window.scrollY > 500 ? 'flex' : 'none';
+        });
+        topBtn.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+})();
+</script>

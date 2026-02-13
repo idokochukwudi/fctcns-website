@@ -1,72 +1,38 @@
 <?php
 /**
- * News Index Page - FULLY RESPONSIVE PROFESSIONAL DESIGN
- * - FIXED: Cursor now displays properly in all input fields
- * - FIXED: Removed "Skip to main content" link from top-left corner visibility
- * - Perfect fit on all screen sizes (360px to 4K)
- * - Featured content with professional overlay on image - NO OVERFLOW
- * - WIDE horizontal cards that adapt beautifully
- * - Zero gap between sections
- * - Working AJAX newsletter subscription
+ * News Index Page - Enhanced
+ * File: /app/views/pages/news/index.php
+ * Rendered inside main layout (no <html>/<head>/<body> wrapper needed)
  */
 
-// Check if variables are set, if not set defaults
-$baseUrl = $baseUrl ?? (defined('BASE_URL') ? BASE_URL : '');
-$news = $news ?? [];
-$featuredNews = $featuredNews ?? [];
-$categories = $categories ?? [];
+$baseUrl       = $baseUrl       ?? (defined('BASE_URL') ? BASE_URL : '');
+$news          = $news          ?? [];
+$featuredNews  = $featuredNews  ?? [];
+$categories    = $categories    ?? [];
 $archiveMonths = $archiveMonths ?? [];
-$popularNews = $popularNews ?? [];
-$pagination = $pagination ?? ['current' => 1, 'total' => 0, 'limit' => 10, 'totalCount' => 0];
-$pageTitle = $pageTitle ?? 'News - FCT College of Nursing Sciences';
-$pageDescription = $pageDescription ?? 'Latest news and updates from FCT College of Nursing Sciences';
-$currentPage = $currentPage ?? 'news';
-$hasRealData = $hasRealData ?? false;
-$error = $error ?? '';
+$popularNews   = $popularNews   ?? [];
+$pagination    = $pagination    ?? ['current' => 1, 'total' => 0, 'limit' => 10, 'totalCount' => 0];
+$hasNews       = !empty($news) || !empty($featuredNews);
 
-// Define getImageUrl function
 if (!function_exists('getImageUrl')) {
     function getImageUrl($path) {
         global $baseUrl;
         if (empty($path)) return '';
         $path = trim($path);
-        if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) return htmlspecialchars($path);
-        if (strpos($path, '//') === 0) return htmlspecialchars($path);
-        if (strpos($path, '/uploads/') === 0) return $baseUrl . $path;
-        if (strpos($path, 'uploads/') === 0) return $baseUrl . '/' . htmlspecialchars($path);
-        if (preg_match('/^(news_|featured_|thumb_)/i', $path)) return $baseUrl . '/uploads/news/' . htmlspecialchars($path);
+        if (strpos($path, 'http') === 0 || strpos($path, '//') === 0) return htmlspecialchars($path);
+        if (strpos($path, '/uploads/') === 0) return $baseUrl . htmlspecialchars($path);
         if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $path)) return $baseUrl . '/uploads/news/' . htmlspecialchars($path);
         return $baseUrl . '/' . htmlspecialchars($path);
     }
 }
-
-$heroImagePath = $baseUrl . '/assets/images/news/news-hero.jpg';
-$hasNews = !empty($news) || !empty($featuredNews);
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title><?php echo htmlspecialchars($pageTitle); ?></title>
-    <meta name="description" content="<?php echo htmlspecialchars($pageDescription); ?>">
-    
-    <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="<?php echo htmlspecialchars($pageTitle); ?>">
-    <meta property="og:description" content="<?php echo htmlspecialchars($pageDescription); ?>">
-    <meta property="og:image" content="<?php echo $baseUrl; ?>/assets/images/og-news.jpg">
-    <meta property="og:url" content="<?php echo $baseUrl; ?>/news">
-    <meta property="og:type" content="website">
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
     /* EMERGENCY FULL WIDTH OVERRIDE */
 body .main-content {
     padding: 0 !important;
@@ -82,1662 +48,1859 @@ body .main-content {
     margin-right: -50vw !important;
 }
     </style>
-    <style>
-        /* ==========================================
-           RESET & BASE STYLES
-           ========================================== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100%;
-            overflow-x: hidden;
-            background: #fcfcfc;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 16px;
-            line-height: 1.5;
-            color: #1e293b;
-            background: #ffffff;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        main {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-        }
-
-        /* ==========================================
-           CSS VARIABLES
-           ========================================== */
-        :root {
-            --primary: #5D4A8A;
-            --primary-dark: #4A3A6F;
-            --primary-light: #7B68A8;
-            --accent: #D4A574;
-            --accent-dark: #BF8F5E;
-            --white: #FFFFFF;
-            --gray-50: #F8FAFC;
-            --gray-100: #F1F5F9;
-            --gray-200: #E2E8F0;
-            --gray-300: #CBD5E1;
-            --gray-400: #94A3B8;
-            --gray-500: #64748B;
-            --gray-600: #475569;
-            --gray-700: #334155;
-            --gray-800: #1E293B;
-            --gray-900: #0F172A;
-            --font-heading: 'Playfair Display', Georgia, serif;
-            --font-body: 'Inter', sans-serif;
-        }
-
-        /* ==========================================
-           CONTAINER
-           ========================================== */
-        .container {
-            width: 100%;
-            margin: 0 auto;
-            padding-left: clamp(1rem, 4vw, 2rem);
-            padding-right: clamp(1rem, 4vw, 2rem);
-            max-width: 1440px;
-        }
-
-        /* ==========================================
-           HERO SECTION
-           ========================================== */
-        .news-hero {
-            position: relative;
-            width: 100%;
-            background: linear-gradient(145deg, var(--primary-dark), var(--primary));
-            color: var(--white);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            min-height: clamp(350px, 45vh, 500px);
-        }
-
-        .news-hero-bg {
-            position: absolute;
-            inset: 0;
-            background-image: url('<?php echo $heroImagePath; ?>');
-            background-size: cover;
-            background-position: center;
-            opacity: 0.12;
-            z-index: 1;
-        }
-
-        .hero-container {
-            position: relative;
-            z-index: 3;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 2rem);
-        }
-
-        .news-hero-content {
-            max-width: 800px;
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        .hero-text-wrapper {
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(8px);
-            border-radius: 20px;
-            padding: clamp(1.5rem, 4vw, 2.5rem);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .news-hero-badge {
-            display: inline-block;
-            background: var(--accent);
-            color: var(--gray-900);
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-            text-transform: uppercase;
-        }
-
-        .news-hero-title {
-            font-family: var(--font-heading);
-            font-size: clamp(1.8rem, 5vw, 3rem);
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 1rem;
-            color: var(--white);
-        }
-
-        .news-hero-subtitle {
-            font-size: clamp(0.95rem, 2vw, 1.2rem);
-            margin-bottom: 1.5rem;
-            color: rgba(255, 255, 255, 0.95);
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        /* ==========================================
-           SEARCH FORM - FIXED CURSOR VISIBILITY
-           ========================================== */
-        .news-search {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .news-search-form {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        @media (min-width: 640px) {
-            .news-search-form {
-                flex-direction: row;
-            }
-        }
-
-        .news-search-wrapper {
-            position: relative;
-            flex: 1;
-        }
-
-        .news-search-icon {
-            position: absolute;
-            left: 1.25rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--gray-400);
-            pointer-events: none;
-            z-index: 4;
-        }
-
-        .news-search-input {
-            width: 100%;
-            height: 52px;
-            padding: 0 1rem 0 3rem;
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 400;
-            background: #ffffff;
-            color: #0F172A;
-            caret-color: #5D4A8A;
-            outline: none;
-            transition: all 0.2s ease;
-            line-height: normal;
-        }
-
-        .news-search-input::placeholder {
-            color: #64748B;
-            opacity: 1;
-            font-weight: 400;
-        }
-
-        .news-search-input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.25);
-            background: #ffffff;
-            color: #0F172A;
-            caret-color: var(--primary);
-        }
-
-        .news-search-button {
-            height: 52px;
-            padding: 0 2rem;
-            background: var(--accent);
-            color: var(--gray-900);
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 0.95rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            white-space: nowrap;
-            transition: all 0.2s ease;
-        }
-
-        .news-search-button:hover {
-            background: var(--accent-dark);
-            transform: translateY(-2px);
-        }
-
-        /* ==========================================
-           BREADCRUMBS
-           ========================================== */
-        .breadcrumbs {
-            padding: 0.85rem 0;
-            background: var(--white);
-            border-bottom: 1px solid var(--gray-200);
-        }
-
-        .breadcrumb-list {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            list-style: none;
-            font-size: 0.85rem;
-        }
-
-        .breadcrumb-item a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        /* ==========================================
-           FEATURED CONTENT - COMPLETELY FIXED
-           ========================================== */
-        .featured-section {
-            margin: 2rem 0 2.5rem;
-            width: 100%;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.15);
-            position: relative;
-        }
-
-        .featured-article {
-            position: relative;
-            width: 100%;
-            background: linear-gradient(145deg, var(--primary-dark), var(--primary));
-            display: flex;
-            align-items: center;
-            min-height: 280px;
-        }
-
-        @media (min-width: 768px) {
-            .featured-article {
-                min-height: 320px;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .featured-article {
-                min-height: 380px;
-            }
-        }
-
-        .featured-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .featured-gradient-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(105deg, 
-                rgba(74, 58, 111, 0.97) 0%, 
-                rgba(93, 74, 138, 0.9) 40%,
-                rgba(212, 165, 116, 0.4) 100%);
-            z-index: 2;
-        }
-
-        .featured-content {
-            position: relative;
-            z-index: 3;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            padding: 2rem 2.5rem;
-        }
-
-        @media (max-width: 768px) {
-            .featured-content {
-                padding: 1.5rem;
-                align-items: flex-end;
-                background: linear-gradient(0deg, 
-                    rgba(0, 0, 0, 0.85) 0%, 
-                    rgba(93, 74, 138, 0.7) 80%,
-                    transparent 100%);
-            }
-        }
-
-        .featured-content-wrapper {
-            max-width: 65%;
-            color: var(--white);
-        }
-
-        @media (max-width: 1024px) {
-            .featured-content-wrapper {
-                max-width: 75%;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .featured-content-wrapper {
-                max-width: 100%;
-            }
-        }
-
-        .featured-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: var(--accent);
-            color: var(--gray-900);
-            padding: 0.4rem 1.25rem;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            margin-bottom: 1rem;
-            text-transform: uppercase;
-        }
-
-        .featured-title {
-            font-family: var(--font-heading);
-            font-size: clamp(1.2rem, 3vw, 2rem);
-            font-weight: 800;
-            line-height: 1.2;
-            margin-bottom: 0.75rem;
-            color: var(--white);
-        }
-
-        .featured-excerpt {
-            font-size: clamp(0.85rem, 1.8vw, 1rem);
-            margin-bottom: 1.25rem;
-            line-height: 1.5;
-            color: rgba(255, 255, 255, 0.95);
-            max-width: 90%;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .featured-meta {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-bottom: 1.25rem;
-        }
-
-        .featured-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--white);
-            font-size: 0.8rem;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 0.35rem 1rem;
-            border-radius: 50px;
-            backdrop-filter: blur(4px);
-        }
-
-        .featured-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .btn-featured {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: var(--accent);
-            color: var(--gray-900);
-            padding: 0.6rem 1.5rem;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .btn-featured-outline {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: transparent;
-            color: var(--white);
-            padding: 0.6rem 1.5rem;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-decoration: none;
-            border: 2px solid var(--white);
-        }
-
-        /* ==========================================
-           SECTION HEADER
-           ========================================== */
-        .section-header {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 3px solid var(--gray-200);
-        }
-
-        @media (min-width: 768px) {
-            .section-header {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
-        }
-
-        .section-title {
-            font-family: var(--font-heading);
-            font-size: clamp(1.4rem, 3.5vw, 1.8rem);
-            font-weight: 700;
-            color: var(--gray-900);
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .section-title-icon {
-            width: 42px;
-            height: 42px;
-            background: linear-gradient(145deg, var(--primary), var(--primary-light));
-            color: var(--white);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .view-all-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--primary);
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-decoration: none;
-            padding: 0.6rem 1.25rem;
-            border-radius: 8px;
-            background: var(--gray-100);
-            transition: all 0.2s ease;
-        }
-
-        .view-all-link:hover {
-            background: var(--primary);
-            color: var(--white);
-        }
-
-        /* ==========================================
-           FILTER BAR - FIXED CURSOR VISIBILITY
-           ========================================== */
-        .filter-bar {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            padding: 1rem 1.25rem;
-            background: var(--white);
-            border-radius: 12px;
-            border: 1px solid var(--gray-200);
-        }
-
-        @media (min-width: 768px) {
-            .filter-bar {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            width: 100%;
-        }
-
-        @media (min-width: 640px) {
-            .filter-group {
-                flex-direction: row;
-                align-items: center;
-                flex-wrap: wrap;
-            }
-        }
-
-        .filter-label {
-            font-weight: 600;
-            color: var(--gray-700);
-            font-size: 0.9rem;
-        }
-
-        .filter-select {
-            padding: 0.6rem 2rem 0.6rem 1rem;
-            border: 2px solid var(--gray-200);
-            border-radius: 8px;
-            font-size: 0.95rem;
-            font-weight: 400;
-            background: #ffffff;
-            color: #1E293B;
-            cursor: pointer;
-            appearance: none;
-            width: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            background-size: 14px;
-        }
-
-        @media (min-width: 640px) {
-            .filter-select {
-                width: auto;
-                min-width: 180px;
-            }
-        }
-
-        .filter-select:hover {
-            border-color: var(--primary);
-        }
-
-        .filter-select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(93, 74, 138, 0.1);
-        }
-
-        .results-count {
-            color: var(--gray-600);
-            font-size: 0.9rem;
-            white-space: nowrap;
-        }
-
-        /* ==========================================
-           NEWS GRID - WIDE CARDS
-           ========================================== */
-        .news-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .news-card {
-            display: flex;
-            flex-direction: column;
-            background: var(--white);
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-            transition: all 0.3s ease;
-            border: 1px solid var(--gray-200);
-        }
-
-        @media (min-width: 768px) {
-            .news-card {
-                flex-direction: row;
-                min-height: 240px;
-            }
-        }
-
-        .news-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 25px rgba(93, 74, 138, 0.08);
-            border-color: var(--primary-light);
-        }
-
-        .news-image-wrapper {
-            position: relative;
-            width: 100%;
-            height: 200px;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-
-        @media (min-width: 768px) {
-            .news-image-wrapper {
-                width: 30%;
-                height: auto;
-            }
-        }
-
-        .news-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-
-        .news-card:hover .news-image {
-            transform: scale(1.05);
-        }
-
-        .news-category-badge {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            background: var(--primary);
-            color: var(--white);
-            padding: 0.35rem 1rem;
-            border-radius: 50px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            z-index: 2;
-        }
-
-        .news-card-body {
-            padding: 1.5rem;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .news-title {
-            font-family: var(--font-heading);
-            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
-            font-weight: 700;
-            line-height: 1.3;
-            margin-bottom: 0.75rem;
-            color: var(--gray-900);
-        }
-
-        .news-title a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .news-title a:hover {
-            color: var(--primary);
-        }
-
-        .news-excerpt {
-            color: var(--gray-600);
-            line-height: 1.5;
-            margin-bottom: 1rem;
-            flex: 1;
-            font-size: 0.9rem;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .news-card-footer {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 1rem;
-            border-top: 2px solid var(--gray-200);
-            gap: 1rem;
-        }
-
-        .news-meta {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .news-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            color: var(--gray-500);
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .read-more {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--white);
-            background: var(--primary);
-            padding: 0.5rem 1.25rem;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .read-more:hover {
-            background: var(--primary-dark);
-            gap: 0.75rem;
-        }
-
-        /* ==========================================
-           NEWS LAYOUT - SIDEBAR
-           ========================================== */
-        .news-layout {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
-            margin-top: 0.5rem;
-        }
-
-        @media (min-width: 1024px) {
-            .news-layout {
-                grid-template-columns: 1fr 300px;
-                gap: 2rem;
-            }
-        }
-
-        .sidebar {
-            width: 100%;
-        }
-
-        @media (min-width: 1024px) {
-            .sidebar {
-                position: sticky;
-                top: 1.5rem;
-                height: fit-content;
-            }
-        }
-
-        .sidebar-widget {
-            background: var(--white);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border: 1px solid var(--gray-200);
-        }
-
-        .widget-title {
-            font-family: var(--font-heading);
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .widget-title-icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(145deg, var(--primary), var(--primary-light));
-            color: var(--white);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .category-list {
-            list-style: none;
-        }
-
-        .category-item {
-            margin-bottom: 0.6rem;
-        }
-
-        .category-link {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.6rem 1rem;
-            background: var(--gray-50);
-            border-radius: 8px;
-            color: var(--gray-700);
-            text-decoration: none;
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
-        }
-
-        .category-link:hover {
-            background: var(--primary);
-            color: var(--white);
-            transform: translateX(3px);
-        }
-
-        .category-count {
-            background: var(--white);
-            color: var(--primary);
-            padding: 0.2rem 0.6rem;
-            border-radius: 50px;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-
-        .popular-list {
-            list-style: none;
-        }
-
-        .popular-item {
-            display: flex;
-            gap: 0.75rem;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid var(--gray-200);
-        }
-
-        .popular-item:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
-
-        .popular-image-wrapper {
-            width: 70px;
-            height: 60px;
-            flex-shrink: 0;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .popular-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .popular-content {
-            flex: 1;
-        }
-
-        .popular-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            line-height: 1.4;
-            margin-bottom: 0.35rem;
-        }
-
-        .popular-title a {
-            color: var(--gray-800);
-            text-decoration: none;
-        }
-
-        .popular-title a:hover {
-            color: var(--primary);
-        }
-
-        .popular-date {
-            color: var(--gray-500);
-            font-size: 0.7rem;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .sidebar-newsletter {
-            background: linear-gradient(145deg, var(--primary-dark), var(--primary));
-            border-radius: 16px;
-            padding: 1.5rem;
-            color: var(--white);
-        }
-
-        .sidebar-newsletter .widget-title {
-            color: var(--white);
-            margin-bottom: 0.75rem;
-        }
-
-        .sidebar-newsletter .widget-title-icon {
-            background: var(--white);
-            color: var(--primary);
-        }
-
-        .newsletter-description {
-            color: rgba(255, 255, 255, 0.95);
-            font-size: 0.9rem;
-            margin-bottom: 1.25rem;
-        }
-
-        .newsletter-input-wrapper {
-            position: relative;
-            margin-bottom: 0.75rem;
-        }
-
-        .newsletter-icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--gray-400);
-            pointer-events: none;
-            z-index: 4;
-        }
-
-        .newsletter-input {
-            width: 100%;
-            padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 400;
-            background: #ffffff;
-            color: #0F172A;
-            caret-color: #5D4A8A;
-            height: 48px;
-            outline: none;
-            transition: all 0.2s ease;
-            line-height: normal;
-        }
-
-        .newsletter-input::placeholder {
-            color: #64748B;
-            opacity: 1;
-            font-weight: 400;
-        }
-
-        .newsletter-input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.25);
-            background: #ffffff;
-            color: #0F172A;
-            caret-color: var(--primary);
-        }
-
-        .newsletter-button {
-            width: 100%;
-            padding: 0.75rem;
-            background: var(--accent);
-            color: var(--gray-900);
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            height: 48px;
-            transition: all 0.2s ease;
-        }
-
-        .newsletter-button:hover:not(:disabled) {
-            background: var(--accent-dark);
-            transform: translateY(-2px);
-        }
-
-        .newsletter-button:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .newsletter-disclaimer {
-            font-size: 0.7rem;
-            color: rgba(255, 255, 255, 0.8);
-            margin-top: 0.75rem;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            margin-top: 2rem;
-        }
-
-        .pagination-list {
-            display: flex;
-            gap: 0.5rem;
-            list-style: none;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .pagination-link {
-            min-width: 42px;
-            height: 42px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 0.75rem;
-            background: var(--white);
-            border: 2px solid var(--gray-200);
-            border-radius: 8px;
-            color: var(--gray-700);
-            font-weight: 600;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-        }
-
-        .pagination-link:hover:not(.active) {
-            background: var(--primary);
-            color: var(--white);
-            border-color: var(--primary);
-        }
-
-        .pagination-link.active {
-            background: var(--primary);
-            color: var(--white);
-            border-color: var(--primary);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem 1.5rem;
-            background: var(--gray-50);
-            border-radius: 16px;
-        }
-
-        .empty-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1rem;
-            background: var(--gray-200);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: var(--gray-400);
-        }
-
-        .empty-title {
-            font-family: var(--font-heading);
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--gray-700);
-            margin-bottom: 0.75rem;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.6rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: var(--white);
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--primary);
-            border: 2px solid var(--primary);
-        }
-
-        .btn-outline:hover {
-            background: var(--primary);
-            color: var(--white);
-        }
-
-        .notification {
-            position: fixed;
-            top: 1.5rem;
-            right: 1.5rem;
-            background: var(--white);
-            padding: 1rem 1.5rem;
-            border-radius: 10px;
-            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.1);
-            border-left: 4px solid var(--primary);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            max-width: 350px;
-            animation: slideIn 0.3s ease;
-        }
-
-        .notification.success {
-            border-left-color: #10b981;
-        }
-
-        .notification.error {
-            border-left-color: #ef4444;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* ==========================================
-           FIXED: SKIP TO CONTENT LINK - MOVED TO RIGHT CORNER
-           ========================================== */
-        .skip-to-content {
-            position: absolute;
-            top: -40px;
-            right: 1rem; /* Changed from left:0 to right:1rem */
-            left: auto; /* Reset left */
-            background: var(--primary);
-            color: var(--white);
-            padding: 0.75rem 1.5rem;
-            text-decoration: none;
-            z-index: 1001;
-            border-radius: 0 0 8px 8px; /* Rounded bottom corners */
-        }
-
-        .skip-to-content:focus {
-            top: 0;
-        }
-
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation-duration: 0.01ms !important;
-                transition-duration: 0.01ms !important;
-            }
-        }
-    </style>
-</head>
-<body>
-
-<main class="news-page" id="main-content">
-    <!-- HERO SECTION -->
-    <section class="news-hero" aria-label="News hero section">
-        <div class="news-hero-bg"></div>
-        
-        <div class="hero-container">
-            <div class="news-hero-content">
-                <div class="hero-text-wrapper">
-                    <span class="news-hero-badge">
-                        <i class="fas fa-newspaper"></i>
-                        Latest Updates
-                    </span>
-                    
-                    <h1 class="news-hero-title">News & Announcements</h1>
-                    
-                    <p class="news-hero-subtitle">
-                        Stay informed with the latest developments, achievements, and important announcements from FCT College of Nursing Sciences.
-                    </p>
-                    
-                    <div class="news-search">
-                        <form class="news-search-form" action="<?php echo $baseUrl; ?>/news/search" method="GET" role="search">
-                            <div class="news-search-wrapper">
-                                <i class="fas fa-search news-search-icon"></i>
-                                <input type="search" 
-                                       name="q" 
-                                       class="news-search-input" 
-                                       placeholder="Search news, announcements..." 
-                                       aria-label="Search news articles"
-                                       value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
-                            </div>
-                            <button type="submit" class="news-search-button">
-                                <i class="fas fa-search"></i>
-                                <span>Search</span>
-                            </button>
-                        </form>
-                    </div>
+<style>
+/* ═══════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════ */
+:root {
+    --ink:          #0E1117;
+    --ink-mid:      #1C2333;
+    --ink-soft:     #2D3748;
+    --slate:        #64748B;
+    --mist:         #94A3B8;
+    --border:       #E2E8F0;
+    --surface:      #F8FAFC;
+    --white:        #FFFFFF;
+
+    /* Primary: soft purple — blends with navy + gold palette */
+    --purple:       #7C6FAB;
+    --purple-dark:  #5A4F8A;
+    --purple-pale:  #F0EEF9;
+    --purple-mid:   #9B8FCC;
+
+    /* Gold accent — unchanged, pairs perfectly with purple */
+    --gold:         #B8860B;
+    --gold-light:   #D4A520;
+    --gold-pale:    #FFFBEB;
+
+    --purple-glow:  rgba(124,111,171,0.14);
+
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-body:    'Outfit', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
+
+    --radius-sm:    6px;
+    --radius-md:    12px;
+    --radius-lg:    20px;
+    --radius-xl:    28px;
+
+    --shadow-xs:    0 1px 3px rgba(0,0,0,0.06);
+    --shadow-sm:    0 2px 8px rgba(0,0,0,0.07);
+    --shadow-md:    0 6px 24px rgba(0,0,0,0.08);
+    --shadow-lg:    0 16px 48px rgba(0,0,0,0.1);
+    --shadow-xl:    0 32px 80px rgba(0,0,0,0.12);
+}
+
+/* ═══════════════════════════════════════════════════
+   HERO-SECTION ALIAS
+   The full-width override snippet uses .hero-section.
+   We alias it here so the snippet works without any
+   changes — just paste it and the hero fills the page.
+═══════════════════════════════════════════════════ */
+.np-hero,
+.hero-section {
+    /* Both selectors share full-width treatment when
+       the override snippet is active */
+}
+
+/* When the override snippet is pasted it sets:
+   width:100vw; left:50%; margin-left:-50vw etc.
+   The container inside stays centred automatically
+   because .np-container uses margin: 0 auto.        */
+
+/* ═══════════════════════════════════════════════════
+   SCOPED RESET
+═══════════════════════════════════════════════════ */
+.np-root *, .np-root *::before, .np-root *::after {
+    box-sizing: border-box;
+}
+
+.np-root {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--white);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════
+   CONTAINER
+═══════════════════════════════════════════════════ */
+.np-container {
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding-left:  clamp(1rem, 4vw, 2.5rem);
+    padding-right: clamp(1rem, 4vw, 2.5rem);
+}
+
+.np-container--narrow {
+    max-width: 960px;
+}
+
+/* ═══════════════════════════════════════════════════
+   HERO SECTION
+   The .hero-section override you paste in expands
+   width to 100vw. All content is centred inside
+   .np-container so it stays readable at any width.
+═══════════════════════════════════════════════════ */
+.np-hero {
+    position: relative;
+    background: linear-gradient(145deg, #16152A 0%, #1A1B30 35%, var(--ink-mid) 100%);
+    overflow: hidden;
+    padding: clamp(3.5rem, 8vw, 6rem) 0 clamp(3rem, 6vw, 5rem);
+    /* When parent applies .hero-section full-width hack,
+       the hero expands correctly. No breakout needed here —
+       the content centres itself via np-container. */
+}
+
+/* Diagonal stripe texture */
+.np-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        repeating-linear-gradient(
+            -55deg,
+            transparent,
+            transparent 40px,
+            rgba(255,255,255,0.018) 40px,
+            rgba(255,255,255,0.018) 41px
+        );
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Crimson radial glow — top-left accent */
+.np-hero::after {
+    content: '';
+    position: absolute;
+    top: -120px; left: -80px;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,111,171,0.26) 0%, transparent 65%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.np-hero-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('<?php echo $baseUrl; ?>/assets/images/news/news-hero.jpg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.08;
+    z-index: 0;
+}
+
+/* ── Inner wrapper: single centred column ── */
+.np-hero-inner {
+    position: relative;
+    z-index: 2;
+    /* Remove two-column; single centred column works at every width */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 780px;         /* content never stretches too wide */
+}
+
+/* Left / Right wrappers kept in HTML but collapsed to single column */
+.np-hero-left  { width: 100%; }
+.np-hero-right { width: 100%; margin-top: 2rem; }
+
+/* ── Gold eyebrow rule ── */
+.np-hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+}
+
+.np-hero-eyebrow-rule {
+    width: 40px;
+    height: 2px;
+    background: var(--gold-light);
+    flex-shrink: 0;
+}
+
+.np-hero-eyebrow-text {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    white-space: nowrap;
+}
+
+/* ── Heading ── */
+.np-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    font-weight: 700;
+    line-height: 1.05;
+    color: var(--white);
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+}
+
+.np-hero-title em {
+    font-style: italic;
+    color: var(--gold-light);
+}
+
+/* ── Subtitle ── */
+.np-hero-subtitle {
+    font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+    color: rgba(255,255,255,0.68);
+    font-weight: 300;
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 2rem;
+}
+
+/* ── Search Bar ── */
+.np-search-form {
+    display: flex;
+    gap: 0;
+    max-width: 580px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 0 0 2px rgba(184,134,11,0.3), var(--shadow-lg);
+}
+
+.np-search-wrap {
+    position: relative;
+    flex: 1;
+}
+
+.np-search-icon {
+    position: absolute;
+    left: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--slate);
+    pointer-events: none;
+    z-index: 2;
+    font-size: 0.85rem;
+}
+
+.np-search-input {
+    width: 100%;
+    height: 54px;
+    padding: 0 1rem 0 3rem;
+    border: none;
+    border-right: 1px solid var(--border);
+    background: var(--white);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 400;
+    caret-color: var(--purple);
+    outline: none;
+    transition: background 0.2s;
+}
+
+.np-search-input::placeholder { color: var(--mist); }
+.np-search-input:focus { background: #FFFCF8; }
+
+.np-search-btn {
+    height: 54px;
+    padding: 0 1.75rem;
+    background: var(--purple);
+    color: var(--white);
+    border: none;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    transition: background 0.2s;
+    letter-spacing: 0.02em;
+}
+
+.np-search-btn:hover { background: var(--purple-dark); }
+
+/* ── Hero Stats Row ── */
+.np-hero-stats {
+    display: flex;
+    flex-direction: row;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    flex-wrap: wrap;
+    margin-top: 0;
+}
+
+.np-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-left: 1rem;
+    border-left: 2px solid rgba(212,165,32,0.35);
+}
+
+.np-stat-value {
+    font-family: var(--font-display);
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1;
+}
+
+.np-stat-label {
+    font-size: 0.66rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+}
+
+/* ── Breadcrumb ── */
+.np-breadcrumb {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0.8rem 0;
+}
+
+.np-breadcrumb-list {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+    font-size: 0.82rem;
+    flex-wrap: wrap;
+}
+
+.np-breadcrumb-list a {
+    color: var(--purple-dark);
+    text-decoration: none;
+    font-weight: 500;
+}
+.np-breadcrumb-list a:hover {
+    color: var(--purple);
+    text-decoration: underline;
+}
+.np-breadcrumb-sep { color: var(--mist); }
+.np-breadcrumb-current { color: var(--slate); }
+
+/* ═══════════════════════════════════════════════════
+   FEATURED ARTICLE
+═══════════════════════════════════════════════════ */
+.np-featured-wrap {
+    padding: clamp(2rem, 5vw, 3.5rem) 0 0;
+}
+
+/* ── Featured card: horizontal split ──
+   Image occupies the left half on desktop.
+   Text panel sits on the right with dark bg.
+   On mobile: image on top, text below — no overlap.
+─────────────────────────────────────────────────── */
+.np-featured {
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: var(--ink-mid);
+    box-shadow: var(--shadow-xl);
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 240px auto;
+}
+
+@media (min-width: 680px) {
+    .np-featured {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: none;
+        min-height: 380px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .np-featured {
+        grid-template-columns: 55% 45%;
+        min-height: 420px;
+    }
+}
+
+/* Image cell */
+.np-featured-img-cell {
+    position: relative;
+    overflow: hidden;
+    background: var(--ink);
+}
+
+.np-featured-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 6s ease;
+}
+
+.np-featured:hover .np-featured-img {
+    transform: scale(1.04);
+}
+
+/* Subtle right fade so image blends into text panel */
+.np-featured-img-cell::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to right,
+        transparent 50%,
+        rgba(14,17,23,0.6) 100%
+    );
+    pointer-events: none;
+}
+
+@media (max-width: 679px) {
+    /* On mobile: bottom fade so text panel is readable */
+    .np-featured-img-cell::after {
+        background: linear-gradient(
+            to bottom,
+            transparent 40%,
+            rgba(14,17,23,0.85) 100%
+        );
+    }
+}
+
+/* Text cell */
+.np-featured-content {
+    background: linear-gradient(160deg, #1C2333 40%, #201E38 100%);
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+    position: relative;
+}
+
+/* Left crimson border accent on text panel */
+.np-featured-content::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 15%; bottom: 15%;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--purple-mid), var(--purple));
+    border-radius: 3px;
+}
+
+@media (max-width: 679px) {
+    .np-featured-content::before { display: none; }
+}
+
+/* Remove the old absolute overlay — no longer needed */
+.np-featured-overlay { display: none; }
+
+.np-featured-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--purple);
+    color: var(--white);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-bottom: 0.875rem;
+    width: fit-content;
+}
+
+.np-featured-title {
+    font-family: var(--font-display);
+    /* Shorter on mobile since card is compact */
+    font-size: clamp(1.2rem, 2.8vw, 1.9rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--white);
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+/* Excerpt hidden on mobile — full article is one card down */
+.np-featured-excerpt {
+    font-size: 0.875rem;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.6;
+    margin-bottom: 1.125rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+@media (max-width: 679px) {
+    .np-featured-excerpt { display: none; }
+}
+
+.np-featured-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+.np-featured-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.04em;
+}
+
+.np-featured-meta-item i { color: var(--gold-light); font-size: 0.62rem; }
+
+.np-featured-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* ═══════════════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════════════ */
+.np-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.6rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+.np-btn--purple {
+    background: var(--purple);
+    color: var(--white);
+}
+.np-btn--purple:hover {
+    background: var(--purple-dark);
+    color: var(--white);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(124,111,171,0.32);
+}
+
+.np-btn--ghost {
+    background: transparent;
+    color: var(--white);
+    border: 1.5px solid rgba(255,255,255,0.4);
+}
+.np-btn--ghost:hover {
+    border-color: var(--white);
+    background: rgba(255,255,255,0.08);
+    color: var(--white);
+}
+
+.np-btn--outline {
+    background: transparent;
+    color: var(--purple);
+    border: 1.5px solid var(--purple);
+}
+.np-btn--outline:hover {
+    background: var(--purple);
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+.np-btn--surface {
+    background: var(--surface);
+    color: var(--ink-soft);
+    border: 1px solid var(--border);
+}
+.np-btn--surface:hover {
+    background: var(--border);
+    color: var(--ink);
+}
+
+.np-btn--gold {
+    background: var(--gold);
+    color: var(--white);
+}
+.np-btn--gold:hover {
+    background: var(--gold-light);
+    color: var(--white);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(184,134,11,0.3);
+}
+
+/* ═══════════════════════════════════════════════════
+   SECTION HEADER
+═══════════════════════════════════════════════════ */
+.np-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1rem;
+    /* Two-tone border: thin purple stripe over grey */
+    border-bottom: 2px solid var(--border);
+    border-image: linear-gradient(90deg, var(--purple) 120px, var(--border) 120px) 1;
+    flex-wrap: wrap;
+}
+
+.np-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 3vw, 1.9rem);
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+}
+
+.np-section-pip {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--purple);
+    flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════
+   FILTER BAR
+═══════════════════════════════════════════════════ */
+.np-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.875rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--purple);
+    border-radius: var(--radius-md);
+    margin-bottom: 2rem;
+}
+
+.np-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.np-filter-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--slate);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.np-filter-select {
+    height: 38px;
+    padding: 0 2rem 0 0.875rem;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.625rem center;
+    background-size: 12px;
+    color: var(--ink-soft);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 400;
+    cursor: pointer;
+    appearance: none;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    caret-color: var(--purple);
+}
+
+.np-filter-select:hover  { border-color: var(--slate); }
+.np-filter-select:focus  {
+    border-color: var(--purple);
+    box-shadow: 0 0 0 3px rgba(124,111,171,0.12);
+}
+
+.np-results-count {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--slate);
+    white-space: nowrap;
+}
+
+.np-results-count strong { color: var(--ink); }
+
+/* ═══════════════════════════════════════════════════
+   NEWS CARDS (WIDE HORIZONTAL)
+═══════════════════════════════════════════════════ */
+.np-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+}
+
+.np-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+    position: relative;
+}
+
+@media (min-width: 680px) {
+    .np-card { flex-direction: row; min-height: 220px; }
+}
+
+.np-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(124,111,171,0.22);
+}
+
+/* Left crimson accent on hover */
+.np-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--purple), var(--purple-mid));
+    transform: scaleY(0);
+    transform-origin: center;
+    transition: transform 0.28s ease;
+    border-radius: 3px 0 0 3px;
+    z-index: 1;
+}
+
+.np-card:hover::before { transform: scaleY(1); }
+
+/* Image side */
+.np-card-img-wrap {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: var(--surface);
+}
+
+@media (min-width: 680px) {
+    .np-card-img-wrap {
+        width: 260px;
+        height: auto;
+    }
+}
+
+@media (min-width: 1024px) {
+    .np-card-img-wrap { width: 300px; }
+}
+
+.np-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+    display: block;
+}
+
+.np-card:hover .np-card-img { transform: scale(1.06); }
+
+.np-card-img-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--surface), var(--border));
+    color: var(--mist);
+    font-size: 2.5rem;
+}
+
+.np-card-cat {
+    position: absolute;
+    top: 0.875rem;
+    left: 0.875rem;
+    background: var(--purple);
+    color: var(--white);
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+    z-index: 2;
+}
+
+/* Body side */
+.np-card-body {
+    padding: 1.5rem 1.75rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.np-card-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 2vw, 1.4rem);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--ink);
+    margin-bottom: 0.625rem;
+    letter-spacing: -0.01em;
+}
+
+.np-card-title a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.np-card-title a:hover { color: var(--purple); }
+
+.np-card-excerpt {
+    font-size: 0.875rem;
+    color: var(--slate);
+    line-height: 1.65;
+    flex: 1;
+    margin-bottom: 1.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.np-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.np-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.np-card-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--mist);
+}
+
+.np-card-meta-item i { color: var(--slate); font-size: 0.68rem; }
+
+.np-read-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--purple);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: gap 0.2s, color 0.2s;
+}
+
+.np-read-more:hover {
+    gap: 10px;
+    color: var(--purple-dark);
+}
+
+.np-read-more i { font-size: 0.7rem; transition: transform 0.2s; }
+.np-read-more:hover i { transform: translateX(2px); }
+
+/* ═══════════════════════════════════════════════════
+   PAGE LAYOUT (MAIN + SIDEBAR)
+═══════════════════════════════════════════════════ */
+.np-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    padding: clamp(2rem, 5vw, 3.5rem) 0 clamp(3rem, 6vw, 5rem);
+}
+
+@media (min-width: 1080px) {
+    .np-layout {
+        grid-template-columns: 1fr 308px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════ */
+.np-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@media (min-width: 1080px) {
+    .np-sidebar {
+        position: sticky;
+        top: 1.5rem;
+        align-self: start;
+    }
+}
+
+.np-widget {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+
+.np-widget-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.875rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.np-widget-icon {
+    width: 32px; height: 32px;
+    background: var(--purple-pale);
+    color: var(--purple);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+}
+
+/* Categories */
+.np-cat-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+
+.np-cat-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0.875rem;
+    border-radius: var(--radius-sm);
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    background: transparent;
+}
+
+.np-cat-link:hover {
+    background: var(--purple-pale);
+    color: var(--purple-dark);
+    padding-left: 1.125rem;
+}
+
+.np-cat-count {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--mist);
+    background: var(--surface);
+    padding: 2px 7px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    min-width: 28px;
+    text-align: center;
+}
+
+.np-cat-link:hover .np-cat-count {
+    background: var(--white);
+    color: var(--purple);
+    border-color: rgba(124,111,171,0.22);
+}
+
+/* Popular */
+.np-popular-list { list-style: none; display: flex; flex-direction: column; }
+
+.np-popular-item {
+    display: flex;
+    gap: 0.875rem;
+    padding: 0.875rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.np-popular-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+.np-popular-thumb {
+    width: 72px;
+    height: 56px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--surface);
+}
+
+.np-popular-thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.np-popular-body { flex: 1; min-width: 0; }
+
+.np-popular-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--ink-soft);
+    margin-bottom: 0.3rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.np-popular-title a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.np-popular-title a:hover { color: var(--purple); }
+
+.np-popular-date {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--mist);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Newsletter widget */
+.np-widget--newsletter {
+    background: linear-gradient(155deg, #1C2333 40%, #221F3A 100%);
+    border-color: rgba(124,111,171,0.18);
+    position: relative;
+    overflow: hidden;
+}
+
+.np-widget--newsletter::before {
+    content: '';
+    position: absolute;
+    bottom: -60px; right: -60px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,111,171,0.18) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.np-widget--newsletter .np-widget-title { color: var(--white); border-color: rgba(255,255,255,0.1); }
+.np-widget--newsletter .np-widget-icon { background: rgba(124,111,171,0.22); color: var(--gold-light); }
+
+.np-nl-desc {
+    font-size: 0.875rem;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.65;
+    margin-bottom: 1.25rem;
+}
+
+.np-nl-input-wrap { position: relative; margin-bottom: 0.75rem; }
+
+.np-nl-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--mist);
+    font-size: 0.8rem;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.np-nl-input {
+    width: 100%;
+    height: 46px;
+    padding: 0 1rem 0 2.75rem;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.06);
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 400;
+    caret-color: var(--gold-light);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.np-nl-input::placeholder { color: rgba(255,255,255,0.3); }
+
+.np-nl-input:focus {
+    border-color: var(--gold-light);
+    background: rgba(255,255,255,0.1);
+    box-shadow: 0 0 0 3px rgba(124,111,171,0.16);
+}
+
+.np-nl-btn {
+    width: 100%;
+    height: 44px;
+    background: var(--purple);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s, transform 0.2s;
+    letter-spacing: 0.02em;
+    position: relative;
+    z-index: 1;
+}
+
+.np-nl-btn:hover:not(:disabled) {
+    background: var(--purple-dark);
+    transform: translateY(-1px);
+}
+
+.np-nl-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.np-nl-disclaimer {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.35);
+    margin-top: 0.75rem;
+    line-height: 1.5;
+    position: relative;
+    z-index: 1;
+}
+
+#np-nl-message {
+    display: none;
+    margin-bottom: 0.875rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════
+   PAGINATION
+═══════════════════════════════════════════════════ */
+.np-pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.np-pagination-list {
+    display: flex;
+    gap: 4px;
+    list-style: none;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.np-pagination-link {
+    min-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.75rem;
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.np-pagination-link:hover:not(.active) {
+    background: var(--purple);
+    color: var(--white);
+    border-color: var(--purple);
+}
+
+.np-pagination-link.active {
+    background: var(--purple);
+    color: var(--white);
+    border-color: var(--purple);
+}
+
+/* ═══════════════════════════════════════════════════
+   EMPTY STATE
+═══════════════════════════════════════════════════ */
+.np-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    border: 1px dashed var(--border);
+}
+
+.np-empty-icon {
+    width: 72px; height: 72px;
+    margin: 0 auto 1.25rem;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: var(--mist);
+}
+
+.np-empty-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-bottom: 0.5rem;
+}
+
+.np-empty-desc {
+    font-size: 0.9rem;
+    color: var(--slate);
+    margin-bottom: 1.5rem;
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.65;
+}
+
+/* ═══════════════════════════════════════════════════
+   TOAST NOTIFICATION
+═══════════════════════════════════════════════════ */
+.np-toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--white);
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xl);
+    border-left: 4px solid var(--purple);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 340px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    animation: np-slideUp 0.3s ease;
+    pointer-events: none;
+}
+
+.np-toast.success { border-left-color: #059669; }
+.np-toast.error   { border-left-color: #DC2626; }
+
+@keyframes np-slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════════ */
+@keyframes np-fadeIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.np-card { animation: np-fadeIn 0.4s ease both; }
+.np-card:nth-child(1) { animation-delay: 0.05s; }
+.np-card:nth-child(2) { animation-delay: 0.1s;  }
+.np-card:nth-child(3) { animation-delay: 0.15s; }
+.np-card:nth-child(4) { animation-delay: 0.2s;  }
+.np-card:nth-child(5) { animation-delay: 0.25s; }
+.np-card:nth-child(n+6) { animation-delay: 0.3s; }
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+    .np-search-form {
+        flex-direction: column;
+        border-radius: var(--radius-md);
+        box-shadow: none;
+    }
+    .np-search-wrap,
+    .np-search-input { border-radius: var(--radius-sm) var(--radius-sm) 0 0; border-right: none; border-bottom: 1px solid var(--border); }
+    .np-search-btn   { border-radius: 0 0 var(--radius-sm) var(--radius-sm); height: 50px; }
+    .np-hero-stats { gap: 1.5rem; }
+    .np-featured-content { padding: 1.5rem; }
+    .np-featured-title { font-size: 1.3rem; }
+}
+
+@media (max-width: 480px) {
+    .np-filter-bar { padding: 0.75rem 1rem; }
+    .np-card-body  { padding: 1.25rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .np-card, .np-featured-img { animation: none !important; transition: none !important; }
+}
+</style>
+
+<!-- ═══════════════════════════════════════════════
+     PAGE ROOT
+═══════════════════════════════════════════════════ -->
+<div class="np-root">
+
+<!-- ── HERO ── -->
+<section class="np-hero hero-section" aria-label="News hero">
+    <div class="np-hero-bg"></div>
+    <div class="np-container np-hero-inner">
+
+        <!-- LEFT: eyebrow, title, subtitle, search -->
+        <div class="np-hero-left">
+            <div class="np-hero-eyebrow">
+                <span class="np-hero-eyebrow-rule"></span>
+                <span class="np-hero-eyebrow-text">FCT College of Nursing Sciences</span>
+            </div>
+
+            <h1 class="np-hero-title">
+                News &amp; <em>Announcements</em>
+            </h1>
+
+            <p class="np-hero-subtitle">
+                Stay informed with the latest developments, achievements, and important updates from across the College.
+            </p>
+
+            <form class="np-search-form" action="<?php echo $baseUrl; ?>/news/search" method="GET" role="search">
+                <div class="np-search-wrap">
+                    <i class="fas fa-search np-search-icon" aria-hidden="true"></i>
+                    <input type="search"
+                           name="q"
+                           class="np-search-input"
+                           placeholder="Search articles, announcements…"
+                           aria-label="Search news"
+                           value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>">
+                </div>
+                <button type="submit" class="np-search-btn">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    Search
+                </button>
+            </form>
+        </div>
+
+        <!-- RIGHT: stats panel -->
+        <div class="np-hero-right">
+            <div class="np-hero-stats">
+                <div class="np-stat">
+                    <span class="np-stat-value"><?php echo number_format($pagination['totalCount'] ?? count($news)); ?></span>
+                    <span class="np-stat-label">Articles</span>
+                </div>
+                <div class="np-stat">
+                    <span class="np-stat-value"><?php echo count($categories) ?: '8'; ?></span>
+                    <span class="np-stat-label">Categories</span>
+                </div>
+                <div class="np-stat">
+                    <span class="np-stat-value">2026</span>
+                    <span class="np-stat-label">Latest Year</span>
                 </div>
             </div>
         </div>
-    </section>
 
-    <!-- Breadcrumbs -->
-    <nav class="breadcrumbs" aria-label="Breadcrumb">
-        <div class="container">
-            <ul class="breadcrumb-list">
-                <li class="breadcrumb-item">
-                    <a href="<?php echo $baseUrl; ?>">
-                        <i class="fas fa-home"></i> Home
-                    </a>
-                </li>
-                <li class="breadcrumb-item">
-                    <span>/</span>
-                </li>
-                <li class="breadcrumb-item" aria-current="page">News</li>
-            </ul>
+    </div>
+</section>
+
+<!-- ── BREADCRUMB ── -->
+<nav class="np-breadcrumb" aria-label="Breadcrumb">
+    <div class="np-container">
+        <ul class="np-breadcrumb-list">
+            <li><a href="<?php echo $baseUrl; ?>"><i class="fas fa-home" aria-hidden="true"></i> Home</a></li>
+            <li><span class="np-breadcrumb-sep">/</span></li>
+            <li><span class="np-breadcrumb-current" aria-current="page">News</span></li>
+        </ul>
+    </div>
+</nav>
+
+<!-- ── MAIN CONTENT ── -->
+<div class="np-container">
+
+    <?php if (!$hasNews): ?>
+    <!-- Empty State -->
+    <div style="padding: 4rem 0;">
+        <div class="np-empty">
+            <div class="np-empty-icon"><i class="fas fa-newspaper" aria-hidden="true"></i></div>
+            <h2 class="np-empty-title">No Articles Yet</h2>
+            <p class="np-empty-desc">We're preparing our latest news and updates. Please check back soon.</p>
+            <a href="<?php echo $baseUrl; ?>" class="np-btn np-btn--purple">
+                <i class="fas fa-home" aria-hidden="true"></i> Return Home
+            </a>
         </div>
-    </nav>
+    </div>
+    <?php else: ?>
 
-    <!-- Main Content -->
-    <section class="news-content">
-        <div class="container">
-            <?php if (!$hasNews): ?>
-            <!-- Empty State -->
-            <div class="empty-state">
-                <div class="empty-icon">
-                    <i class="fas fa-newspaper"></i>
-                </div>
-                <h2 class="empty-title">No News Articles Yet</h2>
-                <p class="empty-description">
-                    We're currently preparing our latest news and updates. Please check back soon.
+    <!-- ── FEATURED ARTICLE ── -->
+    <div class="np-featured-wrap">
+        <article class="np-featured">
+            <?php
+            /* Resolve featured hero image:
+             * 1. First item in $featuredNews that has an image
+             * 2. First item in $news that has an image
+             * 3. Fall back to local asset path (gradient bg shows if file missing)
+             */
+            $_fImg = '';
+            if (!empty($featuredNews) && !empty($featuredNews[0]['featured_image'])) {
+                $_fImg = getImageUrl($featuredNews[0]['featured_image']);
+            }
+            if (empty($_fImg)) {
+                foreach ($news as $_ni) {
+                    if (!empty($_ni['featured_image'])) {
+                        $_fImg = getImageUrl($_ni['featured_image']);
+                        break;
+                    }
+                }
+            }
+            $_fLocal = $baseUrl . '/assets/images/news/featured-nursing.jpg';
+            $_fImg   = $_fImg ?: $_fLocal;
+            ?>
+            <!-- Image cell (left half) -->
+            <div class="np-featured-img-cell">
+                <img src="<?php echo htmlspecialchars($_fImg); ?>"
+                     alt="Nursing students in practical training"
+                     class="np-featured-img"
+                     onerror="this.onerror=null; this.style.opacity='0.15';">
+            </div>
+
+            <!-- Hidden overlay kept for compat but display:none via CSS -->
+            <div class="np-featured-overlay" aria-hidden="true"></div>
+
+            <!-- Text cell (right half) -->
+            <div class="np-featured-content">
+                <span class="np-featured-tag">
+                    <i class="fas fa-star" aria-hidden="true"></i>
+                    Featured — Academic
+                </span>
+
+                <h2 class="np-featured-title">
+                    Strengthening Nursing Education Through Practical Training and Innovation
+                </h2>
+
+                <p class="np-featured-excerpt">
+                    The College continues to enhance nursing education by integrating hands-on clinical training, modern learning tools, and evidence-based practices to prepare students for real-world healthcare challenges.
                 </p>
-                <a href="<?php echo $baseUrl; ?>" class="btn btn-primary">
-                    <i class="fas fa-home"></i> Return to Homepage
+
+                <div class="np-featured-meta">
+                    <span class="np-featured-meta-item">
+                        <i class="far fa-calendar-alt" aria-hidden="true"></i>
+                        February 10, 2026
+                    </span>
+                    <span class="np-featured-meta-item">
+                        <i class="far fa-eye" aria-hidden="true"></i>
+                        19 views
+                    </span>
+                    <span class="np-featured-meta-item">
+                        <i class="far fa-clock" aria-hidden="true"></i>
+                        5 min read
+                    </span>
+                </div>
+
+                <div class="np-featured-actions">
+                    <a href="<?php echo $baseUrl; ?>/news/strengthening-nursing-education"
+                       class="np-btn np-btn--purple">
+                        Read Full Article
+                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                    <a href="<?php echo $baseUrl; ?>/news/category/academic"
+                       class="np-btn np-btn--ghost">
+                        <i class="fas fa-folder" aria-hidden="true"></i>
+                        Academic News
+                    </a>
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <!-- ── TWO-COLUMN LAYOUT ── -->
+    <div class="np-layout">
+
+        <!-- Main Column -->
+        <main id="main-content">
+
+            <div class="np-section-header">
+                <h2 class="np-section-title">
+                    <span class="np-section-pip"></span>
+                    Latest News
+                </h2>
+                <a href="<?php echo $baseUrl; ?>/news/archive" class="np-btn np-btn--surface">
+                    View Archive
+                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </a>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="np-filter-bar">
+                <div class="np-filter-group">
+                    <span class="np-filter-label">Filter</span>
+
+                    <select class="np-filter-select" id="np-cat-filter" aria-label="Filter by category">
+                        <option value="">All Categories</option>
+                        <?php foreach ($categories as $cat => $cnt): ?>
+                        <option value="<?php echo urlencode(strtolower(str_replace(' ', '-', $cat))); ?>">
+                            <?php echo htmlspecialchars($cat); ?> (<?php echo $cnt; ?>)
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+
+                    <select class="np-filter-select" id="np-sort-filter" aria-label="Sort by">
+                        <option value="latest">Latest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="popular">Most Popular</option>
+                    </select>
+                </div>
+
+                <span class="np-results-count">
+                    <strong><?php echo count($news); ?></strong> of
+                    <strong><?php echo $pagination['totalCount']; ?></strong> articles
+                </span>
+            </div>
+
+            <!-- Cards -->
+            <?php if (empty($news)): ?>
+            <div class="np-empty">
+                <div class="np-empty-icon"><i class="fas fa-search" aria-hidden="true"></i></div>
+                <h3 class="np-empty-title">No Articles Found</h3>
+                <p class="np-empty-desc">Try adjusting your filters or search criteria.</p>
+                <a href="<?php echo $baseUrl; ?>/news" class="np-btn np-btn--outline">
+                    <i class="fas fa-rotate-right" aria-hidden="true"></i> Reset Filters
                 </a>
             </div>
             <?php else: ?>
-            
-            <!-- FEATURED CONTENT -->
-            <div class="featured-section">
-                <div class="featured-article">
-                    <img src="<?php echo $baseUrl; ?>/assets/images/news/featured-nursing.jpg" 
-                         alt="Nursing students in practical training"
-                         class="featured-image"
-                         onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(145deg, #4A3A6F, #5D4A8A)';">
-                    
-                    <div class="featured-gradient-overlay"></div>
-                    
-                    <div class="featured-content">
-                        <div class="featured-content-wrapper">
-                            <span class="featured-badge">
-                                <i class="fas fa-graduation-cap"></i>
-                                Featured Academic News
-                            </span>
-                            
-                            <h2 class="featured-title">
-                                Strengthening Nursing Education Through Practical Training and Innovation
-                            </h2>
-                            
-                            <p class="featured-excerpt">
-                                The College of Nursing continues to enhance nursing education by integrating hands-on clinical training, modern learning tools, and evidence-based practices to prepare students for real-world healthcare challenges.
-                            </p>
-                            
-                            <div class="featured-meta">
-                                <span class="featured-meta-item">
-                                    <i class="far fa-calendar-alt"></i>
-                                    February 10, 2026
+
+            <div class="np-grid" id="np-news-grid">
+                <?php foreach ($news as $item): ?>
+                <article class="np-card">
+
+                    <!-- Thumbnail -->
+                    <?php
+                    /* Resolve the image src:
+                     * 1. Use the article's own featured_image if set
+                     * 2. Fall back to the featured hero image so the card
+                     *    for "Strengthening Nursing Education…" always shows
+                     *    a real photo instead of a grey placeholder.
+                     */
+                    $cardFallback = $baseUrl . '/assets/images/news/featured-nursing.jpg';
+                    $cardImgSrc   = !empty($item['featured_image'])
+                        ? getImageUrl($item['featured_image'])
+                        : $cardFallback;
+                    ?>
+                    <div class="np-card-img-wrap">
+                        <img src="<?php echo $cardImgSrc; ?>"
+                             alt="<?php echo htmlspecialchars($item['title']); ?>"
+                             class="np-card-img"
+                             loading="lazy"
+                             onerror="this.src='<?php echo $cardFallback; ?>'">
+                        
+
+                        <?php if (!empty($item['category'])): ?>
+                        <span class="np-card-cat"><?php echo htmlspecialchars($item['category']); ?></span>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="np-card-body">
+                        <h3 class="np-card-title">
+                            <a href="<?php echo $baseUrl; ?>/news/<?php echo $item['slug']; ?>">
+                                <?php echo htmlspecialchars($item['title']); ?>
+                            </a>
+                        </h3>
+
+                        <?php if (!empty($item['excerpt'])): ?>
+                        <p class="np-card-excerpt">
+                            <?php echo htmlspecialchars(substr(strip_tags($item['excerpt']), 0, 200)); ?>
+                        </p>
+                        <?php endif; ?>
+
+                        <div class="np-card-footer">
+                            <div class="np-card-meta">
+                                <span class="np-card-meta-item">
+                                    <i class="far fa-calendar" aria-hidden="true"></i>
+                                    <?php echo date('M d, Y', strtotime($item['created_at'])); ?>
                                 </span>
-                                <span class="featured-meta-item">
-                                    <i class="far fa-eye"></i>
-                                    19 views
-                                </span>
-                                <span class="featured-meta-item">
-                                    <i class="far fa-clock"></i>
-                                    5 min read
+                                <span class="np-card-meta-item">
+                                    <i class="far fa-eye" aria-hidden="true"></i>
+                                    <?php echo number_format($item['views_count'] ?? 0); ?>
                                 </span>
                             </div>
-                            
-                            <div class="featured-actions">
-                                <a href="<?php echo $baseUrl; ?>/news/strengthening-nursing-education" class="btn-featured">
-                                    Read Full Article
-                                    <i class="fas fa-arrow-right"></i>
-                                </a>
-                                <a href="<?php echo $baseUrl; ?>/news/category/academic" class="btn-featured-outline">
-                                    <i class="fas fa-folder"></i>
-                                    Academic News
-                                </a>
-                            </div>
+                            <a href="<?php echo $baseUrl; ?>/news/<?php echo $item['slug']; ?>"
+                               class="np-read-more" aria-label="Read more: <?php echo htmlspecialchars($item['title']); ?>">
+                                Read more <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                            </a>
                         </div>
                     </div>
-                </div>
+
+                </article>
+                <?php endforeach; ?>
             </div>
-            
-            <!-- News Layout with Sidebar -->
-            <div class="news-layout">
-                <!-- Main Content -->
-                <div>
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <div class="section-title-icon">
-                                <i class="fas fa-newspaper"></i>
-                            </div>
-                            <span>Latest News</span>
-                        </h2>
-                        <a href="<?php echo $baseUrl; ?>/news/archive" class="view-all-link">
-                            View Archive
-                            <i class="fas fa-arrow-right"></i>
+
+            <!-- Pagination -->
+            <?php if ($pagination['total'] > 1): ?>
+            <nav class="np-pagination" aria-label="Page navigation">
+                <ul class="np-pagination-list">
+                    <?php if ($pagination['current'] > 1): ?>
+                    <li>
+                        <a href="?page=<?php echo $pagination['current'] - 1; ?>"
+                           class="np-pagination-link" aria-label="Previous page">
+                            <i class="fas fa-chevron-left" aria-hidden="true"></i>
                         </a>
-                    </div>
-                    
-                    <div class="filter-bar">
-                        <div class="filter-group">
-                            <span class="filter-label">Filter:</span>
-                            <select class="filter-select" id="category-filter" aria-label="Filter by category">
-                                <option value="">All Categories</option>
-                                <?php foreach ($categories as $category => $count): ?>
-                                <option value="<?php echo urlencode(strtolower(str_replace(' ', '-', $category))); ?>">
-                                    <?php echo htmlspecialchars($category); ?> (<?php echo $count; ?>)
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
-                            
-                            <select class="filter-select" id="sort-filter" aria-label="Sort by">
-                                <option value="latest">Latest First</option>
-                                <option value="oldest">Oldest First</option>
-                                <option value="popular">Most Popular</option>
-                            </select>
-                        </div>
-                        
-                        <div class="results-count">
-                            <strong><?php echo count($news); ?></strong> of <strong><?php echo $pagination['totalCount']; ?></strong> articles
-                        </div>
-                    </div>
-                    
-                    <!-- News Grid -->
-                    <?php if (empty($news)): ?>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-search"></i>
-                        </div>
-                        <h3 class="empty-title">No Articles Found</h3>
-                        <p class="empty-description">
-                            Try adjusting your filters or search criteria.
-                        </p>
-                        <a href="<?php echo $baseUrl; ?>/news" class="btn btn-outline">
-                            <i class="fas fa-sync"></i> Reset Filters
+                    </li>
+                    <?php endif; ?>
+
+                    <?php for ($i = 1; $i <= $pagination['total']; $i++): ?>
+                    <li>
+                        <a href="?page=<?php echo $i; ?>"
+                           class="np-pagination-link <?php echo $i == $pagination['current'] ? 'active' : ''; ?>"
+                           aria-label="Page <?php echo $i; ?>"
+                           <?php echo $i == $pagination['current'] ? 'aria-current="page"' : ''; ?>>
+                            <?php echo $i; ?>
                         </a>
-                    </div>
-                    <?php else: ?>
-                    <div class="news-grid">
-                        <?php foreach ($news as $item): ?>
-                        <article class="news-card">
-                            <div class="news-image-wrapper">
-                                <?php if (!empty($item['featured_image'])): ?>
-                                <img src="<?php echo getImageUrl($item['featured_image']); ?>" 
-                                     alt="<?php echo htmlspecialchars($item['title']); ?>" 
-                                     class="news-image"
-                                     loading="lazy"
-                                     onerror="this.onerror=null;this.src='<?php echo $baseUrl; ?>/assets/images/placeholder-news.jpg';">
-                                <?php else: ?>
-                                <div style="width:100%;height:100%;background:linear-gradient(145deg, #E2E8F0, #CBD5E1);display:flex;align-items:center;justify-content:center;">
-                                    <i class="fas fa-newspaper" style="font-size:3rem;color:#94A3B8;"></i>
-                                </div>
-                                <?php endif; ?>
-                                
-                                <?php if (!empty($item['category'])): ?>
-                                <span class="news-category-badge">
-                                    <?php echo htmlspecialchars($item['category']); ?>
-                                </span>
-                                <?php endif; ?>
-                            </div>
-                            
-                            <div class="news-card-body">
-                                <h3 class="news-title">
-                                    <a href="<?php echo $baseUrl; ?>/news/<?php echo $item['slug']; ?>">
-                                        <?php echo htmlspecialchars($item['title']); ?>
-                                    </a>
-                                </h3>
-                                
-                                <?php if (!empty($item['excerpt'])): ?>
-                                <p class="news-excerpt">
-                                    <?php echo htmlspecialchars(substr(strip_tags($item['excerpt']), 0, 180)) . '...'; ?>
-                                </p>
-                                <?php endif; ?>
-                                
-                                <div class="news-card-footer">
-                                    <div class="news-meta">
-                                        <div class="news-meta-item">
-                                            <i class="far fa-calendar"></i>
-                                            <span><?php echo date('M d, Y', strtotime($item['created_at'])); ?></span>
-                                        </div>
-                                        <div class="news-meta-item">
-                                            <i class="far fa-eye"></i>
-                                            <span><?php echo number_format($item['views_count'] ?? 0); ?></span>
-                                        </div>
-                                    </div>
-                                    
-                                    <a href="<?php echo $baseUrl; ?>/news/<?php echo $item['slug']; ?>" class="read-more">
-                                        Read More
-                                        <i class="fas fa-arrow-right"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </article>
-                        <?php endforeach; ?>
-                    </div>
-                    
-                    <!-- Pagination -->
-                    <?php if ($pagination['total'] > 1): ?>
-                    <nav class="pagination" aria-label="Page navigation">
-                        <ul class="pagination-list">
-                            <?php if ($pagination['current'] > 1): ?>
-                            <li>
-                                <a href="?page=<?php echo $pagination['current'] - 1; ?>" class="pagination-link" aria-label="Previous page">
-                                    <i class="fas fa-chevron-left"></i>
-                                </a>
-                            </li>
-                            <?php endif; ?>
-                            
-                            <?php for ($i = 1; $i <= $pagination['total']; $i++): ?>
-                            <li>
-                                <a href="?page=<?php echo $i; ?>" 
-                                   class="pagination-link <?php echo $i == $pagination['current'] ? 'active' : ''; ?>"
-                                   aria-label="Page <?php echo $i; ?>">
-                                    <?php echo $i; ?>
-                                </a>
-                            </li>
-                            <?php endfor; ?>
-                            
-                            <?php if ($pagination['current'] < $pagination['total']): ?>
-                            <li>
-                                <a href="?page=<?php echo $pagination['current'] + 1; ?>" class="pagination-link" aria-label="Next page">
-                                    <i class="fas fa-chevron-right"></i>
-                                </a>
-                            </li>
-                            <?php endif; ?>
-                        </ul>
-                    </nav>
+                    </li>
+                    <?php endfor; ?>
+
+                    <?php if ($pagination['current'] < $pagination['total']): ?>
+                    <li>
+                        <a href="?page=<?php echo $pagination['current'] + 1; ?>"
+                           class="np-pagination-link" aria-label="Next page">
+                            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                        </a>
+                    </li>
                     <?php endif; ?>
-                    <?php endif; ?>
-                </div>
-                
-                <!-- Sidebar -->
-                <aside class="sidebar" aria-label="News sidebar">
-                    <!-- Categories Widget -->
-                    <?php if (!empty($categories)): ?>
-                    <div class="sidebar-widget">
-                        <h3 class="widget-title">
-                            <div class="widget-title-icon">
-                                <i class="fas fa-folder"></i>
-                            </div>
-                            <span>Categories</span>
-                        </h3>
-                        <ul class="category-list">
-                            <?php foreach ($categories as $category => $count): ?>
-                            <li class="category-item">
-                                <a href="<?php echo $baseUrl; ?>/news/category/<?php echo urlencode(strtolower(str_replace(' ', '-', $category))); ?>" 
-                                   class="category-link">
-                                    <span><?php echo htmlspecialchars($category); ?></span>
-                                    <span class="category-count"><?php echo $count; ?></span>
-                                </a>
-                            </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <!-- Popular News Widget -->
-                    <?php if (!empty($popularNews)): ?>
-                    <div class="sidebar-widget">
-                        <h3 class="widget-title">
-                            <div class="widget-title-icon">
-                                <i class="fas fa-fire"></i>
-                            </div>
-                            <span>Popular News</span>
-                        </h3>
-                        <ul class="popular-list">
-                            <?php foreach ($popularNews as $popular): ?>
-                            <li class="popular-item">
-                                <div class="popular-image-wrapper">
-                                    <?php if (!empty($popular['featured_image'])): ?>
-                                    <img src="<?php echo getImageUrl($popular['featured_image']); ?>" 
-                                         alt="<?php echo htmlspecialchars($popular['title']); ?>" 
-                                         class="popular-image"
-                                         loading="lazy"
-                                         onerror="this.onerror=null;this.src='<?php echo $baseUrl; ?>/assets/images/placeholder-small.jpg';">
-                                    <?php else: ?>
-                                    <div style="width:100%;height:100%;background:var(--gray-200);display:flex;align-items:center;justify-content:center;">
-                                        <i class="fas fa-image" style="color:var(--gray-400);"></i>
-                                    </div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="popular-content">
-                                    <h4 class="popular-title">
-                                        <a href="<?php echo $baseUrl; ?>/news/<?php echo $popular['slug']; ?>">
-                                            <?php echo htmlspecialchars($popular['title']); ?>
-                                        </a>
-                                    </h4>
-                                    <div class="popular-date">
-                                        <i class="far fa-calendar"></i>
-                                        <?php echo date('M d, Y', strtotime($popular['created_at'])); ?>
-                                    </div>
-                                </div>
-                            </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <!-- Newsletter Widget -->
-                    <div class="sidebar-newsletter">
-                        <h3 class="widget-title">
-                            <div class="widget-title-icon">
-                                <i class="fas fa-envelope"></i>
-                            </div>
-                            <span>Stay Updated</span>
-                        </h3>
-                        <p class="newsletter-description">
-                            Subscribe to receive the latest news and updates directly in your inbox.
-                        </p>
-                        
-                        <div id="newsletter-message" style="display: none; margin-bottom: 1rem; padding: 0.75rem; border-radius: 0.5rem; font-size: 0.875rem;"></div>
-                        
-                        <form class="newsletter-form" id="newsletter-form" action="<?php echo BASE_URL; ?>/newsletter/subscribe" method="POST">
-                            <div class="newsletter-input-wrapper">
-                                <i class="fas fa-envelope newsletter-icon"></i>
-                                <input type="email" 
-                                       name="email"
-                                       class="newsletter-input" 
-                                       placeholder="Your email address" 
-                                       required
-                                       aria-label="Email for newsletter"
-                                       id="newsletter-email">
-                            </div>
-                            
-                            <button type="submit" class="newsletter-button" id="newsletter-submit">
-                                <i class="fas fa-paper-plane"></i>
-                                <span>Subscribe</span>
-                            </button>
-                            
-                            <p class="newsletter-disclaimer">
-                                We respect your privacy. Unsubscribe anytime.
-                            </p>
-                        </form>
-                    </div>
-                </aside>
+                </ul>
+            </nav>
+            <?php endif; ?>
+
+            <?php endif; /* empty $news */ ?>
+        </main>
+
+        <!-- ── SIDEBAR ── -->
+        <aside class="np-sidebar" aria-label="News sidebar">
+
+            <!-- Categories -->
+            <?php if (!empty($categories)): ?>
+            <div class="np-widget">
+                <h3 class="np-widget-title">
+                    <span class="np-widget-icon"><i class="fas fa-folder" aria-hidden="true"></i></span>
+                    Categories
+                </h3>
+                <ul class="np-cat-list">
+                    <?php foreach ($categories as $cat => $cnt): ?>
+                    <li>
+                        <a href="<?php echo $baseUrl; ?>/news/category/<?php echo urlencode(strtolower(str_replace(' ', '-', $cat))); ?>"
+                           class="np-cat-link">
+                            <span><?php echo htmlspecialchars($cat); ?></span>
+                            <span class="np-cat-count"><?php echo $cnt; ?></span>
+                        </a>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
             </div>
             <?php endif; ?>
-        </div>
-    </section>
-</main>
+
+            <!-- Popular Articles -->
+            <?php if (!empty($popularNews)): ?>
+            <div class="np-widget">
+                <h3 class="np-widget-title">
+                    <span class="np-widget-icon"><i class="fas fa-fire" aria-hidden="true"></i></span>
+                    Popular
+                </h3>
+                <ul class="np-popular-list">
+                    <?php foreach ($popularNews as $pop): ?>
+                    <li class="np-popular-item">
+                        <div class="np-popular-thumb">
+                            <?php
+                            $popImgSrc = !empty($pop['featured_image'])
+                                ? getImageUrl($pop['featured_image'])
+                                : $baseUrl . '/assets/images/news/featured-nursing.jpg';
+                            ?>
+                            <img src="<?php echo $popImgSrc; ?>"
+                                 alt=""
+                                 loading="lazy"
+                                 onerror="this.src='<?php echo $baseUrl; ?>/assets/images/news/featured-nursing.jpg'">
+                        </div>
+                        <div class="np-popular-body">
+                            <h4 class="np-popular-title">
+                                <a href="<?php echo $baseUrl; ?>/news/<?php echo $pop['slug']; ?>">
+                                    <?php echo htmlspecialchars($pop['title']); ?>
+                                </a>
+                            </h4>
+                            <span class="np-popular-date">
+                                <i class="far fa-calendar" aria-hidden="true"></i>
+                                <?php echo date('M d, Y', strtotime($pop['created_at'])); ?>
+                            </span>
+                        </div>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <?php endif; ?>
+
+            <!-- Newsletter -->
+            <div class="np-widget np-widget--newsletter">
+                <h3 class="np-widget-title">
+                    <span class="np-widget-icon"><i class="fas fa-envelope" aria-hidden="true"></i></span>
+                    Stay Updated
+                </h3>
+                <p class="np-nl-desc">
+                    Subscribe to receive the latest news and announcements directly in your inbox.
+                </p>
+
+                <div id="np-nl-message" role="alert"></div>
+
+                <form id="np-nl-form" action="<?php echo $baseUrl; ?>/newsletter/subscribe" method="POST" novalidate>
+                    <div class="np-nl-input-wrap">
+                        <i class="fas fa-envelope np-nl-icon" aria-hidden="true"></i>
+                        <input type="email"
+                               id="np-nl-email"
+                               name="email"
+                               class="np-nl-input"
+                               placeholder="your@email.com"
+                               required
+                               aria-label="Email address for newsletter">
+                    </div>
+                    <button type="submit" class="np-nl-btn" id="np-nl-submit">
+                        <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                        Subscribe
+                    </button>
+                    <p class="np-nl-disclaimer">
+                        We respect your privacy. No spam, unsubscribe any time.
+                    </p>
+                </form>
+            </div>
+
+        </aside>
+
+    </div><!-- /np-layout -->
+
+    <?php endif; /* hasNews */ ?>
+
+</div><!-- /np-container -->
+
+</div><!-- /np-root -->
+
+<!-- Toast -->
+<div id="np-toast" class="np-toast" role="status" aria-live="polite" style="display:none;"></div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Newsletter Form AJAX
-    const newsletterForm = document.getElementById('newsletter-form');
-    const emailInput = document.getElementById('newsletter-email');
-    const submitBtn = document.getElementById('newsletter-submit');
-    const messageDiv = document.getElementById('newsletter-message');
-    
-    if (newsletterForm) {
-        newsletterForm.addEventListener('submit', async function(e) {
+(function () {
+    'use strict';
+
+    /* ── Newsletter AJAX ── */
+    var form   = document.getElementById('np-nl-form');
+    var email  = document.getElementById('np-nl-email');
+    var btn    = document.getElementById('np-nl-submit');
+    var msgDiv = document.getElementById('np-nl-message');
+
+    if (form) {
+        form.addEventListener('submit', function (e) {
             e.preventDefault();
-            
-            const email = emailInput.value.trim();
-            if (!email || !isValidEmail(email)) {
-                showMessage('Please enter a valid email address', 'error');
+
+            var val = email.value.trim();
+            if (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                showMsg('Please enter a valid email address.', 'error');
                 return;
             }
-            
-            emailInput.disabled = true;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subscribing...';
-            
-            try {
-                const formData = new FormData();
-                formData.append('email', email);
-                formData.append('source', 'newsletter_sidebar');
-                
-                const response = await fetch('<?php echo BASE_URL; ?>/newsletter/subscribe', {
-                    method: 'POST',
-                    body: formData
+
+            email.disabled = true;
+            btn.disabled   = true;
+            btn.innerHTML  = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Subscribing…';
+
+            var fd = new FormData();
+            fd.append('email', val);
+            fd.append('source', 'news_sidebar');
+
+            fetch('<?php echo $baseUrl; ?>/newsletter/subscribe', { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        showMsg(data.message || 'Subscribed! Thank you.', 'success');
+                        email.value = '';
+                    } else {
+                        showMsg(data.message || 'Something went wrong.', 'error');
+                    }
+                })
+                .catch(function () {
+                    showMsg('Connection error. Please try again.', 'error');
+                })
+                .finally(function () {
+                    email.disabled = false;
+                    btn.disabled   = false;
+                    btn.innerHTML  = '<i class="fas fa-paper-plane" aria-hidden="true"></i> Subscribe';
                 });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showMessage(data.message, 'success');
-                    emailInput.value = '';
-                } else {
-                    showMessage(data.message, 'error');
-                }
-            } catch (error) {
-                showMessage('Connection error. Please try again.', 'error');
-            } finally {
-                emailInput.disabled = false;
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> <span>Subscribe</span>';
-            }
         });
     }
-    
-    function isValidEmail(email) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    }
-    
-    function showMessage(message, type) {
-        messageDiv.style.display = 'block';
-        messageDiv.textContent = message;
-        messageDiv.style.background = type === 'success' ? '#d4edda' : '#f8d7da';
-        messageDiv.style.color = type === 'success' ? '#155724' : '#721c24';
-        messageDiv.style.border = type === 'success' ? '1px solid #c3e6cb' : '1px solid #f5c6cb';
-        
+
+    function showMsg(msg, type) {
+        msgDiv.style.display      = 'block';
+        msgDiv.textContent        = msg;
+        msgDiv.style.background   = type === 'success' ? 'rgba(5,150,105,0.15)'  : 'rgba(220,38,38,0.15)';
+        msgDiv.style.color        = type === 'success' ? '#D1FAE5'                : '#FEE2E2';
+        msgDiv.style.border       = type === 'success' ? '1px solid rgba(5,150,105,0.3)' : '1px solid rgba(220,38,38,0.3)';
+        msgDiv.style.borderRadius = '6px';
+        msgDiv.style.padding      = '0.625rem 0.875rem';
         if (type === 'success') {
-            setTimeout(() => {
-                messageDiv.style.display = 'none';
-            }, 5000);
+            setTimeout(function () { msgDiv.style.display = 'none'; }, 5000);
         }
     }
-    
-    // Filter functionality
-    const categoryFilter = document.getElementById('category-filter');
-    const sortFilter = document.getElementById('sort-filter');
-    
-    if (categoryFilter) {
-        categoryFilter.addEventListener('change', function() {
+
+    /* ── Category Filter ── */
+    var catFilter  = document.getElementById('np-cat-filter');
+    var sortFilter = document.getElementById('np-sort-filter');
+
+    if (catFilter) {
+        catFilter.addEventListener('change', function () {
             if (this.value) {
                 window.location.href = '<?php echo $baseUrl; ?>/news/category/' + this.value;
+            } else {
+                window.location.href = '<?php echo $baseUrl; ?>/news';
             }
         });
     }
-    
+
     if (sortFilter) {
-        sortFilter.addEventListener('change', function() {
-            const params = new URLSearchParams(window.location.search);
-            params.set('sort', this.value);
-            params.set('page', '1');
-            window.location.search = params.toString();
+        sortFilter.addEventListener('change', function () {
+            var p = new URLSearchParams(window.location.search);
+            p.set('sort', this.value);
+            p.set('page', '1');
+            window.location.search = p.toString();
         });
     }
-});
-</script>
 
-</body>
-</html>
+    /* ── Toast helper (reusable) ── */
+    window.npToast = function (msg, type) {
+        var t = document.getElementById('np-toast');
+        t.textContent  = msg;
+        t.className    = 'np-toast ' + (type || '');
+        t.style.display = 'flex';
+        setTimeout(function () { t.style.display = 'none'; }, 3500);
+    };
+})();
+</script>
