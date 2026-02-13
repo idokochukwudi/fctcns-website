@@ -2,618 +2,617 @@
 /**
  * CONTACT SUCCESS PAGE
  * File: /app/views/pages/contact/contact-success.php
- * 
- * Purpose: Displayed after successful form submission
- * Shows: Reference number, confirmation message, next steps
- * Accessed via: /contact/success
- * 
- * @package FCTCNS
+ *
+ * Rendered inside the main layout (header + footer already present).
+ * This file outputs only the page body content.
  */
 
-// Extract data passed from controller
 extract($data ?? []);
 
-// Set defaults
-$baseUrl = $baseUrl ?? '/';
+$baseUrl    = $baseUrl ?? '/';
 $submission = $submission ?? null;
-$reference = $submission['id'] ?? date('Ymd') . rand(100, 999);
-$name = $submission['name'] ?? $_SESSION['contact_name'] ?? 'there';
+$reference  = $submission['id'] ?? date('Ymd') . rand(100, 999);
+$name       = $submission['name'] ?? 'there';
+$subject    = $submission['subject'] ?? '';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Thank you for contacting FCT College of Nursing Sciences. Your message has been received.">
-    <title>Message Sent - FCT College of Nursing Sciences</title>
-    
-    <!-- Font Awesome 6 (CDN - works everywhere) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        /* ---------- DESIGN SYSTEM ---------- */
-        :root {
-            --primary: #2A5C7D;
-            --primary-dark: #1E4560;
-            --primary-light: #EEF5F9;
-            --accent: #E9B741;
-            --accent-dark: #DAA520;
-            --success: #10B981;
-            --success-dark: #059669;
-            --gray-50: #F9FAFB;
-            --gray-100: #F3F4F6;
-            --gray-200: #E5E7EB;
-            --gray-600: #4B5563;
-            --gray-800: #1F2937;
-            --gray-900: #111827;
-            --white: #FFFFFF;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --radius: 12px;
+
+<style>
+    /* ── TOKENS ─────────────────────────────────────────────── */
+    :root {
+        --navy:        #0B1F3A;
+        --navy-light:  #1A3A5C;
+        --gold:        #C9963A;
+        --gold-light:  #E5B96A;
+        --gold-pale:   #F5E6CC;
+        --teal:        #1A7F74;
+        --teal-light:  #22A99B;
+        --cream:       #FAF7F2;
+        --white:       #FFFFFF;
+        --gray-100:    #F0EDE8;
+        --gray-300:    #C8C0B4;
+        --gray-500:    #8A7F72;
+        --gray-700:    #4A4035;
+        --shadow-soft: 0 2px 20px rgba(11,31,58,0.08);
+        --shadow-card: 0 8px 40px rgba(11,31,58,0.12);
+        --shadow-gold: 0 4px 24px rgba(201,150,58,0.25);
+    }
+
+    /* ── SECTION WRAPPER ─────────────────────────────────────── */
+    .success-section {
+        background: var(--cream);
+        padding: clamp(2rem, 6vw, 4rem) clamp(1rem, 5vw, 2rem);
+        display: flex;
+        justify-content: center;
+        /* subtle radial accents that sit behind the card */
+        background-image:
+            radial-gradient(ellipse 70% 40% at 15% 0%, rgba(201,150,58,0.07) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 40% at 85% 100%, rgba(26,127,116,0.06) 0%, transparent 60%);
+    }
+
+    /* ── CARD PANEL ──────────────────────────────────────────── */
+    .sc-panel {
+        width: 100%;
+        max-width: 760px;
+        animation: sc-riseIn 0.7s cubic-bezier(0.22,1,0.36,1) both;
+    }
+
+    /* ── HERO BLOCK ──────────────────────────────────────────── */
+    .sc-hero {
+        background: var(--navy);
+        border-radius: 20px 20px 0 0;
+        padding: clamp(2.5rem, 6vw, 4rem) clamp(1.5rem, 5vw, 3.5rem);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .sc-hero::before {
+        content: '';
+        position: absolute;
+        top: -60px; right: -60px;
+        width: 220px; height: 220px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(201,150,58,0.15) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .sc-hero::after {
+        content: '';
+        position: absolute;
+        bottom: -40px; left: -40px;
+        width: 160px; height: 160px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(26,127,116,0.12) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    /* ── ANIMATED CHECK ──────────────────────────────────────── */
+    .sc-check-ring {
+        width: 80px;
+        height: 80px;
+        flex-shrink: 0;
+        margin-bottom: 1.75rem;
+        position: relative;
+        z-index: 1;
+        animation: sc-popIn 0.6s 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+
+    .sc-check-ring svg { width: 100%; height: 100%; }
+
+    .sc-circle {
+        fill: none;
+        stroke: var(--gold);
+        stroke-width: 2.5;
+        stroke-dasharray: 220;
+        stroke-dashoffset: 220;
+        animation: sc-drawCircle 0.8s 0.5s ease forwards;
+    }
+
+    .sc-tick {
+        fill: none;
+        stroke: var(--gold-light);
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 60;
+        stroke-dashoffset: 60;
+        animation: sc-drawTick 0.4s 1.1s ease forwards;
+    }
+
+    /* ── HERO TEXT ───────────────────────────────────────────── */
+    .sc-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 0.75rem;
+        text-align: center;
+        width: 100%;
+        position: relative;
+        z-index: 1;
+    }
+
+    .sc-title {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: clamp(2rem, 5vw, 3rem);
+        font-weight: 700;
+        color: var(--white);
+        line-height: 1.15;
+        margin-bottom: 1rem;
+        text-align: center;
+        width: 100%;
+        position: relative;
+        z-index: 1;
+    }
+
+    .sc-sub {
+        font-size: clamp(0.9rem, 2vw, 1.05rem);
+        color: var(--gray-300);
+        font-weight: 300;
+        max-width: 520px;
+        width: 100%;
+        margin: 0 auto;
+        line-height: 1.75;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+    }
+
+    .sc-sub strong {
+        color: var(--gold-light);
+        font-weight: 600;
+    }
+
+    /* ── BODY CARD ───────────────────────────────────────────── */
+    .sc-body {
+        background: var(--white);
+        border-radius: 0 0 20px 20px;
+        padding: clamp(2rem, 5vw, 3rem) clamp(1.5rem, 5vw, 3.5rem);
+        box-shadow: var(--shadow-card);
+    }
+
+    /* ── REFERENCE STRIP ─────────────────────────────────────── */
+    .sc-ref-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: var(--gray-100);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 2.5rem;
+    }
+
+    .sc-ref-cell {
+        background: var(--white);
+        padding: 1.25rem 1rem;
+        text-align: center;
+    }
+
+    .sc-ref-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--gray-500);
+        margin-bottom: 0.4rem;
+    }
+
+    .sc-ref-value {
+        font-family: 'DM Mono', 'Courier New', monospace;
+        font-size: clamp(0.95rem, 2.5vw, 1.2rem);
+        font-weight: 500;
+        color: var(--navy);
+    }
+
+    .sc-ref-value.sc-highlight {
+        color: var(--gold);
+        font-size: clamp(1rem, 3vw, 1.35rem);
+    }
+
+    /* ── GREETING ────────────────────────────────────────────── */
+    .sc-greeting {
+        border-left: 3px solid var(--gold);
+        padding: 1.25rem 1.5rem;
+        background: var(--gold-pale);
+        border-radius: 0 10px 10px 0;
+        margin-bottom: 2.5rem;
+    }
+
+    .sc-greeting p {
+        font-size: clamp(0.9rem, 2vw, 1rem);
+        color: var(--gray-700);
+        line-height: 1.75;
+    }
+
+    .sc-greeting strong { color: var(--navy); font-weight: 600; }
+
+    /* ── SECTION LABEL ───────────────────────────────────────── */
+    .sc-section-label {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--gray-500);
+        margin-bottom: 1.25rem;
+        display: block;
+    }
+
+    /* ── PROCESS STEPS ───────────────────────────────────────── */
+    .sc-steps {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .sc-step {
+        border: 1px solid var(--gray-100);
+        border-radius: 12px;
+        padding: 1.25rem 1rem;
+        text-align: center;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        animation: sc-fadeUp 0.5s both;
+    }
+
+    .sc-step:nth-child(1) { animation-delay: 0.15s; }
+    .sc-step:nth-child(2) { animation-delay: 0.25s; }
+    .sc-step:nth-child(3) { animation-delay: 0.35s; }
+
+    .sc-step:hover {
+        border-color: var(--gold-light);
+        box-shadow: var(--shadow-soft);
+    }
+
+    .sc-step-num {
+        width: 32px;
+        height: 32px;
+        background: var(--navy);
+        color: var(--gold);
+        border-radius: 50%;
+        font-size: 0.9rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.75rem;
+    }
+
+    .sc-step-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--navy);
+        margin-bottom: 0.3rem;
+    }
+
+    .sc-step-desc {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+        line-height: 1.5;
+    }
+
+    /* ── DIVIDER ─────────────────────────────────────────────── */
+    .sc-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--gray-100), transparent);
+        margin: 2rem 0;
+    }
+
+    /* ── LINKS GRID ──────────────────────────────────────────── */
+    .sc-links {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .sc-link-tile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0.875rem 1rem;
+        border: 1px solid var(--gray-100);
+        border-radius: 10px;
+        text-decoration: none;
+        color: var(--navy);
+        font-size: 0.85rem;
+        font-weight: 500;
+        background: var(--white);
+        transition: all 0.2s;
+    }
+
+    .sc-link-tile:hover {
+        border-color: var(--teal-light);
+        background: rgba(26,127,116,0.04);
+        color: var(--teal);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-soft);
+    }
+
+    .sc-link-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: var(--gray-100);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        transition: background 0.2s;
+    }
+
+    .sc-link-tile:hover .sc-link-icon { background: rgba(26,127,116,0.1); }
+
+    /* ── ACTION BUTTONS ──────────────────────────────────────── */
+    .sc-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .sc-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0.875rem 1.5rem;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.25s;
+        letter-spacing: 0.01em;
+    }
+
+    .sc-btn-primary {
+        background: var(--navy);
+        color: var(--white);
+        grid-column: span 2;
+    }
+
+    /* color: var(--white) kept on hover so it never inherits body text color */
+    .sc-btn-primary:hover {
+        background: var(--navy-light);
+        color: var(--white);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(11,31,58,0.2);
+    }
+
+    .sc-btn-outline {
+        background: transparent;
+        color: var(--navy);
+        border: 1.5px solid var(--gray-300);
+    }
+
+    .sc-btn-outline:hover {
+        border-color: var(--navy);
+        background: var(--gray-100);
+        color: var(--navy);
+        transform: translateY(-2px);
+    }
+
+    .sc-btn-gold {
+        background: var(--gold);
+        color: var(--white);
+    }
+
+    .sc-btn-gold:hover {
+        background: var(--gold-light);
+        color: var(--white);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-gold);
+    }
+
+    /* ── EMAIL NOTE ──────────────────────────────────────────── */
+    .sc-email-note {
+        margin-top: 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 1rem 1.25rem;
+        background: var(--gray-100);
+        border-radius: 10px;
+        font-size: 0.8rem;
+        color: var(--gray-500);
+        line-height: 1.6;
+    }
+
+    .sc-email-note-icon {
+        font-size: 1rem;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    /* ── ANIMATIONS ──────────────────────────────────────────── */
+    @keyframes sc-riseIn {
+        from { opacity: 0; transform: translateY(28px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes sc-popIn {
+        from { opacity: 0; transform: scale(0.5); }
+        to   { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes sc-drawCircle {
+        to { stroke-dashoffset: 0; }
+    }
+
+    @keyframes sc-drawTick {
+        to { stroke-dashoffset: 0; }
+    }
+
+    @keyframes sc-fadeUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ──────────────────────────────────────────── */
+    @media (max-width: 640px) {
+        .sc-steps {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
         }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(145deg, var(--primary) 0%, var(--primary-dark) 100%);
-            min-height: 100vh;
+
+        .sc-step {
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 24px;
-            line-height: 1.5;
-            color: var(--gray-800);
+            gap: 1rem;
+            text-align: left;
+            padding: 1rem 1.25rem;
         }
-        
-        /* ---------- MAIN CONTAINER ---------- */
-        .success-wrapper {
-            max-width: 900px;
-            width: 100%;
-            animation: fadeInUp 0.6s ease-out;
-        }
-        
-        /* ---------- CARD COMPONENT ---------- */
-        .success-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-lg);
-            overflow: hidden;
-        }
-        
-        /* ---------- HEADER SECTION ---------- */
-        .success-header {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            padding: 48px 32px;
-            text-align: center;
-            position: relative;
-        }
-        
-        .success-header::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, var(--accent), var(--accent-dark));
-        }
-        
-        .checkmark-circle {
-            width: 96px;
-            height: 96px;
-            background: var(--white);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-            box-shadow: var(--shadow-md);
-            animation: bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
-        
-        .checkmark-circle i {
-            font-size: 52px;
-            color: var(--success);
-        }
-        
-        .success-header h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: var(--white);
-            margin-bottom: 12px;
-            letter-spacing: -0.02em;
-        }
-        
-        .success-header p {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.95);
-            font-weight: 400;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        
-        /* ---------- BODY SECTION ---------- */
-        .success-body {
-            padding: 48px;
-        }
-        
-        .greeting {
-            font-size: 1.3rem;
-            margin-bottom: 20px;
-            color: var(--gray-800);
-            font-weight: 500;
-        }
-        
-        .greeting span {
-            color: var(--primary);
-            font-weight: 700;
-            border-bottom: 3px solid var(--accent);
-            padding-bottom: 4px;
-        }
-        
-        .message-confirmation {
-            background: var(--primary-light);
-            padding: 24px;
-            border-radius: var(--radius);
-            border-left: 6px solid var(--primary);
-            margin-bottom: 32px;
-            font-size: 1.05rem;
-            color: var(--gray-700);
-        }
-        
-        /* ---------- INFO GRID (REFERENCE, DATE, RESPONSE TIME) ---------- */
-        .info-highlight {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            margin: 32px 0;
-            padding: 24px;
-            background: var(--gray-50);
-            border-radius: var(--radius);
-            border: 1px solid var(--gray-200);
-        }
-        
-        .info-item {
-            text-align: center;
-        }
-        
-        .info-label {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--gray-600);
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        
-        .info-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary);
-            font-family: 'Inter', sans-serif;
-        }
-        
-        .info-value small {
-            font-size: 0.9rem;
-            color: var(--gray-600);
-            font-weight: 400;
-        }
-        
-        /* ---------- TIMELINE / PROCESS ---------- */
-        .process-timeline {
-            margin: 40px 0;
-            padding: 28px;
-            background: var(--white);
-            border: 2px dashed var(--accent);
-            border-radius: var(--radius);
-        }
-        
-        .process-timeline h3 {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .timeline-steps {
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-        }
-        
-        .step {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .step-number {
-            width: 44px;
-            height: 44px;
-            background: var(--accent);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--gray-900);
-            font-weight: 800;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-        
-        .step-content {
-            font-weight: 600;
-            color: var(--gray-800);
-        }
-        
-        .step-content small {
-            display: block;
-            font-size: 0.8rem;
-            color: var(--gray-600);
-            font-weight: 400;
-            margin-top: 4px;
-        }
-        
-        /* ---------- NEXT STEPS / RESOURCES ---------- */
-        .next-steps {
-            margin: 40px 0 32px;
-            padding: 28px;
-            background: linear-gradient(145deg, var(--primary-light), var(--white));
-            border-radius: var(--radius);
-            border: 1px solid var(--gray-200);
-        }
-        
-        .next-steps h4 {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--primary-dark);
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .resources-list {
-            list-style: none;
-            padding: 0;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-        }
-        
-        .resources-list li {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 0;
-        }
-        
-        .resources-list i {
-            color: var(--accent-dark);
-            width: 20px;
-            text-align: center;
-        }
-        
-        .resources-list a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s;
-        }
-        
-        .resources-list a:hover {
-            color: var(--primary-dark);
-            text-decoration: underline;
-        }
-        
-        /* ---------- ACTION BUTTONS ---------- */
-        .action-group {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
-            margin-top: 40px;
-            flex-wrap: wrap;
-        }
-        
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 14px 32px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-        }
-        
-        .btn-primary {
-            background: var(--primary);
-            color: var(--white);
-            box-shadow: var(--shadow-md);
-        }
-        
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-lg);
-        }
-        
-        .btn-secondary {
-            background: var(--white);
-            color: var(--primary);
-            border: 2px solid var(--primary);
-        }
-        
-        .btn-secondary:hover {
-            background: var(--primary-light);
-            transform: translateY(-3px);
-        }
-        
-        .btn-accent {
-            background: var(--accent);
-            color: var(--gray-900);
-            border: 2px solid var(--accent);
-        }
-        
-        .btn-accent:hover {
-            background: var(--accent-dark);
-            border-color: var(--accent-dark);
-            transform: translateY(-3px);
-        }
-        
-        /* ---------- FOOTER NOTE ---------- */
-        .email-confirmation {
-            margin-top: 40px;
-            padding: 20px;
-            background: var(--gray-50);
-            border-radius: var(--radius);
-            text-align: center;
-            color: var(--gray-600);
-            font-size: 0.95rem;
-            border: 1px solid var(--gray-200);
-        }
-        
-        /* ---------- ANIMATIONS ---------- */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes bounceIn {
-            0% {
-                opacity: 0;
-                transform: scale(0.3);
-            }
-            50% {
-                opacity: 1;
-                transform: scale(1.1);
-            }
-            70% {
-                transform: scale(0.9);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-        
-        /* ---------- RESPONSIVE DESIGN ---------- */
-        @media (max-width: 768px) {
-            .success-header {
-                padding: 40px 24px;
-            }
-            
-            .success-header h1 {
-                font-size: 2rem;
-            }
-            
-            .success-body {
-                padding: 32px 24px;
-            }
-            
-            .info-highlight {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            .timeline-steps {
-                flex-direction: column;
-            }
-            
-            .step {
-                width: 100%;
-            }
-            
-            .resources-list {
-                grid-template-columns: 1fr;
-            }
-            
-            .action-group {
-                flex-direction: column;
-            }
-            
-            .btn {
-                width: 100%;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .success-header h1 {
-                font-size: 1.75rem;
-            }
-            
-            .greeting {
-                font-size: 1.1rem;
-            }
-            
-            .info-value {
-                font-size: 1.3rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="success-wrapper">
-        <div class="success-card">
-            <!-- HEADER: Success Icon & Title -->
-            <div class="success-header">
-                <div class="checkmark-circle">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <h1>Message Sent!</h1>
-                <p>We've received your inquiry</p>
+
+        .sc-step-num { margin: 0; flex-shrink: 0; }
+
+        .sc-actions         { grid-template-columns: 1fr; }
+        .sc-btn-primary     { grid-column: span 1; }
+    }
+
+    @media (max-width: 420px) {
+        .sc-ref-strip   { grid-template-columns: 1fr; gap: 1px; }
+        .sc-ref-cell    { padding: 1rem; }
+        .sc-links       { grid-template-columns: 1fr 1fr; }
+        .sc-hero        { border-radius: 16px 16px 0 0; }
+        .sc-body        { border-radius: 0 0 16px 16px; }
+    }
+
+    @media (min-width: 1024px) {
+        .sc-panel { max-width: 820px; }
+    }
+</style>
+
+<section class="success-section">
+    <div class="sc-panel">
+
+        <!-- Hero -->
+        <div class="sc-hero">
+            <div class="sc-check-ring">
+                <svg viewBox="0 0 80 80">
+                    <circle class="sc-circle" cx="40" cy="40" r="34" transform="rotate(-90 40 40)"/>
+                    <polyline class="sc-tick" points="24,41 34,52 56,30"/>
+                </svg>
             </div>
-            
-            <!-- BODY: Confirmation & Details -->
-            <div class="success-body">
-                <!-- Personalized Greeting -->
-                <div class="greeting">
-                    <i class="fas fa-user-check" style="color: var(--primary); margin-right: 8px;"></i>
-                    Dear <span><?php echo htmlspecialchars($name); ?></span>,
+            <p class="sc-label">Submission Confirmed</p>
+            <h1 class="sc-title">Message Received</h1>
+            <p class="sc-sub">
+                Thank you, <strong><?php echo htmlspecialchars($name); ?></strong>.
+                Your inquiry has been delivered to our team and will be reviewed promptly.
+            </p>
+        </div>
+
+        <!-- Body -->
+        <div class="sc-body">
+
+            <!-- Reference Strip -->
+            <div class="sc-ref-strip">
+                <div class="sc-ref-cell">
+                    <div class="sc-ref-label">Reference</div>
+                    <div class="sc-ref-value sc-highlight">#<?php echo htmlspecialchars($reference); ?></div>
                 </div>
-                
-                <!-- Confirmation Message -->
-                <div class="message-confirmation">
-                    <i class="fas fa-check-circle" style="color: var(--success); margin-right: 10px;"></i>
-                    Thank you for contacting FCT College of Nursing Sciences. 
-                    Your message has been successfully delivered to our administrative team.
+                <div class="sc-ref-cell">
+                    <div class="sc-ref-label">Date Submitted</div>
+                    <div class="sc-ref-value"><?php echo date('d M Y'); ?></div>
                 </div>
-                
-                <!-- Key Information: Reference, Date, Response Time -->
-                <div class="info-highlight">
-                    <div class="info-item">
-                        <div class="info-label">
-                            <i class="fas fa-hashtag"></i> Reference
-                        </div>
-                        <div class="info-value">#<?php echo htmlspecialchars($reference); ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">
-                            <i class="fas fa-calendar"></i> Date
-                        </div>
-                        <div class="info-value"><?php echo date('M d, Y'); ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">
-                            <i class="fas fa-clock"></i> Response
-                        </div>
-                        <div class="info-value">24-48 <small>hours</small></div>
-                    </div>
-                </div>
-                
-                <!-- Process Timeline: What Happens Next -->
-                <div class="process-timeline">
-                    <h3>
-                        <i class="fas fa-tasks" style="color: var(--accent);"></i>
-                        Our Response Process
-                    </h3>
-                    <div class="timeline-steps">
-                        <div class="step">
-                            <div class="step-number">1</div>
-                            <div class="step-content">
-                                Review
-                                <small>Quality check & department routing</small>
-                            </div>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">2</div>
-                            <div class="step-content">
-                                Assign
-                                <small>Directed to specialist</small>
-                            </div>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">3</div>
-                            <div class="step-content">
-                                Respond
-                                <small>Reply sent to your email</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Resources: What To Do While Waiting -->
-                <div class="next-steps">
-                    <h4>
-                        <i class="fas fa-compass" style="color: var(--accent);"></i>
-                        Explore While You Wait
-                    </h4>
-                    <ul class="resources-list">
-                        <li>
-                            <i class="fas fa-graduation-cap"></i>
-                            <a href="<?php echo $baseUrl; ?>programs">Academic Programs</a>
-                        </li>
-                        <li>
-                            <i class="fas fa-file-signature"></i>
-                            <a href="<?php echo $baseUrl; ?>admissions">Admission Requirements</a>
-                        </li>
-                        <li>
-                            <i class="fas fa-calendar-alt"></i>
-                            <a href="<?php echo $baseUrl; ?>events">Upcoming Events</a>
-                        </li>
-                        <li>
-                            <i class="fas fa-map-marker-alt"></i>
-                            <a href="<?php echo $baseUrl; ?>campus-tour">Schedule Campus Tour</a>
-                        </li>
-                        <li>
-                            <i class="fas fa-question-circle"></i>
-                            <a href="<?php echo $baseUrl; ?>faq">Frequently Asked Questions</a>
-                        </li>
-                        <li>
-                            <i class="fas fa-dollar-sign"></i>
-                            <a href="<?php echo $baseUrl; ?>financial-aid">Financial Aid</a>
-                        </li>
-                    </ul>
-                </div>
-                
-                <!-- Call to Action Buttons -->
-                <div class="action-group">
-                    <a href="<?php echo $baseUrl; ?>" class="btn btn-secondary">
-                        <i class="fas fa-home"></i> Home
-                    </a>
-                    <a href="<?php echo $baseUrl; ?>admissions/apply" class="btn btn-accent">
-                        <i class="fas fa-pencil-alt"></i> Apply Now
-                    </a>
-                    <a href="<?php echo $baseUrl; ?>contact" class="btn btn-primary">
-                        <i class="fas fa-envelope"></i> New Message
-                    </a>
-                </div>
-                
-                <!-- Email Confirmation Note -->
-                <div class="email-confirmation">
-                    <i class="fas fa-envelope-open-text" style="margin-right: 8px; color: var(--primary);"></i>
-                    A confirmation has been sent to your email. 
-                    Please check your spam folder if not received within 15 minutes.
+                <div class="sc-ref-cell">
+                    <div class="sc-ref-label">Response Time</div>
+                    <div class="sc-ref-value">24 – 48 hrs</div>
                 </div>
             </div>
+
+            <!-- Greeting -->
+            <div class="sc-greeting">
+                <p>
+                    Dear <strong><?php echo htmlspecialchars($name); ?></strong>, your message has been logged
+                    under reference <strong>#<?php echo htmlspecialchars($reference); ?></strong> and routed to the
+                    appropriate department. A member of our team will respond to your
+                    <?php if (!empty($subject)): ?>
+                        inquiry regarding <strong>"<?php echo htmlspecialchars($subject); ?>"</strong>
+                    <?php else: ?>
+                        inquiry
+                    <?php endif; ?>
+                    within 24–48 working hours.
+                </p>
+            </div>
+
+            <!-- Process Steps -->
+            <span class="sc-section-label">What happens next</span>
+            <div class="sc-steps">
+                <div class="sc-step">
+                    <div class="sc-step-num">1</div>
+                    <div>
+                        <div class="sc-step-title">Review</div>
+                        <div class="sc-step-desc">Your submission is reviewed and assigned to the right department</div>
+                    </div>
+                </div>
+                <div class="sc-step">
+                    <div class="sc-step-num">2</div>
+                    <div>
+                        <div class="sc-step-title">Prepare</div>
+                        <div class="sc-step-desc">A specialist prepares a thorough and accurate response</div>
+                    </div>
+                </div>
+                <div class="sc-step">
+                    <div class="sc-step-num">3</div>
+                    <div>
+                        <div class="sc-step-title">Respond</div>
+                        <div class="sc-step-desc">Reply sent directly to your email within 24–48 hours</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sc-divider"></div>
+
+            <!-- Explore Links -->
+            <span class="sc-section-label">Explore while you wait</span>
+            <div class="sc-links">
+                <a href="<?php echo htmlspecialchars($baseUrl); ?>programs" class="sc-link-tile">
+                    <span class="sc-link-icon">🎓</span> Academic Programs
+                </a>
+                <a href="<?php echo htmlspecialchars($baseUrl); ?>admissions" class="sc-link-tile">
+                    <span class="sc-link-icon">📋</span> Admissions
+                </a>
+                <a href="<?php echo htmlspecialchars($baseUrl); ?>news" class="sc-link-tile">
+                    <span class="sc-link-icon">📰</span> Latest News
+                </a>
+                <a href="<?php echo htmlspecialchars($baseUrl); ?>contact" class="sc-link-tile">
+                    <span class="sc-link-icon">✉️</span> New Message
+                </a>
+            </div>
+
+            <div class="sc-divider"></div>
+
+            <!-- Actions -->
+            <div class="sc-actions">
+                <a href="<?php echo htmlspecialchars($baseUrl); ?>admissions/apply" class="sc-btn sc-btn-gold">
+                    ✏️ Apply Now
+                </a>
+                <a href="<?php echo htmlspecialchars($baseUrl); ?>programs" class="sc-btn sc-btn-outline">
+                    View Programs
+                </a>
+                <a href="<?php echo htmlspecialchars($baseUrl); ?>" class="sc-btn sc-btn-primary">
+                    ← Return to Homepage
+                </a>
+            </div>
+
+            <!-- Email Note -->
+            <div class="sc-email-note">
+                <span class="sc-email-note-icon">📬</span>
+                <span>
+                    A confirmation email has been sent to your inbox.
+                    If you don't see it within 15 minutes, please check your spam or junk folder.
+                    Quote reference <strong style="color: var(--gray-700);">#<?php echo htmlspecialchars($reference); ?></strong> in any follow-up correspondence.
+                </span>
+            </div>
+
         </div>
-        
-        <!-- Brand Signature -->
-        <div style="text-align: center; margin-top: 24px; color: rgba(255,255,255,0.8); font-size: 0.85rem;">
-            FCT College of Nursing Sciences, Gwagwalada — Excellence in Nursing Education
-        </div>
+        <!-- /sc-body -->
+
     </div>
-</body>
-</html>
+    <!-- /sc-panel -->
+</section>
