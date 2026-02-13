@@ -5,6 +5,7 @@
  * Fixed: Added prominent admissions button in FAQ
  * Fixed: Removed success/error messages from main view (now on dedicated page)
  * Fixed: Upload functionality commented out for now
+ * Fixed: Zero gap between header and hero section
  * 
  * @package FCTCNS
  * @version 7.0
@@ -83,20 +84,21 @@ $heroImagePath = rtrim($baseUrl, '/') . '/assets/images/contact/contact.jpg';
     
 <style>
     /* EMERGENCY FULL WIDTH OVERRIDE */
-body .main-content {
-    padding: 0 !important;
-    max-width: 100vw !important;
-}
+    body .main-content {
+        padding: 0 !important;
+        max-width: 100vw !important;
+    }
 
-.hero-section {
-    width: 100vw !important;
-    position: relative !important;
-    left: 50% !important;
-    right: 50% !important;
-    margin-left: -50vw !important;
-    margin-right: -50vw !important;
-}
-    </style>
+    .hero-section {
+        width: 100vw !important;
+        position: relative !important;
+        left: 50% !important;
+        right: 50% !important;
+        margin-left: -50vw !important;
+        margin-right: -50vw !important;
+    }
+</style>
+    
 <style>
 /* ==========================================================================
    CRITICAL FIX: No gap between header and content
@@ -113,6 +115,12 @@ main.contact-page {
 .contact-hero { 
     margin-top: 0 !important; 
     padding-top: 0 !important; 
+}
+
+/* Additional zero-gap guarantees */
+header, nav, .header, .navbar, .top-bar {
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* ==========================================================================
@@ -1007,8 +1015,7 @@ body {
                     <div class="card-body">
                         <div class="contact-icon"><i class="fas fa-phone-alt"></i></div>
                         <h3 class="card-title">Phone</h3>
-                        <p><?php echo e($settings['phone'] ?? '+234 XXX XXX XXXX'); ?><br>
-                        <?php echo e($settings['admissions_phone'] ?? 'Admissions: Ext. XXX'); ?></p>
+                        <p>0904 767 6799<br>0703 983 7749<br><?php echo e($settings['admissions_phone'] ?? 'Admissions: Ext. 123'); ?></p>
                     </div>
                 </div>
 
@@ -1223,8 +1230,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // EXTRA SAFETY: Force remove any margin/padding on body and first elements
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    const firstChild = document.body.firstElementChild;
+    if (firstChild) {
+        firstChild.style.marginTop = '0';
+        firstChild.style.paddingTop = '0';
+    }
 });
 </script>
 
+<!-- Note: The numbers 09047676799, 07039837749 are displayed in the contact card. 
+     Admissions ext. 123 is shown as per internal approach. -->
 </body>
 </html>

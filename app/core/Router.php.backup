@@ -27,13 +27,6 @@ class Router {
     }
 
     /**
-     * Helper function for safe string operations
-     */
-    private function safeStr($value) {
-        return is_string($value) ? $value : '';
-    }
-
-    /**
      * Register all application routes
      */
     private function registerRoutes() {
@@ -60,9 +53,9 @@ class Router {
             
             echo "<h3>Current Request:</h3>";
             echo "<pre>";
-            echo "REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? 'NOT SET') . "\n";
-            echo "SCRIPT_NAME: " . ($_SERVER['SCRIPT_NAME'] ?? 'NOT SET') . "\n";
-            echo "PHP_SELF: " . ($_SERVER['PHP_SELF'] ?? 'NOT SET') . "\n";
+            echo "REQUEST_URI: " . $_SERVER['REQUEST_URI'] . "\n";
+            echo "SCRIPT_NAME: " . $_SERVER['SCRIPT_NAME'] . "\n";
+            echo "PHP_SELF: " . $_SERVER['PHP_SELF'] . "\n";
             echo "BASE_URL: " . (defined('BASE_URL') ? BASE_URL : 'NOT DEFINED') . "\n";
             echo "</pre>";
             
@@ -117,7 +110,7 @@ class Router {
         $this->get('/', 'PageController@home');
         $this->get('/about', 'PageController@about');
         $this->get('/programs', 'PageController@programs');
-        $this->get('/admission', 'AdmissionController@index'); // FIXED: Changed from /admissions to /admission
+        $this->get('/admissions', 'PageController@admissions');
         $this->get('/faculty', 'PageController@faculty');
         $this->get('/alumni', 'PageController@alumni');
         $this->get('/student-life', 'PageController@studentLife');
@@ -396,9 +389,9 @@ class Router {
                 echo "<h1>Debug Test Route</h1>";
                 echo "<p>This route works!</p>";
                 echo "<pre>";
-                echo "REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? 'NOT SET') . "\n";
-                echo "SCRIPT_NAME: " . ($_SERVER['SCRIPT_NAME'] ?? 'NOT SET') . "\n";
-                echo "PHP_SELF: " . ($_SERVER['PHP_SELF'] ?? 'NOT SET') . "\n";
+                echo "REQUEST_URI: " . $_SERVER['REQUEST_URI'] . "\n";
+                echo "SCRIPT_NAME: " . $_SERVER['SCRIPT_NAME'] . "\n";
+                echo "PHP_SELF: " . $_SERVER['PHP_SELF'] . "\n";
                 echo "</pre>";
             });
             
@@ -639,24 +632,15 @@ class Router {
      * Match current request to a route - FIXED VERSION
      */
     public function match() {
-        $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $requestMethod = $_SERVER['REQUEST_METHOD'];
+        $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         
-        // FIX: Ensure request URI is a string
-        $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
-        $requestUri = $this->safeStr($requestUri);
-        
-        if (empty($requestUri)) {
-            $requestUri = '/';
-        }
-        
-        $scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
-        $scriptDir = $this->safeStr($scriptDir);
-        
-        if ($scriptDir !== '/' && $scriptDir !== '\\' && strpos($requestUri, $scriptDir) === 0) {
+        $scriptDir = dirname($_SERVER['SCRIPT_NAME']);
+        if ($scriptDir !== '/' && strpos($requestUri, $scriptDir) === 0) {
             $requestUri = substr($requestUri, strlen($scriptDir));
         }
         
-        if ($requestUri === '' || $requestUri === false) {
+        if ($requestUri === '') {
             $requestUri = '/';
         }
         
@@ -671,12 +655,13 @@ class Router {
         error_log("  Routes count: " . count($this->routes));
         
         foreach ($this->routes as $route) {
-            // Check method match
-            $methodMatches = false;
-            
             if ($route['method'] === 'PUT' || $route['method'] === 'DELETE') {
                 if ($requestMethod === 'POST' && isset($_POST['_method'])) {
-                    $methodMatches = ($_POST['_method'] === $route['method']);
+                    if ($_POST['_method'] === $route['method']) {
+                        $methodMatches = true;
+                    } else {
+                        $methodMatches = false;
+                    }
                 } else {
                     $methodMatches = ($requestMethod === $route['method']);
                 }
@@ -734,8 +719,7 @@ class Router {
         if (isset($_SESSION['user_role'])) {
             require_once APP_PATH . '/middleware/RoleRedirectMiddleware.php';
             
-            $currentRoute = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
-            $currentRoute = $this->safeStr($currentRoute);
+            $currentRoute = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
             
             if (!RoleRedirectMiddleware::isAllowedRoute($currentRoute)) {
                 $redirectUrl = RoleRedirectMiddleware::redirect();
@@ -868,7 +852,6 @@ class Router {
             }
         }
         
-        $baseUrl = defined('BASE_URL') ? BASE_URL : '/';
         echo "<!DOCTYPE html>
         <html>
         <head>
@@ -881,8 +864,8 @@ class Router {
         <body>
             <h1>404 - Page Not Found</h1>
             <p>The page you requested could not be found.</p>
-            <p>Requested URL: " . htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') . "</p>
-            <p><a href='" . $baseUrl . "'>Return to Homepage</a></p>
+            <p>Requested URL: " . htmlspecialchars($_SERVER['REQUEST_URI']) . "</p>
+            <p><a href='" . (defined('BASE_URL') ? BASE_URL : '/') . "'>Return to Homepage</a></p>
         </body>
         </html>";
         exit;

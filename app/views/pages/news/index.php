@@ -1459,18 +1459,17 @@ body .main-content {
     </div>
     <?php else: ?>
 
-    <!-- ── FEATURED ARTICLE ── -->
+    <!-- ── FEATURED ARTICLE (DYNAMIC) ── -->
     <div class="np-featured-wrap">
-        <article class="np-featured">
-            <?php
-            /* Resolve featured hero image:
-             * 1. First item in $featuredNews that has an image
-             * 2. First item in $news that has an image
-             * 3. Fall back to local asset path (gradient bg shows if file missing)
-             */
+        <?php
+        // Get the featured article - first from $featuredNews, fallback to first news item
+        $featuredItem = !empty($featuredNews) ? $featuredNews[0] : (!empty($news) ? $news[0] : null);
+        
+        if ($featuredItem):
+            // Resolve featured hero image
             $_fImg = '';
-            if (!empty($featuredNews) && !empty($featuredNews[0]['featured_image'])) {
-                $_fImg = getImageUrl($featuredNews[0]['featured_image']);
+            if (!empty($featuredItem['featured_image'])) {
+                $_fImg = getImageUrl($featuredItem['featured_image']);
             }
             if (empty($_fImg)) {
                 foreach ($news as $_ni) {
@@ -1482,11 +1481,28 @@ body .main-content {
             }
             $_fLocal = $baseUrl . '/assets/images/news/featured-nursing.jpg';
             $_fImg   = $_fImg ?: $_fLocal;
-            ?>
+            
+            // Format dates
+            $publishDate = !empty($featuredItem['publish_date']) ? $featuredItem['publish_date'] : ($featuredItem['created_at'] ?? date('Y-m-d'));
+            $formattedDate = date('F d, Y', strtotime($publishDate));
+            
+            // Get excerpt or create one from content
+            $excerpt = !empty($featuredItem['excerpt']) 
+                ? $featuredItem['excerpt'] 
+                : (isset($featuredItem['content']) ? substr(strip_tags($featuredItem['content']), 0, 150) . '...' : '');
+            
+            // Calculate read time if not provided
+            $readTime = $featuredItem['read_time'] ?? 5;
+            if (empty($featuredItem['read_time']) && !empty($featuredItem['content'])) {
+                $wordCount = str_word_count(strip_tags($featuredItem['content']));
+                $readTime = max(1, round($wordCount / 200));
+            }
+        ?>
+        <article class="np-featured">
             <!-- Image cell (left half) -->
             <div class="np-featured-img-cell">
                 <img src="<?php echo htmlspecialchars($_fImg); ?>"
-                     alt="Nursing students in practical training"
+                     alt="<?php echo htmlspecialchars($featuredItem['title']); ?>"
                      class="np-featured-img"
                      onerror="this.onerror=null; this.style.opacity='0.15';">
             </div>
@@ -1498,46 +1514,51 @@ body .main-content {
             <div class="np-featured-content">
                 <span class="np-featured-tag">
                     <i class="fas fa-star" aria-hidden="true"></i>
-                    Featured — Academic
+                    Featured — <?php echo htmlspecialchars($featuredItem['category'] ?? 'Academic'); ?>
                 </span>
 
                 <h2 class="np-featured-title">
-                    Strengthening Nursing Education Through Practical Training and Innovation
+                    <?php echo htmlspecialchars($featuredItem['title']); ?>
                 </h2>
 
+                <?php if (!empty($excerpt)): ?>
                 <p class="np-featured-excerpt">
-                    The College continues to enhance nursing education by integrating hands-on clinical training, modern learning tools, and evidence-based practices to prepare students for real-world healthcare challenges.
+                    <?php echo htmlspecialchars($excerpt); ?>
                 </p>
+                <?php endif; ?>
 
                 <div class="np-featured-meta">
                     <span class="np-featured-meta-item">
                         <i class="far fa-calendar-alt" aria-hidden="true"></i>
-                        February 10, 2026
+                        <?php echo $formattedDate; ?>
                     </span>
                     <span class="np-featured-meta-item">
                         <i class="far fa-eye" aria-hidden="true"></i>
-                        19 views
+                        <?php echo number_format($featuredItem['views_count'] ?? 0); ?> views
                     </span>
                     <span class="np-featured-meta-item">
                         <i class="far fa-clock" aria-hidden="true"></i>
-                        5 min read
+                        <?php echo $readTime; ?> min read
                     </span>
                 </div>
 
                 <div class="np-featured-actions">
-                    <a href="<?php echo $baseUrl; ?>/news/strengthening-nursing-education"
+                    <a href="<?php echo $baseUrl; ?>/news/<?php echo $featuredItem['slug']; ?>"
                        class="np-btn np-btn--purple">
                         Read Full Article
                         <i class="fas fa-arrow-right" aria-hidden="true"></i>
                     </a>
-                    <a href="<?php echo $baseUrl; ?>/news/category/academic"
+                    <?php if (!empty($featuredItem['category'])): ?>
+                    <a href="<?php echo $baseUrl; ?>/news/category/<?php echo urlencode(strtolower(str_replace(' ', '-', $featuredItem['category']))); ?>"
                        class="np-btn np-btn--ghost">
                         <i class="fas fa-folder" aria-hidden="true"></i>
-                        Academic News
+                        <?php echo htmlspecialchars($featuredItem['category']); ?>
                     </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </article>
+        <?php endif; ?>
     </div>
 
     <!-- ── TWO-COLUMN LAYOUT ── -->
@@ -1620,7 +1641,6 @@ body .main-content {
                              loading="lazy"
                              onerror="this.src='<?php echo $cardFallback; ?>'">
                         
-
                         <?php if (!empty($item['category'])): ?>
                         <span class="np-card-cat"><?php echo htmlspecialchars($item['category']); ?></span>
                         <?php endif; ?>

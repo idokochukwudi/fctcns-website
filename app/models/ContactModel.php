@@ -33,7 +33,7 @@ class ContactModel {
             ':subject'    => $data['subject'],
             ':message'    => $data['message'],
             ':department' => $data['department'] ?? 'general',
-            ':ip'         => $_SERVER['REMOTE_ADDR'],
+            ':ip'         => $_SERVER['REMOTE_ADDR'] ?? '',
             ':agent'      => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown'
         ]);
         
@@ -41,21 +41,15 @@ class ContactModel {
             return false;
         }
         
-        // Capture the ID immediately before any other query runs
         $submissionId = $this->db->lastInsertId();
         
-        // Send auto-response using the captured ID
         $this->sendAutoResponse($submissionId);
         
-        // Return the ID so the controller can use it directly
         return $submissionId;
     }
     
     /**
      * Get the ID of the last inserted record
-     * Used to generate reference number on success page
-     * 
-     * @return string Last insert ID
      */
     public function getLastInsertId() {
         return $this->db->lastInsertId();
@@ -67,6 +61,10 @@ class ContactModel {
     public function sendAutoResponse($submissionId) {
         $submission = $this->getSubmission($submissionId);
         $settings = $this->getContactSettings();
+        
+        if (!$submission) {
+            return false;
+        }
         
         $to = $submission['email'];
         $subject = "We've received your message - FCT College of Nursing Sciences";
@@ -116,7 +114,6 @@ class ContactModel {
     
     /**
      * Generate mailto link for reply
-     * FIXED: Added Yahoo Mail link generation
      */
     public function generateMailtoLink($submission) {
         $replyToEmail = $this->getReplyToEmail($submission);
@@ -134,7 +131,6 @@ class ContactModel {
         $body .= $settings['phone'] ?? "+234 XXX XXX XXXX";
         $body .= "\n" . ($settings['reply_to_email'] ?? 'noreply@fctcns.edu.ng');
         
-        // Encode for URLs
         $encodedTo = rawurlencode($to);
         $encodedSubject = rawurlencode($subject);
         $encodedBody = rawurlencode($body);
@@ -220,7 +216,6 @@ class ContactModel {
     
     /**
      * Update submission status and notes
-     * FIXED: Added rowCount() check to confirm actual changes
      */
     public function updateSubmission($id, $data) {
         $updates = [];
@@ -284,7 +279,6 @@ class ContactModel {
         $stmt = $this->db->query($sql);
         $stats = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        // Get daily stats
         $sql = "SELECT 
                 DATE(created_at) as date,
                 COUNT(*) as daily_count

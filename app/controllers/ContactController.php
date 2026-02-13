@@ -11,14 +11,11 @@ class ContactController extends Controller {
     public function __construct() {
         parent::__construct();
         
-        // Require authentication
         require_once APP_PATH . '/middleware/AuthMiddleware.php';
         AuthMiddleware::authenticate();
         
-        // Set admin layout
         $this->layout = 'admin';
         
-        // Initialize model
         require_once APP_PATH . '/models/ContactModel.php';
         $this->contactModel = new ContactModel();
     }
@@ -71,7 +68,6 @@ class ContactController extends Controller {
             $this->redirect('/admin/contact');
         }
         
-        // Generate mailto links with webmail options
         $mailto = $this->contactModel->generateMailtoLink($submission);
         $settings = $this->contactModel->getContactSettings();
         
@@ -134,7 +130,6 @@ class ContactController extends Controller {
         }
 
         try {
-            // JavaScript sends JSON body, not form data
             $raw   = file_get_contents('php://input');
             $input = json_decode($raw, true);
 
@@ -202,22 +197,18 @@ class ContactController extends Controller {
             $submissions = $this->contactModel->getAllSubmissions($status, 1000);
         }
         
-        // Set headers for CSV download
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=contact_submissions_' . date('Y-m-d') . '.csv');
         
         $output = fopen('php://output', 'w');
         
-        // Add BOM for UTF-8
         fwrite($output, "\xEF\xBB\xBF");
         
-        // Write headers
         fputcsv($output, [
             'ID', 'Name', 'Email', 'Phone', 'Subject', 'Message', 
             'Department', 'Status', 'Created At', 'Responded At', 'Admin Notes'
         ]);
         
-        // Write data
         foreach ($submissions as $submission) {
             fputcsv($output, [
                 $submission['id'],
@@ -242,7 +233,6 @@ class ContactController extends Controller {
      * Contact settings management
      */
     public function settings() {
-        // Only admin can access settings
         if ($_SESSION['user_role'] !== 'admin') {
             $this->flash('error', 'Access denied. Admin privileges required.');
             $this->redirect('/admin/contact');
@@ -278,26 +268,20 @@ class ContactController extends Controller {
             $this->validateCsrf();
             
             $settings = [
-                // Reply-to email addresses
                 'reply_to_email' => trim($this->input('reply_to_email', 'noreply@fctcns.edu.ng')),
                 'support_email' => trim($this->input('support_email', 'support@fctcns.edu.ng')),
                 'billing_email' => trim($this->input('billing_email', 'billing@fctcns.edu.ng')),
                 'admissions_email' => trim($this->input('admissions_email', 'admissions@fctcns.edu.ng')),
                 'academic_email' => trim($this->input('academic_email', 'academic@fctcns.edu.ng')),
-                
-                // General contact info
                 'phone' => trim($this->input('phone', '')),
                 'email' => trim($this->input('email', 'info@fctcns.edu.ng')),
                 'address' => trim($this->input('address', '')),
                 'hours' => trim($this->input('hours', '')),
                 'emergency' => trim($this->input('emergency', '')),
-                
-                // Map settings
                 'map_latitude' => trim($this->input('map_latitude', '9.0765')),
                 'map_longitude' => trim($this->input('map_longitude', '7.3986'))
             ];
             
-            // Validate email formats
             $emailFields = ['reply_to_email', 'support_email', 'billing_email', 'admissions_email', 'academic_email', 'email'];
             foreach ($emailFields as $field) {
                 if (!empty($settings[$field]) && !filter_var($settings[$field], FILTER_VALIDATE_EMAIL)) {
@@ -409,11 +393,8 @@ class ContactController extends Controller {
             $settings = $this->contactModel->getContactSettings();
             $replyToEmail = $this->contactModel->getReplyToEmail($department);
             
-            // Log test email attempt
             error_log("Test email sent to: $email, from department: $department, reply-to: $replyToEmail");
             
-            // Here you would actually send the test email
-            // For now, just return success
             $this->jsonResponse([
                 'success' => true, 
                 'message' => 'Test email sent successfully to ' . $email,

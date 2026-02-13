@@ -9,12 +9,29 @@
 
 extract($data ?? []);
 
-$baseUrl    = $baseUrl ?? '/';
+$baseUrl    = $baseUrl ?? '';
 $submission = $submission ?? null;
 $reference  = $submission['id'] ?? date('Ymd') . rand(100, 999);
 $name       = $submission['name'] ?? 'there';
 $subject    = $submission['subject'] ?? '';
 ?>
+
+<style>
+    /* EMERGENCY FULL WIDTH OVERRIDE */
+body .main-content {
+    padding: 0 !important;
+    max-width: 100vw !important;
+}
+
+.hero-section {
+    width: 100vw !important;
+    position: relative !important;
+    left: 50% !important;
+    right: 50% !important;
+    margin-left: -50vw !important;
+    margin-right: -50vw !important;
+}
+    </style>
 <style>
     /* EMERGENCY FULL WIDTH OVERRIDE */
 body .main-content {
@@ -58,7 +75,6 @@ body .main-content {
         padding: clamp(2rem, 6vw, 4rem) clamp(1rem, 5vw, 2rem);
         display: flex;
         justify-content: center;
-        /* subtle radial accents that sit behind the card */
         background-image:
             radial-gradient(ellipse 70% 40% at 15% 0%, rgba(201,150,58,0.07) 0%, transparent 60%),
             radial-gradient(ellipse 60% 40% at 85% 100%, rgba(26,127,116,0.06) 0%, transparent 60%);
@@ -316,57 +332,12 @@ body .main-content {
         margin: 2rem 0;
     }
 
-    /* ── LINKS GRID ──────────────────────────────────────────── */
-    .sc-links {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 0.75rem;
-        margin-bottom: 2.5rem;
-    }
-
-    .sc-link-tile {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 0.875rem 1rem;
-        border: 1px solid var(--gray-100);
-        border-radius: 10px;
-        text-decoration: none;
-        color: var(--navy);
-        font-size: 0.85rem;
-        font-weight: 500;
-        background: var(--white);
-        transition: all 0.2s;
-    }
-
-    .sc-link-tile:hover {
-        border-color: var(--teal-light);
-        background: rgba(26,127,116,0.04);
-        color: var(--teal);
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-soft);
-    }
-
-    .sc-link-icon {
-        width: 30px;
-        height: 30px;
-        border-radius: 8px;
-        background: var(--gray-100);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-        flex-shrink: 0;
-        transition: background 0.2s;
-    }
-
-    .sc-link-tile:hover .sc-link-icon { background: rgba(26,127,116,0.1); }
-
     /* ── ACTION BUTTONS ──────────────────────────────────────── */
     .sc-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.75rem;
+        margin-top: 1rem;
     }
 
     .sc-btn {
@@ -391,7 +362,6 @@ body .main-content {
         grid-column: span 2;
     }
 
-    /* color: var(--white) kept on hover so it never inherits body text color */
     .sc-btn-primary:hover {
         background: var(--navy-light);
         color: var(--white);
@@ -492,7 +462,6 @@ body .main-content {
     @media (max-width: 420px) {
         .sc-ref-strip   { grid-template-columns: 1fr; gap: 1px; }
         .sc-ref-cell    { padding: 1rem; }
-        .sc-links       { grid-template-columns: 1fr 1fr; }
         .sc-hero        { border-radius: 16px 16px 0 0; }
         .sc-body        { border-radius: 0 0 16px 16px; }
     }
@@ -583,31 +552,12 @@ body .main-content {
 
             <div class="sc-divider"></div>
 
-            <!-- Explore Links -->
-            <span class="sc-section-label">Explore while you wait</span>
-            <div class="sc-links">
-                <a href="<?php echo htmlspecialchars($baseUrl); ?>programs" class="sc-link-tile">
-                    <span class="sc-link-icon">🎓</span> Academic Programs
-                </a>
-                <a href="<?php echo htmlspecialchars($baseUrl); ?>admissions" class="sc-link-tile">
-                    <span class="sc-link-icon">📋</span> Admissions
-                </a>
-                <a href="<?php echo htmlspecialchars($baseUrl); ?>news" class="sc-link-tile">
-                    <span class="sc-link-icon">📰</span> Latest News
-                </a>
-                <a href="<?php echo htmlspecialchars($baseUrl); ?>contact" class="sc-link-tile">
-                    <span class="sc-link-icon">✉️</span> New Message
-                </a>
-            </div>
-
-            <div class="sc-divider"></div>
-
-            <!-- Actions -->
+            <!-- Actions - Simple navigation buttons -->
             <div class="sc-actions">
-                <a href="<?php echo htmlspecialchars($baseUrl); ?>admissions/apply" class="sc-btn sc-btn-gold">
+                <a href="<?php echo htmlspecialchars($baseUrl); ?>/admissions" class="sc-btn sc-btn-gold">
                     ✏️ Apply Now
                 </a>
-                <a href="<?php echo htmlspecialchars($baseUrl); ?>programs" class="sc-btn sc-btn-outline">
+                <a href="<?php echo htmlspecialchars($baseUrl); ?>/programs" class="sc-btn sc-btn-outline">
                     View Programs
                 </a>
                 <a href="<?php echo htmlspecialchars($baseUrl); ?>" class="sc-btn sc-btn-primary">

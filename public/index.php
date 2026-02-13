@@ -18,22 +18,45 @@ $errorLogFile = $logDir . '/app_errors.log';
 ini_set('error_log', $errorLogFile);
 
 // Log request start
-error_log("\n=== " . date('Y-m-d H:i:s') . " - Request: " . $_SERVER['REQUEST_METHOD'] . " " . $_SERVER['REQUEST_URI'] . " ===");
+error_log("\n=== " . date('Y-m-d H:i:s') . " - Request: " . ($_SERVER['REQUEST_METHOD'] ?? 'UNKNOWN') . " " . ($_SERVER['REQUEST_URI'] ?? 'UNKNOWN') . " ===");
+
+// ============================================================================
+// HELPER FUNCTION FOR SAFE STRING OPERATIONS
+// ============================================================================
+function safeStr($value) {
+    return is_string($value) ? $value : '';
+}
+
+function safeContains($haystack, $needle) {
+    $haystack = safeStr($haystack);
+    return strpos($haystack, $needle) !== false;
+}
 
 // ============================================================================
 // CRITICAL FIX: Detect AJAX routes EARLY - before output buffering
 // ============================================================================
-$requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$isAjaxRoute = (
-    strpos($requestUri, '/validate-bulk-upload') !== false ||
-    strpos($requestUri, '/bulk-upload-process') !== false ||
-    strpos($requestUri, '/generate-preview') !== false ||
-    strpos($requestUri, '/export-excel') !== false ||
-    strpos($requestUri, '/export-csv') !== false ||
-    strpos($requestUri, '/api/') !== false ||
-    (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-     strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
-);
+$requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+// FIX: Ensure $requestUri is a string, not null
+$requestUri = safeStr($requestUri);
+
+// FIX: Safely check if it's an AJAX route using null-safe checks
+$isAjaxRoute = false;
+if (!empty($requestUri)) {
+    $isAjaxRoute = (
+        safeContains($requestUri, '/validate-bulk-upload') ||
+        safeContains($requestUri, '/bulk-upload-process') ||
+        safeContains($requestUri, '/generate-preview') ||
+        safeContains($requestUri, '/export-excel') ||
+        safeContains($requestUri, '/export-csv') ||
+        safeContains($requestUri, '/api/')
+    );
+}
+
+// Also check for AJAX header
+if (!$isAjaxRoute && isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+    $ajaxHeader = strtolower(safeStr($_SERVER['HTTP_X_REQUESTED_WITH']));
+    $isAjaxRoute = ($ajaxHeader === 'xmlhttprequest');
+}
 
 // ============================================================================
 // CONDITIONAL OUTPUT BUFFERING - Only for HTML pages, NOT for AJAX/API
@@ -156,9 +179,9 @@ try {
         echo "<h1>Debug Test Route</h1>";
         echo "<p>This route works!</p>";
         echo "<pre>";
-        echo "REQUEST_URI: " . $_SERVER['REQUEST_URI'] . "\n";
-        echo "SCRIPT_NAME: " . $_SERVER['SCRIPT_NAME'] . "\n";
-        echo "PHP_SELF: " . $_SERVER['PHP_SELF'] . "\n";
+        echo "REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? 'NOT SET') . "\n";
+        echo "SCRIPT_NAME: " . ($_SERVER['SCRIPT_NAME'] ?? 'NOT SET') . "\n";
+        echo "PHP_SELF: " . ($_SERVER['PHP_SELF'] ?? 'NOT SET') . "\n";
         echo "</pre>";
     });
     
@@ -352,7 +375,7 @@ try {
                 <body>
                     <h1>404 - Page Not Found</h1>
                     <p>The page you requested could not be found.</p>
-                    <p><a href='" . BASE_URL . "'>Return to Homepage</a></p>
+                    <p><a href='" . (defined('BASE_URL') ? BASE_URL : '/') . "'>Return to Homepage</a></p>
                 </body>
                 </html>";
             }

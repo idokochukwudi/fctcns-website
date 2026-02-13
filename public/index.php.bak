@@ -20,7 +20,28 @@ ini_set('error_log', $errorLogFile);
 // Log request start
 error_log("\n=== " . date('Y-m-d H:i:s') . " - Request: " . $_SERVER['REQUEST_METHOD'] . " " . $_SERVER['REQUEST_URI'] . " ===");
 
-// Rest of your code...
+// ============================================================================
+// CRITICAL FIX: Detect AJAX routes EARLY - before output buffering
+// ============================================================================
+$requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$isAjaxRoute = (
+    strpos($requestUri, '/validate-bulk-upload') !== false ||
+    strpos($requestUri, '/bulk-upload-process') !== false ||
+    strpos($requestUri, '/generate-preview') !== false ||
+    strpos($requestUri, '/export-excel') !== false ||
+    strpos($requestUri, '/export-csv') !== false ||
+    strpos($requestUri, '/api/') !== false ||
+    (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+     strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+);
+
+// ============================================================================
+// CONDITIONAL OUTPUT BUFFERING - Only for HTML pages, NOT for AJAX/API
+// ============================================================================
+if (!$isAjaxRoute) {
+    ob_start(); // Only buffer HTML responses
+}
+
 /**
  * FCT College of Nursing Sciences - Main Entry Point
  * 
@@ -29,13 +50,6 @@ error_log("\n=== " . date('Y-m-d H:i:s') . " - Request: " . $_SERVER['REQUEST_ME
  * 
  * @package FCT_CNS
  */
-
-// ============================================================================
-// BOOTSTRAP THE APPLICATION
-// ============================================================================
-
-// Start output buffering
-ob_start();
 
 // Set timezone
 date_default_timezone_set('Africa/Lagos');
@@ -364,8 +378,11 @@ try {
     }
 }
 
-// Clean output buffer
-if (ob_get_level() > 0) {
+// ============================================================================
+// CRITICAL FIX: Only flush buffer for HTML pages, not AJAX
+// ============================================================================
+if (!$isAjaxRoute && ob_get_level() > 0) {
     ob_end_flush();
 }
+// For AJAX routes, controller handles its own output and exit
 ?>
