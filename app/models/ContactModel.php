@@ -17,6 +17,7 @@ class ContactModel {
     
     /**
      * Save contact form submission
+     * Returns the new submission ID on success, false on failure
      */
     public function saveSubmission($data) {
         $sql = "INSERT INTO contact_submissions 
@@ -26,22 +27,28 @@ class ContactModel {
         $stmt = $this->db->prepare($sql);
         
         $result = $stmt->execute([
-            ':name' => $data['name'],
-            ':email' => $data['email'],
-            ':phone' => $data['phone'] ?? null,
-            ':subject' => $data['subject'],
-            ':message' => $data['message'],
+            ':name'       => $data['name'],
+            ':email'      => $data['email'],
+            ':phone'      => $data['phone'] ?? null,
+            ':subject'    => $data['subject'],
+            ':message'    => $data['message'],
             ':department' => $data['department'] ?? 'general',
-            ':ip' => $_SERVER['REMOTE_ADDR'],
-            ':agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown'
+            ':ip'         => $_SERVER['REMOTE_ADDR'],
+            ':agent'      => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown'
         ]);
         
-        if ($result) {
-            $submissionId = $this->getLastInsertId();
-            $this->sendAutoResponse($submissionId);
+        if (!$result) {
+            return false;
         }
         
-        return $result;
+        // Capture the ID immediately before any other query runs
+        $submissionId = $this->db->lastInsertId();
+        
+        // Send auto-response using the captured ID
+        $this->sendAutoResponse($submissionId);
+        
+        // Return the ID so the controller can use it directly
+        return $submissionId;
     }
     
     /**

@@ -208,8 +208,8 @@ class ContactPageController extends Controller {
             $saved = $this->contactModel->saveSubmission($data);
             
             if ($saved) {
-                // Get the auto-generated ID from the database
-                $submissionId = $this->contactModel->getLastInsertId();
+                // FIX: saveSubmission() now returns the ID directly — no second call needed
+                $submissionId = $saved;
                 
                 // Store submission data in session for the success page
                 $_SESSION['last_submission'] = [
