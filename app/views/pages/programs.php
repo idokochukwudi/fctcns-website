@@ -779,6 +779,21 @@ body {
     .pg-card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
     .pg-card-img-wrap { display: none; }
 }
+
+/* ==========================================================================
+   FIX FOR CLICK ISSUES - Ensure buttons are clickable
+   ========================================================================== */
+.pg-hero-actions .pg-btn {
+    position: relative;
+    z-index: 100;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+.pg-hero-actions {
+    position: relative;
+    z-index: 99;
+}
 </style>
 
 <!-- =====================================================================
@@ -808,10 +823,12 @@ body {
                 </p>
 
                 <div class="pg-hero-actions">
-                    <a href="#programs" class="pg-btn pg-btn--gold pg-btn--lg">
+                    <!-- SIMPLE SOLUTION: Use onclick directly -->
+                    <a href="javascript:void(0);" 
+                       onclick="document.getElementById('accredited-programs').scrollIntoView({behavior: 'smooth', block: 'start'}); return false;"
+                       class="pg-btn pg-btn--gold pg-btn--lg">
                         <i class="fas fa-book-medical"></i> Explore Programs
                     </a>
-                    <!-- FIXED: Added slash after baseUrl to match old code -->
                     <a href="<?php echo $baseUrl; ?>/admissions" class="pg-btn pg-btn--ghost pg-btn--lg">
                         <i class="fas fa-graduation-cap"></i> Apply Now
                     </a>
@@ -843,7 +860,6 @@ body {
     <nav class="pg-breadcrumb" aria-label="Breadcrumb">
         <div class="pg-container">
             <ul class="pg-breadcrumb-list">
-                <!-- FIXED: Added slash after baseUrl -->
                 <li><a href="<?php echo $baseUrl; ?>/"><i class="fas fa-home"></i> Home</a></li>
                 <li><span class="pg-breadcrumb-sep">/</span></li>
                 <li><span class="pg-breadcrumb-current" aria-current="page">Nursing Programs</span></li>
@@ -852,7 +868,8 @@ body {
     </nav>
 
     <!-- ── PROGRAMS GRID ─────────────────────────────────────────────────── -->
-    <div id="programs" class="pg-section">
+    <!-- Added id="accredited-programs" to the section containing the programs -->
+    <section id="accredited-programs" class="pg-section">
         <div class="pg-container">
 
             <div class="pg-section-header">
@@ -914,7 +931,6 @@ body {
                                 <i class="fas fa-shield-halved"></i> NBTE &amp; NMCN Approved
                             </div>
                             <div class="pg-card-actions">
-                                <!-- FIXED: Added slash after baseUrl to match old code -->
                                 <a href="<?php echo $baseUrl; ?>/admissions" class="pg-btn pg-btn--outline pg-btn-sm">Learn More</a>
                                 <a href="<?php echo $baseUrl; ?>/admissions" class="pg-btn pg-btn--purple pg-btn-sm">Apply Now</a>
                             </div>
@@ -961,7 +977,6 @@ body {
                                 <i class="fas fa-arrows-rotate"></i> Transitioning to ND/HND
                             </div>
                             <div class="pg-card-actions">
-                                <!-- FIXED: Added slash after baseUrl to match old code -->
                                 <a href="<?php echo $baseUrl; ?>/admissions" class="pg-btn pg-btn--outline pg-btn-sm">Learn More</a>
                                 <a href="<?php echo $baseUrl; ?>/contact"     class="pg-btn pg-btn--surface pg-btn-sm">Contact Us</a>
                             </div>
@@ -1008,7 +1023,6 @@ body {
                                 <i class="fas fa-arrows-rotate"></i> Transitioning to ND/HND
                             </div>
                             <div class="pg-card-actions">
-                                <!-- FIXED: Added slash after baseUrl to match old code -->
                                 <a href="<?php echo $baseUrl; ?>/admissions" class="pg-btn pg-btn--outline pg-btn-sm">Learn More</a>
                                 <a href="<?php echo $baseUrl; ?>/contact"     class="pg-btn pg-btn--surface pg-btn-sm">Contact Us</a>
                             </div>
@@ -1055,7 +1069,6 @@ body {
                                 <i class="fas fa-arrows-rotate"></i> Transitioning to ND/HND
                             </div>
                             <div class="pg-card-actions">
-                                <!-- FIXED: Added slash after baseUrl to match old code -->
                                 <a href="<?php echo $baseUrl; ?>/admissions" class="pg-btn pg-btn--outline pg-btn-sm">Learn More</a>
                                 <a href="<?php echo $baseUrl; ?>/contact"     class="pg-btn pg-btn--surface pg-btn-sm">Contact Us</a>
                             </div>
@@ -1065,7 +1078,7 @@ body {
 
             </div><!-- /.pg-programs-grid -->
         </div>
-    </div>
+    </section>
 
     <!-- ── CTA SECTION ───────────────────────────────────────────────────── -->
     <div class="pg-section pg-section--alt pg-section--bordered">
@@ -1080,7 +1093,6 @@ body {
                     </p>
                 </div>
                 <div class="pg-cta-card-actions">
-                    <!-- FIXED: Added slash after baseUrl to match old code -->
                     <a href="<?php echo $baseUrl; ?>/admissions" class="pg-btn pg-btn--gold pg-btn--lg">
                         <i class="fas fa-file-alt"></i> Apply Now
                     </a>
@@ -1127,17 +1139,40 @@ body {
         });
     }
 
-    /* Smooth scroll */
-    document.querySelectorAll('a[href^="#"]').forEach(function (a) {
-        a.addEventListener('click', function (e) {
-            var id = a.getAttribute('href');
-            if (id === '#') return;
-            var target = document.querySelector(id);
-            if (target) {
+    // Backup click handler for the explore button
+    setTimeout(function() {
+        var exploreBtn = document.querySelector('.pg-hero-actions .pg-btn--gold');
+        if (exploreBtn) {
+            // Remove any existing onclick to avoid duplicates
+            exploreBtn.onclick = function(e) {
                 e.preventDefault();
-                window.scrollTo({ top: target.offsetTop - 90, behavior: 'smooth' });
-            }
-        });
-    });
+                var target = document.getElementById('accredited-programs');
+                if (target) {
+                    target.scrollIntoView({behavior: 'smooth', block: 'start'});
+                }
+                return false;
+            };
+        }
+    }, 500);
+
+    console.log('Page loaded - Explore Programs button should work');
 })();
+</script>
+
+<!-- Simple inline fallback - this will work even if all else fails -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Direct element selection
+    var exploreButton = document.querySelector('a[href*="accredited-programs"], .pg-btn--gold');
+    if (exploreButton) {
+        exploreButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            var programsSection = document.getElementById('accredited-programs');
+            if (programsSection) {
+                programsSection.scrollIntoView({behavior: 'smooth'});
+            }
+            return false;
+        });
+    }
+});
 </script>
