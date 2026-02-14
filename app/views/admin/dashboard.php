@@ -42,6 +42,59 @@ try {
     $newsHasType = tableHasColumn($conn, 'news', 'type');
     $eventsTableExists = tableHasColumn($conn, 'events', 'id');
     
+    // ===== NEW CODE: Add news and events statistics =====
+    try {
+        // Check if news table has type column (your current structure)
+        $newsHasType = tableHasColumn($conn, 'news', 'type');
+        
+        if ($newsHasType) {
+            // Combined news and events in same table
+            $stmt = $conn->query("
+                SELECT 
+                    COUNT(*) as total_all,
+                    SUM(type = 'news' OR type IS NULL) as total_news,
+                    SUM(type = 'event') as total_events,
+                    SUM((type = 'news' OR type IS NULL) AND is_published = 1) as published_news,
+                    SUM(type = 'event' AND is_published = 1) as published_events,
+                    SUM((type = 'news' OR type IS NULL) AND is_published = 0) as draft_news,
+                    SUM(type = 'event' AND is_published = 0) as draft_events
+                FROM news
+            ");
+            $newsStats = $stmt->fetch();
+            
+            $stats['total_news'] = $newsStats['total_news'] ?? 0;
+            $stats['total_events'] = $newsStats['total_events'] ?? 0;
+            $stats['published_news'] = $newsStats['published_news'] ?? 0;
+            $stats['published_events'] = $newsStats['published_events'] ?? 0;
+            $stats['draft_news'] = $newsStats['draft_news'] ?? 0;
+            $stats['draft_events'] = $newsStats['draft_events'] ?? 0;
+            $stats['total_news_events'] = ($newsStats['total_news'] ?? 0) + ($newsStats['total_events'] ?? 0);
+        } else {
+            // Separate tables
+            $stmt = $conn->query("SELECT COUNT(*) as total FROM news WHERE is_published = 1");
+            $stats['published_news'] = $stmt->fetch()['total'];
+            
+            $stmt = $conn->query("SELECT COUNT(*) as total FROM news");
+            $stats['total_news'] = $stmt->fetch()['total'];
+            
+            $stmt = $conn->query("SELECT COUNT(*) as total FROM events WHERE is_published = 1");
+            $stats['published_events'] = $stmt->fetch()['total'];
+            
+            $stmt = $conn->query("SELECT COUNT(*) as total FROM events");
+            $stats['total_events'] = $stmt->fetch()['total'];
+            
+            $stats['draft_news'] = $stats['total_news'] - $stats['published_news'];
+            $stats['draft_events'] = $stats['total_events'] - $stats['published_events'];
+            $stats['total_news_events'] = $stats['total_news'] + $stats['total_events'];
+        }
+    } catch (Exception $e) {
+        error_log("Error fetching news stats: " . $e->getMessage());
+        $stats['total_news'] = $stats['total_events'] = 0;
+        $stats['published_news'] = $stats['published_events'] = 0;
+        $stats['draft_news'] = $stats['draft_events'] = 0;
+        $stats['total_news_events'] = 0;
+    }
+    
     if ($newsHasType && !$eventsTableExists) {
         // OLD SYSTEM: news table contains both news and events (has type column)
         $queries = [
@@ -49,8 +102,6 @@ try {
             'total_applications' => "SELECT COUNT(*) as total FROM applications",
             'pending_applications' => "SELECT COUNT(*) as total FROM applications WHERE status = 'pending'",
             'total_research' => "SELECT COUNT(*) as total FROM research_publications WHERE is_published = 1",
-            'total_news' => "SELECT COUNT(*) as total FROM news WHERE is_published = 1 AND type = 'news'",
-            'total_events' => "SELECT COUNT(*) as total FROM news WHERE is_published = 1 AND type = 'event'",
             'upcoming_events' => "SELECT COUNT(*) as total FROM news WHERE is_published = 1 AND type = 'event' AND (event_date >= CURDATE() OR event_date IS NULL)",
             'total_contacts' => "SELECT COUNT(*) as total FROM contact_submissions",
             'pending_contacts' => "SELECT COUNT(*) as total FROM contact_submissions WHERE status = 'pending'",
@@ -66,8 +117,6 @@ try {
             'total_applications' => "SELECT COUNT(*) as total FROM applications",
             'pending_applications' => "SELECT COUNT(*) as total FROM applications WHERE status = 'pending'",
             'total_research' => "SELECT COUNT(*) as total FROM research_publications WHERE is_published = 1",
-            'total_news' => "SELECT COUNT(*) as total FROM news WHERE is_published = 1",
-            'total_events' => "SELECT COUNT(*) as total FROM events WHERE is_published = 1",
             'upcoming_events' => "SELECT COUNT(*) as total FROM events WHERE is_published = 1 AND (event_date >= CURDATE() OR event_date IS NULL)",
             'total_contacts' => "SELECT COUNT(*) as total FROM contact_submissions",
             'pending_contacts' => "SELECT COUNT(*) as total FROM contact_submissions WHERE status = 'pending'",
@@ -120,6 +169,11 @@ try {
         'total_research' => 0,
         'total_news' => 0,
         'total_events' => 0,
+        'total_news_events' => 0,
+        'published_news' => 0,
+        'published_events' => 0,
+        'draft_news' => 0,
+        'draft_events' => 0,
         'upcoming_events' => 0,
         'total_contacts' => 0,
         'pending_contacts' => 0
@@ -145,6 +199,7 @@ try {
             --admin-danger: #e53e3e;
             --admin-info: #3182ce;
             --admin-purple: #9f7aea;
+            --admin-news: #4f46e5;
             --admin-gray-50: #f7fafc;
             --admin-gray-100: #edf2f7;
             --admin-gray-200: #e2e8f0;
@@ -491,6 +546,7 @@ try {
             border-left: 4px solid;
             position: relative;
             overflow: hidden;
+            cursor: pointer;
         }
         
         .stat-card:hover {
@@ -1222,6 +1278,28 @@ try {
             <div class="nav-section">
                 <h3 class="nav-section-title">Management</h3>
                 <ul class="nav-links">
+                    <!-- NEWS MANAGER SIDEBAR LINK - Option 4 -->
+                    <?php 
+                    $showNewsManager = in_array($userRole, ['admin', 'editor', 'news_manager']) || 
+                                      (isset($_SESSION['user_roles']) && in_array('news_manager', $_SESSION['user_roles']));
+                    if ($showNewsManager): 
+                    ?>
+                    <li class="nav-item">
+                        <a href="<?php echo BASE_URL; ?>/admin/news-manager" class="nav-link">
+                            <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/>
+                                <path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V7z"/>
+                            </svg>
+                            <span>News & Events</span>
+                            <?php if (($stats['draft_news'] + $stats['draft_events']) > 0): ?>
+                            <span class="nav-badge">
+                                <?php echo $stats['draft_news'] + $stats['draft_events']; ?>
+                            </span>
+                            <?php endif; ?>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    
                     <?php if ($userRole !== 'nominal_roll_user'): // HIDE FOR NOMINAL ROLL ONLY USERS ?>
                     <?php if (in_array($userRole, ['admin', 'editor'])): ?>
                     <li class="nav-item">
@@ -1412,7 +1490,9 @@ try {
                             'viewer' => 'Viewer',
                             'moderator' => 'Moderator',
                             'supervisor' => 'Supervisor',
-                            'nominal_roll_user' => 'Nominal Roll User'
+                            'nominal_roll_user' => 'Nominal Roll User',
+                            'research_manager' => 'Research Manager',
+                            'news_manager' => 'News & Events Manager'
                         ];
                         echo isset($roleDisplayNames[$userRole]) ? $roleDisplayNames[$userRole] : ucfirst($userRole);
                         ?>
@@ -1452,8 +1532,36 @@ try {
         <div class="admin-content">
             <!-- Stats Grid -->
             <div class="stats-grid">
+                <!-- NEWS MANAGER STAT CARD - Option 1 & 2 Combined -->
+                <?php 
+                $showNewsManager = in_array($userRole, ['admin', 'editor', 'news_manager']) || 
+                                  (isset($_SESSION['user_roles']) && in_array('news_manager', $_SESSION['user_roles']));
+                if ($showNewsManager): 
+                ?>
+                <div class="stat-card" style="border-left-color: var(--admin-news);" onclick="window.location.href='<?php echo BASE_URL; ?>/admin/news-manager'">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-value"><?php echo number_format($stats['total_news_events'] ?? 0); ?></div>
+                            <div class="stat-label">News & Events</div>
+                        </div>
+                        <div class="stat-icon" style="background: rgba(79, 70, 229, 0.1); color: var(--admin-news);">
+                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/>
+                                <path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V7z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-trend" style="background: rgba(79, 70, 229, 0.1); color: var(--admin-news);">
+                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                        </svg>
+                        <?php echo ($stats['published_news'] + $stats['published_events']) ?? 0; ?> published
+                    </div>
+                </div>
+                <?php endif; ?>
+                
                 <?php if ($userRole !== 'nominal_roll_user'): // Hide non-nominal roll stats ?>
-                <div class="stat-card stat-users" style="border-left-color: var(--admin-primary);">
+                <div class="stat-card stat-users" style="border-left-color: var(--admin-primary);" onclick="window.location.href='<?php echo BASE_URL; ?>/admin/users'">
                     <div class="stat-header">
                         <div>
                             <div class="stat-value"><?php echo number_format($stats['total_users']); ?></div>
@@ -1473,7 +1581,7 @@ try {
                     </div>
                 </div>
                 
-                <div class="stat-card stat-applications" style="border-left-color: var(--admin-success);">
+                <div class="stat-card stat-applications" style="border-left-color: var(--admin-success);" onclick="window.location.href='<?php echo BASE_URL; ?>/admin/applications'">
                     <div class="stat-header">
                         <div>
                             <div class="stat-value"><?php echo number_format($stats['total_applications']); ?></div>
@@ -1493,7 +1601,7 @@ try {
                     </div>
                 </div>
                 
-                <div class="stat-card stat-research" style="border-left-color: var(--admin-purple);">
+                <div class="stat-card stat-research" style="border-left-color: var(--admin-purple);" onclick="window.location.href='<?php echo BASE_URL; ?>/admin/research'">
                     <div class="stat-header">
                         <div>
                             <div class="stat-value"><?php echo number_format($stats['total_research']); ?></div>
@@ -1514,7 +1622,7 @@ try {
                 </div>
                 
                 <!-- News Statistics Card -->
-                <div class="stat-card stat-news" style="border-left-color: var(--admin-warning);">
+                <div class="stat-card stat-news" style="border-left-color: var(--admin-warning);" onclick="window.location.href='<?php echo BASE_URL; ?>/admin/news'">
                     <div class="stat-header">
                         <div>
                             <div class="stat-value"><?php echo number_format($stats['total_news']); ?></div>
@@ -1536,7 +1644,7 @@ try {
                 </div>
 
                 <!-- Events Statistics Card -->
-                <div class="stat-card stat-events" style="border-left-color: var(--admin-purple);">
+                <div class="stat-card stat-events" style="border-left-color: var(--admin-purple);" onclick="window.location.href='<?php echo BASE_URL; ?>/admin/events'">
                     <div class="stat-header">
                         <div>
                             <div class="stat-value"><?php echo number_format($stats['total_events']); ?></div>
@@ -1557,7 +1665,7 @@ try {
                 </div>
                 
                 <!-- Contact Messages Card -->
-                <div class="stat-card" style="border-left-color: var(--admin-info);">
+                <div class="stat-card" style="border-left-color: var(--admin-info);" onclick="window.location.href='<?php echo BASE_URL; ?>/admin/contact'">
                     <div class="stat-header">
                         <div>
                             <div class="stat-value"><?php echo number_format($stats['total_contacts'] ?? 0); ?></div>
@@ -1603,7 +1711,7 @@ try {
                 }
                 ?>
                 
-                <div class="stat-card" style="border-left-color: var(--admin-purple);">
+                <div class="stat-card" style="border-left-color: var(--admin-purple);" onclick="window.location.href='<?php echo BASE_URL; ?>/admin/nominal-roll'">
                     <div class="stat-header">
                         <div>
                             <div class="stat-value"><?php echo number_format($nominalStats['total_records']); ?></div>
@@ -2035,6 +2143,26 @@ try {
             
             <!-- Quick Actions -->
             <div class="quick-actions">
+                <!-- NEWS MANAGER QUICK ACTION - Option 3 -->
+                <?php 
+                $showNewsManager = in_array($userRole, ['admin', 'editor', 'news_manager']) || 
+                                  (isset($_SESSION['user_roles']) && in_array('news_manager', $_SESSION['user_roles']));
+                if ($showNewsManager): 
+                ?>
+                <a href="<?php echo BASE_URL; ?>/admin/news-manager" class="action-btn">
+                    <div class="action-icon" style="background: rgba(79, 70, 229, 0.1); color: var(--admin-news);">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/>
+                            <path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V7z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4>News & Events Manager</h4>
+                        <p>Manage news articles and events</p>
+                    </div>
+                </a>
+                <?php endif; ?>
+                
                 <?php if ($userRole !== 'nominal_roll_user'): // Hide non-nominal roll quick actions ?>
                 <?php if (in_array($userRole, ['admin', 'editor'])): ?>
                 <a href="<?php echo BASE_URL; ?>/admin/applications/create" class="action-btn">

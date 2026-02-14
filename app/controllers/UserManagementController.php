@@ -1423,7 +1423,7 @@ class UserManagementController extends Controller {
     }
     
     /**
-     * Get user statistics
+     * Get user statistics - UPDATED TO INCLUDE NEWS MANAGER COUNT
      */
     private function getUserStatistics() {
         $stats = [];
@@ -1438,7 +1438,8 @@ class UserManagementController extends Controller {
             'moderator_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'moderator'",
             'supervisor_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'supervisor'",
             'nominal_roll_user_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'nominal_roll_user'",
-            'research_manager_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'research_manager'", // ADDED
+            'research_manager_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'research_manager'",
+            'news_manager_count' => "SELECT COUNT(*) as count FROM users WHERE role = 'news_manager'", // ADD THIS LINE
             'today_logins' => "SELECT COUNT(*) as count FROM users WHERE DATE(last_login) = CURDATE()",
             'must_change_password' => "SELECT COUNT(*) as count FROM users WHERE must_change_password = 1"
         ];
@@ -1452,7 +1453,7 @@ class UserManagementController extends Controller {
     }
     
     /**
-     * Get available roles - UPDATED TO INCLUDE 'research_manager'
+     * Get available roles - UPDATED TO INCLUDE 'news_manager'
      */
     private function getAvailableRoles() {
         return [
@@ -1462,12 +1463,13 @@ class UserManagementController extends Controller {
             'moderator' => 'Moderator',
             'supervisor' => 'Supervisor',
             'nominal_roll_user' => 'Nominal Roll User',
-            'research_manager' => 'Research Manager' // ADDED
+            'research_manager' => 'Research Manager',
+            'news_manager' => 'News & Events Manager' // ADD THIS LINE
         ];
     }
     
     /**
-     * Get available permissions - UPDATED TO INCLUDE RESEARCH PERMISSIONS
+     * Get available permissions - UPDATED TO INCLUDE NEWS PERMISSIONS
      */
     private function getAvailablePermissions() {
         return [
@@ -1481,12 +1483,21 @@ class UserManagementController extends Controller {
             'nominal_roll_settings' => 'Manage Settings',
             'nominal_roll_approve' => 'Approve Drafts',
             
-            // ADDED RESEARCH PERMISSIONS
+            // Research permissions
             'research_view' => 'View Research Publications',
             'research_create' => 'Create Research Publications',
             'research_edit' => 'Edit Research Publications',
             'research_delete' => 'Delete Research Publications',
             'research_publish' => 'Publish/Unpublish Research',
+            
+            // News & Events permissions - ADDED
+            'news_view' => 'View News & Events',
+            'news_create' => 'Create News & Events',
+            'news_edit' => 'Edit News & Events',
+            'news_delete' => 'Delete News & Events',
+            'news_publish' => 'Publish/Unpublish News',
+            'news_manage_categories' => 'Manage News Categories',
+            'news_upload_images' => 'Upload News Images',
             
             // User management permissions
             'user_view' => 'View Users',
@@ -1592,17 +1603,24 @@ class UserManagementController extends Controller {
     }
     
     /**
-     * Get default permissions for role - UPDATED TO INCLUDE 'research_manager' ROLE
+     * Get default permissions for role - UPDATED TO INCLUDE 'news_manager' ROLE
      */
     private function getDefaultPermissionsForRole($role) {
         $defaults = [
             'admin' => [
+                // Nominal Roll
                 'nominal_roll_view', 'nominal_roll_create', 'nominal_roll_edit', 'nominal_roll_delete',
                 'nominal_roll_bulk_upload', 'nominal_roll_export', 'nominal_roll_settings', 'nominal_roll_approve',
-                // ADDED RESEARCH PERMISSIONS FOR ADMIN
+                // Research
                 'research_view', 'research_create', 'research_edit', 'research_delete', 'research_publish',
+                // News (for admin)
+                'news_view', 'news_create', 'news_edit', 'news_delete', 'news_publish', 
+                'news_manage_categories', 'news_upload_images',
+                // User Management
                 'user_view', 'user_create', 'user_edit', 'user_delete',
+                // Applications
                 'application_view', 'application_edit', 'application_delete',
+                // System
                 'system_settings', 'system_backup', 'system_reports'
             ],
             'editor' => [
@@ -1622,20 +1640,29 @@ class UserManagementController extends Controller {
                 'nominal_roll_view', 'nominal_roll_create', 'nominal_roll_edit',
                 'application_view', 'system_reports'
             ],
-            // Nominal Roll Only User
             'nominal_roll_user' => [
                 'nominal_roll_view',
                 'nominal_roll_create',
                 'nominal_roll_edit',
                 'nominal_roll_export'
             ],
-            // ADDED NEW ROLE: Research Manager
             'research_manager' => [
                 'research_view',
                 'research_create',
                 'research_edit',
                 'research_publish'
-                // Note: No research_delete for safety
+                // No research_delete for safety
+            ],
+            // ADD THIS NEW BLOCK - NEWS MANAGER ROLE
+            'news_manager' => [
+                'news_view',          // View news and events
+                'news_create',        // Create news and events
+                'news_edit',          // Edit news and events
+                'news_delete',        // Delete news and events
+                'news_publish',       // Publish/unpublish
+                'news_manage_categories', // Manage categories
+                'news_upload_images'  // Upload images
+                // NO RESEARCH PERMISSIONS HERE - intentionally excluded
             ]
         ];
         

@@ -56,7 +56,7 @@ class AdminController extends Controller {
     }
 
     /**
-     * Process login - FIXED VERSION with CSRF check and RoleRedirectMiddleware
+     * Process login - FIXED VERSION with CSRF check and role-based redirect
      */
     public function processLogin() {
         require_once __DIR__ . '/../config/database.php';
@@ -128,6 +128,32 @@ class AdminController extends Controller {
                         $_SESSION['username'] = $user['username'];
                         $_SESSION['user_role'] = $user['role'];
                         $_SESSION['user_email'] = $user['email'];
+
+                        // ===== NEW CODE: Load user roles for role-based redirect =====
+                        try {
+                            // Check if tables exist first
+                            $tableCheck = $conn->query("SHOW TABLES LIKE 'user_roles'");
+                            if ($tableCheck->rowCount() > 0) {
+                                // Get user roles from database
+                                $roleStmt = $conn->prepare("SELECT r.name FROM roles r
+                                                             JOIN user_roles ur ON r.id = ur.role_id
+                                                             WHERE ur.user_id = ?");
+                                $roleStmt->execute([$user['id']]);
+                                $roles = $roleStmt->fetchAll(PDO::FETCH_COLUMN);
+                                
+                                // Store roles in session
+                                $_SESSION['user_roles'] = $roles;
+                                
+                                error_log("User roles loaded: " . json_encode($roles));
+                            } else {
+                                // Fallback to legacy role
+                                $_SESSION['user_roles'] = [$user['role']];
+                                error_log("User roles table not found, using legacy role: {$user['role']}");
+                            }
+                        } catch (Exception $e) {
+                            error_log("Failed to load user roles: " . $e->getMessage());
+                            $_SESSION['user_roles'] = [$user['role']]; // Fallback to legacy role
+                        }
                         
                         // Debug: Check session and permissions
                         error_log("DEBUG: User logged in - ID: {$user['id']}, Role: {$user['role']}");
@@ -146,12 +172,29 @@ class AdminController extends Controller {
                             error_log("Failed to log login history: " . $e->getMessage());
                         }
                         
-                        // STEP H1: Redirect based on role using RoleRedirectMiddleware
-                        require_once APP_PATH . '/middleware/RoleRedirectMiddleware.php';
-                        $redirectUrl = RoleRedirectMiddleware::redirect();
-                        error_log("DEBUG: Redirecting to: $redirectUrl");
+                        // ===== NEW CODE: Role-based redirect =====
+                        $roles = $_SESSION['user_roles'] ?? [$user['role']];
                         
-                        header('Location: ' . $redirectUrl);  // FIXED: removed BASE_URL .
+                        if (in_array('admin', $roles) || $user['role'] === 'admin') {
+                            // Admin goes to admin dashboard
+                            $redirectUrl = '/admin/dashboard';
+                        } elseif (in_array('news_manager', $roles)) {
+                            // News manager goes to news manager
+                            $redirectUrl = '/admin/news-manager';
+                        } elseif (in_array('research_manager', $roles)) {
+                            // Research manager goes to research manager
+                            $redirectUrl = '/admin/research';
+                        } elseif (in_array('nominal_roll_user', $roles) || $user['role'] === 'nominal_roll_user') {
+                            // Nominal roll user goes to nominal roll
+                            $redirectUrl = '/admin/nominal-roll';
+                        } else {
+                            // Default redirect using existing middleware
+                            require_once APP_PATH . '/middleware/RoleRedirectMiddleware.php';
+                            $redirectUrl = RoleRedirectMiddleware::redirect();
+                        }
+                        
+                        error_log("DEBUG: Role-based redirect to: $redirectUrl");
+                        header('Location: ' . $redirectUrl);
                         exit;
                     } else {
                         error_log("ACCOUNT INACTIVE for user: {$user['username']}");
@@ -192,6 +235,12 @@ class AdminController extends Controller {
         // STEP 2 FIX: BLOCK nominal_roll_user from dashboard
         if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'nominal_roll_user') {
             header('Location: /admin/nominal-roll');  // FIXED: removed BASE_URL .
+            exit;
+        }
+        
+        // STEP: BLOCK news_manager from accessing dashboard
+        if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'news_manager') {
+            header('Location: /admin/news-manager');  // Redirect to news manager
             exit;
         }
         

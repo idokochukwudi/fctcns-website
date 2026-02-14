@@ -1,8 +1,11 @@
 <?php
 /**
- * News Model - COMPLETE FIXED VERSION WITH IMAGE HANDLING AND AUTHOR NAME FIXES
- * All methods working correctly - EVENTS NOW INSERT INTO NEWS TABLE
- * ✅ FIXED: All author references now use full_name instead of username
+ * News Model - COMPLETE FIXED VERSION WITH WORD-BY-WORD SEARCH
+ * ✅ FIX 1: Search now splits query into individual words for better matching
+ * ✅ FIX 2: All author references use full_name instead of username
+ * ✅ FIX 3: Events now insert into news table with type='event'
+ * ✅ FIX 4: Image handling uses getProjectRootPath() for correct directory
+ * ✅ FIX 5: countPublishedNews() method added
  */
 class NewsModel {
     private $db;
@@ -537,7 +540,7 @@ class NewsModel {
         }
     }
     
-    // === EXISTING METHODS (keeping all of them) ===
+    // === PUBLIC DISPLAY METHODS ===
     
     /**
      * Get published news only (for public display) - FIXED VERSION
@@ -630,106 +633,7 @@ class NewsModel {
     }
     
     /**
-     * ALTERNATIVE SIMPLER METHOD - Use this if above still has issues
-     */
-    public function getPublishedNewsSimple($limit = 10, $offset = 0, $category = '') {
-        try {
-            error_log("=== getPublishedNewsSimple CALLED ===");
-            
-            // Build query
-            $where = "WHERE n.is_published = 1";
-            $params = [];
-            
-            if ($category) {
-                $where .= " AND n.category = ?";
-                $params[] = $category;
-            }
-            
-            // ✅ FIXED: Added JOIN to get author full_name
-            $sql = "SELECT 
-                    n.id,
-                    n.title,
-                    n.slug,
-                    n.excerpt,
-                    n.content,
-                    n.category,
-                    n.type,
-                    n.featured_image,
-                    n.is_published,
-                    n.is_featured,
-                    n.is_breaking,
-                    COALESCE(n.views_count, 0) as views_count,
-                    n.author_id,
-                    n.created_at,
-                    u.full_name as author_name
-                FROM news n
-                LEFT JOIN users u ON n.author_id = u.id
-                {$where}
-                ORDER BY n.created_at DESC 
-                LIMIT ? OFFSET ?";
-            
-            $params[] = (int)$limit;
-            $params[] = (int)$offset;
-            
-            error_log("Simple SQL: " . $sql);
-            error_log("Params: " . json_encode($params));
-            
-            $stmt = $this->db->prepare($sql);
-            
-            // Bind parameters one by one
-            foreach ($params as $key => $value) {
-                $paramType = is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR;
-                $stmt->bindValue($key + 1, $value, $paramType);
-            }
-            
-            $stmt->execute();
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            error_log("getPublishedNewsSimple returned: " . count($results) . " articles");
-            return $results;
-            
-        } catch (Exception $e) {
-            error_log("getPublishedNewsSimple error: " . $e->getMessage());
-            return [];
-        }
-    }
-    
-    /**
-     * EVEN SIMPLER - Direct query method
-     */
-    public function getPublishedNewsDirect($limit = 10, $offset = 0, $category = '') {
-        try {
-            error_log("=== getPublishedNewsDirect CALLED ===");
-            
-            // Note: This method doesn't show author names - consider using getPublishedNews or getPublishedNewsSimple instead
-            if ($category) {
-                $sql = "SELECT * FROM news 
-                        WHERE is_published = 1 AND category = '{$category}' 
-                        ORDER BY created_at DESC 
-                        LIMIT {$limit} OFFSET {$offset}";
-            } else {
-                $sql = "SELECT * FROM news 
-                        WHERE is_published = 1 
-                        ORDER BY created_at DESC 
-                        LIMIT {$limit} OFFSET {$offset}";
-            }
-            
-            error_log("Direct SQL: " . $sql);
-            
-            $stmt = $this->db->query($sql);
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            error_log("getPublishedNewsDirect returned: " . count($results) . " articles");
-            return $results;
-            
-        } catch (Exception $e) {
-            error_log("getPublishedNewsDirect error: " . $e->getMessage());
-            return [];
-        }
-    }
-    
-    /**
-     * Count published news with filters - FIXED
+     * Count published news with filters - FIXED (ADDED THIS METHOD)
      */
     public function countPublishedNews($category = '') {
         try {
@@ -945,23 +849,201 @@ class NewsModel {
     }
     
     /**
-     * Get related news
-     * No changes needed - doesn't display author
+     * Get news by category (for public category pages)
+     * ✅ FIXED: Added JOIN to get author full_name
      */
-    public function getRelatedNews($newsId, $category, $limit = 3) {
+    public function getNewsByCategory($category, $limit = 10, $offset = 0) {
         try {
+            error_log("=== NewsModel::getNewsByCategory() called ===");
+            error_log("Category: $category, Limit: $limit, Offset: $offset");
+            
+            $sql = "SELECT 
+                    n.id,
+                    n.title,
+                    n.slug,
+                    n.excerpt,
+                    n.content,
+                    n.category,
+                    n.type,
+                    n.featured_image,
+                    n.is_published,
+                    n.is_featured,
+                    n.is_breaking,
+                    COALESCE(n.views_count, 0) as views_count,
+                    n.author_id,
+                    n.created_at,
+                    u.full_name as author_name,
+                    u.role as author_role
+                FROM news n
+                LEFT JOIN users u ON n.author_id = u.id
+                WHERE n.is_published = 1 AND n.category = ? 
+                ORDER BY n.created_at DESC 
+                LIMIT ? OFFSET ?";
+            
+            error_log("SQL: " . $sql);
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(1, $category, PDO::PARAM_STR);
+            $stmt->bindParam(2, $limit, PDO::PARAM_INT);
+            $stmt->bindParam(3, $offset, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("getNewsByCategory returned: " . count($results) . " articles");
+            
+            return $results;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getNewsByCategory error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Count news by category (for pagination)
+     */
+    public function countNewsByCategory($category) {
+        try {
+            error_log("=== NewsModel::countNewsByCategory() called ===");
+            error_log("Category: $category");
+            
+            $sql = "SELECT COUNT(*) as total FROM news WHERE is_published = 1 AND category = ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$category]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            $total = $result['total'] ?? 0;
+            error_log("countNewsByCategory result: " . $total);
+            
+            return $total;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel countNewsByCategory error: " . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    /**
+     * Get news by month (for archive pages)
+     * ✅ FIXED: Added JOIN to get author full_name
+     */
+    public function getNewsByMonth($year, $month, $limit = 10, $offset = 0) {
+        try {
+            error_log("=== NewsModel::getNewsByMonth() called ===");
+            error_log("Year: $year, Month: $month");
+            
+            $sql = "SELECT 
+                    n.id,
+                    n.title,
+                    n.slug,
+                    n.excerpt,
+                    n.content,
+                    n.category,
+                    n.type,
+                    n.featured_image,
+                    n.is_published,
+                    n.is_featured,
+                    n.is_breaking,
+                    COALESCE(n.views_count, 0) as views_count,
+                    n.author_id,
+                    n.created_at,
+                    u.full_name as author_name,
+                    u.role as author_role
+                FROM news n
+                LEFT JOIN users u ON n.author_id = u.id
+                WHERE n.is_published = 1 
+                AND YEAR(n.created_at) = ? 
+                AND MONTH(n.created_at) = ?
+                ORDER BY n.created_at DESC 
+                LIMIT ? OFFSET ?";
+            
+            error_log("SQL: " . $sql);
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(1, $year, PDO::PARAM_INT);
+            $stmt->bindParam(2, $month, PDO::PARAM_INT);
+            $stmt->bindParam(3, $limit, PDO::PARAM_INT);
+            $stmt->bindParam(4, $offset, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("getNewsByMonth returned: " . count($results) . " articles");
+            
+            return $results;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getNewsByMonth error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Count news by month (for archive pagination)
+     */
+    public function countNewsByMonth($year, $month) {
+        try {
+            error_log("=== NewsModel::countNewsByMonth() called ===");
+            error_log("Year: $year, Month: $month");
+            
+            $sql = "SELECT COUNT(*) as total FROM news 
+                    WHERE is_published = 1 
+                    AND YEAR(created_at) = ? 
+                    AND MONTH(created_at) = ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$year, $month]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            $total = $result['total'] ?? 0;
+            error_log("countNewsByMonth result: " . $total);
+            
+            return $total;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel countNewsByMonth error: " . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    /**
+     * Get related news by category (excluding current article)
+     * ✅ FIXED: Added JOIN to get author full_name
+     */
+    public function getRelatedNews($id, $category, $limit = 3) {
+        try {
+            error_log("=== NewsModel::getRelatedNews() called ===");
+            error_log("ID: $id, Category: $category, Limit: $limit");
+            
             if (empty($category)) {
                 return [];
             }
             
-            $sql = "SELECT n.* FROM news n 
-                    WHERE n.is_published = 1 AND n.category = ? AND n.id != ? 
-                    ORDER BY n.created_at DESC 
-                    LIMIT ?";
+            $sql = "SELECT 
+                    n.id,
+                    n.title,
+                    n.slug,
+                    n.excerpt,
+                    n.category,
+                    n.featured_image,
+                    COALESCE(n.views_count, 0) as views_count,
+                    n.created_at,
+                    u.full_name as author_name
+                FROM news n
+                LEFT JOIN users u ON n.author_id = u.id
+                WHERE n.is_published = 1 
+                AND n.category = ? 
+                AND n.id != ?
+                ORDER BY n.created_at DESC 
+                LIMIT ?";
             
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$category, $newsId, (int)$limit]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt->execute([$category, $id, $limit]);
+            
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("getRelatedNews returned: " . count($results) . " articles");
+            
+            return $results;
             
         } catch (Exception $e) {
             error_log("NewsModel getRelatedNews error: " . $e->getMessage());
@@ -970,7 +1052,57 @@ class NewsModel {
     }
     
     /**
-     * Get news by archive month
+     * Get upcoming events
+     * ✅ FIXED: Ensuring this method exists with proper JOIN
+     */
+    public function getUpcomingEvents($limit = 5) {
+        try {
+            error_log("=== NewsModel::getUpcomingEvents() called ===");
+            
+            $sql = "SELECT 
+                    n.id,
+                    n.title,
+                    n.slug,
+                    n.excerpt,
+                    n.content,
+                    n.category,
+                    n.type,
+                    n.featured_image,
+                    n.is_published,
+                    n.is_featured,
+                    n.is_breaking,
+                    COALESCE(n.views_count, 0) as views_count,
+                    n.event_date,
+                    n.event_end_date,
+                    n.event_time,
+                    n.event_location,
+                    n.author_id,
+                    n.created_at,
+                    u.full_name as author_name
+                FROM news n
+                LEFT JOIN users u ON n.author_id = u.id
+                WHERE n.type = 'event' 
+                AND n.is_published = 1 
+                AND (n.event_date >= CURDATE() OR n.event_date IS NULL)
+                ORDER BY n.event_date ASC 
+                LIMIT ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$limit]);
+            
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("getUpcomingEvents returned: " . count($results) . " events");
+            
+            return $results;
+            
+        } catch (Exception $e) {
+            error_log("NewsModel getUpcomingEvents error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get news by archive month (legacy method)
      * ✅ FIXED: Added JOIN to get author full_name
      */
     public function getByArchiveMonth($year, $month, $limit = 10, $offset = 0) {
@@ -995,7 +1127,7 @@ class NewsModel {
     }
     
     /**
-     * Count news by archive month
+     * Count news by archive month (legacy method)
      */
     public function countByArchiveMonth($year, $month) {
         try {
@@ -1016,51 +1148,127 @@ class NewsModel {
         }
     }
     
+    // === SEARCH METHODS - FIXED WORD-BY-WORD VERSION ===
+    
     /**
-     * Search news
-     * ✅ FIXED: Added JOIN to get author full_name
+     * Search news articles - FIXED WORD-BY-WORD VERSION
+     * ✅ Splits query into individual words for better matching
      */
     public function searchNews($query, $limit = 10, $offset = 0) {
+        error_log("=== searchNews() START ===");
+        error_log("Search query: '" . $query . "'");
+        
         try {
-            $sql = "SELECT n.*, u.full_name as author_name 
+            // Split the query into individual words for better matching
+            $words = explode(' ', $query);
+            $conditions = [];
+            $params = [];
+            
+            // Build conditions for each word (minimum 3 characters)
+            foreach ($words as $word) {
+                $word = trim($word);
+                if (strlen($word) >= 3) {
+                    $conditions[] = "n.title LIKE ?";
+                    $params[] = '%' . $word . '%';
+                }
+            }
+            
+            // If no valid words, use the full query
+            if (empty($conditions)) {
+                $conditions[] = "n.title LIKE ?";
+                $params[] = '%' . $query . '%';
+            }
+            
+            $whereClause = implode(' AND ', $conditions);
+            
+            $sql = "SELECT 
+                        n.*,
+                        u.full_name as author_name,
+                        u.role as author_role
                     FROM news n 
                     LEFT JOIN users u ON n.author_id = u.id 
                     WHERE n.is_published = 1 
-                    AND (n.title LIKE ? OR n.content LIKE ? OR n.excerpt LIKE ?)
+                    AND ($whereClause)
                     ORDER BY n.created_at DESC 
                     LIMIT ? OFFSET ?";
             
-            $searchTerm = '%' . $query . '%';
+            // Add limit and offset to params
+            $params[] = $limit;
+            $params[] = $offset;
+            
+            error_log("SQL: " . $sql);
+            error_log("Params: " . json_encode($params));
+            
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$searchTerm, $searchTerm, $searchTerm, $limit, $offset]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt->execute($params);
+            
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            error_log("Found " . count($results) . " results");
+            
+            return $results;
             
         } catch (Exception $e) {
-            error_log("NewsModel searchNews error: " . $e->getMessage());
+            error_log("searchNews error: " . $e->getMessage());
             return [];
         }
     }
     
     /**
-     * Count search results
+     * Count search results - FIXED WORD-BY-WORD VERSION
      */
     public function countSearchResults($query) {
+        error_log("=== countSearchResults() START ===");
+        error_log("Search query: '" . $query . "'");
+        
         try {
-            $sql = "SELECT COUNT(*) as total FROM news 
-                    WHERE is_published = 1 
-                    AND (title LIKE ? OR content LIKE ? OR excerpt LIKE ?)";
+            // Split the query into individual words
+            $words = explode(' ', $query);
+            $conditions = [];
+            $params = [];
             
-            $searchTerm = '%' . $query . '%';
+            // Build conditions for each word
+            foreach ($words as $word) {
+                $word = trim($word);
+                if (strlen($word) >= 3) {
+                    $conditions[] = "title LIKE ?";
+                    $params[] = '%' . $word . '%';
+                }
+            }
+            
+            // If no valid words, use the full query
+            if (empty($conditions)) {
+                $conditions[] = "title LIKE ?";
+                $params[] = '%' . $query . '%';
+            }
+            
+            $whereClause = implode(' AND ', $conditions);
+            
+            $sql = "SELECT COUNT(*) as total 
+                    FROM news 
+                    WHERE is_published = 1 
+                    AND ($whereClause)";
+            
+            error_log("Count SQL: " . $sql);
+            error_log("Count params: " . json_encode($params));
+            
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$searchTerm, $searchTerm, $searchTerm]);
+            $stmt->execute($params);
+            
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result['total'] ?? 0;
+            $total = $result['total'] ?? 0;
+            
+            error_log("Total results: " . $total);
+            
+            return $total;
             
         } catch (Exception $e) {
-            error_log("NewsModel countSearchResults error: " . $e->getMessage());
+            error_log("countSearchResults error: " . $e->getMessage());
             return 0;
         }
     }
+    
+    // === UTILITY METHODS ===
     
     /**
      * Increment views
@@ -1490,33 +1698,6 @@ class NewsModel {
         } catch (Exception $e) {
             error_log("NewsModel countEvents error: " . $e->getMessage());
             return 0;
-        }
-    }
-    
-    /**
-     * Get upcoming events
-     * ✅ FIXED: Changed username to full_name
-     */
-    public function getUpcomingEvents($limit = 5) {
-        try {
-            $sql = "SELECT n.*, u.full_name as author_name 
-                    FROM news n 
-                    LEFT JOIN users u ON n.author_id = u.id 
-                    WHERE n.type = 'event' 
-                    AND n.is_published = 1 
-                    AND (n.event_date >= CURDATE() OR n.event_date IS NULL)
-                    ORDER BY n.event_date ASC 
-                    LIMIT ?";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
-            $stmt->execute();
-            
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-        } catch (Exception $e) {
-            error_log("NewsModel getUpcomingEvents error: " . $e->getMessage());
-            return [];
         }
     }
     

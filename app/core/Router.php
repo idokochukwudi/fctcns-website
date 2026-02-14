@@ -117,7 +117,7 @@ class Router {
         $this->get('/', 'PageController@home');
         $this->get('/about', 'PageController@about');
         $this->get('/programs', 'PageController@programs');
-        $this->get('/admission', 'AdmissionController@index'); // FIXED: Changed from /admissions to /admission
+        $this->get('/admission', 'AdmissionController@index');
         $this->get('/faculty', 'PageController@faculty');
         $this->get('/alumni', 'PageController@alumni');
         $this->get('/student-life', 'PageController@studentLife');
@@ -170,25 +170,53 @@ class Router {
         $this->get('/research/{id}/download', 'ResearchController@download');
 
         // ============================================
-        // ADMIN NEWS MODULE ROUTES
+        // CONSOLIDATED NEWS ROUTES (Using ONE controller)
         // ============================================
-        $this->get('/admin/news', 'AdminNewsController@index');
-        $this->get('/admin/news/create', 'AdminNewsController@create');
-        $this->post('/admin/news/store', 'AdminNewsController@store');
-        $this->get('/admin/news/{id}', 'AdminNewsController@show');
-        $this->get('/admin/news/{id}/edit', 'AdminNewsController@edit');
-        $this->post('/admin/news/update/{id}', 'AdminNewsController@update');
-        $this->post('/admin/news/delete/{id}', 'AdminNewsController@destroy');
-        $this->post('/admin/news/bulk-action', 'AdminNewsController@bulkAction');
-        $this->get('/admin/news/export', 'AdminNewsController@export');
-        $this->get('/admin/news/test-edit-direct', 'AdminNewsController@testEditDirect');
-        $this->get('/admin/news/test-data-flow', 'AdminNewsController@testDataFlow');
-        $this->get('/admin/news/test-both', 'AdminNewsController@testBothInserts');
-        $this->get('/admin/news/test-create', 'AdminNewsController@testDirectCreate');
-        $this->post('/admin/news/test-endpoint', 'AdminNewsController@testEndpoint');
-        $this->get('/admin/news/test-simple-query', 'AdminNewsController@testSimpleQuery');
-        $this->get('/admin/news/test-fixes', 'AdminNewsController@testFixes');
-        $this->get('/admin/news/test-images', 'AdminNewsController@testImagePaths');
+        
+        // PUBLIC NEWS ROUTES
+        $this->get('/news', 'NewsController@index');
+        $this->get('/news/search', 'NewsController@search');
+        $this->get('/news/category/{category}', 'NewsController@category');
+        $this->get('/news/archive/{year}/{month}', 'NewsController@archive');
+        $this->get('/news/debug', 'NewsController@debug');
+        $this->get('/news/test', 'NewsController@test');
+        $this->get('/news/direct-test', 'NewsController@directTest');
+        $this->get('/news/simple-test', 'NewsController@simpleTest');
+        $this->get('/news/{slug}', 'NewsController@show');
+        
+        // ADMIN NEWS ROUTES (Full access for admins/editors)
+        $this->get('/admin/news', 'NewsController@adminIndex');
+        $this->get('/admin/news/create', 'NewsController@create');
+        $this->post('/admin/news/store', 'NewsController@store');
+        $this->get('/admin/news/{id}', 'NewsController@show');
+        $this->get('/admin/news/{id}/edit', 'NewsController@edit');
+        $this->post('/admin/news/update/{id}', 'NewsController@update');
+        $this->post('/admin/news/delete/{id}', 'NewsController@destroy');
+        $this->post('/admin/news/bulk-action', 'NewsController@bulkAction');
+        $this->get('/admin/news/export', 'NewsController@export');
+        $this->get('/admin/news/test-edit-direct', 'NewsController@testEditDirect');
+        $this->get('/admin/news/test-data-flow', 'NewsController@testDataFlow');
+        $this->get('/admin/news/test-both', 'NewsController@testBothInserts');
+        $this->get('/admin/news/test-create', 'NewsController@testDirectCreate');
+        $this->post('/admin/news/test-endpoint', 'NewsController@testEndpoint');
+        $this->get('/admin/news/test-simple-query', 'NewsController@testSimpleQuery');
+        $this->get('/admin/news/test-fixes', 'NewsController@testFixes');
+        $this->get('/admin/news/test-images', 'NewsController@testImagePaths');
+        
+        // NEWS MANAGER ROUTES (Limited access for news managers)
+        $this->get('/admin/news-manager', 'NewsController@managerIndex');
+        $this->get('/admin/news-manager/create', 'NewsController@create');
+        $this->post('/admin/news-manager/store', 'NewsController@store');
+        $this->get('/admin/news-manager/{id}', 'NewsController@show');
+        $this->get('/admin/news-manager/{id}/edit', 'NewsController@edit');
+        $this->post('/admin/news-manager/update/{id}', 'NewsController@update');
+        $this->post('/admin/news-manager/delete/{id}', 'NewsController@destroy');
+        $this->post('/admin/news-manager/{id}/toggle-publish', 'NewsController@togglePublish');
+        $this->post('/admin/news-manager/{id}/toggle-featured', 'NewsController@toggleFeatured');
+        $this->get('/admin/news-manager/categories', 'NewsController@categories');
+        $this->post('/admin/news-manager/categories/add', 'NewsController@addCategory');
+        $this->post('/admin/news-manager/categories/edit', 'NewsController@editCategory');
+        $this->post('/admin/news-manager/categories/delete', 'NewsController@deleteCategory');
 
         // ============================================
         // ADMIN EVENTS MODULE ROUTES
@@ -204,18 +232,8 @@ class Router {
         $this->get('/admin/events/registrations/{id}', 'EventsController@registrations');
 
         // ============================================
-        // PUBLIC NEWS & EVENTS ROUTES
+        // PUBLIC EVENTS ROUTES
         // ============================================
-        $this->get('/news', 'NewsController@index');
-        $this->get('/news/search', 'NewsController@search');
-        $this->get('/news/category/{category}', 'NewsController@category');
-        $this->get('/news/archive/{year}/{month}', 'NewsController@archive');
-        $this->get('/news/debug', 'NewsController@debug');
-        $this->get('/news/test', 'NewsController@test');
-        $this->get('/news/direct-test', 'NewsController@directTest');
-        $this->get('/news/simple-test', 'NewsController@simpleTest');
-        $this->get('/news/{slug}', 'NewsController@show');
-        
         $this->get('/events', 'EventsController@publicIndex');
         $this->get('/events/calendar', 'EventsController@calendar');
         $this->get('/events/{slug}', 'EventsController@publicShow');

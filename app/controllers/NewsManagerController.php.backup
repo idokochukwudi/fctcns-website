@@ -1,0 +1,874 @@
+<?php
+/**
+ * News Manager Controller
+ * For users with news_manager role - manages both news AND events
+ * NO ACCESS TO MAIN ADMIN DASHBOARD
+ */
+
+// Fix the path - use correct APP_PATH constant
+require_once APP_PATH . '/core/Controller.php';
+require_once APP_PATH . '/config/session.php';
+require_once APP_PATH . '/config/database.php';
+require_once APP_PATH . '/models/NewsModel.php';
+
+class NewsManagerController extends Controller {
+    
+    private $db;
+    private $conn;
+    private $newsModel;
+    private $userId;
+    private $userRole;
+    private $permissions = [];
+    private $userRoles = [];
+    
+    public function __construct() {
+        parent::__construct();
+        
+        error_log("=== NEWS MANAGER CONTROLLER CONSTRUCTOR ===");
+        
+        // Check if user is logged in
+        $this->checkAuthentication();
+        
+        // Set layout (NOT admin layout)
+        $this->layout = 'default';
+        
+        // Get database connection
+        $database = Database::getInstance();
+        $this->conn = $database->getConnection();
+        
+        // Initialize News Model
+        $this->newsModel = new NewsModel($this->conn);
+        
+        $this->userId = $_SESSION['user_id'] ?? 0;
+        $this->userRole = $_SESSION['user_role'] ?? 'guest';
+        
+        // Load user roles and permissions
+        $this->loadUserRoles();
+        $this->loadPermissions();
+        
+        // Check if user has news manager access
+        $this->checkNewsManagerAccess();
+        
+        // Set common data for views
+        $this->data = array_merge($this->data, [
+            'baseUrl' => BASE_URL,
+            'currentPage' => 'news-manager',
+            'userRole' => $this->userRole,
+            'userRoles' => $this->userRoles,
+            'permissions' => $this->permissions,
+            'hasPermission' => [$this, 'hasPermission']
+        ]);
+        
+        error_log("NewsManagerController initialized for user ID: " . $this->userId);
+    }
+    
+    /**
+     * Check if user is authenticated
+     */
+    private function checkAuthentication() {
+        if (!isset($_SESSION['user_id'])) {
+            Session::setFlash('error', 'Please login to access the news manager');
+            $this->redirect(BASE_URL . '/login');
+            exit;
+        }
+    }
+    
+    /**
+     * Load user roles from database
+     */
+    private function loadUserRoles() {
+        try {
+            // Check if roles table exists
+            $sql = "SELECT r.name FROM roles r
+                    JOIN user_roles ur ON r.id = ur.role_id
+                    WHERE ur.user_id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$this->userId]);
+            $this->userRoles = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            // Also include the legacy role field for backward compatibility
+            if (!in_array($_SESSION['user_role'] ?? '', $this->userRoles)) {
+                $this->userRoles[] = $_SESSION['user_role'] ?? '';
+            }
+            
+            $_SESSION['user_roles'] = $this->userRoles;
+            
+            error_log("User roles loaded: " . json_encode($this->userRoles));
+            
+        } catch (Exception $e) {
+            error_log("Error loading user roles: " . $e->getMessage());
+            $this->userRoles = [$_SESSION['user_role'] ?? ''];
+        }
+    }
+    
+    /**
+     * Load user permissions from database
+     */
+    private function loadPermissions() {
+        try {
+            // Get permissions from roles
+            $sql = "SELECT DISTINCT p.name FROM permissions p
+                    JOIN role_permissions rp ON p.id = rp.permission_id
+                    JOIN roles r ON rp.role_id = r.id
+                    JOIN user_roles ur ON r.id = ur.role_id
+                    WHERE ur.user_id = ?";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$this->userId]);
+            $rolePermissions = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            // Also get individual user permissions if your system uses them
+            $sql2 = "SELECT permission FROM user_permissions 
+                     WHERE user_id = ? AND is_allowed = 1";
+            $stmt2 = $this->conn->prepare($sql2);
+            $stmt2->execute([$this->userId]);
+            $userPermissions = $stmt2->fetchAll(PDO::FETCH_COLUMN);
+            
+            // Merge all permissions
+            $this->permissions = array_unique(array_merge($rolePermissions, $userPermissions));
+            
+            // Store in session for quick access
+            $_SESSION['user_permissions'] = $this->permissions;
+            
+            error_log("User permissions loaded: " . json_encode($this->permissions));
+            
+        } catch (Exception $e) {
+            error_log("Error loading permissions: " . $e->getMessage());
+            $this->permissions = [];
+        }
+    }
+    
+    /**
+     * Check if user has news manager access
+     */
+    private function checkNewsManagerAccess() {
+        // Admin and super_admin always have access
+        if (in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'])) {
+            error_log("Admin user accessing news manager");
+            return;
+        }
+        
+        // Check if user has news_manager role
+        $hasNewsManagerRole = in_array('news_manager', $this->userRoles);
+        
+        // Check if user has any news permissions
+        $hasNewsPermissions = !empty(array_filter($this->permissions, function($perm) {
+            return strpos($perm, 'news_') === 0;
+        }));
+        
+        if (!$hasNewsManagerRole && !$hasNewsPermissions) {
+            error_log("Access denied: User lacks news manager role or permissions");
+            Session::setFlash('error', 'You do not have permission to access the news manager');
+            $this->redirect(BASE_URL . '/dashboard');
+            exit;
+        }
+        
+        error_log("News manager access granted");
+    }
+    
+    /**
+     * Check if user has specific permission
+     */
+    private function hasPermission($permission) {
+        // Admin and super_admin have all permissions
+        if (in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'])) {
+            return true;
+        }
+        
+        return in_array($permission, $this->permissions);
+    }
+    
+    /**
+     * Main dashboard page - /admin/news-manager
+     */
+    public function index() {
+        error_log("=== NEWS MANAGER INDEX METHOD ===");
+        
+        try {
+            // Check view permission
+            if (!$this->hasPermission('news_view') && !in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'])) {
+                Session::setFlash('error', 'You do not have permission to view content');
+                $this->redirect(BASE_URL . '/dashboard');
+                return;
+            }
+            
+            // Get statistics
+            $stats = $this->getContentStats();
+            
+            // Get recent content (both news and events)
+            $content = $this->getRecentContent(10);
+            
+            // Get all categories with counts
+            $categories = $this->getCategoriesWithCounts();
+            
+            // Get draft articles
+            $draftArticles = $this->getDraftArticles(5);
+            
+            // Get popular articles
+            $popularArticles = $this->getPopularArticles(5);
+            
+            // Get recent activity
+            $recentActivity = $this->getRecentActivity(5);
+            
+            // Get upcoming events
+            $upcomingEvents = $this->getUpcomingEvents(5);
+            
+            error_log("Stats - Total: {$stats['total']}, News: {$stats['news']}, Events: {$stats['events']}");
+            error_log("Content count: " . count($content));
+            error_log("Categories count: " . count($categories));
+            
+            // Prepare view data
+            $viewData = [
+                'stats' => $stats,
+                'content' => $content,
+                'categories' => $categories,
+                'draftArticles' => $draftArticles,
+                'popularArticles' => $popularArticles,
+                'recentActivity' => $recentActivity,
+                'upcomingEvents' => $upcomingEvents,
+                'pageTitle' => 'News Manager Dashboard'
+            ];
+            
+            $this->data = array_merge($this->data, $viewData);
+            $this->render('news-manager/index');
+            
+        } catch (Exception $e) {
+            error_log("NewsManagerController index error: " . $e->getMessage());
+            error_log("Error trace: " . $e->getTraceAsString());
+            Session::setFlash('error', 'Failed to load dashboard: ' . $e->getMessage());
+            
+            // Render with empty data to avoid breaking the page
+            $viewData = [
+                'stats' => ['total' => 0, 'news' => 0, 'events' => 0, 'published' => 0, 'draft' => 0, 'featured' => 0, 'breaking' => 0, 'views' => 0, 'this_month' => 0, 'this_week' => 0],
+                'content' => [],
+                'categories' => [],
+                'draftArticles' => [],
+                'popularArticles' => [],
+                'recentActivity' => [],
+                'upcomingEvents' => [],
+                'pageTitle' => 'News Manager Dashboard'
+            ];
+            
+            $this->data = array_merge($this->data, $viewData);
+            $this->render('news-manager/index');
+        }
+    }
+    
+    /**
+     * Get content statistics
+     */
+    private function getContentStats() {
+        try {
+            $sql = "SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN type = 'news' OR type IS NULL THEN 1 ELSE 0 END) as news_count,
+                        SUM(CASE WHEN type = 'event' THEN 1 ELSE 0 END) as events_count,
+                        SUM(is_published = 1) as published,
+                        SUM(is_published = 0) as draft,
+                        SUM(is_featured = 1) as featured,
+                        SUM(is_breaking = 1) as breaking,
+                        COALESCE(SUM(views_count), 0) as total_views,
+                        SUM(MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())) as this_month,
+                        SUM(YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)) as this_week
+                    FROM news";
+            
+            $stmt = $this->conn->query($sql);
+            $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return [
+                'total' => (int)($stats['total'] ?? 0),
+                'news' => (int)($stats['news_count'] ?? 0),
+                'events' => (int)($stats['events_count'] ?? 0),
+                'published' => (int)($stats['published'] ?? 0),
+                'draft' => (int)($stats['draft'] ?? 0),
+                'featured' => (int)($stats['featured'] ?? 0),
+                'breaking' => (int)($stats['breaking'] ?? 0),
+                'views' => (int)($stats['total_views'] ?? 0),
+                'this_month' => (int)($stats['this_month'] ?? 0),
+                'this_week' => (int)($stats['this_week'] ?? 0)
+            ];
+            
+        } catch (Exception $e) {
+            error_log("getContentStats error: " . $e->getMessage());
+            return [
+                'total' => 0, 'news' => 0, 'events' => 0, 'published' => 0,
+                'draft' => 0, 'featured' => 0, 'breaking' => 0, 'views' => 0,
+                'this_month' => 0, 'this_week' => 0
+            ];
+        }
+    }
+    
+    /**
+     * Get recent content
+     */
+    private function getRecentContent($limit = 10) {
+        try {
+            $sql = "SELECT n.*, u.username as author_name
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
+                    ORDER BY 
+                        CASE 
+                            WHEN n.type = 'event' AND n.event_date IS NOT NULL THEN n.event_date
+                            ELSE n.created_at
+                        END DESC
+                    LIMIT ?";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$limit]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("getRecentContent error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get categories with article counts
+     */
+    private function getCategoriesWithCounts() {
+        try {
+            $sql = "SELECT 
+                        category as name,
+                        COUNT(*) as count
+                    FROM news 
+                    WHERE category IS NOT NULL AND category != ''
+                    GROUP BY category
+                    ORDER BY count DESC
+                    LIMIT 10";
+            
+            $stmt = $this->conn->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("getCategoriesWithCounts error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get draft articles
+     */
+    private function getDraftArticles($limit = 5) {
+        try {
+            $sql = "SELECT n.*, u.username as author_name
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
+                    WHERE n.is_published = 0
+                    ORDER BY n.updated_at DESC, n.created_at DESC
+                    LIMIT ?";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$limit]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("getDraftArticles error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get popular articles by views
+     */
+    private function getPopularArticles($limit = 5) {
+        try {
+            $sql = "SELECT n.*, u.username as author_name
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
+                    WHERE n.is_published = 1
+                    ORDER BY n.views_count DESC
+                    LIMIT ?";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$limit]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("getPopularArticles error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get upcoming events
+     */
+    private function getUpcomingEvents($limit = 5) {
+        try {
+            $sql = "SELECT n.*, u.username as author_name
+                    FROM news n 
+                    LEFT JOIN users u ON n.author_id = u.id 
+                    WHERE n.type = 'event' 
+                      AND n.is_published = 1
+                      AND n.event_date >= CURDATE()
+                    ORDER BY n.event_date ASC
+                    LIMIT ?";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$limit]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (Exception $e) {
+            error_log("getUpcomingEvents error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Get recent activity
+     */
+    private function getRecentActivity($limit = 5) {
+        try {
+            // Get recent content updates
+            $sql = "SELECT 
+                        'created' as action,
+                        title as item_title,
+                        type as item_type,
+                        created_at as activity_date
+                    FROM news
+                    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                    ORDER BY created_at DESC
+                    LIMIT ?";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$limit]);
+            $activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Format activities
+            $formatted = [];
+            foreach ($activities as $act) {
+                $type = $act['item_type'] ?? 'article';
+                $formatted[] = [
+                    'text' => 'Created ' . $type . ': ' . (strlen($act['item_title']) > 40 ? substr($act['item_title'], 0, 40) . '...' : $act['item_title']),
+                    'time' => $this->timeAgo($act['activity_date']),
+                    'icon' => 'plus-circle'
+                ];
+            }
+            
+            return $formatted;
+            
+        } catch (Exception $e) {
+            error_log("getRecentActivity error: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Create form
+     */
+    public function create() {
+        error_log("=== NEWS MANAGER CREATE METHOD ===");
+        
+        try {
+            if (!$this->hasPermission('news_create') && !in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'])) {
+                Session::setFlash('error', 'You do not have permission to create content');
+                $this->redirect(BASE_URL . '/admin/news-manager');
+                return;
+            }
+            
+            $type = $_GET['type'] ?? 'news';
+            $categories = $this->getCategoriesWithCounts();
+            
+            $viewData = [
+                'categories' => $categories,
+                'content' => [
+                    'type' => $type,
+                    'is_published' => 0,
+                    'is_featured' => 0,
+                    'is_breaking' => 0,
+                    'event_date' => date('Y-m-d')
+                ],
+                'pageTitle' => $type === 'event' ? 'Create Event' : 'Create News Article',
+                'csrf_token' => Session::generateCSRFTokenMulti()
+            ];
+            
+            $this->data = array_merge($this->data, $viewData);
+            $this->render('news-manager/create');
+            
+        } catch (Exception $e) {
+            error_log("create error: " . $e->getMessage());
+            Session::setFlash('error', 'Failed to load create form');
+            $this->redirect(BASE_URL . '/admin/news-manager');
+        }
+    }
+    
+    /**
+     * Store new content
+     */
+    public function store() {
+        error_log("=== NEWS MANAGER STORE METHOD ===");
+        
+        try {
+            if (!$this->hasPermission('news_create') && !in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'])) {
+                Session::setFlash('error', 'Permission denied');
+                $this->redirect(BASE_URL . '/admin/news-manager');
+                return;
+            }
+            
+            // Validate CSRF token
+            $token = $_POST['csrf_token'] ?? '';
+            if (!Session::validateCSRFTokenMulti($token)) {
+                Session::setFlash('error', 'Invalid security token');
+                $this->redirect(BASE_URL . '/admin/news-manager/create?type=' . ($_POST['type'] ?? 'news'));
+                return;
+            }
+            
+            // Validate required fields
+            $errors = [];
+            if (empty($_POST['title'])) $errors[] = 'Title is required';
+            if (empty($_POST['content'])) $errors[] = 'Content is required';
+            
+            $type = $_POST['type'] ?? 'news';
+            if ($type === 'event' && empty($_POST['event_date'])) {
+                $errors[] = 'Event date is required';
+            }
+            
+            if (!empty($errors)) {
+                Session::setFlash('error', implode('<br>', $errors));
+                $_SESSION['form_data'] = $_POST;
+                $this->redirect(BASE_URL . '/admin/news-manager/create?type=' . $type);
+                return;
+            }
+            
+            // Prepare data
+            $data = [
+                'title' => $_POST['title'],
+                'slug' => $this->generateSlug($_POST['title']),
+                'excerpt' => $_POST['excerpt'] ?? '',
+                'content' => $_POST['content'],
+                'author_id' => $this->userId,
+                'category' => $_POST['category'] ?? '',
+                'type' => $type,
+                'tags' => $this->processTags($_POST['tags'] ?? ''),
+                'is_published' => isset($_POST['publish']) ? 1 : ($_POST['is_published'] ?? 0),
+                'is_featured' => isset($_POST['is_featured']) ? 1 : 0,
+                'is_breaking' => isset($_POST['is_breaking']) ? 1 : 0,
+                'meta_title' => $_POST['meta_title'] ?? '',
+                'meta_description' => $_POST['meta_description'] ?? '',
+                'meta_keywords' => $_POST['meta_keywords'] ?? ''
+            ];
+            
+            // Add event fields
+            if ($type === 'event') {
+                $data['event_date'] = $_POST['event_date'] ?? null;
+                $data['event_end_date'] = $_POST['event_end_date'] ?? null;
+                $data['event_time'] = $_POST['event_time'] ?? null;
+                $data['event_location'] = $_POST['event_location'] ?? '';
+            }
+            
+            // Insert into database
+            $sql = "INSERT INTO news (title, slug, excerpt, content, author_id, category, type, tags, 
+                                     is_published, is_featured, is_breaking, event_date, event_end_date, 
+                                     event_time, event_location, meta_title, meta_description, meta_keywords,
+                                     created_at, updated_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            
+            $stmt = $this->conn->prepare($sql);
+            $success = $stmt->execute([
+                $data['title'], $data['slug'], $data['excerpt'], $data['content'], $data['author_id'],
+                $data['category'], $data['type'], $data['tags'], $data['is_published'], $data['is_featured'],
+                $data['is_breaking'], $data['event_date'], $data['event_end_date'], $data['event_time'],
+                $data['event_location'], $data['meta_title'], $data['meta_description'], $data['meta_keywords']
+            ]);
+            
+            if ($success) {
+                $id = $this->conn->lastInsertId();
+                Session::setFlash('success', ucfirst($type) . ' created successfully');
+                $this->redirect(BASE_URL . '/admin/news-manager/' . $id . '/edit');
+            } else {
+                Session::setFlash('error', 'Failed to create ' . $type);
+                $_SESSION['form_data'] = $_POST;
+                $this->redirect(BASE_URL . '/admin/news-manager/create?type=' . $type);
+            }
+            
+        } catch (Exception $e) {
+            error_log("store error: " . $e->getMessage());
+            Session::setFlash('error', 'Error: ' . $e->getMessage());
+            $_SESSION['form_data'] = $_POST;
+            $this->redirect(BASE_URL . '/admin/news-manager/create?type=' . ($_POST['type'] ?? 'news'));
+        }
+    }
+    
+    /**
+     * Edit form
+     */
+    public function edit($id) {
+        error_log("=== NEWS MANAGER EDIT METHOD for ID: $id ===");
+        
+        try {
+            if (!$this->hasPermission('news_edit') && !in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'])) {
+                Session::setFlash('error', 'Permission denied');
+                $this->redirect(BASE_URL . '/admin/news-manager');
+                return;
+            }
+            
+            // Get content
+            $sql = "SELECT * FROM news WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$id]);
+            $content = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$content) {
+                Session::setFlash('error', 'Content not found');
+                $this->redirect(BASE_URL . '/admin/news-manager');
+                return;
+            }
+            
+            $categories = $this->getCategoriesWithCounts();
+            
+            $viewData = [
+                'content' => $content,
+                'categories' => $categories,
+                'pageTitle' => 'Edit: ' . $content['title'],
+                'csrf_token' => Session::generateCSRFTokenMulti()
+            ];
+            
+            $this->data = array_merge($this->data, $viewData);
+            $this->render('news-manager/edit');
+            
+        } catch (Exception $e) {
+            error_log("edit error: " . $e->getMessage());
+            Session::setFlash('error', 'Failed to load edit form');
+            $this->redirect(BASE_URL . '/admin/news-manager');
+        }
+    }
+    
+    /**
+     * Update content
+     */
+    public function update($id) {
+        error_log("=== NEWS MANAGER UPDATE METHOD for ID: $id ===");
+        
+        try {
+            if (!$this->hasPermission('news_edit') && !in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'])) {
+                Session::setFlash('error', 'Permission denied');
+                $this->redirect(BASE_URL . '/admin/news-manager');
+                return;
+            }
+            
+            // Validate CSRF token
+            $token = $_POST['csrf_token'] ?? '';
+            if (!Session::validateCSRFTokenMulti($token)) {
+                Session::setFlash('error', 'Invalid security token');
+                $this->redirect(BASE_URL . '/admin/news-manager/' . $id . '/edit');
+                return;
+            }
+            
+            // Check if exists
+            $sql = "SELECT * FROM news WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$id]);
+            $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$existing) {
+                Session::setFlash('error', 'Content not found');
+                $this->redirect(BASE_URL . '/admin/news-manager');
+                return;
+            }
+            
+            // Validate
+            $errors = [];
+            if (empty($_POST['title'])) $errors[] = 'Title is required';
+            if (empty($_POST['content'])) $errors[] = 'Content is required';
+            
+            $type = $_POST['type'] ?? $existing['type'];
+            if ($type === 'event' && empty($_POST['event_date'])) {
+                $errors[] = 'Event date is required';
+            }
+            
+            if (!empty($errors)) {
+                Session::setFlash('error', implode('<br>', $errors));
+                $_SESSION['form_data'] = $_POST;
+                $this->redirect(BASE_URL . '/admin/news-manager/' . $id . '/edit');
+                return;
+            }
+            
+            // Update
+            $sql = "UPDATE news SET 
+                        title = ?, excerpt = ?, content = ?, category = ?, 
+                        tags = ?, is_published = ?, is_featured = ?, is_breaking = ?,
+                        event_date = ?, event_end_date = ?, event_time = ?, event_location = ?,
+                        meta_title = ?, meta_description = ?, meta_keywords = ?,
+                        updated_at = NOW()
+                    WHERE id = ?";
+            
+            $stmt = $this->conn->prepare($sql);
+            $success = $stmt->execute([
+                $_POST['title'],
+                $_POST['excerpt'] ?? '',
+                $_POST['content'],
+                $_POST['category'] ?? '',
+                $this->processTags($_POST['tags'] ?? ''),
+                isset($_POST['publish']) ? 1 : ($_POST['is_published'] ?? 0),
+                isset($_POST['is_featured']) ? 1 : 0,
+                isset($_POST['is_breaking']) ? 1 : 0,
+                $_POST['event_date'] ?? null,
+                $_POST['event_end_date'] ?? null,
+                $_POST['event_time'] ?? null,
+                $_POST['event_location'] ?? '',
+                $_POST['meta_title'] ?? '',
+                $_POST['meta_description'] ?? '',
+                $_POST['meta_keywords'] ?? '',
+                $id
+            ]);
+            
+            if ($success) {
+                Session::setFlash('success', ucfirst($type) . ' updated successfully');
+                
+                if (isset($_POST['save_and_continue'])) {
+                    $this->redirect(BASE_URL . '/admin/news-manager/' . $id . '/edit');
+                } else {
+                    $this->redirect(BASE_URL . '/admin/news-manager');
+                }
+            } else {
+                Session::setFlash('error', 'Failed to update');
+                $_SESSION['form_data'] = $_POST;
+                $this->redirect(BASE_URL . '/admin/news-manager/' . $id . '/edit');
+            }
+            
+        } catch (Exception $e) {
+            error_log("update error: " . $e->getMessage());
+            Session::setFlash('error', 'Error: ' . $e->getMessage());
+            $_SESSION['form_data'] = $_POST;
+            $this->redirect(BASE_URL . '/admin/news-manager/' . $id . '/edit');
+        }
+    }
+    
+    /**
+     * Delete content
+     */
+    public function destroy($id) {
+        error_log("=== NEWS MANAGER DELETE METHOD for ID: $id ===");
+        
+        try {
+            if (!$this->hasPermission('news_delete') && !in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'])) {
+                Session::setFlash('error', 'Permission denied');
+                $this->redirect(BASE_URL . '/admin/news-manager');
+                return;
+            }
+            
+            // Validate CSRF token
+            $token = $_POST['csrf_token'] ?? '';
+            if (!Session::validateCSRFTokenMulti($token)) {
+                Session::setFlash('error', 'Invalid security token');
+                $this->redirect(BASE_URL . '/admin/news-manager');
+                return;
+            }
+            
+            $sql = "DELETE FROM news WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $success = $stmt->execute([$id]);
+            
+            if ($success) {
+                Session::setFlash('success', 'Content deleted successfully');
+            } else {
+                Session::setFlash('error', 'Failed to delete content');
+            }
+            
+        } catch (Exception $e) {
+            error_log("destroy error: " . $e->getMessage());
+            Session::setFlash('error', 'Error: ' . $e->getMessage());
+        }
+        
+        $this->redirect(BASE_URL . '/admin/news-manager');
+    }
+    
+    /**
+     * Categories management
+     */
+    public function categories() {
+        error_log("=== NEWS MANAGER CATEGORIES METHOD ===");
+        
+        try {
+            if (!$this->hasPermission('news_manage_categories') && !in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'])) {
+                Session::setFlash('error', 'Permission denied');
+                $this->redirect(BASE_URL . '/admin/news-manager');
+                return;
+            }
+            
+            $categories = $this->getCategoriesWithCounts();
+            
+            $viewData = [
+                'categories' => $categories,
+                'pageTitle' => 'Manage Categories',
+                'csrf_token' => Session::generateCSRFTokenMulti()
+            ];
+            
+            $this->data = array_merge($this->data, $viewData);
+            $this->render('news-manager/categories');
+            
+        } catch (Exception $e) {
+            error_log("categories error: " . $e->getMessage());
+            Session::setFlash('error', 'Failed to load categories');
+            $this->redirect(BASE_URL . '/admin/news-manager');
+        }
+    }
+    
+    /**
+     * Generate slug from title
+     */
+    private function generateSlug($title) {
+        $slug = strtolower(trim($title));
+        $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+        $slug = preg_replace('/-+/', '-', $slug);
+        $slug = trim($slug, '-');
+        
+        // Check if slug exists
+        $baseSlug = $slug;
+        $counter = 1;
+        
+        while ($this->slugExists($slug)) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+        
+        return $slug;
+    }
+    
+    /**
+     * Check if slug exists
+     */
+    private function slugExists($slug) {
+        $sql = "SELECT COUNT(*) as count FROM news WHERE slug = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$slug]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return ($result['count'] ?? 0) > 0;
+    }
+    
+    /**
+     * Process tags
+     */
+    private function processTags($tags) {
+        if (empty($tags)) {
+            return '';
+        }
+        
+        // Check if it's already JSON
+        if (is_string($tags) && strpos($tags, '[') === 0) {
+            return $tags;
+        }
+        
+        // Convert comma-separated to array
+        $tagArray = array_map('trim', explode(',', $tags));
+        $tagArray = array_filter($tagArray);
+        
+        return json_encode(array_values($tagArray));
+    }
+    
+    /**
+     * Time ago helper
+     */
+    private function timeAgo($datetime) {
+        $time = strtotime($datetime);
+        $now = time();
+        $diff = $now - $time;
+        
+        if ($diff < 60) return 'just now';
+        if ($diff < 3600) return floor($diff / 60) . ' minutes ago';
+        if ($diff < 86400) return floor($diff / 3600) . ' hours ago';
+        if ($diff < 2592000) return floor($diff / 86400) . ' days ago';
+        
+        return date('M d, Y', $time);
+    }
+}

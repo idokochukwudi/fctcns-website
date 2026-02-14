@@ -1,0 +1,1377 @@
+<?php
+// Include Session class
+require_once APP_PATH . '/config/session.php';
+
+// Ensure variables exist with proper defaults
+$baseUrl = $data['baseUrl'] ?? BASE_URL;
+$content = $data['content'] ?? [];
+$stats = $data['stats'] ?? [];
+$categories = $data['categories'] ?? [];
+$filters = $data['filters'] ?? [];
+$pagination = $data['pagination'] ?? [];
+$permissions = $data['permissions'] ?? [];
+
+// Permission helper
+$hasPermission = function($perm) use ($permissions) {
+    return in_array($perm, $permissions) || 
+           (isset($permissions[$perm]) && $permissions[$perm]) ||
+           (is_callable([$this, 'hasPermission']) ? $this->hasPermission($perm) : false);
+};
+
+// Ensure stats have all required keys
+$defaultStats = [
+    'total' => 0, 'news' => 0, 'events' => 0, 'published' => 0, 
+    'draft' => 0, 'featured' => 0, 'breaking' => 0, 
+    'this_month' => 0, 'this_week' => 0
+];
+$stats = array_merge($defaultStats, $stats);
+
+// Generate CSRF token
+$csrfToken = Session::generateCSRFTokenMulti();
+
+// Get flash messages
+$flashSuccess = Session::getFlash('success') ?? '';
+$flashError = Session::getFlash('error') ?? '';
+
+// Get current user
+$userId = Session::getUserId();
+$username = Session::getUsername() ?? 'News Manager';
+$userRole = $data['userRole'] ?? Session::getUserRole() ?? 'news_manager';
+$userInitials = strtoupper(substr($username, 0, 2));
+
+// Role display name
+$roleDisplayNames = [
+    'admin' => 'Administrator',
+    'editor' => 'Editor',
+    'news_manager' => 'News Manager',
+    'contributor' => 'Contributor'
+];
+$displayRole = $roleDisplayNames[$userRole] ?? ucfirst($userRole);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Manager Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --purple: #8b5cf6;
+            --news: #4f46e5;
+            --light: #f8fafc;
+            --dark: #1e293b;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-light: #64748b;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--light);
+            color: var(--text);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--dark);
+            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .sidebar-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .sidebar-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--news), var(--primary-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.25rem;
+        }
+
+        .sidebar-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .sidebar-subtitle {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 1.25rem 0;
+            overflow-y: auto;
+        }
+
+        .nav-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-section-title {
+            padding: 0 1.25rem 0.5rem;
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        .nav-links {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.125rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .nav-link.active {
+            background: rgba(79, 70, 229, 0.2);
+            color: white;
+            border-left-color: var(--news);
+        }
+
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--warning);
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+        }
+
+        .sidebar-footer {
+            padding: 1.25rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--news), var(--primary-dark));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-info h4 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.125rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-info span {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            display: block;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-bar {
+            height: 70px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 900;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .page-title h1 {
+            font-size: 1.375rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .notification-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            color: var(--text-light);
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .notification-btn:hover {
+            background: var(--light);
+            color: var(--text);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.6875rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            color: var(--text-light);
+        }
+
+        .content-area {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border-left: 4px solid var(--news);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            color: var(--text);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--news);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--news), var(--primary-dark));
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--news);
+            border: 2px solid var(--news);
+        }
+
+        .btn-outline:hover {
+            background: var(--news);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--light);
+        }
+
+        .card-header h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text);
+        }
+
+        .card-header h3 i {
+            color: var(--news);
+        }
+
+        .card-header a {
+            color: var(--news);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .card-header a:hover {
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Article Lists */
+        .article-list {
+            list-style: none;
+        }
+
+        .article-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .article-item:last-child {
+            border-bottom: none;
+        }
+
+        .article-info {
+            flex: 1;
+        }
+
+        .article-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .article-title a {
+            color: var(--text);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .article-title a:hover {
+            color: var(--news);
+        }
+
+        .article-meta {
+            font-size: 0.8125rem;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: var(--warning);
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: var(--info);
+        }
+
+        .badge-news {
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--news);
+        }
+
+        .badge-event {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--purple);
+        }
+
+        .badge-breaking {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .badge-featured {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        /* Quick Stats */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .quick-stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--light);
+            border-radius: 8px;
+        }
+
+        .quick-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--news);
+            margin-bottom: 0.25rem;
+        }
+
+        .quick-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        /* Activity List */
+        .activity-list {
+            list-style: none;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--news);
+            flex-shrink: 0;
+        }
+
+        .activity-details {
+            flex: 1;
+        }
+
+        .activity-text {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.125rem;
+        }
+
+        .activity-time {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        /* Category Tags */
+        .category-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .category-tag {
+            padding: 0.5rem 1rem;
+            background: var(--light);
+            border-radius: 20px;
+            font-size: 0.875rem;
+            color: var(--text);
+            text-decoration: none;
+            transition: all 0.2s;
+            border: 1px solid var(--border);
+        }
+
+        .category-tag:hover {
+            background: var(--news);
+            color: white;
+            border-color: var(--news);
+        }
+
+        .category-count {
+            margin-left: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.75rem;
+        }
+
+        .category-tag:hover .category-count {
+            color: white;
+        }
+
+        /* Flash Messages */
+        .flash-message {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            box-shadow: var(--shadow-md);
+            animation: slideIn 0.3s;
+        }
+
+        .flash-success {
+            border-left: 4px solid var(--success);
+        }
+
+        .flash-error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .flash-close {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: var(--border);
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h4 {
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .empty-state p {
+            color: var(--text-light);
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                transition: transform 0.3s;
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .mobile-menu-toggle {
+                display: flex;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .quick-actions {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="<?php echo $baseUrl; ?>/admin/news-manager" class="sidebar-brand">
+                <div class="sidebar-logo">
+                    <i class="fas fa-newspaper"></i>
+                </div>
+                <div>
+                    <div class="sidebar-title">News Manager</div>
+                    <div class="sidebar-subtitle">v1.0.0</div>
+                </div>
+            </a>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <h3 class="nav-section-title">Main</h3>
+                <ul class="nav-links">
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager" class="nav-link active">
+                            <i class="fas fa-chart-pie nav-icon"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="nav-section-title">Content</h3>
+                <ul class="nav-links">
+                    <?php if ($hasPermission('news_create')): ?>
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager/create?type=news" class="nav-link">
+                            <i class="fas fa-plus-circle nav-icon"></i>
+                            <span>Create News</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager/create?type=event" class="nav-link">
+                            <i class="fas fa-calendar-plus nav-icon"></i>
+                            <span>Create Event</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager" class="nav-link">
+                            <i class="fas fa-list-ul nav-icon"></i>
+                            <span>All Items</span>
+                            <span class="nav-badge"><?php echo $stats['total'] ?? 0; ?></span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager?status=draft" class="nav-link">
+                            <i class="fas fa-pen-fancy nav-icon"></i>
+                            <span>Drafts</span>
+                            <span class="nav-badge"><?php echo $stats['draft'] ?? 0; ?></span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager?status=published" class="nav-link">
+                            <i class="fas fa-check-circle nav-icon"></i>
+                            <span>Published</span>
+                            <span class="nav-badge"><?php echo $stats['published'] ?? 0; ?></span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="nav-section-title">Management</h3>
+                <ul class="nav-links">
+                    <?php if ($hasPermission('news_manage_categories')): ?>
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager/categories" class="nav-link">
+                            <i class="fas fa-tags nav-icon"></i>
+                            <span>Categories</span>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager?is_featured=1" class="nav-link">
+                            <i class="fas fa-star nav-icon"></i>
+                            <span>Featured</span>
+                            <span class="nav-badge"><?php echo $stats['featured'] ?? 0; ?></span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager?is_breaking=1" class="nav-link">
+                            <i class="fas fa-bolt nav-icon"></i>
+                            <span>Breaking News</span>
+                            <span class="nav-badge"><?php echo $stats['breaking'] ?? 0; ?></span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="nav-section-title">By Type</h3>
+                <ul class="nav-links">
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager?type=news" class="nav-link">
+                            <i class="fas fa-newspaper nav-icon"></i>
+                            <span>News Only</span>
+                            <span class="nav-badge"><?php echo $stats['news'] ?? 0; ?></span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager?type=event" class="nav-link">
+                            <i class="fas fa-calendar-alt nav-icon"></i>
+                            <span>Events Only</span>
+                            <span class="nav-badge"><?php echo $stats['events'] ?? 0; ?></span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="nav-section-title">Navigation</h3>
+                <ul class="nav-links">
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>/admin/dashboard" class="nav-link">
+                            <i class="fas fa-arrow-left nav-icon"></i>
+                            <span>Main Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?php echo $baseUrl; ?>" class="nav-link" target="_blank">
+                            <i class="fas fa-external-link-alt nav-icon"></i>
+                            <span>View Site</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <?php echo $userInitials; ?>
+                </div>
+                <div class="user-info">
+                    <h4><?php echo htmlspecialchars($username); ?></h4>
+                    <span><?php echo $displayRole; ?></span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="page-title">
+                <h1>News & Events Dashboard</h1>
+            </div>
+            <div class="header-actions">
+                <button class="notification-btn" id="notificationBtn">
+                    <i class="fas fa-bell"></i>
+                    <?php 
+                    $notificationCount = ($stats['draft'] ?? 0) + ($stats['breaking'] ?? 0);
+                    if ($notificationCount > 0): 
+                    ?>
+                    <span class="notification-badge"><?php echo min($notificationCount, 99); ?></span>
+                    <?php endif; ?>
+                </button>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Flash Messages -->
+            <?php if ($flashSuccess): ?>
+            <div class="flash-message flash-success">
+                <span><i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($flashSuccess); ?></span>
+                <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
+            </div>
+            <?php endif; ?>
+            
+            <?php if ($flashError): ?>
+            <div class="flash-message flash-error">
+                <span><i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($flashError); ?></span>
+                <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
+            </div>
+            <?php endif; ?>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <?php if ($hasPermission('news_create')): ?>
+                <a href="<?php echo $baseUrl; ?>/admin/news-manager/create?type=news" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create News Article
+                </a>
+                <a href="<?php echo $baseUrl; ?>/admin/news-manager/create?type=event" class="btn btn-outline">
+                    <i class="fas fa-calendar-plus"></i> Create Event
+                </a>
+                <?php endif; ?>
+                
+                <?php if ($hasPermission('news_manage_categories')): ?>
+                <a href="<?php echo $baseUrl; ?>/admin/news-manager/categories" class="btn btn-outline">
+                    <i class="fas fa-tags"></i> Manage Categories
+                </a>
+                <?php endif; ?>
+            </div>
+
+            <!-- Stats Grid - NOW SHOWING REAL DATA -->
+            <div class="stats-grid">
+                <div class="stat-card" onclick="window.location.href='<?php echo $baseUrl; ?>/admin/news-manager'">
+                    <div class="stat-info">
+                        <div class="stat-value"><?php echo number_format($stats['total']); ?></div>
+                        <div class="stat-label">Total Items</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='<?php echo $baseUrl; ?>/admin/news-manager?type=news'">
+                    <div class="stat-info">
+                        <div class="stat-value"><?php echo number_format($stats['news']); ?></div>
+                        <div class="stat-label">News Articles</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-newspaper"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='<?php echo $baseUrl; ?>/admin/news-manager?type=event'">
+                    <div class="stat-info">
+                        <div class="stat-value"><?php echo number_format($stats['events']); ?></div>
+                        <div class="stat-label">Events</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='<?php echo $baseUrl; ?>/admin/news-manager?status=published'">
+                    <div class="stat-info">
+                        <div class="stat-value"><?php echo number_format($stats['published']); ?></div>
+                        <div class="stat-label">Published</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='<?php echo $baseUrl; ?>/admin/news-manager?status=draft'">
+                    <div class="stat-info">
+                        <div class="stat-value"><?php echo number_format($stats['draft']); ?></div>
+                        <div class="stat-label">Drafts</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-pen-fancy"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='<?php echo $baseUrl; ?>/admin/news-manager?is_featured=1'">
+                    <div class="stat-info">
+                        <div class="stat-value"><?php echo number_format($stats['featured']); ?></div>
+                        <div class="stat-label">Featured</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Grid with Recent Items -->
+            <div class="content-grid">
+                <!-- Recent Items -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-clock"></i> Recent Items</h3>
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($content)): ?>
+                        <div class="empty-state">
+                            <i class="fas fa-newspaper"></i>
+                            <h4>No Content Yet</h4>
+                            <p>Start creating your first news article or event</p>
+                            <?php if ($hasPermission('news_create')): ?>
+                            <a href="<?php echo $baseUrl; ?>/admin/news-manager/create?type=news" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i> Create News
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                        <?php else: ?>
+                        <ul class="article-list">
+                            <?php foreach (array_slice($content, 0, 5) as $item): ?>
+                            <li class="article-item">
+                                <div class="article-info">
+                                    <div class="article-title">
+                                        <a href="<?php echo $baseUrl; ?>/admin/news-manager/<?php echo $item['id']; ?>/edit">
+                                            <?php 
+                                            $title = $item['title'] ?? 'Untitled';
+                                            echo htmlspecialchars(strlen($title) > 50 ? substr($title, 0, 50) . '...' : $title); 
+                                            ?>
+                                        </a>
+                                        
+                                        <!-- Type Badge -->
+                                        <?php if (($item['type'] ?? 'news') === 'event'): ?>
+                                            <span class="badge badge-event">Event</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-news">News</span>
+                                        <?php endif; ?>
+                                        
+                                        <!-- Status Badge -->
+                                        <?php if (($item['is_published'] ?? 0)): ?>
+                                            <span class="badge badge-success">Published</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-warning">Draft</span>
+                                        <?php endif; ?>
+                                        
+                                        <!-- Special Badges -->
+                                        <?php if (($item['is_featured'] ?? 0)): ?>
+                                            <span class="badge badge-featured">Featured</span>
+                                        <?php endif; ?>
+                                        
+                                        <?php if (($item['is_breaking'] ?? 0)): ?>
+                                            <span class="badge badge-breaking">Breaking</span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="article-meta">
+                                        <span><i class="far fa-calendar"></i> 
+                                            <?php 
+                                            if (($item['type'] ?? 'news') === 'event' && !empty($item['event_date'])) {
+                                                echo date('M d, Y', strtotime($item['event_date']));
+                                            } else {
+                                                echo date('M d, Y', strtotime($item['created_at'] ?? 'now'));
+                                            }
+                                            ?>
+                                        </span>
+                                        
+                                        <?php if (!empty($item['category'])): ?>
+                                        <span><i class="far fa-folder"></i> <?php echo htmlspecialchars($item['category']); ?></span>
+                                        <?php endif; ?>
+                                        
+                                        <?php if (!empty($item['views_count'])): ?>
+                                        <span><i class="far fa-eye"></i> <?php echo number_format($item['views_count']); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <a href="<?php echo $baseUrl; ?>/admin/news-manager/<?php echo $item['id']; ?>/edit" class="btn btn-sm" style="background: var(--light); color: var(--text);">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Quick Stats & Info -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> Quick Stats</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Time-based Stats -->
+                        <div class="quick-stats">
+                            <div class="quick-stat-item">
+                                <div class="quick-stat-value"><?php echo $stats['this_week'] ?? 0; ?></div>
+                                <div class="quick-stat-label">This Week</div>
+                            </div>
+                            <div class="quick-stat-item">
+                                <div class="quick-stat-value"><?php echo $stats['this_month'] ?? 0; ?></div>
+                                <div class="quick-stat-label">This Month</div>
+                            </div>
+                        </div>
+
+                        <!-- Breakdown by Status -->
+                        <h4 style="margin: 1rem 0 0.5rem; font-size: 0.9rem; color: var(--text-light);">Content Breakdown</h4>
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>News vs Events</span>
+                                <span>
+                                    <?php echo $stats['news'] ?? 0; ?> News / 
+                                    <?php echo $stats['events'] ?? 0; ?> Events
+                                </span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Published vs Drafts</span>
+                                <span>
+                                    <?php echo $stats['published'] ?? 0; ?> Published / 
+                                    <?php echo $stats['draft'] ?? 0; ?> Drafts
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Drafts List -->
+                        <?php 
+                        $drafts = array_filter($content, function($item) {
+                            return !($item['is_published'] ?? 0);
+                        });
+                        if (!empty($drafts)): 
+                        ?>
+                        <h4 style="margin: 1rem 0 0.5rem; font-size: 0.9rem; color: var(--text-light);">
+                            <i class="fas fa-pen-fancy" style="color: var(--warning);"></i> 
+                            Drafts Need Attention
+                        </h4>
+                        <ul class="article-list">
+                            <?php foreach (array_slice($drafts, 0, 3) as $draft): ?>
+                            <li class="article-item">
+                                <div class="article-info">
+                                    <div class="article-title" style="font-size: 0.9rem;">
+                                        <a href="<?php echo $baseUrl; ?>/admin/news-manager/<?php echo $draft['id']; ?>/edit">
+                                            <?php echo htmlspecialchars(strlen($draft['title'] ?? '') > 30 ? 
+                                                substr($draft['title'], 0, 30) . '...' : 
+                                                ($draft['title'] ?? 'Untitled')); ?>
+                                        </a>
+                                    </div>
+                                    <div class="article-meta">
+                                        <span>Last edited <?php 
+                                            $date = $draft['updated_at'] ?? $draft['created_at'] ?? 'now';
+                                            echo date('M d', strtotime($date)); 
+                                        ?></span>
+                                    </div>
+                                </div>
+                                <a href="<?php echo $baseUrl; ?>/admin/news-manager/<?php echo $draft['id']; ?>/edit" class="btn btn-sm" style="background: var(--light); color: var(--text);">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <?php endif; ?>
+
+                        <!-- Upcoming Events -->
+                        <?php 
+                        $upcomingEvents = array_filter($content, function($item) {
+                            return ($item['type'] ?? 'news') === 'event' && 
+                                   !empty($item['event_date']) && 
+                                   strtotime($item['event_date']) >= strtotime('today');
+                        });
+                        if (!empty($upcomingEvents)): 
+                        ?>
+                        <h4 style="margin: 1rem 0 0.5rem; font-size: 0.9rem; color: var(--text-light);">
+                            <i class="fas fa-calendar-alt" style="color: var(--purple);"></i> 
+                            Upcoming Events
+                        </h4>
+                        <ul class="article-list">
+                            <?php foreach (array_slice($upcomingEvents, 0, 3) as $event): ?>
+                            <li class="article-item">
+                                <div class="article-info">
+                                    <div class="article-title" style="font-size: 0.9rem;">
+                                        <a href="<?php echo $baseUrl; ?>/admin/news-manager/<?php echo $event['id']; ?>/edit">
+                                            <?php echo htmlspecialchars(strlen($event['title'] ?? '') > 30 ? 
+                                                substr($event['title'], 0, 30) . '...' : 
+                                                ($event['title'] ?? 'Untitled')); ?>
+                                        </a>
+                                    </div>
+                                    <div class="article-meta">
+                                        <span><i class="far fa-calendar"></i> 
+                                            <?php echo date('M d, Y', strtotime($event['event_date'])); ?>
+                                        </span>
+                                        <?php if (!empty($event['event_location'])): ?>
+                                        <span><i class="fas fa-map-marker-alt"></i> 
+                                            <?php echo htmlspecialchars($event['event_location']); ?>
+                                        </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Section -->
+            <?php if (!empty($categories)): ?>
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-header">
+                    <h3><i class="fas fa-tags"></i> Categories</h3>
+                    <?php if ($hasPermission('news_manage_categories')): ?>
+                    <a href="<?php echo $baseUrl; ?>/admin/news-manager/categories">Manage</a>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <div class="category-tags">
+                        <?php foreach ($categories as $category): 
+                            $catName = is_array($category) ? ($category['name'] ?? 'Category') : $category;
+                            $catCount = is_array($category) ? ($category['count'] ?? 0) : 0;
+                        ?>
+                        <a href="<?php echo $baseUrl; ?>/admin/news-manager?category=<?php echo urlencode($catName); ?>" class="category-tag">
+                            <?php echo htmlspecialchars($catName); ?>
+                            <?php if ($catCount > 0): ?>
+                            <span class="category-count">(<?php echo $catCount; ?>)</span>
+                            <?php endif; ?>
+                        </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+    </main>
+
+    <script>
+        // Mobile menu toggle
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const sidebar = document.getElementById('sidebar');
+
+        mobileMenuToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            if (window.innerWidth <= 768 && 
+                !sidebar.contains(event.target) && 
+                !mobileMenuToggle.contains(event.target) && 
+                sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+            }
+        });
+
+        // Auto-hide flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.opacity = '0';
+                msg.style.transition = 'opacity 0.5s';
+                setTimeout(() => msg.remove(), 500);
+            });
+        }, 5000);
+
+        // Notification button
+        const notificationBtn = document.getElementById('notificationBtn');
+        if (notificationBtn) {
+            notificationBtn.addEventListener('click', function() {
+                const drafts = <?php echo $stats['draft'] ?? 0; ?>;
+                const breaking = <?php echo $stats['breaking'] ?? 0; ?>;
+                
+                let message = '📋 Notifications:\n\n';
+                
+                if (drafts > 0) {
+                    message += `• You have ${drafts} draft article(s) waiting\n`;
+                }
+                if (breaking > 0) {
+                    message += `• ${breaking} breaking news article(s) need attention\n`;
+                }
+                if (drafts === 0 && breaking === 0) {
+                    message += 'No new notifications';
+                }
+                
+                alert(message);
+            });
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            <?php if ($hasPermission('news_create')): ?>
+            // Ctrl/Cmd + N for new news
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                e.preventDefault();
+                window.location.href = '<?php echo $baseUrl; ?>/admin/news-manager/create?type=news';
+            }
+            // Ctrl/Cmd + Shift + N for new event
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'N') {
+                e.preventDefault();
+                window.location.href = '<?php echo $baseUrl; ?>/admin/news-manager/create?type=event';
+            }
+            <?php endif; ?>
+
+            // Ctrl/Cmd + D for dashboard
+            if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+                e.preventDefault();
+                window.location.href = '<?php echo $baseUrl; ?>/admin/news-manager';
+            }
+        });
+    </script>
+</body>
+</html>

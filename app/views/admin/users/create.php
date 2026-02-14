@@ -372,9 +372,18 @@
                         
                         <div class="row">
                             <?php 
-                            // Group permissions - UPDATED TO INCLUDE RESEARCH MANAGEMENT GROUP
+                            // Group permissions - UPDATED TO INCLUDE NEWS MANAGEMENT GROUP
                             $groupedPermissions = [
-                                // ADDED NEW GROUP AT THE TOP:
+                                // ADDED NEWS MANAGEMENT GROUP AT THE TOP
+                                'News & Events Management' => [ // ADD THIS NEW GROUP
+                                    'news_view' => 'View News & Events',
+                                    'news_create' => 'Create News & Events',
+                                    'news_edit' => 'Edit News & Events',
+                                    'news_delete' => 'Delete News & Events',
+                                    'news_publish' => 'Publish/Unpublish',
+                                    'news_manage_categories' => 'Manage Categories',
+                                    'news_upload_images' => 'Upload Images'
+                                ],
                                 'Research Management' => [
                                     'research_view' => 'View Research Publications',
                                     'research_create' => 'Create Publications',
@@ -467,19 +476,24 @@
             alert('Generated password: ' + password);
         }
         
-        // Role-based permission presets - UPDATED TO INCLUDE RESEARCH PERMISSIONS
+        // Role-based permission presets - UPDATED TO INCLUDE NEWS MANAGER
         document.getElementById('role').addEventListener('change', function() {
             const role = this.value;
             const presets = {
                 'admin': [
-                    // Existing nominal roll permissions
+                    // Nominal Roll
                     'nominal_roll_view', 'nominal_roll_create', 'nominal_roll_edit', 'nominal_roll_delete',
                     'nominal_roll_bulk_upload', 'nominal_roll_export', 'nominal_roll_settings', 'nominal_roll_approve',
-                    // ADDED RESEARCH PERMISSIONS
+                    // Research
                     'research_view', 'research_create', 'research_edit', 'research_delete', 'research_publish',
-                    // Other permissions
+                    // News (for admin)
+                    'news_view', 'news_create', 'news_edit', 'news_delete', 'news_publish', 
+                    'news_manage_categories', 'news_upload_images',
+                    // User Management
                     'user_view', 'user_create', 'user_edit', 'user_delete',
+                    // Applications
                     'application_view', 'application_edit', 'application_delete',
+                    // System
                     'system_settings', 'system_backup', 'system_reports'
                 ],
                 'editor': [
@@ -496,10 +510,18 @@
                     'nominal_roll_view', 'nominal_roll_create', 'nominal_roll_edit',
                     'application_view', 'system_reports'
                 ],
-                // ADDED NEW ROLE: research_manager
+                'nominal_roll_user': [
+                    'nominal_roll_view', 'nominal_roll_create', 'nominal_roll_edit', 'nominal_roll_export'
+                ],
                 'research_manager': [
                     'research_view', 'research_create', 'research_edit', 'research_publish'
-                    // Note: No research_delete for safety
+                    // No research_delete for safety
+                ],
+                // ADD THIS NEW PRESET - NEWS MANAGER
+                'news_manager': [
+                    'news_view', 'news_create', 'news_edit', 'news_delete', 
+                    'news_publish', 'news_manage_categories', 'news_upload_images'
+                    // No research permissions - intentionally excluded
                 ]
             };
             
