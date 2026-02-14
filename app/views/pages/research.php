@@ -1,15 +1,19 @@
 <?php
 /**
- * Research Publications Page - Professional Redesign (Mature Light Purple Theme)
- * Mobile-Optimized Version - FULL WIDTH
- * Complete Redesign with Professional Sections
- * Updated: Fixed image path, added transparent background, reduced font size, removed animations
- * FIXED: Enhanced search display with better results header
- * ENHANCED: Search form scrolls to publications section
- * FIXED: No gap between header and research body + flash messages display
+ * Research Publications Page - Professional Redesign (Enhanced Pattern)
+ * Complete redesign using the elegant news page pattern
+ * Maintains all functionality with improved aesthetics
+ * 
+ * FIXED: Removed header spacing
+ * FIXED: Cards without images now show proper text-only layout
+ * FIXED: Hero section uses your original image path
+ * FIXED: Light, clean purple applied to hero elements
+ * FIXED: Proper side margins - content no longer too close to edges
+ * FIXED v5.5: Content inside hero fully padded and centered, never touches edges
+ * FIXED v5.5: Fluid clamp()-based gutters that adapt from mobile → 4K
  * 
  * @package FCTCNS
- * @version 4.6
+ * @version 5.5
  */
 
 extract($data ?? []);
@@ -17,6 +21,18 @@ extract($data ?? []);
 if (!function_exists('e')) {
     function e($text) {
         return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('getImageUrl')) {
+    function getImageUrl($path) {
+        global $baseUrl;
+        if (empty($path)) return '';
+        $path = trim($path);
+        if (strpos($path, 'http') === 0 || strpos($path, '//') === 0) return htmlspecialchars($path);
+        if (strpos($path, '/uploads/') === 0) return $baseUrl . htmlspecialchars($path);
+        if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $path)) return $baseUrl . '/uploads/research/' . htmlspecialchars($path);
+        return $baseUrl . '/' . htmlspecialchars($path);
     }
 }
 
@@ -33,42 +49,28 @@ $flash_success = $flash_success ?? null;
 $flash_error = $flash_error ?? null;
 $flash_errors = $flash_errors ?? null;
 
-// FIXED: Add forward slash between domain and path
-$heroImagePath = rtrim($baseUrl, '/') . '/assets/images/research/research-hero.jpg';
-
 // Check for scroll parameter
 $scrollToPublications = isset($_GET['scroll']) && $_GET['scroll'] === 'publications';
 
-// Preload the hero image
-if (file_exists($_SERVER['DOCUMENT_ROOT'] . $heroImagePath)) {
-    echo '<link rel="preload" href="' . $heroImagePath . '" as="image">';
-}
+// Use original image paths
+$heroImagePath = rtrim($baseUrl, '/') . '/assets/images/research/research-hero.jpg';
+$featuredImagePath = rtrim($baseUrl, '/') . '/assets/images/research/featured-research.jpg';
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-    <meta name="description" content="<?php echo e($page_description ?? 'FCT College of Nursing Sciences - Research Publications & Academic Research'); ?>">
-    <title><?php echo e($pageTitle ?? 'Research Publications - FCT College of Nursing Sciences'); ?></title>
-    
-    <!-- Professional Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 /* ==========================================================================
-   CRITICAL: REMOVE ALL GAPS BETWEEN HEADER AND RESEARCH BODY
+   CORE RESET
    ========================================================================== */
-* {
+*, *::before, *::after {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
 }
 
 html, body {
@@ -81,104 +83,143 @@ html, body {
 body {
     min-height: 100vh;
     background-color: #FFFFFF;
-    font-family: 'Open Sans', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-    font-weight: 400;
-    line-height: 1.6;
-    color: #2D3748;
-    width: 100%;
-    max-width: 100%;
 }
 
-/* Remove ALL spacing from body and header */
-body > header,
-body > .header,
-body > nav,
-body > .navbar {
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* Remove spacing from main wrapper */
 #main-content,
-.research-content,
+.rp-content,
 main {
     margin: 0 !important;
     padding: 0 !important;
     width: 100%;
 }
 
-/* Make sure hero section starts at top */
-.research-hero {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-    border-top: none !important;
+/* ==========================================================================
+   DESIGN TOKENS
+   ========================================================================== */
+:root {
+    --ink:          #1A1F2E;
+    --ink-mid:      #2A3042;
+    --ink-soft:     #3A4055;
+    --slate:        #5B677B;
+    --mist:         #8E9AAC;
+    --border:       #E9EDF2;
+    --surface:      #F7F9FC;
+    --white:        #FFFFFF;
+
+    --purple:       #8B7BB8;
+    --purple-dark:  #6D5C9E;
+    --purple-light: #B2A4D4;
+    --purple-pale:  #F3F0FA;
+    --purple-soft:  #A594C9;
+
+    --gold:         #C9A44A;
+    --gold-light:   #D8B86C;
+    --gold-pale:    #FDF8ED;
+
+    --color-journal:    #6D8EB0;
+    --color-conference: #8B7BB8;
+    --color-book:       #B08968;
+    --color-thesis:     #5D9B8C;
+
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-body:    'Outfit', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
+
+    --radius-sm:    6px;
+    --radius-md:    12px;
+    --radius-lg:    20px;
+    --radius-xl:    28px;
+    --radius-full:  9999px;
+
+    --shadow-xs:    0 1px 3px rgba(0,0,0,0.04);
+    --shadow-sm:    0 2px 8px rgba(0,0,0,0.05);
+    --shadow-md:    0 6px 24px rgba(0,0,0,0.06);
+    --shadow-lg:    0 16px 48px rgba(0,0,0,0.08);
+    --shadow-xl:    0 32px 80px rgba(0,0,0,0.10);
+
+    /*
+     * KEY SPACING TOKENS — fluid gutters
+     * clamp(MIN, PREFERRED_VW, MAX)
+     *  - On 320px mobile  → 20px side-gutter
+     *  - On 768px tablet  → ~32px
+     *  - On 1280px desktop→ ~64px (5vw)
+     *  - On 1920px wide   → 96px cap
+     *
+     * The --container-max caps the readable column width.
+     */
+    --gutter:         clamp(1.25rem, 5vw, 6rem);
+    --container-max:  1400px;
 }
 
 /* ==========================================================================
-   FLASH MESSAGES STYLES - ADDED
+   ROOT SCOPE
    ========================================================================== */
-.flash-messages-container {
+.rp-root {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--white);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    width: 100%;
+}
+
+/* ==========================================================================
+   CONTAINER — always has safe side-gutters, never stretches past max-width
+   ========================================================================== */
+.rp-container {
+    width: 100%;
+    max-width: var(--container-max);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left:  var(--gutter);
+    padding-right: var(--gutter);
+}
+
+/* ==========================================================================
+   FLASH MESSAGES
+   ========================================================================== */
+.rp-flash-messages {
     position: fixed;
     top: 80px;
     right: 20px;
     z-index: 9999;
     max-width: 400px;
-    width: 90%;
+    width: calc(100% - 40px);
 }
 
-.flash-message {
+.rp-flash-message {
     padding: 15px 20px;
     margin-bottom: 10px;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
     display: flex;
     align-items: center;
     gap: 12px;
     animation: slideInRight 0.3s ease-out;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    position: relative;
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 @keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+    from { transform: translateX(110%); opacity: 0; }
+    to   { transform: translateX(0);   opacity: 1; }
 }
 
-.flash-message.success {
-    background: linear-gradient(135deg, rgba(76, 175, 80, 0.95), rgba(56, 142, 60, 0.95));
+.rp-flash-message.success {
+    background: linear-gradient(135deg, rgba(76,175,80,0.95), rgba(56,142,60,0.95));
     color: white;
 }
 
-.flash-message.error {
-    background: linear-gradient(135deg, rgba(244, 67, 54, 0.95), rgba(198, 40, 40, 0.95));
+.rp-flash-message.error {
+    background: linear-gradient(135deg, rgba(244,67,54,0.95), rgba(198,40,40,0.95));
     color: white;
 }
 
-.flash-message.warning {
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.95), rgba(245, 124, 0, 0.95));
-    color: white;
-}
+.rp-flash-message .icon { font-size: 1.2rem; flex-shrink: 0; }
+.rp-flash-message .content { flex: 1; font-size: 0.95rem; line-height: 1.4; }
 
-.flash-message .icon {
-    font-size: 1.2rem;
-    flex-shrink: 0;
-}
-
-.flash-message .content {
-    flex: 1;
-    font-size: 0.95rem;
-    line-height: 1.4;
-}
-
-.flash-message .close-btn {
+.rp-flash-message .close-btn {
     background: none;
     border: none;
     color: inherit;
@@ -186,8 +227,7 @@ main {
     cursor: pointer;
     padding: 4px;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    width: 28px; height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -196,2095 +236,1756 @@ main {
     transition: opacity 0.2s;
 }
 
-.flash-message .close-btn:hover {
+.rp-flash-message .close-btn:hover {
     opacity: 1;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255,255,255,0.15);
 }
 
-/* Mobile flash messages */
-@media (max-width: 768px) {
-    .flash-messages-container {
+@media (max-width: 480px) {
+    .rp-flash-messages {
         top: 70px;
-        right: 10px;
-        left: 10px;
+        right: 12px;
+        left: 12px;
         max-width: none;
         width: auto;
     }
 }
 
 /* ==========================================================================
-   GLOBAL VARIABLES - PROFESSIONAL MATURE DESIGN
+   HERO — full-bleed background, padded inner content
    ========================================================================== */
-:root {
-    /* Professional Color Palette - Muted Elegance */
-    --color-primary: #5D4A8A;           /* Deep sophisticated purple */
-    --color-primary-dark: #4A3A6F;
-    --color-primary-light: #6F5B9E;
-    --color-primary-very-light: #F8F6FC;
-    --color-primary-transparent: rgba(93, 74, 138, 0.08);
-    
-    --color-secondary: #3A6B8F;         /* Professional blue */
-    --color-secondary-dark: #2D5570;
-    
-    --color-accent: #D4A574;            /* Muted gold accent */
-    --color-accent-dark: #BF8F5E;
-    --color-accent-light: #E6C9A5;
-    
-    /* Research-specific colors */
-    --color-journal: #4A7B9D;
-    --color-conference: #7B4A9D;
-    --color-book: #9D7B4A;
-    --color-thesis: #4A9D7B;
-    
-    /* Enhanced Neutral Colors - Professional */
-    --color-white: #FFFFFF;
-    --color-off-white: #FAFAFA;
-    --color-gray-50: #F5F7FA;
-    --color-gray-100: #E8ECF1;
-    --color-gray-200: #D1D9E3;
-    --color-gray-300: #B8C2CC;
-    --color-gray-600: #718096;
-    --color-gray-800: #2D3748;
-    --color-gray-900: #1A202C;
-    --color-black: #000000;
-    
-    /* Typography - Professional Scale */
-    --font-heading: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-body: 'Open Sans', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-    
-    /* Professional Spacing */
-    --spacing-xs: 0.5rem;
-    --spacing-sm: 0.875rem;
-    --spacing-md: 1.25rem;
-    --spacing-lg: 1.75rem;
-    --spacing-xl: 2.25rem;
-    --spacing-xxl: 3rem;
-    
-    /* Touch Targets */
-    --touch-target: 44px;
-    
-    /* Subtle Professional Shadows */
-    --shadow-subtle: 0 2px 6px rgba(0, 0, 0, 0.05);
-    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.12);
-    
-    /* Border Radius */
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-full: 999px;
-}
 
-/* ==========================================================================
-   MAIN CONTENT STRUCTURE - NO GAPS
-   ========================================================================== */
-.research-content {
-    display: block;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-}
-
-.container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
-}
-
-.section {
-    padding: var(--spacing-xl) 0;
-    width: 100%;
-}
-
-.section-alt {
-    background: var(--color-off-white);
-    border-top: 1px solid var(--color-gray-100);
-    border-bottom: 1px solid var(--color-gray-100);
-}
-
-.section-header {
-    text-align: center;
-    margin-bottom: var(--spacing-xl);
-    max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 var(--spacing-md);
-}
-
-.section-title {
-    font-family: var(--font-heading);
-    font-size: clamp(1.5rem, 3.5vw, 2rem);
-    font-weight: 600;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-sm);
+/*
+ * The hero itself spans 100vw (full bleed).
+ * All visible content lives inside .rp-hero-inner which uses the same
+ * fluid gutter system as .rp-container so nothing ever touches the edge.
+ */
+.rp-hero {
     position: relative;
-    display: inline-block;
+    background: linear-gradient(145deg, #2A2A42 0%, #383856 100%);
+    overflow: hidden;
+    padding-top:    clamp(3rem, 7vw, 6rem);
+    padding-bottom: clamp(3rem, 7vw, 6rem);
+    min-height: 520px;
+    display: flex;
+    align-items: center;
+
+    /* full-bleed trick that works inside any wrapper */
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
 }
 
-.section-title::after {
+.rp-hero-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('<?php echo $heroImagePath; ?>');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.2;
+    z-index: 0;
+}
+
+.rp-hero::after {
     content: '';
     position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 50px;
-    height: 2px;
-    background: var(--color-accent);
-    border-radius: 1px;
+    inset: 0;
+    background: radial-gradient(circle at 70% 30%, rgba(139,123,184,0.18) 0%, transparent 60%);
+    z-index: 1;
+    pointer-events: none;
 }
 
-.section-subtitle {
-    font-size: clamp(0.95rem, 2.5vw, 1.1rem);
-    color: var(--color-gray-800);
-    line-height: 1.6;
-    margin-top: var(--spacing-lg);
-    font-weight: 400;
-    padding: 0 var(--spacing-sm);
-    text-align: center;
-    font-family: var(--font-body);
-    max-width: 800px;
-    margin-left: auto;
+/* The inner container uses the same fluid gutter as everywhere else */
+.rp-hero-inner {
+    width: 100%;
+    max-width: var(--container-max);
+    margin-left:  auto;
     margin-right: auto;
-}
-
-/* ==========================================================================
-   HERO SECTION - NO TOP GAP
-   ========================================================================== */
-.research-hero {
+    padding-left:  var(--gutter);
+    padding-right: var(--gutter);
     position: relative;
-    width: 100%;
-    background: #2D3748 url('<?php echo $heroImagePath; ?>') no-repeat center center;
-    background-size: cover;
-    color: var(--color-white);
-    padding: var(--spacing-xxl) 0;
-    margin: 0;
-    border: none;
-    overflow: hidden;
-    min-height: 500px;
+    z-index: 2;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2.5rem;
 }
 
-.hero-container {
-    position: relative;
-    z-index: 3;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
+@media (min-width: 992px) {
+    .rp-hero-inner {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+
+.rp-hero-left {
     width: 100%;
+    max-width: 640px;
+    flex-shrink: 0;
 }
 
-.hero-content {
-    text-align: center;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: var(--spacing-xl) 0;
+@media (min-width: 992px) {
+    .rp-hero-left  { width: 55%; max-width: none; }
+    .rp-hero-right { width: 40%; }
 }
 
-/* Transparent background wrapper for better readability */
-.hero-text-wrapper {
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.hero-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
-    color: var(--color-gray-900);
-    padding: 0.6rem 1.75rem;
-    border-radius: var(--radius-full);
-    font-size: 0.9rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--spacing-md);
-    text-transform: uppercase;
-    font-family: var(--font-heading);
-    box-shadow: var(--shadow-soft);
-    position: relative;
-    z-index: 2;
-}
-
-/* REDUCED FONT SIZE: From 3.75rem to 2.75rem max */
-.hero-title {
-    font-family: var(--font-heading);
-    font-size: clamp(2rem, 5vw, 2.75rem); /* Reduced from 3.75rem */
-    font-weight: 700;
-    line-height: 1.2; /* Adjusted for better readability */
-    margin-bottom: var(--spacing-md);
-    color: var(--color-white);
-    position: relative;
-    z-index: 2;
-    letter-spacing: -0.25px;
-}
-
-.hero-description {
-    font-size: clamp(1rem, 2.5vw, 1.25rem); /* Reduced from 1.65rem */
-    font-weight: 400;
-    margin-bottom: var(--spacing-xl);
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.95);
-    font-family: var(--font-body);
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
-    position: relative;
-    z-index: 2;
-    padding: 0 var(--spacing-md);
-}
-
-.hero-cta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-md);
-    justify-content: center;
-    width: 100%;
-    position: relative;
-    z-index: 2;
-    margin-top: var(--spacing-xl);
-    padding-top: var(--spacing-md);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* ==========================================================================
-   BUTTONS - NO ANIMATIONS
-   ========================================================================== */
-.btn {
+/* Badge */
+.rp-hero-badge {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    padding: 0.85rem 1.75rem;
-    font-family: var(--font-heading);
-    font-size: 0.95rem;
-    font-weight: 600;
-    text-decoration: none;
-    border-radius: var(--radius-md);
-    border: 2px solid transparent;
-    cursor: pointer;
-    min-height: 44px;
-    letter-spacing: 0.3px;
-    white-space: nowrap;
-    text-align: center;
+    gap: 8px;
+    background: rgba(139,123,184,0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(201,164,74,0.35);
+    padding: 0.45rem 1.1rem;
+    border-radius: 50px;
+    margin-bottom: 1.25rem;
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
-    color: var(--color-gray-900);
-    border-color: var(--color-accent);
+.rp-hero-badge-icon {
+    width: 22px; height: 22px;
+    background: var(--purple);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    font-size: 0.65rem;
 }
 
-.btn-primary:hover,
-.btn-primary:focus {
-    background: linear-gradient(135deg, var(--color-accent-dark), var(--color-accent));
-    color: var(--color-gray-900);
-    box-shadow: var(--shadow-soft);
+.rp-hero-badge-text {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
 }
 
-.btn-secondary {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-    color: var(--color-white);
-    border-color: var(--color-primary);
+/* Title */
+.rp-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 4.5vw, 4rem);
+    font-weight: 700;
+    line-height: 1.1;
+    color: white;
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
-.btn-secondary:hover,
-.btn-secondary:focus {
-    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
-    color: var(--color-white);
-    box-shadow: var(--shadow-soft);
+.rp-hero-title .research-mark {
+    color: var(--gold-light);
+    font-style: italic;
 }
 
-.btn-outline-light {
-    background: transparent;
-    color: var(--color-white);
-    border-color: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+/* Subtitle */
+.rp-hero-subtitle {
+    font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+    color: rgba(255,255,255,0.82);
+    font-weight: 300;
+    max-width: 540px;
+    line-height: 1.65;
+    margin-bottom: 2rem;
 }
 
-.btn-outline-light:hover,
-.btn-outline-light:focus {
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--color-white);
-    box-shadow: var(--shadow-soft);
-    border-color: rgba(255, 255, 255, 0.6);
-}
-
-.btn-sm {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-    min-height: 36px;
-}
-
-.btn-outline-primary {
-    background: transparent;
-    color: var(--color-primary);
-    border-color: var(--color-primary);
-}
-
-.btn-outline-primary:hover,
-.btn-outline-primary:focus {
-    background: var(--color-primary);
-    color: var(--color-white);
-}
-
-/* ==========================================================================
-   SEARCH SECTION
-   ========================================================================== */
-.search-section {
-    background: var(--color-white);
-    padding: var(--spacing-lg) 0;
-    box-shadow: var(--shadow-subtle);
-    border-bottom: 1px solid var(--color-gray-100);
-}
-
-.search-container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
-}
-
-/* Enhanced search results header */
-.search-results-header {
-    background: var(--color-primary-very-light);
-    padding: 1.5rem;
-    border-radius: var(--radius-md);
-    margin-bottom: 1.5rem;
-    border: 1px solid var(--color-gray-200);
-}
-
-.search-results-header h3 {
-    margin: 0 0 0.5rem 0;
-    color: var(--color-primary);
-    font-size: 1.2rem;
-}
-
-.search-form {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--spacing-sm);
-}
-
-.search-input-group {
-    position: relative;
+/* Search */
+.rp-search-form {
     display: flex;
-    align-items: center;
-    background: var(--color-white);
-    border: 1px solid var(--color-gray-200);
+    width: 100%;
+    max-width: 560px;
     border-radius: var(--radius-md);
     overflow: hidden;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
-.search-input-group:focus-within {
-    border-color: var(--color-primary-light);
-    box-shadow: 0 0 0 3px var(--color-primary-transparent);
-}
-
-.search-icon {
-    padding: 0 var(--spacing-md);
-    color: var(--color-gray-600);
-    font-size: 1.1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.search-input {
+.rp-search-wrap {
+    position: relative;
     flex: 1;
+    min-width: 0; /* prevents overflow in flex */
+}
+
+.rp-search-icon {
+    position: absolute;
+    left: 1.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--purple);
+    pointer-events: none;
+    z-index: 2;
+    font-size: 0.85rem;
+}
+
+.rp-search-input {
+    width: 100%;
+    height: 52px;
+    padding: 0 0.75rem 0 2.8rem;
     border: none;
-    padding: 0.9rem 0;
-    font-size: 1rem;
+    background: rgba(255,255,255,0.98);
+    color: var(--ink);
     font-family: var(--font-body);
-    color: var(--color-gray-900);
-    background: transparent;
+    font-size: 0.9rem;
+    caret-color: var(--purple);
     outline: none;
     min-width: 0;
 }
 
-.search-input::placeholder {
-    color: var(--color-gray-600);
-    font-weight: 400;
-}
+.rp-search-input::placeholder { color: var(--mist); }
+.rp-search-input:focus { background: white; }
 
-.search-filters {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: var(--spacing-sm);
-    align-items: center;
-}
-
-.filter-select {
-    padding: 0.85rem 1rem;
-    border: 1px solid var(--color-gray-200);
-    border-radius: var(--radius-md);
-    font-size: 0.95rem;
-    font-family: var(--font-body);
-    color: var(--color-gray-900);
-    background: var(--color-white);
-    cursor: pointer;
-    width: 100%;
-}
-
-.filter-select:focus {
-    outline: none;
-    border-color: var(--color-primary-light);
-    box-shadow: 0 0 0 3px var(--color-primary-transparent);
-}
-
-.search-button {
-    width: 100%;
-    justify-content: center;
-}
-
-.search-button .btn {
-    width: 100%;
-}
-
-.search-clear {
-    background: none;
+.rp-search-btn {
+    height: 52px;
+    padding: 0 1.5rem;
+    background: var(--purple);
+    color: white;
     border: none;
-    color: var(--color-gray-600);
-    padding: 0 1rem;
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    font-weight: 500;
     cursor: pointer;
-    font-size: 1rem;
-}
-
-.clear-button {
     display: flex;
     align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+    transition: background 0.2s;
+    flex-shrink: 0;
 }
 
-/* ==========================================================================
-   STATISTICS SECTION
-   ========================================================================== */
-.research-stats-section {
-    background: var(--color-off-white);
-    padding: var(--spacing-xl) 0;
-    border-top: 1px solid var(--color-gray-100);
+.rp-search-btn:hover { background: var(--purple-dark); }
+
+@media (max-width: 420px) {
+    .rp-search-form { flex-direction: column; border-radius: var(--radius-md); }
+    .rp-search-input { border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+    .rp-search-btn {
+        height: 48px;
+        border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+        justify-content: center;
+    }
 }
 
-.research-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-md);
-    text-align: center;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.research-stat-item {
-    padding: var(--spacing-lg);
-    background: var(--color-white);
+/* Stats panel */
+.rp-hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(1rem, 3vw, 2rem);
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.18);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-subtle);
-    border: 1px solid var(--color-gray-100);
+    padding: clamp(1.25rem, 3vw, 1.75rem) clamp(1.5rem, 3vw, 2rem);
+}
+
+.rp-stat {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    gap: 4px;
 }
 
-.research-stat-icon {
-    font-size: 1.75rem;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 60px;
-    height: 60px;
-    background: var(--color-white);
-    border-radius: 50%;
-    box-shadow: var(--shadow-subtle);
-}
-
-.research-stat-number {
-    font-family: var(--font-heading);
-    font-size: clamp(1.75rem, 4vw, 2.25rem);
+.rp-stat-value {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
     font-weight: 700;
-    margin-bottom: 0.25rem;
-    color: var(--color-primary);
+    color: #FFE082;
     line-height: 1;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
-.research-stat-label {
-    font-size: 0.9rem;
-    color: var(--color-gray-800);
-    font-weight: 500;
-    line-height: 1.4;
-    letter-spacing: 0.3px;
+.rp-stat-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.92);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.25);
 }
 
 /* ==========================================================================
-   FEATURED PUBLICATIONS SECTION
+   BREADCRUMB
    ========================================================================== */
-.featured-publications-section {
-    background: var(--color-white);
-    padding: var(--spacing-xl) 0;
+.rp-breadcrumb {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 0;
 }
 
-.featured-grid {
+.rp-breadcrumb .rp-container { /* reuses container for safe gutters */ }
+
+.rp-breadcrumb-list {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    list-style: none;
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.rp-breadcrumb-list a {
+    color: var(--purple-dark);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.18s;
+}
+.rp-breadcrumb-list a:hover { color: var(--purple); text-decoration: underline; }
+.rp-breadcrumb-sep     { color: var(--mist); }
+.rp-breadcrumb-current { color: var(--slate); }
+
+/* ==========================================================================
+   SECTION HEADER
+   ========================================================================== */
+.rp-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border);
+    border-image: linear-gradient(90deg, var(--purple) 110px, var(--border) 110px) 1;
+    flex-wrap: wrap;
+}
+
+.rp-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+}
+
+.rp-section-pip {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--purple);
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   BUTTONS
+   ========================================================================== */
+.rp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0.6rem 1.4rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+.rp-btn--purple { background: var(--purple); color: white; }
+.rp-btn--purple:hover {
+    background: var(--purple-dark); color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(139,123,184,0.32);
+}
+
+.rp-btn--ghost {
+    background: transparent; color: white;
+    border: 1.5px solid rgba(255,255,255,0.32);
+}
+.rp-btn--ghost:hover { border-color: white; background: rgba(255,255,255,0.1); color: white; }
+
+.rp-btn--outline {
+    background: transparent; color: var(--purple);
+    border: 1.5px solid var(--purple);
+}
+.rp-btn--outline:hover { background: var(--purple); color: white; transform: translateY(-1px); }
+
+.rp-btn--surface {
+    background: var(--surface); color: var(--ink-soft);
+    border: 1px solid var(--border);
+}
+.rp-btn--surface:hover { background: var(--border); color: var(--ink); }
+
+.rp-btn--gold { background: var(--gold); color: white; }
+.rp-btn--gold:hover {
+    background: var(--gold-light); color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(201,164,74,0.3);
+}
+
+.rp-btn-sm { padding: 0.38rem 0.9rem; font-size: 0.78rem; }
+
+/* ==========================================================================
+   SEARCH RESULTS BANNER
+   ========================================================================== */
+.rp-search-results {
+    background: var(--purple-pale);
+    padding: 1.25rem 1.5rem;
+    border-radius: var(--radius-md);
+    margin: 2rem 0 1.25rem;
+    border: 1px solid var(--border);
+}
+
+.rp-search-results-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rp-search-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.rp-search-tag {
+    background: var(--white);
+    padding: 0.45rem 0.9rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.83rem;
+}
+
+.rp-search-tag.keyword { background: var(--white); color: var(--ink-soft); }
+.rp-search-tag.category { background: var(--purple); color: white; border-color: var(--purple); }
+.rp-search-tag .remove { color: currentColor; opacity: 0.6; text-decoration: none; margin-left: 0.2rem; }
+.rp-search-tag .remove:hover { opacity: 1; }
+.rp-search-count { font-weight: 500; color: var(--slate); font-size: 0.88rem; }
+.rp-search-clear-all {
+    color: var(--purple); text-decoration: none; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem;
+}
+
+/* ==========================================================================
+   FILTER BAR
+   ========================================================================== */
+.rp-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.85rem 1.2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--purple);
+    border-radius: var(--radius-md);
+    margin-bottom: 2rem;
+}
+
+.rp-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+}
+
+.rp-filter-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--slate);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.rp-filter-select {
+    height: 38px;
+    padding: 0 2rem 0 0.8rem;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    background-size: 11px;
+    color: var(--ink-soft);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    cursor: pointer;
+    appearance: none;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-width: 120px;
+}
+
+.rp-filter-select:hover { border-color: var(--slate); }
+.rp-filter-select:focus {
+    border-color: var(--purple);
+    box-shadow: 0 0 0 3px rgba(139,123,184,0.12);
+}
+
+.rp-results-count {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--slate);
+    white-space: nowrap;
+}
+.rp-results-count strong { color: var(--ink); }
+
+@media (max-width: 560px) {
+    .rp-filter-bar { flex-direction: column; align-items: flex-start; }
+    .rp-filter-group { width: 100%; }
+    .rp-filter-select { flex: 1; }
+}
+
+/* ==========================================================================
+   FEATURED PUBLICATION
+   ========================================================================== */
+.rp-featured-wrap {
+    padding: clamp(2rem, 4vw, 3.5rem) 0 1rem;
+}
+
+.rp-featured {
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: var(--ink-mid);
+    box-shadow: var(--shadow-xl);
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--spacing-lg);
-    max-width: 1200px;
-    margin: 0 auto;
+    width: 100%;
 }
 
-.featured-card {
-    background: var(--color-white);
-    border-radius: var(--radius-lg);
+.rp-featured.has-image {
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 700px) {
+    .rp-featured.has-image { grid-template-columns: 1fr 1fr; }
+}
+
+@media (min-width: 1024px) {
+    .rp-featured.has-image { grid-template-columns: 44% 56%; }
+}
+
+.rp-featured-img-cell {
+    position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow-soft);
-    border: 1px solid var(--color-gray-100);
-    height: 100%;
+    background: var(--ink);
+    display: none;
+    min-height: 280px;
+}
+
+.rp-featured.has-image .rp-featured-img-cell { display: block; }
+
+.rp-featured-img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 6s ease;
+}
+
+.rp-featured:hover .rp-featured-img { transform: scale(1.04); }
+
+.rp-featured-img-cell::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, transparent 50%, rgba(26,31,46,0.4) 100%);
+    pointer-events: none;
+}
+
+@media (max-width: 699px) {
+    .rp-featured-img-cell::after {
+        background: linear-gradient(to bottom, transparent 40%, rgba(26,31,46,0.7) 100%);
+    }
+}
+
+.rp-featured-content {
+    background: linear-gradient(160deg, #2A3042 0%, #3A4055 100%);
+    padding: clamp(1.75rem, 4vw, 3rem);
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    position: relative;
+    width: 100%;
 }
 
-.featured-header {
-    padding: var(--spacing-lg);
-    padding-bottom: var(--spacing-md);
-    background: linear-gradient(135deg, var(--color-primary-very-light), var(--color-white));
-    border-bottom: 1px solid var(--color-gray-100);
+.rp-featured-content::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 15%; bottom: 15%;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--purple-light), var(--purple));
+    border-radius: 3px;
 }
 
-.featured-badge {
-    display: inline-block;
-    background: var(--color-accent);
-    color: var(--color-gray-900);
-    padding: 0.4rem 1rem;
-    border-radius: var(--radius-full);
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--spacing-sm);
-    text-transform: uppercase;
-}
+@media (max-width: 699px) { .rp-featured-content::before { display: none; } }
 
-.featured-date {
-    color: var(--color-gray-600);
-    font-size: 0.85rem;
-    font-weight: 500;
-    display: flex;
+.rp-featured-tag {
+    display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 5px;
+    background: var(--purple);
+    color: white;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 11px;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    width: fit-content;
 }
 
-.featured-date i {
-    font-size: 0.8rem;
+.rp-featured-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.45rem, 2.8vw, 2.1rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: white;
+    margin-bottom: 0.9rem;
+    letter-spacing: -0.01em;
 }
 
-.featured-content {
-    padding: var(--spacing-lg);
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
+.rp-featured-authors {
+    font-size: 0.92rem;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 0.9rem;
+    font-style: italic;
 }
 
-.featured-title {
-    font-family: var(--font-heading);
-    font-size: 1.4rem;
-    font-weight: 600;
-    margin-bottom: var(--spacing-sm);
-    color: var(--color-primary);
-    line-height: 1.3;
-}
+.rp-featured-authors i { color: var(--gold-light); margin-right: 0.3rem; }
 
-.featured-title a {
-    color: inherit;
-    text-decoration: none;
-}
-
-.featured-title a:hover {
-    color: var(--color-primary-dark);
-    text-decoration: underline;
-}
-
-.featured-authors {
-    color: var(--color-gray-800);
-    font-size: 0.95rem;
-    margin-bottom: var(--spacing-md);
-    line-height: 1.5;
-    font-family: var(--font-body);
-}
-
-.featured-abstract {
-    color: var(--color-gray-700);
-    font-size: 0.95rem;
-    line-height: 1.6;
-    margin-bottom: var(--spacing-md);
-    flex-grow: 1;
-    font-family: var(--font-body);
+.rp-featured-excerpt {
+    font-size: 0.92rem;
+    color: rgba(255,255,255,0.62);
+    line-height: 1.7;
+    margin-bottom: 1.4rem;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
-.featured-footer {
-    padding: var(--spacing-md) var(--spacing-lg);
-    background: var(--color-off-white);
-    border-top: 1px solid var(--color-gray-100);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--spacing-sm);
-}
+@media (max-width: 699px) { .rp-featured-excerpt { display: block; -webkit-line-clamp: unset; } }
 
-.featured-tags {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.featured-tag {
-    padding: 0.25rem 0.75rem;
-    background: var(--color-white);
-    color: var(--color-primary);
-    border-radius: var(--radius-full);
-    font-size: 0.8rem;
-    font-weight: 500;
-    border: 1px solid var(--color-gray-200);
-}
-
-.featured-type {
-    background: var(--color-journal);
-    color: var(--color-white);
-    border: none;
-}
-
-.featured-type.conference {
-    background: var(--color-conference);
-}
-
-.featured-type.book {
-    background: var(--color-book);
-}
-
-.featured-type.thesis {
-    background: var(--color-thesis);
-}
-
-.featured-metrics {
-    display: flex;
-    gap: var(--spacing-md);
-    color: var(--color-gray-600);
-    font-size: 0.85rem;
-}
-
-.featured-metrics span {
+.rp-featured-meta {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 1.1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
 }
 
-.featured-metrics i {
-    font-size: 0.8rem;
+.rp-featured-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.02em;
+}
+
+.rp-featured-meta-item i { color: var(--gold-light); font-size: 0.62rem; }
+
+.rp-featured-actions {
+    display: flex;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 /* ==========================================================================
-   RESEARCH AREAS SECTION
+   STATISTICS CARDS
    ========================================================================== */
-.research-areas-section {
-    background: var(--color-off-white);
-    padding: var(--spacing-xl) 0;
-    border-top: 1px solid var(--color-gray-100);
+.rp-stats-section {
+    background: var(--surface);
+    padding: clamp(2rem, 4vw, 3.5rem) 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
 }
 
-.categories-grid {
+.rp-stats-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--spacing-lg);
-    max-width: 1200px;
-    margin: 0 auto;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
 }
 
-.category-card {
-    background: var(--color-white);
+@media (min-width: 600px) { .rp-stats-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.rp-stat-card {
+    background: var(--white);
+    padding: 1.6rem 1.25rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
+}
+
+.rp-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--purple-light);
+}
+
+.rp-stat-icon {
+    width: 50px; height: 50px;
+    margin: 0 auto 0.9rem;
+    background: var(--purple-pale);
+    color: var(--purple);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem;
+}
+
+.rp-stat-number {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 3vw, 2.2rem);
+    font-weight: 700;
+    color: var(--purple);
+    line-height: 1.2;
+    margin-bottom: 0.2rem;
+}
+
+.rp-stat-label {
+    font-size: 0.82rem;
+    color: var(--slate);
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   RESEARCH AREAS
+   ========================================================================== */
+.rp-areas-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+    margin: 1.5rem 0;
+}
+
+@media (min-width: 900px)  { .rp-areas-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 479px)  { .rp-areas-grid { grid-template-columns: 1fr; } }
+
+.rp-area-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.65rem 1.35rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.rp-area-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--purple);
+}
+
+.rp-area-icon {
+    width: 66px; height: 66px;
+    background: var(--purple-pale);
+    color: var(--purple);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.rp-area-card:hover .rp-area-icon { background: var(--purple); color: white; }
+
+.rp-area-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.65rem;
+    color: var(--ink);
+}
+
+.rp-area-desc {
+    font-size: 0.83rem;
+    color: var(--slate);
+    line-height: 1.6;
+    margin-bottom: 1.1rem;
+    flex-grow: 1;
+}
+
+.rp-area-count {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--purple);
+    font-weight: 500;
+    display: flex; align-items: center; gap: 5px;
+}
+
+/* ==========================================================================
+   PUBLICATIONS GRID
+   ========================================================================== */
+.rp-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+    margin-bottom: 2.5rem;
+}
+
+.rp-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: var(--shadow-subtle);
-    border: 1px solid var(--color-gray-100);
-    height: 100%;
+    transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+    position: relative;
+    width: 100%;
+}
+
+@media (min-width: 700px) { .rp-card { flex-direction: row; } }
+
+.rp-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(139,123,184,0.25);
+}
+
+.rp-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--purple), var(--purple-light));
+    transform: scaleY(0);
+    transform-origin: center;
+    transition: transform 0.28s ease;
+    border-radius: 3px 0 0 3px;
+    z-index: 1;
+}
+
+.rp-card:hover::before { transform: scaleY(1); }
+
+/* Image col */
+.rp-card-img-wrap {
+    position: relative;
+    width: 100%;
+    height: 190px;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: var(--surface);
+    display: none;
+}
+
+.rp-card.has-image .rp-card-img-wrap { display: block; }
+
+@media (min-width: 700px) {
+    .rp-card-img-wrap { width: 210px; height: auto; }
+}
+
+@media (min-width: 1024px) {
+    .rp-card-img-wrap { width: 240px; }
+}
+
+.rp-card-img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+    display: block;
+}
+
+.rp-card:hover .rp-card-img { transform: scale(1.06); }
+
+.rp-card-type {
+    background: var(--purple);
+    color: white;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+}
+
+/* When image exists, badge is absolutely positioned over the image */
+.rp-card-img-wrap .rp-card-type {
+    position: absolute;
+    top: 0.85rem;
+    left: 0.85rem;
+    z-index: 2;
+}
+
+.rp-card-type.journal    { background: var(--color-journal); }
+.rp-card-type.conference { background: var(--color-conference); }
+.rp-card-type.book       { background: var(--color-book); }
+.rp-card-type.thesis     { background: var(--color-thesis); }
+
+/* Card body */
+.rp-card-body {
+    padding: clamp(1.2rem, 2.5vw, 1.75rem);
+    flex: 1;
     display: flex;
     flex-direction: column;
-    text-decoration: none;
-    color: inherit;
+    gap: 0;
+    min-width: 0; /* prevents overflow */
+    width: 100%;
 }
 
-.category-icon {
-    padding: var(--spacing-xl) var(--spacing-lg) var(--spacing-md);
-    background: linear-gradient(135deg, var(--color-primary-very-light), var(--color-white));
-    text-align: center;
-}
-
-.category-icon i {
-    font-size: 2.5rem;
-    color: var(--color-primary);
+.rp-card-header {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 80px;
-    height: 80px;
-    margin: 0 auto;
-    background: var(--color-white);
-    border-radius: 50%;
-    box-shadow: var(--shadow-subtle);
-}
-
-.category-content {
-    padding: var(--spacing-lg);
-    text-align: center;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.category-title {
-    font-family: var(--font-heading);
-    font-size: 1.4rem;
-    font-weight: 600;
-    margin-bottom: var(--spacing-sm);
-    color: var(--color-primary);
-    line-height: 1.3;
-}
-
-.category-description {
-    color: var(--color-gray-800);
-    line-height: 1.6;
-    margin-bottom: var(--spacing-md);
-    font-size: 0.95rem;
-    font-weight: 400;
-    flex-grow: 1;
-    font-family: var(--font-body);
-}
-
-.category-count {
-    display: inline-block;
-    margin-top: auto;
-    padding: 0.5rem 1rem;
-    background: var(--color-primary-very-light);
-    color: var(--color-primary);
-    border-radius: var(--radius-full);
-    font-size: 0.9rem;
-    font-weight: 600;
-    border: 1px solid var(--color-gray-100);
-}
-
-/* ==========================================================================
-   ALL PUBLICATIONS SECTION
-   ========================================================================== */
-.all-publications-section {
-    background: var(--color-white);
-    padding: var(--spacing-xl) 0;
-}
-
-.publications-header {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-xl);
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 var(--spacing-md);
-}
-
-.publications-title {
-    font-family: var(--font-heading);
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: var(--color-primary);
-    margin: 0;
-}
-
-.publications-count {
-    color: var(--color-gray-600);
-    font-size: 1rem;
-    font-weight: 400;
-    font-family: var(--font-body);
-}
-
-.no-publications {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: var(--spacing-xl) var(--spacing-md);
-    text-align: center;
-}
-
-.no-publications-icon {
-    font-size: 3rem;
-    color: var(--color-gray-300);
-    margin-bottom: var(--spacing-md);
-}
-
-.no-publications-title {
-    font-family: var(--font-heading);
-    font-size: 1.5rem;
-    color: var(--color-gray-700);
-    margin-bottom: var(--spacing-sm);
-}
-
-.no-publications-message {
-    color: var(--color-gray-600);
-    line-height: 1.6;
-    margin-bottom: var(--spacing-lg);
-    font-family: var(--font-body);
-}
-
-/* Publication List */
-.publications-list {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
-}
-
-.publication-item {
-    background: var(--color-white);
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--spacing-md);
-    padding: var(--spacing-lg);
-    border: 1px solid var(--color-gray-100);
-}
-
-.publication-main {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-}
-
-.publication-header {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-}
-
-.publication-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: var(--spacing-sm);
-}
-
-.publication-type {
-    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.25rem 0.75rem;
-    background: var(--color-primary-very-light);
-    color: var(--color-primary);
-    border-radius: var(--radius-full);
-    font-size: 0.8rem;
-    font-weight: 500;
-    border: 1px solid var(--color-gray-200);
+    margin-bottom: 0.7rem;
+    flex-wrap: wrap;
 }
 
-.publication-date {
-    color: var(--color-gray-600);
-    font-size: 0.85rem;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+.rp-card-date {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--mist);
+    display: flex; align-items: center; gap: 0.25rem;
 }
 
-.publication-title {
-    font-family: var(--font-heading);
-    font-size: 1.4rem;
+.rp-card-featured {
+    background: var(--gold);
+    color: white;
+    font-size: 0.58rem;
     font-weight: 600;
-    color: var(--color-primary);
-    line-height: 1.3;
-    margin: 0;
+    padding: 2px 9px;
+    border-radius: var(--radius-full);
+    display: inline-flex; align-items: center; gap: 4px;
 }
 
-.publication-title a {
+.rp-card-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 2vw, 1.45rem);
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--ink);
+    margin-bottom: 0.65rem;
+    letter-spacing: -0.01em;
+}
+
+.rp-card-title a {
     color: inherit;
     text-decoration: none;
+    transition: color 0.2s;
 }
 
-.publication-title a:hover {
-    color: var(--color-primary-dark);
-    text-decoration: underline;
-}
+.rp-card-title a:hover { color: var(--purple); }
 
-.publication-featured-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.75rem;
-    background: var(--color-accent);
-    color: var(--color-gray-900);
-    border-radius: var(--radius-full);
-    font-size: 0.75rem;
-    font-weight: 600;
-    margin-left: 0.5rem;
-    vertical-align: middle;
-}
-
-.publication-authors {
-    color: var(--color-gray-800);
-    font-size: 0.95rem;
+.rp-card-authors {
+    font-size: 0.87rem;
+    color: var(--slate);
+    margin-bottom: 0.9rem;
+    font-style: italic;
     line-height: 1.5;
-    font-family: var(--font-body);
 }
 
-.publication-authors i {
-    color: var(--color-gray-600);
-    font-size: 0.9rem;
-    margin-right: 0.25rem;
-}
+.rp-card-authors i { color: var(--purple-light); margin-right: 0.3rem; }
 
-.publication-abstract {
-    color: var(--color-gray-700);
-    font-size: 0.95rem;
-    line-height: 1.6;
-    margin: var(--spacing-sm) 0;
-    font-family: var(--font-body);
+.rp-card-abstract {
+    font-size: 0.87rem;
+    color: var(--slate);
+    line-height: 1.7;
+    flex: 1;
+    margin-bottom: 1.4rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
-.publication-footer {
+.rp-card-footer {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: center;
+    gap: 0.75rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--border);
     flex-wrap: wrap;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-md);
-    padding-top: var(--spacing-md);
-    border-top: 1px solid var(--color-gray-100);
 }
 
-.publication-tags {
+.rp-card-tags {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.45rem;
     flex-wrap: wrap;
 }
 
-.publication-tag {
-    padding: 0.25rem 0.75rem;
-    background: var(--color-off-white);
-    color: var(--color-gray-700);
+.rp-card-tag {
+    padding: 0.22rem 0.7rem;
+    background: var(--surface);
+    color: var(--slate);
     border-radius: var(--radius-full);
-    font-size: 0.8rem;
+    font-size: 0.68rem;
     font-weight: 500;
-    border: 1px solid var(--color-gray-200);
+    border: 1px solid var(--border);
 }
 
-.publication-category {
-    background: var(--color-primary-very-light);
-    color: var(--color-primary);
-    border-color: var(--color-primary-light);
+.rp-card-tag.doi {
+    font-family: var(--font-mono);
+    background: var(--white);
+    color: var(--purple);
 }
 
-.publication-doi {
-    background: var(--color-gray-50);
-    color: var(--color-gray-700);
-    font-family: 'Courier New', monospace;
-    font-size: 0.75rem;
-}
-
-.publication-actions {
-    display: flex;
-    gap: var(--spacing-sm);
-    align-items: center;
-}
-
-.publication-metrics {
-    display: flex;
-    gap: var(--spacing-md);
-    color: var(--color-gray-600);
-    font-size: 0.85rem;
-}
-
-.publication-metrics span {
+.rp-card-meta {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.9rem;
 }
 
-.publication-metrics i {
-    font-size: 0.8rem;
+.rp-card-meta-item {
+    display: flex; align-items: center; gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--mist);
+}
+
+.rp-card-meta-item i { color: var(--slate); font-size: 0.62rem; }
+
+.rp-card-actions {
+    display: flex;
+    gap: 0.45rem;
+}
+
+@media (max-width: 560px) {
+    .rp-card-footer { flex-direction: column; align-items: flex-start; }
+    .rp-card-actions { width: 100%; justify-content: flex-end; }
 }
 
 /* ==========================================================================
    PAGINATION
    ========================================================================== */
-.pagination-section {
-    background: var(--color-white);
-    padding: var(--spacing-xl) 0;
-    border-top: 1px solid var(--color-gray-100);
-}
-
-.pagination-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md);
-}
-
-.pagination {
+.rp-pagination {
     display: flex;
     justify-content: center;
-    align-items: center;
-    gap: var(--spacing-xs);
+    margin-top: 3rem;
+}
+
+.rp-pagination-list {
+    display: flex;
+    gap: 5px;
     list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.page-item {
-    margin: 0;
-}
-
-.page-link {
-    display: flex;
-    align-items: center;
+    flex-wrap: wrap;
     justify-content: center;
+}
+
+.rp-pagination-link {
     min-width: 40px;
     height: 40px;
-    padding: 0 var(--spacing-sm);
-    border: 1px solid var(--color-gray-200);
-    background: var(--color-white);
-    color: var(--color-gray-700);
-    font-size: 0.95rem;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 0.7rem;
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
     font-weight: 500;
     text-decoration: none;
-    border-radius: var(--radius-md);
-    font-family: var(--font-heading);
+    transition: all 0.2s;
 }
 
-.page-link:hover {
-    background: var(--color-primary-very-light);
-    color: var(--color-primary);
-    border-color: var(--color-primary-light);
+.rp-pagination-link:hover:not(.active) {
+    background: var(--purple); color: white; border-color: var(--purple);
 }
 
-.page-item.active .page-link {
-    background: var(--color-primary);
-    color: var(--color-white);
-    border-color: var(--color-primary);
-}
-
-.page-item.disabled .page-link {
-    background: var(--color-gray-100);
-    color: var(--color-gray-400);
-    border-color: var(--color-gray-200);
-    cursor: not-allowed;
+.rp-pagination-link.active {
+    background: var(--purple); color: white; border-color: var(--purple);
 }
 
 /* ==========================================================================
-   RESPONSIVE DESIGN FOR ALL SCREEN SIZES
+   EMPTY STATE
    ========================================================================== */
-
-/* Tablet and larger (768px+) */
-@media (min-width: 768px) {
-    :root {
-        --spacing-sm: 1rem;
-        --spacing-md: 1.5rem;
-        --spacing-lg: 2rem;
-        --spacing-xl: 2.5rem;
-        --spacing-xxl: 3.5rem;
-    }
-    
-    .container {
-        padding: 0 var(--spacing-lg);
-    }
-    
-    .research-hero {
-        min-height: 600px;
-    }
-    
-    .hero-text-wrapper {
-        padding: var(--spacing-xl);
-        margin: 0 auto;
-        max-width: 800px;
-    }
-    
-    .search-form {
-        grid-template-columns: 1fr auto auto;
-        gap: var(--spacing-md);
-    }
-    
-    .search-filters {
-        grid-template-columns: 1fr auto auto;
-    }
-    
-    .research-stats-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: var(--spacing-lg);
-    }
-    
-    .research-stat-item {
-        padding: var(--spacing-xl);
-    }
-    
-    .featured-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-xl);
-    }
-    
-    .categories-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-xl);
-    }
-    
-    .publication-main {
-        flex-direction: row;
-        align-items: flex-start;
-    }
-    
-    .publication-content {
-        flex: 1;
-        min-width: 0;
-    }
-    
-    .publication-actions {
-        flex-shrink: 0;
-    }
+.rp-empty {
+    text-align: center;
+    padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.5rem, 4vw, 3rem);
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    border: 1px dashed var(--border);
 }
 
-/* Desktop (1024px+) */
-@media (min-width: 1024px) {
-    .hero-content {
-        text-align: left;
-        max-width: 1200px;
-        padding: var(--spacing-xxl) 0;
-    }
-    
-    .hero-text-wrapper {
-        text-align: left;
-        max-width: 700px;
-        margin: 0;
-    }
-    
-    .hero-title {
-        text-align: left;
-        font-size: 2.5rem;
-    }
-    
-    .hero-description {
-        text-align: left;
-        margin-left: 0;
-        margin-right: 0;
-        font-size: 1.375rem;
-        max-width: 650px;
-    }
-    
-    .hero-cta {
-        justify-content: flex-start;
-    }
-    
-    .featured-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    
-    .categories-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-    
-    .publications-header {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .research-hero {
-        min-height: 700px;
-    }
+.rp-empty-icon {
+    width: 76px; height: 76px;
+    margin: 0 auto 1.4rem;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.9rem;
+    color: var(--mist);
 }
 
-/* Mobile (767px and below) */
-@media (max-width: 767px) {
-    .research-hero {
-        padding: var(--spacing-xl) 0;
-        min-height: 450px;
-    }
-    
-    .hero-text-wrapper {
-        padding: var(--spacing-lg);
-        margin: 0 var(--spacing-sm);
-    }
-    
-    .hero-title {
-        font-size: 1.75rem;
-        line-height: 1.2;
-    }
-    
-    .hero-description {
-        font-size: 1.125rem;
-        line-height: 1.4;
-    }
-    
-    .hero-cta {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .hero-cta .btn {
-        width: 100%;
-        max-width: 280px;
-    }
-    
-    .section {
-        padding: var(--spacing-lg) 0;
-    }
-    
-    .publication-item {
-        padding: var(--spacing-md);
-    }
-    
-    .publication-footer {
-        flex-direction: column;
-        align-items: stretch;
-        gap: var(--spacing-sm);
-    }
-    
-    .publication-actions {
-        justify-content: space-between;
-        width: 100%;
-    }
-    
-    .pagination {
-        flex-wrap: wrap;
-    }
-    
-    .search-results-header > div {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
-    }
-    
-    .search-results-header > div > div:last-child {
-        margin-left: 0;
-        width: 100%;
-        justify-content: space-between;
-    }
+.rp-empty-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-bottom: 0.7rem;
 }
 
-/* Small mobile (480px and below) */
-@media (max-width: 480px) {
-    .research-hero {
-        padding: var(--spacing-lg) 0;
-        min-height: 400px;
-    }
-    
-    .hero-text-wrapper {
-        padding: var(--spacing-md);
-    }
-    
-    .hero-badge {
-        padding: 0.4rem 1.25rem;
-        font-size: 0.75rem;
-        margin-bottom: var(--spacing-md);
-    }
-    
-    .hero-title {
-        font-size: 1.5rem;
-        line-height: 1.2;
-    }
-    
-    .hero-description {
-        font-size: 1rem;
-        line-height: 1.4;
-        padding: 0;
-    }
-    
-    .search-filters {
-        grid-template-columns: 1fr;
-    }
-    
-    .featured-header,
-    .featured-content,
-    .featured-footer {
-        padding: var(--spacing-md);
-    }
-    
-    .featured-title {
-        font-size: 1.2rem;
-    }
-    
-    .publication-title {
-        font-size: 1.2rem;
-    }
-    
-    .publication-meta {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .page-link {
-        min-width: 36px;
-        height: 36px;
-        font-size: 0.85rem;
-        padding: 0 0.5rem;
-    }
+.rp-empty-desc {
+    font-size: 0.92rem;
+    color: var(--slate);
+    margin-bottom: 1.75rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.7;
 }
 
-/* Large desktop (1400px+) */
-@media (min-width: 1400px) {
-    .container {
-        max-width: 1300px;
-    }
-    
-    .hero-title {
-        font-size: 2.75rem;
-    }
-    
-    .hero-description {
-        font-size: 1.5rem;
+/* ==========================================================================
+   SECTION VERTICAL SPACING HELPERS
+   ========================================================================== */
+.section-gap-top    { padding-top:    clamp(2rem, 4vw, 3.5rem); }
+.section-gap-bottom { padding-bottom: clamp(2rem, 4vw, 3.5rem); }
+.section-gap        { padding-top:    clamp(2rem, 4vw, 3.5rem);
+                      padding-bottom: clamp(2rem, 4vw, 3.5rem); }
+
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+@keyframes rp-fadeIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.rp-card { animation: rp-fadeIn 0.4s ease both; }
+.rp-card:nth-child(1) { animation-delay: 0.05s; }
+.rp-card:nth-child(2) { animation-delay: 0.10s; }
+.rp-card:nth-child(3) { animation-delay: 0.15s; }
+.rp-card:nth-child(4) { animation-delay: 0.20s; }
+.rp-card:nth-child(5) { animation-delay: 0.25s; }
+.rp-card:nth-child(n+6) { animation-delay: 0.30s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .rp-card, .rp-featured-img, .rp-stat-card, .rp-area-card {
+        animation: none !important;
+        transition: none !important;
     }
 }
 
 /* ==========================================================================
-   ACCESSIBILITY & UTILITY CLASSES
+   PRINT
    ========================================================================== */
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-:focus-visible {
-    outline: 3px solid var(--color-accent);
-    outline-offset: 3px;
-    border-radius: var(--radius-sm);
-}
-
-mark {
-    background: var(--color-accent-light);
-    padding: 0 0.1em;
-    border-radius: 2px;
-}
-
-/* Print styles */
 @media print {
-    .research-hero,
-    .search-section,
-    .btn {
-        display: none !important;
-    }
-    
-    .section {
-        page-break-inside: avoid;
-    }
-    
-    .publication-item {
-        border: 1px solid #000;
-        margin-bottom: 1rem;
-    }
+    .rp-hero, .rp-search-form, .rp-btn, .rp-filter-bar { display: none !important; }
+    .rp-card { border: 1px solid #000; break-inside: avoid; page-break-inside: avoid; }
 }
-
 </style>
-</head>
-<body>
 
-<!-- Flash Messages Container - ADDED -->
-<div class="flash-messages-container">
+<!-- Flash Messages -->
+<div class="rp-flash-messages">
     <?php if (!empty($flash_success)): ?>
-    <div class="flash-message success">
-        <div class="icon">
-            <i class="fas fa-check-circle"></i>
-        </div>
-        <div class="content">
-            <?php echo e($flash_success); ?>
-        </div>
-        <button class="close-btn" onclick="this.parentElement.remove()">
-            <i class="fas fa-times"></i>
-        </button>
+    <div class="rp-flash-message success">
+        <div class="icon"><i class="fas fa-check-circle"></i></div>
+        <div class="content"><?php echo e($flash_success); ?></div>
+        <button class="close-btn" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
     </div>
     <?php endif; ?>
-    
+
     <?php if (!empty($flash_error)): ?>
-    <div class="flash-message error">
-        <div class="icon">
-            <i class="fas fa-exclamation-circle"></i>
-        </div>
-        <div class="content">
-            <?php echo e($flash_error); ?>
-        </div>
-        <button class="close-btn" onclick="this.parentElement.remove()">
-            <i class="fas fa-times"></i>
-        </button>
+    <div class="rp-flash-message error">
+        <div class="icon"><i class="fas fa-exclamation-circle"></i></div>
+        <div class="content"><?php echo e($flash_error); ?></div>
+        <button class="close-btn" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
     </div>
     <?php endif; ?>
-    
+
     <?php if (!empty($flash_errors) && is_array($flash_errors)): ?>
         <?php foreach ($flash_errors as $error): ?>
-        <div class="flash-message error">
-            <div class="icon">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div class="content">
-                <?php echo e($error); ?>
-            </div>
-            <button class="close-btn" onclick="this.parentElement.remove()">
-                <i class="fas fa-times"></i>
-            </button>
+        <div class="rp-flash-message error">
+            <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="content"><?php echo e($error); ?></div>
+            <button class="close-btn" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
         </div>
         <?php endforeach; ?>
     <?php endif; ?>
 </div>
 
-<!-- Research Content -->
-<main id="main-content" class="research-content" role="main">
-    
-    <!-- ========== HERO SECTION WITH IMAGE ========== -->
-    <section class="research-hero" id="researchHero" aria-label="Research publications hero">
-        <div class="hero-container">
-            <div class="hero-content">
-                <div class="hero-text-wrapper">
-                    <span class="hero-badge">Academic Research</span>
-                    <h1 class="hero-title">Research Publications</h1>
-                    <p class="hero-description">
-                        Explore cutting-edge research from FCT CNS faculty and students. Our publications span various domains of nursing science, healthcare innovation, and clinical practice.
-                    </p>
-                    <div class="hero-cta">
-                        <a href="#publications" class="btn btn-primary">
-                            <i class="fas fa-search" aria-hidden="true"></i> Browse Publications
-                        </a>
-                        <a href="#categories" class="btn btn-outline-light">
-                            <i class="fas fa-folder" aria-hidden="true"></i> Research Areas
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+<!-- =====================================================================
+     MAIN CONTENT
+     ===================================================================== -->
+<main id="main-content" class="rp-root" role="main">
 
-    <!-- ========== SEARCH SECTION ========== -->
-    <section class="search-section" aria-label="Search publications">
-        <div class="search-container">
-            <?php if ($searchTerm || $currentCategory): ?>
-            <div class="search-results-header" style="background: var(--color-primary-very-light); padding: 1.5rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; border: 1px solid var(--color-gray-200);">
-                <h3 style="margin: 0 0 0.5rem 0; color: var(--color-primary); font-size: 1.2rem;">
-                    <i class="fas fa-search" style="margin-right: 0.5rem;"></i>Search Results
-                </h3>
-                
-                <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
-                    <?php if ($searchTerm): ?>
-                    <div style="background: var(--color-white); padding: 0.5rem 1rem; border-radius: var(--radius-full); border: 1px solid var(--color-gray-300); display: flex; align-items: center;">
-                        <strong style="margin-right: 0.5rem; color: var(--color-gray-700);">Keywords:</strong>
-                        <span style="color: var(--color-primary);">"<?php echo e($searchTerm); ?>"</span>
-                        <a href="?<?php echo $currentCategory ? 'category=' . urlencode($currentCategory) : ''; ?>" 
-                           style="margin-left: 0.75rem; color: var(--color-gray-600); text-decoration: none;">
-                            <i class="fas fa-times"></i>
-                        </a>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <?php if ($currentCategory): ?>
-                    <?php 
-                    // Get category name
-                    $categoryName = '';
-                    foreach ($categories as $cat) {
-                        if ($cat['slug'] == $currentCategory) {
-                            $categoryName = $cat['name'];
-                            break;
-                        }
-                    }
-                    ?>
-                    <div style="background: var(--color-primary); color: white; padding: 0.5rem 1rem; border-radius: var(--radius-full); display: flex; align-items: center;">
-                        <i class="fas fa-folder" style="margin-right: 0.5rem;"></i>
-                        <span><?php echo e($categoryName ?: $currentCategory); ?></span>
-                        <a href="?<?php echo $searchTerm ? 'search=' . urlencode($searchTerm) : ''; ?>" 
-                           style="margin-left: 0.75rem; color: rgba(255,255,255,0.8); text-decoration: none;">
-                            <i class="fas fa-times"></i>
-                        </a>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <div style="margin-left: auto; font-weight: 500; color: var(--color-gray-700);">
-                        Found <?php echo count($publications); ?> publication<?php echo count($publications) !== 1 ? 's' : ''; ?>
-                    </div>
-                    
-                    <?php if ($searchTerm || $currentCategory): ?>
-                    <a href="/research" style="display: inline-flex; align-items: center; color: var(--color-primary); text-decoration: none; font-weight: 500;">
-                        <i class="fas fa-undo-alt" style="margin-right: 0.5rem;"></i>
-                        Clear all filters
-                    </a>
-                    <?php endif; ?>
+    <!-- ── HERO ─────────────────────────────────────────────────────────── -->
+    <section class="rp-hero" aria-label="Research publications hero">
+        <div class="rp-hero-bg"></div>
+
+        <div class="rp-hero-inner">
+
+            <!-- Left: headline + search -->
+            <div class="rp-hero-left">
+                <div class="rp-hero-badge">
+                    <span class="rp-hero-badge-icon"><i class="fas fa-flask"></i></span>
+                    <span class="rp-hero-badge-text">Research &amp; Innovation</span>
                 </div>
-            </div>
-            <?php endif; ?>
-            
-            <form method="GET" action="/research" class="search-form">
-                <div class="search-input-group">
-                    <div class="search-icon">
+
+                <h1 class="rp-hero-title">
+                    Advancing Nursing <span class="research-mark">Science</span>
+                </h1>
+
+                <p class="rp-hero-subtitle">
+                    Explore peer-reviewed publications, clinical studies, and academic research from FCT College of Nursing Sciences faculty and students.
+                </p>
+
+                <form class="rp-search-form" method="GET" action="/research" role="search">
+                    <div class="rp-search-wrap">
+                        <i class="fas fa-search rp-search-icon" aria-hidden="true"></i>
+                        <input type="search"
+                               name="search"
+                               class="rp-search-input"
+                               placeholder="Search by title, author, keywords, DOI…"
+                               aria-label="Search publications"
+                               value="<?php echo e($searchTerm); ?>"
+                               id="searchInput">
+                    </div>
+                    <button type="submit" class="rp-search-btn" id="searchSubmit">
                         <i class="fas fa-search" aria-hidden="true"></i>
-                    </div>
-                    <input type="text" 
-                           name="search" 
-                           class="search-input" 
-                           placeholder="Search publications by title, authors, abstract, or keywords..."
-                           value="<?php echo e($searchTerm); ?>"
-                           aria-label="Search publications"
-                           id="searchInput">
-                    <?php if ($searchTerm): ?>
-                    <button type="button" class="search-clear" aria-label="Clear search" style="background: none; border: none; color: var(--color-gray-600); padding: 0 1rem; cursor: pointer; font-size: 1rem;">
-                        <i class="fas fa-times"></i>
+                        Search
                     </button>
-                    <?php endif; ?>
-                </div>
-                
-                <div class="search-filters">
-                    <select name="category" class="filter-select" aria-label="Filter by research area" id="categorySelect">
-                        <option value="">All Research Areas</option>
-                        <?php foreach ($categories as $category): ?>
-                            <option value="<?php echo e($category['slug']); ?>" 
-                                <?php echo ($currentCategory == $category['slug']) ? 'selected' : ''; ?>>
-                                <?php echo e($category['name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    
-                    <div class="search-button">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-search" aria-hidden="true"></i> Search
-                        </button>
+                </form>
+            </div>
+
+            <!-- Right: stats panel -->
+            <div class="rp-hero-right">
+                <div class="rp-hero-stats">
+                    <div class="rp-stat">
+                        <span class="rp-stat-value"><?php echo count($publications) ?: '45'; ?></span>
+                        <span class="rp-stat-label">Publications</span>
                     </div>
-                    
-                    <?php if ($searchTerm || $currentCategory): ?>
-                    <div class="clear-button">
-                        <a href="/research" class="btn btn-outline-primary">
-                            <i class="fas fa-times" aria-hidden="true"></i> Clear All
+                    <div class="rp-stat">
+                        <span class="rp-stat-value"><?php echo count($categories) ?: '12'; ?></span>
+                        <span class="rp-stat-label">Research Areas</span>
+                    </div>
+                    <div class="rp-stat">
+                        <span class="rp-stat-value">1.2K</span>
+                        <span class="rp-stat-label">Citations</span>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /.rp-hero-inner -->
+    </section>
+
+    <!-- ── BREADCRUMB ────────────────────────────────────────────────────── -->
+    <nav class="rp-breadcrumb" aria-label="Breadcrumb">
+        <div class="rp-container">
+            <ul class="rp-breadcrumb-list">
+                <li><a href="<?php echo $baseUrl; ?>"><i class="fas fa-home" aria-hidden="true"></i> Home</a></li>
+                <li><span class="rp-breadcrumb-sep">/</span></li>
+                <li><span class="rp-breadcrumb-current" aria-current="page">Research Publications</span></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- ── SEARCH RESULTS BANNER ────────────────────────────────────────── -->
+    <?php if ($searchTerm || $currentCategory): ?>
+    <div class="rp-container">
+        <div class="rp-search-results">
+            <div class="rp-search-results-header">
+                <div class="rp-search-tags">
+                    <?php if ($searchTerm): ?>
+                    <div class="rp-search-tag keyword">
+                        <i class="fas fa-search"></i>
+                        "<?php echo e($searchTerm); ?>"
+                        <a href="?<?php echo $currentCategory ? 'category=' . urlencode($currentCategory) : ''; ?>&scroll=publications" class="remove">
+                            <i class="fas fa-times"></i>
                         </a>
                     </div>
                     <?php endif; ?>
-                </div>
-            </form>
-        </div>
-    </section>
 
-    <!-- ========== RESEARCH STATISTICS ========== -->
-    <section class="research-stats-section" aria-label="Research statistics">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Research Impact</h2>
-                <p class="section-subtitle">Contributing to nursing science and healthcare innovation</p>
-            </div>
-            
-            <div class="research-stats-grid">
-                <div class="research-stat-item">
-                    <div class="research-stat-icon">
-                        <i class="fas fa-file-alt" aria-hidden="true"></i>
+                    <?php if ($currentCategory):
+                        $categoryName = '';
+                        foreach ($categories as $cat) {
+                            if ($cat['slug'] == $currentCategory) { $categoryName = $cat['name']; break; }
+                        }
+                    ?>
+                    <div class="rp-search-tag category">
+                        <i class="fas fa-folder"></i>
+                        <?php echo e($categoryName ?: $currentCategory); ?>
+                        <a href="?<?php echo $searchTerm ? 'search=' . urlencode($searchTerm) : ''; ?>&scroll=publications" class="remove">
+                            <i class="fas fa-times"></i>
+                        </a>
                     </div>
-                    <div class="research-stat-number">
-                        <?php echo count($publications); ?>+
-                    </div>
-                    <div class="research-stat-label">Publications</div>
-                </div>
-                
-                <div class="research-stat-item">
-                    <div class="research-stat-icon">
-                        <i class="fas fa-users" aria-hidden="true"></i>
-                    </div>
-                    <div class="research-stat-number">
-                        50+
-                    </div>
-                    <div class="research-stat-label">Researchers</div>
-                </div>
-                
-                <div class="research-stat-item">
-                    <div class="research-stat-icon">
-                        <i class="fas fa-graduation-cap" aria-hidden="true"></i>
-                    </div>
-                    <div class="research-stat-number">
-                        10+
-                    </div>
-                    <div class="research-stat-label">Research Areas</div>
-                </div>
-                
-                <div class="research-stat-item">
-                    <div class="research-stat-icon">
-                        <i class="fas fa-quote-right" aria-hidden="true"></i>
-                    </div>
-                    <div class="research-stat-number">
-                        1,000+
-                    </div>
-                    <div class="research-stat-label">Total Citations</div>
-                </div>
-            </div>
-        </div>
-    </section>
+                    <?php endif; ?>
 
-    <!-- ========== FEATURED PUBLICATIONS ========== -->
-    <?php if (!empty($featured)): ?>
-    <section class="featured-publications-section section-alt" aria-label="Featured research publications">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Featured Research</h2>
-                <p class="section-subtitle">Highlighted publications from our researchers</p>
-            </div>
-            
-            <div class="featured-grid">
-                <?php foreach ($featured as $pub): ?>
-                <article class="featured-card">
-                    <div class="featured-header">
-                        <span class="featured-badge">Featured</span>
-                        <div class="featured-date">
-                            <i class="far fa-calendar-alt" aria-hidden="true"></i>
-                            <?php echo date('M Y', strtotime($pub['publication_date'])); ?>
-                        </div>
-                    </div>
-                    
-                    <div class="featured-content">
-                        <h3 class="featured-title">
-                            <a href="/research/<?php echo e($pub['id']); ?>">
-                                <?php echo e($pub['title']); ?>
-                            </a>
-                        </h3>
-                        
-                        <p class="featured-authors">
-                            <?php echo e(substr($pub['authors'], 0, 100)); ?><?php echo (strlen($pub['authors']) > 100) ? '...' : ''; ?>
-                        </p>
-                        
-                        <p class="featured-abstract">
-                            <?php echo e(substr(strip_tags($pub['abstract']), 0, 200)); ?>...
-                        </p>
-                    </div>
-                    
-                    <div class="featured-footer">
-                        <div class="featured-tags">
-                            <span class="featured-tag featured-type <?php echo e($pub['publication_type']); ?>">
-                                <?php echo ucfirst($pub['publication_type']); ?>
-                            </span>
-                            <span class="featured-tag">
-                                <?php echo e($pub['category_name'] ?? $pub['research_area']); ?>
-                            </span>
-                        </div>
-                        
-                        <div class="featured-metrics">
-                            <span>
-                                <i class="fas fa-eye" aria-hidden="true"></i>
-                                <?php echo e($pub['views_count']); ?>
-                            </span>
-                            <span>
-                                <i class="fas fa-download" aria-hidden="true"></i>
-                                <?php echo e($pub['downloads_count']); ?>
-                            </span>
-                        </div>
-                    </div>
-                </article>
-                <?php endforeach; ?>
+                    <span class="rp-search-count">
+                        Found <strong><?php echo count($publications); ?></strong>
+                        publication<?php echo count($publications) !== 1 ? 's' : ''; ?>
+                    </span>
+                </div>
+
+                <a href="/research" class="rp-search-clear-all">
+                    <i class="fas fa-undo-alt"></i> Clear all filters
+                </a>
             </div>
         </div>
-    </section>
+    </div>
     <?php endif; ?>
 
-    <!-- ========== RESEARCH AREAS ========== -->
-    <section id="categories" class="research-areas-section" aria-label="Research areas">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Research Areas</h2>
-                <p class="section-subtitle">Explore publications by research category</p>
+    <!-- ── EMPTY STATE (no data at all) ─────────────────────────────────── -->
+    <?php if (empty($publications) && empty($featured)): ?>
+    <div class="rp-container section-gap">
+        <div class="rp-empty">
+            <div class="rp-empty-icon"><i class="fas fa-flask"></i></div>
+            <h2 class="rp-empty-title">No Publications Yet</h2>
+            <p class="rp-empty-desc">Our research archive is being updated. Please check back soon for new publications.</p>
+            <a href="<?php echo $baseUrl; ?>" class="rp-btn rp-btn--purple">
+                <i class="fas fa-home" aria-hidden="true"></i> Return Home
+            </a>
+        </div>
+    </div>
+
+    <?php else: ?>
+
+    <!-- ── STATISTICS SECTION ───────────────────────────────────────────── -->
+    <section class="rp-stats-section" aria-label="Research statistics">
+        <div class="rp-container">
+            <div class="rp-section-header">
+                <h2 class="rp-section-title">
+                    <span class="rp-section-pip"></span>
+                    Research Impact
+                </h2>
             </div>
-            
-            <div class="categories-grid">
-                <?php foreach ($categories as $category): ?>
-                <a href="/research?category=<?php echo e($category['slug']); ?>&scroll=publications" class="category-card">
-                    <div class="category-icon">
-                        <i class="fas fa-folder-open" aria-hidden="true"></i>
-                    </div>
-                    
-                    <div class="category-content">
-                        <h3 class="category-title"><?php echo e($category['name']); ?></h3>
-                        
-                        <p class="category-description">
-                            <?php echo e(substr($category['description'], 0, 100)); ?><?php echo (strlen($category['description']) > 100) ? '...' : ''; ?>
-                        </p>
-                        
-                        <span class="category-count">
-                            Browse Publications
+            <div class="rp-stats-grid">
+                <div class="rp-stat-card">
+                    <div class="rp-stat-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="rp-stat-number"><?php echo count($publications) ?: '45'; ?></div>
+                    <div class="rp-stat-label">Publications</div>
+                </div>
+                <div class="rp-stat-card">
+                    <div class="rp-stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="rp-stat-number">50+</div>
+                    <div class="rp-stat-label">Researchers</div>
+                </div>
+                <div class="rp-stat-card">
+                    <div class="rp-stat-icon"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="rp-stat-number"><?php echo count($categories) ?: '12'; ?></div>
+                    <div class="rp-stat-label">Research Areas</div>
+                </div>
+                <div class="rp-stat-card">
+                    <div class="rp-stat-icon"><i class="fas fa-quote-right"></i></div>
+                    <div class="rp-stat-number">1.2K+</div>
+                    <div class="rp-stat-label">Citations</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── FEATURED PUBLICATION ─────────────────────────────────────────── -->
+    <?php if (!empty($featured)):
+        $featuredItem = $featured[0];
+        $hasFeaturedImage = !empty($featuredItem['featured_image']);
+        $fImg = $hasFeaturedImage ? getImageUrl($featuredItem['featured_image']) : $featuredImagePath;
+        $featuredClass = $hasFeaturedImage ? 'has-image' : '';
+    ?>
+    <div class="rp-container">
+        <div class="rp-featured-wrap">
+            <article class="rp-featured <?php echo $featuredClass; ?>">
+                <?php if ($hasFeaturedImage): ?>
+                <div class="rp-featured-img-cell">
+                    <img src="<?php echo $fImg; ?>"
+                         alt="<?php echo e($featuredItem['title']); ?>"
+                         class="rp-featured-img"
+                         onerror="this.style.display='none'; this.parentElement.style.display='none';">
+                </div>
+                <?php endif; ?>
+
+                <div class="rp-featured-content">
+                    <span class="rp-featured-tag">
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        Featured Research
+                    </span>
+                    <h2 class="rp-featured-title"><?php echo e($featuredItem['title']); ?></h2>
+                    <p class="rp-featured-authors">
+                        <i class="fas fa-users"></i> <?php echo e($featuredItem['authors']); ?>
+                    </p>
+                    <p class="rp-featured-excerpt">
+                        <?php echo e(substr(strip_tags($featuredItem['abstract']), 0, 200)); ?>...
+                    </p>
+                    <div class="rp-featured-meta">
+                        <span class="rp-featured-meta-item">
+                            <i class="far fa-calendar-alt"></i>
+                            <?php echo date('M d, Y', strtotime($featuredItem['publication_date'])); ?>
+                        </span>
+                        <span class="rp-featured-meta-item">
+                            <i class="fas fa-tag"></i>
+                            <?php echo ucfirst($featuredItem['publication_type']); ?>
+                        </span>
+                        <span class="rp-featured-meta-item">
+                            <i class="far fa-eye"></i>
+                            <?php echo e($featuredItem['views_count']); ?> views
                         </span>
                     </div>
-                </a>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </section>
-
-    <!-- ========== ALL PUBLICATIONS ========== -->
-    <section id="publications" class="all-publications-section" aria-label="All publications">
-        <div class="container">
-            <div class="publications-header">
-                <h2 class="publications-title">All Publications</h2>
-                <p class="publications-count">
-                    <?php echo $totalPublications; ?> publication<?php echo ($totalPublications !== 1) ? 's' : ''; ?> found
-                </p>
-            </div>
-
-            <?php if (empty($publications)): ?>
-                <div class="no-publications">
-                    <div class="no-publications-icon" aria-hidden="true">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <h3 class="no-publications-title">No Publications Found</h3>
-                    <p class="no-publications-message">
-                        <?php if ($searchTerm || $currentCategory): ?>
-                            No publications match your search criteria. Try different keywords or browse all publications.
-                        <?php else: ?>
-                            There are currently no publications available. Please check back soon.
-                        <?php endif; ?>
-                    </p>
-                    <?php if ($searchTerm || $currentCategory): ?>
-                        <a href="/research" class="btn btn-primary">
-                            <i class="fas fa-undo" aria-hidden="true"></i> View All Publications
+                    <div class="rp-featured-actions">
+                        <a href="/research/<?php echo e($featuredItem['id']); ?>" class="rp-btn rp-btn--purple">
+                            Read Full Paper <i class="fas fa-arrow-right"></i>
                         </a>
-                    <?php endif; ?>
+                        <?php if (!empty($featuredItem['file_path'])): ?>
+                        <a href="/research/<?php echo e($featuredItem['id']); ?>/download" class="rp-btn rp-btn--ghost">
+                            <i class="fas fa-download"></i> Download PDF
+                        </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
-            <?php else: ?>
-                <div class="publications-list">
-                    <?php foreach ($publications as $pub): ?>
-                    <article class="publication-item">
-                        <div class="publication-main">
-                            <div class="publication-content">
-                                <header class="publication-header">
-                                    <div class="publication-meta">
-                                        <span class="publication-type">
-                                            <i class="fas fa-file-alt" aria-hidden="true"></i>
-                                            <?php echo ucfirst($pub['publication_type']); ?>
-                                        </span>
-                                        <span class="publication-date">
-                                            <i class="far fa-calendar-alt" aria-hidden="true"></i>
-                                            <?php echo date('F d, Y', strtotime($pub['publication_date'])); ?>
-                                        </span>
-                                    </div>
-                                    
-                                    <h3 class="publication-title">
-                                        <a href="/research/<?php echo e($pub['id']); ?>">
-                                            <?php echo e($pub['title']); ?>
-                                        </a>
-                                        <?php if ($pub['is_featured']): ?>
-                                        <span class="publication-featured-badge">
-                                            <i class="fas fa-star" aria-hidden="true"></i> Featured
-                                        </span>
-                                        <?php endif; ?>
-                                    </h3>
-                                    
-                                    <p class="publication-authors">
-                                        <i class="fas fa-users" aria-hidden="true"></i>
-                                        <?php echo e($pub['authors']); ?>
-                                    </p>
-                                </header>
-                                
-                                <p class="publication-abstract">
-                                    <?php echo e(substr(strip_tags($pub['abstract']), 0, 200)); ?>...
-                                </p>
-                            </div>
-                            
-                            <footer class="publication-footer">
-                                <div class="publication-tags">
-                                    <span class="publication-tag publication-category">
-                                        <?php echo e($pub['category_name'] ?? $pub['research_area']); ?>
-                                    </span>
-                                    <?php if (!empty($pub['doi'])): ?>
-                                    <span class="publication-tag publication-doi">
-                                        DOI: <?php echo e($pub['doi']); ?>
-                                    </span>
-                                    <?php endif; ?>
-                                </div>
-                                
-                                <div class="publication-actions">
-                                    <div class="publication-metrics">
-                                        <span>
-                                            <i class="fas fa-eye" aria-hidden="true"></i>
-                                            <?php echo e($pub['views_count']); ?>
-                                        </span>
-                                        <span>
-                                            <i class="fas fa-download" aria-hidden="true"></i>
-                                            <?php echo e($pub['downloads_count']); ?>
-                                        </span>
-                                    </div>
-                                    
-                                    <div class="action-buttons">
-                                        <?php if (!empty($pub['file_path'])): ?>
-                                        <a href="/research/<?php echo e($pub['id']); ?>/download" 
-                                           class="btn btn-sm btn-outline-primary"
-                                           title="Download full text">
-                                            <i class="fas fa-download" aria-hidden="true"></i>
-                                            <span class="sr-only">Download</span>
-                                        </a>
-                                        <?php endif; ?>
-                                        <a href="/research/<?php echo e($pub['id']); ?>" 
-                                           class="btn btn-sm btn-primary">
-                                            View Details
-                                        </a>
-                                    </div>
-                                </div>
-                            </footer>
-                        </div>
-                    </article>
+            </article>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- ── RESEARCH AREAS ───────────────────────────────────────────────── -->
+    <?php if (!empty($categories)): ?>
+    <div class="rp-container section-gap">
+        <div class="rp-section-header">
+            <h2 class="rp-section-title">
+                <span class="rp-section-pip"></span>
+                Research Areas
+            </h2>
+            <a href="#publications" class="rp-btn rp-btn--surface">
+                Browse All <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="rp-areas-grid">
+            <?php foreach (array_slice($categories, 0, 8) as $category): ?>
+            <a href="/research?category=<?php echo e($category['slug']); ?>&scroll=publications" class="rp-area-card">
+                <div class="rp-area-icon"><i class="fas fa-flask"></i></div>
+                <h3 class="rp-area-title"><?php echo e($category['name']); ?></h3>
+                <p class="rp-area-desc">
+                    <?php echo e(substr($category['description'] ?? 'Research publications in this area', 0, 80)); ?>...
+                </p>
+                <span class="rp-area-count">
+                    <?php echo $category['count'] ?? '0'; ?> publications <i class="fas fa-arrow-right"></i>
+                </span>
+            </a>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- ── ALL PUBLICATIONS ─────────────────────────────────────────────── -->
+    <div id="publications" class="rp-container section-gap-bottom" style="padding-top: 2rem;">
+        <div class="rp-section-header">
+            <h2 class="rp-section-title">
+                <span class="rp-section-pip"></span>
+                All Publications
+            </h2>
+            <span class="rp-results-count">
+                <strong><?php echo count($publications); ?></strong> of
+                <strong><?php echo $totalPublications ?: count($publications); ?></strong> articles
+            </span>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="rp-filter-bar">
+            <div class="rp-filter-group">
+                <span class="rp-filter-label">Filter</span>
+
+                <select class="rp-filter-select" id="categorySelect" aria-label="Filter by category">
+                    <option value="">All Categories</option>
+                    <?php foreach ($categories as $category): ?>
+                    <option value="<?php echo e($category['slug']); ?>"
+                        <?php echo ($currentCategory == $category['slug']) ? 'selected' : ''; ?>>
+                        <?php echo e($category['name']); ?>
+                    </option>
                     <?php endforeach; ?>
-                </div>
+                </select>
+
+                <select class="rp-filter-select" id="typeFilter" aria-label="Filter by publication type">
+                    <option value="">All Types</option>
+                    <option value="journal">Journal Articles</option>
+                    <option value="conference">Conference Papers</option>
+                    <option value="book">Books &amp; Chapters</option>
+                    <option value="thesis">Theses</option>
+                </select>
+
+                <select class="rp-filter-select" id="sortFilter" aria-label="Sort by">
+                    <option value="latest">Latest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="popular">Most Viewed</option>
+                </select>
+            </div>
+
+            <?php if ($searchTerm || $currentCategory): ?>
+            <a href="/research" class="rp-btn rp-btn--outline rp-btn-sm">
+                <i class="fas fa-times"></i> Clear Filters
+            </a>
             <?php endif; ?>
         </div>
-    </section>
 
-    <!-- ========== PAGINATION ========== -->
-    <?php if (!empty($publications) && $totalPublications > 10): ?>
-    <section class="pagination-section" aria-label="Publications pagination">
-        <div class="pagination-container">
-            <nav aria-label="Page navigation">
-                <ul class="pagination">
-                    <li class="page-item disabled">
-                        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">
-                            <i class="fas fa-chevron-left" aria-hidden="true"></i>
-                            <span class="sr-only">Previous</span>
-                        </a>
-                    </li>
-                    <li class="page-item active" aria-current="page">
-                        <a class="page-link" href="#">1</a>
-                    </li>
-                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link" href="#">3</a></li>
-                    <li class="page-item">
-                        <a class="page-link" href="#">
-                            <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                            <span class="sr-only">Next</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
+        <?php if (empty($publications)): ?>
+        <!-- No results -->
+        <div class="rp-empty">
+            <div class="rp-empty-icon"><i class="fas fa-search" aria-hidden="true"></i></div>
+            <h3 class="rp-empty-title">No Publications Found</h3>
+            <p class="rp-empty-desc">
+                <?php if ($searchTerm || $currentCategory): ?>
+                    No publications match your search criteria. Try different keywords or browse all publications.
+                <?php else: ?>
+                    There are currently no publications available. Please check back soon.
+                <?php endif; ?>
+            </p>
+            <?php if ($searchTerm || $currentCategory): ?>
+            <a href="/research" class="rp-btn rp-btn--purple">
+                <i class="fas fa-undo-alt"></i> View All Publications
+            </a>
+            <?php endif; ?>
         </div>
-    </section>
-    <?php endif; ?>
+
+        <?php else: ?>
+
+        <div class="rp-grid" id="publications-grid">
+            <?php foreach ($publications as $pub):
+                $hasImage  = !empty($pub['featured_image']);
+                $pubImg    = $hasImage ? getImageUrl($pub['featured_image']) : $featuredImagePath;
+                $cardClass = $hasImage ? 'has-image' : '';
+            ?>
+            <article class="rp-card <?php echo $cardClass; ?>">
+
+                <!-- Image column (only when image exists) -->
+                <?php if ($hasImage): ?>
+                <div class="rp-card-img-wrap">
+                    <img src="<?php echo $pubImg; ?>"
+                         alt="<?php echo e($pub['title']); ?>"
+                         class="rp-card-img"
+                         loading="lazy"
+                         onerror="this.style.display='none'; this.parentElement.style.display='none';">
+                    <span class="rp-card-type <?php echo e($pub['publication_type']); ?>">
+                        <?php echo ucfirst($pub['publication_type']); ?>
+                    </span>
+                </div>
+                <?php endif; ?>
+
+                <!-- Content column -->
+                <div class="rp-card-body">
+                    <div class="rp-card-header">
+                        <span class="rp-card-date">
+                            <i class="far fa-calendar-alt"></i>
+                            <?php echo date('M d, Y', strtotime($pub['publication_date'])); ?>
+                        </span>
+
+                        <?php if (!$hasImage): ?>
+                        <!-- Type badge inline when no image -->
+                        <span class="rp-card-type <?php echo e($pub['publication_type']); ?>" style="margin-left: auto;">
+                            <?php echo ucfirst($pub['publication_type']); ?>
+                        </span>
+                        <?php endif; ?>
+
+                        <?php if ($pub['is_featured']): ?>
+                        <span class="rp-card-featured">
+                            <i class="fas fa-star"></i> Featured
+                        </span>
+                        <?php endif; ?>
+                    </div>
+
+                    <h3 class="rp-card-title">
+                        <a href="/research/<?php echo e($pub['id']); ?>">
+                            <?php echo e($pub['title']); ?>
+                        </a>
+                    </h3>
+
+                    <p class="rp-card-authors">
+                        <i class="fas fa-users"></i> <?php echo e($pub['authors']); ?>
+                    </p>
+
+                    <p class="rp-card-abstract">
+                        <?php echo e(substr(strip_tags($pub['abstract']), 0, 200)); ?>...
+                    </p>
+
+                    <footer class="rp-card-footer">
+                        <div class="rp-card-tags">
+                            <span class="rp-card-tag">
+                                <?php echo e($pub['category_name'] ?? $pub['research_area']); ?>
+                            </span>
+                            <?php if (!empty($pub['doi'])): ?>
+                            <span class="rp-card-tag doi">DOI: <?php echo e($pub['doi']); ?></span>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="rp-card-meta">
+                            <span class="rp-card-meta-item">
+                                <i class="far fa-eye"></i> <?php echo e($pub['views_count']); ?>
+                            </span>
+                            <span class="rp-card-meta-item">
+                                <i class="far fa-download"></i> <?php echo e($pub['downloads_count']); ?>
+                            </span>
+                        </div>
+
+                        <div class="rp-card-actions">
+                            <?php if (!empty($pub['file_path'])): ?>
+                            <a href="/research/<?php echo e($pub['id']); ?>/download"
+                               class="rp-btn rp-btn--outline rp-btn-sm"
+                               title="Download PDF">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            <?php endif; ?>
+                            <a href="/research/<?php echo e($pub['id']); ?>"
+                               class="rp-btn rp-btn--purple rp-btn-sm">
+                                View Details
+                            </a>
+                        </div>
+                    </footer>
+                </div>
+
+            </article>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Pagination -->
+        <?php if ($totalPublications > 10): ?>
+        <nav class="rp-pagination" aria-label="Page navigation">
+            <ul class="rp-pagination-list">
+                <li>
+                    <a href="?page=1" class="rp-pagination-link" aria-label="First page">
+                        <i class="fas fa-chevron-left"></i><i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="?page=1" class="rp-pagination-link" aria-label="Previous page">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                <li><a href="?page=1" class="rp-pagination-link active" aria-current="page">1</a></li>
+                <li><a href="?page=2" class="rp-pagination-link">2</a></li>
+                <li><a href="?page=3" class="rp-pagination-link">3</a></li>
+                <li><span class="rp-pagination-link" style="border:none;background:transparent;">…</span></li>
+                <li><a href="?page=10" class="rp-pagination-link">10</a></li>
+                <li>
+                    <a href="?page=2" class="rp-pagination-link" aria-label="Next page">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="?page=10" class="rp-pagination-link" aria-label="Last page">
+                        <i class="fas fa-chevron-right"></i><i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <?php endif; ?>
+
+        <?php endif; // end has publications ?>
+    </div>
+
+    <?php endif; // end has any data ?>
+
 </main>
 
-<!-- ========== JAVASCRIPT ENHANCEMENTS ========== -->
+<!-- =====================================================================
+     JAVASCRIPT
+     ===================================================================== -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+(function () {
     'use strict';
-    
-    // Auto-remove flash messages after 5 seconds
-    setTimeout(function() {
-        document.querySelectorAll('.flash-message').forEach(function(msg) {
-            msg.style.opacity = '0';
-            msg.style.transform = 'translateX(100%)';
-            setTimeout(function() {
-                if (msg.parentNode) {
-                    msg.parentNode.removeChild(msg);
-                }
-            }, 300);
+
+    /* Flash auto-dismiss (5s) */
+    setTimeout(function () {
+        document.querySelectorAll('.rp-flash-message').forEach(function (msg) {
+            msg.style.opacity    = '0';
+            msg.style.transform  = 'translateX(110%)';
+            msg.style.transition = 'opacity .3s, transform .3s';
+            setTimeout(function () { if (msg.parentNode) msg.parentNode.removeChild(msg); }, 320);
         });
     }, 5000);
-    
-    // Manual close for flash messages
-    document.querySelectorAll('.flash-message .close-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const msg = this.closest('.flash-message');
-            msg.style.opacity = '0';
-            msg.style.transform = 'translateX(100%)';
-            setTimeout(function() {
-                if (msg.parentNode) {
-                    msg.parentNode.removeChild(msg);
-                }
-            }, 300);
-        });
-    });
-    
-    // FIXED: Correct image path for hero section
-    const heroImagePath = '<?php echo $heroImagePath; ?>';
-    const heroSection = document.getElementById('researchHero');
-    
-    // Load hero background image with fallback
-    if (heroSection) {
-        const heroImage = new Image();
-        
-        heroImage.onload = function() {
-            // Apply image to the hero section
-            heroSection.style.background = '#2D3748 url("' + heroImagePath + '") no-repeat center center';
-            heroSection.style.backgroundSize = 'cover';
-        };
-        
-        heroImage.onerror = function() {
-            // Keep the existing gradient background if image fails
-            heroSection.style.background = '#2D3748';
-        };
-        
-        heroImage.src = heroImagePath;
-    }
-    
-    // Publication type color mapping
-    const typeColors = {
-        'journal': 'var(--color-journal)',
-        'conference': 'var(--color-conference)',
-        'book': 'var(--color-book)',
-        'thesis': 'var(--color-thesis)',
-        'report': 'var(--color-primary)'
-    };
-    
-    // Apply publication type colors
-    const typeElements = document.querySelectorAll('.featured-type, .publication-type');
-    
-    typeElements.forEach(el => {
-        const type = el.classList.contains('featured-type') 
-            ? el.classList[1] 
-            : el.textContent.toLowerCase().trim();
-        
-        const color = typeColors[type];
-        if (color) {
-            el.style.backgroundColor = color;
-            el.style.color = 'var(--color-white)';
-            el.style.borderColor = color;
-        }
-    });
-    
-    // Enhanced search functionality
-    const searchForm = document.querySelector('.search-form');
-    if (searchForm) {
-        const searchInput = document.getElementById('searchInput');
-        const categorySelect = document.getElementById('categorySelect');
-        const clearButtons = document.querySelectorAll('.search-clear, .clear-button a');
-        
-        // Clear search input button
-        clearButtons.forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                if (this.classList.contains('search-clear')) {
-                    e.preventDefault();
-                    searchInput.value = '';
-                    searchInput.focus();
-                    
-                    // If category is selected, submit with just category
-                    if (categorySelect.value) {
-                        // Add scroll parameter
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('scroll', 'publications');
-                        searchForm.action = url.pathname + url.search;
-                        searchForm.submit();
-                    }
-                }
-                // For clear all button, it will navigate to /research
-            });
-        });
-        
-        // Auto-submit when category changes if there's a search term
-        if (categorySelect) {
-            categorySelect.addEventListener('change', function() {
-                // Only auto-submit if there's a search term
-                if (searchInput.value.trim()) {
-                    // Add scroll parameter to URL
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('scroll', 'publications');
-                    searchForm.action = url.pathname + url.search;
-                    searchForm.submit();
-                }
-            });
-        }
-        
-        // Prevent empty search submissions
-        searchForm.addEventListener('submit', function(e) {
-            // If both search and category are empty, prevent submission
-            if (!searchInput.value.trim() && !categorySelect.value) {
-                e.preventDefault();
-                return false;
-            }
-            
-            // If only whitespace in search, clear it
-            if (searchInput.value.trim() === '') {
-                searchInput.value = '';
-            }
-            
-            // Add scroll parameter to URL to scroll to publications after search
-            const url = new URL(window.location.href);
-            url.searchParams.set('scroll', 'publications');
-            searchForm.action = url.pathname + url.search;
-            
-            // For immediate visual feedback, scroll after a small delay
-            // but before the page reloads
-            setTimeout(() => {
-                if (searchInput.value.trim() || categorySelect.value) {
-                    const publicationsSection = document.getElementById('publications');
-                    if (publicationsSection) {
-                        publicationsSection.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'start' 
-                        });
-                    }
-                }
-            }, 100);
-        });
-        
-        // Add keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            // Focus search on Ctrl/Cmd + K
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
-                searchInput.focus();
-            }
-            
-            // Clear search on Escape when focused
-            if (e.key === 'Escape' && document.activeElement === searchInput) {
-                searchInput.value = '';
-            }
-        });
-    }
-    
-    // Highlight search terms in results
-    const searchTerm = '<?php echo e(addslashes($searchTerm)); ?>';
-    if (searchTerm.trim()) {
-        const searchTerms = searchTerm.toLowerCase().split(' ').filter(term => term.length > 2);
-        
-        if (searchTerms.length > 0) {
-            // Function to highlight text
-            const highlightText = (element) => {
-                const html = element.innerHTML;
-                let newHtml = html;
-                
-                searchTerms.forEach(term => {
-                    if (term.length > 2) {
-                        const regex = new RegExp(`(${term})`, 'gi');
-                        newHtml = newHtml.replace(regex, '<mark style="background: var(--color-accent-light); padding: 0 0.1em; border-radius: 2px;">$1</mark>');
-                    }
-                });
-                
-                if (newHtml !== html) {
-                    element.innerHTML = newHtml;
-                }
-            };
-            
-            // Highlight in titles and abstracts
-            document.querySelectorAll('.featured-title, .publication-title, .featured-abstract, .publication-abstract, .featured-authors, .publication-authors').forEach(el => {
-                highlightText(el);
-            });
-        }
-    }
-    
-    // Keyboard navigation for publication cards
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && e.target.classList.contains('category-card')) {
-            e.target.click();
-        }
-    });
-    
-    // Scroll to publications section if scroll parameter is present
-    <?php if ($scrollToPublications): ?>
-    setTimeout(function() {
-        const publicationsSection = document.getElementById('publications');
-        if (publicationsSection) {
-            publicationsSection.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-        }
-    }, 300); // Small delay to ensure page is fully loaded
-    <?php endif; ?>
-});
-</script>
 
-</body>
-</html>
+    document.querySelectorAll('.rp-flash-message .close-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var msg = this.closest('.rp-flash-message');
+            msg.style.opacity   = '0';
+            msg.style.transform = 'translateX(110%)';
+            msg.style.transition= 'opacity .25s, transform .25s';
+            setTimeout(function () { if (msg.parentNode) msg.parentNode.removeChild(msg); }, 260);
+        });
+    });
+
+    /* Search form */
+    var searchForm   = document.querySelector('.rp-search-form');
+    var searchInput  = document.getElementById('searchInput');
+    var categorySelect = document.getElementById('categorySelect');
+
+    if (searchForm) {
+        searchForm.addEventListener('submit', function (e) {
+            if (!searchInput.value.trim() && !categorySelect.value) {
+                e.preventDefault(); return false;
+            }
+        });
+    }
+
+    /* Category filter */
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function () {
+            var url = new URL(window.location.href);
+            if (this.value) { url.searchParams.set('category', this.value); }
+            else            { url.searchParams.delete('category'); }
+            url.searchParams.set('scroll', 'publications');
+            window.location.href = url.pathname + url.search;
+        });
+    }
+
+    /* Sort filter */
+    var sortFilter = document.getElementById('sortFilter');
+    if (sortFilter) {
+        var urlParams = new URLSearchParams(window.location.search);
+        var sortVal   = urlParams.get('sort');
+        if (sortVal) sortFilter.value = sortVal;
+
+        sortFilter.addEventListener('change', function () {
+            var url = new URL(window.location.href);
+            url.searchParams.set('sort',   this.value);
+            url.searchParams.set('scroll', 'publications');
+            window.location.href = url.pathname + url.search;
+        });
+    }
+
+    /* Keyboard shortcuts */
+    document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            if (searchInput) searchInput.focus();
+        }
+        if (e.key === 'Escape' && document.activeElement === searchInput) {
+            searchInput.value = '';
+        }
+    });
+
+    /* Highlight search terms */
+    var searchTerm = '<?php echo addslashes($searchTerm); ?>';
+    if (searchTerm && searchTerm.trim()) {
+        var terms = searchTerm.toLowerCase().split(' ').filter(function (t) { return t.length > 2; });
+        if (terms.length > 0) {
+            var targets = document.querySelectorAll(
+                '.rp-card-title, .rp-card-abstract, .rp-card-authors, ' +
+                '.rp-featured-title, .rp-featured-authors, .rp-featured-excerpt'
+            );
+            targets.forEach(function (el) {
+                var html = el.innerHTML;
+                terms.forEach(function (term) {
+                    var regex = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+                    html = html.replace(regex,
+                        '<mark style="background:var(--gold-pale);padding:0 2px;border-radius:2px;">$1</mark>'
+                    );
+                });
+                el.innerHTML = html;
+            });
+        }
+    }
+
+    /* Scroll to publications anchor */
+    <?php if ($scrollToPublications): ?>
+    setTimeout(function () {
+        var sec = document.getElementById('publications');
+        if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+    <?php endif; ?>
+
+})();
+</script>

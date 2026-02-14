@@ -1,14 +1,13 @@
 <?php
 /**
- * Contact Page View Template - Updated with Consistent Color Scheme
- * Fixed: HTML tags now properly displayed as plain text in FAQ answers
- * Fixed: Added prominent admissions button in FAQ
- * Fixed: Removed success/error messages from main view (now on dedicated page)
- * Fixed: Upload functionality commented out for now
- * Fixed: Zero gap between header and hero section
+ * Contact Page View Template - Premium Design Pattern
+ * Applied design system from admissions and homepage
+ * Enhanced with professional attractive form design
+ * Form fully centered, hero content positioned to reveal background
+ * "Schedule a Visit" button now links to contact form with proper functionality
  * 
  * @package FCTCNS
- * @version 7.0
+ * @version 8.7 - Premium Design Pattern with Fixed Schedule Visit Button
  */
 
 extract($data ?? []);
@@ -28,8 +27,6 @@ $settings = $contact_settings ?? [];
 $csrf_token = $csrf_token ?? '';
 
 // Updated FAQ with accurate program information
-// FIXED: All HTML tags are now escaped to display as plain text
-// FIXED: Added prominent admissions button in FAQ
 $faqs = [
     [
         'question' => 'What programs does the college currently offer?',
@@ -61,7 +58,6 @@ $faqs = [
     ]
 ];
 
-// Fixed: Add forward slash between domain and path
 $heroImagePath = rtrim($baseUrl, '/') . '/assets/images/contact/contact.jpg';
 ?>
 
@@ -69,17 +65,19 @@ $heroImagePath = rtrim($baseUrl, '/') . '/assets/images/contact/contact.jpg';
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <meta name="description" content="<?php echo e($page_description); ?>">
     <title><?php echo e($page_title); ?></title>
     
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Preload hero image to prevent flashing -->
+    <!-- Preload hero image -->
     <link rel="preload" href="<?php echo $heroImagePath; ?>" as="image">
     
 <style>
@@ -101,655 +99,1091 @@ $heroImagePath = rtrim($baseUrl, '/') . '/assets/images/contact/contact.jpg';
     
 <style>
 /* ==========================================================================
-   CRITICAL FIX: No gap between header and content
+   CRITICAL: NO GAP BETWEEN HEADER AND CONTENT
    ========================================================================== */
-body { 
-    margin: 0 !important; 
-    padding: 0 !important; 
-    background: var(--color-white);
-}
-main.contact-page { 
-    margin-top: 0 !important; 
-    padding-top: 0 !important; 
-}
-.contact-hero { 
-    margin-top: 0 !important; 
-    padding-top: 0 !important; 
-}
-
-/* Additional zero-gap guarantees */
-header, nav, .header, .navbar, .top-bar {
+html, body {
     margin: 0 !important;
     padding: 0 !important;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    background: var(--white);
 }
 
-/* ==========================================================================
-   GLOBAL VARIABLES - Consistent Color Scheme with Admissions Page
-   ========================================================================== */
-:root {
-    /* Professional Color Palette - Matching Admissions Page */
-    --color-primary: #5D4A8A;           /* Deep sophisticated purple */
-    --color-primary-dark: #4A3A6F;
-    --color-primary-light: #6F5B9E;
-    --color-primary-very-light: #F8F6FC;
-    --color-primary-transparent: rgba(93, 74, 138, 0.08);
-    
-    --color-accent: #D4A574;            /* Muted gold accent */
-    --color-accent-dark: #BF8F5E;
-    --color-accent-light: #E6C9A5;
-    --color-accent-very-light: rgba(212, 165, 116, 0.1);
-    
-    /* Neutral Colors - Professional */
-    --color-white: #FFFFFF;
-    --color-off-white: #FAFAFA;
-    --color-gray-50: #F5F7FA;
-    --color-gray-100: #E8ECF1;
-    --color-gray-200: #D1D9E3;
-    --color-gray-300: #B8C2CC;
-    --color-gray-600: #718096;
-    --color-gray-800: #2D3748;
-    --color-gray-900: #1A202C;
-    --color-black: #000000;
-    
-    /* Typography - Professional and readable */
-    --font-heading: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-body: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    
-    /* Spacing */
-    --spacing-xs: 0.5rem;
-    --spacing-sm: 1rem;
-    --spacing-md: 1.5rem;
-    --spacing-lg: 2rem;
-    --spacing-xl: 2.5rem;
-    --spacing-xxl: 3.5rem;
-    
-    /* Shadows */
-    --shadow-subtle: 0 2px 6px rgba(0, 0, 0, 0.05);
-    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.12);
-    
-    /* Border Radius */
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-full: 999px;
+body > *:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
 }
 
-* { 
-    box-sizing: border-box; 
+main.contact-page {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    max-width: 100vw;
+}
+
+/* Box sizing for all elements */
+*, *::before, *::after {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-body { 
-    font-family: var(--font-body); 
-    font-size: 16px; 
-    line-height: 1.6; 
-    color: var(--color-gray-800); 
-    background: var(--color-white); 
-}
+/* ==========================================================================
+   DESIGN TOKENS — Premium design system
+   ========================================================================== */
+:root {
+    --ink:          #1A1F2E;
+    --ink-mid:      #2A3042;
+    --ink-soft:     #3A4055;
+    --slate:        #5B677B;
+    --mist:         #8E9AAC;
+    --border:       #E9EDF2;
+    --surface:      #F7F9FC;
+    --white:        #FFFFFF;
 
-.container { 
-    width: 100%; 
-    max-width: 1200px; 
-    margin: 0 auto; 
-    padding: 0 var(--spacing-md); 
+    --purple:       #8B7BB8;
+    --purple-dark:  #6D5C9E;
+    --purple-light: #B2A4D4;
+    --purple-pale:  #F3F0FA;
+
+    --gold:         #C9A44A;
+    --gold-light:   #D8B86C;
+    --gold-pale:    #FDF8ED;
+
+    --red:          #C0392B;
+    --red-pale:     #FDF3F2;
+    --green:        #5D9B8C;
+    --green-pale:   #EEF7F5;
+
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-body:    'Outfit', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
+
+    --radius-sm:    6px;
+    --radius-md:    12px;
+    --radius-lg:    20px;
+    --radius-xl:    28px;
+    --radius-full:  9999px;
+
+    --shadow-xs:    0 1px 3px rgba(0,0,0,0.04);
+    --shadow-sm:    0 2px 8px rgba(0,0,0,0.05);
+    --shadow-md:    0 6px 24px rgba(0,0,0,0.06);
+    --shadow-lg:    0 16px 48px rgba(0,0,0,0.08);
+    --shadow-xl:    0 32px 80px rgba(0,0,0,0.10);
+
+    /* fluid gutter */
+    --gutter:        clamp(1.25rem, 5vw, 6rem);
+    --container-max: 1400px;
+    
+    /* Professional Spacing */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 0.875rem;
+    --spacing-md: 1.25rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+    --spacing-xxl: 4rem;
+    --spacing-xxxl: 5rem;
 }
 
 /* ==========================================================================
-   HERO SECTION - WITH TRANSPARENT BACKGROUND FOR TEXT READABILITY
+   CONTAINER
+   ========================================================================== */
+.container {
+    width: 100%;
+    max-width: var(--container-max);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+}
+
+/* ==========================================================================
+   SECTION SPACING
+   ========================================================================== */
+.section {
+    padding: var(--spacing-xxl) 0;
+    width: 100%;
+}
+
+.section-sm {
+    padding: var(--spacing-xl) 0;
+}
+
+.section-lg {
+    padding: var(--spacing-xxxl) 0;
+}
+
+.section--alt {
+    background: var(--surface);
+}
+
+.section--bordered {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+/* ==========================================================================
+   SECTION HEADER — Centralized
+   ========================================================================== */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border);
+    border-image: linear-gradient(90deg, var(--purple) 110px, var(--border) 110px) 1;
+    text-align: center;
+    width: 100%;
+}
+
+.section-header--center {
+    border-image: none;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: var(--spacing-lg);
+}
+
+.section-header--center::after {
+    content: '';
+    display: block;
+    width: 80px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--purple), var(--purple-light));
+    border-radius: 2px;
+    margin: var(--spacing-md) auto 0;
+}
+
+.section-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    text-align: center;
+    width: 100%;
+}
+
+.section-subtitle {
+    font-size: clamp(1rem, 1.5vw, 1.2rem);
+    color: var(--slate);
+    line-height: 1.6;
+    max-width: 700px;
+    margin: 0 auto;
+    font-weight: 400;
+    text-align: center;
+    width: 100%;
+}
+
+/* ==========================================================================
+   BUTTONS — matches premium design pattern
+   ========================================================================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0.85rem 2rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+.btn--purple { background: var(--purple); color: white; }
+.btn--purple:hover {
+    background: var(--purple-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(139,123,184,0.32);
+}
+
+.btn--gold { background: var(--gold); color: white; }
+.btn--gold:hover {
+    background: var(--gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(201,164,74,0.3);
+}
+
+.btn--outline { 
+    background: transparent; 
+    color: var(--purple); 
+    border: 1.5px solid var(--purple); 
+}
+.btn--outline:hover { 
+    background: var(--purple); 
+    color: white; 
+    transform: translateY(-2px); 
+}
+
+.btn--surface { 
+    background: var(--surface); 
+    color: var(--ink-soft); 
+    border: 1px solid var(--border); 
+}
+.btn--surface:hover { 
+    background: var(--border); 
+    color: var(--ink); 
+}
+
+.btn--lg { padding: 1rem 2.5rem; font-size: 1rem; }
+
+/* Legacy button classes mapped to new design */
+.btn-primary {
+    background: var(--gold);
+    color: white;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0.85rem 2rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+}
+
+.btn-primary:hover {
+    background: var(--gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(201,164,74,0.3);
+}
+
+.btn-secondary {
+    background: var(--purple);
+    color: white;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0.85rem 2rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+}
+
+.btn-secondary:hover {
+    background: var(--purple-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(139,123,184,0.32);
+}
+
+.btn-call {
+    background: transparent;
+    color: white;
+    border: 1.5px solid rgba(255,255,255,0.35);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0.85rem 2rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+}
+
+.btn-call:hover {
+    border-color: white;
+    background: rgba(255,255,255,0.1);
+    transform: translateY(-2px);
+}
+
+.btn-admissions {
+    background: var(--purple);
+    color: white;
+    border: 1.5px solid var(--gold);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 1rem 2.5rem;
+    border-radius: var(--radius-md);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+}
+
+.btn-admissions:hover {
+    background: var(--purple-dark);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(139,123,184,0.4);
+    border-color: var(--gold-light);
+}
+
+.btn-admissions i {
+    color: var(--gold);
+}
+
+/* ==========================================================================
+   HERO SECTION — Positioned to reveal background image
    ========================================================================== */
 .contact-hero {
     position: relative;
     width: 100%;
-    background: #2D3748 url('<?php echo $heroImagePath; ?>') no-repeat center center;
-    background-size: cover;
-    color: var(--color-white);
+    background: linear-gradient(145deg, #2A2A42 0%, #383856 100%);
+    color: var(--white);
     padding: var(--spacing-xxl) 0;
     margin: 0;
     border: none;
     overflow: hidden;
-    min-height: 500px;
+    min-height: 550px;
     display: flex;
     align-items: center;
+}
+
+.contact-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('<?php echo $heroImagePath; ?>');
+    background-size: cover;
+    background-position: center 30%;
+    background-repeat: no-repeat;
+    opacity: 0.25;
+    z-index: 1;
+}
+
+.contact-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 70% 30%, rgba(139,123,184,0.15) 0%, transparent 70%);
+    z-index: 2;
+    pointer-events: none;
 }
 
 .hero-text-overlay {
     position: relative;
     z-index: 3;
-    max-width: 800px;
+    width: 100%;
+    max-width: var(--container-max);
     margin: 0 auto;
-    padding: var(--spacing-xl) var(--spacing-lg);
-    text-align: center;
+    padding: 0 var(--gutter);
 }
 
-/* Transparent background wrapper for better readability */
 .hero-text-wrapper {
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.15);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    padding: clamp(2rem, 5vw, 3rem);
+    max-width: 650px;
+    width: fit-content;
+    box-shadow: var(--shadow-xl);
 }
 
 .hero-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
-    color: var(--color-gray-900);
-    padding: 0.6rem 1.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(139,123,184,0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(201,164,74,0.35);
+    padding: 0.5rem 1.25rem;
     border-radius: var(--radius-full);
-    font-size: 0.875rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    font-family: var(--font-heading);
-    box-shadow: var(--shadow-soft);
-    position: relative;
-    z-index: 2;
-    border: none;
+    color: var(--gold);
+    width: fit-content;
 }
 
-/* Professional font sizes and styling */
 .hero-title {
-    font-family: var(--font-heading);
-    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
     font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: var(--spacing-md);
-    color: var(--color-white);
-    position: relative;
-    z-index: 2;
-    letter-spacing: -0.25px;
+    line-height: 1.1;
+    color: white;
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .hero-title span {
-    color: var(--color-accent);
-    font-weight: 700;
-    display: inline-block;
-    padding: 0.125rem 0.5rem;
-    background: rgba(212, 165, 116, 0.2);
-    border-radius: var(--radius-sm);
+    color: var(--gold-light);
+    font-style: italic;
 }
 
 .hero-description {
-    font-size: clamp(1rem, 2.5vw, 1.25rem);
-    font-weight: 400;
-    margin-bottom: var(--spacing-xl);
-    line-height: 1.6;
-    color: rgba(255, 255, 255, 0.95);
-    font-family: var(--font-body);
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
-    position: relative;
-    z-index: 2;
-    padding: var(--spacing-sm) 0;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: rgba(255,255,255,0.95);
+    font-weight: 300;
+    line-height: 1.7;
+    margin-bottom: 2rem;
+    max-width: 550px;
 }
 
 .hero-cta {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-md);
-    justify-content: center;
-    width: 100%;
-    position: relative;
-    z-index: 2;
-    margin-top: var(--spacing-xl);
-    padding-top: var(--spacing-md);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 1rem;
+    margin-top: 2rem;
 }
 
 .hero-icon {
-    font-size: clamp(3rem, 8vw, 5rem);
-    color: rgba(255, 255, 255, 0.08);
-    margin-top: var(--spacing-xl);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    z-index: 1;
+    position: absolute;
+    right: 5%;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: clamp(4rem, 12vw, 8rem);
+    color: rgba(255,255,255,0.1);
+    z-index: 2;
+    pointer-events: none;
 }
 
 /* ==========================================================================
-   PROFESSIONAL BUTTON DESIGNS - SIMPLIFIED
+   CARDS — Centralized
    ========================================================================== */
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
-    color: var(--color-gray-900);
-    padding: 0.875rem 2rem;
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    font-weight: 600;
-    border: none;
-    font-family: var(--font-heading);
-    font-size: 1rem;
-    letter-spacing: 0.3px;
-    min-height: 52px;
-    cursor: pointer;
-    box-shadow: var(--shadow-soft);
-}
-
-.btn-primary:hover {
-    background: linear-gradient(135deg, var(--color-accent-dark), var(--color-accent));
-    box-shadow: var(--shadow-elevated);
-}
-
-.btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-    color: var(--color-white);
-    padding: 0.875rem 2rem;
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    font-weight: 600;
-    border: none;
-    font-family: var(--font-heading);
-    font-size: 1rem;
-    letter-spacing: 0.3px;
-    min-height: 52px;
-    cursor: pointer;
-    box-shadow: var(--shadow-soft);
-}
-
-.btn-secondary:hover {
-    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
-    box-shadow: var(--shadow-elevated);
-}
-
-/* Professional Call Now button - Simplified */
-.btn-call {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--color-white);
-    padding: 0.875rem 2rem;
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    font-weight: 600;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    font-family: var(--font-heading);
-    font-size: 1rem;
-    letter-spacing: 0.3px;
-    min-height: 52px;
-    cursor: pointer;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
-
-.btn-call:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-}
-
-/* ==========================================================================
-   ADMISSIONS BUTTON - PROMINENT STYLING FOR FAQ SECTION
-   ========================================================================== */
-.btn-admissions {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-    color: var(--color-white);
-    padding: 1rem 2.25rem;
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    font-weight: 700;
-    border: 2px solid var(--color-accent);
-    font-family: var(--font-heading);
-    font-size: 1.125rem;
-    letter-spacing: 0.5px;
-    min-height: 60px;
-    cursor: pointer;
-    box-shadow: var(--shadow-soft);
-    transition: all 0.3s ease;
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
     width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-    text-transform: uppercase;
-}
-
-.btn-admissions:hover {
-    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
-    border-color: var(--color-accent-light);
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-elevated);
-}
-
-.btn-admissions i {
-    font-size: 1.25rem;
-    color: var(--color-accent);
-}
-
-.admissions-cta-container {
-    text-align: center;
-    margin-top: var(--spacing-xl);
-    margin-bottom: var(--spacing-lg);
-    padding: var(--spacing-lg);
-    background: linear-gradient(135deg, rgba(93, 74, 138, 0.05), rgba(212, 165, 116, 0.05));
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-gray-100);
-}
-
-.admissions-cta-title {
-    font-family: var(--font-heading);
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-sm);
-}
-
-.admissions-cta-text {
-    font-size: 1rem;
-    color: var(--color-gray-800);
-    margin-bottom: var(--spacing-lg);
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* ==========================================================================
-   SECTIONS & CARDS - SIMPLIFIED DESIGN
-   ========================================================================== */
-.section { 
-    padding: var(--spacing-xl) 0; 
-}
-
-.section-alt { 
-    background: var(--color-gray-50); 
-    border-top: 1px solid var(--color-gray-100);
-    border-bottom: 1px solid var(--color-gray-100);
-}
-
-.section-header { 
-    text-align: center; 
-    margin-bottom: var(--spacing-xl); 
-    max-width: 800px; 
-    margin-left: auto; 
-    margin-right: auto; 
-}
-
-.section-title { 
-    font-family: var(--font-heading); 
-    font-size: clamp(1.5rem, 3vw, 2rem); 
-    font-weight: 600; 
-    color: var(--color-primary); 
-    position: relative; 
-    display: inline-block;
-    margin-bottom: var(--spacing-sm);
-}
-
-.section-title::after { 
-    content: ''; 
-    position: absolute; 
-    bottom: -8px; 
-    left: 50%; 
-    transform: translateX(-50%); 
-    width: 60px; 
-    height: 3px; 
-    background: var(--color-accent); 
-    border-radius: 2px; 
-}
-
-.section-subtitle { 
-    font-size: 1.125rem; 
-    color: var(--color-gray-800); 
-    line-height: 1.6; 
-    font-weight: 400;
-    max-width: 700px;
-    margin: 0 auto;
-    margin-top: var(--spacing-md);
-    font-family: var(--font-body);
-}
-
-.grid { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-    gap: var(--spacing-lg); 
-    margin-top: var(--spacing-lg);
 }
 
 .card {
-    background: var(--color-white);
+    background: var(--white);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-subtle);
-    border: 1px solid var(--color-gray-100);
-    overflow: hidden;
-    text-align: center;
-    height: 100%;
+    padding: clamp(1.5rem, 3vw, 2rem);
+    transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
     position: relative;
+    overflow: hidden;
+    height: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--purple), var(--purple-light));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.28s ease;
 }
 
-.card:hover { 
-    box-shadow: var(--shadow-elevated); 
-    border-color: var(--color-primary-light);
+.card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(139,123,184,0.2);
 }
 
-.card-body { 
-    padding: var(--spacing-lg); 
+.card:hover::before {
+    transform: scaleX(1);
 }
 
-.card-title { 
-    font-family: var(--font-heading); 
-    font-size: 1.25rem; 
-    font-weight: 600; 
-    color: var(--color-primary); 
-    margin-bottom: var(--spacing-md); 
-}
-
-.contact-icon { 
-    font-size: 2.5rem; 
-    color: var(--color-primary); 
-    margin-bottom: var(--spacing-md); 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+.contact-icon {
     width: 70px;
     height: 70px;
-    background: var(--color-primary-very-light);
+    background: var(--purple-pale);
+    color: var(--purple);
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin-bottom: 1.25rem;
+    transition: all 0.28s ease;
 }
 
 .card:hover .contact-icon {
-    background: var(--color-accent-very-light);
-    color: var(--color-accent-dark);
+    background: var(--purple);
+    color: white;
+    transform: scale(1.1);
+}
+
+.card-title {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+    text-align: center;
+    width: 100%;
+}
+
+.card p {
+    font-size: 0.95rem;
+    color: var(--slate);
+    line-height: 1.7;
+    text-align: center;
+    width: 100%;
 }
 
 /* ==========================================================================
-   FAQ - SIMPLIFIED AND FIXED - HTML TAGS NOW DISPLAYED AS PLAIN TEXT
+   CONTACT FORM — FULLY CENTRALIZED
+   ========================================================================== */
+.contact-form {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 0;
+    box-shadow: var(--shadow-lg);
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+}
+
+/* Form Accent Decoration */
+.form-accent {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 1.5rem 2rem 0.5rem;
+}
+
+.accent-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--purple-light);
+    opacity: 0.5;
+}
+
+.accent-line {
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, var(--purple), var(--gold), var(--purple));
+    border-radius: 2px;
+    max-width: 200px;
+}
+
+/* Form Header - FULLY CENTERED */
+.form-header {
+    text-align: center;
+    padding: 0 2rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+}
+
+.form-header-text {
+    text-align: center;
+}
+
+.form-header-text h3 {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.form-header-text p {
+    font-size: 1rem;
+    color: var(--slate);
+    text-align: center;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Response Time Badge - FULLY CENTERED with flexbox wrapper */
+.response-time-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 2rem;
+}
+
+.response-time-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: var(--purple-pale);
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--purple-light);
+    width: fit-content;
+}
+
+.response-time-badge i {
+    color: var(--purple);
+    font-size: 1rem;
+}
+
+.response-time-badge span {
+    font-size: 0.9rem;
+    color: var(--purple-dark);
+    font-weight: 500;
+}
+
+/* Form Body */
+.form-body {
+    padding: 0 2rem 2rem;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    position: relative;
+    width: 100%;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.6rem;
+    font-family: var(--font-body);
+    font-weight: 500;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    letter-spacing: 0.3px;
+    text-align: left;
+}
+
+.required-star {
+    color: var(--red);
+    margin-left: 3px;
+    font-size: 1.1rem;
+}
+
+/* Input Wrapper */
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--ink);
+    background: var(--white);
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.form-input:hover,
+.form-textarea:hover,
+.form-select:hover {
+    border-color: var(--purple-light);
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+    outline: none;
+    border-color: var(--purple);
+    box-shadow: 0 0 0 4px var(--purple-pale), inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+/* Select specific styling */
+.form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238B7BB8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 16px;
+    padding-right: 2.5rem;
+}
+
+/* Textarea specific */
+.form-textarea {
+    min-height: 140px;
+    resize: vertical;
+}
+
+/* Form Footer - CENTERED on mobile */
+.form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.form-footer-note {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--slate);
+    font-size: 0.9rem;
+}
+
+.form-footer-note i {
+    color: var(--gold);
+    font-size: 1.1rem;
+}
+
+.form-footer-note span {
+    font-weight: 500;
+    color: var(--ink-soft);
+}
+
+/* Submit Button */
+.btn-submit {
+    background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+    color: white;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: var(--radius-md);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-submit::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-submit:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, var(--purple-dark), var(--purple));
+}
+
+.btn-submit:hover::before {
+    left: 100%;
+}
+
+.btn-submit i {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-submit:hover i {
+    transform: translateX(5px);
+}
+
+/* ==========================================================================
+   FAQ SECTION — Centralized
    ========================================================================== */
 .faq-item {
-    background: var(--color-white);
+    background: var(--white);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    margin-bottom: var(--spacing-md);
-    box-shadow: var(--shadow-subtle);
+    margin-bottom: 1rem;
     overflow: hidden;
-    border: 1px solid var(--color-gray-100);
+    transition: all 0.28s ease;
+    width: 100%;
 }
 
 .faq-item:hover {
-    box-shadow: var(--shadow-soft);
-    border-color: var(--color-primary-light);
+    border-color: rgba(139,123,184,0.3);
+    box-shadow: var(--shadow-md);
 }
 
 .faq-question {
-    padding: var(--spacing-lg);
-    background: var(--color-gray-50);
+    padding: 1.5rem;
+    background: var(--white);
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
     font-weight: 600;
-    color: var(--color-primary);
-    font-family: var(--font-heading);
-    font-size: 1rem;
-    position: relative;
+    color: var(--ink);
+    transition: all 0.22s ease;
+}
+
+.faq-question:hover {
+    color: var(--purple);
+    background: var(--purple-pale);
+}
+
+.faq-toggle {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--purple);
+    transition: transform 0.3s ease;
+}
+
+.faq-toggle.open {
+    transform: rotate(45deg);
+    color: var(--gold);
 }
 
 .faq-answer {
-    padding: 0 var(--spacing-lg);
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease, padding 0.3s ease;
+    transition: max-height 0.3s ease;
+    background: var(--surface);
 }
 
 .faq-answer.open {
-    padding: var(--spacing-lg);
-    max-height: 800px;
+    max-height: 500px;
 }
 
 .faq-answer p {
-    white-space: pre-line;
+    padding: 1.5rem;
+    font-size: 0.95rem;
+    color: var(--slate);
     line-height: 1.7;
-    color: var(--color-gray-800);
-    font-family: var(--font-body);
-    font-size: 0.975rem;
-}
-
-.faq-toggle { 
-    font-size: 1.25rem; 
-    color: var(--color-primary);
-    font-weight: 300;
-}
-
-.faq-toggle.open { 
-    color: var(--color-accent);
+    white-space: pre-line;
 }
 
 /* ==========================================================================
-   CONTACT FORM - SIMPLIFIED
+   ADMISSIONS CTA — Centralized
    ========================================================================== */
-.contact-form {
-    background: var(--color-white);
-    padding: var(--spacing-xl);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-subtle);
-    border: 1px solid var(--color-gray-100);
-    max-width: 800px;
-    margin: 0 auto;
+.admissions-cta-container {
+    background: linear-gradient(160deg, #2A3042 0%, #3A4055 100%);
+    border-radius: var(--radius-xl);
+    padding: clamp(2rem, 4vw, 3rem);
+    margin-top: var(--spacing-xl);
+    text-align: center;
     position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-xl);
+    width: 100%;
 }
 
-.contact-form::before {
+.admissions-cta-container::before {
     content: '';
     position: absolute;
-    top: 0;
     left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    top: 15%;
+    bottom: 15%;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--purple-light), var(--purple));
+    border-radius: 3px;
 }
 
-.form-row { 
-    display: grid; 
-    grid-template-columns: 1fr; 
-    gap: var(--spacing-lg); 
-    margin-bottom: var(--spacing-lg);
+.admissions-cta-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 1rem;
+    text-align: center;
 }
 
-@media (min-width: 768px) { 
-    .form-row { 
-        grid-template-columns: 1fr 1fr; 
-    } 
-}
-
-.form-group { 
-    margin-bottom: var(--spacing-lg); 
-    position: relative;
-}
-
-.form-label { 
-    display: block; 
-    margin-bottom: var(--spacing-sm); 
-    font-weight: 600; 
-    color: var(--color-primary); 
-    font-family: var(--font-heading);
-    font-size: 0.95rem;
-}
-
-.form-input, .form-textarea, .form-select {
-    width: 100%;
-    padding: 0.875rem;
-    border: 1px solid var(--color-gray-200);
-    border-radius: var(--radius-md);
-    font-family: var(--font-body);
+.admissions-cta-text {
     font-size: 1rem;
-    background: var(--color-white);
-}
-
-.form-input:focus, .form-textarea:focus, .form-select:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-transparent);
-}
-
-.form-textarea { 
-    min-height: 140px; 
-    resize: vertical; 
+    color: rgba(255,255,255,0.8);
+    line-height: 1.7;
+    max-width: 600px;
+    margin: 0 auto 1.5rem;
+    text-align: center;
 }
 
 /* ==========================================================================
-   CTA SECTION - SIMPLIFIED
+   CTA SECTION — Centralized premium card
    ========================================================================== */
-.cta-section { 
-    background: linear-gradient(135deg, var(--color-gray-50), var(--color-white));
-    text-align: center; 
-    padding: var(--spacing-xxl) 0; 
-    border-top: 1px solid var(--color-gray-100);
-    border-bottom: 1px solid var(--color-gray-100);
+.cta-section {
+    background: linear-gradient(160deg, #2A3042 0%, #3A4055 100%);
+    border-radius: var(--radius-xl);
+    padding: clamp(3rem, 6vw, 4rem);
+    margin: var(--spacing-xxl) auto;
+    max-width: 1000px;
+    text-align: center;
     position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-xl);
+    width: 100%;
 }
 
 .cta-section::before {
     content: '';
     position: absolute;
-    top: 0;
     left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+    top: 15%;
+    bottom: 15%;
+    width: 4px;
+    background: linear-gradient(to bottom, var(--purple-light), var(--purple));
+    border-radius: 4px;
 }
 
 .cta-section .section-title {
-    margin-bottom: var(--spacing-md);
+    color: white;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.cta-section .section-subtitle {
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.cta-section .btn {
+    margin: 0 auto;
+    cursor: pointer;
+    display: inline-flex;
 }
 
 /* ==========================================================================
-   RESPONSIVE DESIGN
+   ANIMATIONS
    ========================================================================== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.card,
+.faq-item,
+.admissions-cta-container,
+.contact-form,
+.cta-section {
+    opacity: 0;
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.form-header {
+    animation: slideInLeft 0.5s ease 0.1s forwards;
+    opacity: 0;
+}
+
+.form-group {
+    opacity: 0;
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.form-group:nth-child(1) { animation-delay: 0.1s; }
+.form-group:nth-child(2) { animation-delay: 0.15s; }
+.form-group:nth-child(3) { animation-delay: 0.2s; }
+.form-group:nth-child(4) { animation-delay: 0.25s; }
+.form-group:nth-child(5) { animation-delay: 0.3s; }
+.form-group:nth-child(6) { animation-delay: 0.35s; }
+
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.2s; }
+.card:nth-child(3) { animation-delay: 0.3s; }
+.card:nth-child(4) { animation-delay: 0.4s; }
+
+.faq-item:nth-child(1) { animation-delay: 0.1s; }
+.faq-item:nth-child(2) { animation-delay: 0.15s; }
+.faq-item:nth-child(3) { animation-delay: 0.2s; }
+.faq-item:nth-child(4) { animation-delay: 0.25s; }
+.faq-item:nth-child(5) { animation-delay: 0.3s; }
+.faq-item:nth-child(6) { animation-delay: 0.35s; }
+.faq-item:nth-child(7) { animation-delay: 0.4s; }
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN — Fully responsive adjustments
+   ========================================================================== */
+@media (max-width: 1024px) {
+    :root {
+        --gutter: 2rem;
+    }
+    
+    .hero-text-wrapper {
+        max-width: 600px;
+    }
+    
+    .hero-icon {
+        font-size: clamp(3rem, 10vw, 6rem);
+    }
+}
+
 @media (max-width: 768px) {
     :root {
-        --spacing-xs: 0.5rem;
-        --spacing-sm: 0.875rem;
-        --spacing-md: 1.25rem;
-        --spacing-lg: 1.75rem;
-        --spacing-xl: 2rem;
-        --spacing-xxl: 2.5rem;
+        --gutter: 1.5rem;
+        --spacing-xl: 2.5rem;
+        --spacing-xxl: 3rem;
     }
     
     .contact-hero {
@@ -757,207 +1191,274 @@ body {
         padding: var(--spacing-xl) 0;
     }
     
-    .hero-text-wrapper {
-        padding: var(--spacing-lg);
-        margin: 0 var(--spacing-sm);
+    .contact-hero::before {
+        background-position: center 20%;
     }
     
-    .hero-badge {
-        padding: 0.5rem 1.5rem;
-        font-size: 0.8rem;
+    .hero-text-wrapper {
+        padding: 1.5rem;
+        max-width: 100%;
     }
     
     .hero-title {
-        font-size: 1.75rem;
-        line-height: 1.2;
+        font-size: 2rem;
     }
     
     .hero-description {
-        font-size: 1.125rem;
-        line-height: 1.4;
-    }
-    
-    .grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-md);
-    }
-    
-    .contact-form {
-        padding: var(--spacing-lg);
-    }
-    
-    .faq-question {
-        padding: var(--spacing-md);
-        font-size: 0.95rem;
-    }
-    
-    .faq-answer.open {
-        padding: var(--spacing-md);
-    }
-    
-    .btn-primary,
-    .btn-secondary,
-    .btn-call {
-        padding: 0.75rem 1.5rem;
-        font-size: 0.95rem;
-        min-height: 46px;
-    }
-    
-    .btn-admissions {
-        padding: 0.875rem 1.75rem;
         font-size: 1rem;
-        min-height: 54px;
-        max-width: 100%;
+        margin-bottom: 1.5rem;
     }
     
     .hero-cta {
         flex-direction: column;
-        align-items: center;
-        gap: var(--spacing-sm);
+        width: 100%;
     }
     
-    .hero-cta .btn-primary,
+    .hero-cta .btn,
     .hero-cta .btn-call {
         width: 100%;
-        max-width: 280px;
+        justify-content: center;
     }
     
-    .admissions-cta-container {
-        padding: var(--spacing-md);
-        margin-top: var(--spacing-lg);
+    .hero-icon {
+        display: none;
+    }
+    
+    .grid {
+        gap: 1rem;
+    }
+    
+    .card {
+        padding: 1.5rem;
+    }
+    
+    /* Form responsive */
+    .form-header {
+        padding: 0 1.5rem 1.5rem;
+    }
+    
+    .form-header-text h3 {
+        font-size: 1.4rem;
+    }
+    
+    .form-body {
+        padding: 0 1.5rem 1.5rem;
+    }
+    
+    .form-footer {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .form-footer-note {
+        justify-content: center;
+    }
+    
+    .btn-submit {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .faq-question {
+        padding: 1.25rem;
+        font-size: 1rem;
+    }
+    
+    .admissions-cta-title {
+        font-size: 1.4rem;
+    }
+    
+    .btn-admissions {
+        width: 100%;
+        max-width: 400px;
+        justify-content: center;
+        margin: 0 auto;
+    }
+    
+    .cta-section {
+        padding: 2.5rem 1.5rem;
+    }
+    
+    .cta-section .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --gutter: 1rem;
+        --spacing-xl: 2rem;
+        --spacing-xxl: 2.5rem;
+    }
+    
+    .contact-hero {
+        min-height: 400px;
+    }
+    
+    .hero-text-wrapper {
+        padding: 1.25rem;
+    }
+    
+    .hero-badge {
+        font-size: 0.7rem;
+        padding: 0.4rem 1rem;
+    }
+    
+    .hero-title {
+        font-size: 1.6rem;
+    }
+    
+    .hero-description {
+        font-size: 0.95rem;
+    }
+    
+    .section-title {
+        font-size: 1.6rem;
+    }
+    
+    .section-subtitle {
+        font-size: 0.95rem;
+    }
+    
+    .card-title {
+        font-size: 1.2rem;
+    }
+    
+    .contact-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.6rem;
+    }
+    
+    /* Form responsive small */
+    .form-header-text h3 {
+        font-size: 1.3rem;
+    }
+    
+    .form-header-text p {
+        font-size: 0.9rem;
+    }
+    
+    .form-row {
+        gap: 1rem;
+    }
+    
+    .form-input,
+    .form-textarea,
+    .form-select {
+        padding: 0.8rem;
+        font-size: 0.9rem;
+    }
+    
+    .response-time-badge {
+        padding: 0.4rem 1rem;
+    }
+    
+    .response-time-badge span {
+        font-size: 0.85rem;
+    }
+    
+    .faq-question {
+        padding: 1rem;
+        font-size: 0.95rem;
+    }
+    
+    .faq-toggle {
+        font-size: 1.25rem;
+    }
+    
+    .faq-answer p {
+        padding: 1rem;
+        font-size: 0.9rem;
     }
     
     .admissions-cta-title {
         font-size: 1.2rem;
     }
-}
-
-@media (max-width: 480px) {
-    .contact-hero {
-        min-height: 400px;
-        padding: var(--spacing-lg) 0;
-    }
     
-    .hero-text-wrapper {
-        padding: var(--spacing-md);
-    }
-    
-    .hero-badge {
-        padding: 0.4rem 1.25rem;
-        font-size: 0.75rem;
-        margin-bottom: var(--spacing-md);
-    }
-    
-    .hero-title {
-        font-size: 1.5rem;
-        line-height: 1.2;
-    }
-    
-    .hero-description {
-        font-size: 1rem;
-        line-height: 1.4;
-        padding: var(--spacing-xs) 0;
-    }
-    
-    .section-title {
-        font-size: 1.375rem;
-    }
-    
-    .card-title {
-        font-size: 1.125rem;
-    }
-    
-    .contact-icon {
-        font-size: 2.25rem;
-        width: 60px;
-        height: 60px;
-    }
-    
-    .form-row {
-        gap: var(--spacing-md);
-    }
-    
-    .form-group {
-        margin-bottom: var(--spacing-md);
-    }
-    
-    .faq-question {
-        padding: var(--spacing-sm);
-        font-size: 0.9rem;
-    }
-    
-    .faq-answer.open {
-        padding: var(--spacing-sm);
-    }
-    
-    .hero-cta .btn-primary,
-    .hero-cta .btn-call {
-        max-width: 100%;
+    .admissions-cta-text {
+        font-size: 0.95rem;
     }
     
     .btn-admissions {
-        padding: 0.75rem 1.5rem;
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .cta-section {
+        padding: 2rem 1rem;
+    }
+    
+    .cta-section .section-title {
+        font-size: 1.5rem;
+    }
+    
+    .cta-section .section-subtitle {
         font-size: 0.95rem;
     }
 }
 
-/* Desktop (1024px+) */
-@media (min-width: 1024px) {
-    .contact-hero {
-        min-height: 550px;
-    }
-    
-    .hero-text-overlay {
-        text-align: left;
-        max-width: 1200px;
-        padding: var(--spacing-xxl) var(--spacing-lg);
-    }
-    
+/* Large screens */
+@media (min-width: 1400px) {
     .hero-text-wrapper {
         max-width: 700px;
-        margin: 0;
-    }
-    
-    .hero-title {
-        font-size: 2.5rem;
-        text-align: left;
     }
     
     .hero-description {
-        text-align: left;
-        margin-left: 0;
-        margin-right: 0;
-        font-size: 1.375rem;
-        max-width: 100%;
+        max-width: 600px;
     }
     
-    .hero-cta {
-        justify-content: flex-start;
+    .contact-form {
+        max-width: 1000px;
     }
     
-    .hero-icon {
-        position: absolute;
-        right: 5%;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: clamp(4rem, 10vw, 6rem);
-        z-index: 1;
-        opacity: 0.08;
+    .form-body {
+        max-width: 800px;
     }
+    
+    .cta-section {
+        max-width: 1100px;
+    }
+}
+
+/* ==========================================================================
+   ACCESSIBILITY
+   ========================================================================== */
+:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* Print styles */
 @media print {
     .contact-hero,
-    .btn-call,
     .hero-cta,
+    .btn,
     .btn-admissions,
-    .admissions-cta-container {
+    .cta-section {
         display: none !important;
     }
     
-    .section {
-        page-break-inside: avoid;
+    .card,
+    .faq-item {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        break-inside: avoid;
     }
 }
 </style>
@@ -965,152 +1466,194 @@ body {
 <body>
 
 <main class="contact-page">
-    <!-- Hero Section - With Transparent Background Wrapper -->
+    <!-- Hero Section - Positioned to reveal background image -->
     <section class="contact-hero" id="contactHero">
-        <div class="container">
-            <div class="hero-text-overlay">
-                <div class="hero-text-wrapper">
-                    <span class="hero-badge">Get in Touch</span>
-                    <h1 class="hero-title">
-                        Contact <span>Our Team</span>
-                    </h1>
-                    <p class="hero-description">
-                        We're here to assist you with admissions, program inquiries, and general information. 
-                        Our dedicated team is committed to providing timely and helpful responses.
-                    </p>
-                    <div class="hero-cta">
-                        <a href="#contact-form" class="btn-primary">
-                            <i class="fas fa-envelope"></i> Send Message
-                        </a>
-                        <a href="tel:<?php echo e($settings['phone'] ?? '+234XXX'); ?>" class="btn-call">
-                            <i class="fas fa-phone-alt"></i> Call Now
-                        </a>
-                    </div>
-                </div>
-                <div class="hero-icon" aria-hidden="true">
+        <div class="hero-text-overlay">
+            <div class="hero-text-wrapper">
+                <div class="hero-badge">
                     <i class="fas fa-headset"></i>
+                    <span>Get in Touch</span>
                 </div>
+                <h1 class="hero-title">
+                    Contact <span>Our Team</span>
+                </h1>
+                <p class="hero-description">
+                    We're here to assist you with admissions, program inquiries, and general information. 
+                    Our dedicated team is committed to providing timely and helpful responses.
+                </p>
+                <div class="hero-cta">
+                    <a href="#contact-form" class="btn--gold btn">
+                        <i class="fas fa-envelope"></i> Send Message
+                    </a>
+                    <a href="tel:<?php echo e($settings['phone'] ?? '+234XXX'); ?>" class="btn-call">
+                        <i class="fas fa-phone-alt"></i> Call Now
+                    </a>
+                </div>
+            </div>
+            <div class="hero-icon" aria-hidden="true">
+                <i class="fas fa-headset"></i>
             </div>
         </div>
     </section>
 
-    <!-- Contact Information -->
-    <section class="section section-alt">
+    <!-- Contact Information - Premium Cards - Centralized -->
+    <section class="section section--alt">
         <div class="container">
-            <div class="section-header">
+            <div class="section-header section-header--center">
                 <h2 class="section-title">Contact Information</h2>
                 <p class="section-subtitle">Multiple ways to reach our team</p>
             </div>
 
             <div class="grid">
                 <div class="card">
-                    <div class="card-body">
-                        <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
-                        <h3 class="card-title">Address</h3>
-                        <p><?php echo nl2br(e($settings['address'] ?? 'FCT College of Nursing Sciences<br>Gwagwalada, Abuja')); ?></p>
-                    </div>
+                    <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <h3 class="card-title">Address</h3>
+                    <p><?php echo nl2br(e($settings['address'] ?? 'FCT College of Nursing Sciences<br>Gwagwalada, Abuja')); ?></p>
                 </div>
 
                 <div class="card">
-                    <div class="card-body">
-                        <div class="contact-icon"><i class="fas fa-phone-alt"></i></div>
-                        <h3 class="card-title">Phone</h3>
-                        <p>0904 767 6799<br>0703 983 7749<br><?php echo e($settings['admissions_phone'] ?? 'Admissions: Ext. 123'); ?></p>
-                    </div>
+                    <div class="contact-icon"><i class="fas fa-phone-alt"></i></div>
+                    <h3 class="card-title">Phone</h3>
+                    <p>0904 767 6799<br>0703 983 7749<br><?php echo e($settings['admissions_phone'] ?? 'Admissions: Ext. 123'); ?></p>
                 </div>
 
                 <div class="card">
-                    <div class="card-body">
-                        <div class="contact-icon"><i class="fas fa-envelope"></i></div>
-                        <h3 class="card-title">Email</h3>
-                        <p><?php echo e($settings['email'] ?? 'info@fctcns.edu.ng'); ?><br>
-                        <?php echo e($settings['admissions_email'] ?? 'admissions@fctcns.edu.ng'); ?></p>
-                    </div>
+                    <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+                    <h3 class="card-title">Email</h3>
+                    <p><?php echo e($settings['email'] ?? 'info@fctcns.edu.ng'); ?><br>
+                    <?php echo e($settings['admissions_email'] ?? 'admissions@fctcns.edu.ng'); ?></p>
                 </div>
 
                 <div class="card">
-                    <div class="card-body">
-                        <div class="contact-icon"><i class="fas fa-clock"></i></div>
-                        <h3 class="card-title">Office Hours</h3>
-                        <p><?php echo e($settings['working_hours'] ?? 'Monday – Friday: 8:00 AM – 5:00 PM'); ?></p>
-                    </div>
+                    <div class="contact-icon"><i class="fas fa-clock"></i></div>
+                    <h3 class="card-title">Office Hours</h3>
+                    <p><?php echo e($settings['working_hours'] ?? 'Monday – Friday: 8:00 AM – 5:00 PM'); ?></p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Contact Form -->
+    <!-- Contact Form - FULLY CENTRALIZED -->
     <section class="section" id="contact-form">
         <div class="container">
-            <div class="section-header">
+            <div class="section-header section-header--center">
                 <h2 class="section-title">Send us a Message</h2>
                 <p class="section-subtitle">We typically respond within 24-48 hours.</p>
             </div>
 
             <div class="contact-form">
-                <form action="<?php echo $baseUrl; ?>/contact/submit" method="POST" id="contactForm" novalidate>
-                    <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token); ?>">
+                <!-- Decorative top accent -->
+                <div class="form-accent">
+                    <div class="accent-dot"></div>
+                    <div class="accent-line"></div>
+                    <div class="accent-dot"></div>
+                </div>
+                
+                <!-- Form Header - FULLY CENTERED -->
+                <div class="form-header">
+                    <div class="form-header-text">
+                        <h3>We'd love to hear from you</h3>
+                        <p>Fill out the form below and our team will get back to you shortly</p>
+                    </div>
+                </div>
+                
+                <!-- Response Time Badge - FULLY CENTERED with wrapper -->
+                <div class="response-time-wrapper">
+                    <div class="response-time-badge">
+                        <i class="fas fa-clock"></i>
+                        <span>Average response time: <strong>4 hours</strong></span>
+                    </div>
+                </div>
+                
+                <!-- Form Body - CENTERED with max-width -->
+                <div class="form-body">
+                    <form action="<?php echo $baseUrl; ?>/contact/submit" method="POST" id="contactForm" novalidate>
+                        <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token); ?>">
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Full Name *</label>
-                            <input type="text" name="name" class="form-input" required value="<?php echo e($_POST['name'] ?? ''); ?>">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Full Name <span class="required-star">*</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <input type="text" name="name" class="form-input" required value="<?php echo e($_POST['name'] ?? ''); ?>" placeholder="Enter your full name">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Email Address <span class="required-star">*</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <input type="email" name="email" class="form-input" required value="<?php echo e($_POST['email'] ?? ''); ?>" placeholder="you@example.com">
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Email Address *</label>
-                            <input type="email" name="email" class="form-input" required value="<?php echo e($_POST['email'] ?? ''); ?>">
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Phone Number
+                                </label>
+                                <div class="input-wrapper">
+                                    <input type="tel" name="phone" class="form-input" value="<?php echo e($_POST['phone'] ?? ''); ?>" placeholder="+234 XXX XXX XXXX">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Inquiry Type
+                                </label>
+                                <div class="input-wrapper">
+                                    <select name="department" class="form-select">
+                                        <option value="general" <?php echo (($_POST['department'] ?? '') === 'general') ? 'selected' : ''; ?>>General Inquiry</option>
+                                        <option value="admissions" <?php echo (($_POST['department'] ?? '') === 'admissions') ? 'selected' : ''; ?>>Admissions</option>
+                                        <option value="academic" <?php echo (($_POST['department'] ?? '') === 'academic') ? 'selected' : ''; ?>>Academic Programs</option>
+                                        <option value="student" <?php echo (($_POST['department'] ?? '') === 'student') ? 'selected' : ''; ?>>Student Services</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Phone Number</label>
-                            <input type="tel" name="phone" class="form-input" value="<?php echo e($_POST['phone'] ?? ''); ?>">
+                            <label class="form-label">
+                                Subject <span class="required-star">*</span>
+                            </label>
+                            <div class="input-wrapper">
+                                <input type="text" name="subject" class="form-input" required value="<?php echo e($_POST['subject'] ?? ''); ?>" placeholder="Brief subject of your message">
+                            </div>
                         </div>
+
                         <div class="form-group">
-                            <label class="form-label">Inquiry Type</label>
-                            <select name="department" class="form-select">
-                                <option value="general" <?php echo (($_POST['department'] ?? '') === 'general') ? 'selected' : ''; ?>>General Inquiry</option>
-                                <option value="admissions" <?php echo (($_POST['department'] ?? '') === 'admissions') ? 'selected' : ''; ?>>Admissions</option>
-                                <option value="academic" <?php echo (($_POST['department'] ?? '') === 'academic') ? 'selected' : ''; ?>>Academic Programs</option>
-                                <option value="student" <?php echo (($_POST['department'] ?? '') === 'student') ? 'selected' : ''; ?>>Student Services</option>
-                                <option value="other">Other</option>
-                            </select>
+                            <label class="form-label">
+                                Message <span class="required-star">*</span>
+                            </label>
+                            <textarea name="message" class="form-textarea" rows="6" required placeholder="Please write your message here..."><?php echo e($_POST['message'] ?? ''); ?></textarea>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Subject *</label>
-                        <input type="text" name="subject" class="form-input" required value="<?php echo e($_POST['subject'] ?? ''); ?>">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Message *</label>
-                        <textarea name="message" class="form-textarea" rows="6" required><?php echo e($_POST['message'] ?? ''); ?></textarea>
-                    </div>
-
-                    <!-- Attachment field commented out for now -->
-                    <!--
-                    <div class="form-group">
-                        <label class="form-label">Attachment (Optional)</label>
-                        <input type="file" name="attachment" class="form-input">
-                    </div>
-                    -->
-
-                    <div style="text-align:center;">
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-paper-plane"></i> Send Message
-                        </button>
-                    </div>
-                </form>
+                        <!-- Form Footer -->
+                        <div class="form-footer">
+                            <div class="form-footer-note">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Your information is secure</span>
+                            </div>
+                            
+                            <button type="submit" class="btn-submit">
+                                <span>Send Message</span>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Frequently Asked Questions -->
-    <section class="section section-alt">
+    <!-- Frequently Asked Questions - Centralized -->
+    <section class="section section--alt">
         <div class="container">
-            <div class="section-header">
+            <div class="section-header section-header--center">
                 <h2 class="section-title">Frequently Asked Questions</h2>
                 <p class="section-subtitle">Find answers to common questions about our programs and admissions.</p>
             </div>
@@ -1129,35 +1672,33 @@ body {
                 <?php endforeach; ?>
             </div>
             
-            <!-- PROMINENT ADMISSIONS BUTTON - Direct link to admissions page -->
+            <!-- Premium Admissions CTA - Centralized -->
             <div class="admissions-cta-container">
                 <div class="admissions-cta-title">
-                    <i class="fas fa-graduation-cap" style="color: var(--color-accent); margin-right: 0.5rem;"></i>
                     Ready to Start Your Journey?
                 </div>
                 <p class="admissions-cta-text">
                     Visit our comprehensive admissions page for complete information on programs, requirements, application deadlines, and the step-by-step application process.
                 </p>
                 <a href="<?php echo $baseUrl; ?>/admissions" class="btn-admissions">
-                    <i class="fas fa-external-link-alt"></i> Go to Admissions Page
-                    <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
+                    Go to Admissions Page <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
         </div>
     </section>
 
-    <!-- CTA -->
-    <section class="cta-section">
-        <div class="container">
+    <!-- Premium CTA Section - Schedule a Visit now links to contact form -->
+    <div class="container">
+        <section class="cta-section">
             <h2 class="section-title">Visit Our Campus</h2>
-            <p class="section-subtitle" style="max-width:700px; margin:0 auto var(--spacing-xl);">
+            <p class="section-subtitle">
                 We welcome visitors and prospective students to tour our facilities and learn more about our programs.
             </p>
-            <a href="<?php echo $baseUrl; ?>/admissions" class="btn-secondary">
-                <i class="fas fa-calendar-alt"></i> Schedule a Visit
+            <a href="#contact-form" class="btn--gold btn--lg" onclick="document.getElementById('contact-form').scrollIntoView({behavior: 'smooth'}); return false;">
+                Schedule a Visit <i class="fas fa-calendar-alt"></i>
             </a>
-        </div>
-    </section>
+        </section>
+    </div>
 </main>
 
 <script>
@@ -1170,33 +1711,15 @@ function toggleFAQ(element) {
     answer.classList.toggle('open');
     toggle.classList.toggle('open');
     
-    // Change + to -
+    // Change + to × (multiplication sign)
     if (toggle.textContent === '+') {
-        toggle.textContent = '−';
+        toggle.textContent = '×';
     } else {
         toggle.textContent = '+';
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Fix for background flashing - simple load
-    const heroSection = document.getElementById('contactHero');
-    const heroImagePath = '<?php echo $heroImagePath; ?>';
-    
-    if (heroSection) {
-        const img = new Image();
-        img.src = heroImagePath;
-        
-        img.onload = function() {
-            heroSection.style.background = '#2D3748 url("' + heroImagePath + '") no-repeat center center';
-            heroSection.style.backgroundSize = 'cover';
-        };
-        
-        img.onerror = function() {
-            heroSection.style.background = '#2D3748';
-        };
-    }
-    
     // Ensure all FAQ answers are closed on load
     document.querySelectorAll('.faq-answer').forEach(answer => {
         answer.classList.remove('open');
@@ -1206,7 +1729,7 @@ document.addEventListener('DOMContentLoaded', function() {
         toggle.textContent = '+';
     });
     
-    // Form validation
+    // Form validation with enhanced feedback
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
         contactForm.addEventListener('submit', function(e) {
@@ -1216,8 +1739,14 @@ document.addEventListener('DOMContentLoaded', function() {
             requiredFields.forEach(field => {
                 if (!field.value.trim()) {
                     isValid = false;
-                    field.style.borderColor = '#dc3545';
-                    field.style.boxShadow = '0 0 0 2px rgba(220, 53, 69, 0.2)';
+                    field.style.borderColor = 'var(--red)';
+                    field.style.boxShadow = '0 0 0 3px rgba(192, 57, 43, 0.1)';
+                    
+                    // Add shake animation
+                    field.style.animation = 'shake 0.5s ease';
+                    setTimeout(() => {
+                        field.style.animation = '';
+                    }, 500);
                 } else {
                     field.style.borderColor = '';
                     field.style.boxShadow = '';
@@ -1228,6 +1757,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 alert('Please fill in all required fields marked with *.');
             }
+        });
+        
+        // Real-time validation styling
+        const inputs = contactForm.querySelectorAll('.form-input, .form-textarea, .form-select');
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (this.hasAttribute('required') && !this.value.trim()) {
+                    this.style.borderColor = 'var(--red)';
+                } else if (this.value.trim()) {
+                    this.style.borderColor = 'var(--green)';
+                } else {
+                    this.style.borderColor = '';
+                }
+            });
+            
+            input.addEventListener('focus', function() {
+                this.style.borderColor = 'var(--purple)';
+            });
         });
     }
     
@@ -1240,9 +1787,18 @@ document.addEventListener('DOMContentLoaded', function() {
         firstChild.style.paddingTop = '0';
     }
 });
+
+// Add shake animation keyframes if not already present
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+`;
+document.head.appendChild(style);
 </script>
 
-<!-- Note: The numbers 09047676799, 07039837749 are displayed in the contact card. 
-     Admissions ext. 123 is shown as per internal approach. -->
 </body>
 </html>

@@ -1,11 +1,14 @@
 <?php
 /**
- * About Page View Template - Enhanced for Responsiveness
- * Updated: Removed overlay, enhanced fonts, professional design
- * Enhanced Leadership, Mission/Vision/Values & Accreditation Sections
- * 
+ * About Page View Template
+ * Redesigned to match design system (v6.0)
+ *
+ * Fonts   : Cormorant Garamond (display) + Outfit (body) + JetBrains Mono (mono)
+ * Palette : identical CSS custom-properties as all other pages
+ * Layout  : fluid --gutter, full-bleed hero at very top, max-width 1400px
+ *
  * @package FCTCNS
- * @version 5.3
+ * @version 6.0
  */
 
 extract($data ?? []);
@@ -16,24 +19,16 @@ if (!function_exists('e')) {
     }
 }
 
-$baseUrl = $baseUrl ?? '/';
-$page_title = $page_title ?? 'About | FCT College of Nursing Sciences';
+$baseUrl          = $baseUrl ?? '/';
+$page_title       = $page_title ?? 'About | FCT College of Nursing Sciences';
 $page_description = $page_description ?? 'Learn about our history, mission, vision, values, leadership, and commitment to excellence in nursing education.';
+$heroImagePath    = rtrim($baseUrl, '/') . '/assets/images/about/campus-building.jpg';
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <meta name="description" content="<?php echo e($page_description); ?>">
-    <title><?php echo e($page_title); ?></title>
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Google Fonts — identical to all other pages -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     /* EMERGENCY FULL WIDTH OVERRIDE */
 body .main-content {
@@ -52,1927 +47,1427 @@ body .main-content {
     </style>
 <style>
 /* ==========================================================================
-   CRITICAL FIX: No gap between header and content
+   RESET
    ========================================================================== */
-body { 
-    margin: 0 !important; 
-    padding: 0 !important; 
-    overflow-x: hidden;
-}
-main.about-page { 
-    margin-top: 0 !important; 
-    padding-top: 0 !important; 
-}
-.about-hero { 
-    margin-top: 0 !important; 
-    padding-top: 0 !important; 
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { margin: 0 !important; padding: 0 !important; width: 100%; overflow-x: hidden; }
+body { min-height: 100vh; background: #fff; -webkit-font-smoothing: antialiased; }
 
 /* ==========================================================================
-   GLOBAL VARIABLES - Consistent Color Scheme with Admissions Page
+   DESIGN TOKENS — identical across all pages
    ========================================================================== */
 :root {
-    /* Professional Color Palette - Matching Admissions Page */
-    --color-primary: #5D4A8A;           /* Deep sophisticated purple */
-    --color-primary-dark: #4A3A6F;
-    --color-primary-light: #6F5B9E;
-    --color-primary-very-light: #F8F6FC;
-    --color-primary-transparent: rgba(93, 74, 138, 0.08);
-    
-    --color-accent: #D4A574;            /* Muted gold accent */
-    --color-accent-dark: #BF8F5E;
-    --color-accent-light: #E6C9A5;
-    
-    /* Neutral Colors - Professional */
-    --color-white: #FFFFFF;
-    --color-off-white: #FAFAFA;
-    --color-gray-50: #F5F7FA;
-    --color-gray-100: #E8ECF1;
-    --color-gray-200: #D1D9E3;
-    --color-gray-300: #B8C2CC;
-    --color-gray-600: #718096;
-    --color-gray-800: #2D3748;
-    --color-gray-900: #1A202C;
-    --color-black: #000000;
-    
-    /* Typography - Consistent with Admissions Page */
-    --font-heading: 'Montserrat', sans-serif;
-    --font-body: 'Open Sans', sans-serif;
-    
-    /* Spacing */
-    --spacing-xs: 0.5rem;
-    --spacing-sm: 1rem;
-    --spacing-md: 1.5rem;
-    --spacing-lg: 2rem;
-    --spacing-xl: 2.5rem;
-    --spacing-xxl: 3.5rem;
-    
-    /* Shadows */
-    --shadow-subtle: 0 2px 6px rgba(0, 0, 0, 0.05);
-    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.12);
-    --shadow-deep: 0 16px 32px rgba(0, 0, 0, 0.15);
-    
-    /* Border Radius */
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 20px;
-    --radius-full: 999px;
-    
-    /* Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+    --ink:          #1A1F2E;
+    --ink-mid:      #2A3042;
+    --ink-soft:     #3A4055;
+    --slate:        #5B677B;
+    --mist:         #8E9AAC;
+    --border:       #E9EDF2;
+    --surface:      #F7F9FC;
+    --white:        #FFFFFF;
 
-* { 
-    box-sizing: border-box; 
-    margin: 0;
-    padding: 0;
-}
+    --purple:       #8B7BB8;
+    --purple-dark:  #6D5C9E;
+    --purple-light: #B2A4D4;
+    --purple-pale:  #F3F0FA;
 
-body { 
-    font-family: var(--font-body); 
-    font-size: 16px; 
-    line-height: 1.6; 
-    color: var(--color-gray-800); 
-    background: var(--color-white); 
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
+    --gold:         #C9A44A;
+    --gold-light:   #D8B86C;
+    --gold-pale:    #FDF8ED;
 
-.container { 
-    width: 100%; 
-    max-width: 1200px; 
-    margin: 0 auto; 
-    padding: 0 var(--spacing-md); 
+    --green:        #5D9B8C;
+    --green-pale:   #EEF7F5;
+
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-body:    'Outfit', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
+
+    --radius-sm:    6px;
+    --radius-md:    12px;
+    --radius-lg:    20px;
+    --radius-xl:    28px;
+    --radius-full:  9999px;
+
+    --shadow-xs:    0 1px 3px rgba(0,0,0,0.04);
+    --shadow-sm:    0 2px 8px rgba(0,0,0,0.05);
+    --shadow-md:    0 6px 24px rgba(0,0,0,0.06);
+    --shadow-lg:    0 16px 48px rgba(0,0,0,0.08);
+    --shadow-xl:    0 32px 80px rgba(0,0,0,0.10);
+
+    --gutter:        clamp(1.25rem, 5vw, 6rem);
+    --container-max: 1400px;
 }
 
 /* ==========================================================================
-   HERO SECTION - ENHANCED WITHOUT OVERLAY
+   ROOT SCOPE
    ========================================================================== */
-.about-hero {
+.ab-root {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--white);
+    overflow-x: hidden;
+    width: 100%;
+}
+
+.ab-container {
+    width: 100%;
+    max-width: var(--container-max);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left:  var(--gutter);
+    padding-right: var(--gutter);
+}
+
+/* ==========================================================================
+   HERO — full-bleed, starts at very top
+   ========================================================================== */
+.ab-hero {
     position: relative;
-    min-height: 85vh;
-    height: auto;
-    max-height: none;
+    background: linear-gradient(145deg, #2A2A42 0%, #383856 100%);
     overflow: hidden;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    padding-top:    clamp(4rem, 8vw, 7rem);
+    padding-bottom: clamp(4rem, 8vw, 7rem);
+    min-height: 560px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.ab-hero-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('<?php echo $heroImagePath; ?>');
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;
-    display: flex;
-    align-items: center;
-    padding: var(--spacing-xl) 0;
+    opacity: 0.18;
+    z-index: 0;
 }
 
-.about-hero-bg {
+.ab-hero::after {
+    content: '';
     position: absolute;
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%;
-    background-size: cover; 
-    background-position: center;
-    background-image: url('<?php echo $baseUrl; ?>/assets/images/about/campus-building.jpg');
+    inset: 0;
+    background: radial-gradient(circle at 70% 30%, rgba(139,123,184,0.18) 0%, transparent 60%);
     z-index: 1;
-}
-
-.about-hero-content {
-    position: relative;
-    z-index: 3;
-    color: var(--color-white);
-    max-width: 900px;
-    padding: var(--spacing-xl);
-    margin: 0 auto;
-    text-align: center;
-    background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(5px);
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    width: 90%;
-}
-
-.about-hero-badge { 
-    display: inline-block;
-    background: var(--color-accent); 
-    color: var(--color-gray-900); 
-    padding: 0.6rem 1.75rem; 
-    border-radius: var(--radius-full); 
-    font-size: 0.9rem; 
-    font-weight: 600; 
-    margin-bottom: var(--spacing-md);
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    font-family: var(--font-heading);
-    box-shadow: var(--shadow-soft);
-}
-
-.about-hero-title { 
-    font-family: var(--font-heading); 
-    font-size: clamp(2.25rem, 5.5vw, 3.5rem);
-    font-weight: 700; 
-    color: var(--color-white); 
-    text-shadow: 0 2px 10px rgba(0,0,0,0.6);
-    line-height: 1.15;
-    margin-bottom: var(--spacing-md);
-    letter-spacing: -0.5px;
-}
-
-.about-hero-subtitle { 
-    font-size: clamp(1.15rem, 3.5vw, 1.6rem);
-    color: rgba(255,255,255,0.95);
-    line-height: 1.5;
-    max-width: 800px;
-    margin: 0 auto;
-    font-weight: 400;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-}
-
-/* ==========================================================================
-   PROFESSIONAL MISSION, VISION & VALUES CARDS - NO ICONS
-   ========================================================================== */
-.mvv-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--spacing-xl);
-    margin-top: var(--spacing-xl);
-}
-
-.mvv-card {
-    background: var(--color-white);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-xl) var(--spacing-lg);
-    position: relative;
-    transition: var(--transition-smooth);
-    border: 1px solid var(--color-gray-100);
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    box-shadow: var(--shadow-subtle);
-    overflow: hidden;
-}
-
-.mvv-card:hover {
-    transform: translateY(-10px);
-    box-shadow: var(--shadow-deep);
-    border-color: var(--color-primary-light);
-}
-
-.mvv-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 6px;
-    background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-}
-
-.mvv-title {
-    font-family: var(--font-heading);
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-md);
-    line-height: 1.2;
-    position: relative;
-    display: inline-block;
-}
-
-.mvv-title::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 0;
-    width: 60px;
-    height: 3px;
-    background: var(--color-accent);
-    border-radius: 2px;
-    transition: width 0.3s ease;
-}
-
-.mvv-card:hover .mvv-title::after {
-    width: 100px;
-}
-
-.mvv-text {
-    color: var(--color-gray-800);
-    line-height: 1.7;
-    font-size: 1rem;
-    margin-top: var(--spacing-xs);
-    flex-grow: 1;
-}
-
-/* Values List Styling - Enhanced */
-.values-container {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-md);
-}
-
-.value-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: 0.75rem;
-    border-radius: var(--radius-md);
-    background: var(--color-gray-50);
-    transition: var(--transition-smooth);
-}
-
-.value-item:hover {
-    background: var(--color-primary-very-light);
-    transform: translateX(5px);
-}
-
-.value-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-full);
-    background: var(--color-white);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-accent);
-    font-size: 0.9rem;
-    border: 1px solid var(--color-gray-100);
-}
-
-.value-item:hover .value-icon {
-    background: var(--color-accent);
-    color: var(--color-white);
-    border-color: var(--color-accent);
-}
-
-.value-text {
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: var(--color-gray-800);
-}
-
-/* ==========================================================================
-   ENHANCED LEADERSHIP SECTION - PROFESSIONAL DESIGN
-   ========================================================================== */
-.leadership-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--spacing-xl);
-    margin-top: var(--spacing-xl);
-}
-
-.leadership-card {
-    background: var(--color-white);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    position: relative;
-    transition: var(--transition-smooth);
-    border: 1px solid var(--color-gray-100);
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    box-shadow: var(--shadow-subtle);
-}
-
-.leadership-card:hover {
-    transform: translateY(-10px);
-    box-shadow: var(--shadow-deep);
-    border-color: var(--color-primary-light);
-}
-
-.leadership-image-wrapper {
-    position: relative;
-    width: 100%;
-    padding-top: 115%;
-    overflow: hidden;
-    background: linear-gradient(135deg, var(--color-primary-very-light), var(--color-gray-50));
-}
-
-.leadership-img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center 20%;
-    transition: transform 0.6s ease;
-}
-
-.leadership-card:hover .leadership-img {
-    transform: scale(1.05);
-}
-
-.leadership-content {
-    padding: var(--spacing-lg);
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.leadership-title {
-    font-family: var(--font-heading);
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-xs);
-    line-height: 1.3;
-}
-
-.leadership-role {
-    font-family: var(--font-heading);
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--color-accent-dark);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--spacing-xs);
-}
-
-.leadership-dept {
-    font-size: 0.95rem;
-    color: var(--color-gray-600);
-    margin-bottom: var(--spacing-md);
-    line-height: 1.5;
-    border-bottom: 1px solid var(--color-gray-100);
-    padding-bottom: var(--spacing-md);
-}
-
-.leadership-bio {
-    font-size: 0.95rem;
-    color: var(--color-gray-800);
-    line-height: 1.6;
-    margin-bottom: var(--spacing-md);
-    flex-grow: 1;
-}
-
-.leadership-social {
-    display: flex;
-    gap: var(--spacing-sm);
-    margin-top: auto;
-    padding-top: var(--spacing-sm);
-    border-top: 1px solid var(--color-gray-100);
-}
-
-.leadership-social a {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--color-primary-very-light);
-    color: var(--color-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: var(--transition-smooth);
-    text-decoration: none;
-}
-
-.leadership-social a:hover {
-    background: var(--color-primary);
-    color: var(--color-white);
-    transform: translateY(-2px);
-}
-
-/* Leadership Quote Section - Perfectly Centered */
-.leadership-quote {
-    margin-top: var(--spacing-xxl);
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-xl) var(--spacing-lg);
-    color: var(--color-white);
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    width: 100%;
-}
-
-.leadership-quote::before {
-    content: '"';
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 200px;
-    font-family: var(--font-heading);
-    color: rgba(255, 255, 255, 0.1);
-    line-height: 1;
     pointer-events: none;
 }
 
-.leadership-quote-content {
-    position: relative;
-    z-index: 2;
-    max-width: 800px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+.ab-hero-inner {
     width: 100%;
-}
-
-.leadership-quote-text {
-    font-size: 1.35rem;
-    font-weight: 400;
-    line-height: 1.6;
-    margin-bottom: var(--spacing-lg);
-    font-style: italic;
-    max-width: 750px;
+    max-width: var(--container-max);
     margin-left: auto;
     margin-right: auto;
-    text-align: center;
+    padding-left:  var(--gutter);
+    padding-right: var(--gutter);
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2.5rem;
 }
 
-.leadership-quote-author {
-    font-size: 1.25rem;
+@media (min-width: 992px) {
+    .ab-hero-inner { flex-direction: row; align-items: center; justify-content: space-between; }
+}
+
+.ab-hero-left  { width: 100%; max-width: 660px; }
+.ab-hero-right { width: 100%; }
+@media (min-width: 992px) {
+    .ab-hero-left  { width: 58%; max-width: none; }
+    .ab-hero-right { width: 38%; }
+}
+
+.ab-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(139,123,184,0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(201,164,74,0.35);
+    padding: 0.45rem 1.1rem;
+    border-radius: 50px;
+    margin-bottom: 1.1rem;
+}
+
+.ab-hero-badge-icon {
+    width: 22px; height: 22px;
+    background: var(--purple);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 0.65rem;
+}
+
+.ab-hero-badge-text {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+}
+
+.ab-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 4.5vw, 4rem);
     font-weight: 700;
-    color: var(--color-accent);
-    margin-bottom: var(--spacing-xs);
-    text-align: center;
-    width: 100%;
+    line-height: 1.1;
+    color: white;
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
-.leadership-quote-title {
-    font-size: 1rem;
-    opacity: 0.95;
-    font-weight: 400;
-    text-align: center;
-    width: 100%;
-    letter-spacing: 0.5px;
+.ab-hero-title .accent { color: var(--gold-light); font-style: italic; }
+
+.ab-hero-subtitle {
+    font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+    color: rgba(255,255,255,0.82);
+    font-weight: 300;
+    max-width: 540px;
+    line-height: 1.65;
+}
+
+.ab-hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(1rem, 3vw, 2rem);
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.25rem, 3vw, 1.75rem) clamp(1.5rem, 3vw, 2rem);
+}
+
+.ab-stat { display: flex; flex-direction: column; gap: 4px; }
+
+.ab-stat-value {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    font-weight: 700;
+    color: #FFE082;
+    line-height: 1;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.ab-stat-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.92);
 }
 
 /* ==========================================================================
-   PROFESSIONAL ACCREDITATION SECTION - REDESIGNED
+   BREADCRUMB — below hero
    ========================================================================== */
-.accreditation-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-xl);
-    margin-top: var(--spacing-xl);
+.ab-breadcrumb {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 0;
 }
 
-.accreditation-card {
-    background: linear-gradient(135deg, var(--color-white), var(--color-gray-50));
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-xl);
+.ab-breadcrumb-list {
+    display: flex; align-items: center; gap: 0.4rem;
+    list-style: none; font-size: 0.8rem; flex-wrap: wrap;
+}
+
+.ab-breadcrumb-list a { color: var(--purple-dark); text-decoration: none; font-weight: 500; transition: color 0.18s; }
+.ab-breadcrumb-list a:hover { color: var(--purple); text-decoration: underline; }
+.ab-breadcrumb-sep { color: var(--mist); }
+.ab-breadcrumb-current { color: var(--slate); }
+
+/* ==========================================================================
+   SECTION SPACING
+   ========================================================================== */
+.ab-section {
+    padding-top:    clamp(2.5rem, 5vw, 4rem);
+    padding-bottom: clamp(2.5rem, 5vw, 4rem);
+}
+
+.ab-section--alt      { background: var(--surface); }
+.ab-section--bordered { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+/* ==========================================================================
+   SECTION HEADER
+   ========================================================================== */
+.ab-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border);
+    border-image: linear-gradient(90deg, var(--purple) 110px, var(--border) 110px) 1;
+    flex-wrap: wrap;
+}
+
+.ab-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+}
+
+.ab-section-pip {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--purple);
+    flex-shrink: 0;
+}
+
+.ab-section-subtitle {
+    font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+    color: var(--slate);
+    line-height: 1.65;
+    margin-top: 0.5rem;
+    font-weight: 400;
+    max-width: 680px;
+}
+
+/* ==========================================================================
+   BUTTONS
+   ========================================================================== */
+.ab-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 0.65rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.9rem; font-weight: 500;
+    text-decoration: none; border: none; cursor: pointer;
+    transition: all 0.22s ease; letter-spacing: 0.01em; white-space: nowrap;
+}
+
+.ab-btn--purple { background: var(--purple); color: white; }
+.ab-btn--purple:hover { background: var(--purple-dark); color: white; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(139,123,184,0.32); }
+
+.ab-btn--gold { background: var(--gold); color: white; }
+.ab-btn--gold:hover { background: var(--gold-light); color: white; transform: translateY(-1px); }
+
+.ab-btn--outline { background: transparent; color: var(--purple); border: 1.5px solid var(--purple); }
+.ab-btn--outline:hover { background: var(--purple); color: white; transform: translateY(-1px); }
+
+.ab-btn--ghost { background: transparent; color: white; border: 1.5px solid rgba(255,255,255,0.35); }
+.ab-btn--ghost:hover { border-color: white; background: rgba(255,255,255,0.1); color: white; }
+
+.ab-btn--lg { padding: 0.85rem 2rem; font-size: 1rem; }
+
+/* ==========================================================================
+   MISSION / VISION / VALUES
+   ========================================================================== */
+.ab-mvv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.4rem;
+    margin-top: 0.5rem;
+}
+
+.ab-mvv-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.5rem, 3vw, 2rem);
     position: relative;
-    transition: var(--transition-smooth);
-    border: 1px solid var(--color-gray-100);
+    overflow: hidden;
+    transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
     display: flex;
     flex-direction: column;
-    height: 100%;
-    box-shadow: var(--shadow-subtle);
+}
+
+.ab-mvv-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--purple), var(--purple-light));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.28s ease;
+    border-radius: 3px 3px 0 0;
+}
+
+.ab-mvv-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: rgba(139,123,184,0.25); }
+.ab-mvv-card:hover::before { transform: scaleX(1); }
+
+.ab-mvv-label {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--purple);
+    margin-bottom: 0.75rem;
+}
+
+.ab-mvv-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 2vw, 1.75rem);
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+}
+
+.ab-mvv-text {
+    font-size: 0.92rem;
+    color: var(--slate);
+    line-height: 1.75;
+    flex: 1;
+}
+
+/* Values list */
+.ab-values-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem; }
+
+.ab-value-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.85rem;
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.ab-value-item:hover { background: var(--purple-pale); border-color: var(--purple-light); transform: translateX(4px); }
+
+.ab-value-dot {
+    width: 7px; height: 7px;
+    background: var(--gold);
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   STATISTICS
+   ========================================================================== */
+.ab-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.25rem;
+    margin-top: 0.5rem;
+}
+
+.ab-stat-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+    transition: transform 0.28s ease, box-shadow 0.28s ease;
+    position: relative;
     overflow: hidden;
 }
 
-.accreditation-card:hover {
-    transform: translateY(-8px);
-    box-shadow: var(--shadow-deep);
-    border-color: var(--color-primary-light);
-    background: linear-gradient(135deg, var(--color-white), var(--color-primary-very-light));
-}
-
-.accreditation-badge {
+.ab-stat-card::after {
+    content: '';
     position: absolute;
-    top: var(--spacing-lg);
-    right: var(--spacing-lg);
-    background: var(--color-accent);
-    color: var(--color-gray-900);
-    padding: 0.4rem 1rem;
-    border-radius: var(--radius-full);
-    font-size: 0.75rem;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--purple), var(--gold));
+    transform: scaleX(0);
+    transition: transform 0.28s ease;
+}
+
+.ab-stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+.ab-stat-card:hover::after { transform: scaleX(1); }
+
+.ab-stat-card-value {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 3vw, 2.8rem);
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    z-index: 2;
-    box-shadow: var(--shadow-soft);
+    color: var(--purple);
+    line-height: 1;
+    margin-bottom: 0.4rem;
 }
 
-.accreditation-logo-wrapper {
-    width: 100px;
-    height: 100px;
-    border-radius: var(--radius-lg);
-    background: var(--color-white);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: var(--spacing-lg);
-    border: 1px solid var(--color-gray-100);
-    box-shadow: var(--shadow-subtle);
-    transition: var(--transition-smooth);
+.ab-stat-card-label {
+    font-size: 0.82rem;
+    color: var(--slate);
+    font-weight: 500;
+    line-height: 1.4;
 }
-
-.accreditation-card:hover .accreditation-logo-wrapper {
-    border-color: var(--color-primary-light);
-    transform: scale(1.05);
-    box-shadow: var(--shadow-soft);
-}
-
-.accreditation-logo {
-    font-size: 3rem;
-    color: var(--color-primary);
-    transition: var(--transition-smooth);
-}
-
-.accreditation-card:hover .accreditation-logo {
-    color: var(--color-accent);
-    transform: scale(1.1);
-}
-
-.accreditation-title {
-    font-family: var(--font-heading);
-    font-size: 2.2rem;
-    font-weight: 800;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-xs);
-    line-height: 1.1;
-    letter-spacing: -0.5px;
-}
-
-.accreditation-subtitle {
-    font-family: var(--font-heading);
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-accent-dark);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: var(--spacing-md);
-}
-
-.accreditation-body {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-}
-
-.accreditation-description {
-    color: var(--color-gray-800);
-    line-height: 1.6;
-    font-size: 1rem;
-    margin-bottom: var(--spacing-sm);
-}
-
-.accreditation-features {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.accreditation-features li {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: 0.5rem 0;
-    color: var(--color-gray-800);
-    font-size: 0.95rem;
-}
-
-.accreditation-features li i {
-    color: var(--color-accent);
-    font-size: 1rem;
-    width: 20px;
-}
-
-/* REMOVED - Accreditation seal that was overlapping footer */
 
 /* ==========================================================================
-   STATISTICS - Enhanced Display
+   LEADERSHIP CARDS
    ========================================================================== */
-.stats-grid {
+.ab-leadership-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-    gap: var(--spacing-lg);
-    margin-top: var(--spacing-lg);
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.4rem;
+    margin-top: 0.5rem;
 }
 
-.stat-card {
-    background: var(--color-white);
+.ab-leader-card {
+    background: var(--white);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-subtle);
-    padding: var(--spacing-lg);
-    text-align: center;
-    transition: var(--transition-smooth);
-    border: 1px solid var(--color-gray-100);
+    overflow: hidden;
+    transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    min-height: 160px;
 }
 
-.stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-soft);
-    border-color: var(--color-primary-light);
+.ab-leader-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: rgba(139,123,184,0.25); }
+
+.ab-leader-img-wrap {
+    position: relative;
+    width: 100%;
+    padding-top: 110%;
+    overflow: hidden;
+    background: var(--purple-pale);
 }
 
-.stat-number {
-    font-family: var(--font-heading);
-    font-size: clamp(2.2rem, 5vw, 3rem);
+.ab-leader-img {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center 20%;
+    transition: transform 0.5s ease;
+}
+
+.ab-leader-card:hover .ab-leader-img { transform: scale(1.05); }
+
+.ab-leader-body {
+    padding: 1.1rem 1.25rem 1.25rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.ab-leader-name {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
     font-weight: 700;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-sm);
+    color: var(--ink);
+    margin-bottom: 0.2rem;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+}
+
+.ab-leader-role {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.15rem;
+}
+
+.ab-leader-dept {
+    font-size: 0.8rem;
+    color: var(--slate);
+    line-height: 1.4;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.ab-leader-bio {
+    font-size: 0.82rem;
+    color: var(--slate);
+    line-height: 1.65;
+    flex: 1;
+    margin-bottom: 0.9rem;
+}
+
+.ab-leader-social {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: auto;
+}
+
+.ab-leader-social a {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--slate);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.ab-leader-social a:hover { background: var(--purple); color: white; border-color: var(--purple); transform: translateY(-2px); }
+
+/* ==========================================================================
+   LEADERSHIP QUOTE CARD — dark card style matching all pages
+   ========================================================================== */
+.ab-quote-card {
+    background: linear-gradient(160deg, #2A3042 0%, #3A4055 100%);
+    border-radius: var(--radius-xl);
+    padding: clamp(2rem, 4vw, 3rem) clamp(1.75rem, 4vw, 3rem);
+    margin-top: 2rem;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    box-shadow: var(--shadow-xl);
+}
+
+.ab-quote-card::before {
+    content: '\201C';
+    position: absolute;
+    top: -0.5rem; left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-display);
+    font-size: clamp(8rem, 15vw, 14rem);
+    color: rgba(255,255,255,0.06);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+}
+
+.ab-quote-card::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 20%; bottom: 20%;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--purple-light), var(--purple));
+    border-radius: 3px;
+}
+
+.ab-quote-text {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 2vw, 1.45rem);
+    font-weight: 400;
+    font-style: italic;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.65;
+    max-width: 760px;
+    margin: 0 auto 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.ab-quote-author {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    margin-bottom: 0.25rem;
+    position: relative;
+    z-index: 1;
+}
+
+.ab-quote-role {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    position: relative;
+    z-index: 1;
+}
+
+/* ==========================================================================
+   ACCREDITATION CARDS
+   ========================================================================== */
+.ab-accred-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.4rem;
+    margin-top: 0.5rem;
+}
+
+.ab-accred-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.5rem, 3vw, 2rem);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.28s ease, box-shadow 0.28s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ab-accred-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--purple), var(--gold));
+    border-radius: 3px 3px 0 0;
+}
+
+.ab-accred-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: rgba(139,123,184,0.25); }
+
+.ab-accred-badge {
+    position: absolute;
+    top: 1.1rem; right: 1.1rem;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    background: var(--green-pale);
+    color: var(--green);
+    border: 1px solid rgba(93,155,140,0.3);
+    border-radius: 4px;
+}
+
+.ab-accred-icon-wrap {
+    width: 60px; height: 60px;
+    background: var(--purple-pale);
+    color: var(--purple);
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    transition: all 0.28s ease;
+    border: 1px solid var(--border);
+}
+
+.ab-accred-card:hover .ab-accred-icon-wrap { background: var(--purple); color: white; }
+
+.ab-accred-abbr {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 3vw, 2.6rem);
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
     line-height: 1;
 }
 
-.stat-label {
-    color: var(--color-gray-800);
-    font-size: 1.1rem;
+.ab-accred-name {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
     font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin-top: 0.2rem;
 }
+
+.ab-accred-desc {
+    font-size: 0.88rem;
+    color: var(--slate);
+    line-height: 1.7;
+}
+
+.ab-accred-features { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; }
+
+.ab-accred-features li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.ab-accred-features li:last-child { border-bottom: none; }
+
+.ab-accred-features li i { color: var(--gold); font-size: 0.75rem; flex-shrink: 0; }
 
 /* ==========================================================================
-   GALLERY CAROUSEL - Enhanced for Mobile
+   GALLERY CAROUSEL
    ========================================================================== */
-.gallery-container {
+.ab-gallery-wrap {
     position: relative;
-    margin-top: var(--spacing-xl);
-    width: 100%;
+    margin-top: 0.5rem;
+    border-radius: var(--radius-xl);
     overflow: hidden;
+    box-shadow: var(--shadow-xl);
+    height: clamp(300px, 50vw, 600px);
 }
 
-.gallery-carousel {
-    position: relative;
-    height: 600px;
-    overflow: hidden;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-elevated);
-}
-
-.gallery-slide {
+.ab-gallery-slide {
     position: absolute;
     inset: 0;
-    opacity: 0;
-    transition: opacity 0.8s ease;
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;
-    width: 100%;
-    height: 100%;
+    opacity: 0;
+    transition: opacity 0.8s ease;
 }
 
-.gallery-slide.active { 
-    opacity: 1; 
-}
+.ab-gallery-slide.is-active { opacity: 1; }
 
-.gallery-caption {
+/* Caption overlay */
+.ab-gallery-caption {
     position: absolute;
-    top: 50%;
-    right: 0;
-    transform: translateY(-50%);
-    width: 45%;
-    max-width: 450px;
-    background: rgba(93, 74, 138, 0.92);
-    padding: var(--spacing-xl);
-    color: var(--color-white);
-    backdrop-filter: blur(8px);
-    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+    bottom: 0; left: 0; right: 0;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    background: linear-gradient(to top, rgba(26,31,46,0.92) 0%, rgba(26,31,46,0.6) 60%, transparent 100%);
+    z-index: 5;
+}
+
+@media (min-width: 768px) {
+    .ab-gallery-caption {
+        top: 0; bottom: 0; left: auto;
+        right: 0;
+        width: 40%;
+        max-width: 420px;
+        background: rgba(26,31,46,0.88);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border-left: 3px solid var(--purple);
+    }
+}
+
+.ab-gallery-caption-tag {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.65rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ab-gallery-caption-tag::before {
+    content: '';
+    width: 20px; height: 1.5px;
+    background: var(--gold);
+    display: block;
+}
+
+.ab-gallery-caption h3 {
+    font-family: var(--font-display);
+    font-size: clamp(1.2rem, 2.5vw, 1.65rem);
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.6rem;
+    line-height: 1.25;
+}
+
+.ab-gallery-caption p {
+    font-size: clamp(0.82rem, 1.2vw, 0.92rem);
+    color: rgba(255,255,255,0.75);
+    line-height: 1.6;
+}
+
+/* Dots */
+.ab-gallery-dots {
+    position: absolute;
+    bottom: 1rem; left: 1rem;
+    display: flex;
+    gap: 0.4rem;
     z-index: 10;
 }
 
-.gallery-caption::before {
+@media (min-width: 768px) {
+    .ab-gallery-dots { left: 1.25rem; bottom: 1.25rem; }
+}
+
+.ab-gallery-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.35);
+    border: 1.5px solid rgba(255,255,255,0.6);
+    cursor: pointer;
+    transition: all 0.22s ease;
+}
+
+.ab-gallery-dot.is-active { background: var(--gold); border-color: var(--gold); transform: scale(1.3); }
+.ab-gallery-dot:hover     { background: rgba(255,255,255,0.7); }
+
+/* ==========================================================================
+   CTA DARK CARD
+   ========================================================================== */
+.ab-cta-card {
+    background: linear-gradient(160deg, #2A3042 0%, #3A4055 100%);
+    border-radius: var(--radius-xl);
+    padding: clamp(1.75rem, 4vw, 2.75rem);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+    box-shadow: var(--shadow-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.ab-cta-card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 5px;
-    background: var(--color-accent);
+    left: 0; top: 15%; bottom: 15%;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--purple-light), var(--purple));
+    border-radius: 3px;
 }
 
-.gallery-caption h3 {
-    font-family: var(--font-heading);
-    font-size: 1.9rem;
+.ab-cta-content { flex: 1; min-width: 220px; }
+
+.ab-cta-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--purple);
+    color: white;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-bottom: 0.85rem;
+}
+
+.ab-cta-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
     font-weight: 700;
-    margin-bottom: var(--spacing-md);
-    color: var(--color-white);
-    line-height: 1.3;
+    color: white;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
 }
 
-.gallery-caption p {
-    font-size: 1.1rem;
-    color: rgba(255,255,255,0.95);
+.ab-cta-desc {
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.7);
     line-height: 1.6;
-    margin: 0;
 }
 
-.gallery-dots {
-    display: flex;
-    justify-content: center;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-lg);
-    position: absolute;
-    bottom: var(--spacing-lg);
-    left: 0;
-    right: 0;
-    z-index: 20;
-}
+.ab-cta-actions { display: flex; gap: 0.85rem; flex-wrap: wrap; }
 
-.gallery-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
-    border: 2px solid var(--color-white);
-    cursor: pointer;
-    transition: var(--transition-smooth);
-}
-
-.gallery-dot.active {
-    background: var(--color-accent);
-    transform: scale(1.2);
-}
-
-.gallery-dot:hover {
-    background: var(--color-accent-light);
-}
-
-/* ==========================================================================
-   BUTTONS - Enhanced for Mobile
-   ========================================================================== */
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    background: var(--color-accent);
-    color: var(--color-gray-900);
-    padding: 1rem 2rem;
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    font-weight: 600;
-    transition: var(--transition-smooth);
-    border: 2px solid var(--color-accent);
-    font-family: var(--font-heading);
-    font-size: 1.05rem;
-    letter-spacing: 0.3px;
-    min-height: 50px;
-    width: 100%;
-    max-width: 250px;
-}
-
-.btn-primary:hover { 
-    background: var(--color-accent-dark); 
-    color: var(--color-gray-900);
-    transform: translateY(-3px); 
-    box-shadow: var(--shadow-soft); 
-    border-color: var(--color-accent-dark);
-}
-
-.btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    background: var(--color-primary);
-    color: var(--color-white);
-    padding: 1rem 2rem;
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    font-weight: 600;
-    transition: var(--transition-smooth);
-    border: 2px solid var(--color-primary);
-    font-family: var(--font-heading);
-    font-size: 1.05rem;
-    letter-spacing: 0.3px;
-    min-height: 50px;
-    width: 100%;
-    max-width: 250px;
-}
-
-.btn-secondary:hover { 
-    background: var(--color-primary-dark); 
-    color: var(--color-white);
-    transform: translateY(-3px); 
-    box-shadow: var(--shadow-soft); 
-    border-color: var(--color-primary-dark);
-}
-
-/* ==========================================================================
-   CTA SECTION - Enhanced for Mobile
-   ========================================================================== */
-.cta-section { 
-    background: linear-gradient(135deg, var(--color-gray-50), var(--color-white));
-    text-align: center; 
-    padding: var(--spacing-xxl) 0; 
-    border-top: 1px solid var(--color-gray-100);
-    border-bottom: 1px solid var(--color-gray-100);
-}
-
-.cta-section .section-title {
-    margin-bottom: var(--spacing-md);
-}
-
-.cta-buttons {
-    display: flex;
-    gap: var(--spacing-md);
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: var(--spacing-lg);
-}
-
-/* ==========================================================================
-   ENHANCED RESPONSIVE DESIGN
-   ========================================================================== */
-
-/* Large Tablets & Small Laptops */
-@media (max-width: 1024px) {
-    .about-hero {
-        min-height: 75vh;
-    }
-    
-    .gallery-carousel {
-        height: 500px;
-    }
-    
-    .gallery-caption {
-        width: 55%;
-        padding: var(--spacing-lg);
-    }
-    
-    .gallery-caption h3 {
-        font-size: 1.7rem;
-    }
-    
-    .gallery-caption p {
-        font-size: 1.05rem;
-    }
-    
-    .mvv-grid {
-        gap: var(--spacing-lg);
-    }
-    
-    .leadership-quote-text {
-        font-size: 1.25rem;
-    }
-}
-
-/* Tablets */
-@media (max-width: 768px) {
-    :root {
-        --spacing-xs: 0.5rem;
-        --spacing-sm: 0.875rem;
-        --spacing-md: 1.25rem;
-        --spacing-lg: 1.5rem;
-        --spacing-xl: 2rem;
-        --spacing-xxl: 2.5rem;
-    }
-    
-    .about-hero {
-        min-height: 70vh;
-        padding: var(--spacing-lg) 0;
-    }
-    
-    .about-hero-content {
-        padding: var(--spacing-lg);
-        margin: 0 auto;
-        width: 95%;
-        backdrop-filter: blur(5px);
-    }
-    
-    .about-hero-title {
-        font-size: clamp(2rem, 6vw, 2.8rem);
-        margin-bottom: var(--spacing-sm);
-    }
-    
-    .about-hero-subtitle {
-        font-size: clamp(1.15rem, 4vw, 1.4rem);
-        line-height: 1.5;
-    }
-    
-    .gallery-carousel {
-        height: 400px;
-    }
-    
-    .gallery-caption {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        top: auto;
-        transform: none;
-        width: 100%;
-        max-width: 100%;
-        background: linear-gradient(
-            to top,
-            rgba(93, 74, 138, 0.95),
-            rgba(93, 74, 138, 0.85) 70%,
-            rgba(93, 74, 138, 0.7)
-        );
-        padding: var(--spacing-lg);
-        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-        box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.2);
-    }
-    
-    .gallery-caption h3 {
-        font-size: 1.5rem;
-        margin-bottom: var(--spacing-xs);
-    }
-    
-    .gallery-caption p {
-        font-size: 1rem;
-        line-height: 1.4;
-    }
-    
-    .gallery-dots {
-        bottom: var(--spacing-md);
-    }
-    
-    /* Mission, Vision, Values - Stack on tablet */
-    .mvv-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-lg);
-    }
-    
-    /* Accreditation - Stack on tablet */
-    .accreditation-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-lg);
-    }
-    
-    .leadership-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-md);
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-md);
-    }
-    
-    .cta-buttons {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .btn-primary,
-    .btn-secondary {
-        max-width: 300px;
-    }
-    
-    .leadership-quote {
-        padding: var(--spacing-lg);
-    }
-    
-    .leadership-quote-text {
-        font-size: 1.2rem;
-    }
-    
-    .leadership-quote-author {
-        font-size: 1.15rem;
-    }
-    
-    .accreditation-title {
-        font-size: 2rem;
-    }
-}
-
-/* Mobile Devices */
 @media (max-width: 480px) {
-    .about-hero {
-        min-height: 65vh;
-        padding: var(--spacing-md) 0;
-    }
-    
-    .about-hero-content {
-        padding: var(--spacing-md);
-        backdrop-filter: blur(3px);
-    }
-    
-    .about-hero-badge {
-        padding: 0.5rem 1.25rem;
-        font-size: 0.8rem;
-        margin-bottom: var(--spacing-sm);
-    }
-    
-    .about-hero-title {
-        font-size: 1.8rem;
-        line-height: 1.3;
-        margin-bottom: var(--spacing-xs);
-    }
-    
-    .about-hero-subtitle {
-        font-size: 1.1rem;
-        line-height: 1.4;
-    }
-    
-    .section {
-        padding: var(--spacing-lg) 0;
-    }
-    
-    .section-header {
-        margin-bottom: var(--spacing-lg);
-    }
-    
-    .section-title {
-        font-size: 1.6rem;
-    }
-    
-    .section-subtitle {
-        font-size: 1.05rem;
-        margin-top: var(--spacing-sm);
-    }
-    
-    .gallery-carousel {
-        height: 300px;
-        border-radius: var(--radius-md);
-    }
-    
-    .gallery-caption {
-        padding: var(--spacing-md);
-    }
-    
-    .gallery-caption h3 {
-        font-size: 1.3rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .gallery-caption p {
-        font-size: 0.9rem;
-        line-height: 1.3;
-    }
-    
-    .gallery-dots {
-        bottom: var(--spacing-sm);
-    }
-    
-    .gallery-dot {
-        width: 10px;
-        height: 10px;
-        border-width: 1px;
-    }
-    
-    .mvv-grid {
-        gap: var(--spacing-md);
-    }
-    
-    .mvv-card {
-        padding: var(--spacing-lg);
-    }
-    
-    .mvv-title {
-        font-size: 1.6rem;
-    }
-    
-    .accreditation-grid {
-        gap: var(--spacing-md);
-    }
-    
-    .accreditation-card {
-        padding: var(--spacing-lg);
-    }
-    
-    .accreditation-title {
-        font-size: 1.8rem;
-    }
-    
-    .accreditation-logo-wrapper {
-        width: 80px;
-        height: 80px;
-    }
-    
-    .accreditation-logo {
-        font-size: 2.5rem;
-    }
-    
-    .leadership-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-md);
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-sm);
-    }
-    
-    .stat-card {
-        padding: var(--spacing-md);
-        min-height: 120px;
-    }
-    
-    .stat-number {
-        font-size: 2.2rem;
-    }
-    
-    .cta-section {
-        padding: var(--spacing-xl) 0;
-    }
-    
-    .btn-primary,
-    .btn-secondary {
-        padding: 0.875rem 1.5rem;
-        font-size: 1rem;
-        min-height: 44px;
-    }
-    
-    .value-item {
-        padding: 0.6rem;
-    }
-    
-    .value-text {
-        font-size: 0.9rem;
-    }
-    
-    .leadership-quote {
-        padding: var(--spacing-md);
-    }
-    
-    .leadership-quote-text {
-        font-size: 1.1rem;
-        margin-bottom: var(--spacing-md);
-    }
-    
-    .leadership-quote-author {
-        font-size: 1.1rem;
-    }
-    
-    .leadership-quote-title {
-        font-size: 0.9rem;
-    }
-    
-    .accreditation-features li {
-        font-size: 0.9rem;
-    }
+    .ab-cta-card { flex-direction: column; }
+    .ab-cta-actions { flex-direction: column; width: 100%; }
+    .ab-cta-actions .ab-btn { justify-content: center; }
 }
 
-/* Very Small Mobile Devices */
-@media (max-width: 360px) {
-    .about-hero {
-        min-height: 60vh;
-    }
-    
-    .about-hero-title {
-        font-size: 1.6rem;
-    }
-    
-    .about-hero-subtitle {
-        font-size: 1rem;
-    }
-    
-    .gallery-carousel {
-        height: 250px;
-    }
-    
-    .gallery-caption {
-        padding: var(--spacing-sm);
-    }
-    
-    .gallery-caption h3 {
-        font-size: 1.15rem;
-    }
-    
-    .gallery-caption p {
-        font-size: 0.85rem;
-    }
-    
-    .container {
-        padding: 0 var(--spacing-sm);
-    }
-    
-    .leadership-title {
-        font-size: 1.2rem;
-    }
-    
-    .accreditation-title {
-        font-size: 1.6rem;
-    }
-    
-    .accreditation-logo-wrapper {
-        width: 70px;
-        height: 70px;
-    }
-    
-    .accreditation-logo {
-        font-size: 2.2rem;
-    }
-    
-    .leadership-quote-text {
-        font-size: 1rem;
-    }
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+@keyframes ab-fadeIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Landscape Orientation */
-@media (max-height: 600px) and (orientation: landscape) {
-    .about-hero {
-        min-height: 100vh;
-        padding: var(--spacing-md) 0;
-    }
-    
-    .about-hero-content {
-        margin: 0 auto;
-        padding: var(--spacing-md);
-    }
-    
-    .about-hero-title {
-        font-size: 2rem;
-        margin-bottom: var(--spacing-xs);
-    }
-    
-    .about-hero-subtitle {
-        font-size: 1.1rem;
-        line-height: 1.4;
-    }
+.ab-mvv-card, .ab-leader-card, .ab-accred-card, .ab-stat-card {
+    animation: ab-fadeIn 0.4s ease both;
 }
 
-/* High-resolution displays */
-@media (min-width: 1400px) {
-    .container {
-        max-width: 1320px;
-    }
-    
-    .about-hero {
-        min-height: 90vh;
-    }
-    
-    .about-hero-title {
-        font-size: 4rem;
-    }
-    
-    .about-hero-subtitle {
-        font-size: 1.8rem;
-    }
-    
-    .gallery-carousel {
-        height: 700px;
-    }
-    
-    .leadership-grid {
-        grid-template-columns: repeat(5, 1fr);
-    }
-    
-    .mvv-grid {
-        gap: var(--spacing-xxl);
-    }
-    
-    .accreditation-grid {
-        gap: var(--spacing-xxl);
-    }
-    
-    .leadership-quote-text {
-        font-size: 1.5rem;
-    }
-}
+.ab-mvv-card:nth-child(1), .ab-leader-card:nth-child(1), .ab-stat-card:nth-child(1) { animation-delay: 0.05s; }
+.ab-mvv-card:nth-child(2), .ab-leader-card:nth-child(2), .ab-stat-card:nth-child(2) { animation-delay: 0.10s; }
+.ab-mvv-card:nth-child(3), .ab-leader-card:nth-child(3), .ab-stat-card:nth-child(3) { animation-delay: 0.15s; }
+.ab-leader-card:nth-child(4), .ab-stat-card:nth-child(4) { animation-delay: 0.20s; }
+.ab-leader-card:nth-child(5) { animation-delay: 0.25s; }
 
-/* Print Styles */
-@media print {
-    .about-hero {
-        min-height: auto;
-        background: var(--color-white);
-        color: var(--color-black);
-        padding: 2rem 0;
-    }
-    
-    .about-hero-bg {
-        display: none;
-    }
-    
-    .about-hero-content {
-        color: var(--color-black);
-        background: transparent;
-        backdrop-filter: none;
-        border: none;
-        box-shadow: none;
-    }
-    
-    .btn-primary,
-    .btn-secondary {
-        display: none;
-    }
-    
-    .gallery-carousel {
-        display: none;
-    }
-    
-    .section {
-        padding: 1rem 0;
-        break-inside: avoid;
-    }
-    
-    .mvv-card,
-    .accreditation-card,
-    .leadership-card {
-        box-shadow: none;
-        border: 1px solid var(--color-gray-300);
-        break-inside: avoid;
-        page-break-inside: avoid;
-    }
-    
-    .mvv-card::before {
-        background: var(--color-gray-300);
-    }
-    
-    .leadership-quote {
-        background: var(--color-gray-50);
-        color: var(--color-gray-900);
-        border: 1px solid var(--color-gray-300);
-    }
-    
-    .value-item {
-        background: var(--color-white);
-        border: 1px solid var(--color-gray-200);
-    }
-}
-
-/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
-    * {
-        transition: none !important;
-        animation: none !important;
-    }
-    
-    .card:hover,
-    .btn-primary:hover,
-    .btn-secondary:hover,
-    .stat-card:hover,
-    .leadership-card:hover,
-    .mvv-card:hover,
-    .accreditation-card:hover {
-        transform: none !important;
-    }
-    
-    .gallery-slide {
-        transition: none;
-    }
+    .ab-mvv-card, .ab-leader-card, .ab-accred-card, .ab-stat-card,
+    .ab-gallery-slide { animation: none !important; transition: none !important; }
 }
 
-:focus-visible {
-    outline: 3px solid var(--color-accent);
-    outline-offset: 3px;
-    border-radius: var(--radius-sm);
-}
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: var(--radius-sm); }
 
-/* Screen Reader Only */
 .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* Print */
+@media print {
+    .ab-hero, .ab-btn, .ab-gallery-wrap, .ab-cta-card { display: none !important; }
+    .ab-mvv-card, .ab-leader-card, .ab-accred-card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    .ab-quote-card { background: #f5f5f5; color: #000; }
 }
 </style>
-</head>
-<body>
 
-<main class="about-page">
-    <!-- Hero Section - Enhanced for Mobile -->
-    <section class="about-hero" aria-label="About FCT College of Nursing Sciences">
-        <div class="about-hero-bg" role="img" aria-label="Campus building background"></div>
-        <div class="container">
-            <div class="about-hero-content">
-                <span class="about-hero-badge">Excellence Since 1989</span>
-                <h1 class="about-hero-title">About FCT College of Nursing Sciences</h1>
-                <p class="about-hero-subtitle">
+<!-- =====================================================================
+     PAGE ROOT
+     ===================================================================== -->
+<div class="ab-root">
+
+    <!-- ── HERO — starts at very top ─────────────────────────────────────── -->
+    <section class="ab-hero" aria-label="About FCT College of Nursing Sciences">
+        <div class="ab-hero-bg"></div>
+
+        <div class="ab-hero-inner">
+            <div class="ab-hero-left">
+                <div class="ab-hero-badge">
+                    <span class="ab-hero-badge-icon"><i class="fas fa-building-columns"></i></span>
+                    <span class="ab-hero-badge-text">Excellence Since 1989</span>
+                </div>
+
+                <h1 class="ab-hero-title">
+                    About FCT College of <span class="accent">Nursing Sciences</span>
+                </h1>
+
+                <p class="ab-hero-subtitle">
                     A premier institution dedicated to excellence in nursing education, research, and healthcare training in Nigeria's Federal Capital Territory.
                 </p>
             </div>
+
+            <div class="ab-hero-right">
+                <div class="ab-hero-stats">
+                    <div class="ab-stat">
+                        <span class="ab-stat-value">35+</span>
+                        <span class="ab-stat-label">Years</span>
+                    </div>
+                    <div class="ab-stat">
+                        <span class="ab-stat-value">5,000+</span>
+                        <span class="ab-stat-label">Graduates</span>
+                    </div>
+                    <div class="ab-stat">
+                        <span class="ab-stat-value">100%</span>
+                        <span class="ab-stat-label">Accredited</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Mission, Vision, Values - Professionally Designed Cards (No Icons) -->
-    <section class="section section-alt" aria-labelledby="mission-vision-values">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title" id="mission-vision-values">Mission, Vision & Values</h2>
-                <p class="section-subtitle">The guiding principles that define our commitment to nursing excellence.</p>
+    <!-- ── BREADCRUMB ────────────────────────────────────────────────────── -->
+    <nav class="ab-breadcrumb" aria-label="Breadcrumb">
+        <div class="ab-container">
+            <ul class="ab-breadcrumb-list">
+                <li><a href="<?php echo $baseUrl; ?>"><i class="fas fa-home"></i> Home</a></li>
+                <li><span class="ab-breadcrumb-sep">/</span></li>
+                <li><span class="ab-breadcrumb-current" aria-current="page">About</span></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- ── MISSION / VISION / VALUES ─────────────────────────────────────── -->
+    <div class="ab-section ab-section--alt ab-section--bordered">
+        <div class="ab-container">
+            <div class="ab-section-header">
+                <div>
+                    <h2 class="ab-section-title"><span class="ab-section-pip"></span> Mission, Vision &amp; Values</h2>
+                    <p class="ab-section-subtitle">The guiding principles that define our commitment to nursing excellence.</p>
+                </div>
             </div>
-            
-            <div class="mvv-grid">
-                <!-- Mission Card - No Icon -->
-                <div class="mvv-card">
-                    <h3 class="mvv-title">Our Mission</h3>
-                    <p class="mvv-text">
-                        To prepare competent and polyvalent nurses that will use problem-solving skills in providing safe, acceptable, effective health services to meet the health needs of individuals, families and the communities at all levels of care.
+
+            <div class="ab-mvv-grid">
+
+                <div class="ab-mvv-card">
+                    <div class="ab-mvv-label">Our Mission</div>
+                    <h3 class="ab-mvv-title">Mission</h3>
+                    <p class="ab-mvv-text">
+                        To prepare competent and polyvalent nurses that will use problem-solving skills in providing safe, acceptable, effective health services to meet the health needs of individuals, families and communities at all levels of care.
                     </p>
                 </div>
 
-                <!-- Vision Card - No Icon -->
-                <div class="mvv-card">
-                    <h3 class="mvv-title">Our Vision</h3>
-                    <p class="mvv-text">
-                        To be one of the best college of Nursing Sciences in Nigeria especially in the area of imparting knowledge into prospective nurses as well as providing solutions to the much needed health services as required by the people of the FCT in particular and Nigeria at large.
+                <div class="ab-mvv-card">
+                    <div class="ab-mvv-label">Our Vision</div>
+                    <h3 class="ab-mvv-title">Vision</h3>
+                    <p class="ab-mvv-text">
+                        To be one of the best colleges of Nursing Sciences in Nigeria, especially in imparting knowledge into prospective nurses and providing the health services required by the people of the FCT in particular, and Nigeria at large.
                     </p>
                 </div>
 
-                <!-- Core Values Card - No Icon -->
-                <div class="mvv-card">
-                    <h3 class="mvv-title">Core Values</h3>
-                    <div class="values-container">
-                        <div class="value-item">
-                            <span class="value-icon"><i class="fas fa-check"></i></span>
-                            <span class="value-text">Excellence in Education</span>
-                        </div>
-                        <div class="value-item">
-                            <span class="value-icon"><i class="fas fa-check"></i></span>
-                            <span class="value-text">Integrity and Ethics</span>
-                        </div>
-                        <div class="value-item">
-                            <span class="value-icon"><i class="fas fa-check"></i></span>
-                            <span class="value-text">Compassionate Care</span>
-                        </div>
-                        <div class="value-item">
-                            <span class="value-icon"><i class="fas fa-check"></i></span>
-                            <span class="value-text">Innovation and Research</span>
-                        </div>
-                        <div class="value-item">
-                            <span class="value-icon"><i class="fas fa-check"></i></span>
-                            <span class="value-text">Professional Development</span>
-                        </div>
-                        <div class="value-item">
-                            <span class="value-icon"><i class="fas fa-check"></i></span>
-                            <span class="value-text">Community Service</span>
-                        </div>
-                    </div>
+                <div class="ab-mvv-card">
+                    <div class="ab-mvv-label">Core Values</div>
+                    <h3 class="ab-mvv-title">Values</h3>
+                    <ul class="ab-values-list">
+                        <li class="ab-value-item"><span class="ab-value-dot"></span> Excellence in Education</li>
+                        <li class="ab-value-item"><span class="ab-value-dot"></span> Integrity and Ethics</li>
+                        <li class="ab-value-item"><span class="ab-value-dot"></span> Compassionate Care</li>
+                        <li class="ab-value-item"><span class="ab-value-dot"></span> Innovation and Research</li>
+                        <li class="ab-value-item"><span class="ab-value-dot"></span> Professional Development</li>
+                        <li class="ab-value-item"><span class="ab-value-dot"></span> Community Service</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ── STATISTICS ─────────────────────────────────────────────────────── -->
+    <div class="ab-section">
+        <div class="ab-container">
+            <div class="ab-section-header">
+                <h2 class="ab-section-title"><span class="ab-section-pip"></span> Our Impact in Numbers</h2>
+            </div>
+
+            <div class="ab-stats-grid">
+                <div class="ab-stat-card">
+                    <div class="ab-stat-card-value">35+</div>
+                    <div class="ab-stat-card-label">Years of Excellence</div>
+                </div>
+                <div class="ab-stat-card">
+                    <div class="ab-stat-card-value">5,000+</div>
+                    <div class="ab-stat-card-label">Nursing Graduates</div>
+                </div>
+                <div class="ab-stat-card">
+                    <div class="ab-stat-card-value">100%</div>
+                    <div class="ab-stat-card-label">NMCN Accredited</div>
+                </div>
+                <div class="ab-stat-card">
+                    <div class="ab-stat-card-value">50+</div>
+                    <div class="ab-stat-card-label">Faculty Members</div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 
-    <!-- Statistics -->
-    <section class="section" aria-labelledby="statistics">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title" id="statistics">Our Impact in Numbers</h2>
-            </div>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number">35+</div>
-                    <div class="stat-label">Years of Excellence</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">5,000+</div>
-                    <div class="stat-label">Nursing Graduates</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">100%</div>
-                    <div class="stat-label">NMCN Accredited</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">50+</div>
-                    <div class="stat-label">Faculty Members</div>
+    <!-- ── LEADERSHIP ─────────────────────────────────────────────────────── -->
+    <div class="ab-section ab-section--alt ab-section--bordered">
+        <div class="ab-container">
+            <div class="ab-section-header">
+                <div>
+                    <h2 class="ab-section-title"><span class="ab-section-pip"></span> Institutional Leadership</h2>
+                    <p class="ab-section-subtitle">Distinguished leaders shaping the future of nursing education in the Federal Capital Territory.</p>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <!-- Enhanced Leadership Section -->
-    <section class="section section-alt" aria-labelledby="leadership">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title" id="leadership">Institutional Leadership</h2>
-                <p class="section-subtitle">Distinguished leaders shaping the future of nursing education and healthcare delivery in the Federal Capital Territory.</p>
-            </div>
-            
-            <div class="leadership-grid">
-                <!-- FCT Minister -->
-                <div class="leadership-card">
-                    <div class="leadership-image-wrapper">
-                        <img src="<?php echo $baseUrl; ?>/assets/images/leadership/fct-minister.jpg" alt="Ezenwo Nyesom Wike CON" class="leadership-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/person-placeholder.jpg';" loading="lazy">
+            <div class="ab-leadership-grid">
+
+                <div class="ab-leader-card">
+                    <div class="ab-leader-img-wrap">
+                        <img src="<?php echo rtrim($baseUrl,'/'); ?>/assets/images/leadership/fct-minister.jpg"
+                             alt="Ezenwo Nyesom Wike CON"
+                             class="ab-leader-img" loading="lazy"
+                             onerror="this.closest('.ab-leader-img-wrap').style.background='var(--purple-pale)';">
                     </div>
-                    <div class="leadership-content">
-                        <h3 class="leadership-title">Ezenwo Nyesom Wike CON</h3>
-                        <p class="leadership-role">FCT Minister</p>
-                        <p class="leadership-dept">Federal Capital Territory Administration</p>
-                        <p class="leadership-bio">Distinguished leader and legal practitioner driving transformative healthcare infrastructure development and educational advancement in the nation's capital.</p>
-                        <div class="leadership-social">
-                            <a href="#" aria-label="LinkedIn Profile"><i class="fab fa-linkedin-in"></i></a>
+                    <div class="ab-leader-body">
+                        <h3 class="ab-leader-name">Ezenwo Nyesom Wike CON</h3>
+                        <div class="ab-leader-role">FCT Minister</div>
+                        <div class="ab-leader-dept">Federal Capital Territory Administration</div>
+                        <p class="ab-leader-bio">Distinguished leader and legal practitioner driving transformative healthcare infrastructure development in the nation's capital.</p>
+                        <div class="ab-leader-social">
+                            <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
                             <a href="#" aria-label="Email"><i class="fas fa-envelope"></i></a>
-                            <a href="#" aria-label="Profile"><i class="fas fa-user-circle"></i></a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Mandate Secretary -->
-                <div class="leadership-card">
-                    <div class="leadership-image-wrapper">
-                        <img src="<?php echo $baseUrl; ?>/assets/images/leadership/mandate-secretary.jpg" alt="Dr. Adedolapo Fasawe" class="leadership-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/person-placeholder.jpg';" loading="lazy">
+                <div class="ab-leader-card">
+                    <div class="ab-leader-img-wrap">
+                        <img src="<?php echo rtrim($baseUrl,'/'); ?>/assets/images/leadership/mandate-secretary.jpg"
+                             alt="Dr. Adedolapo Fasawe"
+                             class="ab-leader-img" loading="lazy"
+                             onerror="this.closest('.ab-leader-img-wrap').style.background='var(--purple-pale)';">
                     </div>
-                    <div class="leadership-content">
-                        <h3 class="leadership-title">Dr. Adedolapo Fasawe</h3>
-                        <p class="leadership-role">Mandate Secretary</p>
-                        <p class="leadership-dept">Health Services & Environment Secretariat</p>
-                        <p class="leadership-bio">Visionary public health administrator with extensive experience in healthcare policy, environmental health, and institutional development.</p>
-                        <div class="leadership-social">
-                            <a href="#" aria-label="LinkedIn Profile"><i class="fab fa-linkedin-in"></i></a>
+                    <div class="ab-leader-body">
+                        <h3 class="ab-leader-name">Dr. Adedolapo Fasawe</h3>
+                        <div class="ab-leader-role">Mandate Secretary</div>
+                        <div class="ab-leader-dept">Health Services &amp; Environment Secretariat</div>
+                        <p class="ab-leader-bio">Visionary public health administrator with extensive experience in healthcare policy and institutional development.</p>
+                        <div class="ab-leader-social">
+                            <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
                             <a href="#" aria-label="Email"><i class="fas fa-envelope"></i></a>
-                            <a href="#" aria-label="Profile"><i class="fas fa-user-circle"></i></a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Permanent Secretary -->
-                <div class="leadership-card">
-                    <div class="leadership-image-wrapper">
-                        <img src="<?php echo $baseUrl; ?>/assets/images/leadership/permanent-secretary.jpg" alt="Dr. Babagana Adam" class="leadership-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/person-placeholder.jpg';" loading="lazy">
+                <div class="ab-leader-card">
+                    <div class="ab-leader-img-wrap">
+                        <img src="<?php echo rtrim($baseUrl,'/'); ?>/assets/images/leadership/permanent-secretary.jpg"
+                             alt="Dr. Babagana Adam"
+                             class="ab-leader-img" loading="lazy"
+                             onerror="this.closest('.ab-leader-img-wrap').style.background='var(--purple-pale)';">
                     </div>
-                    <div class="leadership-content">
-                        <h3 class="leadership-title">Dr. Babagana Adam</h3>
-                        <p class="leadership-role">Permanent Secretary</p>
-                        <p class="leadership-dept">Health Services & Environment Secretariat</p>
-                        <p class="leadership-bio">Seasoned administrator and healthcare strategist dedicated to strengthening public health systems and nursing education standards.</p>
-                        <div class="leadership-social">
-                            <a href="#" aria-label="LinkedIn Profile"><i class="fab fa-linkedin-in"></i></a>
+                    <div class="ab-leader-body">
+                        <h3 class="ab-leader-name">Dr. Babagana Adam</h3>
+                        <div class="ab-leader-role">Permanent Secretary</div>
+                        <div class="ab-leader-dept">Health Services &amp; Environment Secretariat</div>
+                        <p class="ab-leader-bio">Seasoned administrator dedicated to strengthening public health systems and nursing education standards.</p>
+                        <div class="ab-leader-social">
+                            <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
                             <a href="#" aria-label="Email"><i class="fas fa-envelope"></i></a>
-                            <a href="#" aria-label="Profile"><i class="fas fa-user-circle"></i></a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Director, Nursing Services -->
-                <div class="leadership-card">
-                    <div class="leadership-image-wrapper">
-                        <img src="<?php echo $baseUrl; ?>/assets/images/leadership/director-nursing.jpg" alt="Mrs Ijoema Jimi Bada" class="leadership-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/person-placeholder.jpg';" loading="lazy">
+                <div class="ab-leader-card">
+                    <div class="ab-leader-img-wrap">
+                        <img src="<?php echo rtrim($baseUrl,'/'); ?>/assets/images/leadership/director-nursing.jpg"
+                             alt="Mrs Ijoema Jimi Bada"
+                             class="ab-leader-img" loading="lazy"
+                             onerror="this.closest('.ab-leader-img-wrap').style.background='var(--purple-pale)';">
                     </div>
-                    <div class="leadership-content">
-                        <h3 class="leadership-title">Mrs Ijoema Jimi Bada</h3>
-                        <p class="leadership-role">Director</p>
-                        <p class="leadership-dept">Nursing Services</p>
-                        <p class="leadership-bio">Accomplished nursing professional with decades of experience advancing nursing practice standards and clinical education excellence.</p>
-                        <div class="leadership-social">
-                            <a href="#" aria-label="LinkedIn Profile"><i class="fab fa-linkedin-in"></i></a>
+                    <div class="ab-leader-body">
+                        <h3 class="ab-leader-name">Mrs Ijoema Jimi Bada</h3>
+                        <div class="ab-leader-role">Director, Nursing Services</div>
+                        <div class="ab-leader-dept">Nursing Services</div>
+                        <p class="ab-leader-bio">Accomplished nursing professional advancing nursing practice standards and clinical education excellence.</p>
+                        <div class="ab-leader-social">
+                            <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
                             <a href="#" aria-label="Email"><i class="fas fa-envelope"></i></a>
-                            <a href="#" aria-label="Profile"><i class="fas fa-user-circle"></i></a>
                         </div>
                     </div>
                 </div>
 
-                <!-- College Provost -->
-                <div class="leadership-card">
-                    <div class="leadership-image-wrapper">
-                        <img src="<?php echo $baseUrl; ?>/assets/images/leadership/college-provost.jpg" alt="Comr. Deborah Yusuf" class="leadership-img" onerror="this.src='<?php echo $baseUrl; ?>/assets/images/placeholder/person-placeholder.jpg';" loading="lazy">
+                <div class="ab-leader-card">
+                    <div class="ab-leader-img-wrap">
+                        <img src="<?php echo rtrim($baseUrl,'/'); ?>/assets/images/leadership/college-provost.jpg"
+                             alt="Comr. Deborah Yusuf"
+                             class="ab-leader-img" loading="lazy"
+                             onerror="this.closest('.ab-leader-img-wrap').style.background='var(--purple-pale)';">
                     </div>
-                    <div class="leadership-content">
-                        <h3 class="leadership-title">Comr. Deborah Yusuf</h3>
-                        <p class="leadership-role">Provost</p>
-                        <p class="leadership-dept">FCT College of Nursing Sciences</p>
-                        <p class="leadership-bio">Dynamic academic leader and nursing educator committed to innovative curriculum development and student-centered learning approaches.</p>
-                        <div class="leadership-social">
-                            <a href="#" aria-label="LinkedIn Profile"><i class="fab fa-linkedin-in"></i></a>
+                    <div class="ab-leader-body">
+                        <h3 class="ab-leader-name">Comr. Deborah Yusuf</h3>
+                        <div class="ab-leader-role">Provost</div>
+                        <div class="ab-leader-dept">FCT College of Nursing Sciences</div>
+                        <p class="ab-leader-bio">Dynamic academic leader committed to innovative curriculum development and student-centered learning approaches.</p>
+                        <div class="ab-leader-social">
+                            <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
                             <a href="#" aria-label="Email"><i class="fas fa-envelope"></i></a>
-                            <a href="#" aria-label="Profile"><i class="fas fa-user-circle"></i></a>
                         </div>
                     </div>
+                </div>
+
+            </div>
+
+            <!-- Quote card -->
+            <div class="ab-quote-card">
+                <p class="ab-quote-text">"Our collective vision is to nurture a new generation of nursing professionals who will transform healthcare delivery across Nigeria. Through strategic leadership and unwavering commitment to excellence, we are building an institution that stands as a beacon of hope and quality education."</p>
+                <div class="ab-quote-author">Comr. Deborah Yusuf</div>
+                <div class="ab-quote-role">Provost, FCT College of Nursing Sciences</div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ── ACCREDITATION ──────────────────────────────────────────────────── -->
+    <div class="ab-section">
+        <div class="ab-container">
+            <div class="ab-section-header">
+                <div>
+                    <h2 class="ab-section-title"><span class="ab-section-pip"></span> Institutional Accreditation</h2>
+                    <p class="ab-section-subtitle">Nationally recognised and fully accredited by Nigeria's premier regulatory bodies.</p>
                 </div>
             </div>
 
-            <!-- Leadership Quote Section - Perfectly Centered on All Screens -->
-            <div class="leadership-quote">
-                <div class="leadership-quote-content">
-                    <p class="leadership-quote-text">"Our collective vision is to nurture a new generation of nursing professionals who will transform healthcare delivery across Nigeria. Through strategic leadership and unwavering commitment to excellence, we are building an institution that stands as a beacon of hope and quality education."</p>
-                    <p class="leadership-quote-author">Comr. Deborah Yusuf</p>
-                    <p class="leadership-quote-title">Provost, FCT College of Nursing Sciences</p>
+            <div class="ab-accred-grid">
+
+                <div class="ab-accred-card">
+                    <span class="ab-accred-badge">Full Accreditation</span>
+                    <div class="ab-accred-icon-wrap"><i class="fas fa-stethoscope"></i></div>
+                    <div>
+                        <div class="ab-accred-abbr">NMCN</div>
+                        <div class="ab-accred-name">Nursing &amp; Midwifery Council of Nigeria</div>
+                    </div>
+                    <p class="ab-accred-desc">Full accreditation for all nursing programmes, ensuring graduates meet the highest professional standards.</p>
+                    <ul class="ab-accred-features">
+                        <li><i class="fas fa-check-circle"></i> Basic Nursing Programme</li>
+                        <li><i class="fas fa-check-circle"></i> Post-Basic Nursing Programmes</li>
+                        <li><i class="fas fa-check-circle"></i> Midwifery Education</li>
+                        <li><i class="fas fa-check-circle"></i> Continuing Professional Development</li>
+                    </ul>
+                </div>
+
+                <div class="ab-accred-card">
+                    <span class="ab-accred-badge">Full Accreditation</span>
+                    <div class="ab-accred-icon-wrap"><i class="fas fa-university"></i></div>
+                    <div>
+                        <div class="ab-accred-abbr">NBTE</div>
+                        <div class="ab-accred-name">National Board for Technical Education</div>
+                    </div>
+                    <p class="ab-accred-desc">Comprehensive accreditation for technical education programmes, demonstrating our commitment to educational excellence.</p>
+                    <ul class="ab-accred-features">
+                        <li><i class="fas fa-check-circle"></i> Community Health Programmes</li>
+                        <li><i class="fas fa-check-circle"></i> Health Technology Programmes</li>
+                        <li><i class="fas fa-check-circle"></i> Technical Nursing Education</li>
+                        <li><i class="fas fa-check-circle"></i> Vocational Training Standards</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ── GALLERY ────────────────────────────────────────────────────────── -->
+    <div class="ab-section ab-section--alt ab-section--bordered">
+        <div class="ab-container">
+            <div class="ab-section-header">
+                <div>
+                    <h2 class="ab-section-title"><span class="ab-section-pip"></span> Our Learning Environment</h2>
+                    <p class="ab-section-subtitle">Modern facilities supporting excellence in nursing education.</p>
+                </div>
+            </div>
+
+            <div class="ab-gallery-wrap" role="region" aria-label="Campus gallery">
+
+                <div class="ab-gallery-slide is-active"
+                     style="background-image:url('<?php echo rtrim($baseUrl,'/'); ?>/assets/images/about/simulation-lab.jpg');"
+                     role="img" aria-label="Simulation Laboratory">
+                    <div class="ab-gallery-caption">
+                        <div class="ab-gallery-caption-tag">Facility</div>
+                        <h3>Simulation Laboratory</h3>
+                        <p>State-of-the-art simulation lab where students practise clinical skills in a controlled, realistic environment.</p>
+                    </div>
+                </div>
+
+                <div class="ab-gallery-slide"
+                     style="background-image:url('<?php echo rtrim($baseUrl,'/'); ?>/assets/images/about/library.jpg');"
+                     role="img" aria-label="Medical Library">
+                    <div class="ab-gallery-caption">
+                        <div class="ab-gallery-caption-tag">Facility</div>
+                        <h3>Medical Library</h3>
+                        <p>Comprehensive collection of nursing journals, textbooks, and digital resources for research and study.</p>
+                    </div>
+                </div>
+
+                <div class="ab-gallery-slide"
+                     style="background-image:url('<?php echo rtrim($baseUrl,'/'); ?>/assets/images/about/classroom.jpg');"
+                     role="img" aria-label="Interactive Classroom">
+                    <div class="ab-gallery-caption">
+                        <div class="ab-gallery-caption-tag">Facility</div>
+                        <h3>Interactive Classrooms</h3>
+                        <p>Technology-enhanced learning spaces designed for collaborative nursing education and discussion.</p>
+                    </div>
+                </div>
+
+                <div class="ab-gallery-slide"
+                     style="background-image:url('<?php echo rtrim($baseUrl,'/'); ?>/assets/images/about/campus-building.jpg');"
+                     role="img" aria-label="Main Campus">
+                    <div class="ab-gallery-caption">
+                        <div class="ab-gallery-caption-tag">Campus</div>
+                        <h3>Main Campus</h3>
+                        <p>The heart of our institution where future nursing professionals begin their transformative journey.</p>
+                    </div>
+                </div>
+
+                <div class="ab-gallery-dots" role="tablist" aria-label="Gallery slides">
+                    <div class="ab-gallery-dot is-active" data-slide="0" role="tab" aria-selected="true" tabindex="0" aria-label="Slide 1"></div>
+                    <div class="ab-gallery-dot" data-slide="1" role="tab" aria-selected="false" tabindex="0" aria-label="Slide 2"></div>
+                    <div class="ab-gallery-dot" data-slide="2" role="tab" aria-selected="false" tabindex="0" aria-label="Slide 3"></div>
+                    <div class="ab-gallery-dot" data-slide="3" role="tab" aria-selected="false" tabindex="0" aria-label="Slide 4"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ── CTA ───────────────────────────────────────────────────────────── -->
+    <div class="ab-section">
+        <div class="ab-container">
+            <div class="ab-cta-card">
+                <div class="ab-cta-content">
+                    <span class="ab-cta-tag"><i class="fas fa-graduation-cap"></i> Join Our Community</span>
+                    <h2 class="ab-cta-title">Begin Your Nursing Journey</h2>
+                    <p class="ab-cta-desc">Join thousands of graduates making a difference in healthcare across Nigeria.</p>
+                </div>
+                <div class="ab-cta-actions">
+                    <a href="<?php echo $baseUrl; ?>/admissions" class="ab-btn ab-btn--gold ab-btn--lg">
+                        <i class="fas fa-file-alt"></i> Apply Now
+                    </a>
+                    <a href="<?php echo $baseUrl; ?>/programs" class="ab-btn ab-btn--ghost ab-btn--lg">
+                        <i class="fas fa-book-open"></i> Explore Programs
+                    </a>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 
-    <!-- Professional Accreditation Section - Redesigned (No Footer Overlap) -->
-    <section class="section" aria-labelledby="accreditation">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title" id="accreditation">Institutional Accreditation</h2>
-                <p class="section-subtitle">Nationally recognized and fully accredited by Nigeria's premier regulatory bodies.</p>
-            </div>
-            
-            <div class="accreditation-grid">
-                <!-- NMCN Accreditation Card -->
-                <div class="accreditation-card">
-                    <span class="accreditation-badge">Full Accreditation</span>
-                    <div class="accreditation-logo-wrapper">
-                        <i class="fas fa-stethoscope accreditation-logo"></i>
-                    </div>
-                    <h3 class="accreditation-title">NMCN</h3>
-                    <p class="accreditation-subtitle">Nursing & Midwifery Council of Nigeria</p>
-                    <div class="accreditation-body">
-                        <p class="accreditation-description">
-                            Full accreditation status for all nursing programs, ensuring our graduates meet the highest professional standards.
-                        </p>
-                        <ul class="accreditation-features">
-                            <li><i class="fas fa-check-circle"></i> Basic Nursing Program</li>
-                            <li><i class="fas fa-check-circle"></i> Post-Basic Nursing Programs</li>
-                            <li><i class="fas fa-check-circle"></i> Midwifery Education</li>
-                            <li><i class="fas fa-check-circle"></i> Continuing Professional Development</li>
-                        </ul>
-                        <!-- Removed accreditation-seal that was overlapping footer -->
-                    </div>
-                </div>
+</div><!-- /.ab-root -->
 
-                <!-- NBTE Accreditation Card -->
-                <div class="accreditation-card">
-                    <span class="accreditation-badge">Full Accreditation</span>
-                    <div class="accreditation-logo-wrapper">
-                        <i class="fas fa-university accreditation-logo"></i>
-                    </div>
-                    <h3 class="accreditation-title">NBTE</h3>
-                    <p class="accreditation-subtitle">National Board for Technical Education</p>
-                    <div class="accreditation-body">
-                        <p class="accreditation-description">
-                            Comprehensive accreditation for technical education programs, demonstrating our commitment to educational excellence.
-                        </p>
-                        <ul class="accreditation-features">
-                            <li><i class="fas fa-check-circle"></i> Community Health Programs</li>
-                            <li><i class="fas fa-check-circle"></i> Health Technology Programs</li>
-                            <li><i class="fas fa-check-circle"></i> Technical Nursing Education</li>
-                            <li><i class="fas fa-check-circle"></i> Vocational Training Standards</li>
-                        </ul>
-                        <!-- Removed accreditation-seal that was overlapping footer -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Gallery Carousel - Enhanced for Mobile -->
-    <section class="section section-alt" aria-labelledby="gallery">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title" id="gallery">Our Learning Environment</h2>
-                <p class="section-subtitle">Modern facilities supporting excellence in nursing education.</p>
-            </div>
-            
-            <div class="gallery-container">
-                <div class="gallery-carousel" role="region" aria-label="Campus gallery">
-                    <!-- Slide 1 -->
-                    <div class="gallery-slide active" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/about/simulation-lab.jpg');" role="img" aria-label="Simulation Laboratory">
-                        <div class="gallery-caption">
-                            <h3>Simulation Laboratory</h3>
-                            <p>State-of-the-art simulation lab where students practice clinical skills in a controlled, realistic environment.</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Slide 2 -->
-                    <div class="gallery-slide" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/about/library.jpg');" role="img" aria-label="Medical Library">
-                        <div class="gallery-caption">
-                            <h3>Medical Library</h3>
-                            <p>Comprehensive collection of nursing journals, textbooks, and digital resources for research and study.</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Slide 3 -->
-                    <div class="gallery-slide" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/about/classroom.jpg');" role="img" aria-label="Interactive Classroom">
-                        <div class="gallery-caption">
-                            <h3>Interactive Classrooms</h3>
-                            <p>Technology-enhanced learning spaces designed for collaborative nursing education and discussion.</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Slide 4 -->
-                    <div class="gallery-slide" style="background-image: url('<?php echo $baseUrl; ?>/assets/images/about/campus-building.jpg');" role="img" aria-label="Main Campus Building">
-                        <div class="gallery-caption">
-                            <h3>Main Campus</h3>
-                            <p>The heart of our institution where future nursing professionals begin their transformative journey.</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Navigation Dots -->
-                    <div class="gallery-dots" role="tablist" aria-label="Gallery slides">
-                        <div class="gallery-dot active" data-slide="0" role="tab" aria-selected="true" aria-label="Slide 1: Simulation Laboratory"></div>
-                        <div class="gallery-dot" data-slide="1" role="tab" aria-selected="false" aria-label="Slide 2: Medical Library"></div>
-                        <div class="gallery-dot" data-slide="2" role="tab" aria-selected="false" aria-label="Slide 3: Interactive Classrooms"></div>
-                        <div class="gallery-dot" data-slide="3" role="tab" aria-selected="false" aria-label="Slide 4: Main Campus"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Call to Action -->
-    <section class="cta-section" aria-labelledby="cta-title">
-        <div class="container">
-            <h2 class="section-title" id="cta-title">Join Our Nursing Community</h2>
-            <p class="section-subtitle" style="max-width: 700px; margin: 0 auto;">Begin your professional nursing journey at one of Nigeria's most respected institutions.</p>
-            <div class="cta-buttons">
-                <a href="<?php echo $baseUrl; ?>/admissions" class="btn-primary"><i class="fas fa-file-alt"></i> Begin Application</a>
-                <a href="<?php echo $baseUrl; ?>/programs" class="btn-secondary"><i class="fas fa-book-open"></i> Explore Programs</a>
-            </div>
-        </div>
-    </section>
-</main>
-
-<!-- Enhanced Carousel Script -->
 <script>
-const gallerySlides = document.querySelectorAll('.gallery-slide');
-const galleryDots = document.querySelectorAll('.gallery-dot');
-let currentSlide = 0;
-const intervalTime = 5000;
-let autoSlideInterval;
+(function () {
+    'use strict';
 
-function showSlide(index) {
-    gallerySlides.forEach(slide => {
-        slide.classList.remove('active');
-    });
-    
-    galleryDots.forEach((dot, i) => {
-        dot.classList.remove('active');
-        dot.setAttribute('aria-selected', i === index ? 'true' : 'false');
-    });
-    
-    gallerySlides[index].classList.add('active');
-    galleryDots[index].classList.add('active');
-    galleryDots[index].setAttribute('aria-selected', 'true');
-    currentSlide = index;
-}
+    /* ── Gallery Carousel ─────────────────────────────────────────── */
+    var slides  = document.querySelectorAll('.ab-gallery-slide');
+    var dots    = document.querySelectorAll('.ab-gallery-dot');
+    var current = 0;
+    var timer;
 
-function nextSlide() {
-    const nextIndex = (currentSlide + 1) % gallerySlides.length;
-    showSlide(nextIndex);
-}
-
-function startAutoSlide() {
-    autoSlideInterval = setInterval(nextSlide, intervalTime);
-}
-
-galleryDots.forEach((dot, index) => {
-    dot.addEventListener('click', () => {
-        clearInterval(autoSlideInterval);
-        showSlide(index);
-        startAutoSlide();
-    });
-    
-    dot.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            clearInterval(autoSlideInterval);
-            showSlide(index);
-            startAutoSlide();
-        }
-    });
-});
-
-const galleryCarousel = document.querySelector('.gallery-carousel');
-galleryCarousel.addEventListener('mouseenter', () => {
-    clearInterval(autoSlideInterval);
-});
-
-galleryCarousel.addEventListener('mouseleave', () => {
-    startAutoSlide();
-});
-
-galleryCarousel.addEventListener('focusin', () => {
-    clearInterval(autoSlideInterval);
-});
-
-galleryCarousel.addEventListener('focusout', () => {
-    startAutoSlide();
-});
-
-let touchStartX = 0;
-let touchEndX = 0;
-
-galleryCarousel.addEventListener('touchstart', (e) => {
-    touchStartX = e.changedTouches[0].screenX;
-    clearInterval(autoSlideInterval);
-});
-
-galleryCarousel.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-});
-
-galleryCarousel.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
-    startAutoSlide();
-});
-
-function handleSwipe() {
-    const swipeThreshold = 50;
-    
-    if (touchStartX - touchEndX > swipeThreshold) {
-        nextSlide();
-    } else if (touchEndX - touchStartX > swipeThreshold) {
-        const prevIndex = (currentSlide - 1 + gallerySlides.length) % gallerySlides.length;
-        showSlide(prevIndex);
+    function showSlide(idx) {
+        slides.forEach(function (s, i) {
+            s.classList.toggle('is-active', i === idx);
+        });
+        dots.forEach(function (d, i) {
+            d.classList.toggle('is-active', i === idx);
+            d.setAttribute('aria-selected', i === idx ? 'true' : 'false');
+        });
+        current = idx;
     }
-}
 
-document.addEventListener('keydown', (e) => {
-    if (document.activeElement.closest('.gallery-carousel')) {
-        if (e.key === 'ArrowLeft') {
-            e.preventDefault();
-            clearInterval(autoSlideInterval);
-            const prevIndex = (currentSlide - 1 + gallerySlides.length) % gallerySlides.length;
-            showSlide(prevIndex);
-            startAutoSlide();
-        } else if (e.key === 'ArrowRight') {
-            e.preventDefault();
-            clearInterval(autoSlideInterval);
-            nextSlide();
-            startAutoSlide();
-        }
-    }
-});
+    function next() { showSlide((current + 1) % slides.length); }
+    function prev() { showSlide((current - 1 + slides.length) % slides.length); }
 
-document.addEventListener('DOMContentLoaded', () => {
-    startAutoSlide();
-});
+    function startAuto() { timer = setInterval(next, 5000); }
+    function stopAuto()  { clearInterval(timer); }
 
-document.querySelectorAll('.leadership-img, .card-img').forEach(img => {
-    img.addEventListener('error', function() {
-        this.src = '<?php echo $baseUrl; ?>/assets/images/placeholder/person-placeholder.jpg';
-        this.alt = 'Image not available';
-    });
-});
-
-if ('IntersectionObserver' in window) {
-    const imageObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                if (img.dataset.src) {
-                    img.src = img.dataset.src;
-                    img.removeAttribute('data-src');
-                }
-                imageObserver.unobserve(img);
+    dots.forEach(function (d) {
+        d.addEventListener('click', function () {
+            stopAuto(); showSlide(parseInt(d.dataset.slide, 10)); startAuto();
+        });
+        d.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault(); stopAuto(); showSlide(parseInt(d.dataset.slide, 10)); startAuto();
             }
         });
-    }, {
-        rootMargin: '50px 0px',
-        threshold: 0.01
     });
-    
-    document.querySelectorAll('[data-src]').forEach(img => {
-        imageObserver.observe(img);
-    });
-}
 
-document.addEventListener('DOMContentLoaded', function() {
-    const heroBg = document.querySelector('.about-hero-bg');
-    if (heroBg) {
-        const bgImage = new Image();
-        bgImage.onload = function() {
-            heroBg.style.backgroundImage = 'url("<?php echo $baseUrl; ?>/assets/images/about/campus-building.jpg")';
-            heroBg.style.opacity = '0.8';
-        };
-        bgImage.onerror = function() {
-            heroBg.style.background = 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))';
-        };
-        bgImage.src = '<?php echo $baseUrl; ?>/assets/images/about/campus-building.jpg';
+    var wrap = document.querySelector('.ab-gallery-wrap');
+    if (wrap) {
+        wrap.addEventListener('mouseenter', stopAuto);
+        wrap.addEventListener('mouseleave', startAuto);
+
+        var tx = 0;
+        wrap.addEventListener('touchstart', function (e) { tx = e.changedTouches[0].screenX; stopAuto(); });
+        wrap.addEventListener('touchend',   function (e) {
+            var diff = tx - e.changedTouches[0].screenX;
+            if (Math.abs(diff) > 50) { diff > 0 ? next() : prev(); }
+            startAuto();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (!document.activeElement.closest('.ab-gallery-wrap')) return;
+            if (e.key === 'ArrowLeft')  { stopAuto(); prev(); startAuto(); }
+            if (e.key === 'ArrowRight') { stopAuto(); next(); startAuto(); }
+        });
     }
-});
 
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
+    startAuto();
+
+    /* ── Hero background fallback ─────────────────────────────────── */
+    var heroBg = document.querySelector('.ab-hero-bg');
+    if (heroBg) {
+        var img = new Image();
+        img.onerror = function () { heroBg.style.backgroundImage = 'none'; };
+        img.src = '<?php echo $heroImagePath; ?>';
+    }
+
+    /* ── Scroll-triggered fade-in ─────────────────────────────────── */
+    if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                    io.unobserve(entry.target);
+                }
             });
-        }
-    });
-});
-</script>
+        }, { threshold: 0.1 });
 
-</body>
-</html>
+        document.querySelectorAll('.ab-mvv-card, .ab-leader-card, .ab-accred-card, .ab-stat-card')
+            .forEach(function (el, i) {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(18px)';
+                el.style.transition = 'opacity .5s ease ' + (i * 0.07) + 's, transform .5s ease ' + (i * 0.07) + 's';
+                io.observe(el);
+            });
+    }
+
+    /* ── Smooth scroll ─────────────────────────────────────────────── */
+    document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+            var id = a.getAttribute('href');
+            if (id === '#') return;
+            var t = document.querySelector(id);
+            if (t) { e.preventDefault(); window.scrollTo({ top: t.offsetTop - 90, behavior: 'smooth' }); }
+        });
+    });
+})();
+</script>

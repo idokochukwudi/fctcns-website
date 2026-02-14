@@ -4,6 +4,7 @@
  * REDESIGNED: Minimized gold accents, premium navy dominance
  * FIXED: Mobile menu displays under handle on all screen sizes
  * ELEGANT: Refined, professional, authoritative
+ * UPDATED: Logo size reduced and properly fitted with header title
  * 
  * @package FCT_CNS
  */
@@ -86,6 +87,7 @@ if (class_exists('Session')) {
            Navy-dominant color palette, refined accents
            Mobile menu ALWAYS displays under handle
            Professional, authoritative, timeless
+           UPDATED: Logo properly sized and fitted with title
            ============================================== */
         
         :root {
@@ -108,20 +110,22 @@ if (class_exists('Session')) {
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             
             /* ===== OPTIMAL DIMENSIONS - PERFECTLY BALANCED ===== */
-            --header-height-desktop: 110px;
-            --header-height-mobile: 100px;
+            --header-height-desktop: 100px;
+            --header-height-mobile: 90px;
             --nav-height: 48px;
             
-            /* ===== FULL LOGO VISIBILITY - NO BORDERS ===== */
-            --logo-size-desktop: 90px;
-            --logo-size-tablet: 85px;
-            --logo-size-mobile: 80px;
-            --logo-size-mobile-small: 75px;
+            /* ===== REDUCED LOGO SIZE - PROPERLY FITTED ===== */
+            --logo-size-desktop: 70px;
+            --logo-size-tablet: 65px;
+            --logo-size-mobile: 60px;
+            --logo-size-mobile-small: 55px;
             --logo-padding: 0px;
             
             /* ===== ENHANCED TYPOGRAPHY SIZE ===== */
-            --brand-text-size-1: 0.9rem;
-            --brand-text-size-2: 2.1rem;
+            --brand-text-size-1: 0.8rem;
+            --brand-text-size-2: 1.9rem;
+            --brand-text-size-2-mobile: 1.6rem;
+            --brand-text-size-2-small: 1.4rem;
             --nav-text-size: 0.9rem;
             --button-text-size: 0.9rem;
             
@@ -179,10 +183,12 @@ if (class_exists('Session')) {
             max-width: 100vw;
             box-shadow: var(--shadow-subtle);
             transition: all var(--transition-smooth);
+            display: flex;
+            align-items: center;
         }
         
         .site-header.scrolled {
-            height: 100px;
+            height: 90px;
             box-shadow: var(--shadow-medium);
             border-bottom-color: var(--prestige-navy-light);
         }
@@ -199,19 +205,20 @@ if (class_exists('Session')) {
         }
         
         /* ==========================================================================
-           ELEGANT LOGO - FULL VISIBILITY, NO GOLD BORDERS
+           ELEGANT LOGO - REDUCED SIZE, PROPERLY FITTED WITH TITLE
            ========================================================================== */
         .brand {
             display: flex;
             align-items: center;
-            gap: 1.2rem;
+            gap: 1rem;
             text-decoration: none;
             color: inherit;
             flex-shrink: 0;
-            max-width: 80%;
+            max-width: 70%;
+            height: 100%;
         }
         
-        /* LOGO CONTAINER - CLEAN, NO BORDERS, NO GOLD */
+        /* LOGO CONTAINER - REDUCED SIZE */
         .brand-logo {
             width: var(--logo-size-desktop);
             height: var(--logo-size-desktop);
@@ -227,10 +234,10 @@ if (class_exists('Session')) {
         }
         
         .brand:hover .brand-logo {
-            transform: scale(1.05);
+            transform: scale(1.03);
         }
         
-        /* LOGO IMAGE - PURE, CLEAN, PROFESSIONAL */
+        /* LOGO IMAGE - PERFECTLY CONTAINED */
         .brand-logo img {
             width: 100%;
             height: 100%;
@@ -257,20 +264,22 @@ if (class_exists('Session')) {
             color: white;
             font-family: var(--font-serif);
             font-weight: 800;
-            font-size: 2.4rem;
-            letter-spacing: 4px;
+            font-size: 2rem;
+            letter-spacing: 3px;
             border-radius: 0;
             box-shadow: var(--shadow-subtle);
         }
         
         /* ==========================================================================
-           REFINED TYPOGRAPHY - AUTHORITATIVE, MATURE
+           REFINED TYPOGRAPHY - PERFECTLY ALIGNED WITH LOGO
            ========================================================================== */
         .brand-text {
             display: flex;
             flex-direction: column;
+            justify-content: center;
             flex: 1;
             min-width: 0;
+            line-height: 1.2;
         }
         
         .brand-name {
@@ -278,14 +287,14 @@ if (class_exists('Session')) {
             line-height: 1.1;
         }
         
-        /* "FCT College of" - NAVY, SUBTLE, PROFESSIONAL */
+        /* "FCT College of" - SUBTLE, PROFESSIONAL */
         .brand-line-1 {
             font-size: var(--brand-text-size-1);
             font-weight: 600;
             color: var(--prestige-slate);
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             font-family: var(--font-sans);
             white-space: nowrap;
         }
@@ -303,13 +312,13 @@ if (class_exists('Session')) {
             white-space: nowrap;
         }
         
-        /* MINIMAL GOLD UNDERLINE - THIN, ELEGANT, NOT OVERBEARING */
+        /* MINIMAL GOLD UNDERLINE - ELEGANT, NOT OVERBEARING */
         .brand-line-2::after {
             content: '';
             position: absolute;
-            bottom: -8px;
+            bottom: -6px;
             left: 0;
-            width: 60px;
+            width: 50px;
             height: 2px;
             background: var(--prestige-gold-subtle);
             border-radius: 1px;
@@ -318,7 +327,7 @@ if (class_exists('Session')) {
         }
         
         .brand:hover .brand-line-2::after {
-            width: 100px;
+            width: 80px;
             background: var(--prestige-gold-accent);
         }
         
@@ -328,12 +337,13 @@ if (class_exists('Session')) {
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.8rem;
             flex-shrink: 0;
+            height: 100%;
         }
         
         .apply-btn {
-            padding: 0.6rem 1.6rem;
+            padding: 0.5rem 1.4rem;
             background: var(--prestige-navy);
             color: white;
             border: none;
@@ -343,7 +353,7 @@ if (class_exists('Session')) {
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 0.6rem;
+            gap: 0.5rem;
             white-space: nowrap;
             transition: all var(--transition-smooth);
             letter-spacing: 0.3px;
@@ -351,7 +361,7 @@ if (class_exists('Session')) {
         }
         
         .apply-btn i {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
         
         .apply-btn:hover {
@@ -361,8 +371,8 @@ if (class_exists('Session')) {
         }
         
         .user-btn {
-            width: 44px;
-            height: 44px;
+            width: 42px;
+            height: 42px;
             border-radius: 4px;
             background: var(--prestige-ivory);
             color: var(--prestige-navy);
@@ -371,7 +381,7 @@ if (class_exists('Session')) {
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             transition: all var(--transition-smooth);
             text-decoration: none;
         }
@@ -391,13 +401,14 @@ if (class_exists('Session')) {
             display: none;  /* Hidden by default, shown only on mobile */
             flex-direction: column;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             cursor: pointer;
+            margin-left: 0.3rem;
         }
         
         .mobile-menu-toggle {
-            width: 44px;
-            height: 44px;
+            width: 42px;
+            height: 42px;
             border-radius: 4px;
             border: 1px solid var(--prestige-stone);
             background: white;
@@ -411,7 +422,7 @@ if (class_exists('Session')) {
         
         .mobile-menu-toggle span {
             display: block;
-            width: 24px;
+            width: 22px;
             height: 2px;
             background: var(--prestige-navy);
             transition: all var(--transition-smooth);
@@ -424,11 +435,11 @@ if (class_exists('Session')) {
         }
         
         .menu-label {
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             font-weight: 600;
             color: var(--prestige-slate);
             text-transform: uppercase;
-            letter-spacing: 1.2px;
+            letter-spacing: 1px;
         }
         
         /* ==========================================================================
@@ -449,7 +460,7 @@ if (class_exists('Session')) {
         }
         
         .site-header.scrolled + .desktop-nav-container {
-            top: 100px;
+            top: 90px;
         }
         
         .desktop-nav {
@@ -468,7 +479,7 @@ if (class_exists('Session')) {
             justify-content: flex-start;
             width: 100%;
             max-width: 1440px;
-            gap: 0.2rem;
+            gap: 0.1rem;
         }
         
         .desktop-nav-item {
@@ -537,7 +548,7 @@ if (class_exists('Session')) {
             z-index: 100;
             border: 1px solid var(--prestige-stone);
             border-top: 2px solid var(--prestige-navy);
-            padding: 0.6rem 0;
+            padding: 0.5rem 0;
         }
         
         .has-dropdown:hover .dropdown-menu {
@@ -548,7 +559,7 @@ if (class_exists('Session')) {
         
         .dropdown-link {
             display: block;
-            padding: 0.6rem 1.6rem;
+            padding: 0.5rem 1.5rem;
             color: var(--prestige-charcoal);
             text-decoration: none;
             font-weight: 500;
@@ -561,7 +572,7 @@ if (class_exists('Session')) {
         .dropdown-link:hover {
             background: rgba(10, 35, 66, 0.02);
             color: var(--prestige-navy);
-            padding-left: 2rem;
+            padding-left: 1.8rem;
             font-weight: 600;
         }
         
@@ -577,7 +588,7 @@ if (class_exists('Session')) {
         
         .dropdown-link:hover::before {
             opacity: 1;
-            left: 1.3rem;
+            left: 1.2rem;
         }
         
         /* CONTACT TAB - BURGUNDY, PROFESSIONAL */
@@ -587,12 +598,12 @@ if (class_exists('Session')) {
             border-left: 1px solid rgba(122, 62, 62, 0.08);
             border-right: 1px solid rgba(122, 62, 62, 0.08);
             font-weight: 600;
-            margin-left: 0.4rem;
+            margin-left: 0.3rem;
             padding: 0 1.2rem;
         }
         
         .desktop-nav-item.contact-tab .desktop-nav-link i {
-            margin-right: 6px;
+            margin-right: 5px;
             font-size: 0.8rem;
             color: var(--prestige-burgundy);
         }
@@ -608,7 +619,6 @@ if (class_exists('Session')) {
         
         /* ==========================================================================
            MOBILE NAVIGATION - ALWAYS DISPLAYS UNDER HANDLE
-           FIXED: Now visible on all mobile screens when toggled
            ========================================================================== */
         .mobile-nav-overlay {
             position: fixed;
@@ -630,7 +640,7 @@ if (class_exists('Session')) {
         }
         
         .site-header.scrolled ~ .mobile-nav-overlay {
-            top: 100px;
+            top: 90px;
         }
         
         .mobile-nav-overlay.active {
@@ -647,7 +657,7 @@ if (class_exists('Session')) {
         
         .mobile-nav-menu {
             list-style: none;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
         
         .mobile-nav-item {
@@ -658,7 +668,7 @@ if (class_exists('Session')) {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 0;
+            padding: 0.9rem 0;
             color: var(--prestige-charcoal);
             text-decoration: none;
             font-weight: 500;
@@ -667,29 +677,29 @@ if (class_exists('Session')) {
         }
         
         .mobile-nav-link span i {
-            width: 26px;
+            width: 24px;
             color: var(--prestige-navy);
-            margin-right: 12px;
+            margin-right: 10px;
             font-size: 1rem;
         }
         
         .mobile-nav-link:hover {
             color: var(--prestige-navy);
-            padding-left: 0.5rem;
+            padding-left: 0.3rem;
         }
         
         .mobile-nav-link.active {
             color: var(--prestige-navy);
             font-weight: 700;
             border-left: 3px solid var(--prestige-navy);
-            padding-left: 0.8rem;
+            padding-left: 0.6rem;
         }
         
         .mobile-nav-item.contact-tab .mobile-nav-link {
             color: var(--prestige-burgundy);
             background: rgba(122, 62, 62, 0.02);
-            padding: 1rem 0.8rem;
-            margin: 0.6rem 0;
+            padding: 0.9rem 0.6rem;
+            margin: 0.5rem 0;
             border-radius: 4px;
             border: 1px solid rgba(122, 62, 62, 0.1);
             font-weight: 600;
@@ -702,19 +712,19 @@ if (class_exists('Session')) {
         .mobile-quick-actions {
             display: flex;
             flex-direction: column;
-            gap: 0.8rem;
-            margin-bottom: 2rem;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
         }
         
         .mobile-action-btn {
-            padding: 1rem 1.2rem;
+            padding: 0.9rem 1.2rem;
             border-radius: 4px;
             background: var(--prestige-navy);
             color: white;
             text-decoration: none;
             display: flex;
             align-items: center;
-            gap: 0.8rem;
+            gap: 0.6rem;
             transition: all var(--transition-smooth);
             font-weight: 600;
             justify-content: center;
@@ -724,7 +734,7 @@ if (class_exists('Session')) {
         }
         
         .mobile-action-btn i {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
         
         .mobile-action-btn.accent {
@@ -739,24 +749,24 @@ if (class_exists('Session')) {
         }
         
         .mobile-contact-info {
-            padding-top: 1.5rem;
+            padding-top: 1.2rem;
             border-top: 1px solid var(--prestige-stone);
         }
         
         .mobile-contact-grid {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 0.8rem;
+            gap: 0.6rem;
         }
         
         .mobile-contact-item {
             display: flex;
             align-items: center;
-            gap: 0.8rem;
+            gap: 0.6rem;
             color: var(--prestige-slate);
             text-decoration: none;
-            font-size: 0.9rem;
-            padding: 0.8rem;
+            font-size: 0.85rem;
+            padding: 0.6rem;
             border-radius: 4px;
             transition: all var(--transition-smooth);
             font-weight: 500;
@@ -765,8 +775,8 @@ if (class_exists('Session')) {
         
         .mobile-contact-item i {
             color: var(--prestige-navy);
-            width: 22px;
-            font-size: 1rem;
+            width: 20px;
+            font-size: 0.9rem;
         }
         
         .mobile-contact-item:hover {
@@ -776,11 +786,17 @@ if (class_exists('Session')) {
         }
         
         /* ==========================================================================
-           CRITICAL FIX: MOBILE MENU DISPLAYS UNDER HANDLE ON ALL SCREEN SIZES
+           RESPONSIVE BREAKPOINTS - PROPERLY ADJUSTED
            ========================================================================== */
         
         /* Tablet and Mobile - SHOW MOBILE MENU HANDLE, HIDE DESKTOP NAV */
         @media (max-width: 1023px) {
+            :root {
+                --header-height-desktop: 90px;
+                --logo-size-desktop: var(--logo-size-tablet);
+                --brand-text-size-2: var(--brand-text-size-2-mobile);
+            }
+            
             .desktop-nav-container {
                 display: none !important;
             }
@@ -790,51 +806,56 @@ if (class_exists('Session')) {
             }
             
             .mobile-menu-toggle-wrapper {
-                display: flex !important;  /* ALWAYS show on mobile */
+                display: flex !important;
             }
             
             .apply-btn {
                 display: none;
             }
             
-            .main-content-wrapper {
-                padding-top: var(--header-height-desktop);
+            .header-container {
+                padding: 0 var(--container-padding-tablet);
+            }
+            
+            .brand {
+                max-width: 75%;
+                gap: 0.9rem;
+            }
+            
+            .brand-logo {
+                width: 65px;
+                height: 65px;
+            }
+            
+            .brand-line-2::after {
+                bottom: -5px;
+                width: 45px;
             }
             
             .mobile-nav-overlay {
-                display: block;  /* Ensure overlay can display */
+                top: 90px;
             }
         }
         
         /* Tablet specific */
         @media (min-width: 768px) and (max-width: 1023px) {
-            :root {
-                --header-height-desktop: 105px;
-                --logo-size-desktop: var(--logo-size-tablet);
-                --brand-text-size-2: 1.9rem;
+            .brand-line-1 {
+                font-size: 0.75rem;
+                letter-spacing: 1.2px;
             }
             
-            .header-container {
-                padding: 0 var(--container-padding-tablet);
-            }
-            
-            .brand-logo {
-                width: 85px;
-                height: 85px;
-            }
-            
-            .mobile-nav-overlay {
-                top: 105px;
+            .brand-line-2 {
+                font-size: 1.7rem;
             }
         }
         
         /* Mobile */
         @media (max-width: 767px) {
             :root {
-                --header-height-desktop: 100px;
+                --header-height-desktop: 85px;
                 --logo-size-desktop: var(--logo-size-mobile);
-                --brand-text-size-2: 1.8rem;
-                --brand-text-size-1: 0.85rem;
+                --brand-text-size-2: 1.5rem;
+                --brand-text-size-1: 0.7rem;
             }
             
             .header-container {
@@ -842,16 +863,21 @@ if (class_exists('Session')) {
             }
             
             .brand {
-                gap: 1rem;
+                gap: 0.8rem;
                 max-width: 70%;
             }
             
             .brand-logo {
-                width: 80px;
-                height: 80px;
+                width: 60px;
+                height: 60px;
+            }
+            
+            .brand-logo .logo-fallback {
+                font-size: 1.8rem;
             }
             
             .brand-line-1 {
+                letter-spacing: 1px;
                 white-space: normal;
                 word-break: break-word;
             }
@@ -862,12 +888,23 @@ if (class_exists('Session')) {
             }
             
             .brand-line-2::after {
-                width: 50px;
-                bottom: -7px;
+                width: 40px;
+                bottom: -5px;
+            }
+            
+            .user-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+            
+            .mobile-menu-toggle {
+                width: 40px;
+                height: 40px;
             }
             
             .mobile-nav-overlay {
-                top: 100px;
+                top: 85px;
                 padding: 1.5rem;
             }
         }
@@ -875,79 +912,85 @@ if (class_exists('Session')) {
         /* Small Mobile */
         @media (max-width: 480px) {
             :root {
-                --header-height-desktop: 95px;
+                --header-height-desktop: 80px;
                 --logo-size-desktop: var(--logo-size-mobile-small);
-                --brand-text-size-2: 1.6rem;
-                --brand-text-size-1: 0.8rem;
+                --brand-text-size-2: 1.3rem;
+                --brand-text-size-1: 0.65rem;
             }
             
             .header-container {
-                padding: 0 1.2rem;
+                padding: 0 1rem;
             }
             
             .brand {
-                gap: 0.8rem;
+                gap: 0.6rem;
                 max-width: 75%;
             }
             
             .brand-logo {
-                width: 75px;
-                height: 75px;
+                width: 55px;
+                height: 55px;
             }
             
             .brand-logo .logo-fallback {
-                font-size: 2rem;
+                font-size: 1.6rem;
+                letter-spacing: 2px;
             }
             
             .brand-line-1 {
-                font-size: 0.75rem;
-                letter-spacing: 1.2px;
+                font-size: 0.6rem;
+                letter-spacing: 0.8px;
             }
             
             .brand-line-2 {
-                font-size: 1.5rem;
+                font-size: 1.2rem;
             }
             
             .brand-line-2::after {
-                width: 45px;
+                width: 35px;
                 height: 2px;
-                bottom: -6px;
+                bottom: -4px;
             }
             
             .user-btn {
-                width: 42px;
-                height: 42px;
-                font-size: 1.1rem;
+                width: 38px;
+                height: 38px;
+                font-size: 0.95rem;
             }
             
             .mobile-menu-toggle {
-                width: 42px;
-                height: 42px;
+                width: 38px;
+                height: 38px;
+            }
+            
+            .menu-label {
+                font-size: 0.5rem;
             }
             
             .mobile-nav-overlay {
-                top: 95px;
-                padding: 1.2rem;
+                top: 80px;
+                padding: 1rem;
+            }
+            
+            .mobile-nav-link {
+                padding: 0.8rem 0;
+                font-size: 0.9rem;
             }
         }
         
         /* Extra Small Mobile */
         @media (max-width: 360px) {
             .brand-line-2 {
-                font-size: 1.3rem;
+                font-size: 1.1rem;
             }
             
             .menu-label {
                 display: none;
             }
             
-            .mobile-nav-overlay {
-                padding: 1rem;
-            }
-            
-            .mobile-nav-link {
-                padding: 0.9rem 0;
-                font-size: 0.95rem;
+            .brand-logo {
+                width: 50px;
+                height: 50px;
             }
         }
         
@@ -959,7 +1002,7 @@ if (class_exists('Session')) {
             width: 100%;
             max-width: 100vw;
             margin-top: 0;
-            padding-top: var(--header-height-desktop);
+            padding-top: calc(var(--header-height-desktop) + var(--nav-height));
             overflow-x: hidden;
         }
         
@@ -1002,7 +1045,7 @@ if (class_exists('Session')) {
             background: white;
             border-left: 4px solid var(--prestige-navy);
             border-radius: 4px;
-            padding: 0.9rem 1.6rem;
+            padding: 0.8rem 1.5rem;
             margin-bottom: 0.5rem;
             box-shadow: var(--shadow-medium);
             animation: slideDown 0.25s ease;
@@ -1015,16 +1058,17 @@ if (class_exists('Session')) {
             font-weight: 500;
             border: 1px solid var(--prestige-stone);
             border-left-width: 4px;
+            font-size: 0.9rem;
         }
         
         .flash-close {
             background: none;
             border: none;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             line-height: 1;
             cursor: pointer;
             color: var(--prestige-slate);
-            padding: 0 0.5rem;
+            padding: 0 0.4rem;
         }
         
         @keyframes slideDown {
@@ -1064,10 +1108,10 @@ if (class_exists('Session')) {
     ?>
 </div>
 
-<!-- SOPHISTICATED HEADER - MINIMAL GOLD, NAVY DOMINANT -->
+<!-- SOPHISTICATED HEADER - REDUCED LOGO, PERFECTLY FITTED -->
 <header class="site-header" role="banner">
     <div class="header-container">
-        <!-- BRAND WITH FULL VISIBILITY LOGO - CLEAN, PROFESSIONAL -->
+        <!-- BRAND WITH REDUCED LOGO - PROPERLY FITTED -->
         <a href="<?php echo $baseUrl; ?>/" class="brand">
             <div class="brand-logo">
                 <?php
@@ -1089,7 +1133,7 @@ if (class_exists('Session')) {
             </div>
         </a>
         
-        <!-- HEADER ACTIONS - CLEAN, PROFESSIONAL -->
+        <!-- HEADER ACTIONS -->
         <div class="header-actions">
             <a href="<?php echo $baseUrl; ?>/admissions" class="apply-btn">
                 <i class="fas fa-file-alt"></i>
@@ -1102,7 +1146,7 @@ if (class_exists('Session')) {
             </a>
             <?php endif; ?>
             
-            <!-- MOBILE MENU HANDLE - ALWAYS VISIBLE ON MOBILE SCREENS -->
+            <!-- MOBILE MENU HANDLE -->
             <div class="mobile-menu-toggle-wrapper" onclick="toggleMobileMenu()">
                 <button class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false">
                     <span></span>
@@ -1115,7 +1159,7 @@ if (class_exists('Session')) {
     </div>
 </header>
 
-<!-- DESKTOP NAVIGATION - CLEAN, PROFESSIONAL TABS -->
+<!-- DESKTOP NAVIGATION -->
 <div class="desktop-nav-container">
     <nav class="desktop-nav" aria-label="Main navigation">
         <ul class="desktop-nav-menu">
@@ -1195,7 +1239,7 @@ if (class_exists('Session')) {
     </nav>
 </div>
 
-<!-- MOBILE NAVIGATION - ALWAYS DISPLAYS UNDER HANDLE WHEN TOGGLED -->
+<!-- MOBILE NAVIGATION -->
 <div class="mobile-nav-overlay" id="mobileNav">
     <div class="mobile-nav-content">
         <ul class="mobile-nav-menu">
@@ -1336,9 +1380,9 @@ if (class_exists('Session')) {
             
             // Animate hamburger to X
             if (isExpanded) {
-                menuToggle.children[0].style.transform = 'rotate(45deg) translate(6px, 6px)';
+                menuToggle.children[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
                 menuToggle.children[1].style.opacity = '0';
-                menuToggle.children[2].style.transform = 'rotate(-45deg) translate(6px, -6px)';
+                menuToggle.children[2].style.transform = 'rotate(-45deg) translate(5px, -5px)';
             } else {
                 menuToggle.children[0].style.transform = 'none';
                 menuToggle.children[1].style.opacity = '1';
@@ -1354,7 +1398,7 @@ if (class_exists('Session')) {
         
         // Scroll Effects
         function handleScroll() {
-            if (window.scrollY > 40) {
+            if (window.scrollY > 30) {
                 header.classList.add('scrolled');
                 if (navContainer) navContainer.classList.add('scrolled');
             } else {
@@ -1449,7 +1493,7 @@ if (class_exists('Session')) {
             // Update main content padding
             const mainContentWrapper = document.querySelector('.main-content-wrapper');
             if (mainContentWrapper) {
-                const headerHeight = header?.offsetHeight || 110;
+                const headerHeight = header?.offsetHeight || 100;
                 if (isDesktop && navContainer) {
                     const navHeight = navContainer.offsetHeight || 48;
                     mainContentWrapper.style.paddingTop = (headerHeight + navHeight) + 'px';
