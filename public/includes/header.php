@@ -5,6 +5,7 @@
  * FIXED: Mobile menu displays under handle on all screen sizes
  * ELEGANT: Refined, professional, authoritative
  * UPDATED: Logo size reduced and properly fitted with header title
+ * UPDATED: Student Life and Faculty tabs commented out
  * 
  * @package FCT_CNS
  */
@@ -1210,18 +1211,22 @@ if (class_exists('Session')) {
                     <a href="<?php echo $baseUrl; ?>/research/grants" class="dropdown-link">Grants & Funding</a>
                 </div>
             </li>
+            <!-- Student Life Tab - Commented Out
             <li class="desktop-nav-item">
                 <a href="<?php echo $baseUrl; ?>/student-life" 
                    class="desktop-nav-link <?php echo $currentPage == 'student-life' ? 'active' : ''; ?>">
                     Student Life
                 </a>
             </li>
+            -->
+            <!-- Faculty Tab - Commented Out
             <li class="desktop-nav-item">
                 <a href="<?php echo $baseUrl; ?>/faculty" 
                    class="desktop-nav-link <?php echo $currentPage == 'faculty' ? 'active' : ''; ?>">
                     Faculty
                 </a>
             </li>
+            -->
             <li class="desktop-nav-item">
                 <a href="<?php echo $baseUrl; ?>/news" 
                    class="desktop-nav-link <?php echo $currentPage == 'news' ? 'active' : ''; ?>">
@@ -1278,6 +1283,7 @@ if (class_exists('Session')) {
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>
+            <!-- Student Life Mobile Tab - Commented Out
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/student-life" 
                    class="mobile-nav-link <?php echo $currentPage == 'student-life' ? 'active' : ''; ?>">
@@ -1285,6 +1291,8 @@ if (class_exists('Session')) {
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>
+            -->
+            <!-- Faculty Mobile Tab - Commented Out
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/faculty" 
                    class="mobile-nav-link <?php echo $currentPage == 'faculty' ? 'active' : ''; ?>">
@@ -1292,6 +1300,7 @@ if (class_exists('Session')) {
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>
+            -->
             <li class="mobile-nav-item">
                 <a href="<?php echo $baseUrl; ?>/news" 
                    class="mobile-nav-link <?php echo $currentPage == 'news' ? 'active' : ''; ?>">
