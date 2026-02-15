@@ -1940,7 +1940,7 @@ body .main-content {
 
                     <div class="provost-name-card">
                         <h3>Comr. Deborah Yusuf</h3>
-                        <p>Provost & Chief Executive</p>
+                        <p>Ag. Provost FCTCNS</p>
                     </div>
 
                     <div class="provost-badges">
@@ -1969,7 +1969,7 @@ body .main-content {
                         <div class="signature-dot"></div>
                         <div class="signature-text">
                             <strong>Comr. Deborah Yusuf</strong>
-                            <span>Provost, FCT College of Nursing Sciences</span>
+                            <span>Ag. Provost, FCT College of Nursing Sciences</span>
                         </div>
                     </div>
 
