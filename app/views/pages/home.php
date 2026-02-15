@@ -2,9 +2,11 @@
 /**
  * Homepage View Template - Professional Redesign v3.3
  * Premium Design with Fixed Mobile Layout, No Gaps, and Resources Links
+ * UPDATED: Program information from programs page integrated
+ * NOTE: Community Nursing Program will soon be integrated fully
  * 
  * @package FCTCNS
- * @version 6.3 - Mobile-Optimized with Resources Integration
+ * @version 6.4 - Programs Information Integrated
  */
 
 extract($data ?? []);
@@ -44,6 +46,15 @@ if (empty($carouselSlides)) {
         ]
     ];
 }
+
+// Program images from programs page
+$programImages = [
+    'nd-nursing'    => rtrim($baseUrl,'/') . '/assets/images/programs/nd-nursing.jpg',
+    'basic-nursing' => rtrim($baseUrl,'/') . '/assets/images/programs/basic-nursing.jpg',
+    'basic-midwifery'=> rtrim($baseUrl,'/') . '/assets/images/programs/basic-midwifery.jpg',
+    'post-basic'    => rtrim($baseUrl,'/') . '/assets/images/programs/post-basic.jpg',
+    'community-nursing' => rtrim($baseUrl,'/') . '/assets/images/programs/community-nursing.jpg', // Placeholder for community program
+];
 ?>
 
 <!DOCTYPE html>
@@ -138,6 +149,12 @@ body .main-content {
         --gold-light: #D8B86C;
         --gold-pale: #FDF6E7;
         --gold-soft: #FFFAF0;
+        
+        /* Additional colors from programs page */
+        --green: #5D9B8C;
+        --green-pale: #EEF7F5;
+        --amber: #C9870A;
+        --amber-pale: #FEF6E4;
         
         /* Neutrals */
         --ink: #1A1F2E;
@@ -307,8 +324,27 @@ body .main-content {
         transform: translateY(-2px);
     }
 
+    /* Additional button styles from programs page */
+    .btn--ghost {
+        background: transparent;
+        color: white;
+        border: 1.5px solid rgba(255,255,255,0.35);
+    }
+    
+    .btn--ghost:hover {
+        border-color: white;
+        background: rgba(255,255,255,0.1);
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .btn--lg {
+        padding: 0.85rem 2rem;
+        font-size: 1rem;
+    }
+
     /* ==========================================================================
-       HERO CAROUSEL - No Gap at Top
+       HERO CAROUSEL - No Gap at Top with Resources Button
        ========================================================================== */
     .hero-section {
         position: relative;
@@ -1217,7 +1253,7 @@ body .main-content {
     }
 
     /* ==========================================================================
-       PROGRAMS SECTION
+       PROGRAMS SECTION - UPDATED with full program information from programs page
        ========================================================================== */
     .programs-section {
         padding: var(--space-xxl) 0;
@@ -1237,108 +1273,261 @@ body .main-content {
         }
     }
 
-    @media (min-width: 1200px) {
-        .programs-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
-    }
-
     .program-card {
         background: var(--white);
         border: 1px solid var(--border);
         border-radius: var(--radius-lg);
-        padding: var(--space-lg);
+        overflow: hidden;
         transition: all 0.3s ease;
         height: 100%;
         display: flex;
         flex-direction: column;
         position: relative;
-        overflow: hidden;
+        animation: fadeInUp 0.5s ease forwards;
+    }
+
+    .program-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--purple-light);
     }
 
     .program-card::before {
         content: '';
         position: absolute;
-        top: 0;
         left: 0;
-        width: 100%;
-        height: 4px;
-        background: var(--purple-gradient);
-        transform: scaleX(0);
-        transform-origin: left;
-        transition: transform 0.3s ease;
-    }
-
-    .program-card:hover {
-        transform: translateY(-5px);
-        box-shadow: var(--shadow-xl), var(--shadow-purple);
-        border-color: var(--purple-light);
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(to bottom, var(--purple), var(--purple-light));
+        transform: scaleY(0);
+        transform-origin: center;
+        transition: transform 0.28s ease;
+        border-radius: 3px 0 0 3px;
+        z-index: 1;
     }
 
     .program-card:hover::before {
-        transform: scaleX(1);
+        transform: scaleY(1);
     }
 
-    .program-icon {
-        width: 60px;
-        height: 60px;
-        background: var(--purple-gradient);
+    .program-card-img-wrap {
+        position: relative;
+        width: 100%;
+        height: 200px;
+        overflow: hidden;
+        background: var(--surface);
+    }
+
+    .program-card-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.5s ease;
+    }
+
+    .program-card:hover .program-card-img {
+        transform: scale(1.05);
+    }
+
+    .program-status {
+        position: absolute;
+        top: 0.85rem;
+        left: 0.85rem;
+        font-family: var(--font-mono);
+        font-size: 0.6rem;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border-radius: 4px;
+        z-index: 2;
+    }
+
+    .program-status--active {
+        background: var(--green);
         color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        margin-bottom: var(--space-md);
-        box-shadow: var(--shadow-purple);
-        transition: all 0.3s ease;
     }
 
-    .program-card:hover .program-icon {
-        transform: scale(1.1) rotate(5deg);
+    .program-status--transition {
+        background: var(--amber);
+        color: white;
+    }
+
+    .program-status--note {
+        background: var(--purple);
+        color: white;
+    }
+
+    .program-card-content {
+        padding: var(--space-lg);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .program-card-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        flex-wrap: wrap;
     }
 
     .program-card h3 {
+        font-family: var(--font-display);
         font-size: 1.3rem;
         color: var(--purple-deep);
-        margin-bottom: var(--space-sm);
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+    }
+
+    .program-duration {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: var(--purple-pale);
+        color: var(--purple-dark);
+        border: 1px solid var(--purple-light);
+        border-radius: var(--radius-full);
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        font-weight: 500;
+        padding: 3px 10px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .program-duration i {
+        font-size: 0.6rem;
+    }
+
+    .program-breakdown {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.85rem;
+        flex-wrap: wrap;
+    }
+
+    .program-breakdown-pill {
+        background: var(--surface);
+        color: var(--slate);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-full);
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        padding: 2px 9px;
+    }
+
+    .program-breakdown-arrow {
+        color: var(--mist);
+        font-size: 0.7rem;
     }
 
     .program-card p {
         color: var(--slate);
         margin-bottom: var(--space-md);
         line-height: 1.6;
-        flex-grow: 1;
         font-size: 0.95rem;
     }
 
-    .program-features {
-        list-style: none;
-        margin-bottom: var(--space-lg);
+    .program-highlights {
+        background: var(--purple-pale);
+        border-left: 3px solid var(--purple);
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        padding: 0.9rem 1.1rem;
+        margin-bottom: 1.25rem;
     }
 
-    .program-features li {
+    .program-highlights-title {
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--purple-dark);
+        margin-bottom: 0.6rem;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.4rem 0;
-        color: var(--ink-soft);
-        font-size: 0.85rem;
-        border-bottom: 1px solid var(--border);
+        gap: 5px;
     }
 
-    .program-features li::before {
+    .program-highlights-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.2rem 1rem;
+        list-style: none;
+    }
+
+    @media (max-width: 560px) {
+        .program-highlights-list {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .program-highlights-list li {
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+        line-height: 1.5;
+        padding: 0.2rem 0;
+        padding-left: 1.1rem;
+        position: relative;
+    }
+
+    .program-highlights-list li::before {
         content: '';
-        width: 6px;
-        height: 6px;
-        background: var(--purple);
+        position: absolute;
+        left: 0;
+        top: 9px;
+        width: 5px;
+        height: 5px;
+        background: var(--gold);
         border-radius: 50%;
     }
 
-    .program-card .btn {
-        align-self: flex-start;
-        font-size: 0.9rem;
-        padding: 0.6rem 1.25rem;
+    .program-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding-top: 1.1rem;
+        border-top: 1px solid var(--border);
+        flex-wrap: wrap;
+        margin-top: auto;
+    }
+
+    .program-footer-meta {
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        color: var(--mist);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .program-footer-meta i {
+        font-size: 0.62rem;
+        color: var(--slate);
+    }
+
+    .program-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    @media (max-width: 480px) {
+        .program-card-footer {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .program-actions {
+            width: 100%;
+            justify-content: flex-end;
+        }
     }
 
     /* ==========================================================================
@@ -1465,6 +1654,90 @@ body .main-content {
         }
     }
 
+    /* CTA Dark Card from programs page */
+    .program-cta-card {
+        background: linear-gradient(160deg, #2A3042 0%, #3A4055 100%);
+        border-radius: var(--radius-xl);
+        padding: clamp(1.75rem, 4vw, 2.75rem);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2rem;
+        flex-wrap: wrap;
+        box-shadow: var(--shadow-xl);
+        position: relative;
+        overflow: hidden;
+        margin-top: var(--space-xxl);
+    }
+
+    .program-cta-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 15%;
+        bottom: 15%;
+        width: 3px;
+        background: linear-gradient(to bottom, var(--purple-light), var(--purple));
+        border-radius: 3px;
+    }
+
+    .program-cta-card-content {
+        flex: 1;
+        min-width: 220px;
+    }
+
+    .program-cta-card-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: var(--purple);
+        color: white;
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        font-weight: 500;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        padding: 4px 12px;
+        border-radius: 4px;
+        margin-bottom: 0.85rem;
+    }
+
+    .program-cta-card-title {
+        font-family: var(--font-display);
+        font-size: clamp(1.4rem, 2.5vw, 2rem);
+        font-weight: 700;
+        color: white;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.01em;
+    }
+
+    .program-cta-card-desc {
+        font-size: 0.95rem;
+        color: rgba(255,255,255,0.7);
+        line-height: 1.6;
+    }
+
+    .program-cta-card-actions {
+        display: flex;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+    }
+
+    @media (max-width: 480px) {
+        .program-cta-card {
+            flex-direction: column;
+        }
+        
+        .program-cta-card-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .program-cta-card-actions .btn {
+            justify-content: center;
+        }
+    }
+
     /* ==========================================================================
        ANIMATIONS
        ========================================================================== */
@@ -1481,7 +1754,6 @@ body .main-content {
 
     .stat-card,
     .accred-card,
-    .program-card,
     .environment-card {
         opacity: 0;
         animation: fadeInUp 0.5s ease forwards;
@@ -1496,9 +1768,10 @@ body .main-content {
     .accred-card:nth-child(2) { animation-delay: 0.3s; }
 
     .program-card:nth-child(1) { animation-delay: 0.1s; }
-    .program-card:nth-child(2) { animation-delay: 0.2s; }
-    .program-card:nth-child(3) { animation-delay: 0.3s; }
-    .program-card:nth-child(4) { animation-delay: 0.4s; }
+    .program-card:nth-child(2) { animation-delay: 0.15s; }
+    .program-card:nth-child(3) { animation-delay: 0.2s; }
+    .program-card:nth-child(4) { animation-delay: 0.25s; }
+    .program-card:nth-child(5) { animation-delay: 0.3s; }
 
     .environment-card:nth-child(1) { animation-delay: 0.2s; }
     .environment-card:nth-child(2) { animation-delay: 0.3s; }
@@ -1760,7 +2033,7 @@ body .main-content {
                     <div class="stat-icon">
                         <i class="fas fa-chalkboard-teacher"></i>
                     </div>
-                    <div class="stat-number">4</div>
+                    <div class="stat-number">5</div>
                     <div class="stat-label">Academic Programs</div>
                 </div>
             </div>
@@ -1795,78 +2068,253 @@ body .main-content {
         </div>
     </section>
 
-    <!-- ========== PROGRAMS SECTION ========== -->
+    <!-- ========== PROGRAMS SECTION - UPDATED with full program information from programs page ========== -->
     <section class="programs-section" aria-label="Academic programs">
         <div class="container">
             <div class="section-header">
-                <h2>Our Academic Programs</h2>
-                <p>Choose from our range of accredited nursing programs designed to launch successful healthcare careers</p>
+                <h2>Our Accredited Programs</h2>
+                <p>Nationally recognised nursing programs designed for real-world healthcare delivery</p>
             </div>
 
             <div class="programs-grid">
-                <div class="program-card">
-                    <div class="program-icon">
-                        <i class="fas fa-user-nurse"></i>
-                    </div>
-                    <h3>Basic Nursing</h3>
-                    <p>Comprehensive 3-year program covering fundamentals of nursing practice, patient care, and clinical skills.</p>
-                    <ul class="program-features">
-                        <li>3-year duration</li>
-                        <li>Clinical rotations</li>
-                        <li>NMCN accredited</li>
-                    </ul>
-                    <a href="<?php echo $baseUrl; ?>/programs#basic-nursing" class="btn btn--purple-outline">
-                        Learn More <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
 
-                <div class="program-card">
-                    <div class="program-icon">
-                        <i class="fas fa-baby"></i>
+                <!-- CARD 1: ND/HND Nursing Programme -->
+                <article class="program-card">
+                    <div class="program-card-img-wrap">
+                        <img src="<?php echo $programImages['nd-nursing']; ?>"
+                             alt="ND/HND Nursing Programme"
+                             class="program-card-img"
+                             loading="lazy"
+                             onerror="this.closest('.program-card-img-wrap').style.background='var(--purple-pale)'; this.style.display='none';">
+                        <span class="program-status program-status--active">Currently Available</span>
                     </div>
-                    <h3>Midwifery</h3>
-                    <p>Specialized program focusing on maternal and child health, antenatal care, and delivery procedures.</p>
-                    <ul class="program-features">
-                        <li>3-year duration</li>
-                        <li>Maternity specialization</li>
-                        <li>NMCN accredited</li>
-                    </ul>
-                    <a href="<?php echo $baseUrl; ?>/programs#midwifery" class="btn btn--purple-outline">
-                        Learn More <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
 
-                <div class="program-card">
-                    <div class="program-icon">
-                        <i class="fas fa-procedures"></i>
-                    </div>
-                    <h3>Post-Basic Nursing</h3>
-                    <p>Advanced program for registered nurses seeking specialization in areas like anesthesia, critical care, or public health.</p>
-                    <ul class="program-features">
-                        <li>18-month duration</li>
-                        <li>Specialization options</li>
-                        <li>For registered nurses</li>
-                    </ul>
-                    <a href="<?php echo $baseUrl; ?>/programs#post-basic" class="btn btn--purple-outline">
-                        Learn More <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
+                    <div class="program-card-content">
+                        <div class="program-card-top">
+                            <h3>ND/HND Nursing Programme</h3>
+                            <span class="program-duration">
+                                <i class="far fa-clock"></i> 4 Years · Non-Terminal
+                            </span>
+                        </div>
 
-                <div class="program-card">
-                    <div class="program-icon">
-                        <i class="fas fa-heartbeat"></i>
+                        <div class="program-breakdown">
+                            <span class="program-breakdown-pill">ND — 2 Years</span>
+                            <span class="program-breakdown-arrow"><i class="fas fa-arrow-right"></i></span>
+                            <span class="program-breakdown-pill">HND — 2 Years</span>
+                        </div>
+
+                        <p>
+                            Comprehensive four-year non-terminal programme leading to National Diploma (ND) and Higher National Diploma (HND) qualifications. Combines theoretical knowledge with practical skills for advanced healthcare delivery.
+                        </p>
+
+                        <div class="program-highlights">
+                            <div class="program-highlights-title"><i class="fas fa-list-check"></i> Key Features</div>
+                            <ul class="program-highlights-list">
+                                <li>NBTE accredited programme</li>
+                                <li>Non-terminal ND/HND structure</li>
+                                <li>JAMB UTME pathway</li>
+                                <li>Clinical rotations & internships</li>
+                                <li>Modern simulation labs</li>
+                                <li>Research methodology training</li>
+                            </ul>
+                        </div>
+
+                        <div class="program-card-footer">
+                            <div class="program-footer-meta">
+                                <i class="fas fa-shield-halved"></i> NBTE & NMCN Approved
+                            </div>
+                            <div class="program-actions">
+                                <a href="<?php echo $baseUrl; ?>/admissions" class="btn btn--purple-outline btn-sm">Learn More</a>
+                                <a href="<?php echo $baseUrl; ?>/admissions" class="btn btn--primary btn-sm">Apply Now</a>
+                            </div>
+                        </div>
                     </div>
-                    <h3>Community Health</h3>
-                    <p>Program focusing on public health, disease prevention, and community-based healthcare delivery.</p>
-                    <ul class="program-features">
-                        <li>3-year duration</li>
-                        <li>Community focus</li>
-                        <li>Public health emphasis</li>
-                    </ul>
-                    <a href="<?php echo $baseUrl; ?>/programs#community-health" class="btn btn--purple-outline">
-                        Learn More <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
+                </article>
+
+                <!-- CARD 2: Basic Nursing -->
+                <article class="program-card">
+                    <div class="program-card-img-wrap">
+                        <img src="<?php echo $programImages['basic-nursing']; ?>"
+                             alt="Basic Nursing Programme"
+                             class="program-card-img"
+                             loading="lazy"
+                             onerror="this.closest('.program-card-img-wrap').style.background='var(--purple-pale)'; this.style.display='none';">
+                        <span class="program-status program-status--transition">Programme Transition</span>
+                    </div>
+
+                    <div class="program-card-content">
+                        <div class="program-card-top">
+                            <h3>Basic Nursing</h3>
+                            <span class="program-duration">
+                                <i class="far fa-clock"></i> 3 Years
+                            </span>
+                        </div>
+
+                        <p>
+                            Comprehensive general nursing education preparing students for registration as Registered Nurses (RN). <strong>Note: This programme is transitioning to the ND/HND system.</strong>
+                        </p>
+
+                        <div class="program-highlights">
+                            <div class="program-highlights-title"><i class="fas fa-list-check"></i> Key Features</div>
+                            <ul class="program-highlights-list">
+                                <li>Full NMCN accreditation</li>
+                                <li>Extensive clinical practice</li>
+                                <li>Simulation training</li>
+                                <li>Exam preparation support</li>
+                                <li>Professional development</li>
+                            </ul>
+                        </div>
+
+                        <div class="program-card-footer">
+                            <div class="program-footer-meta">
+                                <i class="fas fa-arrows-rotate"></i> Transitioning to ND/HND
+                            </div>
+                            <div class="program-actions">
+                                <a href="<?php echo $baseUrl; ?>/admissions" class="btn btn--purple-outline btn-sm">Learn More</a>
+                                <a href="<?php echo $baseUrl; ?>/contact" class="btn btn--surface btn-sm">Contact Us</a>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- CARD 3: Basic Midwifery -->
+                <article class="program-card">
+                    <div class="program-card-img-wrap">
+                        <img src="<?php echo $programImages['basic-midwifery']; ?>"
+                             alt="Basic Midwifery Programme"
+                             class="program-card-img"
+                             loading="lazy"
+                             onerror="this.closest('.program-card-img-wrap').style.background='var(--purple-pale)'; this.style.display='none';">
+                        <span class="program-status program-status--transition">Programme Transition</span>
+                    </div>
+
+                    <div class="program-card-content">
+                        <div class="program-card-top">
+                            <h3>Basic Midwifery</h3>
+                            <span class="program-duration">
+                                <i class="far fa-clock"></i> 3 Years
+                            </span>
+                        </div>
+
+                        <p>
+                            Specialised training in maternal and child healthcare, antenatal care, delivery, and postnatal services. <strong>Note: This programme is transitioning to the ND/HND system.</strong>
+                        </p>
+
+                        <div class="program-highlights">
+                            <div class="program-highlights-title"><i class="fas fa-list-check"></i> Key Features</div>
+                            <ul class="program-highlights-list">
+                                <li>NMCN approved</li>
+                                <li>Maternity clinical placements</li>
+                                <li>Family planning training</li>
+                                <li>Neonatal care focus</li>
+                                <li>Community outreach</li>
+                            </ul>
+                        </div>
+
+                        <div class="program-card-footer">
+                            <div class="program-footer-meta">
+                                <i class="fas fa-arrows-rotate"></i> Transitioning to ND/HND
+                            </div>
+                            <div class="program-actions">
+                                <a href="<?php echo $baseUrl; ?>/admissions" class="btn btn--purple-outline btn-sm">Learn More</a>
+                                <a href="<?php echo $baseUrl; ?>/contact" class="btn btn--surface btn-sm">Contact Us</a>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- CARD 4: Post Basic Nursing Specialisation -->
+                <article class="program-card">
+                    <div class="program-card-img-wrap">
+                        <img src="<?php echo $programImages['post-basic']; ?>"
+                             alt="Post Basic Nursing Specialisation"
+                             class="program-card-img"
+                             loading="lazy"
+                             onerror="this.closest('.program-card-img-wrap').style.background='var(--purple-pale)'; this.style.display='none';">
+                        <span class="program-status program-status--transition">Programme Transition</span>
+                    </div>
+
+                    <div class="program-card-content">
+                        <div class="program-card-top">
+                            <h3>Post Basic Nursing Specialisation</h3>
+                            <span class="program-duration">
+                                <i class="far fa-clock"></i> 18 Months
+                            </span>
+                        </div>
+
+                        <p>
+                            Advanced specialisation for registered nurses in intensive care, paediatrics, perioperative, or psychiatric nursing. <strong>Note: This programme is transitioning to the ND/HND system.</strong>
+                        </p>
+
+                        <div class="program-highlights">
+                            <div class="program-highlights-title"><i class="fas fa-list-check"></i> Key Features</div>
+                            <ul class="program-highlights-list">
+                                <li>Specialist clinical training</li>
+                                <li>Leadership development</li>
+                                <li>Research methodology</li>
+                                <li>Career advancement pathway</li>
+                                <li>Expert faculty mentorship</li>
+                            </ul>
+                        </div>
+
+                        <div class="program-card-footer">
+                            <div class="program-footer-meta">
+                                <i class="fas fa-arrows-rotate"></i> Transitioning to ND/HND
+                            </div>
+                            <div class="program-actions">
+                                <a href="<?php echo $baseUrl; ?>/admissions" class="btn btn--purple-outline btn-sm">Learn More</a>
+                                <a href="<?php echo $baseUrl; ?>/contact" class="btn btn--surface btn-sm">Contact Us</a>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- CARD 5: Community Health (Soon to be fully integrated) -->
+                <article class="program-card">
+                    <div class="program-card-img-wrap">
+                        <img src="<?php echo $programImages['community-nursing']; ?>"
+                             alt="Community Health Nursing"
+                             class="program-card-img"
+                             loading="lazy"
+                             onerror="this.closest('.program-card-img-wrap').style.background='var(--purple-pale)'; this.style.display='none';">
+                        <span class="program-status program-status--note">Soon to be Integrated</span>
+                    </div>
+
+                    <div class="program-card-content">
+                        <div class="program-card-top">
+                            <h3>Community Health Nursing</h3>
+                            <span class="program-duration">
+                                <i class="far fa-clock"></i> 3 Years
+                            </span>
+                        </div>
+
+                        <p>
+                            Program focusing on public health, disease prevention, and community-based healthcare delivery. <strong>Note: This programme will soon be fully integrated into the ND/HND system.</strong>
+                        </p>
+
+                        <div class="program-highlights">
+                            <div class="program-highlights-title"><i class="fas fa-list-check"></i> Key Features</div>
+                            <ul class="program-highlights-list">
+                                <li>Community health focus</li>
+                                <li>Public health emphasis</li>
+                                <li>Disease prevention</li>
+                                <li>Health education</li>
+                                <li>Rural healthcare</li>
+                            </ul>
+                        </div>
+
+                        <div class="program-card-footer">
+                            <div class="program-footer-meta">
+                                <i class="fas fa-arrows-rotate"></i> Integration in Progress
+                            </div>
+                            <div class="program-actions">
+                                <a href="<?php echo $baseUrl; ?>/admissions" class="btn btn--purple-outline btn-sm">Learn More</a>
+                                <a href="<?php echo $baseUrl; ?>/contact" class="btn btn--surface btn-sm">Contact Us</a>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
             </div>
         </div>
     </section>
@@ -1910,8 +2358,9 @@ body .main-content {
         </div>
     </section>
 
-    <!-- ========== FINAL CALL TO ACTION - UPDATED Resources Link ========== -->
+    <!-- ========== FINAL CALL TO ACTION - Enhanced with Programs CTA Card ========== -->
     <div class="container">
+        <!-- Regular CTA Section -->
         <section class="cta-section" aria-label="Call to action">
             <div class="cta-content">
                 <h2>Begin Your Nursing Journey Today</h2>
@@ -1927,6 +2376,25 @@ body .main-content {
                 </div>
             </div>
         </section>
+
+        <!-- Enhanced Programs CTA Card from programs page -->
+        <div class="program-cta-card">
+            <div class="program-cta-card-content">
+                <span class="program-cta-card-tag"><i class="fas fa-graduation-cap"></i> Start Your Journey</span>
+                <h2 class="program-cta-card-title">Begin Your Nursing Career Today</h2>
+                <p class="program-cta-card-desc">
+                    Join thousands of graduates making a difference in healthcare across Nigeria. Apply for the next admissions cycle.
+                </p>
+            </div>
+            <div class="program-cta-card-actions">
+                <a href="<?php echo $baseUrl; ?>/admissions" class="btn btn--secondary btn--lg">
+                    <i class="fas fa-file-alt"></i> Apply Now
+                </a>
+                <a href="<?php echo $baseUrl; ?>/contact" class="btn btn--ghost btn--lg">
+                    <i class="fas fa-phone-alt"></i> Contact Admissions
+                </a>
+            </div>
+        </div>
     </div>
 </main>
 
