@@ -123,6 +123,9 @@ class Router {
         $this->get('/student-life', 'PageController@studentLife');
         $this->get('/library', 'PageController@library');
         $this->get('/faq', 'FaqController@index');
+        $this->get('/facilities', 'PageController@facilities');
+        $this->get('/resources', 'PageController@resources');
+    
         
         // ============================================
         // CONTACT ROUTES - ORGANIZED FOLDER STRUCTURE

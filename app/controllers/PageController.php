@@ -233,6 +233,104 @@ class PageController extends Controller {
     }
     
     /**
+     * Display facilities page
+     */
+    public function facilities() {
+        try {
+            // Get facilities data
+            $facilities = $this->getFacilitiesData();
+            
+            // Get facility statistics
+            $stats = $this->getFacilityStats();
+            
+            // Get featured facilities
+            $featured = $this->getFeaturedFacilities();
+            
+            $viewData = [
+                'facilities' => $facilities,
+                'stats' => $stats,
+                'featured' => $featured,
+                'page_title' => 'Our Facilities - FCT College of Nursing Sciences',
+                'page_description' => 'Explore our state-of-the-art facilities including simulation laboratories, library, clinical skills labs, and student spaces',
+                'currentPage' => 'facilities'
+            ];
+            
+            $this->data = array_merge($this->data, $viewData);
+            $this->render('pages/facilities');
+            
+        } catch (Exception $e) {
+            error_log("PageController facilities error: " . $e->getMessage());
+            $this->renderError('Failed to load facilities page');
+        }
+    }
+
+    /**
+     * Get facilities data
+     */
+    private function getFacilitiesData() {
+        // This could eventually come from database
+        return [
+            [
+                'name' => 'Simulation Laboratory',
+                'location' => 'Main Campus, Block A, Ground Floor',
+                'description' => 'High-fidelity simulation lab with advanced manikins',
+                'features' => ['High-fidelity manikins', 'Virtual reality', 'Video recording'],
+                'image' => '/assets/images/facilities/simulation-lab.jpg',
+                'badge' => 'Featured'
+            ],
+            // Add more facilities as needed
+        ];
+    }
+
+    /**
+     * Get facility statistics
+     */
+    private function getFacilityStats() {
+        return [
+            ['number' => '6', 'label' => 'Specialized Labs'],
+            ['number' => '10,000+', 'label' => 'Library Volumes'],
+            ['number' => '50+', 'label' => 'Computer Stations'],
+            ['number' => '24/7', 'label' => 'Study Access']
+        ];
+    }
+
+    /**
+     * Get featured facilities
+     */
+    private function getFeaturedFacilities() {
+        return [
+            'simulation_lab' => true,
+            'library' => true
+        ];
+    }
+    /**
+     * Display resources page (under construction)
+     */
+    public function resources() {
+        try {
+            $viewData = [
+                'page_title' => 'Resources Center - FCT College of Nursing Sciences',
+                'page_description' => 'Educational resources, study materials, and research publications for nursing students and healthcare professionals',
+                'currentPage' => 'resources',
+                'estimated_launch' => 'Q2 2026',
+                'features' => [
+                    'Study Materials',
+                    'Lab Manuals', 
+                    'Research Papers',
+                    'Video Tutorials'
+                ]
+            ];
+            
+            $this->data = array_merge($this->data, $viewData);
+            $this->render('pages/resources');
+            
+        } catch (Exception $e) {
+            error_log("PageController resources error: " . $e->getMessage());
+            $this->renderError('Failed to load resources page');
+        }
+    }
+    
+    /**
      * Display news page (redirects to NewsController)
      */
     public function news() {
