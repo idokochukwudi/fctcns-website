@@ -126,7 +126,6 @@ class Router {
         $this->get('/facilities', 'PageController@facilities');
         $this->get('/resources', 'PageController@resources');
     
-        
         // ============================================
         // CONTACT ROUTES - ORGANIZED FOLDER STRUCTURE
         // ============================================
@@ -258,16 +257,64 @@ class Router {
         $this->post('/admin/admission/update', 'AdmissionController@adminUpdate');
         $this->get('/admin/admission/manual-correction', 'AdmissionController@manualCorrection');
         $this->post('/admin/admission/manual-correction', 'AdmissionController@manualCorrection');
+
+        // ============================================
+        // APPLICATION ROUTES - COMPLETE FLOW
+        // ============================================
+        
+        // Landing page
+        $this->get('/apply', 'PublicApplicationController@landing');
+
+        // Step 1: Account Creation
+        $this->get('/apply/register', 'PublicApplicationController@showRegistration');
+        $this->post('/apply/register', 'PublicApplicationController@processRegistration');
+        $this->get('/apply/verify-email', 'PublicApplicationController@verifyEmail');
+        $this->get('/apply/resend-verification', 'PublicApplicationController@resendVerification');
+
+        // Step 2: Application Form (requires login)
+        $this->get('/apply/form', 'PublicApplicationController@showApplicationForm');
+        $this->post('/apply/verify-jamb', 'PublicApplicationController@verifyJamb');
+        $this->post('/apply/save-application', 'PublicApplicationController@saveApplication');
+
+        // Step 3: Payment
+        $this->get('/apply/payment', 'PublicApplicationController@showPayment');
+        $this->post('/apply/initiate-payment', 'PublicApplicationController@initiatePayment');
+        $this->get('/apply/verify-payment', 'PublicApplicationController@verifyPayment');
+
+        // Step 4: Exam Slip
+        $this->get('/apply/exam-slip', 'PublicApplicationController@showExamSlip');
+        $this->get('/apply/download-slip', 'PublicApplicationController@downloadExamSlip');
+
+        // Applicant authentication
+        $this->get('/applicant/login', 'PublicApplicationController@login');
+        $this->post('/applicant/login', 'PublicApplicationController@processLogin');
+        $this->get('/applicant/logout', 'PublicApplicationController@logout');
+        $this->get('/applicant/forgot-password', 'PublicApplicationController@forgotPassword');
+        $this->post('/applicant/forgot-password', 'PublicApplicationController@processForgotPassword');
+        $this->get('/applicant/reset-password', 'PublicApplicationController@resetPassword');
+        $this->post('/applicant/reset-password', 'PublicApplicationController@processResetPassword');
+
+        // Success/Failure pages
+        $this->get('/apply/success', 'PublicApplicationController@verificationSuccess');
+        $this->get('/apply/failed', 'PublicApplicationController@verificationFailed');
+        
+        // Legacy application routes (keeping for backward compatibility)
+        $this->get('/apply/step/1', 'PublicApplicationController@step1');
+        $this->get('/apply/step/2', 'PublicApplicationController@step2');
+        $this->get('/apply/step/3', 'PublicApplicationController@step3');
+        $this->get('/apply/step/4', 'PublicApplicationController@step4');
+        $this->get('/apply/download-exam-slip', 'PublicApplicationController@downloadExamSlip');
         
         // ============================================
-        // APPLICATION ROUTES
+        // PAYMENT ROUTES
         // ============================================
-        $this->get('/apply', 'PublicApplicationController@showApplicationForm');
-        $this->get('/apply/step/{step}', 'PublicApplicationController@showStep');
-        $this->post('/apply/step/{step}', 'PublicApplicationController@processStep');
-        $this->post('/apply/submit', 'PublicApplicationController@submitApplication');
-        $this->get('/apply/success', 'PublicApplicationController@applicationSuccess');
-        $this->get('/apply/reset', 'PublicApplicationController@resetApplication');
+        $this->post('/payment/initiate', 'PaymentController@initiate');
+        $this->post('/payment/verify', 'PaymentController@verify');
+        $this->get('/payment/status', 'PaymentController@status');
+        $this->get('/payment/remita-response', 'PaymentController@remitaResponse');
+        $this->post('/payment/remita-notification', 'PaymentController@remitaNotification');
+        $this->get('/payment/check-status', 'PaymentController@checkStatus');
+        $this->post('/payment/admin/verify', 'PaymentController@adminVerify');
         
         // ============================================
         // ADMIN CONTACT MANAGEMENT ROUTES
@@ -374,6 +421,24 @@ class Router {
         $this->get('/admin/applications/view/{id}', 'ApplicationsController@view');
         $this->get('/admin/applications/edit/{id}', 'ApplicationsController@edit');
         $this->post('/admin/applications/update-status/{id}', 'ApplicationsController@updateStatus');
+
+        // ============================================
+        // ADMIN APPLICATION MANAGEMENT ROUTES
+        // ============================================
+        $this->get('/admin/applications/dashboard', 'AdminApplicationController@dashboard');
+        $this->post('/admin/applications/status', 'AdminApplicationController@updateStatus');
+        $this->get('/admin/applications/settings', 'AdminApplicationController@settings');
+        $this->post('/admin/applications/settings', 'AdminApplicationController@settings');
+        $this->get('/admin/applications/terms', 'AdminApplicationController@terms');
+        $this->post('/admin/applications/terms/create', 'AdminApplicationController@createTerms');
+        $this->post('/admin/applications/terms/edit/{id}', 'AdminApplicationController@editTerms');
+        $this->post('/admin/applications/terms/activate/{id}', 'AdminApplicationController@activateTerms');
+        $this->get('/admin/applications/jamb-import', 'AdminApplicationController@jambImport');
+        $this->post('/admin/applications/jamb-import', 'AdminApplicationController@processJambImport');
+        $this->get('/admin/applications/jamb-template', 'AdminApplicationController@downloadJambTemplate');
+        $this->get('/admin/applications/payments', 'AdminApplicationController@payments');
+        $this->get('/admin/applications/payments/{id}', 'AdminApplicationController@viewPayment');
+        $this->get('/admin/applications/export', 'AdminApplicationController@export');
 
         // ============================================
         // AUTHENTICATION ROUTES

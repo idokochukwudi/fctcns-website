@@ -6,6 +6,9 @@
  * ELEGANT: Refined, professional, authoritative
  * UPDATED: Logo size reduced and properly fitted with header title
  * UPDATED: Student Life and Faculty tabs commented out
+ * UPDATED: Apply Now buttons now point to /apply application portal
+ * UPDATED: Flash messages integrated with professional styling
+ * UPDATED: Apply button with refined typography and proper contrast
  * 
  * @package FCT_CNS
  */
@@ -89,6 +92,8 @@ if (class_exists('Session')) {
            Mobile menu ALWAYS displays under handle
            Professional, authoritative, timeless
            UPDATED: Logo properly sized and fitted with title
+           UPDATED: Flash messages with professional styling
+           UPDATED: Apply button with refined typography
            ============================================== */
         
         :root {
@@ -105,6 +110,17 @@ if (class_exists('Session')) {
             --prestige-stone: #e2dfda;        /* Light gray border */
             --prestige-burgundy: #7a3e3e;     /* Muted burgundy - professional */
             --prestige-white: #ffffff;
+            
+            /* Flash message colors */
+            --flash-success-bg: #e8f0f5;      /* Light navy-tinted background */
+            --flash-success-border: #0a2342;   /* Navy border */
+            --flash-success-text: #0a2342;     /* Navy text */
+            --flash-success-icon: #0a2342;      /* Navy icon */
+            
+            --flash-error-bg: #fef2f2;         /* Light background */
+            --flash-error-border: #7a3e3e;      /* Burgundy border */
+            --flash-error-text: #7a3e3e;        /* Burgundy text */
+            --flash-error-icon: #7a3e3e;         /* Burgundy icon */
             
             /* ===== TYPOGRAPHY - REFINED ===== */
             --font-serif: 'Cormorant Garamond', Georgia, serif;
@@ -343,10 +359,11 @@ if (class_exists('Session')) {
             height: 100%;
         }
         
+        /* APPLY BUTTON - PROFESSIONAL TYPOGRAPHY & CONTRAST */
         .apply-btn {
             padding: 0.5rem 1.4rem;
             background: var(--prestige-navy);
-            color: white;
+            color: var(--prestige-white);
             border: none;
             border-radius: 4px;
             font-size: var(--button-text-size);
@@ -359,16 +376,26 @@ if (class_exists('Session')) {
             transition: all var(--transition-smooth);
             letter-spacing: 0.3px;
             box-shadow: var(--shadow-subtle);
+            font-family: var(--font-sans);
+            text-transform: uppercase;
+            border: 1px solid transparent;
         }
         
         .apply-btn i {
             font-size: 0.8rem;
+            color: var(--prestige-white);
+            transition: transform var(--transition-smooth);
         }
         
         .apply-btn:hover {
             background: var(--prestige-navy-dark);
             transform: translateY(-2px);
             box-shadow: var(--shadow-medium);
+            border-color: var(--prestige-gold-subtle);
+        }
+        
+        .apply-btn:hover i {
+            transform: translateX(3px);
         }
         
         .user-btn {
@@ -385,6 +412,7 @@ if (class_exists('Session')) {
             font-size: 1.1rem;
             transition: all var(--transition-smooth);
             text-decoration: none;
+            font-family: var(--font-serif);
         }
         
         .user-btn:hover {
@@ -732,10 +760,12 @@ if (class_exists('Session')) {
             font-size: 0.95rem;
             border: none;
             letter-spacing: 0.3px;
+            font-family: var(--font-sans);
         }
         
         .mobile-action-btn i {
             font-size: 0.9rem;
+            color: white;
         }
         
         .mobile-action-btn.accent {
@@ -787,6 +817,105 @@ if (class_exists('Session')) {
         }
         
         /* ==========================================================================
+           FLASH MESSAGES - PROFESSIONAL NOTIFICATIONS
+           ========================================================================== */
+        .flash-messages {
+            position: fixed;
+            top: calc(var(--header-height-desktop) + var(--nav-height) + 0.5rem);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            width: 100%;
+            max-width: 600px;
+            padding: 0 1rem;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .site-header.scrolled ~ .flash-messages {
+            top: calc(90px + var(--nav-height) + 0.5rem);
+        }
+        
+        .flash-message {
+            padding: 1rem 1.5rem;
+            border-radius: 4px;
+            background: white;
+            box-shadow: var(--shadow-elevated);
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            border-left-width: 4px;
+            border-left-style: solid;
+            animation: slideDown 0.3s ease;
+            font-family: var(--font-sans);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        
+        .flash-message.flash-success {
+            border-left-color: var(--flash-success-border);
+            background: var(--flash-success-bg);
+            color: var(--flash-success-text);
+        }
+        
+        .flash-message.flash-error {
+            border-left-color: var(--flash-error-border);
+            background: var(--flash-error-bg);
+            color: var(--flash-error-text);
+        }
+        
+        .flash-message i {
+            font-size: 1.1rem;
+            margin-right: 0.5rem;
+        }
+        
+        .flash-success i {
+            color: var(--flash-success-icon);
+        }
+        
+        .flash-error i {
+            color: var(--flash-error-icon);
+        }
+        
+        .flash-message span {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+        
+        .flash-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            color: currentColor;
+            opacity: 0.5;
+            padding: 0 0.2rem;
+            transition: opacity var(--transition-smooth);
+            font-family: var(--font-sans);
+        }
+        
+        .flash-close:hover {
+            opacity: 1;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        /* ==========================================================================
            RESPONSIVE BREAKPOINTS - PROPERLY ADJUSTED
            ========================================================================== */
         
@@ -835,6 +964,14 @@ if (class_exists('Session')) {
             
             .mobile-nav-overlay {
                 top: 90px;
+            }
+            
+            .flash-messages {
+                top: calc(var(--header-height-desktop) + 0.5rem);
+            }
+            
+            .site-header.scrolled ~ .flash-messages {
+                top: calc(90px + 0.5rem);
             }
         }
         
@@ -907,6 +1044,16 @@ if (class_exists('Session')) {
             .mobile-nav-overlay {
                 top: 85px;
                 padding: 1.5rem;
+            }
+            
+            .flash-messages {
+                padding: 0 1rem;
+                max-width: 100%;
+            }
+            
+            .flash-message {
+                padding: 0.8rem 1rem;
+                font-size: 0.9rem;
             }
         }
         
@@ -1025,63 +1172,6 @@ if (class_exists('Session')) {
             max-width: 100%;
             height: auto;
         }
-        
-        /* ==========================================================================
-           FLASH MESSAGES - CLEAN NOTIFICATIONS
-           ========================================================================== */
-        .flash-messages {
-            position: fixed;
-            top: calc(var(--header-height-desktop) + 0.5rem);
-            left: 0;
-            right: 0;
-            z-index: 1001;
-            padding: 0 2rem;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .flash-message {
-            background: white;
-            border-left: 4px solid var(--prestige-navy);
-            border-radius: 4px;
-            padding: 0.8rem 1.5rem;
-            margin-bottom: 0.5rem;
-            box-shadow: var(--shadow-medium);
-            animation: slideDown 0.25s ease;
-            pointer-events: auto;
-            max-width: 600px;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-weight: 500;
-            border: 1px solid var(--prestige-stone);
-            border-left-width: 4px;
-            font-size: 0.9rem;
-        }
-        
-        .flash-close {
-            background: none;
-            border: none;
-            font-size: 1.4rem;
-            line-height: 1;
-            cursor: pointer;
-            color: var(--prestige-slate);
-            padding: 0 0.4rem;
-        }
-        
-        @keyframes slideDown {
-            from {
-                transform: translateY(-100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
     </style>
 </head>
 <body>
@@ -1089,20 +1179,30 @@ if (class_exists('Session')) {
 <!-- Flash Messages -->
 <div class="flash-messages">
     <?php
-    if (class_exists('Session')) {
+    if (class_exists('Session') && method_exists('Session', 'getAllFlash')) {
         $flashMessages = Session::getAllFlash();
         foreach ($flashMessages as $type => $message) {
-            echo '<div class="flash-message flash-' . htmlspecialchars($type) . '">';
-            echo '<span>' . htmlspecialchars($message) . '</span>';
-            echo '<button class="flash-close" aria-label="Close">&times;</button>';
-            echo '</div>';
+            if (!empty($message)) {
+                $icon = ($type === 'success') ? 'fa-check-circle' : 'fa-exclamation-circle';
+                echo '<div class="flash-message flash-' . htmlspecialchars($type) . '">';
+                echo '<span><i class="fas ' . $icon . '"></i> ' . htmlspecialchars($message) . '</span>';
+                echo '<button class="flash-close" aria-label="Close">&times;</button>';
+                echo '</div>';
+            }
+        }
+        // Clear flash messages after displaying
+        if (method_exists('Session', 'clearFlash')) {
+            Session::clearFlash();
         }
     } elseif (isset($_SESSION['flash']) && is_array($_SESSION['flash'])) {
         foreach ($_SESSION['flash'] as $type => $message) {
-            echo '<div class="flash-message flash-' . htmlspecialchars($type) . '">';
-            echo '<span>' . htmlspecialchars($message) . '</span>';
-            echo '<button class="flash-close" aria-label="Close">&times;</button>';
-            echo '</div>';
+            if (!empty($message)) {
+                $icon = ($type === 'success') ? 'fa-check-circle' : 'fa-exclamation-circle';
+                echo '<div class="flash-message flash-' . htmlspecialchars($type) . '">';
+                echo '<span><i class="fas ' . $icon . '"></i> ' . htmlspecialchars($message) . '</span>';
+                echo '<button class="flash-close" aria-label="Close">&times;</button>';
+                echo '</div>';
+            }
         }
         unset($_SESSION['flash']);
     }
@@ -1134,15 +1234,15 @@ if (class_exists('Session')) {
             </div>
         </a>
         
-        <!-- HEADER ACTIONS -->
+        <!-- HEADER ACTIONS - Updated to point to /apply -->
         <div class="header-actions">
-            <a href="<?php echo $baseUrl; ?>/admissions" class="apply-btn">
+            <a href="<?php echo $baseUrl; ?>/apply" class="apply-btn">
                 <i class="fas fa-file-alt"></i>
                 <span>Apply Now</span>
             </a>
             
             <?php if ($isLoggedIn): ?>
-            <a href="<?php echo $baseUrl; ?>/student/dashboard" class="user-btn" aria-label="User dashboard">
+            <a href="<?php echo $baseUrl; ?>/admin/dashboard" class="user-btn" aria-label="User dashboard">
                 <?php echo strtoupper(substr($username, 0, 1)); ?>
             </a>
             <?php endif; ?>
@@ -1317,13 +1417,13 @@ if (class_exists('Session')) {
             </li>
             <?php if ($isLoggedIn): ?>
             <li class="mobile-nav-item">
-                <a href="<?php echo $baseUrl; ?>/student/dashboard" class="mobile-nav-link">
+                <a href="<?php echo $baseUrl; ?>/admin/dashboard" class="mobile-nav-link">
                     <span><i class="fas fa-tachometer-alt"></i>Dashboard</span>
                     <i class="fas fa-external-link-alt"></i>
                 </a>
             </li>
             <li class="mobile-nav-item">
-                <a href="<?php echo $baseUrl; ?>/student/logout" class="mobile-nav-link">
+                <a href="<?php echo $baseUrl; ?>/logout" class="mobile-nav-link">
                     <span><i class="fas fa-sign-out-alt"></i>Logout</span>
                     <i class="fas fa-chevron-right"></i>
                 </a>
@@ -1331,8 +1431,9 @@ if (class_exists('Session')) {
             <?php endif; ?>
         </ul>
         
+        <!-- Mobile Quick Actions - Updated to point to /apply -->
         <div class="mobile-quick-actions">
-            <a href="<?php echo $baseUrl; ?>/admissions" class="mobile-action-btn">
+            <a href="<?php echo $baseUrl; ?>/apply" class="mobile-action-btn">
                 <i class="fas fa-file-import"></i>
                 Apply Now
             </a>
@@ -1419,7 +1520,7 @@ if (class_exists('Session')) {
         window.addEventListener('scroll', handleScroll, { passive: true });
         handleScroll();
         
-        // Flash Messages
+        // Flash Messages - Close button functionality
         document.querySelectorAll('.flash-close').forEach(button => {
             button.addEventListener('click', function() {
                 const flashMessage = this.closest('.flash-message');
@@ -1429,7 +1530,7 @@ if (class_exists('Session')) {
             });
         });
         
-        // Auto-hide flash messages
+        // Auto-hide flash messages after 5 seconds
         setTimeout(() => {
             document.querySelectorAll('.flash-message').forEach(message => {
                 message.style.opacity = '0';
