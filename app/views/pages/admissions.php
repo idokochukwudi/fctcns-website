@@ -2,13 +2,14 @@
 /**
  * Admissions Page View Template
  * Redesigned to match research-publications.php design system (v5.5)
+ * Enhanced with clearer step-by-step application process
  *
  * Fonts   : Cormorant Garamond (display) + Outfit (body) + JetBrains Mono (mono)
  * Palette : identical CSS custom-properties as research pages
  * Layout  : fluid --gutter, full-bleed hero, max-width 1400px
  *
  * @package FCTCNS
- * @version 6.0
+ * @version 6.1
  */
 
 extract($data ?? []);
@@ -92,6 +93,10 @@ body {
     --red-pale:     #FDF3F2;
     --green:        #5D9B8C;
     --green-pale:   #EEF7F5;
+
+    --blue:         #2A6F97;
+    --blue-light:   #4A8BB7;
+    --blue-pale:    #E8F0FE;
 
     --font-display: 'Cormorant Garamond', Georgia, serif;
     --font-body:    'Outfit', system-ui, sans-serif;
@@ -387,6 +392,20 @@ body {
     flex-shrink: 0;
 }
 
+.adm-process-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.35rem 1.2rem;
+    background: var(--purple-pale);
+    border: 1px solid var(--purple-light);
+    border-radius: var(--radius-full);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--purple-dark);
+}
+
 /* Centred section header variant */
 .adm-section-header--center {
     flex-direction: column;
@@ -636,169 +655,291 @@ body {
 .adm-req-item strong { color: var(--ink); }
 
 /* ==========================================================================
-   PROCESS FLOW — redesigned to match design system
+   REDESIGNED PROCESS OVERVIEW CARDS
    ========================================================================== */
-
-/* Step timeline */
-.adm-process-timeline {
-    display: flex;
-    align-items: stretch;
-    gap: 0;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    overflow: hidden;
-    margin-top: 2rem;
-    margin-bottom: 2.5rem;
-}
-
-.adm-timeline-step {
-    flex: 1;
-    padding: 1.5rem 1.25rem;
-    text-align: center;
-    position: relative;
-    transition: background 0.22s;
-    border-right: 1px solid var(--border);
-}
-
-.adm-timeline-step:last-child { border-right: none; }
-
-.adm-timeline-step.is-active {
-    background: var(--white);
-    box-shadow: var(--shadow-sm);
-}
-
-.adm-timeline-step-num {
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--mist);
-    margin-bottom: 0.5rem;
-}
-
-.adm-timeline-icon {
-    width: 46px; height: 46px;
-    background: var(--purple-pale);
-    color: var(--purple);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem;
-    margin: 0 auto 0.6rem;
-    transition: all 0.22s;
-}
-
-.adm-timeline-step.is-active .adm-timeline-icon { background: var(--purple); color: white; }
-.adm-timeline-step:hover .adm-timeline-icon     { background: var(--purple); color: white; transform: scale(1.08); }
-
-.adm-timeline-label {
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--ink-soft);
-    line-height: 1.3;
+.adm-process-overview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
 @media (max-width: 640px) {
-    .adm-process-timeline { flex-direction: column; }
-    .adm-timeline-step { border-right: none; border-bottom: 1px solid var(--border); }
-    .adm-timeline-step:last-child { border-bottom: none; }
+    .adm-process-overview {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
 }
 
-/* Step detail cards — 2-col grid */
-.adm-steps-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
-}
-
-@media (min-width: 768px) { .adm-steps-grid { grid-template-columns: repeat(2, 1fr); } }
-
-.adm-step-block {
+.adm-overview-card {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: clamp(1.25rem, 3vw, 1.75rem);
+    padding: 1.25rem 1rem;
     display: flex;
-    gap: 1.1rem;
-    align-items: flex-start;
-    transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
-    position: relative;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s ease;
 }
 
-.adm-step-block::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: linear-gradient(to bottom, var(--purple), var(--purple-light));
-    transform: scaleY(0);
-    transform-origin: center;
-    transition: transform 0.28s ease;
-    border-radius: 3px 0 0 3px;
+.adm-overview-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--purple-light);
 }
 
-.adm-step-block:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-lg);
-    border-color: rgba(139,123,184,0.25);
+.adm-overview-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
 }
 
-.adm-step-block:hover::before { transform: scaleY(1); }
-
-.adm-step-num {
-    font-family: var(--font-display);
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--purple-pale);
-    line-height: 1;
-    min-width: 52px;
-    text-align: center;
-    /* Actual coloured outline number */
-    -webkit-text-stroke: 1.5px var(--purple-light);
-    color: transparent;
+.adm-overview-content {
+    flex: 1;
 }
 
-.adm-step-content {}
+.adm-overview-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--slate);
+    margin-bottom: 0.15rem;
+}
 
-.adm-step-title {
+.adm-overview-value {
+    display: block;
     font-family: var(--font-display);
     font-size: 1.2rem;
     font-weight: 700;
     color: var(--ink);
-    margin-bottom: 0.65rem;
-    letter-spacing: -0.01em;
+    line-height: 1.2;
 }
 
-.adm-step-list { list-style: none; }
+/* ==========================================================================
+   REDESIGNED TIMELINE STEP INDICATOR
+   ========================================================================== */
+.adm-steps-showcase {
+    margin: 2rem 0 2.5rem;
+}
 
-.adm-step-list li {
+.adm-steps-track {
     display: flex;
-    align-items: flex-start;
-    gap: 0.6rem;
-    padding: 0.4rem 0;
-    font-size: 0.88rem;
-    color: var(--slate);
-    line-height: 1.55;
+    align-items: stretch;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 640px) {
+    .adm-steps-track {
+        flex-direction: column;
+        border-radius: var(--radius-lg);
+    }
+}
+
+.adm-track-step {
+    flex: 1;
+    padding: 1.5rem 0.5rem;
+    text-align: center;
+    position: relative;
+    background: var(--white);
+    transition: all 0.2s ease;
+    border-right: 1px solid var(--border);
+}
+
+.adm-track-step:last-child {
+    border-right: none;
+}
+
+@media (max-width: 640px) {
+    .adm-track-step {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 0.5rem;
+    }
+    .adm-track-step:last-child {
+        border-bottom: none;
+    }
+}
+
+.adm-track-step.active {
+    background: var(--purple-pale);
+    position: relative;
+}
+
+.adm-track-step.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--purple);
+}
+
+@media (max-width: 640px) {
+    .adm-track-step.active::after {
+        bottom: auto;
+        top: 0;
+        height: 100%;
+        width: 3px;
+        left: 0;
+        right: auto;
+    }
+}
+
+.adm-step-marker {
+    width: 36px;
+    height: 36px;
+    background: var(--purple-pale);
+    border: 2px solid var(--purple-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.75rem;
+    font-weight: 700;
+    color: var(--purple-dark);
+    transition: all 0.2s ease;
+}
+
+.adm-track-step.active .adm-step-marker {
+    background: var(--purple);
+    border-color: var(--purple);
+    color: white;
+    transform: scale(1.1);
+}
+
+.adm-step-label {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 0.25rem;
+}
+
+.adm-step-desc {
+    font-size: 0.7rem;
+    color: var(--mist);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   REDESIGNED STEP DETAIL CARDS — CLEANER LAYOUT
+   ========================================================================== */
+.adm-steps-detailed {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+    margin: 2rem 0;
+}
+
+@media (max-width: 768px) {
+    .adm-steps-detailed {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+.adm-step-detail-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all 0.25s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.adm-step-detail-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--purple-light);
+}
+
+.adm-detail-header {
+    padding: 1.25rem 1.25rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     border-bottom: 1px solid var(--border);
 }
 
-.adm-step-list li:last-child { border-bottom: none; }
-
-.adm-step-list li::before {
-    content: '';
-    width: 5px; height: 5px;
-    background: var(--gold);
-    border-radius: 50%;
+.adm-detail-num {
+    width: 42px;
+    height: 42px;
+    background: var(--purple-pale);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--purple-dark);
     flex-shrink: 0;
-    margin-top: 7px;
 }
 
-.adm-step-list strong { color: var(--ink-soft); font-weight: 600; }
+.adm-detail-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.2;
+}
 
-/* Portal link pill */
-.adm-portal-pill {
+.adm-detail-content {
+    padding: 1.25rem;
+    flex: 1;
+}
+
+.adm-detail-list {
+    list-style: none;
+}
+
+.adm-detail-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    border-bottom: 1px dashed var(--border);
+}
+
+.adm-detail-list li:last-child {
+    border-bottom: none;
+}
+
+.adm-detail-list li i {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--purple);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.adm-detail-list strong {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.adm-portal-badge {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -807,70 +948,51 @@ body {
     border: 1px solid var(--purple-light);
     border-radius: var(--radius-full);
     font-family: var(--font-mono);
-    font-size: 0.68rem;
-    font-weight: 500;
-    padding: 3px 10px;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.8rem;
+    margin-left: 0.5rem;
     text-decoration: none;
     transition: all 0.2s;
-    margin-left: 4px;
+    white-space: nowrap;
 }
 
-.adm-portal-pill:hover { background: var(--purple); color: white; border-color: var(--purple); }
-
-/* Stats bar inside process section */
-.adm-process-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.1rem;
-    margin-bottom: 2.5rem;
+.adm-portal-badge:hover {
+    background: var(--purple);
+    color: white;
+    border-color: var(--purple);
 }
 
-@media (max-width: 768px)  { .adm-process-stats { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 420px)  { .adm-process-stats { grid-template-columns: 1fr; } }
-
-.adm-ps-tile {
-    background: var(--white);
+/* ==========================================================================
+   QUICK ACTIONS BAR
+   ========================================================================== */
+.adm-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 1.25rem 1rem;
-    text-align: center;
-    transition: transform 0.28s ease, box-shadow 0.28s ease;
+    padding: 1rem 1.5rem;
+    margin: 2rem 0;
 }
 
-.adm-ps-tile:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--purple-light); }
-
-.adm-ps-value {
-    font-family: var(--font-display);
-    font-size: clamp(1.6rem, 2.5vw, 2.2rem);
-    font-weight: 700;
-    color: var(--purple);
-    line-height: 1.1;
-    margin-bottom: 0.2rem;
+@media (max-width: 640px) {
+    .adm-quick-actions {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
 }
 
-.adm-ps-label {
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--slate);
+.adm-quick-actions span {
+    font-size: 0.9rem;
+    color: var(--ink-soft);
 }
 
-.adm-ps-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 0.5rem;
-    padding: 2px 9px;
-    background: var(--purple-pale);
-    color: var(--purple-dark);
-    border: 1px solid var(--purple-light);
-    border-radius: var(--radius-full);
-    font-family: var(--font-mono);
-    font-size: 0.6rem;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+.adm-quick-actions .adm-btn {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.85rem;
 }
 
 /* ==========================================================================
@@ -1014,22 +1136,22 @@ body {
 }
 
 .adm-card,
-.adm-step-block,
-.adm-ps-tile {
+.adm-step-detail-card,
+.adm-overview-card {
     animation: adm-fadeIn 0.4s ease both;
 }
 
 .adm-card:nth-child(1),
-.adm-step-block:nth-child(1) { animation-delay: 0.05s; }
+.adm-step-detail-card:nth-child(1) { animation-delay: 0.05s; }
 .adm-card:nth-child(2),
-.adm-step-block:nth-child(2) { animation-delay: 0.10s; }
+.adm-step-detail-card:nth-child(2) { animation-delay: 0.10s; }
 .adm-card:nth-child(3),
-.adm-step-block:nth-child(3) { animation-delay: 0.15s; }
+.adm-step-detail-card:nth-child(3) { animation-delay: 0.15s; }
 .adm-card:nth-child(4),
-.adm-step-block:nth-child(4) { animation-delay: 0.20s; }
+.adm-step-detail-card:nth-child(4) { animation-delay: 0.20s; }
 
 @media (prefers-reduced-motion: reduce) {
-    .adm-card, .adm-step-block, .adm-ps-tile { animation: none !important; transition: none !important; }
+    .adm-card, .adm-step-detail-card, .adm-overview-card { animation: none !important; transition: none !important; }
 }
 
 /* ==========================================================================
@@ -1045,7 +1167,7 @@ body {
 /* Print */
 @media print {
     .adm-hero, .adm-btn, .adm-portal-card { display: none !important; }
-    .adm-card, .adm-step-block { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    .adm-card, .adm-step-detail-card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
 }
 
 /* Focus */
@@ -1092,7 +1214,7 @@ body {
                         <span class="adm-stat-label">Simple Steps</span>
                     </div>
                     <div class="adm-stat">
-                        <span class="adm-stat-value">₦2.2K</span>
+                        <span class="adm-stat-value">₦2,200</span>
                         <span class="adm-stat-label">Application Fee</span>
                     </div>
                     <div class="adm-stat">
@@ -1234,126 +1356,224 @@ body {
         </div>
     </div>
 
-    <!-- ── APPLICATION PROCESS ──────────────────────────────────────────── -->
+    <!-- ── REDESIGNED APPLICATION PROCESS ─────────────────────────────────── -->
     <div class="adm-section">
         <div class="adm-container">
+            <!-- Section Header -->
             <div class="adm-section-header">
                 <h2 class="adm-section-title">
                     <span class="adm-section-pip"></span>
                     Application Process
                 </h2>
-                <span style="font-family:var(--font-mono); font-size:.75rem; color:var(--slate);">
-                    4-step process
+                <span class="adm-process-badge">
+                    <i class="fas fa-arrow-right"></i> 4 Simple Steps
                 </span>
             </div>
 
-            <!-- Stats bar -->
-            <div class="adm-process-stats">
-                <div class="adm-ps-tile">
-                    <div class="adm-ps-value">4</div>
-                    <div class="adm-ps-label">Steps</div>
+            <!-- Process Overview Cards (Clear at a glance) -->
+            <div class="adm-process-overview">
+                <div class="adm-overview-card">
+                    <div class="adm-overview-icon" style="background: #e8f0fe; color: var(--blue);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="adm-overview-content">
+                        <span class="adm-overview-label">Application Period</span>
+                        <span class="adm-overview-value">Sept 15 – 28, 2025</span>
+                    </div>
                 </div>
-                <div class="adm-ps-tile">
-                    <div class="adm-ps-value">₦2,200</div>
-                    <div class="adm-ps-label">Application Fee</div>
+                <div class="adm-overview-card">
+                    <div class="adm-overview-icon" style="background: #e6f7ee; color: var(--green);">
+                        <i class="fas fa-naira-sign"></i>
+                    </div>
+                    <div class="adm-overview-content">
+                        <span class="adm-overview-label">Application Fee</span>
+                        <span class="adm-overview-value">₦2,200</span>
+                    </div>
                 </div>
-                <div class="adm-ps-tile">
-                    <div class="adm-ps-value">15–28</div>
-                    <div class="adm-ps-label">Sept 2025</div>
-                    <span class="adm-ps-tag"><i class="fas fa-file-invoice"></i> Sales of Forms</span>
-                </div>
-                <div class="adm-ps-tile">
-                    <div class="adm-ps-value">6–8</div>
-                    <div class="adm-ps-label">Oct 2025</div>
-                    <span class="adm-ps-tag"><i class="fas fa-laptop"></i> CBT Screening</span>
-                </div>
-            </div>
-
-            <!-- Step flow bar -->
-            <div class="adm-process-timeline" role="list" aria-label="Application steps">
-                <div class="adm-timeline-step is-active" role="listitem">
-                    <div class="adm-timeline-step-num">Step 01</div>
-                    <div class="adm-timeline-icon"><i class="fas fa-user-plus"></i></div>
-                    <div class="adm-timeline-label">Account Creation</div>
-                </div>
-                <div class="adm-timeline-step" role="listitem">
-                    <div class="adm-timeline-step-num">Step 02</div>
-                    <div class="adm-timeline-icon"><i class="fas fa-file-alt"></i></div>
-                    <div class="adm-timeline-label">Application Form</div>
-                </div>
-                <div class="adm-timeline-step" role="listitem">
-                    <div class="adm-timeline-step-num">Step 03</div>
-                    <div class="adm-timeline-icon"><i class="fas fa-credit-card"></i></div>
-                    <div class="adm-timeline-label">Payment</div>
-                </div>
-                <div class="adm-timeline-step" role="listitem">
-                    <div class="adm-timeline-step-num">Step 04</div>
-                    <div class="adm-timeline-icon"><i class="fas fa-print"></i></div>
-                    <div class="adm-timeline-label">Exam Slip</div>
+                <div class="adm-overview-card">
+                    <div class="adm-overview-icon" style="background: #fff0e0; color: #b45f06;">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="adm-overview-content">
+                        <span class="adm-overview-label">CBT Screening</span>
+                        <span class="adm-overview-value">Oct 6 – 8, 2025</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Detailed step blocks -->
-            <div class="adm-steps-grid">
+            <!-- Visual Step Timeline -->
+            <div class="adm-steps-showcase">
+                <div class="adm-steps-track">
+                    <div class="adm-track-step active">
+                        <div class="adm-step-marker">1</div>
+                        <div class="adm-step-label">Create Account</div>
+                        <div class="adm-step-desc">Register on portal</div>
+                    </div>
+                    <div class="adm-track-step">
+                        <div class="adm-step-marker">2</div>
+                        <div class="adm-step-label">Fill Form</div>
+                        <div class="adm-step-desc">Personal & academic info</div>
+                    </div>
+                    <div class="adm-track-step">
+                        <div class="adm-step-marker">3</div>
+                        <div class="adm-step-label">Make Payment</div>
+                        <div class="adm-step-desc">₦2,200 application fee</div>
+                    </div>
+                    <div class="adm-track-step">
+                        <div class="adm-step-marker">4</div>
+                        <div class="adm-step-label">Print Slip</div>
+                        <div class="adm-step-desc">CBT examination slip</div>
+                    </div>
+                </div>
+            </div>
 
-                <div class="adm-step-block">
-                    <div class="adm-step-num">01</div>
-                    <div class="adm-step-content">
-                        <h4 class="adm-step-title">Account Creation &amp; Registration</h4>
-                        <ul class="adm-step-list">
-                            <li><strong>Visit the application portal</strong>
-                                <a href="<?php echo $applicationPortal; ?>" target="_blank" rel="noopener" class="adm-portal-pill">
-                                    <i class="fas fa-external-link-alt"></i> Open Portal
-                                </a>
+            <!-- Detailed Step Cards (Clear instructions) -->
+            <div class="adm-steps-detailed">
+                <!-- Step 1 -->
+                <div class="adm-step-detail-card">
+                    <div class="adm-detail-header">
+                        <div class="adm-detail-num">01</div>
+                        <div class="adm-detail-title">Account Creation</div>
+                    </div>
+                    <div class="adm-detail-content">
+                        <ul class="adm-detail-list">
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Visit:</strong> 
+                                    <a href="<?php echo $applicationPortal; ?>" target="_blank" rel="noopener" class="adm-portal-badge">
+                                        <i class="fas fa-external-link-alt"></i> Application Portal
+                                    </a>
+                                </span>
                             </li>
-                            <li><strong>Read and agree</strong> to the terms and conditions</li>
-                            <li><strong>Enter your 2025 JAMB registration number</strong> for validation</li>
-                            <li><strong>Provide email, phone number</strong> and create a secure password</li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Click</strong> "Create New Account" or "Register"</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Enter</strong> valid email address and phone number</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Create</strong> secure password (min. 8 characters)</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Verify</strong> email via confirmation link sent</span>
+                            </li>
                         </ul>
                     </div>
                 </div>
 
-                <div class="adm-step-block">
-                    <div class="adm-step-num">02</div>
-                    <div class="adm-step-content">
-                        <h4 class="adm-step-title">Complete Application Form</h4>
-                        <ul class="adm-step-list">
-                            <li><strong>Log in</strong> with your registered credentials</li>
-                            <li><strong>Navigate to "Apply Now"</strong> or "My Application" section</li>
-                            <li><strong>Fill all personal and academic information</strong> accurately</li>
-                            <li><strong>Upload required documents:</strong> passport photograph, O'Level results</li>
+                <!-- Step 2 -->
+                <div class="adm-step-detail-card">
+                    <div class="adm-detail-header">
+                        <div class="adm-detail-num">02</div>
+                        <div class="adm-detail-title">Application Form</div>
+                    </div>
+                    <div class="adm-detail-content">
+                        <ul class="adm-detail-list">
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Log in</strong> with your credentials</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Enter JAMB Registration Number</strong> for validation</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Fill personal details:</strong> name, date of birth, address</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Upload:</strong> Passport photograph (max 200KB)</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Upload O'Level results</strong> (WAEC/NECO/NABTEB)</span>
+                            </li>
                         </ul>
                     </div>
                 </div>
 
-                <div class="adm-step-block">
-                    <div class="adm-step-num">03</div>
-                    <div class="adm-step-content">
-                        <h4 class="adm-step-title">Payment &amp; Verification</h4>
-                        <ul class="adm-step-list">
-                            <li><strong>Click "Proceed to Payment"</strong> to generate RRR code</li>
-                            <li><strong>Pay ₦2,200</strong> online or at any commercial bank</li>
-                            <li><strong>Return and click "Verify Payment"</strong> to confirm</li>
-                            <li><strong>Wait for payment confirmation</strong> before proceeding</li>
+                <!-- Step 3 -->
+                <div class="adm-step-detail-card">
+                    <div class="adm-detail-header">
+                        <div class="adm-detail-num">03</div>
+                        <div class="adm-detail-title">Payment Processing</div>
+                    </div>
+                    <div class="adm-detail-content">
+                        <ul class="adm-detail-list">
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Review</strong> all entered information</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Click</strong> "Proceed to Payment"</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Generate RRR code</strong> for payment reference</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Pay ₦2,200</strong> via online banking or at any bank</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Return to portal</strong> and click "Verify Payment"</span>
+                            </li>
                         </ul>
                     </div>
                 </div>
 
-                <div class="adm-step-block">
-                    <div class="adm-step-num">04</div>
-                    <div class="adm-step-content">
-                        <h4 class="adm-step-title">Examination Slip &amp; Preparation</h4>
-                        <ul class="adm-step-list">
-                            <li><strong>Download and print your examination slip</strong> from the portal</li>
-                            <li><strong>Bring slip, writing materials and valid ID</strong> to exam venue</li>
-                            <li><strong>Arrive at least 30 minutes before</strong> scheduled time</li>
+                <!-- Step 4 -->
+                <div class="adm-step-detail-card">
+                    <div class="adm-detail-header">
+                        <div class="adm-detail-num">04</div>
+                        <div class="adm-detail-title">Examination Slip</div>
+                    </div>
+                    <div class="adm-detail-content">
+                        <ul class="adm-detail-list">
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Wait for payment confirmation</strong> (instant or within 24hrs)</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Navigate to</strong> "Print Examination Slip"</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Download and print</strong> your CBT slip</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Check:</strong> Date, time, and venue</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-chevron-right"></i>
+                                <span><strong>Bring slip + valid ID</strong> to exam centre</span>
+                            </li>
                         </ul>
                     </div>
                 </div>
+            </div>
 
-            </div><!-- /.adm-steps-grid -->
+            <!-- Quick Actions Bar -->
+            <div class="adm-quick-actions">
+                <span><i class="fas fa-info-circle" style="color: var(--purple);"></i> <strong>Portal Status:</strong> Currently closed for 2025/2026</span>
+                <a href="<?php echo $applicationPortal; ?>" target="_blank" rel="noopener" class="adm-btn adm-btn--outline">
+                    <i class="fas fa-external-link-alt"></i> Visit Portal
+                </a>
+                <a href="<?php echo $baseUrl; ?>/faq" class="adm-btn adm-btn--surface">
+                    <i class="fas fa-question-circle"></i> Application FAQs
+                </a>
+            </div>
 
-            <!-- Portal CTA dark card - Help Guide now links to contact page -->
+            <!-- Portal CTA Card -->
             <div class="adm-portal-card">
                 <div class="adm-portal-card-content">
                     <span class="adm-portal-card-tag"><i class="fas fa-globe"></i> Official Portal</span>
@@ -1485,7 +1705,7 @@ body {
     }
 
     /* Scroll-triggered fade-in for cards */
-    var animated = document.querySelectorAll('.adm-card, .adm-step-block, .adm-ps-tile');
+    var animated = document.querySelectorAll('.adm-card, .adm-step-detail-card, .adm-overview-card');
     if ('IntersectionObserver' in window) {
         var io = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
@@ -1515,6 +1735,14 @@ body {
                 e.preventDefault();
                 window.scrollTo({ top: target.offsetTop - 90, behavior: 'smooth' });
             }
+        });
+    });
+
+    /* Step tracker hover effect (optional) */
+    var steps = document.querySelectorAll('.adm-track-step');
+    steps.forEach(function(step, index) {
+        step.addEventListener('mouseenter', function() {
+            // Optional: preview step details
         });
     });
 })();
