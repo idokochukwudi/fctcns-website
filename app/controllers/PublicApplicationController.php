@@ -77,7 +77,7 @@ class PublicApplicationController extends ApplicationBaseController {
             if ($application) {
                 $this->redirect('/apply/step/' . $application['application_step']);
             } else {
-                $this->redirect('/apply/form');
+                $this->redirect('/apply/step/1');
             }
             return;
         }
@@ -236,6 +236,16 @@ class PublicApplicationController extends ApplicationBaseController {
                 
                 $this->data['verified'] = true;
                 unset($_SESSION['registration_email']);
+                
+                // Auto login after verification
+                $_SESSION['applicant_id'] = $applicant['id'];
+                $_SESSION['applicant_email'] = $applicant['email'];
+                $_SESSION['applicant_name'] = ($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? '');
+                $_SESSION['applicant_login_time'] = time();
+                
+                // Redirect to JAMB verification
+                $this->redirect('/apply/step/1');
+                return;
             } else {
                 $this->data['error'] = 'Invalid or expired verification link';
             }
@@ -376,14 +386,30 @@ class PublicApplicationController extends ApplicationBaseController {
             exit;
         }
         
+        // Check if JAMB has been verified
+        if (!isset($_SESSION['jamb_verification']) || !$_SESSION['jamb_verification']) {
+            $_SESSION['flash_error'] = 'Please verify your JAMB number first';
+            header('Location: /apply/step/1');
+            exit;
+        }
+        
         // Check if application exists
         $application = $this->applicationModel->getByApplicantId($applicant['id']);
         
         if (!$application) {
-            // Create new application
+            // Create new application with JAMB data
+            $jambData = $_SESSION['jamb_verification'];
             $applicationId = $this->applicationModel->insert([
                 'applicant_id' => $applicant['id'],
                 'application_number' => $this->applicationModel->generateApplicationNumber(),
+                'jamb_number' => $jambData['jamb_number'],
+                'first_name' => $jambData['first_name'],
+                'last_name' => $jambData['last_name'],
+                'other_names' => $jambData['other_names'],
+                'gender' => $jambData['gender'],
+                'state_of_origin' => $jambData['state_of_origin'],
+                'lga' => $jambData['lga'],
+                'utme_score' => $jambData['score'],
                 'application_step' => 2,
                 'status' => 'pending',
                 'created_at' => date('Y-m-d H:i:s'),
@@ -397,7 +423,7 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!$application) {
             $_SESSION['flash_error'] = 'Failed to create application';
-            header('Location: /apply/register');
+            header('Location: /apply/step/1');
             exit;
         }
         
@@ -405,6 +431,7 @@ class PublicApplicationController extends ApplicationBaseController {
             'pageTitle' => 'Application Form - Step 2',
             'application' => $application,
             'applicant' => $applicant,
+            'jamb_data' => $_SESSION['jamb_verification'],
             'states' => $this->getStates(),
             'programs' => $this->getPrograms(),
             'csrf_token' => $this->csrfToken()
@@ -465,6 +492,7 @@ class PublicApplicationController extends ApplicationBaseController {
             'city' => trim($_POST['city'] ?? ''),
             'program_choice_1' => $_POST['program_choice_1'] ?? '',
             'program_choice_2' => $_POST['program_choice_2'] ?? '',
+            'program_choice_3' => $_POST['program_choice_3'] ?? '',
             'updated_at' => date('Y-m-d H:i:s')
         ];
         
@@ -554,12 +582,74 @@ class PublicApplicationController extends ApplicationBaseController {
             }
         }
         
+        // Handle JAMB result slip upload
+        if (isset($_FILES['jamb_result']) && $_FILES['jamb_result']['error'] === UPLOAD_ERR_OK) {
+            $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+            $maxSize = 2 * 1024 * 1024; // 2MB
+            
+            if (in_array($_FILES['jamb_result']['type'], $allowedTypes) && $_FILES['jamb_result']['size'] <= $maxSize) {
+                require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
+                $docModel = new ApplicationDocumentModel();
+                
+                $uploadPath = UPLOADS_PATH . '/jamb_results/' . $application['id'] . '/';
+                if (!is_dir($uploadPath)) {
+                    mkdir($uploadPath, 0777, true);
+                }
+                
+                $filename = 'jamb_result_' . time() . '_' . $_FILES['jamb_result']['name'];
+                $filepath = $uploadPath . $filename;
+                
+                if (move_uploaded_file($_FILES['jamb_result']['tmp_name'], $filepath)) {
+                    $docModel->insert([
+                        'application_id' => $application['id'],
+                        'document_type' => 'jamb_result',
+                        'file_name' => $filename,
+                        'file_path' => 'jamb_results/' . $application['id'] . '/' . $filename,
+                        'file_size' => $_FILES['jamb_result']['size'],
+                        'mime_type' => $_FILES['jamb_result']['type'],
+                        'uploaded_at' => date('Y-m-d H:i:s')
+                    ]);
+                }
+            }
+        }
+        
+        // Handle birth certificate upload
+        if (isset($_FILES['birth_certificate']) && $_FILES['birth_certificate']['error'] === UPLOAD_ERR_OK) {
+            $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+            $maxSize = 2 * 1024 * 1024; // 2MB
+            
+            if (in_array($_FILES['birth_certificate']['type'], $allowedTypes) && $_FILES['birth_certificate']['size'] <= $maxSize) {
+                require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
+                $docModel = new ApplicationDocumentModel();
+                
+                $uploadPath = UPLOADS_PATH . '/birth_certificates/' . $application['id'] . '/';
+                if (!is_dir($uploadPath)) {
+                    mkdir($uploadPath, 0777, true);
+                }
+                
+                $filename = 'birth_certificate_' . time() . '_' . $_FILES['birth_certificate']['name'];
+                $filepath = $uploadPath . $filename;
+                
+                if (move_uploaded_file($_FILES['birth_certificate']['tmp_name'], $filepath)) {
+                    $docModel->insert([
+                        'application_id' => $application['id'],
+                        'document_type' => 'birth_certificate',
+                        'file_name' => $filename,
+                        'file_path' => 'birth_certificates/' . $application['id'] . '/' . $filename,
+                        'file_size' => $_FILES['birth_certificate']['size'],
+                        'mime_type' => $_FILES['birth_certificate']['type'],
+                        'uploaded_at' => date('Y-m-d H:i:s')
+                    ]);
+                }
+            }
+        }
+        
         $_SESSION['flash_success'] = 'Application saved successfully';
         
         // Determine redirect based on action
         $action = $_POST['action'] ?? 'save';
         if ($action === 'next') {
-            header('Location: /apply/payment');
+            header('Location: /apply/step/3');
         } else {
             header('Location: /apply/form');
         }
@@ -599,7 +689,7 @@ class PublicApplicationController extends ApplicationBaseController {
         $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
         
         if ($hasPaid) {
-            header('Location: /apply/exam-slip');
+            header('Location: /apply/step/4');
             exit;
         }
         
@@ -648,7 +738,7 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (empty($rrr)) {
             $_SESSION['flash_error'] = 'Invalid payment reference';
-            header('Location: /apply/payment');
+            header('Location: /apply/step/3');
             exit;
         }
         
@@ -683,7 +773,7 @@ class PublicApplicationController extends ApplicationBaseController {
         $this->generateExamSlip($application['id']);
         
         $_SESSION['flash_success'] = 'Payment verified successfully';
-        header('Location: /apply/exam-slip');
+        header('Location: /apply/step/4');
         exit;
     }
 
@@ -720,7 +810,7 @@ class PublicApplicationController extends ApplicationBaseController {
         $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
         
         if (!$hasPaid) {
-            header('Location: /apply/payment');
+            header('Location: /apply/step/3');
             exit;
         }
         
@@ -796,7 +886,7 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!$examSlip) {
             $_SESSION['flash_error'] = 'Exam slip not found';
-            header('Location: /apply/exam-slip');
+            header('Location: /apply/step/4');
             exit;
         }
         
@@ -970,7 +1060,7 @@ class PublicApplicationController extends ApplicationBaseController {
         
         // If already logged in, redirect
         if (isset($_SESSION['applicant_id'])) {
-            header('Location: /apply/form');
+            header('Location: /apply/step/1');
             exit;
         }
         
@@ -983,7 +1073,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
     
     /**
-     * Process applicant login
+     * Process applicant login - FIXED REDIRECT
      */
     public function processLogin() {
         // Start session
@@ -1044,8 +1134,8 @@ class PublicApplicationController extends ApplicationBaseController {
         $_SESSION['applicant_name'] = ($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? '');
         $_SESSION['applicant_login_time'] = time();
         
-        // Redirect to application form
-        header('Location: /apply/form');
+        // FIX: Redirect to STEP 1 for JAMB verification, not directly to form
+        header('Location: /apply/step/1');
         exit;
     }
     
@@ -1056,6 +1146,9 @@ class PublicApplicationController extends ApplicationBaseController {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+        
+        // Clear JAMB verification if exists
+        unset($_SESSION['jamb_verification']);
         
         // Clear session
         $_SESSION = array();
@@ -1140,9 +1233,10 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // If already logged in, redirect to application form
-        if ($this->isApplicantLoggedIn()) {
-            header('Location: /apply/form');
+        // If not logged in, redirect to login
+        if (!$this->isApplicantLoggedIn()) {
+            $_SESSION['flash_error'] = 'Please login to continue';
+            $this->redirect('/applicant/login');
             return;
         }
         
@@ -1168,6 +1262,13 @@ class PublicApplicationController extends ApplicationBaseController {
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
             header('Location: /applicant/login');
+            return;
+        }
+        
+        // Check if JAMB has been verified
+        if (!isset($_SESSION['jamb_verification']) || !$_SESSION['jamb_verification']) {
+            $_SESSION['flash_error'] = 'Please verify your JAMB number first';
+            header('Location: /apply/step/1');
             return;
         }
         
@@ -1216,14 +1317,11 @@ class PublicApplicationController extends ApplicationBaseController {
         // Set header for JSON response
         header('Content-Type: application/json');
         
-        // Check if user is logged in (optional - can verify without login first)
-        // Uncomment if you want to require login before JAMB verification
-        /*
+        // Check if user is logged in
         if (!isset($_SESSION['applicant_id'])) {
             echo json_encode(['success' => false, 'message' => 'Please login first']);
             return;
         }
-        */
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             echo json_encode(['success' => false, 'message' => 'Invalid request method']);

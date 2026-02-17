@@ -80,24 +80,74 @@
         <form id="applicationForm" style="display: none;" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
             
+            <!-- Hidden fields for JAMB data -->
+            <input type="hidden" id="jamb_number_display" name="jamb_number">
+            <input type="hidden" id="utme_score" name="utme_score">
+            
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0"><i class="fas fa-user"></i> Personal Information</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="first_name" class="form-label">First Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="first_name" name="first_name" required readonly>
+                            <input type="text" class="form-control" id="first_name" name="first_name" required readonly
+                                   style="background-color: #f8f9fa; cursor: not-allowed;">
+                            <small class="text-muted">From JAMB record</small>
                             <div class="invalid-feedback">First name is required.</div>
                         </div>
                         
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="last_name" class="form-label">Last Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="last_name" name="last_name" required readonly>
+                            <input type="text" class="form-control" id="last_name" name="last_name" required readonly
+                                   style="background-color: #f8f9fa; cursor: not-allowed;">
+                            <small class="text-muted">From JAMB record</small>
                             <div class="invalid-feedback">Last name is required.</div>
                         </div>
                         
+                        <div class="col-md-4 mb-3">
+                            <label for="other_names" class="form-label">Other Names</label>
+                            <input type="text" class="form-control" id="other_names" name="other_names" readonly
+                                   style="background-color: #f8f9fa; cursor: not-allowed;">
+                            <small class="text-muted">From JAMB record</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="gender" class="form-label">Gender <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="gender" name="gender" required readonly
+                                   style="background-color: #f8f9fa; cursor: not-allowed;">
+                            <small class="text-muted">From JAMB record</small>
+                            <div class="invalid-feedback">Gender is required.</div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="state" class="form-label">State of Origin <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="state" name="state" required readonly
+                                   style="background-color: #f8f9fa; cursor: not-allowed;">
+                            <small class="text-muted">From JAMB record</small>
+                            <div class="invalid-feedback">State of origin is required.</div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="lga" class="form-label">LGA <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="lga" name="lga" required readonly
+                                   style="background-color: #f8f9fa; cursor: not-allowed;">
+                            <small class="text-muted">From JAMB record</small>
+                            <div class="invalid-feedback">LGA is required.</div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="utme_score_display" class="form-label">UTME Score</label>
+                            <input type="text" class="form-control" id="utme_score_display" readonly
+                                   style="background-color: #f8f9fa; cursor: not-allowed;">
+                            <small class="text-muted">From JAMB record</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="date_of_birth" class="form-label">Date of Birth <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" required>
@@ -105,71 +155,17 @@
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label for="gender" class="form-label">Gender <span class="text-danger">*</span></label>
-                            <select class="form-control" id="gender" name="gender" required>
-                                <option value="">Select Gender</option>
-                                <option value="M">Male</option>
-                                <option value="F">Female</option>
-                            </select>
-                            <div class="invalid-feedback">Please select your gender.</div>
+                            <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                   placeholder="08012345678" pattern="[0-9]{11}" required>
+                            <div class="invalid-feedback">Phone number must be 11 digits.</div>
                         </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="state" class="form-label">State of Origin <span class="text-danger">*</span></label>
-                            <select class="form-control" id="state" name="state" required>
-                                <option value="">Select State</option>
-                                <option value="Abia">Abia</option>
-                                <option value="Adamawa">Adamawa</option>
-                                <option value="Akwa Ibom">Akwa Ibom</option>
-                                <option value="Anambra">Anambra</option>
-                                <option value="Bauchi">Bauchi</option>
-                                <option value="Bayelsa">Bayelsa</option>
-                                <option value="Benue">Benue</option>
-                                <option value="Borno">Borno</option>
-                                <option value="Cross River">Cross River</option>
-                                <option value="Delta">Delta</option>
-                                <option value="Ebonyi">Ebonyi</option>
-                                <option value="Edo">Edo</option>
-                                <option value="Ekiti">Ekiti</option>
-                                <option value="Enugu">Enugu</option>
-                                <option value="FCT - Abuja">FCT - Abuja</option>
-                                <option value="Gombe">Gombe</option>
-                                <option value="Imo">Imo</option>
-                                <option value="Jigawa">Jigawa</option>
-                                <option value="Kaduna">Kaduna</option>
-                                <option value="Kano">Kano</option>
-                                <option value="Katsina">Katsina</option>
-                                <option value="Kebbi">Kebbi</option>
-                                <option value="Kogi">Kogi</option>
-                                <option value="Kwara">Kwara</option>
-                                <option value="Lagos">Lagos</option>
-                                <option value="Nasarawa">Nasarawa</option>
-                                <option value="Niger">Niger</option>
-                                <option value="Ogun">Ogun</option>
-                                <option value="Ondo">Ondo</option>
-                                <option value="Osun">Osun</option>
-                                <option value="Oyo">Oyo</option>
-                                <option value="Plateau">Plateau</option>
-                                <option value="Rivers">Rivers</option>
-                                <option value="Sokoto">Sokoto</option>
-                                <option value="Taraba">Taraba</option>
-                                <option value="Yobe">Yobe</option>
-                                <option value="Zamfara">Zamfara</option>
-                            </select>
-                            <div class="invalid-feedback">Please select your state of origin.</div>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="lga" class="form-label">LGA <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="lga" name="lga" required>
-                            <div class="invalid-feedback">LGA is required.</div>
-                        </div>
-                        
-                        <div class="col-12 mb-3">
-                            <label for="address" class="form-label">Contact Address <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
-                            <div class="invalid-feedback">Address is required.</div>
-                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Contact Address <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
+                        <div class="invalid-feedback">Address is required.</div>
                     </div>
                 </div>
             </div>
@@ -372,33 +368,47 @@ document.getElementById('jambVerificationForm').addEventListener('submit', async
 
 // Function to fill JAMB data in the form
 function fillJAMBData(data) {
-    // Extract name parts
-    const fullName = data.name || '';
-    const nameParts = fullName.split(' ');
+    console.log('Filling JAMB data:', data); // Debug log
     
-    // For demo data, we have name and score
-    // You'll need to adjust based on what your API returns
+    // Fill all the JAMB data into the form fields
+    document.getElementById('first_name').value = data.first_name || '';
+    document.getElementById('last_name').value = data.last_name || '';
+    document.getElementById('other_names').value = data.other_names || '';
     
-    document.getElementById('first_name').value = nameParts[0] || '';
-    document.getElementById('last_name').value = nameParts.slice(1).join(' ') || '';
+    // Convert gender code to full text
+    let genderText = '';
+    if (data.gender === 'M') genderText = 'Male';
+    else if (data.gender === 'F') genderText = 'Female';
+    document.getElementById('gender').value = genderText;
     
-    // If your API returns more data, add them here
-    if (data.gender) {
-        document.getElementById('gender').value = data.gender;
-    }
-    if (data.state_of_origin) {
-        document.getElementById('state').value = data.state_of_origin;
-    }
-    if (data.lga) {
-        document.getElementById('lga').value = data.lga;
-    }
+    document.getElementById('state').value = data.state_of_origin || '';
+    document.getElementById('lga').value = data.lga || '';
     
-    // Show a message that JAMB data is loaded
+    // Display UTME score
+    document.getElementById('utme_score_display').value = data.score || '';
+    
+    // Store in hidden fields for submission
+    document.getElementById('jamb_number_display').value = data.jamb_number || '';
+    document.getElementById('utme_score').value = data.score || '';
+    
+    // Make sure these fields are read-only
+    document.getElementById('first_name').readOnly = true;
+    document.getElementById('last_name').readOnly = true;
+    document.getElementById('other_names').readOnly = true;
+    document.getElementById('gender').readOnly = true;
+    document.getElementById('state').readOnly = true;
+    document.getElementById('lga').readOnly = true;
+    document.getElementById('utme_score_display').readOnly = true;
+    
+    // Show a success message with JAMB info
     const infoDiv = document.createElement('div');
-    infoDiv.className = 'alert alert-info mt-3';
+    infoDiv.className = 'alert alert-success mt-3';
     infoDiv.innerHTML = `
-        <i class="fas fa-info-circle me-2"></i>
-        JAMB data loaded for <strong>${data.name}</strong> (UTME Score: ${data.score})
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>JAMB Verified!</strong><br>
+        Name: ${data.first_name} ${data.last_name}<br>
+        JAMB Number: ${data.jamb_number}<br>
+        UTME Score: ${data.score}
     `;
     document.getElementById('applicationForm').insertBefore(infoDiv, document.getElementById('applicationForm').firstChild);
 }
@@ -461,9 +471,7 @@ document.getElementById('submitApplication').addEventListener('click', async fun
     // Validate required fields
     const dob = document.getElementById('date_of_birth').value;
     const address = document.getElementById('address').value;
-    const gender = document.getElementById('gender').value;
-    const state = document.getElementById('state').value;
-    const lga = document.getElementById('lga').value;
+    const phone = document.getElementById('phone').value;
     const program1 = document.getElementById('program_choice_1').value;
     const passport = document.getElementById('passport').files[0];
     const olevel = document.getElementById('olevel').files;
@@ -473,18 +481,8 @@ document.getElementById('submitApplication').addEventListener('click', async fun
         return;
     }
     
-    if (!gender) {
-        showAlert('Please select your gender', 'danger');
-        return;
-    }
-    
-    if (!state) {
-        showAlert('Please select your state of origin', 'danger');
-        return;
-    }
-    
-    if (!lga) {
-        showAlert('Please enter your LGA', 'danger');
+    if (!phone || !/^[0-9]{11}$/.test(phone)) {
+        showAlert('Please enter a valid 11-digit phone number', 'danger');
         return;
     }
     
@@ -528,10 +526,17 @@ document.getElementById('submitApplication').addEventListener('click', async fun
         formData.append('jamb_number', jambData.jamb_number);
         formData.append('first_name', document.getElementById('first_name').value);
         formData.append('last_name', document.getElementById('last_name').value);
+        formData.append('other_names', document.getElementById('other_names').value);
+        
+        // Convert gender text back to code
+        const genderField = document.getElementById('gender').value;
+        const genderCode = genderField === 'Male' ? 'M' : (genderField === 'Female' ? 'F' : '');
+        formData.append('gender', genderCode);
+        
+        formData.append('state_of_origin', document.getElementById('state').value);
+        formData.append('lga', document.getElementById('lga').value);
         formData.append('date_of_birth', dob);
-        formData.append('gender', gender);
-        formData.append('state', state);
-        formData.append('lga', lga);
+        formData.append('phone', phone);
         formData.append('address', address);
         formData.append('program_choice_1', program1);
         formData.append('program_choice_2', document.getElementById('program_choice_2').value);
