@@ -1,20 +1,20 @@
 /**
  * Payment handling JavaScript
  * Handles RRR generation and payment verification
- * FIXED: Enhanced CSRF token detection and error handling
+ * FIXED: Proper CSRF token handling for parent Controller
  */
 
 $(document).ready(function() {
     console.log('Payment.js loaded - Document ready');
     
-    // Handle Pay Now button click (supports both ID variations)
+    // Handle Pay Now button click
     $('#payNowBtn, #pay-now-btn').on('click', function(e) {
         e.preventDefault();
         console.log('Pay Now button clicked');
         initiatePayment();
     });
     
-    // Handle Verify Payment button click (supports both ID variations)
+    // Handle Verify Payment button click
     $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').on('click', function(e) {
         e.preventDefault();
         console.log('Verify button clicked');
@@ -58,20 +58,21 @@ $(document).ready(function() {
 function getCsrfToken() {
     var token = '';
     
-    // Try meta tag (most common)
+    // Try meta tag (most common - set by Controller)
     token = $('meta[name="csrf-token"]').attr('content');
     if (token) {
         console.log('CSRF token found in meta tag');
         return token;
     }
     
-    // Try hidden input fields
+    // Try hidden input fields (standard field name)
     token = $('input[name="csrf_token"]').val();
     if (token) {
         console.log('CSRF token found in input[name="csrf_token"]');
         return token;
     }
     
+    // Try alternative field name
     token = $('input[name="_token"]').val();
     if (token) {
         console.log('CSRF token found in input[name="_token"]');
@@ -108,12 +109,12 @@ function getCookie(name) {
 
 /**
  * Initiate payment - generate RRR
- * FIXED: Enhanced CSRF token detection
+ * FIXED: Simplified to work with parent Controller's CSRF validation
  */
 function initiatePayment() {
     console.log('initiatePayment() called');
     
-    // Get button (supports both ID variations)
+    // Get button
     var btn = $('#payNowBtn, #pay-now-btn').first();
     if (!btn.length) {
         console.error('Pay button not found');
@@ -132,7 +133,7 @@ function initiatePayment() {
         $('#paymentMessage').text('Generating RRR...');
     }
     
-    // Get CSRF token using our enhanced function
+    // Get CSRF token
     var csrfToken = getCsrfToken();
     
     console.log('CSRF token status:', csrfToken ? 'Found ✓' : 'Missing ✗');
@@ -143,7 +144,7 @@ function initiatePayment() {
         return;
     }
     
-    // Prepare request data
+    // Prepare request data - parent Controller reads from POST
     var requestData = {
         csrf_token: csrfToken
     };
@@ -156,12 +157,12 @@ function initiatePayment() {
         contentType: 'application/json',
         data: JSON.stringify(requestData),
         dataType: 'json',
-        timeout: 30000, // 30 second timeout
+        timeout: 30000,
         success: function(response) {
             console.log('Payment initiation response:', response);
             
-            if (response.success || response.status === 'success') {
-                var rrr = response.rrr || (response.data ? response.data.rrr : null);
+            if (response.success) {
+                var rrr = response.rrr;
                 
                 if (rrr) {
                     // Store RRR in session storage for later use
@@ -169,7 +170,7 @@ function initiatePayment() {
                     sessionStorage.setItem('payment_id', response.payment_id || '');
                     
                     // Show success message
-                    showAlert('success', 'RRR generated successfully: ' + rrr);
+                    showAlert('RRR generated successfully: ' + rrr, 'success');
                     
                     // Update UI with RRR
                     showRRR(rrr);
@@ -179,19 +180,16 @@ function initiatePayment() {
                     
                     // Show verify button
                     $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').show();
-                    
-                    // Reset button (success case - button should stay "Pay Now" for next time)
-                    btn.html(originalText);
-                    btn.prop('disabled', false);
                 } else {
                     console.error('RRR not found in response:', response);
                     showAlert('RRR not found in server response', 'danger');
-                    resetButton(btn, originalText);
                 }
             } else {
                 showAlert(response.message || 'Failed to generate RRR', 'danger');
-                resetButton(btn, originalText);
             }
+            
+            // Reset button
+            resetButton(btn, originalText);
         },
         error: function(xhr, status, error) {
             console.error('=== PAYMENT INITIATION ERROR ===');
@@ -211,13 +209,13 @@ function initiatePayment() {
             } catch(e) {
                 // If response is not JSON, use status-based message
                 if (xhr.status === 500) {
-                    errorMessage = 'Server error (500). Please check the error logs.';
+                    errorMessage = 'Server error (500). Please try again later.';
                 } else if (xhr.status === 404) {
-                    errorMessage = 'Payment endpoint not found. Please check your routes.';
+                    errorMessage = 'Payment endpoint not found. Please contact support.';
                 } else if (xhr.status === 403) {
                     errorMessage = 'Access denied. Please login again.';
                 } else if (xhr.status === 419) {
-                    errorMessage = 'CSRF token expired. Please refresh the page.';
+                    errorMessage = 'Session expired. Please refresh the page.';
                 } else if (status === 'timeout') {
                     errorMessage = 'Request timed out. Please try again.';
                 }
@@ -243,7 +241,7 @@ function verifyPayment(rrr) {
         }
     }
     
-    // Get button (supports multiple ID variations)
+    // Get button
     var btn = $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').first();
     var originalText = btn.html();
     
@@ -263,17 +261,18 @@ function verifyPayment(rrr) {
     $.ajax({
         url: '/payment/verify',
         type: 'POST',
-        data: { 
+        contentType: 'application/json',
+        data: JSON.stringify({ 
             rrr: rrr,
             csrf_token: csrfToken
-        },
+        }),
         dataType: 'json',
         timeout: 30000,
         success: function(response) {
             console.log('Payment verification response:', response);
             
-            if (response.success || response.status === 'success') {
-                showAlert('success', 'Payment verified successfully! Redirecting...');
+            if (response.success) {
+                showAlert('Payment verified successfully! Redirecting...', 'success');
                 
                 // Clear stored RRR
                 sessionStorage.removeItem('pending_rrr');
@@ -287,18 +286,8 @@ function verifyPayment(rrr) {
                     window.location.href = response.redirect || '/apply/step/4';
                 }, 2000);
                 
-            } else if (response.status === 'pending') {
-                showAlert('info', response.message || 'Payment is still processing. Please wait...');
-                
-                // Auto-retry after 10 seconds
-                setTimeout(function() {
-                    verifyPayment(rrr);
-                }, 10000);
-                
-                resetButton(btn, originalText);
-                
             } else {
-                showAlert('error', response.message || 'Payment verification failed');
+                showAlert(response.message || 'Payment verification failed', 'danger');
                 resetButton(btn, originalText);
             }
         },
@@ -308,12 +297,12 @@ function verifyPayment(rrr) {
             
             try {
                 var response = JSON.parse(xhr.responseText);
-                showAlert('error', response.message || 'Verification failed');
+                showAlert(response.message || 'Verification failed', 'danger');
             } catch(e) {
                 if (xhr.status === 419) {
-                    showAlert('error', 'Session expired. Please refresh the page.');
+                    showAlert('Session expired. Please refresh the page.', 'danger');
                 } else {
-                    showAlert('error', 'Verification error: ' + error);
+                    showAlert('Verification error. Please try again.', 'danger');
                 }
             }
             
@@ -323,7 +312,7 @@ function verifyPayment(rrr) {
 }
 
 /**
- * Check payment status without verification (for status page)
+ * Check payment status without verification
  */
 function checkPaymentStatus(rrr) {
     if (!rrr) return;
@@ -331,14 +320,14 @@ function checkPaymentStatus(rrr) {
     console.log('Checking payment status for RRR:', rrr);
     
     $.ajax({
-        url: '/payment/check-status',
+        url: '/payment/status',
         type: 'GET',
         data: { rrr: rrr },
         dataType: 'json',
         success: function(response) {
             console.log('Payment status response:', response);
             
-            if (response.status === 'success' || response.success) {
+            if (response.success && response.status === 'success') {
                 $('#payment-status-badge').removeClass('bg-warning bg-danger')
                     .addClass('bg-success')
                     .text('Completed');
@@ -422,7 +411,7 @@ function showRemitaLink(rrr) {
         $('#payment-instructions, .payment-instructions').after(linkHtml);
     }
     
-    // Optional: Open automatically with confirmation
+    // Open automatically with confirmation
     if (confirm('RRR generated: ' + rrr + '\n\nClick OK to proceed to Remita payment page.')) {
         window.open(remitaUrl, '_blank');
     }
@@ -448,7 +437,7 @@ function resetButton(btn, originalText) {
 /**
  * Show alert message
  */
-function showAlert(type, message) {
+function showAlert(message, type) {
     console.log('Alert - Type:', type, 'Message:', message);
     
     var alertClass = type === 'success' ? 'alert-success' : 
@@ -510,7 +499,7 @@ function copyRRR() {
     // Modern clipboard API
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(rrr).then(function() {
-            showAlert('success', 'RRR copied to clipboard!');
+            showAlert('RRR copied to clipboard!', 'success');
         }).catch(function() {
             // Fallback to older method
             fallbackCopy(rrr);
@@ -530,7 +519,7 @@ function fallbackCopy(text) {
     tempInput.val(text).select();
     document.execCommand('copy');
     tempInput.remove();
-    showAlert('success', 'RRR copied to clipboard!');
+    showAlert('RRR copied to clipboard!', 'success');
 }
 
 /**
