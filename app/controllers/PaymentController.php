@@ -44,6 +44,7 @@ class PaymentController extends Controller {
     /**
      * STEP A: Initialize Payment (Called when user clicks "Pay Now")
      * URL: /payment/initiate
+     * FIXED: Returns proper JSON response with consistent format
      */
     public function initiate() {
         // Set JSON header
@@ -51,11 +52,28 @@ class PaymentController extends Controller {
         
         // Check if user is logged in
         if (!isset($_SESSION['applicant_id'])) {
-            echo json_encode(['error' => 'Not logged in']);
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Please login first',
+                'error' => 'Not logged in'
+            ]);
             return;
         }
         
         $applicantId = $_SESSION['applicant_id'];
+        
+        // Get input data (handle both JSON and form data)
+        $input = json_decode(file_get_contents('php://input'), true);
+        $csrfToken = $input['csrf_token'] ?? $_POST['csrf_token'] ?? '';
+        
+        // Validate CSRF
+        if (!$this->validateCsrfToken($csrfToken)) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Invalid security token'
+            ]);
+            return;
+        }
         
         // Load ApplicantModel
         require_once MODELS_PATH . '/application/ApplicantModel.php';
@@ -65,7 +83,19 @@ class PaymentController extends Controller {
         $application = $this->applicationModel->getByApplicantId($applicantId);
         
         if (!$application) {
-            echo json_encode(['error' => 'Application not found']);
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Application not found'
+            ]);
+            return;
+        }
+        
+        // Check if already paid
+        if ($this->paymentModel->hasSuccessfulPayment($application['id'])) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Payment already completed'
+            ]);
             return;
         }
         
@@ -73,7 +103,10 @@ class PaymentController extends Controller {
         $applicant = $applicantModel->find($applicantId);
         
         if (!$applicant) {
-            echo json_encode(['error' => 'Applicant not found']);
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Applicant not found'
+            ]);
             return;
         }
         
@@ -87,6 +120,14 @@ class PaymentController extends Controller {
             $amount
         );
         
+        if (!$payment) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Failed to create payment record'
+            ]);
+            return;
+        }
+        
         // Generate RRR from Remita
         $payerName = $applicant['first_name'] . ' ' . $applicant['last_name'];
         $result = $this->remitaModel->generateRRRRemita(
@@ -97,7 +138,7 @@ class PaymentController extends Controller {
             $applicant['phone']
         );
         
-        // Handle response
+        // Handle response with consistent JSON format
         if ($result['status'] === 'success') {
             // Update payment with RRR
             $this->paymentModel->updateRRR($payment['id'], $result['rrr']);
@@ -119,6 +160,7 @@ class PaymentController extends Controller {
             ];
             
             echo json_encode([
+                'success' => true,
                 'status' => 'success',
                 'rrr' => $result['rrr'],
                 'message' => 'RRR generated successfully',
@@ -128,8 +170,9 @@ class PaymentController extends Controller {
             error_log("Payment initiation failed: " . json_encode($result));
             
             echo json_encode([
+                'success' => false,
                 'status' => 'error',
-                'message' => 'Failed to generate RRR. Please try again.'
+                'message' => $result['message'] ?? 'Failed to generate RRR. Please try again.'
             ]);
         }
     }
@@ -137,6 +180,7 @@ class PaymentController extends Controller {
     /**
      * STEP B: Verify Payment (Called when user clicks "I've Paid, Verify")
      * URL: /payment/verify
+     * FIXED: Consistent JSON response format
      */
     public function verify() {
         header('Content-Type: application/json');
@@ -144,7 +188,10 @@ class PaymentController extends Controller {
         $rrr = $_POST['rrr'] ?? $_GET['rrr'] ?? '';
         
         if (empty($rrr)) {
-            echo json_encode(['error' => 'RRR is required']);
+            echo json_encode([
+                'success' => false,
+                'error' => 'RRR is required'
+            ]);
             return;
         }
         
@@ -155,7 +202,10 @@ class PaymentController extends Controller {
         $payment = $this->paymentModel->getByRRR($rrr);
         
         if (!$payment) {
-            echo json_encode(['error' => 'Payment record not found']);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Payment record not found'
+            ]);
             return;
         }
         
@@ -200,6 +250,7 @@ class PaymentController extends Controller {
             unset($_SESSION['pending_payment']);
             
             echo json_encode([
+                'success' => true,
                 'status' => 'success',
                 'message' => 'Payment verified successfully',
                 'redirect' => '/apply/step/4'
@@ -207,12 +258,14 @@ class PaymentController extends Controller {
             
         } elseif ($verification['status'] === 'pending') {
             echo json_encode([
+                'success' => false,
                 'status' => 'pending',
                 'message' => $verification['message'] ?? 'Payment is still processing'
             ]);
             
         } else {
             echo json_encode([
+                'success' => false,
                 'status' => 'failed',
                 'message' => $verification['message'] ?? 'Payment verification failed'
             ]);
@@ -491,8 +544,10 @@ class PaymentController extends Controller {
     /**
      * Validate CSRF token
      */
-    private function validateCsrfToken() {
-        $token = $this->input('csrf_token') ?? $this->input('_token');
+    private function validateCsrfToken($token = null) {
+        if ($token === null) {
+            $token = $this->input('csrf_token') ?? $this->input('_token');
+        }
         return $token === ($_SESSION['csrf_token'] ?? '');
     }
     

@@ -306,7 +306,7 @@ class Router {
         $this->get('/apply/download-exam-slip', 'PublicApplicationController@downloadExamSlip');
         
         // ============================================
-        // PAYMENT ROUTES
+        // PAYMENT ROUTES - UPDATED WITH ALL REQUIRED ENDPOINTS
         // ============================================
         $this->post('/payment/initiate', 'PaymentController@initiate');
         $this->post('/payment/verify', 'PaymentController@verify');
