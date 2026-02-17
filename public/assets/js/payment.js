@@ -1,7 +1,7 @@
 /**
  * Payment handling JavaScript
  * Handles RRR generation and payment verification
- * FIXED: Proper CSRF token handling for parent Controller
+ * FIXED: Proper CSRF token handling from hidden input
  * FIXED: Updated status endpoint to /payment/check-status
  */
 
@@ -59,17 +59,17 @@ $(document).ready(function() {
 function getCsrfToken() {
     var token = '';
     
-    // Try meta tag (most common - set by Controller)
-    token = $('meta[name="csrf-token"]').attr('content');
-    if (token) {
-        console.log('CSRF token found in meta tag');
-        return token;
-    }
-    
-    // Try hidden input fields (standard field name)
+    // Try hidden input fields first (most reliable for this page)
     token = $('input[name="csrf_token"]').val();
     if (token) {
         console.log('CSRF token found in input[name="csrf_token"]');
+        return token;
+    }
+    
+    // Try meta tag (backup)
+    token = $('meta[name="csrf-token"]').attr('content');
+    if (token) {
+        console.log('CSRF token found in meta tag');
         return token;
     }
     
@@ -110,7 +110,7 @@ function getCookie(name) {
 
 /**
  * Initiate payment - generate RRR
- * FIXED: Simplified to work with parent Controller's CSRF validation
+ * FIXED: Prioritizes hidden input for CSRF token
  */
 function initiatePayment() {
     console.log('initiatePayment() called');
@@ -134,10 +134,21 @@ function initiatePayment() {
         $('#paymentMessage').text('Generating RRR...');
     }
     
-    // Get CSRF token
-    var csrfToken = getCsrfToken();
+    // Get CSRF token - prioritize hidden input
+    var csrfToken = $('input[name="csrf_token"]').val();
+    
+    // Fallback to meta tag if hidden input not found
+    if (!csrfToken) {
+        csrfToken = $('meta[name="csrf-token"]').attr('content');
+    }
+    
+    // Fallback to our comprehensive function
+    if (!csrfToken) {
+        csrfToken = getCsrfToken();
+    }
     
     console.log('CSRF token status:', csrfToken ? 'Found ✓' : 'Missing ✗');
+    console.log('CSRF token value:', csrfToken ? csrfToken.substring(0, 10) + '...' : 'none');
     
     if (!csrfToken) {
         showAlert('Security token missing. Please refresh the page and try again.', 'danger');
@@ -145,7 +156,7 @@ function initiatePayment() {
         return;
     }
     
-    // Prepare request data - parent Controller reads from POST
+    // Prepare request data
     var requestData = {
         csrf_token: csrfToken
     };
@@ -251,7 +262,7 @@ function verifyPayment(rrr) {
     btn.prop('disabled', true);
     
     // Get CSRF token
-    var csrfToken = getCsrfToken();
+    var csrfToken = $('input[name="csrf_token"]').val() || $('meta[name="csrf-token"]').attr('content') || getCsrfToken();
     
     if (!csrfToken) {
         showAlert('Security token missing. Please refresh the page.', 'danger');
@@ -314,7 +325,6 @@ function verifyPayment(rrr) {
 
 /**
  * Check payment status without verification
- * FIXED: Updated endpoint from /payment/status to /payment/check-status
  */
 function checkPaymentStatus(rrr) {
     if (!rrr) return;
@@ -322,7 +332,7 @@ function checkPaymentStatus(rrr) {
     console.log('Checking payment status for RRR:', rrr);
     
     $.ajax({
-        url: '/payment/check-status',  // FIXED: Changed from '/payment/status' to '/payment/check-status'
+        url: '/payment/check-status',
         type: 'GET',
         data: { rrr: rrr },
         dataType: 'json',
