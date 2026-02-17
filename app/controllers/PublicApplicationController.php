@@ -482,191 +482,219 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Save application form - FIXED JSON RESPONSE
+     * Save application form
      */
     public function saveApplication() {
-        // Set header to JSON first thing
-        header('Content-Type: application/json');
-        
         // Start session
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         
-        // Check if user is logged in
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /apply/form');
+            exit;
+        }
+        
+        // Check login
         if (!isset($_SESSION['applicant_id'])) {
-            echo json_encode(['success' => false, 'message' => 'Please login first']);
-            return;
+            $_SESSION['flash_error'] = 'Please login to continue';
+            header('Location: /applicant/login');
+            exit;
         }
         
         // Validate CSRF
-        if (!isset($_POST['csrf_token']) || !$this->validateCsrfToken()) {
-            echo json_encode(['success' => false, 'message' => 'Invalid security token']);
-            return;
+        if (!$this->validateCsrfToken()) {
+            $_SESSION['flash_error'] = 'Security token expired. Please try again.';
+            header('Location: /apply/form');
+            exit;
         }
         
-        try {
-            $applicantId = $_SESSION['applicant_id'];
+        $applicantId = $_SESSION['applicant_id'];
+        $application = $this->applicationModel->getByApplicantId($applicantId);
+        
+        if (!$application) {
+            $_SESSION['flash_error'] = 'Application not found';
+            header('Location: /apply/form');
+            exit;
+        }
+        
+        // Update application data
+        $updateData = [
+            'first_name' => trim($_POST['first_name'] ?? ''),
+            'last_name' => trim($_POST['last_name'] ?? ''),
+            'other_names' => trim($_POST['other_names'] ?? ''),
+            'date_of_birth' => $_POST['date_of_birth'] ?? null,
+            'gender' => $_POST['gender'] ?? '',
+            'marital_status' => $_POST['marital_status'] ?? '',
+            'nationality' => $_POST['nationality'] ?? 'Nigerian',
+            'state_of_origin' => $_POST['state_of_origin'] ?? '',
+            'lga' => $_POST['lga'] ?? '',
+            'address' => trim($_POST['address'] ?? ''),
+            'city' => trim($_POST['city'] ?? ''),
+            'program_choice_1' => $_POST['program_choice_1'] ?? '',
+            'program_choice_2' => $_POST['program_choice_2'] ?? '',
+            'program_choice_3' => $_POST['program_choice_3'] ?? '',
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+        
+        // Update email and phone in applicants table
+        $email = trim($_POST['email'] ?? '');
+        $phone = trim($_POST['phone'] ?? '');
+        
+        if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->applicantModel->update(
+                ['email' => $email, 'updated_at' => date('Y-m-d H:i:s')],
+                'id = :id',
+                ['id' => $applicantId]
+            );
+        }
+        
+        if (!empty($phone) && preg_match('/^[0-9]{11}$/', $phone)) {
+            $this->applicantModel->update(
+                ['phone' => $phone, 'updated_at' => date('Y-m-d H:i:s')],
+                'id = :id',
+                ['id' => $applicantId]
+            );
+        }
+        
+        // Update application
+        $this->applicationModel->update($updateData, 'id = :id', ['id' => $application['id']]);
+        
+        // Handle O'Level results
+        if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
+            require_once MODELS_PATH . '/application/OlevelResultModel.php';
+            $olevelModel = new OlevelResultModel();
             
-            // Get JAMB data from session or hidden fields
-            $jambNumber = $_POST['jamb_number'] ?? '';
-            $firstName = $_POST['first_name'] ?? '';
-            $lastName = $_POST['last_name'] ?? '';
-            $otherNames = $_POST['other_names'] ?? '';
-            $gender = $_POST['gender'] ?? '';
-            $stateOfOrigin = $_POST['state_of_origin'] ?? '';
-            $lga = $_POST['lga'] ?? '';
-            $utmeScore = $_POST['utme_score'] ?? '';
+            // Clear existing results
+            $olevelModel->deleteByApplicationId($application['id']);
             
-            // Get editable fields
-            $dateOfBirth = $_POST['date_of_birth'] ?? '';
-            $phone = $_POST['phone'] ?? '';
-            $address = $_POST['address'] ?? '';
-            $programChoice = $_POST['program_choice'] ?? '';
-            
-            // Validate required fields
-            if (empty($dateOfBirth) || empty($phone) || empty($address) || empty($programChoice)) {
-                echo json_encode(['success' => false, 'message' => 'Please fill all required fields']);
-                return;
-            }
-            
-            // Check if application exists
-            $application = $this->applicationModel->getByApplicantId($applicantId);
-            
-            if (!$application) {
-                // Create new application
-                $applicationId = $this->applicationModel->insert([
-                    'applicant_id' => $applicantId,
-                    'application_number' => $this->applicationModel->generateApplicationNumber(),
-                    'jamb_number' => $jambNumber,
-                    'first_name' => $firstName,
-                    'last_name' => $lastName,
-                    'other_names' => $otherNames,
-                    'gender' => $gender,
-                    'state_of_origin' => $stateOfOrigin,
-                    'lga' => $lga,
-                    'utme_score' => $utmeScore,
-                    'date_of_birth' => $dateOfBirth,
-                    'phone' => $phone,
-                    'address' => $address,
-                    'program_choice_1' => $programChoice,
-                    'application_step' => 2,
-                    'status' => 'pending',
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
-                ]);
-            } else {
-                // Update existing application
-                $this->applicationModel->update(
-                    [
-                        'date_of_birth' => $dateOfBirth,
-                        'phone' => $phone,
-                        'address' => $address,
-                        'program_choice_1' => $programChoice,
-                        'application_step' => 2,
-                        'updated_at' => date('Y-m-d H:i:s')
-                    ],
-                    'id = :id',
-                    ['id' => $application['id']]
-                );
-                $applicationId = $application['id'];
-            }
-            
-            // Handle file uploads
-            $uploadErrors = [];
-            
-            // Upload passport
-            if (isset($_FILES['passport']) && $_FILES['passport']['error'] === UPLOAD_ERR_OK) {
-                $passportResult = $this->uploadFile($_FILES['passport'], $applicantId, 'passport');
-                if (!$passportResult['success']) {
-                    $uploadErrors[] = 'Passport: ' . $passportResult['message'];
+            // Save new results
+            foreach ($_POST['olevel'] as $result) {
+                if (!empty($result['subject']) && !empty($result['grade'])) {
+                    $olevelModel->insert([
+                        'application_id' => $application['id'],
+                        'subject' => $result['subject'],
+                        'grade' => $result['grade'],
+                        'exam_type' => $result['exam_type'] ?? 'WAEC',
+                        'exam_year' => $result['exam_year'] ?? date('Y'),
+                        'exam_number' => $result['exam_number'] ?? '',
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
                 }
             }
+        }
+        
+        // Handle passport upload
+        if (isset($_FILES['passport']) && $_FILES['passport']['error'] === UPLOAD_ERR_OK) {
+            $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            $maxSize = 2 * 1024 * 1024; // 2MB
             
-            // Upload O'Level results
-            if (isset($_FILES['olevel'])) {
-                $files = $_FILES['olevel'];
-                // Handle both single file and multiple files
-                if (is_array($files['name'])) {
-                    // Multiple files
-                    for ($i = 0; $i < count($files['name']); $i++) {
-                        if ($files['error'][$i] === UPLOAD_ERR_OK) {
-                            $file = [
-                                'name' => $files['name'][$i],
-                                'type' => $files['type'][$i],
-                                'tmp_name' => $files['tmp_name'][$i],
-                                'error' => $files['error'][$i],
-                                'size' => $files['size'][$i]
-                            ];
-                            $result = $this->uploadFile($file, $applicantId, 'olevel');
-                            if (!$result['success']) {
-                                $uploadErrors[] = 'O\'Level: ' . $result['message'];
-                            }
-                        }
+            if (in_array($_FILES['passport']['type'], $allowedTypes) && $_FILES['passport']['size'] <= $maxSize) {
+                require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
+                $docModel = new ApplicationDocumentModel();
+                
+                $uploadPath = UPLOADS_PATH . '/passports/' . $application['id'] . '/';
+                if (!is_dir($uploadPath)) {
+                    mkdir($uploadPath, 0777, true);
+                }
+                
+                $filename = 'passport_' . time() . '_' . $_FILES['passport']['name'];
+                $filepath = $uploadPath . $filename;
+                
+                if (move_uploaded_file($_FILES['passport']['tmp_name'], $filepath)) {
+                    // Delete old passport if exists
+                    $oldPassport = $docModel->getPassport($application['id']);
+                    if ($oldPassport && file_exists(UPLOADS_PATH . '/' . $oldPassport['file_path'])) {
+                        unlink(UPLOADS_PATH . '/' . $oldPassport['file_path']);
+                        $docModel->delete($oldPassport['id']);
                     }
-                } else {
-                    // Single file
-                    if ($files['error'] === UPLOAD_ERR_OK) {
-                        $result = $this->uploadFile($files, $applicantId, 'olevel');
-                        if (!$result['success']) {
-                            $uploadErrors[] = 'O\'Level: ' . $result['message'];
-                        }
-                    }
+                    
+                    // Save new passport
+                    $docModel->insert([
+                        'application_id' => $application['id'],
+                        'document_type' => 'passport',
+                        'file_name' => $filename,
+                        'file_path' => 'passports/' . $application['id'] . '/' . $filename,
+                        'file_size' => $_FILES['passport']['size'],
+                        'mime_type' => $_FILES['passport']['type'],
+                        'uploaded_at' => date('Y-m-d H:i:s')
+                    ]);
                 }
             }
+        }
+        
+        // Handle JAMB result slip upload
+        if (isset($_FILES['jamb_result']) && $_FILES['jamb_result']['error'] === UPLOAD_ERR_OK) {
+            $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+            $maxSize = 2 * 1024 * 1024; // 2MB
             
-            // Return success response
-            echo json_encode([
-                'success' => true,
-                'message' => 'Application saved successfully',
-                'application_id' => $applicationId,
-                'upload_errors' => $uploadErrors
-            ]);
-            
-        } catch (Exception $e) {
-            error_log("Save application error: " . $e->getMessage());
-            echo json_encode([
-                'success' => false,
-                'message' => 'Server error: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * Upload file helper
-     */
-    private function uploadFile($file, $applicantId, $type) {
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-        $maxSize = 2 * 1024 * 1024; // 2MB
-        
-        if (!in_array($file['type'], $allowedTypes)) {
-            return ['success' => false, 'message' => 'Invalid file type. Allowed: JPG, PNG, PDF'];
-        }
-        
-        if ($file['size'] > $maxSize) {
-            return ['success' => false, 'message' => 'File too large. Max size: 2MB'];
-        }
-        
-        // Create upload directory
-        $uploadDir = PUBLIC_PATH . "/uploads/applications/{$applicantId}/{$type}";
-        if (!is_dir($uploadDir)) {
-            if (!mkdir($uploadDir, 0755, true)) {
-                return ['success' => false, 'message' => 'Failed to create upload directory'];
+            if (in_array($_FILES['jamb_result']['type'], $allowedTypes) && $_FILES['jamb_result']['size'] <= $maxSize) {
+                require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
+                $docModel = new ApplicationDocumentModel();
+                
+                $uploadPath = UPLOADS_PATH . '/jamb_results/' . $application['id'] . '/';
+                if (!is_dir($uploadPath)) {
+                    mkdir($uploadPath, 0777, true);
+                }
+                
+                $filename = 'jamb_result_' . time() . '_' . $_FILES['jamb_result']['name'];
+                $filepath = $uploadPath . $filename;
+                
+                if (move_uploaded_file($_FILES['jamb_result']['tmp_name'], $filepath)) {
+                    $docModel->insert([
+                        'application_id' => $application['id'],
+                        'document_type' => 'jamb_result',
+                        'file_name' => $filename,
+                        'file_path' => 'jamb_results/' . $application['id'] . '/' . $filename,
+                        'file_size' => $_FILES['jamb_result']['size'],
+                        'mime_type' => $_FILES['jamb_result']['type'],
+                        'uploaded_at' => date('Y-m-d H:i:s')
+                    ]);
+                }
             }
         }
         
-        // Generate filename
-        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $filename = $type . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $extension;
-        $filepath = $uploadDir . '/' . $filename;
-        
-        if (move_uploaded_file($file['tmp_name'], $filepath)) {
-            // Save to database if you have an uploads table
-            // For now, just return success
-            return ['success' => true, 'path' => str_replace(PUBLIC_PATH, '', $filepath)];
+        // Handle birth certificate upload
+        if (isset($_FILES['birth_certificate']) && $_FILES['birth_certificate']['error'] === UPLOAD_ERR_OK) {
+            $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+            $maxSize = 2 * 1024 * 1024; // 2MB
+            
+            if (in_array($_FILES['birth_certificate']['type'], $allowedTypes) && $_FILES['birth_certificate']['size'] <= $maxSize) {
+                require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
+                $docModel = new ApplicationDocumentModel();
+                
+                $uploadPath = UPLOADS_PATH . '/birth_certificates/' . $application['id'] . '/';
+                if (!is_dir($uploadPath)) {
+                    mkdir($uploadPath, 0777, true);
+                }
+                
+                $filename = 'birth_certificate_' . time() . '_' . $_FILES['birth_certificate']['name'];
+                $filepath = $uploadPath . $filename;
+                
+                if (move_uploaded_file($_FILES['birth_certificate']['tmp_name'], $filepath)) {
+                    $docModel->insert([
+                        'application_id' => $application['id'],
+                        'document_type' => 'birth_certificate',
+                        'file_name' => $filename,
+                        'file_path' => 'birth_certificates/' . $application['id'] . '/' . $filename,
+                        'file_size' => $_FILES['birth_certificate']['size'],
+                        'mime_type' => $_FILES['birth_certificate']['type'],
+                        'uploaded_at' => date('Y-m-d H:i:s')
+                    ]);
+                }
+            }
         }
         
-        return ['success' => false, 'message' => 'Failed to save file'];
+        $_SESSION['flash_success'] = 'Application saved successfully';
+        
+        // Determine redirect based on action
+        $action = $_POST['action'] ?? 'save';
+        if ($action === 'next') {
+            header('Location: /apply/step/3');
+        } else {
+            header('Location: /apply/form');
+        }
+        exit;
     }
 
     // ============================================
@@ -1478,9 +1506,10 @@ class PublicApplicationController extends ApplicationBaseController {
     protected function getPrograms() {
         return [
             'ND Nursing',
-            'Post Basic Nursing',
-            'Midwifery',
-            'Public Health Nursing'
+            'HND Nursing',
+            'ND/HND Nursing (Non-terminal)',
+            'Post-Basic Nursing',
+            'Midwifery'
         ];
     }
 }
