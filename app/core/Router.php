@@ -310,10 +310,10 @@ class Router {
         // ============================================
         $this->post('/payment/initiate', 'PaymentController@initiate');
         $this->post('/payment/verify', 'PaymentController@verify');
-        $this->get('/payment/status', 'PaymentController@status');
+        // Note: '/payment/status' route removed to avoid conflict with parent Controller
         $this->get('/payment/remita-response', 'PaymentController@remitaResponse');
         $this->post('/payment/remita-notification', 'PaymentController@remitaNotification');
-        $this->get('/payment/check-status', 'PaymentController@checkStatus');
+        $this->get('/payment/check-status', 'PaymentController@checkStatus'); // FIXED: Using checkStatus instead of status
         $this->post('/payment/admin/verify', 'PaymentController@adminVerify');
         
         // ============================================
