@@ -1,21 +1,29 @@
 /**
  * Payment handling JavaScript
  * Handles RRR generation and payment verification
- * FIXED: Proper error handling and CSRF token management
+ * FIXED: Enhanced CSRF token detection and error handling
  */
 
 $(document).ready(function() {
+    console.log('Payment.js loaded - Document ready');
+    
     // Handle Pay Now button click (supports both ID variations)
     $('#payNowBtn, #pay-now-btn').on('click', function(e) {
         e.preventDefault();
+        console.log('Pay Now button clicked');
         initiatePayment();
     });
     
     // Handle Verify Payment button click (supports both ID variations)
-    $('#verifyPaymentBtn, #verify-payment-btn').on('click', function(e) {
+    $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').on('click', function(e) {
         e.preventDefault();
+        console.log('Verify button clicked');
         var rrr = $(this).data('rrr') || sessionStorage.getItem('pending_rrr') || $('#rrr-input').val();
-        verifyPayment(rrr);
+        if (rrr) {
+            verifyPayment(rrr);
+        } else {
+            showAlert('No RRR found. Please generate RRR first.', 'danger');
+        }
     });
     
     // Handle manual RRR input verification
@@ -25,16 +33,93 @@ $(document).ready(function() {
         if (rrr) {
             verifyPayment(rrr);
         } else {
-            showAlert('error', 'Please enter your RRR number');
+            showAlert('Please enter your RRR number', 'warning');
         }
     });
+    
+    // Handle copy RRR button
+    $('#copy-rrr-btn').on('click', function(e) {
+        e.preventDefault();
+        copyRRR();
+    });
+    
+    // Check if we have a pending RRR on page load
+    var pendingRRR = sessionStorage.getItem('pending_rrr');
+    if (pendingRRR) {
+        console.log('Found pending RRR in session:', pendingRRR);
+        showRRR(pendingRRR);
+    }
 });
 
 /**
+ * Get CSRF token from multiple sources
+ * This function tries various places where CSRF token might be stored
+ */
+function getCsrfToken() {
+    var token = '';
+    
+    // Try meta tag (most common)
+    token = $('meta[name="csrf-token"]').attr('content');
+    if (token) {
+        console.log('CSRF token found in meta tag');
+        return token;
+    }
+    
+    // Try hidden input fields
+    token = $('input[name="csrf_token"]').val();
+    if (token) {
+        console.log('CSRF token found in input[name="csrf_token"]');
+        return token;
+    }
+    
+    token = $('input[name="_token"]').val();
+    if (token) {
+        console.log('CSRF token found in input[name="_token"]');
+        return token;
+    }
+    
+    // Try any input with csrf in the name
+    token = $('input[name*="csrf"]').first().val();
+    if (token) {
+        console.log('CSRF token found in input with csrf in name');
+        return token;
+    }
+    
+    // Try to get from cookie (if using cookie-based CSRF)
+    token = getCookie('XSRF-TOKEN');
+    if (token) {
+        console.log('CSRF token found in cookie');
+        return token;
+    }
+    
+    console.warn('No CSRF token found in any location');
+    return '';
+}
+
+/**
+ * Helper function to get cookie value
+ */
+function getCookie(name) {
+    var value = "; " + document.cookie;
+    var parts = value.split("; " + name + "=");
+    if (parts.length == 2) return parts.pop().split(";").shift();
+    return null;
+}
+
+/**
  * Initiate payment - generate RRR
+ * FIXED: Enhanced CSRF token detection
  */
 function initiatePayment() {
+    console.log('initiatePayment() called');
+    
+    // Get button (supports both ID variations)
     var btn = $('#payNowBtn, #pay-now-btn').first();
+    if (!btn.length) {
+        console.error('Pay button not found');
+        return;
+    }
+    
     var originalText = btn.html();
     
     // Show loading state
@@ -47,27 +132,36 @@ function initiatePayment() {
         $('#paymentMessage').text('Generating RRR...');
     }
     
-    // Get CSRF token from multiple possible sources
-    var csrfToken = $('meta[name="csrf-token"]').attr('content') || 
-                    $('input[name="csrf_token"]').val() || 
-                    $('input[name="_token"]').val() || 
-                    '';
+    // Get CSRF token using our enhanced function
+    var csrfToken = getCsrfToken();
     
-    console.log('Initiating payment with CSRF token:', csrfToken ? 'Present' : 'Missing');
+    console.log('CSRF token status:', csrfToken ? 'Found ✓' : 'Missing ✗');
+    
+    if (!csrfToken) {
+        showAlert('Security token missing. Please refresh the page and try again.', 'danger');
+        resetButton(btn, originalText);
+        return;
+    }
+    
+    // Prepare request data
+    var requestData = {
+        csrf_token: csrfToken
+    };
+    
+    console.log('Sending payment initiation request...');
     
     $.ajax({
         url: '/payment/initiate',
         type: 'POST',
         contentType: 'application/json',
-        data: JSON.stringify({
-            csrf_token: csrfToken
-        }),
+        data: JSON.stringify(requestData),
         dataType: 'json',
+        timeout: 30000, // 30 second timeout
         success: function(response) {
             console.log('Payment initiation response:', response);
             
             if (response.success || response.status === 'success') {
-                var rrr = response.rrr || response.data?.rrr;
+                var rrr = response.rrr || (response.data ? response.data.rrr : null);
                 
                 if (rrr) {
                     // Store RRR in session storage for later use
@@ -82,38 +176,54 @@ function initiatePayment() {
                     
                     // Show Remita payment link
                     showRemitaLink(rrr);
+                    
+                    // Show verify button
+                    $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').show();
+                    
+                    // Reset button (success case - button should stay "Pay Now" for next time)
+                    btn.html(originalText);
+                    btn.prop('disabled', false);
                 } else {
-                    showAlert('error', 'RRR not found in response');
+                    console.error('RRR not found in response:', response);
+                    showAlert('RRR not found in server response', 'danger');
+                    resetButton(btn, originalText);
                 }
             } else {
-                showAlert('error', response.message || 'Failed to generate RRR');
+                showAlert(response.message || 'Failed to generate RRR', 'danger');
+                resetButton(btn, originalText);
             }
-            
-            // Reset button
-            resetButton(btn, originalText);
         },
         error: function(xhr, status, error) {
-            console.error('Payment initiation error:', error);
+            console.error('=== PAYMENT INITIATION ERROR ===');
             console.error('Status:', status);
-            console.error('Response:', xhr.responseText);
+            console.error('Error:', error);
+            console.error('Response Text:', xhr.responseText);
+            console.error('Response Status:', xhr.status);
             
             // Try to parse error response
+            var errorMessage = 'An error occurred. Please try again.';
+            
             try {
-                var response = JSON.parse(xhr.responseText);
-                showAlert('error', response.message || 'Server error occurred');
+                if (xhr.responseText) {
+                    var response = JSON.parse(xhr.responseText);
+                    errorMessage = response.message || response.error || errorMessage;
+                }
             } catch(e) {
+                // If response is not JSON, use status-based message
                 if (xhr.status === 500) {
-                    showAlert('error', 'Server error (500). Please check the error logs.');
+                    errorMessage = 'Server error (500). Please check the error logs.';
                 } else if (xhr.status === 404) {
-                    showAlert('error', 'Payment endpoint not found. Please check your routes.');
+                    errorMessage = 'Payment endpoint not found. Please check your routes.';
                 } else if (xhr.status === 403) {
-                    showAlert('error', 'Access denied. Please login again.');
-                } else {
-                    showAlert('error', 'Connection error: ' + error);
+                    errorMessage = 'Access denied. Please login again.';
+                } else if (xhr.status === 419) {
+                    errorMessage = 'CSRF token expired. Please refresh the page.';
+                } else if (status === 'timeout') {
+                    errorMessage = 'Request timed out. Please try again.';
                 }
             }
             
-            // Reset button
+            showAlert(errorMessage, 'danger');
             resetButton(btn, originalText);
         }
     });
@@ -123,15 +233,18 @@ function initiatePayment() {
  * Verify payment status
  */
 function verifyPayment(rrr) {
+    console.log('verifyPayment() called with RRR:', rrr);
+    
     if (!rrr) {
         rrr = sessionStorage.getItem('pending_rrr');
         if (!rrr) {
-            showAlert('error', 'No pending payment found. Please generate RRR first.');
+            showAlert('No pending payment found. Please generate RRR first.', 'danger');
             return;
         }
     }
     
-    var btn = $('#verifyPaymentBtn, #verify-payment-btn').first();
+    // Get button (supports multiple ID variations)
+    var btn = $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').first();
     var originalText = btn.html();
     
     // Show loading state
@@ -139,10 +252,13 @@ function verifyPayment(rrr) {
     btn.prop('disabled', true);
     
     // Get CSRF token
-    var csrfToken = $('meta[name="csrf-token"]').attr('content') || 
-                    $('input[name="csrf_token"]').val() || 
-                    $('input[name="_token"]').val() || 
-                    '';
+    var csrfToken = getCsrfToken();
+    
+    if (!csrfToken) {
+        showAlert('Security token missing. Please refresh the page.', 'danger');
+        resetButton(btn, originalText);
+        return;
+    }
     
     $.ajax({
         url: '/payment/verify',
@@ -152,6 +268,7 @@ function verifyPayment(rrr) {
             csrf_token: csrfToken
         },
         dataType: 'json',
+        timeout: 30000,
         success: function(response) {
             console.log('Payment verification response:', response);
             
@@ -161,6 +278,9 @@ function verifyPayment(rrr) {
                 // Clear stored RRR
                 sessionStorage.removeItem('pending_rrr');
                 sessionStorage.removeItem('payment_id');
+                
+                // Hide verify button
+                $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').hide();
                 
                 // Redirect to exam slip
                 setTimeout(function() {
@@ -190,7 +310,11 @@ function verifyPayment(rrr) {
                 var response = JSON.parse(xhr.responseText);
                 showAlert('error', response.message || 'Verification failed');
             } catch(e) {
-                showAlert('error', 'Verification error: ' + error);
+                if (xhr.status === 419) {
+                    showAlert('error', 'Session expired. Please refresh the page.');
+                } else {
+                    showAlert('error', 'Verification error: ' + error);
+                }
             }
             
             resetButton(btn, originalText);
@@ -204,15 +328,17 @@ function verifyPayment(rrr) {
 function checkPaymentStatus(rrr) {
     if (!rrr) return;
     
+    console.log('Checking payment status for RRR:', rrr);
+    
     $.ajax({
         url: '/payment/check-status',
         type: 'GET',
         data: { rrr: rrr },
         dataType: 'json',
         success: function(response) {
-            console.log('Payment status:', response);
+            console.log('Payment status response:', response);
             
-            if (response.status === 'success') {
+            if (response.status === 'success' || response.success) {
                 $('#payment-status-badge').removeClass('bg-warning bg-danger')
                     .addClass('bg-success')
                     .text('Completed');
@@ -233,6 +359,9 @@ function checkPaymentStatus(rrr) {
         },
         error: function() {
             console.log('Failed to check payment status');
+            $('#payment-status-badge').removeClass('bg-success bg-warning')
+                .addClass('bg-secondary')
+                .text('Unknown');
         }
     });
 }
@@ -241,29 +370,37 @@ function checkPaymentStatus(rrr) {
  * Show RRR and payment instructions
  */
 function showRRR(rrr) {
+    console.log('Showing RRR:', rrr);
+    
     // Update RRR display elements
-    $('#paymentRRR, .rrr-display').text(rrr);
+    $('#paymentRRR, .rrr-display').text(rrr).show();
     
     // Create or update payment instructions
-    var html = '<div class="alert alert-info mt-3 payment-instructions">' +
+    var instructionsHtml = '<div class="alert alert-info mt-3 payment-instructions">' +
                '<h5><i class="fas fa-info-circle"></i> Payment Details</h5>' +
-               '<p><strong>RRR:</strong> <span class="text-primary fw-bold">' + rrr + '</span></p>' +
+               '<p><strong>RRR:</strong> <span class="text-primary fw-bold">' + rrr + '</span>' +
+               ' <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyRRR()">' +
+               '<i class="fas fa-copy"></i> Copy</button></p>' +
                '<p><strong>Instructions:</strong></p>' +
                '<ol>' +
                '<li>Click the "Proceed to Payment" button below</li>' +
                '<li>Complete your payment on the Remita payment page</li>' +
-               '<li>After payment, return here and click "I\'ve Paid, Verify"</li>' +
+               '<li>After payment, return here and click "Verify Payment"</li>' +
                '</ol>' +
                '</div>';
     
     if ($('#payment-instructions').length) {
-        $('#payment-instructions').html(html);
+        $('#payment-instructions').html(instructionsHtml).show();
+    } else if ($('#paymentStatus').length) {
+        $('#paymentStatus').show();
+        $('#paymentMessage').html('RRR Generated: <strong>' + rrr + '</strong>');
+        $('#paymentStatus').after(instructionsHtml);
     } else {
-        $('.payment-section').prepend(html);
+        $('.payment-section, .card-body:first').prepend(instructionsHtml);
     }
     
     // Show verify button
-    $('#verify-payment-btn, #verifyPaymentBtn').show();
+    $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').show();
 }
 
 /**
@@ -272,7 +409,7 @@ function showRRR(rrr) {
 function showRemitaLink(rrr) {
     var remitaUrl = 'https://remitademo.net/remita/ecomm/frame/handleCCD.action?rrr=' + rrr;
     
-    var html = '<div class="alert alert-warning mt-2">' +
+    var linkHtml = '<div class="alert alert-warning mt-2 remita-link">' +
                '<p><i class="fas fa-external-link-alt"></i> <strong>Proceed to Payment:</strong></p>' +
                '<a href="' + remitaUrl + '" target="_blank" class="btn btn-primary">' +
                '<i class="fas fa-credit-card"></i> Pay Now on Remita</a>' +
@@ -280,9 +417,9 @@ function showRemitaLink(rrr) {
                '</div>';
     
     if ($('#remita-link').length) {
-        $('#remita-link').html(html);
+        $('#remita-link').html(linkHtml).show();
     } else {
-        $('#payment-instructions, .payment-instructions').after(html);
+        $('#payment-instructions, .payment-instructions').after(linkHtml);
     }
     
     // Optional: Open automatically with confirmation
@@ -312,15 +449,17 @@ function resetButton(btn, originalText) {
  * Show alert message
  */
 function showAlert(type, message) {
+    console.log('Alert - Type:', type, 'Message:', message);
+    
     var alertClass = type === 'success' ? 'alert-success' : 
-                     type === 'error' ? 'alert-danger' : 
+                     type === 'danger' ? 'alert-danger' : 
                      type === 'info' ? 'alert-info' : 'alert-warning';
     
     var icon = type === 'success' ? 'fa-check-circle' : 
-               type === 'error' ? 'fa-exclamation-circle' : 
+               type === 'danger' ? 'fa-exclamation-circle' : 
                type === 'info' ? 'fa-info-circle' : 'fa-exclamation-triangle';
     
-    var html = '<div class="alert ' + alertClass + ' alert-dismissible fade show" role="alert">' +
+    var alertHtml = '<div class="alert ' + alertClass + ' alert-dismissible fade show" role="alert">' +
                '<i class="fas ' + icon + ' me-2"></i>' +
                message +
                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
@@ -328,33 +467,70 @@ function showAlert(type, message) {
     
     // Check multiple possible alert container IDs
     if ($('#payment-alerts').length) {
-        $('#payment-alerts').html(html);
+        $('#payment-alerts').html(alertHtml);
     } else if ($('#alertContainer').length) {
-        $('#alertContainer').html(html);
+        $('#alertContainer').html(alertHtml);
     } else if ($('#paymentStatus').length) {
         $('#paymentStatus').show();
         $('#paymentMessage').html(message);
-        $('#paymentStatus .alert').removeClass('alert-info alert-success alert-danger')
-            .addClass(alertClass);
+        $('#paymentStatus .alert').remove();
+        $('#paymentStatus').prepend(alertHtml);
     } else {
         // Create alert container if none exists
         var containerHtml = '<div id="payment-alerts" class="mt-3"></div>';
         if ($('.payment-section').length) {
             $('.payment-section').prepend(containerHtml);
-            $('#payment-alerts').html(html);
+            $('#payment-alerts').html(alertHtml);
         } else {
             $('.container:first').prepend(containerHtml);
-            $('#payment-alerts').html(html);
+            $('#payment-alerts').html(alertHtml);
         }
     }
     
     // Auto-dismiss after 5 seconds (except for errors which stay longer)
-    var timeout = type === 'error' ? 8000 : 5000;
+    var timeout = type === 'danger' ? 8000 : 5000;
     setTimeout(function() {
         $('.alert').fadeOut('slow', function() {
             $(this).remove();
         });
     }, timeout);
+}
+
+/**
+ * Copy RRR to clipboard
+ */
+function copyRRR() {
+    var rrr = $('#paymentRRR').text() || sessionStorage.getItem('pending_rrr');
+    
+    if (!rrr) {
+        showAlert('No RRR to copy', 'warning');
+        return;
+    }
+    
+    // Modern clipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(rrr).then(function() {
+            showAlert('success', 'RRR copied to clipboard!');
+        }).catch(function() {
+            // Fallback to older method
+            fallbackCopy(rrr);
+        });
+    } else {
+        // Fallback for older browsers
+        fallbackCopy(rrr);
+    }
+}
+
+/**
+ * Fallback copy method for older browsers
+ */
+function fallbackCopy(text) {
+    var tempInput = $('<input>');
+    $('body').append(tempInput);
+    tempInput.val(text).select();
+    document.execCommand('copy');
+    tempInput.remove();
+    showAlert('success', 'RRR copied to clipboard!');
 }
 
 /**
@@ -367,29 +543,9 @@ function formatCurrency(amount) {
     });
 }
 
-/**
- * Copy RRR to clipboard
- */
-function copyRRR() {
-    var rrr = $('#paymentRRR').text() || sessionStorage.getItem('pending_rrr');
-    
-    if (!rrr) {
-        showAlert('error', 'No RRR to copy');
-        return;
-    }
-    
-    // Create temporary input
-    var tempInput = $('<input>');
-    $('body').append(tempInput);
-    tempInput.val(rrr).select();
-    document.execCommand('copy');
-    tempInput.remove();
-    
-    showAlert('success', 'RRR copied to clipboard!');
-}
-
 // Export functions for use in HTML onclick attributes
 window.initiatePayment = initiatePayment;
 window.verifyPayment = verifyPayment;
 window.checkPaymentStatus = checkPaymentStatus;
 window.copyRRR = copyRRR;
+window.getCsrfToken = getCsrfToken;
