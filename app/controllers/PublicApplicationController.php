@@ -363,10 +363,11 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Send verification email
+     * Send verification email - UPDATED with resend link
      */
     private function sendVerificationEmail($email, $token) {
         $verificationLink = BASE_URL . '/apply/verify-email?token=' . $token;
+        $resendLink = BASE_URL . '/apply/resend-verification?email=' . urlencode($email);
         
         $subject = "Verify Your Email - FCT College of Nursing Sciences";
         
@@ -381,6 +382,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 .content { padding: 20px; background: #f9f9f9; }
                 .button { display: inline-block; padding: 10px 20px; background: #6B4E9B; color: white; text-decoration: none; border-radius: 5px; }
                 .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+                .info { background: #e8f4fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
             </style>
         </head>
         <body>
@@ -397,13 +399,21 @@ class PublicApplicationController extends ApplicationBaseController {
                         <a href='{$verificationLink}' class='button'>Verify Email Address</a>
                     </p>
                     
-                    <p>If the button doesn't work, copy and paste this link into your browser:</p>
-                    <p>{$verificationLink}</p>
+                    <div class='info'>
+                        <p><strong>Didn't receive this email?</strong></p>
+                        <p>If the button doesn't work, copy and paste this link into your browser:</p>
+                        <p style='word-break: break-all;'>{$verificationLink}</p>
+                        
+                        <p style='margin-top: 20px;'>
+                            <a href='{$resendLink}'>Click here to resend verification email</a>
+                        </p>
+                    </div>
                     
-                    <p>This link will expire in 24 hours.</p>
+                    <p><strong>Note:</strong> This link will expire in 24 hours.</p>
                 </div>
                 <div class='footer'>
                     <p>&copy; " . date('Y') . " FCT College of Nursing Sciences</p>
+                    <p>This is an automated message, please do not reply.</p>
                 </div>
             </div>
         </body>

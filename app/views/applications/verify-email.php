@@ -62,7 +62,7 @@
                     </div>
                     
                 <?php elseif (isset($email_sent) && $email_sent): ?>
-                    <!-- Email Sent Page (No token) -->
+                    <!-- Email Sent Page (No token) - FIXED VERSION -->
                     <div class="card-header bg-primary text-white text-center py-4">
                         <i class="fas fa-envelope fa-4x mb-3"></i>
                         <h2 class="h3 mb-0">Verify Your Email</h2>
@@ -71,34 +71,66 @@
                         <div class="mb-4">
                             <i class="fas fa-paper-plane fa-3x text-primary mb-3"></i>
                             <h4>Check your inbox</h4>
-                            <p class="text-muted">
-                                We've sent a verification link to:<br>
-                                <strong><?php echo htmlspecialchars($email ?? ''); ?></strong>
-                            </p>
+                            
+                            <?php if (!empty($email)): ?>
+                                <p class="text-muted">
+                                    We've sent a verification link to:<br>
+                                    <strong class="text-primary"><?php echo htmlspecialchars($email); ?></strong>
+                                </p>
+                            <?php else: ?>
+                                <p class="text-muted">
+                                    We've sent a verification link to your email address.
+                                </p>
+                            <?php endif; ?>
                         </div>
                         
                         <div class="alert alert-info">
                             <i class="fas fa-clock me-2"></i>
-                            The link will expire in 24 hours
+                            <strong>The link will expire in 24 hours</strong>
                         </div>
                         
-                        <p class="mb-4">
-                            Didn't receive the email? 
-                            <a href="/apply/resend-verification?email=<?php echo urlencode($email ?? ''); ?>" class="text-primary">
-                                Click here to resend
+                        <div class="mt-4 mb-3 p-3 bg-light rounded">
+                            <p class="mb-2"><i class="fas fa-question-circle me-2"></i>Didn't receive the email?</p>
+                            <a href="/apply/resend-verification?email=<?php echo urlencode($email ?? ''); ?>" 
+                               class="btn btn-outline-primary">
+                                <i class="fas fa-redo me-2"></i>Resend Verification Email
                             </a>
-                        </p>
+                        </div>
                         
-                        <hr>
+                        <hr class="my-4">
                         
-                        <p class="text-muted small">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Please check your spam folder if you don't see the email.
-                        </p>
+                        <div class="text-muted small">
+                            <p class="mb-2">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <strong>Common issues:</strong>
+                            </p>
+                            <ul class="text-start list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-spam me-2 text-warning"></i>
+                                    Check your spam/junk folder
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-clock me-2 text-info"></i>
+                                    Wait a few minutes for the email to arrive
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-envelope me-2 text-danger"></i>
+                                    Make sure you entered the correct email address
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <hr class="my-4">
                         
                         <div class="mt-3">
-                            <a href="/applicant/login" class="text-muted">
-                                Already verified? Login here
+                            <a href="/applicant/login" class="text-muted text-decoration-none">
+                                <i class="fas fa-sign-in-alt me-2"></i>Already verified? Login here
+                            </a>
+                        </div>
+                        
+                        <div class="mt-2">
+                            <a href="/apply/register" class="text-muted text-decoration-none small">
+                                <i class="fas fa-user-plus me-2"></i>Register with a different email
                             </a>
                         </div>
                     </div>
@@ -111,11 +143,51 @@
                     </div>
                     <div class="card-body p-4 text-center">
                         <p>Please try again or contact support.</p>
-                        <a href="/apply/register" class="btn btn-primary">Register Again</a>
+                        <div class="d-grid gap-2">
+                            <a href="/apply/register" class="btn btn-primary">Register Again</a>
+                            <a href="/applicant/login" class="btn btn-outline-secondary">Go to Login</a>
+                        </div>
                     </div>
                 <?php endif; ?>
                 
             </div>
+            
+            <!-- Support Information -->
+            <div class="text-center mt-4">
+                <p class="text-muted small">
+                    <i class="fas fa-question-circle me-2"></i>
+                    Need help? Contact support at 
+                    <a href="mailto:info@fctcns.edu.ng">info@fctcns.edu.ng</a> or call 
+                    <a href="tel:07039837749">07039837749</a>
+                </p>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Optional JavaScript for auto-focus and interactions -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-hide alerts after 5 seconds
+    setTimeout(function() {
+        var alerts = document.querySelectorAll('.alert:not(.alert-info)');
+        alerts.forEach(function(alert) {
+            alert.classList.remove('show');
+            setTimeout(function() {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 300);
+        });
+    }, 5000);
+    
+    // Add click handler for resend link (optional tracking)
+    var resendLink = document.querySelector('a[href*="resend-verification"]');
+    if (resendLink) {
+        resendLink.addEventListener('click', function(e) {
+            console.log('Resend verification clicked for email:', 
+                new URLSearchParams(this.href.split('?')[1]).get('email'));
+        });
+    }
+});
+</script>
