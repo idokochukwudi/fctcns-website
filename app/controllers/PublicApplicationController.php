@@ -218,22 +218,26 @@ class PublicApplicationController extends ApplicationBaseController {
         // Get token from URL
         $token = $_GET['token'] ?? '';
         
+        // Get email from URL or session
+        $email = $_GET['email'] ?? $_SESSION['registration_email'] ?? '';
+        
         // Debug log
         error_log("=== verifyEmail called ===");
         error_log("Token: " . $token);
-        error_log("Session registration_email: " . ($_SESSION['registration_email'] ?? 'not set'));
+        error_log("Email from URL: " . ($_GET['email'] ?? 'not set'));
+        error_log("Email from session: " . ($_SESSION['registration_email'] ?? 'not set'));
+        error_log("Final email: " . $email);
         
         // If no token, show the "check your email" page
         if (empty($token)) {
             // Show email sent page
-            $email = $_SESSION['registration_email'] ?? '';
-            
-            // Clear this from session so it doesn't persist
-            unset($_SESSION['registration_email']);
-            
             $this->data['email'] = $email;
             $this->data['pageTitle'] = 'Verify Your Email';
             $this->data['email_sent'] = true; // Add this flag
+            
+            // Don't clear session email yet - keep it for resend
+            // But we'll use it in the view
+            
             $this->render('applications/verify-email');
             return;
         }
@@ -299,22 +303,41 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Resend verification email (Step 1 - New Flow)
+     * Resend verification email (Step 1 - New Flow) - FIXED
+     * Now properly handles email parameter and redirects with email in URL
      */
     public function resendVerification() {
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Get email from query string or session
         $email = $_GET['email'] ?? $_SESSION['registration_email'] ?? '';
         
+        error_log("Resend verification called with email: " . $email);
+        
         if (empty($email)) {
+            $_SESSION['flash_error'] = 'Email address not found. Please register again.';
             header('Location: /apply/register');
             exit;
         }
         
+        // Find applicant by email
         $applicant = $this->applicantModel->findByEmail($email);
         
-        if ($applicant && !$applicant['email_verified']) {
+        if ($applicant) {
+            if ($applicant['email_verified'] == 1) {
+                // Already verified
+                $_SESSION['flash_success'] = 'Your email is already verified. Please login.';
+                header('Location: /applicant/login');
+                exit;
+            }
+            
             // Generate new token
             $newToken = bin2hex(random_bytes(32));
             
+            // Update applicant with new token
             $this->applicantModel->update(
                 ['verification_token' => $newToken],
                 'id = :id',
@@ -324,13 +347,19 @@ class PublicApplicationController extends ApplicationBaseController {
             // Resend email
             $this->sendVerificationEmail($email, $newToken);
             
+            // Store email in session for display
+            $_SESSION['registration_email'] = $email;
             $_SESSION['flash_success'] = 'Verification email has been resent. Please check your inbox.';
+            
+            // Redirect back to verification page WITH email parameter
+            header('Location: /apply/verify-email?email=' . urlencode($email));
+            exit;
         } else {
-            $_SESSION['flash_error'] = 'Email not found or already verified.';
+            // Applicant not found with this email
+            $_SESSION['flash_error'] = 'Email address not found in our records. Please register again.';
+            header('Location: /apply/register');
+            exit;
         }
-        
-        header('Location: /apply/verify-email');
-        exit;
     }
 
     /**
