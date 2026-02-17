@@ -529,8 +529,11 @@ class PaymentController extends Controller {
      * Override render method
      */
     protected function render($view = null, $data = []) {
-        // Add CSRF token
-        $data['csrf_token'] = $this->csrfToken();
+        // Do NOT regenerate CSRF token here - use the one already set in $this->data
+        // Only generate if not already set
+        if (!isset($this->data['csrf_token'])) {
+            $this->data['csrf_token'] = $this->csrfToken();
+        }
         
         // Add flash messages
         $data['flash_success'] = $this->getFlash('success');
