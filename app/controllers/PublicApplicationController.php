@@ -212,49 +212,90 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Verify email (Step 1 - New Flow)
+     * Verify email with token - FIXED VERSION
      */
     public function verifyEmail() {
-        $token = $_GET['token'] ?? '';
-        $email = $_SESSION['registration_email'] ?? '';
-        
-        if (!empty($token)) {
-            // Verify the token
-            $applicant = $this->applicantModel->findByVerificationToken($token);
-            
-            if ($applicant) {
-                // Mark email as verified
-                $this->applicantModel->update(
-                    [
-                        'email_verified' => 1,
-                        'verification_token' => null,
-                        'email_verified_at' => date('Y-m-d H:i:s')
-                    ],
-                    'id = :id',
-                    ['id' => $applicant['id']]
-                );
-                
-                $this->data['verified'] = true;
-                unset($_SESSION['registration_email']);
-                
-                // Auto login after verification
-                $_SESSION['applicant_id'] = $applicant['id'];
-                $_SESSION['applicant_email'] = $applicant['email'];
-                $_SESSION['applicant_name'] = ($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? '');
-                $_SESSION['applicant_login_time'] = time();
-                
-                // Redirect to JAMB verification
-                $this->redirect('/apply/step/1');
-                return;
-            } else {
-                $this->data['error'] = 'Invalid or expired verification link';
-            }
-        } else {
-            // Just show the "check your email" page
-            $this->data['email'] = $email;
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
         }
         
-        $this->data['pageTitle'] = 'Email Verification';
+        // Get token from URL
+        $token = $_GET['token'] ?? '';
+        
+        // Debug log
+        error_log("=== verifyEmail called ===");
+        error_log("Token: " . $token);
+        error_log("Session registration_email: " . ($_SESSION['registration_email'] ?? 'not set'));
+        
+        // If no token, show error
+        if (empty($token)) {
+            $this->data['error'] = 'No verification token provided';
+            $this->data['pageTitle'] = 'Email Verification Failed';
+            $this->render('applications/verify-email');
+            return;
+        }
+        
+        // Find applicant by token
+        $applicant = $this->applicantModel->findByVerificationToken($token);
+        
+        if (!$applicant) {
+            // Token not found or expired
+            error_log("No applicant found with token: " . $token);
+            $this->data['error'] = 'Invalid or expired verification link';
+            $this->data['pageTitle'] = 'Email Verification Failed';
+            $this->render('applications/verify-email');
+            return;
+        }
+        
+        error_log("Found applicant: ID=" . $applicant['id'] . ", Email=" . $applicant['email'] . ", Verified=" . $applicant['email_verified']);
+        
+        // Check if already verified
+        if ($applicant['email_verified'] == 1) {
+            $this->data['message'] = 'Email already verified. Please login.';
+            $this->data['pageTitle'] = 'Email Already Verified';
+            $this->render('applications/verify-email');
+            return;
+        }
+        
+        // Update applicant as verified
+        $updated = $this->applicantModel->update(
+            [
+                'email_verified' => 1,
+                'verification_token' => null,
+                'email_verified_at' => date('Y-m-d H:i:s')
+            ],
+            'id = :id',
+            ['id' => $applicant['id']]
+        );
+        
+        if ($updated) {
+            error_log("Successfully verified applicant ID: " . $applicant['id']);
+            
+            // Auto-login the applicant
+            $_SESSION['applicant_id'] = $applicant['id'];
+            $_SESSION['applicant_email'] = $applicant['email'];
+            $_SESSION['applicant_name'] = ($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? '');
+            $_SESSION['applicant_login_time'] = time();
+            
+            // Clear registration email from session
+            unset($_SESSION['registration_email']);
+            
+            // Success - show verified page
+            $this->data['verified'] = true;
+            $this->data['applicant_name'] = $applicant['first_name'] . ' ' . $applicant['last_name'];
+            $this->data['applicant_email'] = $applicant['email'];
+            $this->data['pageTitle'] = 'Email Verified Successfully';
+            $this->data['auto_redirect'] = true;
+            $this->data['redirect_url'] = '/apply/step/1';
+            $this->data['redirect_timeout'] = 3; // Redirect after 3 seconds
+        } else {
+            // Failed to update
+            error_log("Failed to update applicant ID: " . $applicant['id']);
+            $this->data['error'] = 'Failed to verify email. Please try again.';
+            $this->data['pageTitle'] = 'Email Verification Failed';
+        }
+        
         $this->render('applications/verify-email');
     }
 
