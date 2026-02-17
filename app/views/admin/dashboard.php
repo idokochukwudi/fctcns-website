@@ -42,7 +42,46 @@ try {
     $newsHasType = tableHasColumn($conn, 'news', 'type');
     $eventsTableExists = tableHasColumn($conn, 'events', 'id');
     
-    // ===== NEW CODE: Add news and events statistics =====
+    // ===== APPLICATION STATISTICS =====
+    try {
+        // Get application statistics
+        $appStats = $conn->query("
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'reviewed' THEN 1 ELSE 0 END) as reviewed,
+                SUM(CASE WHEN status = 'accepted' THEN 1 ELSE 0 END) as accepted,
+                SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected
+            FROM applications
+        ")->fetch();
+        
+        $stats['total_applications'] = $appStats['total'] ?? 0;
+        $stats['pending_applications'] = $appStats['pending'] ?? 0;
+        $stats['reviewed_applications'] = $appStats['reviewed'] ?? 0;
+        $stats['accepted_applications'] = $appStats['accepted'] ?? 0;
+        $stats['rejected_applications'] = $appStats['rejected'] ?? 0;
+        
+        // Recent applications with applicant details
+        $stmt = $conn->query("
+            SELECT a.*, ap.first_name, ap.last_name, ap.email 
+            FROM applications a
+            JOIN applicants ap ON a.applicant_id = ap.id
+            ORDER BY a.created_at DESC
+            LIMIT 5
+        ");
+        $recentApplications = $stmt->fetchAll();
+        
+    } catch (Exception $e) {
+        error_log("Error fetching application stats: " . $e->getMessage());
+        $stats['total_applications'] = 0;
+        $stats['pending_applications'] = 0;
+        $stats['reviewed_applications'] = 0;
+        $stats['accepted_applications'] = 0;
+        $stats['rejected_applications'] = 0;
+        $recentApplications = [];
+    }
+    
+    // ===== NEWS AND EVENTS STATISTICS =====
     try {
         // Check if news table has type column (your current structure)
         $newsHasType = tableHasColumn($conn, 'news', 'type');
@@ -99,14 +138,11 @@ try {
         // OLD SYSTEM: news table contains both news and events (has type column)
         $queries = [
             'total_users' => "SELECT COUNT(*) as total FROM users WHERE is_active = 1",
-            'total_applications' => "SELECT COUNT(*) as total FROM applications",
-            'pending_applications' => "SELECT COUNT(*) as total FROM applications WHERE status = 'pending'",
             'total_research' => "SELECT COUNT(*) as total FROM research_publications WHERE is_published = 1",
             'upcoming_events' => "SELECT COUNT(*) as total FROM news WHERE is_published = 1 AND type = 'event' AND (event_date >= CURDATE() OR event_date IS NULL)",
             'total_contacts' => "SELECT COUNT(*) as total FROM contact_submissions",
             'pending_contacts' => "SELECT COUNT(*) as total FROM contact_submissions WHERE status = 'pending'",
             'recent_activities' => "SELECT al.*, u.username as user_name FROM activity_logs al LEFT JOIN users u ON al.user_id = u.id ORDER BY al.created_at DESC LIMIT 10",
-            'recent_applications' => "SELECT a.* FROM applications a ORDER BY a.created_at DESC LIMIT 5",
             'recent_news' => "SELECT n.*, u.username as author_name FROM news n LEFT JOIN users u ON n.author_id = u.id WHERE n.is_published = 1 AND n.type = 'news' ORDER BY n.created_at DESC LIMIT 5",
             'recent_events' => "SELECT n.*, u.username as author_name FROM news n LEFT JOIN users u ON n.author_id = u.id WHERE n.is_published = 1 AND n.type = 'event' ORDER BY n.event_date DESC, n.created_at DESC LIMIT 5"
         ];
@@ -114,21 +150,18 @@ try {
         // NEW SYSTEM: separate tables for news and events
         $queries = [
             'total_users' => "SELECT COUNT(*) as total FROM users WHERE is_active = 1",
-            'total_applications' => "SELECT COUNT(*) as total FROM applications",
-            'pending_applications' => "SELECT COUNT(*) as total FROM applications WHERE status = 'pending'",
             'total_research' => "SELECT COUNT(*) as total FROM research_publications WHERE is_published = 1",
             'upcoming_events' => "SELECT COUNT(*) as total FROM events WHERE is_published = 1 AND (event_date >= CURDATE() OR event_date IS NULL)",
             'total_contacts' => "SELECT COUNT(*) as total FROM contact_submissions",
             'pending_contacts' => "SELECT COUNT(*) as total FROM contact_submissions WHERE status = 'pending'",
             'recent_activities' => "SELECT al.*, u.username as user_name FROM activity_logs al LEFT JOIN users u ON al.user_id = u.id ORDER BY al.created_at DESC LIMIT 10",
-            'recent_applications' => "SELECT a.* FROM applications a ORDER BY a.created_at DESC LIMIT 5",
             'recent_news' => "SELECT n.*, u.username as author_name FROM news n LEFT JOIN users u ON n.author_id = u.id WHERE n.is_published = 1 ORDER BY n.created_at DESC LIMIT 5",
             'recent_events' => "SELECT e.*, u.username as author_name FROM events e LEFT JOIN users u ON e.author_id = u.id WHERE e.is_published = 1 ORDER BY e.event_date DESC, e.created_at DESC LIMIT 5"
         ];
     }
     
     foreach ($queries as $key => $sql) {
-        if (in_array($key, ['recent_activities', 'recent_applications', 'recent_news', 'recent_events'])) {
+        if (in_array($key, ['recent_activities', 'recent_news', 'recent_events'])) {
             continue; // Handle separately
         }
         $stmt = $conn->query($sql);
@@ -138,10 +171,6 @@ try {
     // Recent activities
     $stmt = $conn->query($queries['recent_activities']);
     $recentActivities = $stmt->fetchAll();
-    
-    // Recent applications
-    $stmt = $conn->query($queries['recent_applications']);
-    $recentApplications = $stmt->fetchAll();
     
     // Recent contact submissions
     $stmt = $conn->query("
@@ -166,6 +195,9 @@ try {
         'total_users' => 0,
         'total_applications' => 0,
         'pending_applications' => 0,
+        'reviewed_applications' => 0,
+        'accepted_applications' => 0,
+        'rejected_applications' => 0,
         'total_research' => 0,
         'total_news' => 0,
         'total_events' => 0,
@@ -766,6 +798,7 @@ try {
         }
         
         .status-pending { background: rgba(214, 158, 46, 0.1); color: var(--admin-warning); }
+        .status-review { background: rgba(49, 130, 206, 0.1); color: var(--admin-info); }
         .status-approved { background: rgba(56, 161, 105, 0.1); color: var(--admin-success); }
         .status-rejected { background: rgba(229, 62, 62, 0.1); color: var(--admin-danger); }
         .status-published { background: rgba(56, 161, 105, 0.1); color: var(--admin-success); }
@@ -1278,7 +1311,7 @@ try {
             <div class="nav-section">
                 <h3 class="nav-section-title">Management</h3>
                 <ul class="nav-links">
-                    <!-- NEWS MANAGER SIDEBAR LINK - Option 4 -->
+                    <!-- NEWS MANAGER SIDEBAR LINK -->
                     <?php 
                     $showNewsManager = in_array($userRole, ['admin', 'editor', 'news_manager']) || 
                                       (isset($_SESSION['user_roles']) && in_array('news_manager', $_SESSION['user_roles']));
@@ -1532,7 +1565,7 @@ try {
         <div class="admin-content">
             <!-- Stats Grid -->
             <div class="stats-grid">
-                <!-- NEWS MANAGER STAT CARD - Option 1 & 2 Combined -->
+                <!-- NEWS MANAGER STAT CARD -->
                 <?php 
                 $showNewsManager = in_array($userRole, ['admin', 'editor', 'news_manager']) || 
                                   (isset($_SESSION['user_roles']) && in_array('news_manager', $_SESSION['user_roles']));
@@ -1597,7 +1630,7 @@ try {
                         <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
                         </svg>
-                        +24%
+                        <?php echo $stats['pending_applications']; ?> pending
                     </div>
                 </div>
                 
@@ -1639,7 +1672,7 @@ try {
                         <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
                         </svg>
-                        +12%
+                        <?php echo $stats['published_news']; ?> published
                     </div>
                 </div>
 
@@ -1687,7 +1720,7 @@ try {
                 </div>
                 <?php endif; ?>
                 
-                <!-- Nominal Roll Statistics Card - Always shown for nominal_roll_user -->
+                <!-- Nominal Roll Statistics Card - Always shown -->
                 <?php 
                 // Get nominal roll statistics
                 $nominalStats = [];
@@ -1773,44 +1806,102 @@ try {
                     </div>
                 </div>
                 
-                <!-- Recent Applications -->
+                <!-- Applications Overview Card -->
                 <div class="content-card">
                     <div class="card-header">
-                        <h3>Recent Applications</h3>
+                        <h3>Applications Overview</h3>
                         <a href="<?php echo BASE_URL; ?>/admin/applications">View All</a>
                     </div>
                     <div class="card-body">
-                        <?php if (!empty($recentApplications)): ?>
-                        <table class="applications-table">
+                        <?php
+                        // Get application statistics
+                        try {
+                            $appStats = $conn->query("
+                                SELECT 
+                                    COUNT(*) as total,
+                                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                                    SUM(CASE WHEN status = 'reviewed' THEN 1 ELSE 0 END) as reviewed,
+                                    SUM(CASE WHEN status = 'accepted' THEN 1 ELSE 0 END) as accepted,
+                                    SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected
+                                FROM applications
+                            ")->fetch();
+                        } catch (Exception $e) {
+                            $appStats = ['total' => 0, 'pending' => 0, 'reviewed' => 0, 'accepted' => 0, 'rejected' => 0];
+                        }
+                        ?>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-bottom: 1.5rem;">
+                            <div style="text-align: center; padding: 0.75rem; background: #f7fafc; border-radius: 8px;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #2d3748;"><?php echo $appStats['total']; ?></div>
+                                <div style="font-size: 0.75rem; color: #718096;">Total</div>
+                            </div>
+                            <div style="text-align: center; padding: 0.75rem; background: #fef3c7; border-radius: 8px;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #d97706;"><?php echo $appStats['pending']; ?></div>
+                                <div style="font-size: 0.75rem; color: #92400e;">Pending</div>
+                            </div>
+                            <div style="text-align: center; padding: 0.75rem; background: #e0f2fe; border-radius: 8px;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #0284c7;"><?php echo $appStats['reviewed']; ?></div>
+                                <div style="font-size: 0.75rem; color: #075985;">Reviewed</div>
+                            </div>
+                            <div style="text-align: center; padding: 0.75rem; background: #d1fae5; border-radius: 8px;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #059669;"><?php echo $appStats['accepted']; ?></div>
+                                <div style="font-size: 0.75rem; color: #065f46;">Accepted</div>
+                            </div>
+                            <div style="text-align: center; padding: 0.75rem; background: #fee2e2; border-radius: 8px;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: #dc2626;"><?php echo $appStats['rejected']; ?></div>
+                                <div style="font-size: 0.75rem; color: #991b1b;">Rejected</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Applications -->
+                        <h4 style="margin: 1rem 0 0.75rem; font-size: 0.875rem; color: #4a5568;">Recent Applications</h4>
+                        <?php
+                        try {
+                            $recentApps = $conn->query("
+                                SELECT a.*, ap.first_name, ap.last_name, ap.email 
+                                FROM applications a
+                                JOIN applicants ap ON a.applicant_id = ap.id
+                                ORDER BY a.created_at DESC
+                                LIMIT 5
+                            ")->fetchAll();
+                        } catch (Exception $e) {
+                            $recentApps = [];
+                        }
+                        ?>
+                        
+                        <?php if (!empty($recentApps)): ?>
+                        <table style="width: 100%; border-collapse: collapse;">
                             <thead>
-                                <tr>
-                                    <th>Applicant</th>
-                                    <th>Program</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
+                                <tr style="border-bottom: 1px solid #e2e8f0;">
+                                    <th style="text-align: left; padding: 0.5rem; font-size: 0.75rem; color: #718096;">Applicant</th>
+                                    <th style="text-align: left; padding: 0.5rem; font-size: 0.75rem; color: #718096;">Program</th>
+                                    <th style="text-align: left; padding: 0.5rem; font-size: 0.75rem; color: #718096;">Date</th>
+                                    <th style="text-align: left; padding: 0.5rem; font-size: 0.75rem; color: #718096;">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($recentApplications as $app): ?>
-                                <tr>
-                                    <td>
-                                        <strong><?php echo htmlspecialchars($app['first_name'] . ' ' . $app['last_name']); ?></strong>
-                                        <div style="font-size: 0.75rem; color: var(--admin-gray-600);">
-                                            <?php echo htmlspecialchars($app['email']); ?>
-                                        </div>
+                                <?php foreach ($recentApps as $app): ?>
+                                <tr style="border-bottom: 1px solid #edf2f7;">
+                                    <td style="padding: 0.5rem;">
+                                        <a href="<?php echo BASE_URL; ?>/admin/applications/view/<?php echo $app['id']; ?>" style="color: #2c5282; text-decoration: none; font-weight: 500;">
+                                            <?php echo htmlspecialchars($app['first_name'] . ' ' . $app['last_name']); ?>
+                                        </a>
+                                        <div style="font-size: 0.75rem; color: #718096;"><?php echo htmlspecialchars($app['application_number']); ?></div>
                                     </td>
-                                    <td><?php echo htmlspecialchars($app['program'] ?? 'N/A'); ?></td>
-                                    <td><?php echo date('M d, Y', strtotime($app['created_at'])); ?></td>
-                                    <td>
-                                        <?php 
-                                        $statusClass = 'status-pending';
-                                        if ($app['status'] === 'approved') {
-                                            $statusClass = 'status-approved';
-                                        } elseif ($app['status'] === 'rejected') {
-                                            $statusClass = 'status-rejected';
-                                        }
-                                        ?>
-                                        <span class="status-badge <?php echo $statusClass; ?>">
+                                    <td style="padding: 0.5rem;"><?php echo htmlspecialchars($app['program_choice_1']); ?></td>
+                                    <td style="padding: 0.5rem;"><?php echo date('M d, Y', strtotime($app['created_at'])); ?></td>
+                                    <td style="padding: 0.5rem;">
+                                        <span style="display: inline-block; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; 
+                                            <?php
+                                            $colors = [
+                                                'pending' => 'background: #fef3c7; color: #d97706;',
+                                                'reviewed' => 'background: #e0f2fe; color: #0284c7;',
+                                                'accepted' => 'background: #d1fae5; color: #059669;',
+                                                'rejected' => 'background: #fee2e2; color: #dc2626;'
+                                            ];
+                                            echo $colors[$app['status']] ?? 'background: #f1f5f9; color: #475569;';
+                                            ?>
+                                        ">
                                             <?php echo ucfirst($app['status']); ?>
                                         </span>
                                     </td>
@@ -1819,10 +1910,8 @@ try {
                             </tbody>
                         </table>
                         <?php else: ?>
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📋</div>
-                            <div class="empty-state-title">No applications yet</div>
-                            <div class="empty-state-description">Applications will appear here when submitted by users.</div>
+                        <div style="text-align: center; padding: 2rem; color: #a0aec0;">
+                            No applications yet
                         </div>
                         <?php endif; ?>
                     </div>
@@ -1981,8 +2070,10 @@ try {
                                     <td>
                                         <?php if (!empty($event['event_date'])): ?>
                                         <div class="event-date">
-                                            <i class="fas fa-calendar"></i>
-                                            <?php echo date('M d', strtotime($event['event_date'])); ?>
+                                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                                            </svg>
+                                            <?php echo date('M d, Y', strtotime($event['event_date'])); ?>
                                         </div>
                                         <?php endif; ?>
                                     </td>
@@ -2072,7 +2163,7 @@ try {
                             <a href="<?php echo BASE_URL; ?>/admin/nominal-roll/bulk-upload" class="action-btn">
                                 <div class="action-icon" style="background: rgba(214, 158, 46, 0.1); color: var(--admin-warning);">
                                     <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V15a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
                                     </svg>
                                 </div>
                                 <div>
@@ -2143,7 +2234,7 @@ try {
             
             <!-- Quick Actions -->
             <div class="quick-actions">
-                <!-- NEWS MANAGER QUICK ACTION - Option 3 -->
+                <!-- NEWS MANAGER QUICK ACTION -->
                 <?php 
                 $showNewsManager = in_array($userRole, ['admin', 'editor', 'news_manager']) || 
                                   (isset($_SESSION['user_roles']) && in_array('news_manager', $_SESSION['user_roles']));
@@ -2163,118 +2254,55 @@ try {
                 </a>
                 <?php endif; ?>
                 
-                <?php if ($userRole !== 'nominal_roll_user'): // Hide non-nominal roll quick actions ?>
+                <!-- Application Quick Actions -->
+                <?php if ($userRole !== 'nominal_roll_user'): ?>
                 <?php if (in_array($userRole, ['admin', 'editor'])): ?>
-                <a href="<?php echo BASE_URL; ?>/admin/applications/create" class="action-btn">
-                    <div class="action-icon">
+                <a href="<?php echo BASE_URL; ?>/admin/applications" class="action-btn">
+                    <div class="action-icon" style="background: rgba(56, 161, 105, 0.1); color: var(--admin-success);">
                         <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
                         </svg>
                     </div>
                     <div>
-                        <h4>New Application</h4>
-                        <p>Add manual application</p>
+                        <h4>Manage Applications</h4>
+                        <p>View and process applications</p>
                     </div>
                 </a>
                 
-                <a href="<?php echo BASE_URL; ?>/admin/research/create" class="action-btn">
-                    <div class="action-icon">
+                <a href="<?php echo BASE_URL; ?>/admin/applications/settings" class="action-btn">
+                    <div class="action-icon" style="background: rgba(214, 158, 46, 0.1); color: #d69e2e;">
                         <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
                         </svg>
                     </div>
                     <div>
-                        <h4>Add Research</h4>
-                        <p>Upload new research paper</p>
+                        <h4>Application Settings</h4>
+                        <p>Configure fees, dates, requirements</p>
                     </div>
                 </a>
                 
-                <!-- News Quick Action -->
-                <a href="<?php echo BASE_URL; ?>/admin/news/create" class="action-btn">
-                    <div class="action-icon news-action-icon">
+                <a href="<?php echo BASE_URL; ?>/admin/applications/jamb-import" class="action-btn">
+                    <div class="action-icon" style="background: rgba(56, 161, 105, 0.1); color: #38a169;">
                         <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
                         </svg>
                     </div>
                     <div>
-                        <h4>Create News</h4>
-                        <p>Publish news article</p>
-                    </div>
-                </a>
-
-                <!-- Events Quick Action -->
-                <?php if ($eventsTableExists): ?>
-                <a href="<?php echo BASE_URL; ?>/admin/events/create" class="action-btn">
-                <?php else: ?>
-                <a href="<?php echo BASE_URL; ?>/admin/news/create?type=event" class="action-btn">
-                <?php endif; ?>
-                    <div class="action-icon events-action-icon">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h4>Create Event</h4>
-                        <p>Add new event</p>
-                    </div>
-                </a>
-
-                <!-- Manage News Quick Action -->
-                <a href="<?php echo BASE_URL; ?>/admin/news" class="action-btn">
-                    <div class="action-icon news-action-icon">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/>
-                            <path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V7z"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h4>Manage News</h4>
-                        <p>View all news articles</p>
-                    </div>
-                </a>
-
-                <!-- Manage Events Quick Action -->
-                <?php if ($eventsTableExists): ?>
-                <a href="<?php echo BASE_URL; ?>/admin/events" class="action-btn">
-                <?php else: ?>
-                <a href="<?php echo BASE_URL; ?>/admin/news?type=event" class="action-btn">
-                <?php endif; ?>
-                    <div class="action-icon events-action-icon">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h4>Manage Events</h4>
-                        <p>View all events</p>
+                        <h4>Import JAMB Data</h4>
+                        <p>Upload JAMB candidate records</p>
                     </div>
                 </a>
                 
-                <!-- Carousel Quick Action -->
-                <a href="<?php echo BASE_URL; ?>/admin/carousel/create" class="action-btn">
-                    <div class="action-icon">
+                <a href="<?php echo BASE_URL; ?>/admin/applications/payments" class="action-btn">
+                    <div class="action-icon" style="background: rgba(159, 122, 234, 0.1); color: #9f7aea;">
                         <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
+                            <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
                         </svg>
                     </div>
                     <div>
-                        <h4>Add Carousel Slide</h4>
-                        <p>Create new homepage slide</p>
-                    </div>
-                </a>
-                <?php endif; ?>
-                
-                <?php if ($userRole === 'admin'): ?>
-                <!-- User Management Quick Action -->
-                <a href="<?php echo BASE_URL; ?>/admin/users/create" class="action-btn">
-                    <div class="action-icon">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h4>User Management</h4>
-                        <p>Manage user accounts</p>
+                        <h4>View Payments</h4>
+                        <p>Monitor payment transactions</p>
                     </div>
                 </a>
                 <?php endif; ?>
