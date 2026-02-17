@@ -96,10 +96,11 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Process registration (Step 1 - New Flow)
+     * Process registration (Step 1 - New Flow) - FIXED
+     * Redirects to email sent page, not verification with token
      */
     public function processRegistration() {
-        // Start session if not already started
+        // Start session
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -130,10 +131,8 @@ class PublicApplicationController extends ApplicationBaseController {
             $errors[] = 'A valid email address is required';
         }
         
-        if (empty($phone)) {
-            $errors[] = 'Phone number is required';
-        } elseif (!preg_match('/^[0-9]{11}$/', $phone)) {
-            $errors[] = 'Phone number must be 11 digits';
+        if (empty($phone) || !preg_match('/^[0-9]{11}$/', $phone)) {
+            $errors[] = 'Valid 11-digit phone number is required';
         }
         
         if (strlen($password) < 8) {
@@ -167,9 +166,6 @@ class PublicApplicationController extends ApplicationBaseController {
         }
         
         try {
-            // Begin transaction
-            $this->applicantModel->beginTransaction();
-            
             // Create verification token
             $verificationToken = bin2hex(random_bytes(32));
             
@@ -189,21 +185,17 @@ class PublicApplicationController extends ApplicationBaseController {
                 throw new Exception('Failed to create account');
             }
             
-            // Commit transaction
-            $this->applicantModel->commit();
-            
             // Send verification email
             $this->sendVerificationEmail($email, $verificationToken);
             
-            // Store email for display
+            // Store email in session for display
             $_SESSION['registration_email'] = $email;
             
-            // Redirect to verification page
-            header('Location: /apply/verify-email');
+            // IMPORTANT: Redirect to email sent page, NOT to verify-email with token
+            header('Location: /apply/verify-email');  // This shows "check your email" page
             exit;
             
         } catch (Exception $e) {
-            $this->applicantModel->rollback();
             error_log("Registration error: " . $e->getMessage());
             $_SESSION['flash_error'] = 'An error occurred. Please try again.';
             header('Location: /apply/register');
@@ -212,7 +204,10 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Verify email with token - FIXED VERSION
+     * Verify email with token or show email sent page - FIXED
+     * Handles two scenarios:
+     * 1. No token - show "check your email" page
+     * 2. With token - verify the email
      */
     public function verifyEmail() {
         // Start session
@@ -228,22 +223,24 @@ class PublicApplicationController extends ApplicationBaseController {
         error_log("Token: " . $token);
         error_log("Session registration_email: " . ($_SESSION['registration_email'] ?? 'not set'));
         
-        // If no token, show error
+        // If no token, show the "check your email" page
         if (empty($token)) {
-            $this->data['error'] = 'No verification token provided';
-            $this->data['pageTitle'] = 'Email Verification Failed';
+            // Show email sent page
+            $email = $_SESSION['registration_email'] ?? '';
+            $this->data['email'] = $email;
+            $this->data['pageTitle'] = 'Verify Your Email';
             $this->render('applications/verify-email');
             return;
         }
         
-        // Find applicant by token
+        // Token provided - verify the email
         $applicant = $this->applicantModel->findByVerificationToken($token);
         
         if (!$applicant) {
             // Token not found or expired
             error_log("No applicant found with token: " . $token);
             $this->data['error'] = 'Invalid or expired verification link';
-            $this->data['pageTitle'] = 'Email Verification Failed';
+            $this->data['pageTitle'] = 'Verification Failed';
             $this->render('applications/verify-email');
             return;
         }
@@ -281,19 +278,16 @@ class PublicApplicationController extends ApplicationBaseController {
             // Clear registration email from session
             unset($_SESSION['registration_email']);
             
-            // Success - show verified page
+            // Show success page
             $this->data['verified'] = true;
             $this->data['applicant_name'] = $applicant['first_name'] . ' ' . $applicant['last_name'];
             $this->data['applicant_email'] = $applicant['email'];
             $this->data['pageTitle'] = 'Email Verified Successfully';
-            $this->data['auto_redirect'] = true;
-            $this->data['redirect_url'] = '/apply/step/1';
-            $this->data['redirect_timeout'] = 3; // Redirect after 3 seconds
         } else {
             // Failed to update
             error_log("Failed to update applicant ID: " . $applicant['id']);
             $this->data['error'] = 'Failed to verify email. Please try again.';
-            $this->data['pageTitle'] = 'Email Verification Failed';
+            $this->data['pageTitle'] = 'Verification Failed';
         }
         
         $this->render('applications/verify-email');
