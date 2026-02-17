@@ -713,6 +713,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show payment page (Step 3 - New Flow)
+     * FIXED: Generate fresh CSRF token and store in session
      */
     public function showPayment() {
         // Start session
@@ -744,6 +745,18 @@ class PublicApplicationController extends ApplicationBaseController {
             exit;
         }
         
+        // Generate a fresh CSRF token and store it in session
+        $csrfToken = bin2hex(random_bytes(32));
+        
+        // Initialize csrf_tokens array if it doesn't exist
+        if (!isset($_SESSION['csrf_tokens'])) {
+            $_SESSION['csrf_tokens'] = [];
+        }
+        
+        // Store the token with timestamp
+        $_SESSION['csrf_tokens'][$csrfToken] = time();
+        $_SESSION['current_csrf_token'] = $csrfToken; // Store current token for reference
+        
         $fee = $this->settingsModel->getApplicationFee();
         $currency = $this->settingsModel->getCurrency();
         
@@ -753,7 +766,7 @@ class PublicApplicationController extends ApplicationBaseController {
             'fee' => $fee,
             'currency' => $currency,
             'formatted_fee' => $this->settingsModel->getFormattedFee(),
-            'csrf_token' => $this->csrfToken()
+            'csrf_token' => $csrfToken // Use the fresh token
         ]);
         
         $this->render('applications/payment');
