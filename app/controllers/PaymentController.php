@@ -44,36 +44,74 @@ class PaymentController extends Controller {
     /**
      * Initialize payment - Generate RRR
      * URL: POST /payment/initiate
+     * FIXED: Manual CSRF token validation using session storage
      */
     public function initiate() {
         // Set header to JSON
         header('Content-Type: application/json');
         
-        // Start session if not started (parent doesn't always start it)
+        // Start session if not started
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         
+        // Log session for debugging
+        error_log("=== PAYMENT INITIATE ===");
+        error_log("Session ID: " . session_id());
+        error_log("Session applicant_id: " . ($_SESSION['applicant_id'] ?? 'not set'));
+        error_log("Session tokens: " . (isset($_SESSION['csrf_tokens']) ? count($_SESSION['csrf_tokens']) . ' tokens' : 'no tokens array'));
+        
         // Check if user is logged in
         if (!isset($_SESSION['applicant_id'])) {
-            echo json_encode(['success' => false, 'message' => 'Please login first']);
+            error_log("ERROR: User not logged in");
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Please login first'
+            ]);
             return;
         }
         
         try {
-            // Get CSRF token from request and manually set it in POST for parent validation
+            // Get CSRF token from request
             $input = json_decode(file_get_contents('php://input'), true);
+            $csrfToken = $input['csrf_token'] ?? '';
             
-            // IMPORTANT: Set the CSRF token in POST so parent validateCsrfToken() can find it
-            if (isset($input['csrf_token'])) {
-                $_POST['csrf_token'] = $input['csrf_token'];
-            }
+            error_log("CSRF Token received: " . ($csrfToken ? substr($csrfToken, 0, 10) . '...' : 'EMPTY'));
+            error_log("Session csrf_tokens: " . print_r($_SESSION['csrf_tokens'] ?? [], true));
             
-            // Validate CSRF using parent method (no parameters needed)
-            if (!$this->validateCsrfToken()) {
-                echo json_encode(['success' => false, 'message' => 'Invalid security token']);
+            // Manually check CSRF token
+            if (empty($csrfToken)) {
+                error_log("CSRF validation failed: Token is empty");
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Security token missing'
+                ]);
                 return;
             }
+            
+            // Check if token exists in session
+            if (!isset($_SESSION['csrf_tokens'][$csrfToken])) {
+                error_log("CSRF validation failed: Token not found in session");
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Invalid security token'
+                ]);
+                return;
+            }
+            
+            // Check token expiration (1 hour)
+            $tokenTime = $_SESSION['csrf_tokens'][$csrfToken];
+            if (time() - $tokenTime > 3600) {
+                unset($_SESSION['csrf_tokens'][$csrfToken]);
+                error_log("CSRF validation failed: Token expired");
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Security token expired. Please refresh the page.'
+                ]);
+                return;
+            }
+            
+            error_log("CSRF validation successful");
             
             $applicantId = $_SESSION['applicant_id'];
             
@@ -81,22 +119,35 @@ class PaymentController extends Controller {
             $application = $this->applicationModel->getByApplicantId($applicantId);
             
             if (!$application) {
-                echo json_encode(['success' => false, 'message' => 'Application not found']);
+                error_log("Application not found for applicant: $applicantId");
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Application not found'
+                ]);
                 return;
             }
             
+            error_log("Application found: ID=" . $application['id']);
+            
             // Check if already paid
             if ($this->paymentModel->hasSuccessfulPayment($application['id'])) {
-                echo json_encode(['success' => false, 'message' => 'Payment already completed']);
+                error_log("Payment already completed for application: " . $application['id']);
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Payment already completed'
+                ]);
                 return;
             }
             
             // Get fee
             $fee = $this->settingsModel->getApplicationFee();
+            error_log("Application fee: " . $fee);
             
             // Generate RRR (demo)
             $rrr = 'DEMO' . time() . rand(1000, 9999);
             $orderId = 'ORD' . time() . rand(100, 999);
+            
+            error_log("Generated RRR: $rrr, Order ID: $orderId");
             
             // Create payment record
             $paymentData = [
@@ -113,6 +164,8 @@ class PaymentController extends Controller {
             $paymentId = $this->paymentModel->insert($paymentData);
             
             if ($paymentId) {
+                error_log("Payment record created with ID: $paymentId");
+                
                 // Store in session for later use
                 $_SESSION['pending_payment'] = [
                     'payment_id' => $paymentId,
@@ -121,6 +174,9 @@ class PaymentController extends Controller {
                     'created_at' => time()
                 ];
                 
+                // Optionally remove the used token (can be kept for multiple attempts)
+                // unset($_SESSION['csrf_tokens'][$csrfToken]);
+                
                 echo json_encode([
                     'success' => true,
                     'rrr' => $rrr,
@@ -128,6 +184,7 @@ class PaymentController extends Controller {
                     'message' => 'RRR generated successfully'
                 ]);
             } else {
+                error_log("Failed to create payment record");
                 echo json_encode([
                     'success' => false,
                     'message' => 'Failed to generate RRR'
@@ -135,7 +192,11 @@ class PaymentController extends Controller {
             }
             
         } catch (Exception $e) {
-            error_log("Payment initiation error: " . $e->getMessage());
+            error_log("=== PAYMENT INITIATE EXCEPTION ===");
+            error_log("Error message: " . $e->getMessage());
+            error_log("Error file: " . $e->getFile() . " on line " . $e->getLine());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            
             echo json_encode([
                 'success' => false,
                 'message' => 'Server error occurred'
@@ -162,15 +223,18 @@ class PaymentController extends Controller {
         try {
             $input = json_decode(file_get_contents('php://input'), true);
             $rrr = $input['rrr'] ?? $_POST['rrr'] ?? '';
+            $csrfToken = $input['csrf_token'] ?? $_POST['csrf_token'] ?? '';
             
-            // Set CSRF token in POST for parent validation
-            if (isset($input['csrf_token'])) {
-                $_POST['csrf_token'] = $input['csrf_token'];
+            // Validate CSRF token
+            if (empty($csrfToken) || !isset($_SESSION['csrf_tokens'][$csrfToken])) {
+                echo json_encode(['success' => false, 'message' => 'Invalid security token']);
+                return;
             }
             
-            // Validate CSRF using parent method
-            if (!$this->validateCsrfToken()) {
-                echo json_encode(['success' => false, 'message' => 'Invalid security token']);
+            // Check token expiration
+            if (time() - $_SESSION['csrf_tokens'][$csrfToken] > 3600) {
+                unset($_SESSION['csrf_tokens'][$csrfToken]);
+                echo json_encode(['success' => false, 'message' => 'Security token expired']);
                 return;
             }
             
@@ -205,6 +269,9 @@ class PaymentController extends Controller {
             
             // Clear pending payment from session
             unset($_SESSION['pending_payment']);
+            
+            // Remove used token
+            unset($_SESSION['csrf_tokens'][$csrfToken]);
             
             echo json_encode([
                 'success' => true,
@@ -310,11 +377,15 @@ class PaymentController extends Controller {
     }
     
     /**
-     * Check payment status (AJAX endpoint)
+     * Check payment status
      * URL: GET /payment/check-status
      */
     public function checkStatus() {
         header('Content-Type: application/json');
+        
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         
         $rrr = $_GET['rrr'] ?? '';
         
@@ -333,6 +404,7 @@ class PaymentController extends Controller {
         echo json_encode([
             'success' => true,
             'status' => $payment['status'],
+            'payment_date' => $payment['payment_date'] ?? null,
             'message' => $payment['status'] === 'success' ? 'Payment completed' : 'Payment pending'
         ]);
     }
@@ -355,8 +427,9 @@ class PaymentController extends Controller {
             return;
         }
         
-        // Validate CSRF using parent method
-        if (!$this->validateCsrfToken()) {
+        // Validate CSRF token
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        if (empty($csrfToken) || !isset($_SESSION['csrf_tokens'][$csrfToken])) {
             echo json_encode(['error' => 'Invalid CSRF token']);
             return;
         }
@@ -395,6 +468,9 @@ class PaymentController extends Controller {
         
         // Log activity
         $this->logPaymentAction($paymentId, 'manual_verification', "Payment manually verified by admin");
+        
+        // Remove used token
+        unset($_SESSION['csrf_tokens'][$csrfToken]);
         
         echo json_encode(['success' => true, 'message' => 'Payment verified successfully']);
     }
