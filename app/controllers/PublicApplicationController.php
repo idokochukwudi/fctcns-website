@@ -227,8 +227,13 @@ class PublicApplicationController extends ApplicationBaseController {
         if (empty($token)) {
             // Show email sent page
             $email = $_SESSION['registration_email'] ?? '';
+            
+            // Clear this from session so it doesn't persist
+            unset($_SESSION['registration_email']);
+            
             $this->data['email'] = $email;
             $this->data['pageTitle'] = 'Verify Your Email';
+            $this->data['email_sent'] = true; // Add this flag
             $this->render('applications/verify-email');
             return;
         }
