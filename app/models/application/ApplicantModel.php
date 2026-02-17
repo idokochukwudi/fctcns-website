@@ -88,12 +88,14 @@ class ApplicantModel extends BaseModel {
     }
     
     /**
-     * Create applicant from registration (Step 2 - Email/Phone collection)
+     * Create applicant from registration (Step 1 - Email/Phone collection)
+     * FIXED: Only includes email, phone, and password fields - NO JAMB fields
      * 
      * @param array $data Registration data
      * @return int|false Created applicant ID or false on failure
      */
     public function createFromRegistration($data) {
+        // Only include the fields that should be inserted at registration time
         $insertData = [
             'email' => $data['email'],
             'phone' => $data['phone'],
@@ -104,6 +106,11 @@ class ApplicantModel extends BaseModel {
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s')
         ];
+        
+        // IMPORTANT: Do NOT include jamb_number, first_name, last_name, etc. here
+        // Those fields are added later during JAMB verification (Step 2)
+        
+        error_log("ApplicantModel::createFromRegistration - Inserting applicant with email: " . $data['email']);
         
         return $this->insert($insertData);
     }
