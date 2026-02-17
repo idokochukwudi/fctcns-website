@@ -22,7 +22,7 @@
                             <strong style="font-size: 1.5rem; font-family: monospace;"><?php echo $password; ?></strong>
                         </div>
                         <p class="mt-2 mb-0 small text-muted">
-                            <i class="fas fa-info-circle"></i> This password will also be sent to your email after you provide it.
+                            <i class="fas fa-info-circle"></i> This password has also been sent to your email address.
                         </p>
                     </div>
                     
@@ -86,6 +86,37 @@
                         <strong>Note:</strong> Your JAMB details (name, state, LGA, UTME score) are pre-filled and cannot be edited. Please verify they are correct.
                     </div>
                     
+                    <!-- JAMB Data Summary Card -->
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title"><i class="fas fa-id-card me-2 text-primary"></i>Your Verified JAMB Information</h6>
+                            <div class="row mt-3">
+                                <div class="col-sm-6">
+                                    <p class="mb-1"><strong>JAMB Number:</strong><br>
+                                        <span class="text-primary"><?php echo htmlspecialchars($jamb_data['jamb_number']); ?></span>
+                                    </p>
+                                    <p class="mb-1"><strong>Full Name:</strong><br>
+                                        <?php echo htmlspecialchars($jamb_data['first_name'] . ' ' . $jamb_data['last_name'] . ($jamb_data['other_names'] ? ' ' . $jamb_data['other_names'] : '')); ?>
+                                    </p>
+                                    <p class="mb-1"><strong>Gender:</strong><br>
+                                        <?php echo $jamb_data['gender'] === 'M' ? 'Male' : 'Female'; ?>
+                                    </p>
+                                </div>
+                                <div class="col-sm-6">
+                                    <p class="mb-1"><strong>State of Origin:</strong><br>
+                                        <?php echo htmlspecialchars($jamb_data['state_of_origin']); ?>
+                                    </p>
+                                    <p class="mb-1"><strong>LGA:</strong><br>
+                                        <?php echo htmlspecialchars($jamb_data['lga']); ?>
+                                    </p>
+                                    <p class="mb-1"><strong>UTME Score:</strong><br>
+                                        <span class="badge bg-success"><?php echo htmlspecialchars($jamb_data['score']); ?></span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="d-grid gap-2 mt-4">
                         <a href="/apply/step/2" class="btn btn-primary btn-lg" id="continueBtn">
                             <i class="fas fa-arrow-right me-2"></i>Continue to Application Form
@@ -94,7 +125,7 @@
                     
                     <div class="text-center mt-3">
                         <small class="text-muted">
-                            <i class="fas fa-clock me-2"></i>You will be automatically logged in for this session
+                            <i class="fas fa-clock me-2"></i>You are now logged in for this session
                         </small>
                     </div>
                 </div>
@@ -112,5 +143,22 @@
 document.getElementById('continueBtn').addEventListener('click', function(e) {
     this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
     this.style.pointerEvents = 'none';
+});
+
+// Optional: Show countdown or auto-redirect after 10 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    let seconds = 10;
+    const btn = document.getElementById('continueBtn');
+    const originalText = btn.innerHTML;
+    
+    const timer = setInterval(function() {
+        seconds--;
+        if (seconds > 0) {
+            btn.innerHTML = `<i class="fas fa-arrow-right me-2"></i>Continue to Application Form (${seconds}s)`;
+        } else {
+            clearInterval(timer);
+            btn.innerHTML = originalText;
+        }
+    }, 1000);
 });
 </script>
