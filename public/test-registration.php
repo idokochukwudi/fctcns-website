@@ -1,12 +1,31 @@
 <?php
-// Test Registration Flow
+// Test Registration Flow - Production Version
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once dirname(__DIR__) . '/app/config/constants.php';
-require_once dirname(__DIR__) . '/app/config/database.php';
-require_once dirname(__DIR__) . '/app/models/application/ApplicantModel.php';
-require_once dirname(__DIR__) . '/app/controllers/PublicApplicationController.php';
+// Try different possible paths for production
+$possiblePaths = [
+    '/home2/fctcnsed/fctcns-app/app/config/constants.php',  // Your production path
+    dirname(__DIR__) . '/app/config/constants.php',          // Local development path
+    __DIR__ . '/../app/config/constants.php'                 // Alternative relative path
+];
+
+$constantsLoaded = false;
+foreach ($possiblePaths as $path) {
+    if (file_exists($path)) {
+        require_once $path;
+        $constantsLoaded = true;
+        echo "<!-- Loaded constants from: $path -->\n";
+        break;
+    }
+}
+
+if (!$constantsLoaded) {
+    die('ERROR: Could not load constants.php. Tried paths: ' . implode(', ', $possiblePaths));
+}
+
+require_once APP_PATH . '/config/database.php';
+require_once APP_PATH . '/models/application/ApplicantModel.php';
 
 session_start();
 
@@ -14,7 +33,7 @@ $database = Database::getInstance();
 $db = $database->getConnection();
 $applicantModel = new ApplicantModel();
 
-// Test email and phone
+// Generate unique test data
 $testEmail = 'test_' . time() . '@example.com';
 $testPhone = '080' . rand(10000000, 99999999);
 ?>
@@ -26,10 +45,20 @@ $testPhone = '080' . rand(10000000, 99999999);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registration Test Tool</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .path-info { background: #f0f0f0; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
         <h1>Registration Test Tool</h1>
+        
+        <div class="path-info mb-3">
+            <strong>Server Paths:</strong><br>
+            DOCUMENT_ROOT: <?php echo $_SERVER['DOCUMENT_ROOT']; ?><br>
+            SCRIPT_FILENAME: <?php echo $_SERVER['SCRIPT_FILENAME']; ?><br>
+            __DIR__: <?php echo __DIR__; ?>
+        </div>
         
         <div class="row mt-4">
             <div class="col-md-6">
@@ -38,7 +67,7 @@ $testPhone = '080' . rand(10000000, 99999999);
                         Test Registration
                     </div>
                     <div class="card-body">
-                        <form id="testForm">
+                        <form id="testForm" onsubmit="event.preventDefault(); testRegistration();">
                             <div class="mb-3">
                                 <label class="form-label">Email</label>
                                 <input type="email" class="form-control" id="email" value="<?php echo $testEmail; ?>">
@@ -51,7 +80,7 @@ $testPhone = '080' . rand(10000000, 99999999);
                                 <label class="form-label">Password</label>
                                 <input type="text" class="form-control" id="password" value="password123">
                             </div>
-                            <button type="button" class="btn btn-primary" onclick="testRegistration()">
+                            <button type="submit" class="btn btn-primary">
                                 Test Registration
                             </button>
                         </form>
@@ -112,17 +141,22 @@ $testPhone = '080' . rand(10000000, 99999999);
             body: formData
         })
         .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            
             if (response.redirected) {
                 document.getElementById('result').innerHTML = 
                     '<div class="alert alert-success">✓ Registration successful! Redirected to: ' + response.url + '</div>';
             } else {
-                return response.text();
+                return response.text().then(text => {
+                    return { text: text, status: response.status };
+                });
             }
         })
-        .then(text => {
-            if (text) {
+        .then(data => {
+            if (data) {
                 document.getElementById('result').innerHTML = 
-                    '<div class="alert alert-danger">✗ Registration failed:<br><pre>' + text + '</pre></div>';
+                    '<div class="alert alert-danger">✗ Registration failed (Status: ' + data.status + '):<br><pre>' + data.text + '</pre></div>';
             }
         })
         .catch(error => {
