@@ -2,6 +2,7 @@
  * Payment handling JavaScript
  * Handles RRR generation and payment verification
  * FIXED: Proper CSRF token handling for parent Controller
+ * FIXED: Updated status endpoint to /payment/check-status
  */
 
 $(document).ready(function() {
@@ -313,6 +314,7 @@ function verifyPayment(rrr) {
 
 /**
  * Check payment status without verification
+ * FIXED: Updated endpoint from /payment/status to /payment/check-status
  */
 function checkPaymentStatus(rrr) {
     if (!rrr) return;
@@ -320,7 +322,7 @@ function checkPaymentStatus(rrr) {
     console.log('Checking payment status for RRR:', rrr);
     
     $.ajax({
-        url: '/payment/status',
+        url: '/payment/check-status',  // FIXED: Changed from '/payment/status' to '/payment/check-status'
         type: 'GET',
         data: { rrr: rrr },
         dataType: 'json',
