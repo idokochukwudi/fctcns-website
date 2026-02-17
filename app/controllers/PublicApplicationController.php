@@ -1132,13 +1132,31 @@ class PublicApplicationController extends ApplicationBaseController {
      * Show step 1: JAMB verification (Legacy Flow)
      */
     public function step1() {
-        // If already logged in, redirect
+        // Check if portal is open
+        if (!$this->settingsModel->isPortalOpen()) {
+            $this->data['portal_closed'] = true;
+            $this->data['portal_message'] = $this->settingsModel->getPortalMessage();
+            $this->render('applications/step1');
+            return;
+        }
+        
+        // If already logged in, redirect to application form
         if ($this->isApplicantLoggedIn()) {
             header('Location: /apply/form');
             return;
         }
         
-        $this->data['pageTitle'] = 'Step 1: JAMB Verification';
+        // Get terms and settings for display
+        $terms = $this->termsModel->getForAcceptance();
+        $settings = $this->settingsModel->getAllSettings();
+        
+        $this->data = array_merge($this->data, [
+            'pageTitle' => 'Step 1: JAMB Verification',
+            'terms' => $terms,
+            'settings' => $settings,
+            'csrf_token' => $this->csrfToken()
+        ]);
+        
         $this->render('applications/step1');
     }
 
@@ -1192,37 +1210,98 @@ class PublicApplicationController extends ApplicationBaseController {
     // ============================================
 
     /**
-     * Verify JAMB number (AJAX endpoint)
+     * Verify JAMB number (AJAX endpoint) - FIXED VERSION
      */
     public function verifyJamb() {
-        // This would be an AJAX endpoint for JAMB verification
+        // Set header for JSON response
         header('Content-Type: application/json');
         
-        $jambNumber = $_POST['jamb_number'] ?? '';
-        
-        if (empty($jambNumber)) {
-            echo json_encode(['success' => false, 'message' => 'JAMB number is required']);
-            exit;
+        // Check if user is logged in (optional - can verify without login first)
+        // Uncomment if you want to require login before JAMB verification
+        /*
+        if (!isset($_SESSION['applicant_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Please login first']);
+            return;
         }
+        */
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+            return;
+        }
+        
+        // Validate CSRF
+        if (!$this->validateCsrfToken()) {
+            echo json_encode(['success' => false, 'message' => 'Security token expired']);
+            return;
+        }
+        
+        $jambNumber = trim($_POST['jamb_number'] ?? '');
+        
+        // Validate JAMB number
+        if (empty($jambNumber) || !preg_match('/^[0-9A-Z]{10,14}$/', strtoupper($jambNumber))) {
+            echo json_encode(['success' => false, 'message' => 'Invalid JAMB number format']);
+            return;
+        }
+        
+        // Convert to uppercase for consistency
+        $jambNumber = strtoupper($jambNumber);
         
         // Find JAMB candidate
-        $candidate = $this->jambModel->findByJambNumber($jambNumber);
+        $jambCandidate = $this->jambModel->findByJambNumber($jambNumber);
         
-        if (!$candidate) {
-            echo json_encode(['success' => false, 'message' => 'JAMB number not found']);
-            exit;
+        if (!$jambCandidate) {
+            echo json_encode(['success' => false, 'message' => 'JAMB number not found in our records']);
+            return;
         }
         
-        if ($candidate['is_used']) {
-            echo json_encode(['success' => false, 'message' => 'JAMB number already used']);
-            exit;
+        // Check if already used
+        if ($jambCandidate['is_used']) {
+            echo json_encode(['success' => false, 'message' => 'This JAMB number has already been used']);
+            return;
         }
         
+        // Check score requirement
+        $minScore = $this->settingsModel->get('min_utme_score', 170);
+        if ($jambCandidate['aggregate_score'] < $minScore) {
+            echo json_encode([
+                'success' => false, 
+                'message' => "Your score of {$jambCandidate['aggregate_score']} is below the minimum requirement of {$minScore}"
+            ]);
+            return;
+        }
+        
+        // Start session if not already started
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Store in session
+        $_SESSION['jamb_verification'] = [
+            'id' => $jambCandidate['id'],
+            'jamb_number' => $jambCandidate['jamb_number'],
+            'first_name' => $jambCandidate['first_name'],
+            'last_name' => $jambCandidate['last_name'],
+            'other_names' => $jambCandidate['other_names'],
+            'gender' => $jambCandidate['gender'],
+            'state_of_origin' => $jambCandidate['state_of_origin'],
+            'lga' => $jambCandidate['lga'],
+            'score' => $jambCandidate['aggregate_score']
+        ];
+        
+        // Return complete data
         echo json_encode([
             'success' => true,
             'data' => [
-                'name' => $candidate['first_name'] . ' ' . $candidate['last_name'],
-                'score' => $candidate['aggregate_score'] ?? $candidate['utme_score'] ?? 0
+                'jamb_number' => $jambCandidate['jamb_number'],
+                'name' => $jambCandidate['first_name'] . ' ' . $jambCandidate['last_name'],
+                'first_name' => $jambCandidate['first_name'],
+                'last_name' => $jambCandidate['last_name'],
+                'other_names' => $jambCandidate['other_names'],
+                'gender' => $jambCandidate['gender'],
+                'state_of_origin' => $jambCandidate['state_of_origin'],
+                'lga' => $jambCandidate['lga'],
+                'score' => $jambCandidate['aggregate_score']
             ]
         ]);
         exit;

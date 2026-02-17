@@ -9,6 +9,7 @@ error_log("REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
 error_log("REQUEST_URI: " . $_SERVER['REQUEST_URI']);
 error_log("POST data: " . print_r($_POST, true));
 error_log("Session: " . print_r($_SESSION, true));
+
 // Load constants file - FIXED PATH
 // Since this file is at: C:\xampp\htdocs\fctcns-website\app\views\admin\index.php
 // We need to go up 3 levels to reach the project root
@@ -79,6 +80,11 @@ $routes = [
     'applications/edit' => ['controller' => 'ApplicationController', 'method' => 'edit'],
     'applications/store' => ['controller' => 'ApplicationController', 'method' => 'store'],
     'applications/update-status' => ['controller' => 'ApplicationController', 'method' => 'updateStatus'],
+    'applications/dashboard' => ['controller' => 'ApplicationController', 'method' => 'dashboard'],
+    'applications/settings' => ['controller' => 'ApplicationController', 'method' => 'settings'],
+    'applications/jamb-import' => ['controller' => 'ApplicationController', 'method' => 'jambImport'],
+    'applications/terms' => ['controller' => 'ApplicationController', 'method' => 'terms'],
+    'applications/payments' => ['controller' => 'ApplicationController', 'method' => 'payments'],
     
     // Research - COMPLETE WITH VIEW ROUTE
     'research' => ['controller' => 'ResearchController', 'method' => 'index'],
@@ -227,6 +233,15 @@ http_response_code(404);
             background: #1a365d;
             transform: translateY(-1px);
         }
+
+        .btn-secondary {
+            background: #718096;
+            margin-left: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #4a5568;
+        }
     </style>
 </head>
 <body>
@@ -236,7 +251,7 @@ http_response_code(404);
         <p>The requested admin page "<?php echo htmlspecialchars($route_key); ?>" could not be found.</p>
         <p>Available routes: <?php echo implode(', ', array_keys($routes)); ?></p>
         <a href="<?php echo BASE_URL; ?>/admin/dashboard" class="btn">Go to Dashboard</a>
-        <a href="<?php echo BASE_URL; ?>/admin/debug" class="btn" style="background: #718096; margin-left: 10px;">Debug</a>
+        <a href="<?php echo BASE_URL; ?>/admin/debug" class="btn btn-secondary">Debug</a>
     </div>
 </body>
 </html>

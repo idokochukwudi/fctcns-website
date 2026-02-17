@@ -566,12 +566,12 @@ class AdminApplicationController extends Controller {
      */
     public function jambImport() {
         // Get recent imports using the jambModel
-        $imports = $this->jambModel->fetchAll(
+        $imports = $this->db->fetchAll(
             "SELECT * FROM jamb_import_logs ORDER BY created_at DESC LIMIT 20"
         );
         
         // Get stats using the jambModel
-        $stats = $this->jambModel->fetchOne(
+        $stats = $this->db->fetchOne(
             "SELECT 
                 COUNT(*) as total,
                 SUM(is_used) as used,
@@ -947,17 +947,21 @@ class AdminApplicationController extends Controller {
         
         // Get total count
         $countSql = "SELECT COUNT(*) as total FROM application_payments p";
+        $countParams = [];
+        
         if (!empty($status) || !empty($search)) {
             $countSql .= " WHERE 1=1";
             if (!empty($status)) {
                 $countSql .= " AND p.status = :status";
+                $countParams['status'] = $status;
             }
             if (!empty($search)) {
                 $countSql .= " AND (p.rrr LIKE :search OR p.reference LIKE :search)";
+                $countParams['search'] = '%' . $search . '%';
             }
         }
         
-        $total = $this->db->fetchOne($countSql, $params)['total'];
+        $total = $this->db->fetchOne($countSql, $countParams)['total'];
         $totalPages = ceil($total / $limit);
         
         $stats = $this->paymentModel->getStats();
@@ -1252,5 +1256,31 @@ class AdminApplicationController extends Controller {
         $this->data = array_merge($this->data, $data);
         
         parent::render($view);
+    }
+    
+    /**
+     * Get flash message
+     */
+    private function getFlash($type) {
+        if (isset($_SESSION['flash_' . $type])) {
+            $message = $_SESSION['flash_' . $type];
+            unset($_SESSION['flash_' . $type]);
+            return $message;
+        }
+        return null;
+    }
+    
+    /**
+     * Input helper
+     */
+    protected function input($key, $default = '') {
+        return $_POST[$key] ?? $_GET[$key] ?? $default;
+    }
+    
+    /**
+     * Query helper
+     */
+    protected function query($key, $default = '') {
+        return $_GET[$key] ?? $default;
     }
 }
