@@ -222,39 +222,6 @@ class PaymentController extends Controller {
     }
     
     /**
-     * Check payment status
-     * URL: GET /payment/status
-     */
-    public function status() {
-        header('Content-Type: application/json');
-        
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        
-        $rrr = $_GET['rrr'] ?? '';
-        
-        if (empty($rrr)) {
-            echo json_encode(['success' => false, 'message' => 'RRR required']);
-            return;
-        }
-        
-        $payment = $this->paymentModel->getByRRR($rrr);
-        
-        if (!$payment) {
-            echo json_encode(['success' => false, 'message' => 'Payment not found']);
-            return;
-        }
-        
-        echo json_encode([
-            'success' => true,
-            'status' => $payment['status'],
-            'payment_date' => $payment['payment_date'] ?? null,
-            'message' => $payment['status'] === 'success' ? 'Payment completed' : 'Payment pending'
-        ]);
-    }
-    
-    /**
      * Remita response handler
      * URL: GET /payment/remita-response
      */
