@@ -1213,8 +1213,7 @@ class PublicApplicationController extends ApplicationBaseController {
         $_SESSION['applicant_name'] = ($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? '');
         $_SESSION['applicant_login_time'] = time();
         
-        // ===== FIXED: Check application progress and redirect correctly =====
-        // Get the application for this applicant
+        // Get application to determine current step
         $application = $this->applicationModel->getByApplicantId($applicant['id']);
 
         if (!$application) {
@@ -1256,17 +1255,20 @@ class PublicApplicationController extends ApplicationBaseController {
 
         switch ($step) {
             case 1:
+                // No JAMB yet, go to JAMB verification
                 header('Location: /apply/step/1');
                 break;
             case 2:
-                // User has verified JAMB but not completed form
-                // Still redirect to step 1 which now shows the form
-                header('Location: /apply/step/1');
+                // JAMB verified, application form in progress
+                // Go to the application form page (not back to step 1)
+                header('Location: /apply/form');
                 break;
             case 3:
+                // Payment page
                 header('Location: /apply/step/3');
                 break;
             case 4:
+                // Exam slip page
                 header('Location: /apply/step/4');
                 break;
             default:
@@ -1397,6 +1399,13 @@ class PublicApplicationController extends ApplicationBaseController {
             $this->data['jamb_verified'] = true;
             $this->data['jamb_data'] = $_SESSION['jamb_verification'];
             $this->data['application_step'] = $application['application_step'];
+            
+            // If application step is 2, redirect to form
+            if ($application['application_step'] == 2) {
+                error_log("Application step 2 detected, redirecting to form");
+                header('Location: /apply/form');
+                exit;
+            }
         }
         
         $terms = $this->termsModel->getForAcceptance();
