@@ -2,9 +2,10 @@
 /**
  * Application Form View - Step 2
  * FIXED: Added logout button, enhanced file indicators, PDF view icons, wider desktop layout
+ * UPDATED: Full-width layout with improved spacing
  * 
  * @package FCTCNS
- * @version 2.3 - Enhanced with logout, file indicators, PDF icons, wider layout
+ * @version 2.4 - Full-width layout with optimized desktop spacing
  */
 
 extract($data ?? []);
@@ -144,7 +145,7 @@ if (empty($applicant_name)) {
         
         /* Spacing - Clean and Consistent */
         --gutter: clamp(1rem, 4vw, 4rem);
-        --container-max: 1600px; /* INCREASED from 1400px to 1600px for wider desktop layout */
+        --container-max: 1800px; /* INCREASED from 1600px to 1800px for ultra-wide layout */
         
         --space-xs: 0.5rem;
         --space-sm: 1rem;
@@ -155,7 +156,7 @@ if (empty($applicant_name)) {
     }
 
     /* ==========================================================================
-       CONTAINER & LAYOUT - ENHANCED FOR WIDER DESKTOP
+       CONTAINER & LAYOUT - OPTIMIZED FOR WIDE SCREENS
        ========================================================================== */
     .container {
         width: 100%;
@@ -164,22 +165,18 @@ if (empty($applicant_name)) {
         padding: var(--space-lg) var(--gutter);
     }
 
-    /* Wider columns for desktop */
-    .col-lg-10 {
-        width: 100%;
-    }
-    
-    @media (min-width: 1200px) {
-        .col-xl-9 {
-            width: 90%; /* Wider on large screens */
-            margin: 0 auto;
+    /* Reduced side padding on very wide screens */
+    @media (min-width: 1400px) {
+        .container {
+            padding-left: 2rem;
+            padding-right: 2rem;
         }
     }
-    
-    @media (min-width: 1600px) {
-        .col-xxl-8 {
-            width: 85%; /* Even wider on extra large screens */
-            margin: 0 auto;
+
+    @media (min-width: 1800px) {
+        .container {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
         }
     }
 
@@ -403,7 +400,7 @@ if (empty($applicant_name)) {
         display: flex;
         justify-content: space-between;
         width: 100%;
-        max-width: 700px; /* INCREASED from 600px to 700px */
+        max-width: 900px; /* INCREASED from 700px to 900px for better spacing */
         margin: 0 auto;
     }
 
@@ -528,7 +525,13 @@ if (empty($applicant_name)) {
 
     @media (min-width: 1200px) {
         .card-body {
-            padding: var(--space-xxl); /* More padding on larger screens */
+            padding: 3rem 4rem; /* More padding on larger screens */
+        }
+    }
+
+    @media (min-width: 1600px) {
+        .card-body {
+            padding: 3rem 5rem; /* Even more padding on ultra-wide screens */
         }
     }
 
@@ -1004,17 +1007,17 @@ if (empty($applicant_name)) {
     }
 
     /* ==========================================================================
-       GRID SYSTEM - ENHANCED FOR WIDER LAYOUT
+       GRID SYSTEM - ENHANCED FOR FULL WIDTH
        ========================================================================== */
     .row {
         display: flex;
         flex-wrap: wrap;
-        margin: calc(-1 * var(--space-md)); /* Increased from -sm to -md for more spacing */
+        margin: calc(-1 * var(--space-md));
     }
 
     .col {
         flex: 1 0 0%;
-        padding: var(--space-md); /* Increased from sm to md */
+        padding: var(--space-md);
     }
 
     .col-12 { width: 100%; padding: var(--space-md); }
@@ -1039,9 +1042,15 @@ if (empty($applicant_name)) {
     }
 
     @media (min-width: 1200px) {
+        .col-xl-12 { width: 100%; }
         .col-xl-10 { width: 83.333%; }
         .col-xl-8 { width: 66.667%; }
         .col-xl-6 { width: 50%; }
+    }
+
+    @media (min-width: 1400px) {
+        .col-xxl-12 { width: 100%; }
+        .col-xxl-9 { width: 75%; }
     }
 
     /* ==========================================================================
@@ -1135,7 +1144,7 @@ if (empty($applicant_name)) {
 
     @media (max-width: 480px) {
         .card-body {
-            padding: var(--space-lg);
+            padding: var(--space-lg); /* Override wide-screen padding for mobile */
         }
         
         .upload-area {
@@ -1211,7 +1220,8 @@ if (empty($applicant_name)) {
     <main id="main-content" class="main-content" role="main">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-12 col-lg-11 col-xl-10 col-xxl-9"> <!-- WIDER columns for desktop -->
+                <!-- FIXED: Changed from col-12 col-lg-11 col-xl-10 col-xxl-9 to col-12 for full width -->
+                <div class="col-12">
                     
                     <!-- TOP BAR WITH WELCOME AND LOGOUT BUTTON -->
                     <div class="top-bar fade-in">
