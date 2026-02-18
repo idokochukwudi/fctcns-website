@@ -431,9 +431,9 @@
                 Email: 
                 <?php 
                 if (isset($settings) && is_array($settings) && isset($settings['key_value'])) {
-                    echo htmlspecialchars($settings['key_value']['support_email'] ?? 'support.consap@fcthhss.abj.gov.ng');
+                    echo htmlspecialchars($settings['key_value']['support_email'] ?? 'info@fctcns.edu.ng');
                 } else {
-                    echo 'support.consap@fcthhss.abj.gov.ng';
+                    echo 'info@fctcns.edu.ng';  // UPDATED: Changed to info@fctcns.edu.ng
                 }
                 ?>
             </p>
