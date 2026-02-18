@@ -4,7 +4,7 @@
  * 
  * Handles public-facing application processes
  * ENHANCED: Added application creation during JAMB verification, specific login error messages, password reset functionality
- * FIXED: Redirect from application form to step 2, proper JAMB data restoration
+ * FIXED: Redirect from application form to step 2, proper JAMB data restoration, saveApplication field mapping
  * 
  * @package FCT_CNS
  */
@@ -556,7 +556,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Save application form - FIXED with birth certificate persistence
+     * Save application form - FIXED with correct field mapping and validation
      */
     public function saveApplication() {
         // Set header to JSON first thing
@@ -582,7 +582,7 @@ class PublicApplicationController extends ApplicationBaseController {
         try {
             $applicantId = $_SESSION['applicant_id'];
             
-            // Get JAMB data from session or hidden fields
+            // Get JAMB data from hidden fields
             $jambNumber = $_POST['jamb_number'] ?? '';
             $firstName = $_POST['first_name'] ?? '';
             $lastName = $_POST['last_name'] ?? '';
@@ -592,30 +592,62 @@ class PublicApplicationController extends ApplicationBaseController {
             $lga = $_POST['lga'] ?? '';
             $utmeScore = $_POST['utme_score'] ?? '';
             
-            // Get editable fields
+            // Get editable fields - FIXED: Match form field names
             $dateOfBirth = $_POST['date_of_birth'] ?? '';
             $phone = $_POST['phone'] ?? '';
+            $email = $_POST['email'] ?? '';  // Added email
             $address = $_POST['address'] ?? '';
-            $programChoice = $_POST['program_choice'] ?? '';
+            $nationality = $_POST['nationality'] ?? 'Nigerian';  // Added nationality with default
+            $programChoice = $_POST['program_choice_1'] ?? '';  // FIXED: Match form field name
             
-            // Validate required fields
-            if (empty($dateOfBirth) || empty($phone) || empty($address) || empty($programChoice)) {
-                echo json_encode(['success' => false, 'message' => 'Please fill all required fields']);
+            // Debug log
+            error_log("Save Application - POST data: " . print_r($_POST, true));
+            
+            // Validate required fields - FIXED: Match form field names
+            $missingFields = [];
+            if (empty($dateOfBirth)) $missingFields[] = 'date_of_birth';
+            if (empty($phone)) $missingFields[] = 'phone';
+            if (empty($email)) $missingFields[] = 'email';
+            if (empty($address)) $missingFields[] = 'address';
+            if (empty($programChoice)) $missingFields[] = 'program_choice_1';
+            
+            if (!empty($missingFields)) {
+                error_log("Missing fields: " . implode(', ', $missingFields));
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Please fill all required fields: ' . implode(', ', $missingFields)
+                ]);
                 return;
             }
             
             // Check if application exists
             $application = $this->applicationModel->getByApplicantId($applicantId);
             
-            // Prepare update data
+            // Handle O'Level results
+            $olevelData = [];
+            if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
+                $olevelData = $_POST['olevel'];
+                error_log("O'Level data received: " . print_r($olevelData, true));
+            }
+            
+            // Prepare update data - FIXED: Match database column names
             $updateData = [
                 'date_of_birth' => $dateOfBirth,
                 'phone' => $phone,
+                'email' => $email,
                 'address' => $address,
+                'nationality' => $nationality,
                 'program_choice_1' => $programChoice,
+                'program_choice_2' => '',  // Not used in form
+                'program_choice_3' => '',  // Not used in form
                 'application_step' => 2,
                 'updated_at' => date('Y-m-d H:i:s')
             ];
+            
+            // Store O'Level results as JSON if present
+            if (!empty($olevelData)) {
+                $updateData['olevel_results'] = json_encode($olevelData);
+            }
             
             // Handle file uploads
             $uploadErrors = [];
@@ -625,12 +657,13 @@ class PublicApplicationController extends ApplicationBaseController {
                 $passportResult = $this->uploadFile($_FILES['passport'], $applicantId, 'passport');
                 if ($passportResult['success']) {
                     $updateData['passport_photo'] = $passportResult['path'];
+                    error_log("Passport uploaded: " . $passportResult['path']);
                 } else {
                     $uploadErrors[] = 'Passport: ' . $passportResult['message'];
                 }
             }
             
-            // Upload O'Level results
+            // Upload O'Level results (files)
             if (isset($_FILES['olevel'])) {
                 $files = $_FILES['olevel'];
                 $olevelFiles = [];
@@ -690,7 +723,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
             }
             
-            // Upload birth certificate (optional) - FIXED: Now saves to database
+            // Upload birth certificate (optional)
             if (isset($_FILES['birth_certificate']) && $_FILES['birth_certificate']['error'] === UPLOAD_ERR_OK) {
                 $birthCertResult = $this->uploadFile($_FILES['birth_certificate'], $applicantId, 'birth_certificate');
                 if ($birthCertResult['success']) {
@@ -715,37 +748,67 @@ class PublicApplicationController extends ApplicationBaseController {
                     'utme_score' => $utmeScore,
                     'date_of_birth' => $dateOfBirth,
                     'phone' => $phone,
+                    'email' => $email,
                     'address' => $address,
+                    'nationality' => $nationality,
                     'program_choice_1' => $programChoice,
+                    'program_choice_2' => '',
+                    'program_choice_3' => '',
+                    'program' => $programChoice,
                     'passport_photo' => $updateData['passport_photo'] ?? null,
-                    'olevel_results' => $updateData['olevel_results'] ?? null,
+                    'olevel_results' => !empty($olevelData) ? json_encode($olevelData) : ($updateData['olevel_results'] ?? null),
                     'qualification_file' => $updateData['qualification_file'] ?? null,
                     'birth_certificate' => $updateData['birth_certificate'] ?? null,
                     'application_step' => 2,
                     'status' => 'pending',
+                    'entry_year' => date('Y'),
+                    'highest_qualification' => 'SSCE',
                     'created_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s')
                 ]);
+                
+                error_log("Created new application ID: " . $applicationId);
             } else {
                 // Update existing application
-                $applicationId = $application['id'];
                 $this->applicationModel->update(
-                    $updateData,
-                    'id = :id',
-                    ['id' => $application['id']]
+                    $application['id'],
+                    $updateData
                 );
+                $applicationId = $application['id'];
+                error_log("Updated existing application ID: " . $applicationId);
             }
             
+            // Update applicant phone and email if needed
+            $this->applicantModel->update(
+                $applicantId,
+                [
+                    'phone' => $phone,
+                    'email' => $email,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]
+            );
+            
             // Return success response
-            echo json_encode([
+            $response = [
                 'success' => true,
                 'message' => 'Application saved successfully',
-                'application_id' => $applicationId,
-                'upload_errors' => $uploadErrors
-            ]);
+                'application_id' => $applicationId
+            ];
+            
+            if (!empty($uploadErrors)) {
+                $response['upload_errors'] = $uploadErrors;
+            }
+            
+            // If action is 'next', redirect to payment
+            if (isset($_POST['action']) && $_POST['action'] === 'next') {
+                $response['redirect'] = '/apply/step/3';
+            }
+            
+            echo json_encode($response);
             
         } catch (Exception $e) {
             error_log("Save application error: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             echo json_encode([
                 'success' => false,
                 'message' => 'Server error: ' . $e->getMessage()
@@ -845,9 +908,8 @@ class PublicApplicationController extends ApplicationBaseController {
             if (!empty($updateData)) {
                 $updateData['updated_at'] = date('Y-m-d H:i:s');
                 $this->applicationModel->update(
-                    $updateData,
-                    'id = :id',
-                    ['id' => $application['id']]
+                    $application['id'],
+                    $updateData
                 );
             }
             
@@ -1926,7 +1988,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show step 2: Application form (Legacy Flow) - FIXED
-     * This method now properly restores JAMB data from database and redirects to /apply/step/2
+     * This method now properly restores JAMB data from database and renders the form
      */
     public function step2() {
         // Start session

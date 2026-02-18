@@ -1,7 +1,7 @@
 <?php
 /**
  * Step 2: Application Form View
- * FIXED: Complete restoration from old code - JAMB score, O'Level details, passport preview
+ * FIXED: Removed score field, expanded width for better fit
  * 
  * @package FCTCNS
  */
@@ -62,7 +62,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
         }
         
         .container {
-            max-width: 1000px;
+            max-width: 1200px; /* Increased from 1000px to 1200px */
             margin: 0 auto;
         }
         
@@ -83,21 +83,23 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
         .card-header h2 {
             margin: 0;
             font-weight: 600;
+            font-size: 2rem;
         }
         
         .card-header p {
             margin: 10px 0 0;
             opacity: 0.9;
+            font-size: 1.1rem;
         }
         
         .card-body {
-            padding: 40px;
+            padding: 50px; /* Increased padding */
             background: white;
         }
         
         .jumbotron {
             background: #f0f4f8;
-            padding: 20px;
+            padding: 25px;
             border-radius: 15px;
             margin-bottom: 30px;
             border-left: 5px solid #667eea;
@@ -106,11 +108,13 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
         .jumbotron h4 {
             color: #333;
             margin-bottom: 10px;
+            font-size: 1.4rem;
         }
         
         .jumbotron p {
             margin: 0;
             color: #666;
+            font-size: 1.1rem;
         }
         
         .badge-score {
@@ -124,7 +128,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
         
         .form-section {
             background: #f9f9f9;
-            padding: 25px;
+            padding: 30px;
             border-radius: 15px;
             margin-bottom: 30px;
         }
@@ -132,7 +136,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
         .form-section h3 {
             color: #333;
             margin-bottom: 20px;
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             font-weight: 600;
             border-bottom: 2px solid #667eea;
             padding-bottom: 10px;
@@ -146,6 +150,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
         .form-label {
             font-weight: 500;
             color: #555;
+            font-size: 0.95rem;
         }
         
         .form-label .text-danger {
@@ -155,8 +160,9 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
         .form-control, .form-select {
             border: 2px solid #e0e0e0;
             border-radius: 10px;
-            padding: 10px 15px;
+            padding: 12px 15px;
             transition: all 0.3s;
+            font-size: 1rem;
         }
         
         .form-control:focus, .form-select:focus {
@@ -178,8 +184,8 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
         }
         
         .document-preview img {
-            max-width: 150px;
-            max-height: 150px;
+            max-width: 180px; /* Increased from 150px */
+            max-height: 180px;
             border-radius: 5px;
             border: 3px solid white;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
@@ -191,6 +197,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
             padding: 12px 30px;
             border-radius: 10px;
             font-weight: 600;
+            font-size: 1rem;
         }
         
         .btn-primary:hover {
@@ -204,6 +211,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
             padding: 12px 30px;
             border-radius: 10px;
             font-weight: 600;
+            font-size: 1rem;
         }
         
         .btn-success:hover {
@@ -229,6 +237,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
             border: none;
             border-left: 5px solid;
             margin-bottom: 20px;
+            padding: 15px 20px;
         }
         
         .alert-success {
@@ -250,19 +259,21 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
             background: white;
             border: 2px solid #e0e0e0;
             border-radius: 15px;
-            padding: 20px;
+            padding: 25px;
             margin-bottom: 20px;
         }
         
         .text-muted small {
             display: block;
             margin-top: 5px;
+            font-size: 0.9rem;
         }
         
         .footer {
             text-align: center;
             margin-top: 30px;
             color: rgba(255,255,255,0.9);
+            font-size: 0.95rem;
         }
         
         .footer a {
@@ -273,6 +284,28 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
         
         .footer a:hover {
             border-bottom-color: white;
+        }
+        
+        /* Grid adjustments for better spacing */
+        .row {
+            margin-right: -15px;
+            margin-left: -15px;
+        }
+        
+        .col-md-2, .col-md-3, .col-md-4, .col-md-6 {
+            padding-right: 15px;
+            padding-left: 15px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .card-body {
+                padding: 25px;
+            }
+            
+            .form-section {
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -323,8 +356,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
                             <h4><i class="fas fa-check-circle text-success me-2"></i>JAMB Verified Successfully</h4>
                             <p class="mb-0">
                                 <strong><?php echo e($jamb_data['first_name'] ?? $application['first_name']); ?> <?php echo e($jamb_data['last_name'] ?? $application['last_name']); ?></strong> | 
-                                JAMB: <?php echo e($jamb_data['jamb_number'] ?? $application['jamb_number']); ?> | 
-                                Score: <span class="badge-score"><?php echo e($jamb_data['score'] ?? $application['utme_score']); ?></span>
+                                JAMB: <?php echo e($jamb_data['jamb_number'] ?? $application['jamb_number']); ?>
                             </p>
                         </div>
                         <a href="/applicant/logout" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to logout? Your progress will be saved.');">
@@ -398,10 +430,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
                                 <input type="text" class="form-control" value="<?php echo e($jamb_data['lga'] ?? $application['lga']); ?>" readonly>
                             </div>
                             
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label">UTME Score</label>
-                                <input type="text" class="form-control fw-bold text-success" value="<?php echo e($jamb_data['score'] ?? $application['utme_score']); ?>" readonly>
-                            </div>
+                            <!-- Score field completely removed -->
                         </div>
                         
                         <div class="row">
@@ -466,7 +495,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
                         <input type="hidden" name="program_choice_3" value="">
                     </div>
                     
-                    <!-- O'Level Results Section - COMPLETELY RESTORED FROM OLD CODE -->
+                    <!-- O'Level Results Section -->
                     <div class="form-section">
                         <h3><i class="fas fa-certificate"></i> O'Level Results</h3>
                         <p class="text-muted small mb-3">Credit passes required in English, Mathematics, Biology, Chemistry, and Physics.</p>
@@ -559,7 +588,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
                                 </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <!-- Default O'Level item - EXACTLY as in old code -->
+                                <!-- Default O'Level item -->
                                 <div class="olevel-result-item mb-4 p-3 border rounded">
                                     <div class="row">
                                         <div class="col-md-3 mb-2">
@@ -708,7 +737,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
     </div>
     
     <script>
-    // Add O'Level result item - EXACTLY as in old code
+    // Add O'Level result item
     let olevelIndex = <?php echo count($olevel_results ?? [1]); ?>;
     
     document.getElementById('add-olevel').addEventListener('click', function() {
@@ -831,7 +860,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
         olevelIndex++;
     });
     
-    // Confirm passport upload - EXACTLY as in old code
+    // Confirm passport upload
     function confirmPassportUpload(input) {
         if (input.files && input.files[0]) {
             var reader = new FileReader();
@@ -852,7 +881,7 @@ $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
         }
     }
     
-    // Form validation - EXACTLY as in old code
+    // Form validation
     (function() {
         'use strict';
         
