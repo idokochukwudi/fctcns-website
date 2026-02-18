@@ -451,41 +451,97 @@ document.addEventListener('DOMContentLoaded', function() {
     <?php endif; ?>
 });
 
-// Load JAMB data on page load
+// Load JAMB data on page load - FIXED to check both sessionStorage AND server data
 document.addEventListener('DOMContentLoaded', function() {
+    // First check if we have JAMB data from the server (passed from PHP)
+    <?php if (isset($jamb_data) && $jamb_data): ?>
+    // Use server-provided JAMB data
+    const serverJambData = <?php echo json_encode($jamb_data); ?>;
+    console.log('Using server JAMB data:', serverJambData);
+    
+    // Fill JAMB data from server
+    document.getElementById('first_name').value = serverJambData.first_name || '';
+    document.getElementById('last_name').value = serverJambData.last_name || '';
+    document.getElementById('other_names').value = serverJambData.other_names || '';
+    
+    // Convert gender code to full text if needed
+    let genderText = '';
+    if (serverJambData.gender === 'M') genderText = 'Male';
+    else if (serverJambData.gender === 'F') genderText = 'Female';
+    else genderText = serverJambData.gender || '';
+    document.getElementById('gender').value = genderText;
+    
+    document.getElementById('state_of_origin').value = serverJambData.state_of_origin || '';
+    document.getElementById('lga').value = serverJambData.lga || '';
+    document.getElementById('utme_score_display').value = serverJambData.score || '';
+    
+    // Hidden fields
+    document.getElementById('jamb_number').value = serverJambData.jamb_number || '';
+    document.getElementById('utme_score').value = serverJambData.score || '';
+    
+    // Update summary
+    document.getElementById('jambSummary').innerHTML = `
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0">
+                    <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                        <i class="fas fa-check-circle text-success fa-2x"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h5 class="fw-bold mb-1">JAMB Verified Successfully</h5>
+                    <p class="text-muted mb-0 small">
+                        <strong>${serverJambData.first_name} ${serverJambData.last_name}</strong> | 
+                        JAMB: ${serverJambData.jamb_number} | 
+                        Score: <span class="badge bg-success">${serverJambData.score}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    <?php else: ?>
+    // Fallback to sessionStorage if no server data
     const jambData = sessionStorage.getItem('jamb_data');
     const jambVerified = sessionStorage.getItem('jamb_verified');
     
     if (!jambData || !jambVerified) {
-        showAlert('Please verify your JAMB number first', 'warning');
-        setTimeout(() => {
-            window.location.href = '/apply/step/1';
-        }, 2000);
-        return;
-    }
-    
-    try {
-        const data = JSON.parse(jambData);
-        console.log('Loading JAMB data:', data);
+        // Check if we have application data from server instead
+        <?php if (isset($application) && !empty($application['jamb_number'])): ?>
+        // We have application data but no JAMB data in sessionStorage - this is OK
+        console.log('No sessionStorage JAMB data but application exists - proceeding normally');
         
-        // Fill JAMB data
-        document.getElementById('first_name').value = data.first_name || '';
-        document.getElementById('last_name').value = data.last_name || '';
-        document.getElementById('other_names').value = data.other_names || '';
+        // Construct JAMB data from application
+        const appData = {
+            jamb_number: '<?php echo $application['jamb_number'] ?? ''; ?>',
+            first_name: '<?php echo $application['first_name'] ?? ''; ?>',
+            last_name: '<?php echo $application['last_name'] ?? ''; ?>',
+            other_names: '<?php echo $application['other_names'] ?? ''; ?>',
+            gender: '<?php echo $application['gender'] ?? ''; ?>',
+            state_of_origin: '<?php echo $application['state_of_origin'] ?? ''; ?>',
+            lga: '<?php echo $application['lga'] ?? ''; ?>',
+            score: '<?php echo $application['utme_score'] ?? ''; ?>'
+        };
+        
+        // Fill JAMB data from application
+        document.getElementById('first_name').value = appData.first_name || '';
+        document.getElementById('last_name').value = appData.last_name || '';
+        document.getElementById('other_names').value = appData.other_names || '';
         
         // Convert gender code to full text
         let genderText = '';
-        if (data.gender === 'M') genderText = 'Male';
-        else if (data.gender === 'F') genderText = 'Female';
+        if (appData.gender === 'M') genderText = 'Male';
+        else if (appData.gender === 'F') genderText = 'Female';
+        else genderText = appData.gender || '';
         document.getElementById('gender').value = genderText;
         
-        document.getElementById('state_of_origin').value = data.state_of_origin || '';
-        document.getElementById('lga').value = data.lga || '';
-        document.getElementById('utme_score_display').value = data.score || '';
+        document.getElementById('state_of_origin').value = appData.state_of_origin || '';
+        document.getElementById('lga').value = appData.lga || '';
+        document.getElementById('utme_score_display').value = appData.score || '';
         
         // Hidden fields
-        document.getElementById('jamb_number').value = data.jamb_number || '';
-        document.getElementById('utme_score').value = data.score || '';
+        document.getElementById('jamb_number').value = appData.jamb_number || '';
+        document.getElementById('utme_score').value = appData.score || '';
         
         // Update summary
         document.getElementById('jambSummary').innerHTML = `
@@ -499,21 +555,84 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="flex-grow-1 ms-3">
                         <h5 class="fw-bold mb-1">JAMB Verified Successfully</h5>
                         <p class="text-muted mb-0 small">
-                            <strong>${data.first_name} ${data.last_name}</strong> | 
-                            JAMB: ${data.jamb_number} | 
-                            Score: <span class="badge bg-success">${data.score}</span>
+                            <strong>${appData.first_name} ${appData.last_name}</strong> | 
+                            JAMB: ${appData.jamb_number} | 
+                            Score: <span class="badge bg-success">${appData.score}</span>
                         </p>
                     </div>
                 </div>
             </div>
         `;
-    } catch (e) {
-        console.error('Error parsing JAMB data:', e);
-        showAlert('Error loading JAMB data. Please verify again.', 'danger');
+        
+        <?php else: ?>
+        // No JAMB data anywhere - redirect to verification
+        console.log('No JAMB data found anywhere, redirecting to verification');
+        showAlert('Please verify your JAMB number first', 'warning');
         setTimeout(() => {
             window.location.href = '/apply/step/1';
         }, 2000);
+        return;
+        <?php endif; ?>
+    } else {
+        // Use sessionStorage data
+        try {
+            const data = JSON.parse(jambData);
+            console.log('Loading JAMB data from sessionStorage:', data);
+            
+            // Fill JAMB data
+            document.getElementById('first_name').value = data.first_name || '';
+            document.getElementById('last_name').value = data.last_name || '';
+            document.getElementById('other_names').value = data.other_names || '';
+            
+            // Convert gender code to full text
+            let genderText = '';
+            if (data.gender === 'M') genderText = 'Male';
+            else if (data.gender === 'F') genderText = 'Female';
+            document.getElementById('gender').value = genderText;
+            
+            document.getElementById('state_of_origin').value = data.state_of_origin || '';
+            document.getElementById('lga').value = data.lga || '';
+            document.getElementById('utme_score_display').value = data.score || '';
+            
+            // Hidden fields
+            document.getElementById('jamb_number').value = data.jamb_number || '';
+            document.getElementById('utme_score').value = data.score || '';
+            
+            // Update summary
+            document.getElementById('jambSummary').innerHTML = `
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                                <i class="fas fa-check-circle text-success fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="fw-bold mb-1">JAMB Verified Successfully</h5>
+                            <p class="text-muted mb-0 small">
+                                <strong>${data.first_name} ${data.last_name}</strong> | 
+                                JAMB: ${data.jamb_number} | 
+                                Score: <span class="badge bg-success">${data.score}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } catch (e) {
+            console.error('Error parsing JAMB data:', e);
+            // Don't redirect - use application data if available
+            <?php if (isset($application) && !empty($application['jamb_number'])): ?>
+            console.log('Falling back to application data');
+            // Fallback to application data (handled above)
+            <?php else: ?>
+            showAlert('Error loading JAMB data. Please verify again.', 'danger');
+            setTimeout(() => {
+                window.location.href = '/apply/step/1';
+            }, 2000);
+            <?php endif; ?>
+        }
     }
+    <?php endif; ?>
 });
 
 // Form submission with enhanced error handling
@@ -559,8 +678,8 @@ document.getElementById('applicationForm').addEventListener('submit', async func
     }
     
     // Validate JAMB data exists
-    const jambData = JSON.parse(sessionStorage.getItem('jamb_data') || '{}');
-    if (!jambData.jamb_number) {
+    const jambNumber = document.getElementById('jamb_number').value;
+    if (!jambNumber) {
         showAlert('JAMB verification data not found. Please restart your application.', 'danger');
         return;
     }
@@ -575,7 +694,7 @@ document.getElementById('applicationForm').addEventListener('submit', async func
         const formData = new FormData(this);
         
         // Add JAMB data
-        formData.append('jamb_number', jambData.jamb_number);
+        formData.append('jamb_number', document.getElementById('jamb_number').value);
         formData.append('first_name', document.getElementById('first_name').value);
         formData.append('last_name', document.getElementById('last_name').value);
         formData.append('other_names', document.getElementById('other_names').value);
@@ -587,7 +706,7 @@ document.getElementById('applicationForm').addEventListener('submit', async func
         
         formData.append('state_of_origin', document.getElementById('state_of_origin').value);
         formData.append('lga', document.getElementById('lga').value);
-        formData.append('utme_score', jambData.score || '');
+        formData.append('utme_score', document.getElementById('utme_score').value || '');
         
         // Make the API call
         const response = await fetch('/apply/save-application', {
@@ -612,10 +731,6 @@ document.getElementById('applicationForm').addEventListener('submit', async func
         const result = await response.json();
         
         if (result.success) {
-            // Clear session storage for JAMB data (optional - depends on your flow)
-            // sessionStorage.removeItem('jamb_data');
-            // sessionStorage.removeItem('jamb_verified');
-            
             showAlert('Application saved successfully! Redirecting to payment...', 'success');
             
             // Redirect to payment page
@@ -630,7 +745,6 @@ document.getElementById('applicationForm').addEventListener('submit', async func
             // If there are upload errors, show them
             if (result.upload_errors && result.upload_errors.length > 0) {
                 console.warn('Upload errors:', result.upload_errors);
-                // You could display these in a separate alert if needed
             }
             
             resetSubmitButton();
