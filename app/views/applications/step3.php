@@ -2,10 +2,10 @@
 /**
  * Payment View - Step 3
  * Professional design matching application form
- * FIXED: RRR generation and expanded width for desktop
+ * FIXED: RRR generation, expanded width, and support section layout
  * 
  * @package FCTCNS
- * @version 1.1 - Fixed RRR generation and responsive width
+ * @version 1.2 - Fixed button ID and support section overflow
  */
 
 extract($data ?? []);
@@ -670,7 +670,7 @@ if (empty($applicant_name)) {
     }
 
     /* ==========================================================================
-       SUPPORT SECTION
+       SUPPORT SECTION - FIXED FOR EMAIL OVERFLOW
        ========================================================================== */
     .support-section {
         background: var(--surface);
@@ -688,42 +688,67 @@ if (empty($applicant_name)) {
     .support-item {
         display: flex;
         align-items: center;
-        justify-content: center;
         gap: var(--space-sm);
-        padding: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
         background: var(--white);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
+        min-width: 0; /* Allows flex items to shrink below content size */
+        width: 100%;
     }
 
     .support-icon {
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        flex-shrink: 0;
+        flex-shrink: 0; /* Prevents icon from shrinking */
     }
 
     .support-icon.phone { background: var(--purple); }
     .support-icon.whatsapp { background: #25D366; }
     .support-icon.email { background: var(--danger); }
 
-    .support-text {
+    .support-content {
+        flex: 1;
+        min-width: 0; /* Enables text truncation */
+    }
+
+    .support-label {
+        font-size: 0.7rem;
+        color: var(--mist);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.1rem;
+    }
+
+    .support-value {
         font-size: 0.9rem;
         font-weight: 500;
         color: var(--ink);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
     }
 
+    /* Mobile styles */
     @media (max-width: 768px) {
         .support-grid {
             grid-template-columns: 1fr;
+            gap: var(--space-sm);
         }
         
         .support-item {
-            justify-content: flex-start;
+            padding: var(--space-sm) var(--space-md);
+        }
+        
+        .support-value {
+            white-space: normal; /* Allow wrapping on mobile */
+            word-break: break-word;
         }
     }
 
@@ -988,7 +1013,7 @@ if (empty($applicant_name)) {
                                 </div>
                             </div>
 
-                            <!-- Support Information -->
+                            <!-- Support Information - FIXED for email overflow -->
                             <div class="support-section">
                                 <h5 class="fw-semibold text-center mb-4">Payment Support</h5>
                                 <div class="support-grid">
@@ -996,19 +1021,28 @@ if (empty($applicant_name)) {
                                         <div class="support-icon phone">
                                             <i class="fas fa-phone"></i>
                                         </div>
-                                        <span class="support-text">07039837749</span>
+                                        <div class="support-content">
+                                            <div class="support-label">Phone</div>
+                                            <div class="support-value">07039837749</div>
+                                        </div>
                                     </div>
                                     <div class="support-item">
                                         <div class="support-icon whatsapp">
                                             <i class="fab fa-whatsapp"></i>
                                         </div>
-                                        <span class="support-text">08082775076</span>
+                                        <div class="support-content">
+                                            <div class="support-label">WhatsApp</div>
+                                            <div class="support-value">08082775076</div>
+                                        </div>
                                     </div>
                                     <div class="support-item">
                                         <div class="support-icon email">
                                             <i class="fas fa-envelope"></i>
                                         </div>
-                                        <span class="support-text">info@fctcns.edu.ng</span>
+                                        <div class="support-content">
+                                            <div class="support-label">Email</div>
+                                            <div class="support-value">info@fctcns.edu.ng</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1048,40 +1082,52 @@ if (empty($applicant_name)) {
     document.addEventListener('DOMContentLoaded', function() {
         debugLog('Payment page loaded');
         
-        // Initialize generate RRR button
-        document.getElementById('generateRRRBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            debugLog('Generate RRR button clicked');
-            initiatePayment();
-        });
+        // Check if generate button exists
+        const generateBtn = document.getElementById('generateRRRBtn');
+        if (!generateBtn) {
+            debugLog('ERROR: Generate RRR button not found!');
+        } else {
+            debugLog('Generate RRR button found');
+            generateBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                debugLog('Generate RRR button clicked');
+                initiatePayment();
+            });
+        }
         
         // Initialize verify button
-        document.getElementById('verifyPaymentBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            var rrr = document.getElementById('generatedRRR')?.textContent || 
-                     document.querySelector('.rrr-display')?.textContent ||
-                     '<?php echo $pending_payment['rrr'] ?? ''; ?>';
-            if (rrr) {
-                debugLog('Verifying payment for RRR:', rrr);
-                verifyPayment(rrr);
-            } else {
-                showAlert('No RRR found. Please generate RRR first.', 'warning');
-            }
-        });
+        const verifyBtn = document.getElementById('verifyPaymentBtn');
+        if (verifyBtn) {
+            verifyBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var rrr = document.getElementById('generatedRRR')?.textContent || 
+                         document.querySelector('.rrr-display')?.textContent ||
+                         '<?php echo $pending_payment['rrr'] ?? ''; ?>';
+                if (rrr) {
+                    debugLog('Verifying payment for RRR:', rrr);
+                    verifyPayment(rrr);
+                } else {
+                    showAlert('No RRR found. Please generate RRR first.', 'warning');
+                }
+            });
+        }
         
         // Initialize check status button
-        document.getElementById('checkStatusBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            var rrr = document.getElementById('generatedRRR')?.textContent || 
-                     document.querySelector('.rrr-display')?.textContent ||
-                     '<?php echo $pending_payment['rrr'] ?? ''; ?>';
-            if (rrr) {
-                debugLog('Checking payment status for RRR:', rrr);
-                checkPaymentStatus(rrr);
-            } else {
-                showAlert('No RRR found.', 'warning');
-            }
-        });
+        const checkBtn = document.getElementById('checkStatusBtn');
+        if (checkBtn) {
+            checkBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var rrr = document.getElementById('generatedRRR')?.textContent || 
+                         document.querySelector('.rrr-display')?.textContent ||
+                         '<?php echo $pending_payment['rrr'] ?? ''; ?>';
+                if (rrr) {
+                    debugLog('Checking payment status for RRR:', rrr);
+                    checkPaymentStatus(rrr);
+                } else {
+                    showAlert('No RRR found.', 'warning');
+                }
+            });
+        }
         
         // Check if we have a pending RRR in sessionStorage
         var pendingRRR = sessionStorage.getItem('pending_rrr');
@@ -1094,11 +1140,18 @@ if (empty($applicant_name)) {
     });
 
     function initiatePayment() {
-        debugLog('Initiating payment...');
+        debugLog('initiatePayment() called');
+        
+        const generateBtn = document.getElementById('generateRRRBtn');
+        if (!generateBtn) {
+            debugLog('ERROR: generateRRRBtn not found in initiatePayment');
+            showAlert('Technical error: Button not found. Please refresh.', 'danger');
+            return;
+        }
         
         // Show payment status area
         document.getElementById('paymentStatus').style.display = 'block';
-        document.getElementById('generateRRRBtn').disabled = true;
+        generateBtn.disabled = true;
         document.getElementById('paymentMessage').innerText = 'Generating RRR...';
         document.getElementById('paymentSpinner').style.display = 'inline-block';
         
@@ -1116,15 +1169,6 @@ if (empty($applicant_name)) {
         const formData = new FormData();
         formData.append('csrf_token', csrfToken);
         
-        // Try multiple endpoint variations
-        const endpoints = [
-            '/payment/initiate',
-            '/apply/payment/initiate',
-            '/applicant/payment/initiate',
-            '/api/payment/initiate'
-        ];
-        
-        // Use the first endpoint that might work
         const endpoint = '/payment/initiate';
         
         debugLog('Sending request to:', endpoint);
@@ -1141,28 +1185,11 @@ if (empty($applicant_name)) {
         })
         .then(response => {
             debugLog('Response status:', response.status);
-            debugLog('Response headers:', response.headers);
-            
-            // Check content type
-            const contentType = response.headers.get('content-type');
-            debugLog('Content-Type:', contentType);
             
             if (!response.ok) {
                 return response.text().then(text => {
                     debugLog('Error response text:', text.substring(0, 500));
-                    throw new Error(`Server error: ${response.status} - ${text.substring(0, 100)}`);
-                });
-            }
-            
-            if (!contentType || !contentType.includes('application/json')) {
-                return response.text().then(text => {
-                    debugLog('Non-JSON response:', text.substring(0, 500));
-                    // Try to parse as JSON anyway
-                    try {
-                        return JSON.parse(text);
-                    } catch (e) {
-                        throw new Error('Server returned non-JSON response');
-                    }
+                    throw new Error(`Server error: ${response.status}`);
                 });
             }
             
@@ -1176,7 +1203,7 @@ if (empty($applicant_name)) {
             if (data.success) {
                 document.getElementById('paymentMessage').innerText = 'RRR Generated Successfully!';
                 
-                // Store RRR
+                // Store RRR - handle different response formats
                 var rrr = data.rrr || data.data?.rrr || data.reference;
                 debugLog('RRR received:', rrr);
                 
