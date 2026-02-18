@@ -226,7 +226,12 @@ class PaymentController extends Controller {
             $csrfToken = $input['csrf_token'] ?? $_POST['csrf_token'] ?? '';
             
             // Validate CSRF token
-            if (empty($csrfToken) || !isset($_SESSION['csrf_tokens'][$csrfToken])) {
+            if (empty($csrfToken)) {
+                echo json_encode(['success' => false, 'message' => 'Security token missing']);
+                return;
+            }
+            
+            if (!isset($_SESSION['csrf_tokens'][$csrfToken])) {
                 echo json_encode(['success' => false, 'message' => 'Invalid security token']);
                 return;
             }
@@ -251,6 +256,12 @@ class PaymentController extends Controller {
                 return;
             }
             
+            // Verify ownership
+            if ($payment['applicant_id'] != $_SESSION['applicant_id']) {
+                echo json_encode(['success' => false, 'message' => 'Unauthorized access to payment']);
+                return;
+            }
+            
             // For demo purposes, simulate successful verification
             // In production, this would call Remita API to verify
             
@@ -261,23 +272,30 @@ class PaymentController extends Controller {
                 'payment_details' => json_encode(['verified_at' => date('Y-m-d H:i:s')])
             ]);
             
-            // Update application step
-            $this->applicationModel->updateStep($payment['application_id'], 4);
-            
-            // Generate exam slip
-            $this->applicationModel->generateExamSlip($payment['application_id']);
-            
-            // Clear pending payment from session
-            unset($_SESSION['pending_payment']);
-            
-            // Remove used token
-            unset($_SESSION['csrf_tokens'][$csrfToken]);
-            
-            echo json_encode([
-                'success' => true,
-                'message' => 'Payment verified successfully',
-                'redirect' => '/apply/step/4'
-            ]);
+            if ($updateResult) {
+                // Update application step
+                $this->applicationModel->updateStep($payment['application_id'], 4);
+                
+                // Generate exam slip
+                $this->applicationModel->generateExamSlip($payment['application_id']);
+                
+                // Clear pending payment from session
+                unset($_SESSION['pending_payment']);
+                
+                // Remove used token
+                unset($_SESSION['csrf_tokens'][$csrfToken]);
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Payment verified successfully',
+                    'redirect' => '/apply/step/4'
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to verify payment'
+                ]);
+            }
             
         } catch (Exception $e) {
             error_log("Payment verification error: " . $e->getMessage());
@@ -414,6 +432,13 @@ class PaymentController extends Controller {
      * URL: POST /payment/admin/verify
      */
     public function adminVerify() {
+        header('Content-Type: application/json');
+        
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         // Check if user is admin
         if (!in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'])) {
             http_response_code(403);
@@ -429,8 +454,20 @@ class PaymentController extends Controller {
         
         // Validate CSRF token
         $csrfToken = $_POST['csrf_token'] ?? '';
-        if (empty($csrfToken) || !isset($_SESSION['csrf_tokens'][$csrfToken])) {
+        if (empty($csrfToken)) {
+            echo json_encode(['error' => 'Security token missing']);
+            return;
+        }
+        
+        if (!isset($_SESSION['csrf_tokens'][$csrfToken])) {
             echo json_encode(['error' => 'Invalid CSRF token']);
+            return;
+        }
+        
+        // Check token expiration
+        if (time() - $_SESSION['csrf_tokens'][$csrfToken] > 3600) {
+            unset($_SESSION['csrf_tokens'][$csrfToken]);
+            echo json_encode(['error' => 'Security token expired']);
             return;
         }
         
@@ -454,7 +491,7 @@ class PaymentController extends Controller {
         }
         
         // Mark as success manually
-        $this->paymentModel->markAsSuccess($paymentId, [
+        $result = $this->paymentModel->markAsSuccess($paymentId, [
             'payment_method' => 'manual',
             'payment_details' => json_encode([
                 'verified_by' => $_SESSION['user_id'],
@@ -462,17 +499,21 @@ class PaymentController extends Controller {
             ])
         ]);
         
-        // Update application
-        $this->applicationModel->updateStep($payment['application_id'], 4);
-        $this->applicationModel->generateExamSlip($payment['application_id']);
-        
-        // Log activity
-        $this->logPaymentAction($paymentId, 'manual_verification', "Payment manually verified by admin");
-        
-        // Remove used token
-        unset($_SESSION['csrf_tokens'][$csrfToken]);
-        
-        echo json_encode(['success' => true, 'message' => 'Payment verified successfully']);
+        if ($result) {
+            // Update application
+            $this->applicationModel->updateStep($payment['application_id'], 4);
+            $this->applicationModel->generateExamSlip($payment['application_id']);
+            
+            // Log activity
+            $this->logPaymentAction($paymentId, 'manual_verification', "Payment manually verified by admin");
+            
+            // Remove used token
+            unset($_SESSION['csrf_tokens'][$csrfToken]);
+            
+            echo json_encode(['success' => true, 'message' => 'Payment verified successfully']);
+        } else {
+            echo json_encode(['error' => 'Failed to verify payment']);
+        }
     }
     
     /**
@@ -507,19 +548,25 @@ class PaymentController extends Controller {
      */
     private function logPaymentAction($paymentId, $action, $description) {
         try {
-            $stmt = $this->db->prepare("
-                INSERT INTO activity_logs (user_id, action, description, table_name, record_id, ip_address, user_agent, created_at)
-                VALUES (:user_id, :action, :description, 'payments', :record_id, :ip_address, :user_agent, NOW())
-            ");
+            // Check if activity_logs table exists
+            $stmt = $this->db->prepare("SHOW TABLES LIKE 'activity_logs'");
+            $stmt->execute();
             
-            $stmt->execute([
-                'user_id' => $_SESSION['user_id'] ?? null,
-                'action' => $action,
-                'description' => $description,
-                'record_id' => $paymentId,
-                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
-                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? ''
-            ]);
+            if ($stmt->rowCount() > 0) {
+                $stmt = $this->db->prepare("
+                    INSERT INTO activity_logs (user_id, action, description, table_name, record_id, ip_address, user_agent, created_at)
+                    VALUES (:user_id, :action, :description, 'payments', :record_id, :ip_address, :user_agent, NOW())
+                ");
+                
+                $stmt->execute([
+                    'user_id' => $_SESSION['user_id'] ?? null,
+                    'action' => $action,
+                    'description' => $description,
+                    'record_id' => $paymentId,
+                    'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+                    'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? ''
+                ]);
+            }
         } catch (Exception $e) {
             error_log("Failed to log payment action: " . $e->getMessage());
         }

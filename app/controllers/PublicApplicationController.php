@@ -713,7 +713,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show payment page (Step 3 - New Flow)
-     * FIXED: Generate fresh CSRF token and store in session
+     * FIXED: Generate fresh CSRF token and store in session, restore JAMB data if needed
      */
     public function showPayment() {
         // Start session
@@ -735,6 +735,21 @@ class PublicApplicationController extends ApplicationBaseController {
             $_SESSION['flash_error'] = 'Application not found';
             header('Location: /apply/form');
             exit;
+        }
+        
+        // RESTORE JAMB DATA TO SESSION IF MISSING BUT APPLICATION HAS IT
+        if (!isset($_SESSION['jamb_verification']) && $application['jamb_number']) {
+            $_SESSION['jamb_verification'] = [
+                'jamb_number' => $application['jamb_number'],
+                'first_name' => $application['first_name'],
+                'last_name' => $application['last_name'],
+                'other_names' => $application['other_names'],
+                'gender' => $application['gender'],
+                'state_of_origin' => $application['state_of_origin'],
+                'lga' => $application['lga'],
+                'score' => $application['utme_score']
+            ];
+            error_log("Restored JAMB data to session from application ID: " . $application['id']);
         }
         
         // Check if already paid
@@ -1137,7 +1152,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
     
     /**
-     * Process applicant login - FIXED REDIRECT
+     * Process applicant login - FIXED to redirect to correct step
      */
     public function processLogin() {
         // Start session
@@ -1198,8 +1213,57 @@ class PublicApplicationController extends ApplicationBaseController {
         $_SESSION['applicant_name'] = ($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? '');
         $_SESSION['applicant_login_time'] = time();
         
-        // FIX: Redirect to STEP 1 for JAMB verification, not directly to form
-        header('Location: /apply/step/1');
+        // Get application to determine current step
+        $application = $this->applicationModel->getByApplicantId($applicant['id']);
+        
+        if (!$application) {
+            // No application yet, go to JAMB verification
+            error_log("No application found, redirecting to step 1");
+            header('Location: /apply/step/1');
+            exit;
+        }
+        
+        // Check if JAMB is verified in session
+        if (!isset($_SESSION['jamb_verification']) || !$_SESSION['jamb_verification']) {
+            // Check if application has JAMB data
+            if ($application['jamb_number']) {
+                // JAMB was verified, restore session
+                $_SESSION['jamb_verification'] = [
+                    'jamb_number' => $application['jamb_number'],
+                    'first_name' => $application['first_name'],
+                    'last_name' => $application['last_name'],
+                    'other_names' => $application['other_names'],
+                    'gender' => $application['gender'],
+                    'state_of_origin' => $application['state_of_origin'],
+                    'lga' => $application['lga'],
+                    'score' => $application['utme_score']
+                ];
+                error_log("Restored JAMB data to session after login");
+            } else {
+                // No JAMB data, go to verification
+                error_log("No JAMB verification, redirecting to step 1");
+                header('Location: /apply/step/1');
+                exit;
+            }
+        }
+        
+        // Redirect based on application step
+        error_log("Application step: " . $application['application_step']);
+        
+        switch ($application['application_step']) {
+            case 1:
+            case 2:
+                header('Location: /apply/step/1');
+                break;
+            case 3:
+                header('Location: /apply/step/3');
+                break;
+            case 4:
+                header('Location: /apply/step/4');
+                break;
+            default:
+                header('Location: /apply/step/1');
+        }
         exit;
     }
     
