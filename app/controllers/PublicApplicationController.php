@@ -557,6 +557,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Save application form - FIXED with proper JAMB data handling and field mapping
+     * Now uses updateApplication() method instead of direct update
      */
     public function saveApplication() {
         // Set header to JSON first thing
@@ -728,40 +729,24 @@ class PublicApplicationController extends ApplicationBaseController {
             
             // Handle O'Level data (form inputs for subjects)
             if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
-                // If we have subject data, store it separately or merge with existing
-                // This depends on your database structure - you might have a separate table
+                // If we have subject data, store it in a separate field or table
+                // This depends on your database structure
                 error_log("O'Level subject data received: " . print_r($_POST['olevel'], true));
                 
-                // If you have a separate OlevelResultModel, you would save it here
-                // For now, we'll just log it
-            }
-            
-            // Update existing application - Try both possible method signatures
-            $updated = false;
-            
-            // Try method 1: update($id, $data) - for models that extend BaseModel with this signature
-            if (method_exists($this->applicationModel, 'update')) {
-                try {
-                    $updated = $this->applicationModel->update($application['id'], $updateData);
-                    error_log("Update attempt 1 result: " . ($updated ? 'true' : 'false'));
-                } catch (Exception $e) {
-                    error_log("Update method 1 failed: " . $e->getMessage());
+                // If your application model has a method to save O'Level subjects, call it here
+                // For now, we'll just store it in a separate field if available
+                if (method_exists($this->applicationModel, 'saveOlevelSubjects')) {
+                    $this->applicationModel->saveOlevelSubjects($application['id'], $_POST['olevel']);
+                } else {
+                    // If no dedicated method, you might want to store it in the application record
+                    // Uncomment the line below if you have a field for O'Level subject data
+                    // $updateData['olevel_subjects'] = json_encode($_POST['olevel']);
                 }
             }
             
-            // If first method failed or doesn't exist, try method 2: update($data, $where, $params)
-            if (!$updated) {
-                try {
-                    $updated = $this->applicationModel->update(
-                        $updateData,
-                        'id = :id',
-                        ['id' => $application['id']]
-                    );
-                    error_log("Update attempt 2 result: " . ($updated ? 'true' : 'false'));
-                } catch (Exception $e) {
-                    error_log("Update method 2 failed: " . $e->getMessage());
-                }
-            }
+            // Update existing application using the dedicated updateApplication method
+            // This is the key change - using updateApplication instead of direct update
+            $updated = $this->applicationModel->updateApplication($application['id'], $updateData);
             
             if (!$updated) {
                 error_log("Failed to update application ID: " . $application['id']);
@@ -776,10 +761,10 @@ class PublicApplicationController extends ApplicationBaseController {
                 try {
                     // Try both method signatures for applicant update
                     if (method_exists($this->applicantModel, 'update')) {
-                        $this->applicantModel->update($applicantId, ['phone' => $phone, 'updated_at' => date('Y-m-d H:i:s')]);
+                        $this->applicantModel->update($applicantId, ['phone' => $phone, 'email' => $email, 'updated_at' => date('Y-m-d H:i:s')]);
                     } else {
                         $this->applicantModel->update(
-                            ['phone' => $phone, 'updated_at' => date('Y-m-d H:i:s')],
+                            ['phone' => $phone, 'email' => $email, 'updated_at' => date('Y-m-d H:i:s')],
                             'id = :id',
                             ['id' => $applicantId]
                         );
@@ -911,30 +896,8 @@ class PublicApplicationController extends ApplicationBaseController {
             if (!empty($updateData)) {
                 $updateData['updated_at'] = date('Y-m-d H:i:s');
                 
-                // Try both update method signatures
-                $updated = false;
-                
-                // Try method 1: update($id, $data)
-                if (method_exists($this->applicationModel, 'update')) {
-                    try {
-                        $updated = $this->applicationModel->update($application['id'], $updateData);
-                    } catch (Exception $e) {
-                        error_log("Remove document update method 1 failed: " . $e->getMessage());
-                    }
-                }
-                
-                // If first method failed, try method 2
-                if (!$updated) {
-                    try {
-                        $updated = $this->applicationModel->update(
-                            $updateData,
-                            'id = :id',
-                            ['id' => $application['id']]
-                        );
-                    } catch (Exception $e) {
-                        error_log("Remove document update method 2 failed: " . $e->getMessage());
-                    }
-                }
+                // Use updateApplication method for consistency
+                $updated = $this->applicationModel->updateApplication($application['id'], $updateData);
                 
                 if (!$updated) {
                     echo json_encode(['success' => false, 'message' => 'Failed to update application']);
@@ -2082,6 +2045,15 @@ class PublicApplicationController extends ApplicationBaseController {
         // Get applicant details
         $applicant = $this->applicantModel->find($applicantId);
         
+        // Parse O'Level results from JSON if exists
+        $olevelFiles = [];
+        if (!empty($application['olevel_results'])) {
+            $olevelFiles = json_decode($application['olevel_results'], true);
+            if (!is_array($olevelFiles)) {
+                $olevelFiles = [];
+            }
+        }
+        
         // Prepare JAMB data for view
         $jamb_data = $_SESSION['jamb_verification'];
         
@@ -2267,30 +2239,8 @@ class PublicApplicationController extends ApplicationBaseController {
                     'updated_at' => date('Y-m-d H:i:s')
                 ];
                 
-                // Try both update method signatures
-                $updated = false;
-                
-                // Try method 1: update($id, $data)
-                if (method_exists($this->applicationModel, 'update')) {
-                    try {
-                        $updated = $this->applicationModel->update($existingApplication['id'], $updateData);
-                    } catch (Exception $e) {
-                        error_log("Verify JAMB update method 1 failed: " . $e->getMessage());
-                    }
-                }
-                
-                // If first method failed, try method 2
-                if (!$updated) {
-                    try {
-                        $updated = $this->applicationModel->update(
-                            $updateData,
-                            'id = :id',
-                            ['id' => $existingApplication['id']]
-                        );
-                    } catch (Exception $e) {
-                        error_log("Verify JAMB update method 2 failed: " . $e->getMessage());
-                    }
-                }
+                // Use updateApplication method for consistency
+                $updated = $this->applicationModel->updateApplication($existingApplication['id'], $updateData);
                 
                 if (!$updated) {
                     throw new Exception("Failed to update application record");

@@ -3,7 +3,7 @@
  * Application Model
  * 
  * Handles application data operations
- * FIXED: Added proper update method that handles array data
+ * FIXED: Proper update method without conflicts
  * 
  * @package FCT_CNS
  * @subpackage Application
@@ -174,42 +174,25 @@ class ApplicationModel extends BaseModel {
     }
     
     /**
-     * Update application - FIXED to handle array data properly
+     * Update application by ID - SIMPLE VERSION to avoid conflicts
      */
-    public function update($id, $data = null) {
+    public function updateApplication($id, $data) {
         try {
-            // Check if second parameter is array (new format) or null
-            if (is_array($id) && $data === null) {
-                // Called as update($data, $where, $params) from parent
-                return parent::update($id);
+            $sets = [];
+            $params = [':id' => $id];
+            
+            foreach ($data as $field => $value) {
+                $sets[] = "`$field` = :$field";
+                $params[":$field"] = $value;
             }
             
-            // Handle array data format: update($id, $data)
-            if (is_numeric($id) && is_array($data)) {
-                $sets = [];
-                $params = [':id' => $id];
-                
-                foreach ($data as $field => $value) {
-                    $sets[] = "`$field` = :$field";
-                    $params[":$field"] = $value;
-                }
-                
-                $sql = "UPDATE " . $this->table . " SET " . implode(', ', $sets) . " WHERE id = :id";
-                
-                error_log("ApplicationModel Update SQL: " . $sql);
-                error_log("ApplicationModel Update params: " . print_r($params, true));
-                
-                $stmt = $this->db->prepare($sql);
-                return $stmt->execute($params);
-            }
+            $sql = "UPDATE " . $this->table . " SET " . implode(', ', $sets) . " WHERE id = :id";
             
-            // Legacy format: update($data, $where, $params)
-            if (is_array($id) && is_array($data)) {
-                return parent::update($id, $data);
-            }
+            error_log("ApplicationModel Update SQL: " . $sql);
+            error_log("ApplicationModel Update params: " . print_r($params, true));
             
-            return false;
-            
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute($params);
         } catch (Exception $e) {
             error_log("Error updating application: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());
@@ -300,7 +283,7 @@ class ApplicationModel extends BaseModel {
             $updateData['submitted_at'] = date('Y-m-d H:i:s');
         }
         
-        return $this->update($applicationId, $updateData);
+        return $this->updateApplication($applicationId, $updateData);
     }
     
     /**
@@ -320,7 +303,7 @@ class ApplicationModel extends BaseModel {
             'application_step' => 2
         ];
         
-        return $this->update($applicationId, $updateData);
+        return $this->updateApplication($applicationId, $updateData);
     }
     
     /**
@@ -334,7 +317,7 @@ class ApplicationModel extends BaseModel {
             'application_step' => 2
         ];
         
-        return $this->update($applicationId, $updateData);
+        return $this->updateApplication($applicationId, $updateData);
     }
     
     /**
@@ -409,7 +392,7 @@ class ApplicationModel extends BaseModel {
             return false;
         }
         
-        return $this->update($applicationId, [
+        return $this->updateApplication($applicationId, [
             'submitted_at' => date('Y-m-d H:i:s'),
             'application_step' => 3,
             'status' => 'pending'
@@ -565,7 +548,7 @@ class ApplicationModel extends BaseModel {
             $slipId = $examSlipModel->create($slipData);
             
             // Update application
-            $this->update($applicationId, [
+            $this->updateApplication($applicationId, [
                 'exam_slip_generated' => 1,
                 'application_step' => 4
             ]);
