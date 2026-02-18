@@ -437,7 +437,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show application form (Step 2 - New Flow)
-     * FIXED: Properly restore JAMB data from database if session missing
+     * FIXED: Load existing file paths from database and restore JAMB data
      */
     public function showApplicationForm() {
         // Start session
@@ -498,7 +498,16 @@ class PublicApplicationController extends ApplicationBaseController {
             error_log("Restored JAMB data to session from database in showApplicationForm for applicant: " . $applicantId);
         }
         
-        // Pass data to view
+        // Parse O'Level results from JSON if exists
+        $olevelFiles = [];
+        if (!empty($application['olevel_results'])) {
+            $olevelFiles = json_decode($application['olevel_results'], true);
+            if (!is_array($olevelFiles)) {
+                $olevelFiles = [];
+            }
+        }
+        
+        // Pass data to view including file paths
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Application Form - Step 2',
             'application' => $application,
@@ -506,14 +515,28 @@ class PublicApplicationController extends ApplicationBaseController {
             'jamb_data' => $_SESSION['jamb_verification'] ?? null,
             'states' => $this->getStates(),
             'programs' => $this->getPrograms(),
-            'csrf_token' => $this->csrfToken()
+            'csrf_token' => $this->csrfToken(),
+            'existing_passport' => !empty($application['passport_photo']) ? [
+                'file_path' => $application['passport_photo'],
+                'id' => 'passport'
+            ] : null,
+            'existing_olevel' => array_map(function($path, $index) {
+                return [
+                    'file_path' => $path,
+                    'id' => 'olevel_' . $index
+                ];
+            }, $olevelFiles, array_keys($olevelFiles)),
+            'existing_jamb_result' => !empty($application['qualification_file']) ? [
+                'file_path' => $application['qualification_file'],
+                'id' => 'jamb_result'
+            ] : null
         ]);
         
         $this->render('applications/application-form');
     }
 
     /**
-     * Save application form - FIXED JSON RESPONSE
+     * Save application form - FIXED to save file paths to database
      */
     public function saveApplication() {
         // Set header to JSON first thing
@@ -564,6 +587,94 @@ class PublicApplicationController extends ApplicationBaseController {
             // Check if application exists
             $application = $this->applicationModel->getByApplicantId($applicantId);
             
+            // Prepare update data
+            $updateData = [
+                'date_of_birth' => $dateOfBirth,
+                'phone' => $phone,
+                'address' => $address,
+                'program_choice_1' => $programChoice,
+                'application_step' => 2,
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+            
+            // Handle file uploads
+            $uploadErrors = [];
+            
+            // Upload passport
+            if (isset($_FILES['passport']) && $_FILES['passport']['error'] === UPLOAD_ERR_OK) {
+                $passportResult = $this->uploadFile($_FILES['passport'], $applicantId, 'passport');
+                if ($passportResult['success']) {
+                    $updateData['passport_photo'] = $passportResult['path'];
+                } else {
+                    $uploadErrors[] = 'Passport: ' . $passportResult['message'];
+                }
+            }
+            
+            // Upload O'Level results
+            if (isset($_FILES['olevel'])) {
+                $files = $_FILES['olevel'];
+                $olevelFiles = [];
+                
+                // Handle both single file and multiple files
+                if (is_array($files['name'])) {
+                    // Multiple files
+                    for ($i = 0; $i < count($files['name']); $i++) {
+                        if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                            $file = [
+                                'name' => $files['name'][$i],
+                                'type' => $files['type'][$i],
+                                'tmp_name' => $files['tmp_name'][$i],
+                                'error' => $files['error'][$i],
+                                'size' => $files['size'][$i]
+                            ];
+                            $result = $this->uploadFile($file, $applicantId, 'olevel');
+                            if ($result['success']) {
+                                $olevelFiles[] = $result['path'];
+                            } else {
+                                $uploadErrors[] = 'O\'Level: ' . $result['message'];
+                            }
+                        }
+                    }
+                } else {
+                    // Single file
+                    if ($files['error'] === UPLOAD_ERR_OK) {
+                        $result = $this->uploadFile($files, $applicantId, 'olevel');
+                        if ($result['success']) {
+                            $olevelFiles[] = $result['path'];
+                        } else {
+                            $uploadErrors[] = 'O\'Level: ' . $result['message'];
+                        }
+                    }
+                }
+                
+                if (!empty($olevelFiles)) {
+                    // Store as JSON in olevel_results field
+                    $updateData['olevel_results'] = json_encode($olevelFiles);
+                }
+            }
+            
+            // Upload JAMB result (optional)
+            if (isset($_FILES['jamb_result']) && $_FILES['jamb_result']['error'] === UPLOAD_ERR_OK) {
+                $jambResultResult = $this->uploadFile($_FILES['jamb_result'], $applicantId, 'jamb_result');
+                if ($jambResultResult['success']) {
+                    $updateData['qualification_file'] = $jambResultResult['path'];
+                } else {
+                    $uploadErrors[] = 'JAMB Result: ' . $jambResultResult['message'];
+                }
+            }
+            
+            // Upload birth certificate (optional)
+            if (isset($_FILES['birth_certificate']) && $_FILES['birth_certificate']['error'] === UPLOAD_ERR_OK) {
+                $birthCertResult = $this->uploadFile($_FILES['birth_certificate'], $applicantId, 'birth_certificate');
+                if ($birthCertResult['success']) {
+                    // You might want to store this in a separate field or as part of qualification_file
+                    // For now, we'll just log it
+                    error_log("Birth certificate uploaded: " . $birthCertResult['path']);
+                } else {
+                    $uploadErrors[] = 'Birth Certificate: ' . $birthCertResult['message'];
+                }
+            }
+            
             if (!$application) {
                 // Create new application
                 $applicationId = $this->applicationModel->insert([
@@ -581,6 +692,9 @@ class PublicApplicationController extends ApplicationBaseController {
                     'phone' => $phone,
                     'address' => $address,
                     'program_choice_1' => $programChoice,
+                    'passport_photo' => $updateData['passport_photo'] ?? null,
+                    'olevel_results' => $updateData['olevel_results'] ?? null,
+                    'qualification_file' => $updateData['qualification_file'] ?? null,
                     'application_step' => 2,
                     'status' => 'pending',
                     'created_at' => date('Y-m-d H:i:s'),
@@ -588,62 +702,12 @@ class PublicApplicationController extends ApplicationBaseController {
                 ]);
             } else {
                 // Update existing application
+                $applicationId = $application['id'];
                 $this->applicationModel->update(
-                    [
-                        'date_of_birth' => $dateOfBirth,
-                        'phone' => $phone,
-                        'address' => $address,
-                        'program_choice_1' => $programChoice,
-                        'application_step' => 2,
-                        'updated_at' => date('Y-m-d H:i:s')
-                    ],
+                    $updateData,
                     'id = :id',
                     ['id' => $application['id']]
                 );
-                $applicationId = $application['id'];
-            }
-            
-            // Handle file uploads
-            $uploadErrors = [];
-            
-            // Upload passport
-            if (isset($_FILES['passport']) && $_FILES['passport']['error'] === UPLOAD_ERR_OK) {
-                $passportResult = $this->uploadFile($_FILES['passport'], $applicantId, 'passport');
-                if (!$passportResult['success']) {
-                    $uploadErrors[] = 'Passport: ' . $passportResult['message'];
-                }
-            }
-            
-            // Upload O'Level results
-            if (isset($_FILES['olevel'])) {
-                $files = $_FILES['olevel'];
-                // Handle both single file and multiple files
-                if (is_array($files['name'])) {
-                    // Multiple files
-                    for ($i = 0; $i < count($files['name']); $i++) {
-                        if ($files['error'][$i] === UPLOAD_ERR_OK) {
-                            $file = [
-                                'name' => $files['name'][$i],
-                                'type' => $files['type'][$i],
-                                'tmp_name' => $files['tmp_name'][$i],
-                                'error' => $files['error'][$i],
-                                'size' => $files['size'][$i]
-                            ];
-                            $result = $this->uploadFile($file, $applicantId, 'olevel');
-                            if (!$result['success']) {
-                                $uploadErrors[] = 'O\'Level: ' . $result['message'];
-                            }
-                        }
-                    }
-                } else {
-                    // Single file
-                    if ($files['error'] === UPLOAD_ERR_OK) {
-                        $result = $this->uploadFile($files, $applicantId, 'olevel');
-                        if (!$result['success']) {
-                            $uploadErrors[] = 'O\'Level: ' . $result['message'];
-                        }
-                    }
-                }
             }
             
             // Return success response
@@ -664,7 +728,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Upload file helper
+     * Upload file helper - UPDATED to return file path
      */
     private function uploadFile($file, $applicantId, $type) {
         $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
@@ -692,9 +756,9 @@ class PublicApplicationController extends ApplicationBaseController {
         $filepath = $uploadDir . '/' . $filename;
         
         if (move_uploaded_file($file['tmp_name'], $filepath)) {
-            // Save to database if you have an uploads table
-            // For now, just return success
-            return ['success' => true, 'path' => str_replace(PUBLIC_PATH, '', $filepath)];
+            // Return the web-accessible path
+            $webPath = '/uploads/applications/' . $applicantId . '/' . $type . '/' . $filename;
+            return ['success' => true, 'path' => $webPath];
         }
         
         return ['success' => false, 'message' => 'Failed to save file'];
