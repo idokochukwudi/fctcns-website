@@ -1,7 +1,7 @@
 <?php
 /**
  * Step 2: Application Form View
- * FIXED: Removed score field, expanded width for better fit
+ * FIXED: Added AJAX form submission with redirect handling, passport preview improvements
  * 
  * @package FCTCNS
  */
@@ -378,7 +378,7 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
     }
 
     /* =========================================================
-       PASSPORT SECTION
+       PASSPORT SECTION - FIXED for full preview
     ========================================================= */
     .passport-wrap {
         display: grid;
@@ -392,26 +392,39 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
     }
 
     .passport-preview-box {
-        width: 200px; height: 200px;
+        width: 200px;
+        height: 200px;
         border: 2px dashed var(--border-dark);
         border-radius: var(--radius-md);
-        display: flex; align-items: center; justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         overflow: hidden;
         background: var(--off-white);
         transition: border-color 0.2s;
+        position: relative;
     }
 
-    .passport-preview-box.has-image { border-style: solid; border-color: var(--teal); }
+    .passport-preview-box.has-image {
+        border-style: solid;
+        border-color: var(--teal);
+        border-width: 3px;
+    }
 
     .passport-preview-box img {
-        width: 100%; height: 100%;
+        width: 100%;
+        height: 100%;
         object-fit: cover;
         display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
     }
 
     .passport-preview-box .placeholder-icon {
         font-size: 48px;
         color: var(--border-dark);
+        z-index: 1;
     }
 
     .passport-upload-area h6 { font-size: 14px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
@@ -509,6 +522,40 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
     .error-list ul li + li { margin-top: 4px; }
 
     /* =========================================================
+       LOADING OVERLAY
+    ========================================================= */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        visibility: hidden;
+        opacity: 0;
+        transition: all 0.3s;
+    }
+    .loading-overlay.show {
+        visibility: visible;
+        opacity: 1;
+    }
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 3px solid var(--border);
+        border-top-color: var(--navy);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* =========================================================
        UTILITY
     ========================================================= */
     .mb-0 { margin-bottom: 0 !important; }
@@ -518,6 +565,11 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
 </head>
 <body>
 <div class="page-shell">
+
+    <!-- ===== LOADING OVERLAY ===== -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
 
     <!-- ===== FLASH MESSAGES ===== -->
     <?php if (!empty($flash_success)): ?>
@@ -824,17 +876,18 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
                 <div class="passport-wrap">
                     <div class="passport-preview-box" id="passportBox">
                         <i class="fas fa-user placeholder-icon" id="passportPlaceholder"></i>
-                        <?php if (!empty($passport['file_path'])): ?>
-                        <img src="<?php echo e($passport['file_path']); ?>" alt="Passport" id="passport-preview"
-                             style="display:block;" onload="document.getElementById('passportBox').classList.add('has-image');document.getElementById('passportPlaceholder').style.display='none';">
+                        <?php if (!empty($application['passport_photo'])): ?>
+                        <img src="<?php echo e($application['passport_photo']); ?>" alt="Passport" id="passport-preview"
+                             style="display:block; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;"
+                             onload="document.getElementById('passportBox').classList.add('has-image');document.getElementById('passportPlaceholder').style.display='none';">
                         <?php else: ?>
-                        <img src="" alt="Passport Preview" id="passport-preview">
+                        <img src="" alt="Passport Preview" id="passport-preview" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;">
                         <?php endif; ?>
                     </div>
                     <div class="passport-upload-area">
                         <h6>Select Passport Photo</h6>
                         <p>Ensure the photo clearly shows your face on a plain white background.</p>
-                        <input type="hidden" name="passport_confirmed" id="passport-confirmed" value="0">
+                        <input type="hidden" name="passport_confirmed" id="passport-confirmed" value="<?php echo !empty($application['passport_photo']) ? '1' : '0'; ?>">
                         <input type="file" class="form-control" id="passport" name="passport"
                                accept="image/jpeg,image/png"
                                onchange="confirmPassportUpload(this)"
@@ -851,12 +904,10 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
                     <i class="fas fa-arrow-left"></i> Back
                 </a>
                 <div class="action-bar-right">
-                    <button type="submit" class="btn btn-navy"
-                            onclick="document.getElementById('form_action').value='save'">
+                    <button type="submit" class="btn btn-navy" id="saveBtn">
                         <i class="fas fa-save"></i> Save Progress
                     </button>
-                    <button type="submit" class="btn btn-teal btn-lg"
-                            onclick="document.getElementById('form_action').value='next'">
+                    <button type="submit" class="btn btn-teal btn-lg" id="nextBtn">
                         Save &amp; Continue <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
@@ -951,7 +1002,7 @@ document.getElementById('add-olevel').addEventListener('click', function () {
 });
 
 /* ======================================================
-   Passport upload confirmation
+   Passport upload confirmation - FIXED for full preview
 ====================================================== */
 function confirmPassportUpload(input) {
     if (!input.files || !input.files[0]) return;
@@ -969,8 +1020,17 @@ function confirmPassportUpload(input) {
             const img = document.getElementById('passport-preview');
             const box = document.getElementById('passportBox');
             const placeholder = document.getElementById('passportPlaceholder');
-            img.src = e.target.result;
+            
+            // FIXED: Ensure image fills the box completely
             img.style.display = 'block';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.style.position = 'absolute';
+            img.style.top = '0';
+            img.style.left = '0';
+            img.src = e.target.result;
+            
             placeholder.style.display = 'none';
             box.classList.add('has-image');
             document.getElementById('passport-confirmed').value = '1';
@@ -983,15 +1043,93 @@ function confirmPassportUpload(input) {
 }
 
 /* ======================================================
-   Bootstrap native validation
+   AJAX Form Submission with Redirect Handling - FIXED
+====================================================== */
+(function() {
+    'use strict';
+    
+    const form = document.getElementById('mainForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const saveBtn = document.getElementById('saveBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    // Remove default form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate form
+        if (!form.checkValidity()) {
+            e.stopPropagation();
+            form.classList.add('was-validated');
+            return;
+        }
+        
+        form.classList.add('was-validated');
+        
+        // Show loading overlay
+        loadingOverlay.classList.add('show');
+        
+        // Determine action (save or next)
+        const action = e.submitter ? (e.submitter.id === 'nextBtn' ? 'next' : 'save') : 'save';
+        document.getElementById('form_action').value = action;
+        
+        // Create FormData
+        const formData = new FormData(form);
+        
+        // Send AJAX request
+        fetch('/apply/save-application', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingOverlay.classList.remove('show');
+            
+            if (data.success) {
+                // Show success message
+                alert(data.message);
+                
+                // FIXED: Handle redirect if present
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    // Just saved, maybe show a temporary message
+                    console.log('Application saved');
+                }
+            } else {
+                // Show error message
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            loadingOverlay.classList.remove('show');
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        });
+    });
+    
+    // Handle button clicks to ensure proper action value
+    saveBtn.addEventListener('click', function() {
+        document.getElementById('form_action').value = 'save';
+    });
+    
+    nextBtn.addEventListener('click', function() {
+        document.getElementById('form_action').value = 'next';
+    });
+})();
+
+/* ======================================================
+   Bootstrap native validation (fallback)
 ====================================================== */
 (function () {
     'use strict';
-    document.querySelectorAll('.needs-validation').forEach(function (form) {
-        form.addEventListener('submit', function (e) {
+    // Keep this as fallback but our AJAX handler will prevent default
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
             if (!form.checkValidity()) {
-                e.preventDefault();
-                e.stopPropagation();
+                event.preventDefault();
+                event.stopPropagation();
             }
             form.classList.add('was-validated');
         }, false);
