@@ -268,20 +268,19 @@
                             </div>
                         </div>
 
-                        <!-- Form Actions -->
-                        <div class="d-grid gap-3 mt-5">
-                            <button type="submit" class="btn btn-success btn-lg rounded-3 py-3" id="submitBtn">
+                        <!-- Navigation Buttons -->
+                        <div class="d-flex justify-content-between mt-5">
+                            <a href="/apply/step/1" class="btn btn-outline-secondary btn-lg px-4" onclick="return confirmBack()">
+                                <i class="fas fa-arrow-left me-2"></i>Back to JAMB Info
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg px-5" id="submitBtn">
                                 <span id="submitText">
-                                    <i class="fas fa-save me-2"></i>Save and Continue to Payment
+                                    <i class="fas fa-save me-2"></i>Save & Continue
                                 </span>
                                 <span id="submitSpinner" style="display: none;">
                                     <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    Processing...
+                                    Saving...
                                 </span>
-                            </button>
-                            
-                            <button type="button" class="btn btn-outline-secondary rounded-3 py-2" onclick="goBack()">
-                                <i class="fas fa-arrow-left me-2"></i>Back to JAMB Verification
                             </button>
                         </div>
                     </form>
@@ -419,10 +418,39 @@
         height: 32px;
         font-size: 0.875rem;
     }
+    
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .d-flex.justify-content-between a,
+    .d-flex.justify-content-between button {
+        width: 100%;
+    }
 }
 </style>
 
 <script>
+// Load saved form data from database (passed from controller)
+document.addEventListener('DOMContentLoaded', function() {
+    <?php if (isset($application)): ?>
+    // Pre-fill form with existing data
+    if (document.getElementById('date_of_birth') && '<?php echo $application['date_of_birth'] ?? ''; ?>') {
+        document.getElementById('date_of_birth').value = '<?php echo $application['date_of_birth'] ?? ''; ?>';
+    }
+    if (document.getElementById('phone') && '<?php echo $application['phone'] ?? ''; ?>') {
+        document.getElementById('phone').value = '<?php echo $application['phone'] ?? ''; ?>';
+    }
+    if (document.getElementById('address') && '<?php echo addslashes($application['address'] ?? ''); ?>') {
+        document.getElementById('address').value = '<?php echo addslashes($application['address'] ?? ''); ?>';
+    }
+    if (document.getElementById('program_choice') && '<?php echo $application['program_choice_1'] ?? ''; ?>') {
+        document.getElementById('program_choice').value = '<?php echo $application['program_choice_1'] ?? ''; ?>';
+    }
+    <?php endif; ?>
+});
+
 // Load JAMB data on page load
 document.addEventListener('DOMContentLoaded', function() {
     const jambData = sessionStorage.getItem('jamb_data');
@@ -726,10 +754,8 @@ function removePassport() {
     document.getElementById('passportArea').classList.remove('border-success');
 }
 
-function goBack() {
-    if (confirm('Are you sure you want to go back? Your form data will be lost.')) {
-        window.location.href = '/apply/step/1';
-    }
+function confirmBack() {
+    return confirm('Are you sure you want to go back to JAMB verification? Your form data will be lost if you haven\'t saved.');
 }
 
 function showAlert(message, type) {
