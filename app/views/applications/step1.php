@@ -1,7 +1,7 @@
 <?php
 /**
  * JAMB Verification View - Step 1
- * ENHANCED: Professional design, responsive layout, fixed redirect issue
+ * ENHANCED: Fixed font colors, removed duplicate footer, updated placeholder
  * 
  * @package FCTCNS
  */
@@ -83,6 +83,9 @@ $portal_message = $portal_message ?? '';
             --surface: #F7F9FC;
             --border: #E9EDF2;
             --white: #FFFFFF;
+            --text-dark: #1A1F2E;
+            --text-light: #FFFFFF;
+            --text-muted: #6B7280;
             --shadow-sm: 0 4px 6px rgba(0,0,0,0.05);
             --shadow-md: 0 10px 25px rgba(0,0,0,0.1);
             --shadow-lg: 0 20px 40px rgba(0,0,0,0.15);
@@ -109,7 +112,7 @@ $portal_message = $portal_message ?? '';
         }
 
         /* ==========================================================================
-           HEADER
+           HEADER - FIXED FONT COLORS
            ========================================================================== */
         .header {
             text-align: center;
@@ -120,27 +123,30 @@ $portal_message = $portal_message ?? '';
             font-family: 'Cormorant Garamond', serif;
             font-size: clamp(28px, 5vw, 42px);
             font-weight: 700;
-            color: var(--white);
+            color: #FFFFFF !important; /* Force white */
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: -0.5px;
         }
 
         .header p {
             font-size: clamp(14px, 2vw, 16px);
-            color: rgba(255,255,255,0.95);
-            opacity: 0.9;
+            color: rgba(255,255,255,0.95) !important; /* Force white with opacity */
+            font-weight: 400;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
 
         /* ==========================================================================
-           STEP INDICATOR
+           STEP INDICATOR - FIXED FONT COLORS
            ========================================================================== */
         .step-indicator {
             display: flex;
             justify-content: space-between;
             margin-bottom: 40px;
             position: relative;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.15);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border-radius: 50px;
             padding: 15px 20px;
             border: 1px solid rgba(255,255,255,0.2);
@@ -153,7 +159,7 @@ $portal_message = $portal_message ?? '';
             left: 60px;
             right: 60px;
             height: 2px;
-            background: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.2);
             transform: translateY(-50%);
             z-index: 1;
         }
@@ -163,60 +169,60 @@ $portal_message = $portal_message ?? '';
             z-index: 2;
             text-align: center;
             flex: 1;
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(5px);
-            border-radius: 30px;
             padding: 8px 0;
-            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .step-number {
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 40px;
             background: rgba(255,255,255,0.2);
             border: 2px solid rgba(255,255,255,0.3);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 5px;
+            margin: 0 auto 8px;
             font-weight: 700;
-            color: white;
+            color: #FFFFFF !important; /* Force white */
             transition: all 0.3s;
+            backdrop-filter: blur(5px);
         }
 
         .step.active .step-number {
             background: var(--primary);
-            border-color: var(--white);
+            border-color: #FFFFFF;
             box-shadow: var(--shadow-primary);
+            color: #FFFFFF !important;
         }
 
         .step.completed .step-number {
             background: var(--success);
-            border-color: var(--white);
+            border-color: #FFFFFF;
+            color: #FFFFFF !important;
         }
 
         .step-label {
-            font-size: 12px;
-            font-weight: 500;
-            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            color: #FFFFFF !important; /* Force white */
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
 
         .step.active .step-label {
-            color: var(--gold);
-            font-weight: 600;
+            color: #FFD700 !important; /* Gold color for active */
+            font-weight: 700;
         }
 
         @media (max-width: 768px) {
             .step-indicator {
                 flex-wrap: wrap;
                 gap: 10px;
-                background: none;
-                backdrop-filter: none;
-                border: none;
-                padding: 0;
+                background: rgba(255,255,255,0.2);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.2);
+                padding: 15px;
             }
             
             .step-indicator::before {
@@ -225,13 +231,14 @@ $portal_message = $portal_message ?? '';
             
             .step {
                 flex: 0 0 calc(50% - 5px);
-                background: rgba(255,255,255,0.15);
-                backdrop-filter: blur(5px);
                 padding: 10px 5px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 30px;
+                backdrop-filter: blur(5px);
             }
             
             .step-label {
-                font-size: 10px;
+                font-size: 11px;
             }
         }
 
@@ -268,12 +275,14 @@ $portal_message = $portal_message ?? '';
             font-size: 28px;
             font-weight: 700;
             margin-bottom: 10px;
+            color: #FFFFFF !important;
         }
 
         .card-header p {
             font-size: 14px;
             opacity: 0.9;
             margin: 0;
+            color: rgba(255,255,255,0.95) !important;
         }
 
         .card-body {
@@ -310,6 +319,7 @@ $portal_message = $portal_message ?? '';
             display: flex;
             align-items: center;
             gap: 10px;
+            color: #FFFFFF !important;
         }
 
         .terms-body {
@@ -328,7 +338,7 @@ $portal_message = $portal_message ?? '';
 
         .terms-content {
             font-size: 14px;
-            color: #4a5568;
+            color: var(--text-dark);
             line-height: 1.7;
         }
 
@@ -339,6 +349,7 @@ $portal_message = $portal_message ?? '';
 
         .terms-content li {
             margin-bottom: 8px;
+            color: var(--text-dark);
         }
 
         .terms-footer {
@@ -346,7 +357,7 @@ $portal_message = $portal_message ?? '';
             padding: 12px 20px;
             border-top: 1px solid var(--border);
             font-size: 12px;
-            color: #718096;
+            color: var(--text-muted);
         }
 
         /* ==========================================================================
@@ -369,6 +380,7 @@ $portal_message = $portal_message ?? '';
             font-size: 15px;
             transition: all 0.3s;
             font-family: 'Outfit', sans-serif;
+            color: var(--text-dark);
         }
 
         .form-control:focus {
@@ -382,9 +394,15 @@ $portal_message = $portal_message ?? '';
             letter-spacing: 1px;
         }
 
+        .form-control::placeholder {
+            color: #9CA3AF;
+            font-size: 14px;
+            letter-spacing: normal;
+        }
+
         .form-text {
             font-size: 12px;
-            color: #718096;
+            color: var(--text-muted);
             margin-top: 5px;
         }
 
@@ -406,7 +424,7 @@ $portal_message = $portal_message ?? '';
 
         .form-check-label {
             font-size: 14px;
-            color: #4a5568;
+            color: var(--text-dark);
             margin-left: 5px;
         }
 
@@ -436,14 +454,19 @@ $portal_message = $portal_message ?? '';
             font-size: 18px;
         }
 
+        .info-alert strong {
+            color: var(--text-dark);
+        }
+
         .info-alert ul {
             margin: 10px 0 0 20px;
-            color: #2c3e50;
+            color: var(--text-dark);
             font-size: 14px;
         }
 
         .info-alert li {
             margin-bottom: 5px;
+            color: var(--text-dark);
         }
 
         /* ==========================================================================
@@ -581,41 +604,48 @@ $portal_message = $portal_message ?? '';
         .divider span {
             background: var(--white);
             padding: 0 15px;
-            color: #a0aec0;
+            color: var(--text-muted);
             font-size: 14px;
             position: relative;
             z-index: 2;
         }
 
         /* ==========================================================================
-           FOOTER
+           FOOTER - SINGLE FOOTER (REMOVED DUPLICATE)
            ========================================================================== */
-        .footer {
+        .app-footer {
             text-align: center;
             margin-top: 30px;
-            color: rgba(255,255,255,0.9);
+            color: rgba(255,255,255,0.95) !important;
             font-size: 13px;
             padding: 20px;
-            background: rgba(0,0,0,0.2);
+            background: rgba(0,0,0,0.25);
             border-radius: var(--radius-lg);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.15);
         }
 
-        .footer a {
-            color: white;
+        .app-footer p {
+            color: rgba(255,255,255,0.95) !important;
+            margin-bottom: 5px;
+        }
+
+        .app-footer a {
+            color: #FFFFFF !important;
             text-decoration: none;
             font-weight: 500;
-            border-bottom: 1px dotted rgba(255,255,255,0.3);
+            border-bottom: 1px dotted rgba(255,255,255,0.5);
         }
 
-        .footer a:hover {
-            border-bottom-color: white;
+        .app-footer a:hover {
+            border-bottom-color: #FFFFFF;
         }
 
-        .footer i {
+        .app-footer i {
             margin: 0 5px;
             opacity: 0.9;
+            color: rgba(255,255,255,0.9);
         }
 
         /* ==========================================================================
@@ -640,7 +670,7 @@ $portal_message = $portal_message ?? '';
         }
 
         .portal-closed p {
-            color: #4a5568;
+            color: var(--text-dark);
             margin-bottom: 10px;
         }
 
@@ -673,18 +703,23 @@ $portal_message = $portal_message ?? '';
                 font-size: 16px;
                 padding: 12px;
             }
+            
+            .app-footer {
+                padding: 15px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="verification-container">
-        <!-- Header -->
+        <!-- Header - Fixed colors -->
         <div class="header">
             <h1>FCT College of Nursing Sciences</h1>
             <p>2025/2026 Admissions Application Portal</p>
         </div>
 
-        <!-- Step Indicator -->
+        <!-- Step Indicator - Fixed colors -->
         <div class="step-indicator">
             <div class="step active">
                 <div class="step-number">1</div>
@@ -763,7 +798,7 @@ $portal_message = $portal_message ?? '';
                                    class="form-control form-control-lg" 
                                    id="jamb_number" 
                                    name="jamb_number" 
-                                   placeholder="e.g., 202550805685FF"
+                                   placeholder="e.g., 202650000089FG"
                                    style="text-transform: uppercase;"
                                    autocomplete="off"
                                    required>
@@ -807,9 +842,9 @@ $portal_message = $portal_message ?? '';
                         <span>OR</span>
                     </div>
                     
-                    <!-- Login Link -->
+                    <!-- Login Link - Fixed to point to login page -->
                     <div class="text-center">
-                        <p class="mb-2" style="color: #718096;">Already have an account?</p>
+                        <p class="mb-2" style="color: var(--text-muted);">Already have an account?</p>
                         <a href="/applicant/login" class="btn btn-outline-primary">
                             <i class="fas fa-sign-in-alt"></i> Login to Continue Application
                         </a>
@@ -818,8 +853,8 @@ $portal_message = $portal_message ?? '';
             </div>
         <?php endif; ?>
 
-        <!-- Footer -->
-        <div class="footer">
+        <!-- SINGLE FOOTER - Using app-footer class to avoid conflict with layout -->
+        <div class="app-footer">
             <p>© <?php echo date('Y'); ?> FCT College of Nursing Sciences. All rights reserved.</p>
             <p>
                 <i class="fas fa-phone-alt"></i> Support: 07039837749 | 
