@@ -1358,25 +1358,47 @@ class PublicApplicationController extends ApplicationBaseController {
     // ============================================
 
     /**
-     * Show step 1: JAMB verification (Legacy Flow)
+     * Show step 1: JAMB verification - UPDATED to check existing application
      */
     public function step1() {
-        // Check if portal is open
-        if (!$this->settingsModel->isPortalOpen()) {
-            $this->data['portal_closed'] = true;
-            $this->data['portal_message'] = $this->settingsModel->getPortalMessage();
-            $this->render('applications/step1');
-            return;
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
         }
         
-        // If not logged in, redirect to login
-        if (!$this->isApplicantLoggedIn()) {
+        // Check if logged in
+        if (!isset($_SESSION['applicant_id'])) {
             $_SESSION['flash_error'] = 'Please login to continue';
-            $this->redirect('/applicant/login');
-            return;
+            header('Location: /applicant/login');
+            exit;
         }
         
-        // Get terms and settings for display
+        $applicantId = $_SESSION['applicant_id'];
+        
+        // Check if application exists and has JAMB already
+        $application = $this->applicationModel->getByApplicantId($applicantId);
+        
+        if ($application && !empty($application['jamb_number'])) {
+            // JAMB already verified, restore to session and show form
+            $_SESSION['jamb_verification'] = [
+                'jamb_number' => $application['jamb_number'],
+                'first_name' => $application['first_name'],
+                'last_name' => $application['last_name'],
+                'other_names' => $application['other_names'],
+                'gender' => $application['gender'],
+                'state_of_origin' => $application['state_of_origin'],
+                'lga' => $application['lga'],
+                'score' => $application['utme_score']
+            ];
+            
+            error_log("Restored JAMB data to session from application in step1 for applicant: " . $applicantId);
+            
+            // Pass to view that JAMB is already verified
+            $this->data['jamb_verified'] = true;
+            $this->data['jamb_data'] = $_SESSION['jamb_verification'];
+            $this->data['application_step'] = $application['application_step'];
+        }
+        
         $terms = $this->termsModel->getForAcceptance();
         $settings = $this->settingsModel->getAllSettings();
         
