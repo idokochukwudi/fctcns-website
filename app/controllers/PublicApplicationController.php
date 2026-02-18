@@ -5,6 +5,7 @@
  * Handles public-facing application processes
  * ENHANCED: Added application creation during JAMB verification, specific login error messages, password reset functionality
  * FIXED: Redirect from application form to step 2, proper JAMB data restoration, saveApplication field mapping and update method
+ * FIXED: O'Level results handling in saveApplication method
  * 
  * @package FCT_CNS
  */
@@ -556,8 +557,8 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Save application form - FIXED with proper JAMB data handling and field mapping
-     * Now uses updateApplication() method instead of direct update
+     * Save application form - FIXED with proper O'Level data handling
+     * Now properly saves O'Level subjects data to olevel_results field
      */
     public function saveApplication() {
         // Set header to JSON first thing
@@ -643,6 +644,23 @@ class PublicApplicationController extends ApplicationBaseController {
                 'updated_at' => date('Y-m-d H:i:s')
             ];
             
+            // FIXED: Handle O'Level subject data - THIS WAS MISSING
+            if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
+                error_log("O'Level subject data received: " . print_r($_POST['olevel'], true));
+                
+                // Get existing O'Level data if any
+                $existingOlevel = [];
+                if (!empty($application['olevel_results'])) {
+                    $existingOlevel = json_decode($application['olevel_results'], true) ?: [];
+                }
+                
+                // For O'Level subjects, we want to replace with the current form data
+                // This assumes $_POST['olevel'] contains the structured subject data
+                $updateData['olevel_results'] = json_encode($_POST['olevel']);
+                
+                error_log("O'Level data being saved: " . $updateData['olevel_results']);
+            }
+            
             // Handle file uploads
             $uploadErrors = [];
             
@@ -679,20 +697,20 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
             }
             
-            // Handle O'Level files
-            if (isset($_FILES['olevel'])) {
+            // Handle O'Level file uploads (separate from subject data)
+            if (isset($_FILES['olevel_files'])) {
                 $olevelFiles = [];
                 
-                if (is_array($_FILES['olevel']['name'])) {
+                if (is_array($_FILES['olevel_files']['name'])) {
                     // Multiple files
-                    for ($i = 0; $i < count($_FILES['olevel']['name']); $i++) {
-                        if ($_FILES['olevel']['error'][$i] === UPLOAD_ERR_OK) {
+                    for ($i = 0; $i < count($_FILES['olevel_files']['name']); $i++) {
+                        if ($_FILES['olevel_files']['error'][$i] === UPLOAD_ERR_OK) {
                             $file = [
-                                'name' => $_FILES['olevel']['name'][$i],
-                                'type' => $_FILES['olevel']['type'][$i],
-                                'tmp_name' => $_FILES['olevel']['tmp_name'][$i],
-                                'error' => $_FILES['olevel']['error'][$i],
-                                'size' => $_FILES['olevel']['size'][$i]
+                                'name' => $_FILES['olevel_files']['name'][$i],
+                                'type' => $_FILES['olevel_files']['type'][$i],
+                                'tmp_name' => $_FILES['olevel_files']['tmp_name'][$i],
+                                'error' => $_FILES['olevel_files']['error'][$i],
+                                'size' => $_FILES['olevel_files']['size'][$i]
                             ];
                             $result = $this->uploadFile($file, $applicantId, 'olevel');
                             if ($result['success']) {
@@ -705,8 +723,8 @@ class PublicApplicationController extends ApplicationBaseController {
                     }
                 } else {
                     // Single file
-                    if ($_FILES['olevel']['error'] === UPLOAD_ERR_OK) {
-                        $result = $this->uploadFile($_FILES['olevel'], $applicantId, 'olevel');
+                    if ($_FILES['olevel_files']['error'] === UPLOAD_ERR_OK) {
+                        $result = $this->uploadFile($_FILES['olevel_files'], $applicantId, 'olevel');
                         if ($result['success']) {
                             $olevelFiles[] = $result['path'];
                             error_log("O'Level file uploaded: " . $result['path']);
@@ -717,23 +735,21 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
                 
                 if (!empty($olevelFiles)) {
-                    // Get existing O'Level files
+                    // Store file paths separately - you might need another field for this
+                    // For now, we'll log it and save to a separate field if available
+                    error_log("O'Level files to save: " . json_encode($olevelFiles));
+                    
+                    // If you have a field for O'Level file paths, save them here
+                    // For example, if you have an 'olevel_files' field:
+                    // $updateData['olevel_files'] = json_encode($olevelFiles);
+                    
+                    // Or if you want to append to existing file list:
                     $existingFiles = [];
-                    if ($application && !empty($application['olevel_results'])) {
-                        $existingFiles = json_decode($application['olevel_results'], true) ?: [];
+                    if (!empty($application['olevel_file_paths'])) {
+                        $existingFiles = json_decode($application['olevel_file_paths'], true) ?: [];
                     }
                     $allFiles = array_merge($existingFiles, $olevelFiles);
-                    $updateData['olevel_results'] = json_encode($allFiles);
-                }
-            }
-            
-            // Handle O'Level data (form inputs for subjects)
-            if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
-                error_log("O'Level subject data received: " . print_r($_POST['olevel'], true));
-                
-                // If your application model has a method to save O'Level subjects, call it here
-                if (method_exists($this->applicationModel, 'saveOlevelSubjects')) {
-                    $this->applicationModel->saveOlevelSubjects($application['id'], $_POST['olevel']);
+                    $updateData['olevel_file_paths'] = json_encode($allFiles);
                 }
             }
             
@@ -857,12 +873,12 @@ class PublicApplicationController extends ApplicationBaseController {
                     break;
                     
                 case 'olevel':
-                    if ($index !== null && !empty($application['olevel_results'])) {
-                        $olevelFiles = json_decode($application['olevel_results'], true);
+                    if ($index !== null && !empty($application['olevel_file_paths'])) {
+                        $olevelFiles = json_decode($application['olevel_file_paths'], true);
                         if (is_array($olevelFiles) && isset($olevelFiles[$index])) {
                             $filePath = $olevelFiles[$index];
                             array_splice($olevelFiles, $index, 1);
-                            $updateData['olevel_results'] = !empty($olevelFiles) ? json_encode($olevelFiles) : null;
+                            $updateData['olevel_file_paths'] = !empty($olevelFiles) ? json_encode($olevelFiles) : null;
                         }
                     }
                     break;
