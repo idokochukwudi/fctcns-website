@@ -275,6 +275,8 @@ class Router {
         $this->get('/apply/form', 'PublicApplicationController@showApplicationForm');
         $this->post('/apply/verify-jamb', 'PublicApplicationController@verifyJamb');
         $this->post('/apply/save-application', 'PublicApplicationController@saveApplication');
+        // NEW ROUTE FOR REMOVING DOCUMENTS
+        $this->post('/apply/remove-document', 'PublicApplicationController@removeDocument');
 
         // Step 3: Payment
         $this->get('/apply/payment', 'PublicApplicationController@showPayment');

@@ -1,10 +1,10 @@
 <?php
 /**
  * Application Form View - Step 2
- * FIXED: Displays existing uploaded files and improved responsive design
+ * FIXED: Displays existing uploaded files, view buttons, and birth certificate persistence
  * 
  * @package FCTCNS
- * @version 2.1 - Enhanced with mature, responsive design
+ * @version 2.2 - Added view buttons and birth certificate persistence
  */
 
 extract($data ?? []);
@@ -27,6 +27,7 @@ $csrf_token = $csrf_token ?? '';
 $existing_passport = $existing_passport ?? null;
 $existing_olevel = $existing_olevel ?? [];
 $existing_jamb_result = $existing_jamb_result ?? null;
+$existing_birth_certificate = $existing_birth_certificate ?? null;
 ?>
 
 <!DOCTYPE html>
@@ -1348,7 +1349,10 @@ $existing_jamb_result = $existing_jamb_result ?? null;
                                                     <?php echo e(basename($existing_jamb_result['file_path'])); ?>
 
                                                 </small>
-                                                <button type="button" class="btn btn--sm btn--outline text-danger" onclick="removeExistingJambResult()">
+                                                <a href="<?php echo e($existing_jamb_result['file_path']); ?>" target="_blank" class="existing-file-btn" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <button type="button" class="btn btn--sm btn--outline text-danger" onclick="removeExistingJambResult()" title="Remove">
                                                     <i class="fas fa-times"></i>
                                                 </button>
                                             </span>
@@ -1359,12 +1363,27 @@ $existing_jamb_result = $existing_jamb_result ?? null;
                                     
                                     <div class="col-12 col-md-6">
                                         <label class="form-label">Birth Certificate (Optional)</label>
-                                        <div class="d-flex align-items-center gap-2">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
                                             <input type="file" class="form-control" id="birth_certificate" name="birth_certificate" 
                                                    accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
                                             <button type="button" class="btn btn--outline" onclick="document.getElementById('birth_certificate').click()">
-                                                <i class="fas fa-upload me-2"></i>Upload
+                                                <i class="fas fa-upload me-2"></i><?php echo isset($existing_birth_certificate) ? 'Replace' : 'Upload'; ?>
                                             </button>
+                                            <?php if (isset($existing_birth_certificate)): ?>
+                                            <span class="text-success d-flex align-items-center gap-2">
+                                                <i class="fas fa-check-circle"></i>
+                                                <small class="text-muted" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                    <?php echo e(basename($existing_birth_certificate['file_path'])); ?>
+
+                                                </small>
+                                                <a href="<?php echo e($existing_birth_certificate['file_path']); ?>" target="_blank" class="existing-file-btn" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <button type="button" class="btn btn--sm btn--outline text-danger" onclick="removeExistingBirthCertificate()" title="Remove">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </span>
+                                            <?php endif; ?>
                                         </div>
                                         <div class="form-text">Upload your birth certificate. Max 2MB.</div>
                                     </div>
@@ -1570,18 +1589,15 @@ $existing_jamb_result = $existing_jamb_result ?? null;
         <?php endif; ?>
     });
 
-    // Functions to remove existing files (using server-side endpoint)
+    // Functions to remove existing files
     function removeExistingFile(type) {
         if (confirm('Are you sure you want to remove this file?')) {
-            // Create form data
             const formData = new FormData();
             formData.append('type', type);
             formData.append('csrf_token', '<?php echo $csrf_token; ?>');
             
-            // Show loading state
             showAlert('Removing file...', 'info');
             
-            // AJAX call to remove file
             fetch('/apply/remove-document', {
                 method: 'POST',
                 body: formData
@@ -1635,6 +1651,34 @@ $existing_jamb_result = $existing_jamb_result ?? null;
         if (confirm('Are you sure you want to remove your JAMB result slip?')) {
             const formData = new FormData();
             formData.append('type', 'jamb_result');
+            formData.append('csrf_token', '<?php echo $csrf_token; ?>');
+            
+            showAlert('Removing file...', 'info');
+            
+            fetch('/apply/remove-document', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('File removed successfully', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert('Failed to remove file: ' + (data.message || 'Unknown error'), 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('Network error. Please try again.', 'danger');
+            });
+        }
+    }
+
+    function removeExistingBirthCertificate() {
+        if (confirm('Are you sure you want to remove your birth certificate?')) {
+            const formData = new FormData();
+            formData.append('type', 'birth_certificate');
             formData.append('csrf_token', '<?php echo $csrf_token; ?>');
             
             showAlert('Removing file...', 'info');

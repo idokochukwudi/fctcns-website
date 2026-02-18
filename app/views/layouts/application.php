@@ -356,22 +356,32 @@
             <p>2025/2026 Admissions Application Portal</p>
         </div>
         
-        <?php if (!isset($hideSteps) && isset($application)): ?>
+        <?php 
+        // Safely check if application exists and has application_step
+        $showSteps = false;
+        $currentStep = 1;
+        if (isset($application) && is_array($application) && isset($application['application_step'])) {
+            $showSteps = true;
+            $currentStep = (int)$application['application_step'];
+        }
+        ?>
+        
+        <?php if (!isset($hideSteps) && $showSteps): ?>
         <div class="application-body">
             <div class="step-indicator">
-                <div class="step <?php echo $application['application_step'] >= 1 ? 'completed' : ''; ?> <?php echo $application['application_step'] == 1 ? 'active' : ''; ?>">
+                <div class="step <?php echo $currentStep >= 1 ? 'completed' : ''; ?> <?php echo $currentStep == 1 ? 'active' : ''; ?>">
                     <div class="step-number">1</div>
                     <div class="step-label">JAMB Verification</div>
                 </div>
-                <div class="step <?php echo $application['application_step'] >= 2 ? 'completed' : ''; ?> <?php echo $application['application_step'] == 2 ? 'active' : ''; ?>">
+                <div class="step <?php echo $currentStep >= 2 ? 'completed' : ''; ?> <?php echo $currentStep == 2 ? 'active' : ''; ?>">
                     <div class="step-number">2</div>
                     <div class="step-label">Application Form</div>
                 </div>
-                <div class="step <?php echo $application['application_step'] >= 3 ? 'completed' : ''; ?> <?php echo $application['application_step'] == 3 ? 'active' : ''; ?>">
+                <div class="step <?php echo $currentStep >= 3 ? 'completed' : ''; ?> <?php echo $currentStep == 3 ? 'active' : ''; ?>">
                     <div class="step-number">3</div>
                     <div class="step-label">Payment</div>
                 </div>
-                <div class="step <?php echo $application['application_step'] >= 4 ? 'completed' : ''; ?> <?php echo $application['application_step'] == 4 ? 'active' : ''; ?>">
+                <div class="step <?php echo $currentStep >= 4 ? 'completed' : ''; ?> <?php echo $currentStep == 4 ? 'active' : ''; ?>">
                     <div class="step-number">4</div>
                     <div class="step-label">Exam Slip</div>
                 </div>
@@ -409,7 +419,24 @@
         
         <div class="application-footer">
             <p>&copy; <?php echo date('Y'); ?> FCT College of Nursing Sciences. All rights reserved.</p>
-            <p>Support: <?php echo htmlspecialchars($settings['key_value']['support_phone_1'] ?? '07039837749'); ?> | Email: <?php echo htmlspecialchars($settings['key_value']['support_email'] ?? 'support.consap@fcthhss.abj.gov.ng'); ?></p>
+            <p>Support: 
+                <?php 
+                // Safely check if settings exists and has the required keys
+                if (isset($settings) && is_array($settings) && isset($settings['key_value'])) {
+                    echo htmlspecialchars($settings['key_value']['support_phone_1'] ?? '07039837749');
+                } else {
+                    echo '07039837749';
+                }
+                ?> | 
+                Email: 
+                <?php 
+                if (isset($settings) && is_array($settings) && isset($settings['key_value'])) {
+                    echo htmlspecialchars($settings['key_value']['support_email'] ?? 'support.consap@fcthhss.abj.gov.ng');
+                } else {
+                    echo 'support.consap@fcthhss.abj.gov.ng';
+                }
+                ?>
+            </p>
         </div>
     </div>
     
@@ -420,7 +447,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
     <!-- Payment JavaScript -->
-    <script src="<?php echo BASE_URL; ?>/assets/js/payment.js"></script>
+    <script src="<?php echo defined('BASE_URL') ? BASE_URL : ''; ?>/assets/js/payment.js"></script>
     
     <!-- Custom JavaScript -->
     <script>

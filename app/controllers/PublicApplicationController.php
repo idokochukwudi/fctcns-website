@@ -3,6 +3,7 @@
  * Public Application Controller
  * 
  * Handles public-facing application processes
+ * FIXED: Added birth certificate persistence, view buttons support, remove document endpoint
  * 
  * @package FCT_CNS
  */
@@ -437,7 +438,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show application form (Step 2 - New Flow)
-     * FIXED: Load existing file paths from database and restore JAMB data
+     * FIXED: Load existing file paths from database including birth certificate
      */
     public function showApplicationForm() {
         // Start session
@@ -529,6 +530,10 @@ class PublicApplicationController extends ApplicationBaseController {
             'existing_jamb_result' => !empty($application['qualification_file']) ? [
                 'file_path' => $application['qualification_file'],
                 'id' => 'jamb_result'
+            ] : null,
+            'existing_birth_certificate' => !empty($application['birth_certificate']) ? [
+                'file_path' => $application['birth_certificate'],
+                'id' => 'birth_certificate'
             ] : null
         ]);
         
@@ -536,7 +541,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Save application form - FIXED to save file paths to database
+     * Save application form - FIXED with birth certificate persistence
      */
     public function saveApplication() {
         // Set header to JSON first thing
@@ -648,6 +653,13 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
                 
                 if (!empty($olevelFiles)) {
+                    // If there are existing files, merge with new ones
+                    if (!empty($application['olevel_results'])) {
+                        $existingFiles = json_decode($application['olevel_results'], true);
+                        if (is_array($existingFiles)) {
+                            $olevelFiles = array_merge($existingFiles, $olevelFiles);
+                        }
+                    }
                     // Store as JSON in olevel_results field
                     $updateData['olevel_results'] = json_encode($olevelFiles);
                 }
@@ -663,13 +675,11 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
             }
             
-            // Upload birth certificate (optional)
+            // Upload birth certificate (optional) - FIXED: Now saves to database
             if (isset($_FILES['birth_certificate']) && $_FILES['birth_certificate']['error'] === UPLOAD_ERR_OK) {
                 $birthCertResult = $this->uploadFile($_FILES['birth_certificate'], $applicantId, 'birth_certificate');
                 if ($birthCertResult['success']) {
-                    // You might want to store this in a separate field or as part of qualification_file
-                    // For now, we'll just log it
-                    error_log("Birth certificate uploaded: " . $birthCertResult['path']);
+                    $updateData['birth_certificate'] = $birthCertResult['path'];
                 } else {
                     $uploadErrors[] = 'Birth Certificate: ' . $birthCertResult['message'];
                 }
@@ -695,6 +705,7 @@ class PublicApplicationController extends ApplicationBaseController {
                     'passport_photo' => $updateData['passport_photo'] ?? null,
                     'olevel_results' => $updateData['olevel_results'] ?? null,
                     'qualification_file' => $updateData['qualification_file'] ?? null,
+                    'birth_certificate' => $updateData['birth_certificate'] ?? null,
                     'application_step' => 2,
                     'status' => 'pending',
                     'created_at' => date('Y-m-d H:i:s'),
@@ -724,6 +735,112 @@ class PublicApplicationController extends ApplicationBaseController {
                 'success' => false,
                 'message' => 'Server error: ' . $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Remove document - NEW endpoint for removing files
+     */
+    public function removeDocument() {
+        // Set header to JSON first thing
+        header('Content-Type: application/json');
+        
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Check if user is logged in
+        if (!isset($_SESSION['applicant_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Please login first']);
+            return;
+        }
+        
+        // Validate CSRF
+        $input = json_decode(file_get_contents('php://input'), true);
+        $token = $input['csrf_token'] ?? $_POST['csrf_token'] ?? '';
+        
+        if (!$this->validateCsrfToken($token)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid security token']);
+            return;
+        }
+        
+        try {
+            $applicantId = $_SESSION['applicant_id'];
+            $type = $input['type'] ?? $_POST['type'] ?? '';
+            $index = isset($input['index']) ? intval($input['index']) : (isset($_POST['index']) ? intval($_POST['index']) : null);
+            
+            if (empty($type)) {
+                echo json_encode(['success' => false, 'message' => 'File type not specified']);
+                return;
+            }
+            
+            // Get application
+            $application = $this->applicationModel->getByApplicantId($applicantId);
+            
+            if (!$application) {
+                echo json_encode(['success' => false, 'message' => 'Application not found']);
+                return;
+            }
+            
+            $updateData = [];
+            $filePath = null;
+            
+            switch ($type) {
+                case 'passport':
+                    $filePath = $application['passport_photo'];
+                    $updateData['passport_photo'] = null;
+                    break;
+                    
+                case 'jamb_result':
+                    $filePath = $application['qualification_file'];
+                    $updateData['qualification_file'] = null;
+                    break;
+                    
+                case 'birth_certificate':
+                    $filePath = $application['birth_certificate'];
+                    $updateData['birth_certificate'] = null;
+                    break;
+                    
+                case 'olevel':
+                    if ($index !== null && !empty($application['olevel_results'])) {
+                        $olevelFiles = json_decode($application['olevel_results'], true);
+                        if (is_array($olevelFiles) && isset($olevelFiles[$index])) {
+                            $filePath = $olevelFiles[$index];
+                            array_splice($olevelFiles, $index, 1);
+                            $updateData['olevel_results'] = !empty($olevelFiles) ? json_encode($olevelFiles) : null;
+                        }
+                    }
+                    break;
+                    
+                default:
+                    echo json_encode(['success' => false, 'message' => 'Invalid file type']);
+                    return;
+            }
+            
+            // Delete physical file if it exists
+            if ($filePath) {
+                $fullPath = PUBLIC_PATH . $filePath;
+                if (file_exists($fullPath)) {
+                    unlink($fullPath);
+                }
+            }
+            
+            // Update database if we have changes
+            if (!empty($updateData)) {
+                $updateData['updated_at'] = date('Y-m-d H:i:s');
+                $this->applicationModel->update(
+                    $updateData,
+                    'id = :id',
+                    ['id' => $application['id']]
+                );
+            }
+            
+            echo json_encode(['success' => true, 'message' => 'File removed successfully']);
+            
+        } catch (Exception $e) {
+            error_log("Remove document error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
         }
     }
 
