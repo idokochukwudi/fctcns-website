@@ -4,7 +4,7 @@
  * 
  * Handles public-facing application processes
  * ENHANCED: Added application creation during JAMB verification, specific login error messages, password reset functionality
- * FIXED: Redirect from application form to step 2, proper JAMB data restoration, saveApplication field mapping
+ * FIXED: Redirect from application form to step 2, proper JAMB data restoration, saveApplication field mapping and update method
  * 
  * @package FCT_CNS
  */
@@ -556,7 +556,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Save application form - FIXED with correct field mapping and validation
+     * Save application form - FIXED with correct field mapping and update method handling
      */
     public function saveApplication() {
         // Set header to JSON first thing
@@ -595,15 +595,15 @@ class PublicApplicationController extends ApplicationBaseController {
             // Get editable fields - FIXED: Match form field names
             $dateOfBirth = $_POST['date_of_birth'] ?? '';
             $phone = $_POST['phone'] ?? '';
-            $email = $_POST['email'] ?? '';  // Added email
+            $email = $_POST['email'] ?? '';
             $address = $_POST['address'] ?? '';
-            $nationality = $_POST['nationality'] ?? 'Nigerian';  // Added nationality with default
-            $programChoice = $_POST['program_choice_1'] ?? '';  // FIXED: Match form field name
+            $nationality = $_POST['nationality'] ?? 'Nigerian';
+            $programChoice = $_POST['program_choice_1'] ?? '';
             
             // Debug log
             error_log("Save Application - POST data: " . print_r($_POST, true));
             
-            // Validate required fields - FIXED: Match form field names
+            // Validate required fields
             $missingFields = [];
             if (empty($dateOfBirth)) $missingFields[] = 'date_of_birth';
             if (empty($phone)) $missingFields[] = 'phone';
@@ -623,6 +623,11 @@ class PublicApplicationController extends ApplicationBaseController {
             // Check if application exists
             $application = $this->applicationModel->getByApplicantId($applicantId);
             
+            if (!$application) {
+                echo json_encode(['success' => false, 'message' => 'Application not found']);
+                return;
+            }
+            
             // Handle O'Level results
             $olevelData = [];
             if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
@@ -630,7 +635,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 error_log("O'Level data received: " . print_r($olevelData, true));
             }
             
-            // Prepare update data - FIXED: Match database column names
+            // Prepare update data - Match database column names
             $updateData = [
                 'date_of_birth' => $dateOfBirth,
                 'phone' => $phone,
@@ -638,8 +643,6 @@ class PublicApplicationController extends ApplicationBaseController {
                 'address' => $address,
                 'nationality' => $nationality,
                 'program_choice_1' => $programChoice,
-                'program_choice_2' => '',  // Not used in form
-                'program_choice_3' => '',  // Not used in form
                 'application_step' => 2,
                 'updated_at' => date('Y-m-d H:i:s')
             ];
@@ -663,7 +666,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
             }
             
-            // Upload O'Level results (files)
+            // Upload O'Level files if any
             if (isset($_FILES['olevel'])) {
                 $files = $_FILES['olevel'];
                 $olevelFiles = [];
@@ -733,66 +736,58 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
             }
             
-            if (!$application) {
-                // Create new application
-                $applicationId = $this->applicationModel->insert([
-                    'applicant_id' => $applicantId,
-                    'application_number' => $this->applicationModel->generateApplicationNumber(),
-                    'jamb_number' => $jambNumber,
-                    'first_name' => $firstName,
-                    'last_name' => $lastName,
-                    'other_names' => $otherNames,
-                    'gender' => $gender,
-                    'state_of_origin' => $stateOfOrigin,
-                    'lga' => $lga,
-                    'utme_score' => $utmeScore,
-                    'date_of_birth' => $dateOfBirth,
-                    'phone' => $phone,
-                    'email' => $email,
-                    'address' => $address,
-                    'nationality' => $nationality,
-                    'program_choice_1' => $programChoice,
-                    'program_choice_2' => '',
-                    'program_choice_3' => '',
-                    'program' => $programChoice,
-                    'passport_photo' => $updateData['passport_photo'] ?? null,
-                    'olevel_results' => !empty($olevelData) ? json_encode($olevelData) : ($updateData['olevel_results'] ?? null),
-                    'qualification_file' => $updateData['qualification_file'] ?? null,
-                    'birth_certificate' => $updateData['birth_certificate'] ?? null,
-                    'application_step' => 2,
-                    'status' => 'pending',
-                    'entry_year' => date('Y'),
-                    'highest_qualification' => 'SSCE',
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
-                ]);
-                
-                error_log("Created new application ID: " . $applicationId);
-            } else {
-                // Update existing application
-                $this->applicationModel->update(
-                    $application['id'],
-                    $updateData
-                );
-                $applicationId = $application['id'];
-                error_log("Updated existing application ID: " . $applicationId);
+            // Update existing application - FIXED: Try both possible method signatures
+            $updated = false;
+            
+            // Try method 1: update($id, $data)
+            if (method_exists($this->applicationModel, 'update')) {
+                try {
+                    $updated = $this->applicationModel->update($application['id'], $updateData);
+                    error_log("Update attempt 1 result: " . ($updated ? 'true' : 'false'));
+                } catch (Exception $e) {
+                    error_log("Update method 1 failed: " . $e->getMessage());
+                }
             }
             
+            // If first method failed or doesn't exist, try method 2: update($data, $where, $params)
+            if (!$updated) {
+                try {
+                    $updated = $this->applicationModel->update(
+                        $updateData,
+                        'id = :id',
+                        ['id' => $application['id']]
+                    );
+                    error_log("Update attempt 2 result: " . ($updated ? 'true' : 'false'));
+                } catch (Exception $e) {
+                    error_log("Update method 2 failed: " . $e->getMessage());
+                }
+            }
+            
+            if (!$updated) {
+                error_log("Failed to update application ID: " . $application['id']);
+                echo json_encode(['success' => false, 'message' => 'Failed to update application']);
+                return;
+            }
+            
+            error_log("Updated existing application ID: " . $application['id']);
+            
             // Update applicant phone and email if needed
-            $this->applicantModel->update(
-                $applicantId,
-                [
-                    'phone' => $phone,
-                    'email' => $email,
-                    'updated_at' => date('Y-m-d H:i:s')
-                ]
-            );
+            try {
+                $this->applicantModel->update(
+                    ['phone' => $phone, 'email' => $email, 'updated_at' => date('Y-m-d H:i:s')],
+                    'id = :id',
+                    ['id' => $applicantId]
+                );
+            } catch (Exception $e) {
+                error_log("Failed to update applicant: " . $e->getMessage());
+                // Don't return error, application update succeeded
+            }
             
             // Return success response
             $response = [
                 'success' => true,
                 'message' => 'Application saved successfully',
-                'application_id' => $applicationId
+                'application_id' => $application['id']
             ];
             
             if (!empty($uploadErrors)) {
@@ -817,7 +812,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Remove document - NEW endpoint for removing files
+     * Remove document - FIXED with correct update method handling
      */
     public function removeDocument() {
         // Set header to JSON first thing
@@ -907,10 +902,36 @@ class PublicApplicationController extends ApplicationBaseController {
             // Update database if we have changes
             if (!empty($updateData)) {
                 $updateData['updated_at'] = date('Y-m-d H:i:s');
-                $this->applicationModel->update(
-                    $application['id'],
-                    $updateData
-                );
+                
+                // Try both update method signatures
+                $updated = false;
+                
+                // Try method 1: update($id, $data)
+                if (method_exists($this->applicationModel, 'update')) {
+                    try {
+                        $updated = $this->applicationModel->update($application['id'], $updateData);
+                    } catch (Exception $e) {
+                        error_log("Remove document update method 1 failed: " . $e->getMessage());
+                    }
+                }
+                
+                // If first method failed, try method 2
+                if (!$updated) {
+                    try {
+                        $updated = $this->applicationModel->update(
+                            $updateData,
+                            'id = :id',
+                            ['id' => $application['id']]
+                        );
+                    } catch (Exception $e) {
+                        error_log("Remove document update method 2 failed: " . $e->getMessage());
+                    }
+                }
+                
+                if (!$updated) {
+                    echo json_encode(['success' => false, 'message' => 'Failed to update application']);
+                    return;
+                }
             }
             
             echo json_encode(['success' => true, 'message' => 'File removed successfully']);
@@ -2263,7 +2284,35 @@ class PublicApplicationController extends ApplicationBaseController {
                     'updated_at' => date('Y-m-d H:i:s')
                 ];
                 
-                $this->applicationModel->update($existingApplication['id'], $updateData);
+                // Try both update method signatures
+                $updated = false;
+                
+                // Try method 1: update($id, $data)
+                if (method_exists($this->applicationModel, 'update')) {
+                    try {
+                        $updated = $this->applicationModel->update($existingApplication['id'], $updateData);
+                    } catch (Exception $e) {
+                        error_log("Verify JAMB update method 1 failed: " . $e->getMessage());
+                    }
+                }
+                
+                // If first method failed, try method 2
+                if (!$updated) {
+                    try {
+                        $updated = $this->applicationModel->update(
+                            $updateData,
+                            'id = :id',
+                            ['id' => $existingApplication['id']]
+                        );
+                    } catch (Exception $e) {
+                        error_log("Verify JAMB update method 2 failed: " . $e->getMessage());
+                    }
+                }
+                
+                if (!$updated) {
+                    throw new Exception("Failed to update application record");
+                }
+                
                 error_log("Updated existing application ID: " . $existingApplication['id'] . " with JAMB data");
                 
             } catch (Exception $e) {

@@ -26,880 +26,1111 @@ $csrf_token = $csrf_token ?? '';
 $temp_password = $temp_password ?? '';
 $errors = $errors ?? [];
 
-// Get applicant name for welcome message
 $applicant_name = trim(($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? ''));
 if (empty($applicant_name) && !empty($application)) {
     $applicant_name = trim(($application['first_name'] ?? '') . ' ' . ($application['last_name'] ?? ''));
 }
-if (empty($applicant_name)) {
-    $applicant_name = 'Applicant';
-}
+if (empty($applicant_name)) $applicant_name = 'Applicant';
 
-// Flash messages
 $flash_success = $flash_success ?? $_SESSION['flash_success'] ?? null;
-$flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
+$flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Step 2: Application Form - FCT College of Nursing Sciences</title>
-    
-    <!-- Bootstrap 5 -->
+    <title>Step 2: Application Form – FCT College of Nursing Sciences</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
     <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .container {
-            max-width: 1200px; /* Increased from 1000px to 1200px */
-            margin: 0 auto;
-        }
-        
-        .card {
-            border: none;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        
-        .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .card-header h2 {
-            margin: 0;
-            font-weight: 600;
-            font-size: 2rem;
-        }
-        
-        .card-header p {
-            margin: 10px 0 0;
-            opacity: 0.9;
-            font-size: 1.1rem;
-        }
-        
-        .card-body {
-            padding: 50px; /* Increased padding */
-            background: white;
-        }
-        
-        .jumbotron {
-            background: #f0f4f8;
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            border-left: 5px solid #667eea;
-        }
-        
-        .jumbotron h4 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 1.4rem;
-        }
-        
-        .jumbotron p {
-            margin: 0;
-            color: #666;
-            font-size: 1.1rem;
-        }
-        
-        .badge-score {
-            background: #28a745;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-        
-        .form-section {
-            background: #f9f9f9;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .form-section h3 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.4rem;
-            font-weight: 600;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-        
-        .form-section h3 i {
-            color: #667eea;
-            margin-right: 10px;
-        }
-        
-        .form-label {
-            font-weight: 500;
-            color: #555;
-            font-size: 0.95rem;
-        }
-        
-        .form-label .text-danger {
-            font-size: 1.2rem;
-        }
-        
-        .form-control, .form-select {
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 12px 15px;
-            transition: all 0.3s;
-            font-size: 1rem;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
-        }
-        
-        .form-control[readonly] {
-            background-color: #f5f5f5;
-            cursor: not-allowed;
-        }
-        
-        .document-preview {
-            text-align: center;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 10px;
-            border: 2px dashed #ddd;
-        }
-        
-        .document-preview img {
-            max-width: 180px; /* Increased from 150px */
-            max-height: 180px;
-            border-radius: 5px;
-            border: 3px solid white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            padding: 12px 30px;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102,126,234,0.3);
-        }
-        
-        .btn-success {
-            background: #28a745;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        
-        .btn-success:hover {
-            background: #218838;
-            transform: translateY(-2px);
-        }
-        
-        .btn-outline-danger {
-            border: 2px solid #dc3545;
-            color: #dc3545;
-            padding: 10px 25px;
-            border-radius: 10px;
-            font-weight: 600;
-        }
-        
-        .btn-outline-danger:hover {
-            background: #dc3545;
-            color: white;
-        }
-        
-        .alert {
-            border-radius: 10px;
-            border: none;
-            border-left: 5px solid;
-            margin-bottom: 20px;
-            padding: 15px 20px;
-        }
-        
-        .alert-success {
-            background: #d4edda;
-            border-left-color: #28a745;
-        }
-        
-        .alert-danger {
-            background: #f8d7da;
-            border-left-color: #dc3545;
-        }
-        
-        .alert-warning {
-            background: #fff3cd;
-            border-left-color: #ffc107;
-        }
-        
-        .olevel-result-item {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-        }
-        
-        .text-muted small {
-            display: block;
-            margin-top: 5px;
-            font-size: 0.9rem;
-        }
-        
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            color: rgba(255,255,255,0.9);
-            font-size: 0.95rem;
-        }
-        
-        .footer a {
-            color: white;
-            text-decoration: none;
-            border-bottom: 1px dotted rgba(255,255,255,0.5);
-        }
-        
-        .footer a:hover {
-            border-bottom-color: white;
-        }
-        
-        /* Grid adjustments for better spacing */
-        .row {
-            margin-right: -15px;
-            margin-left: -15px;
-        }
-        
-        .col-md-2, .col-md-3, .col-md-4, .col-md-6 {
-            padding-right: 15px;
-            padding-left: 15px;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .card-body {
-                padding: 25px;
-            }
-            
-            .form-section {
-                padding: 20px;
-            }
-        }
+    /* =========================================================
+       BASE
+    ========================================================= */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+        --navy:        #0F1B35;
+        --navy-mid:    #1A2D55;
+        --navy-light:  #243E73;
+        --gold:        #C8963A;
+        --gold-light:  #E2B05F;
+        --gold-pale:   #FDF6E9;
+        --teal:        #1D8A7A;
+        --teal-light:  #E8F7F5;
+        --red:         #C0392B;
+        --red-light:   #FDEEEC;
+        --success:     #16A34A;
+        --white:       #FFFFFF;
+        --off-white:   #F8FAFD;
+        --border:      #E2E8F4;
+        --border-dark: #C8D3E8;
+        --text-dark:   #0F1B35;
+        --text-body:   #374160;
+        --text-muted:  #7A86A0;
+        --radius-sm:   6px;
+        --radius-md:   10px;
+        --radius-lg:   16px;
+        --radius-xl:   24px;
+    }
+
+    html, body {
+        width: 100%;
+        overflow-x: hidden;
+        background: var(--off-white);
+        font-family: 'DM Sans', -apple-system, sans-serif;
+        font-size: 14px;
+        color: var(--text-body);
+        line-height: 1.6;
+    }
+
+    /* =========================================================
+       PAGE SHELL — full width, generous but not excessive padding
+    ========================================================= */
+    .page-shell {
+        width: 100%;
+        max-width: 1540px;   /* wide but centred on huge monitors */
+        margin: 0 auto;
+        padding: 28px 32px 56px;
+    }
+
+    @media (max-width: 1200px) { .page-shell { padding: 20px 24px 48px; } }
+    @media (max-width: 768px)  { .page-shell { padding: 16px 14px 40px; } }
+
+    /* =========================================================
+       TOP BAR
+    ========================================================= */
+    .top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        background: var(--navy);
+        border-radius: var(--radius-lg);
+        padding: 16px 28px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .top-bar-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .top-bar-emblem {
+        width: 44px; height: 44px;
+        background: rgba(255,255,255,0.08);
+        border: 1.5px solid rgba(200,150,58,0.4);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--gold-light);
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .top-bar-title { font-family: 'Playfair Display', serif; font-size: 18px; color: #fff; font-weight: 700; line-height: 1.2; }
+    .top-bar-sub   { font-size: 11px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+    .top-bar-right { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+    .applicant-chip {
+        display: flex; align-items: center; gap: 8px;
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 50px;
+        padding: 6px 14px;
+        font-size: 13px; color: rgba(255,255,255,0.75);
+    }
+
+    .applicant-chip i { color: var(--gold-light); font-size: 12px; }
+
+    .logout-btn {
+        display: inline-flex; align-items: center; gap: 7px;
+        background: rgba(192,57,43,0.15);
+        border: 1px solid rgba(192,57,43,0.4);
+        border-radius: 50px;
+        padding: 7px 16px;
+        font-size: 12px; font-weight: 600;
+        color: #f87171;
+        text-decoration: none;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .logout-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+    /* =========================================================
+       PROGRESS STEPS
+    ========================================================= */
+    .steps-bar {
+        display: flex;
+        align-items: center;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 18px 32px;
+        margin-bottom: 24px;
+        gap: 0;
+        overflow-x: auto;
+    }
+
+    .step-item { flex: 1; display: flex; align-items: center; min-width: 0; }
+
+    .step-inner {
+        display: flex; align-items: center; gap: 10px;
+        white-space: nowrap;
+    }
+
+    .step-num {
+        width: 32px; height: 32px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; font-weight: 700;
+        flex-shrink: 0;
+        border: 2px solid var(--border);
+        color: var(--text-muted);
+        background: var(--white);
+        transition: all 0.3s;
+    }
+
+    .step-item.done   .step-num { background: var(--teal);     border-color: var(--teal);     color: #fff; }
+    .step-item.active .step-num { background: var(--gold);     border-color: var(--gold);     color: var(--navy); box-shadow: 0 0 0 4px rgba(200,150,58,.2); }
+
+    .step-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .step-item.done   .step-label { color: var(--teal); }
+    .step-item.active .step-label { color: var(--gold); }
+
+    .step-connector { flex: 1; height: 1px; background: var(--border); margin: 0 10px; }
+    .step-connector.done { background: var(--teal); }
+
+    /* =========================================================
+       FLASH ALERTS
+    ========================================================= */
+    .flash-alert {
+        display: flex; align-items: flex-start; gap: 12px;
+        padding: 13px 18px; border-radius: var(--radius-md);
+        margin-bottom: 16px; font-size: 14px;
+        border: 1px solid transparent;
+    }
+    .flash-alert.success { background: var(--teal-light);  border-color: rgba(29,138,122,.25); color: #145f55; }
+    .flash-alert.error   { background: var(--red-light);   border-color: rgba(192,57,43,.25);  color: #8b1a12; }
+    .flash-alert.warning { background: var(--gold-pale);   border-color: rgba(200,150,58,.35); color: #7c5200; }
+    .flash-alert i { margin-top: 1px; flex-shrink: 0; }
+
+    /* Temp password box */
+    .temp-pw-box {
+        background: var(--gold-pale);
+        border: 1.5px solid rgba(200,150,58,.4);
+        border-radius: var(--radius-md);
+        padding: 18px 22px;
+        margin-bottom: 18px;
+    }
+    .temp-pw-box h6 { font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+    .temp-pw-code {
+        background: var(--white);
+        border: 1px solid var(--border-dark);
+        border-radius: var(--radius-sm);
+        padding: 12px 20px;
+        font-family: 'DM Mono', monospace;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 4px;
+        text-align: center;
+        color: var(--navy);
+        margin: 10px 0;
+    }
+
+    /* =========================================================
+       JAMB VERIFIED BANNER
+    ========================================================= */
+    .jamb-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        background: var(--navy);
+        border-radius: var(--radius-md);
+        padding: 18px 24px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+
+    .jamb-banner-left { display: flex; align-items: center; gap: 14px; }
+
+    .jamb-check {
+        width: 44px; height: 44px; border-radius: 50%;
+        background: var(--teal);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .jamb-info-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+    .jamb-info-sub   { font-size: 13px; color: rgba(255,255,255,0.6); }
+    .jamb-info-sub strong { color: rgba(255,255,255,0.9); }
+
+    .jamb-score-pill {
+        background: rgba(200,150,58,0.15);
+        border: 1px solid rgba(200,150,58,0.35);
+        border-radius: 50px;
+        padding: 5px 14px;
+        font-size: 12px; font-weight: 700;
+        color: var(--gold-light);
+        white-space: nowrap;
+    }
+
+    /* =========================================================
+       FORM CARD
+    ========================================================= */
+    .form-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+        box-shadow: 0 4px 24px rgba(15,27,53,0.07);
+    }
+
+    /* =========================================================
+       SECTION BLOCKS inside the card
+    ========================================================= */
+    .f-section {
+        padding: 32px 36px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .f-section:last-child { border-bottom: none; }
+
+    @media (max-width: 768px) { .f-section { padding: 22px 18px; } }
+
+    .f-section-head {
+        display: flex; align-items: center; gap: 12px;
+        margin-bottom: 24px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .f-section-icon {
+        width: 36px; height: 36px;
+        background: var(--navy);
+        border-radius: var(--radius-sm);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; color: var(--gold-light);
+        flex-shrink: 0;
+    }
+
+    .f-section-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--text-dark); margin: 0; }
+    .f-section-sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* =========================================================
+       FORM FIELDS
+    ========================================================= */
+    .field-label {
+        display: block;
+        font-size: 12px; font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 6px;
+        letter-spacing: 0.1px;
+    }
+    .field-label .req { color: var(--red); margin-left: 2px; }
+
+    .field-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    .form-control,
+    .form-select {
+        width: 100%;
+        border: 1.5px solid var(--border-dark);
+        border-radius: var(--radius-md);
+        padding: 10px 13px;
+        font-size: 14px;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--text-dark);
+        background: var(--white);
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--navy-mid);
+        box-shadow: 0 0 0 3px rgba(26,45,85,.09);
+        outline: none;
+    }
+
+    .form-control[readonly] {
+        background: var(--off-white);
+        color: var(--text-muted);
+        cursor: not-allowed;
+        border-color: var(--border);
+    }
+
+    textarea.form-control { resize: vertical; min-height: 80px; }
+
+    /* 
+       GRID — we use a simple flex row system so we control gutter precisely
+       All columns get equal gap. No Bootstrap row negative-margin mess.
+    */
+    .f-row {
+        display: grid;
+        gap: 18px 24px;
+        margin-bottom: 18px;
+    }
+    .f-row:last-child { margin-bottom: 0; }
+
+    /* Column count variants */
+    .f-row.cols-2  { grid-template-columns: repeat(2, 1fr); }
+    .f-row.cols-3  { grid-template-columns: repeat(3, 1fr); }
+    .f-row.cols-4  { grid-template-columns: repeat(4, 1fr); }
+    .f-row.cols-5  { grid-template-columns: repeat(5, 1fr); }
+    .f-row.cols-6  { grid-template-columns: repeat(6, 1fr); }
+
+    /* Responsive collapse */
+    @media (max-width: 1100px) {
+        .f-row.cols-6 { grid-template-columns: repeat(3, 1fr); }
+        .f-row.cols-5 { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 900px) {
+        .f-row.cols-4 { grid-template-columns: repeat(2, 1fr); }
+        .f-row.cols-3 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+        .f-row.cols-2,
+        .f-row.cols-3,
+        .f-row.cols-4,
+        .f-row.cols-5,
+        .f-row.cols-6 { grid-template-columns: 1fr; }
+    }
+
+    /* span helpers */
+    .col-span-2 { grid-column: span 2; }
+    .col-span-3 { grid-column: span 3; }
+
+    @media (max-width: 900px) {
+        .col-span-2,
+        .col-span-3 { grid-column: span 1; }
+    }
+
+    /* =========================================================
+       O'LEVEL RESULT ITEM
+    ========================================================= */
+    .olevel-item {
+        background: var(--off-white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        margin-bottom: 16px;
+        position: relative;
+    }
+
+    .olevel-item-head {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 18px;
+        flex-wrap: wrap; gap: 8px;
+    }
+
+    .olevel-item-label {
+        font-size: 13px; font-weight: 700;
+        color: var(--navy);
+        display: flex; align-items: center; gap: 8px;
+    }
+
+    .olevel-item-label .idx-badge {
+        background: var(--navy);
+        color: var(--gold-light);
+        font-size: 11px; font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 50px;
+    }
+
+    .btn-remove {
+        background: transparent;
+        border: 1px solid rgba(192,57,43,0.3);
+        border-radius: var(--radius-sm);
+        color: var(--red);
+        font-size: 12px; font-weight: 600;
+        padding: 5px 12px;
+        cursor: pointer;
+        display: inline-flex; align-items: center; gap: 5px;
+        transition: all 0.2s;
+    }
+    .btn-remove:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+    /* Grade dropdowns in the O'Level row — we use cols-5 which gives each subject full space */
+    .grades-divider {
+        font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+        color: var(--text-muted);
+        margin: 14px 0 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px dashed var(--border);
+    }
+
+    /* =========================================================
+       PASSPORT SECTION
+    ========================================================= */
+    .passport-wrap {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 28px;
+        align-items: start;
+    }
+
+    @media (max-width: 640px) {
+        .passport-wrap { grid-template-columns: 1fr; }
+    }
+
+    .passport-preview-box {
+        width: 200px; height: 200px;
+        border: 2px dashed var(--border-dark);
+        border-radius: var(--radius-md);
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden;
+        background: var(--off-white);
+        transition: border-color 0.2s;
+    }
+
+    .passport-preview-box.has-image { border-style: solid; border-color: var(--teal); }
+
+    .passport-preview-box img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        display: none;
+    }
+
+    .passport-preview-box .placeholder-icon {
+        font-size: 48px;
+        color: var(--border-dark);
+    }
+
+    .passport-upload-area h6 { font-size: 14px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
+    .passport-upload-area p  { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+
+    /* =========================================================
+       BUTTONS
+    ========================================================= */
+    .btn {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px; font-weight: 600;
+        border-radius: var(--radius-md);
+        border: none; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 7px;
+        transition: all 0.2s;
+        text-decoration: none;
+        padding: 10px 22px;
+    }
+
+    .btn-navy {
+        background: var(--navy); color: #fff;
+        box-shadow: 0 4px 12px rgba(15,27,53,0.22);
+    }
+    .btn-navy:hover { background: var(--navy-light); color: #fff; transform: translateY(-1px); }
+
+    .btn-gold {
+        background: var(--gold); color: var(--navy);
+        box-shadow: 0 4px 12px rgba(200,150,58,0.28);
+    }
+    .btn-gold:hover { background: var(--gold-light); transform: translateY(-1px); }
+
+    .btn-teal {
+        background: var(--teal); color: #fff;
+        box-shadow: 0 4px 12px rgba(29,138,122,0.25);
+    }
+    .btn-teal:hover { background: #16756a; color: #fff; transform: translateY(-1px); }
+
+    .btn-ghost {
+        background: transparent; color: var(--text-body);
+        border: 1.5px solid var(--border-dark);
+    }
+    .btn-ghost:hover { background: var(--off-white); border-color: var(--navy); color: var(--navy); }
+
+    .btn-outline-teal {
+        background: transparent; color: var(--teal);
+        border: 1.5px solid var(--teal);
+    }
+    .btn-outline-teal:hover { background: var(--teal); color: #fff; }
+
+    .btn-lg { padding: 13px 32px; font-size: 14px; }
+    .btn-sm { padding: 7px 16px; font-size: 12px; }
+
+    /* =========================================================
+       FORM ACTION BAR (bottom nav)
+    ========================================================= */
+    .action-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 24px 36px;
+        background: var(--off-white);
+        border-top: 1px solid var(--border);
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .action-bar-right { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* =========================================================
+       FOOTER
+    ========================================================= */
+    .page-footer {
+        text-align: center;
+        padding: 28px 0 0;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+    .page-footer a { color: var(--navy-mid); text-decoration: none; font-weight: 500; }
+    .page-footer a:hover { color: var(--gold); }
+    .page-footer i { color: var(--gold); font-size: 11px; margin-right: 4px; }
+
+    /* =========================================================
+       ERROR LIST
+    ========================================================= */
+    .error-list {
+        background: var(--red-light);
+        border: 1px solid rgba(192,57,43,.25);
+        border-left: 3px solid var(--red);
+        border-radius: var(--radius-md);
+        padding: 16px 20px;
+        margin-bottom: 20px;
+    }
+    .error-list h6 { color: var(--red); font-weight: 700; margin-bottom: 8px; font-size: 13px; }
+    .error-list ul { margin: 0; padding-left: 18px; font-size: 13px; color: #8b1a12; }
+    .error-list ul li + li { margin-top: 4px; }
+
+    /* =========================================================
+       UTILITY
+    ========================================================= */
+    .mb-0 { margin-bottom: 0 !important; }
+    .mt-4 { margin-top: 16px; }
+    .text-center { text-align: center; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Flash Messages at VERY TOP -->
-        <?php if (!empty($flash_success)): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle me-2"></i><?php echo e($flash_success); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <?php unset($_SESSION['flash_success']); ?>
-        <?php endif; ?>
-        
-        <?php if (!empty($flash_error)): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle me-2"></i><?php echo e($flash_error); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <?php unset($_SESSION['flash_error']); ?>
-        <?php endif; ?>
-        
-        <?php if (!empty($temp_password)): ?>
-            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                <h5 class="alert-heading"><i class="fas fa-key me-2"></i>Your Login Password</h5>
-                <p class="mb-2">Please save this password. You'll need it to log in later:</p>
-                <div class="bg-light p-3 text-center rounded">
-                    <strong style="font-size: 1.5rem; font-family: monospace;"><?php echo e($temp_password); ?></strong>
-                </div>
-                <p class="mt-2 mb-0 small text-muted">
-                    <i class="fas fa-info-circle"></i> This password will also be sent to your email after you provide it.
-                </p>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-        
-        <div class="card">
-            <div class="card-header">
-                <h2>Step 2: Application Form</h2>
-                <p>Please fill in your personal and academic details accurately</p>
-            </div>
-            
-            <div class="card-body">
-                <!-- JAMB Summary -->
-                <div class="jumbotron">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <h4><i class="fas fa-check-circle text-success me-2"></i>JAMB Verified Successfully</h4>
-                            <p class="mb-0">
-                                <strong><?php echo e($jamb_data['first_name'] ?? $application['first_name']); ?> <?php echo e($jamb_data['last_name'] ?? $application['last_name']); ?></strong> | 
-                                JAMB: <?php echo e($jamb_data['jamb_number'] ?? $application['jamb_number']); ?>
-                            </p>
-                        </div>
-                        <a href="/applicant/logout" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to logout? Your progress will be saved.');">
-                            <i class="fas fa-sign-out-alt me-2"></i>Logout
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Error Display -->
-                <?php if (!empty($errors)): ?>
-                    <div class="alert alert-danger">
-                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Please fix the following errors:</h5>
-                        <ul class="mb-0">
-                            <?php foreach ($errors as $error): ?>
-                                <li><?php echo e($error); ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                <?php endif; ?>
-                
-                <!-- Main Form -->
-                <form method="POST" action="/apply/save-application" enctype="multipart/form-data" class="needs-validation" novalidate>
-                    <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token); ?>">
-                    <input type="hidden" name="action" id="form_action" value="save">
-                    <input type="hidden" name="jamb_number" value="<?php echo e($jamb_data['jamb_number'] ?? $application['jamb_number']); ?>">
-                    <input type="hidden" name="utme_score" value="<?php echo e($jamb_data['score'] ?? $application['utme_score']); ?>">
-                    <input type="hidden" name="first_name" value="<?php echo e($jamb_data['first_name'] ?? $application['first_name']); ?>">
-                    <input type="hidden" name="last_name" value="<?php echo e($jamb_data['last_name'] ?? $application['last_name']); ?>">
-                    <input type="hidden" name="other_names" value="<?php echo e($jamb_data['other_names'] ?? $application['other_names']); ?>">
-                    <input type="hidden" name="gender" value="<?php echo e($jamb_data['gender'] ?? $application['gender']); ?>">
-                    <input type="hidden" name="state_of_origin" value="<?php echo e($jamb_data['state_of_origin'] ?? $application['state_of_origin']); ?>">
-                    <input type="hidden" name="lga" value="<?php echo e($jamb_data['lga'] ?? $application['lga']); ?>">
-                    
-                    <!-- Personal Information Section -->
-                    <div class="form-section">
-                        <h3><i class="fas fa-user"></i> Personal Information</h3>
-                        <p class="text-muted small mb-3">Fields from JAMB record cannot be edited. Please verify they are correct.</p>
-                        
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">First Name</label>
-                                <input type="text" class="form-control" value="<?php echo e($jamb_data['first_name'] ?? $application['first_name']); ?>" readonly>
-                            </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Last Name</label>
-                                <input type="text" class="form-control" value="<?php echo e($jamb_data['last_name'] ?? $application['last_name']); ?>" readonly>
-                            </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Other Names</label>
-                                <input type="text" class="form-control" value="<?php echo e($jamb_data['other_names'] ?? $application['other_names']); ?>" readonly>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label">Gender</label>
-                                <input type="text" class="form-control" 
-                                       value="<?php echo isset($jamb_data['gender']) ? ($jamb_data['gender'] == 'M' ? 'Male' : ($jamb_data['gender'] == 'F' ? 'Female' : '')) : (isset($application['gender']) ? ($application['gender'] == 'M' ? 'Male' : ($application['gender'] == 'F' ? 'Female' : '')) : ''); ?>" 
-                                       readonly>
-                            </div>
-                            
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label">State of Origin</label>
-                                <input type="text" class="form-control" value="<?php echo e($jamb_data['state_of_origin'] ?? $application['state_of_origin']); ?>" readonly>
-                            </div>
-                            
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label">LGA</label>
-                                <input type="text" class="form-control" value="<?php echo e($jamb_data['lga'] ?? $application['lga']); ?>" readonly>
-                            </div>
-                            
-                            <!-- Score field completely removed -->
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" 
-                                       value="<?php echo e($application['date_of_birth'] ?? ''); ?>" required>
-                                <div class="invalid-feedback">Date of birth is required.</div>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Nationality</label>
-                                <input type="text" class="form-control" id="nationality" name="nationality" 
-                                       value="<?php echo e($application['nationality'] ?? 'Nigerian'); ?>">
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Email Address <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control" id="email" name="email" 
-                                       value="<?php echo e($application['email'] ?? ($applicant['email'] ?? '')); ?>" required>
-                                <div class="invalid-feedback">Valid email is required.</div>
-                                <small class="text-muted">Your login credentials will be sent to this email</small>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone Number <span class="text-danger">*</span></label>
-                                <input type="tel" class="form-control" id="phone" name="phone" 
-                                       value="<?php echo e($application['phone'] ?? ($applicant['phone'] ?? '')); ?>" 
-                                       pattern="[0-9]{11}" maxlength="11" required>
-                                <div class="invalid-feedback">Phone number is required.</div>
-                                <small class="text-muted">Enter 11-digit Nigerian mobile number</small>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Contact Address <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="address" name="address" rows="2" required><?php echo e($application['address'] ?? ''); ?></textarea>
-                            <div class="invalid-feedback">Address is required.</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Program Choice Section -->
-                    <div class="form-section">
-                        <h3><i class="fas fa-graduation-cap"></i> Program Choice</h3>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Select Program <span class="text-danger">*</span></label>
-                                <select class="form-select" id="program_choice_1" name="program_choice_1" required>
-                                    <option value="">Select Program</option>
-                                    <option value="ND Nursing" <?php echo ($application['program_choice_1'] ?? '') == 'ND Nursing' ? 'selected' : ''; ?>>ND Nursing</option>
-                                    <option value="Post Basic Nursing" <?php echo ($application['program_choice_1'] ?? '') == 'Post Basic Nursing' ? 'selected' : ''; ?>>Post Basic Nursing</option>
-                                </select>
-                                <div class="invalid-feedback">Please select your program.</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Hidden fields for other choices -->
-                        <input type="hidden" name="program_choice_2" value="">
-                        <input type="hidden" name="program_choice_3" value="">
-                    </div>
-                    
-                    <!-- O'Level Results Section -->
-                    <div class="form-section">
-                        <h3><i class="fas fa-certificate"></i> O'Level Results</h3>
-                        <p class="text-muted small mb-3">Credit passes required in English, Mathematics, Biology, Chemistry, and Physics.</p>
-                        
-                        <div id="olevel-results-container">
-                            <?php if (!empty($olevel_results)): ?>
-                                <?php foreach ($olevel_results as $index => $result): ?>
-                                <div class="olevel-result-item mb-4 p-3 border rounded">
-                                    <div class="row">
-                                        <div class="col-md-3 mb-2">
-                                            <label class="form-label">Exam Type</label>
-                                            <select class="form-select" name="olevel[<?php echo $index; ?>][exam_type]" required>
-                                                <option value="WAEC" <?php echo ($result['exam_type'] ?? '') == 'WAEC' ? 'selected' : ''; ?>>WAEC</option>
-                                                <option value="NECO" <?php echo ($result['exam_type'] ?? '') == 'NECO' ? 'selected' : ''; ?>>NECO</option>
-                                                <option value="NABTEB" <?php echo ($result['exam_type'] ?? '') == 'NABTEB' ? 'selected' : ''; ?>>NABTEB</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">Year</label>
-                                            <input type="text" class="form-control" name="olevel[<?php echo $index; ?>][exam_year]" 
-                                                   value="<?php echo e($result['exam_year'] ?? ''); ?>" required>
-                                        </div>
-                                        <div class="col-md-3 mb-2">
-                                            <label class="form-label">Exam Number</label>
-                                            <input type="text" class="form-control" name="olevel[<?php echo $index; ?>][exam_number]" 
-                                                   value="<?php echo e($result['exam_number'] ?? ''); ?>">
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">Sitting</label>
-                                            <select class="form-select" name="olevel[<?php echo $index; ?>][sitting]">
-                                                <option value="1st" <?php echo ($result['sitting'] ?? '') == '1st' ? 'selected' : ''; ?>>1st Sitting</option>
-                                                <option value="2nd" <?php echo ($result['sitting'] ?? '') == '2nd' ? 'selected' : ''; ?>>2nd Sitting</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">&nbsp;</label>
-                                            <button type="button" class="btn btn-danger btn-sm remove-olevel w-100" onclick="this.closest('.olevel-result-item').remove()">
-                                                <i class="fas fa-trash"></i> Remove
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="row mt-2">
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">English</label>
-                                            <select class="form-select" name="olevel[<?php echo $index; ?>][english_grade]" required>
-                                                <option value="">Select</option>
-                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
-                                                    <option value="<?php echo $grade; ?>" <?php echo ($result['english_grade'] ?? '') == $grade ? 'selected' : ''; ?>><?php echo $grade; ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">Mathematics</label>
-                                            <select class="form-select" name="olevel[<?php echo $index; ?>][mathematics_grade]" required>
-                                                <option value="">Select</option>
-                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
-                                                    <option value="<?php echo $grade; ?>" <?php echo ($result['mathematics_grade'] ?? '') == $grade ? 'selected' : ''; ?>><?php echo $grade; ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">Biology</label>
-                                            <select class="form-select" name="olevel[<?php echo $index; ?>][biology_grade]" required>
-                                                <option value="">Select</option>
-                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
-                                                    <option value="<?php echo $grade; ?>" <?php echo ($result['biology_grade'] ?? '') == $grade ? 'selected' : ''; ?>><?php echo $grade; ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">Chemistry</label>
-                                            <select class="form-select" name="olevel[<?php echo $index; ?>][chemistry_grade]" required>
-                                                <option value="">Select</option>
-                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
-                                                    <option value="<?php echo $grade; ?>" <?php echo ($result['chemistry_grade'] ?? '') == $grade ? 'selected' : ''; ?>><?php echo $grade; ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">Physics</label>
-                                            <select class="form-select" name="olevel[<?php echo $index; ?>][physics_grade]" required>
-                                                <option value="">Select</option>
-                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
-                                                    <option value="<?php echo $grade; ?>" <?php echo ($result['physics_grade'] ?? '') == $grade ? 'selected' : ''; ?>><?php echo $grade; ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <!-- Default O'Level item -->
-                                <div class="olevel-result-item mb-4 p-3 border rounded">
-                                    <div class="row">
-                                        <div class="col-md-3 mb-2">
-                                            <label class="form-label">Exam Type</label>
-                                            <select class="form-select" name="olevel[0][exam_type]" required>
-                                                <option value="WAEC">WAEC</option>
-                                                <option value="NECO">NECO</option>
-                                                <option value="NABTEB">NABTEB</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">Year</label>
-                                            <input type="text" class="form-control" name="olevel[0][exam_year]" required>
-                                        </div>
-                                        <div class="col-md-3 mb-2">
-                                            <label class="form-label">Exam Number</label>
-                                            <input type="text" class="form-control" name="olevel[0][exam_number]">
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">Sitting</label>
-                                            <select class="form-select" name="olevel[0][sitting]">
-                                                <option value="1st">1st Sitting</option>
-                                                <option value="2nd">2nd Sitting</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">&nbsp;</label>
-                                            <button type="button" class="btn btn-danger btn-sm remove-olevel w-100" onclick="this.closest('.olevel-result-item').remove()">
-                                                <i class="fas fa-trash"></i> Remove
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="row mt-2">
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">English</label>
-                                            <select class="form-select" name="olevel[0][english_grade]" required>
-                                                <option value="">Select</option>
-                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
-                                                    <option value="<?php echo $grade; ?>"><?php echo $grade; ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">Mathematics</label>
-                                            <select class="form-select" name="olevel[0][mathematics_grade]" required>
-                                                <option value="">Select</option>
-                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
-                                                    <option value="<?php echo $grade; ?>"><?php echo $grade; ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">Biology</label>
-                                            <select class="form-select" name="olevel[0][biology_grade]" required>
-                                                <option value="">Select</option>
-                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
-                                                    <option value="<?php echo $grade; ?>"><?php echo $grade; ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">Chemistry</label>
-                                            <select class="form-select" name="olevel[0][chemistry_grade]" required>
-                                                <option value="">Select</option>
-                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
-                                                    <option value="<?php echo $grade; ?>"><?php echo $grade; ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label class="form-label">Physics</label>
-                                            <select class="form-select" name="olevel[0][physics_grade]" required>
-                                                <option value="">Select</option>
-                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
-                                                    <option value="<?php echo $grade; ?>"><?php echo $grade; ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                        
-                        <div class="text-center mt-3">
-                            <button type="button" class="btn btn-outline-primary" id="add-olevel">
-                                <i class="fas fa-plus me-2"></i> Add Another Sitting
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Passport Upload Section -->
-                    <div class="form-section">
-                        <h3><i class="fas fa-camera"></i> Passport Photograph</h3>
-                        <p class="text-muted small mb-3">Upload a recent passport photograph (max 500KB, JPG or PNG)</p>
-                        
-                        <div class="row align-items-center">
-                            <div class="col-md-4 text-center">
-                                <div class="document-preview">
-                                    <?php if (!empty($passport) && !empty($passport['file_path'])): ?>
-                                        <img src="<?php echo e($passport['file_path']); ?>" alt="Passport" id="passport-preview">
-                                    <?php else: ?>
-                                        <img src="/assets/images/default-avatar.png" alt="Passport Preview" id="passport-preview" style="max-width: 150px; max-height: 150px; display: none;">
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-8">
-                                <input type="hidden" name="passport_confirmed" id="passport-confirmed" value="0">
-                                <div class="mb-3">
-                                    <label for="passport" class="form-label">Select Passport Photo</label>
-                                    <input type="file" class="form-control" id="passport" name="passport" 
-                                           accept="image/jpeg,image/png" onchange="confirmPassportUpload(this)">
-                                    <small class="text-muted">Allowed: JPG, PNG. Max size: 500KB</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Navigation Buttons -->
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="/apply/step/1" class="btn btn-outline-secondary" onclick="return confirm('Are you sure you want to go back? Unsaved data will be lost.')">
-                            <i class="fas fa-arrow-left"></i> Back
-                        </a>
-                        <div>
-                            <button type="submit" class="btn btn-primary me-2" onclick="document.getElementById('form_action').value='save'">
-                                <i class="fas fa-save"></i> Save Progress
-                            </button>
-                            <button type="submit" class="btn btn-success" onclick="document.getElementById('form_action').value='next'">
-                                Save & Continue <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                </form>
+<div class="page-shell">
+
+    <!-- ===== TOP BAR ===== -->
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <div class="top-bar-emblem"><i class="fas fa-star-of-life"></i></div>
+            <div>
+                <div class="top-bar-title">FCT College of Nursing Sciences</div>
+                <div class="top-bar-sub">2025 / 2026 Admissions Portal</div>
             </div>
         </div>
-        
-        <!-- Footer -->
-        <div class="footer">
-            <p>© <?php echo date('Y'); ?> FCT College of Nursing Sciences. All rights reserved.</p>
-            <p>
-                <i class="fas fa-phone-alt"></i> Support: 07039837749 | 
-                <i class="fas fa-envelope"></i> <a href="mailto:info@fctcns.edu.ng">info@fctcns.edu.ng</a>
-            </p>
+        <div class="top-bar-right">
+            <div class="applicant-chip">
+                <i class="fas fa-user-graduate"></i>
+                <?php echo e($applicant_name); ?>
+            </div>
+            <a href="/applicant/logout" class="logout-btn"
+               onclick="return confirm('Are you sure you want to logout? Your progress will be saved.');">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
         </div>
     </div>
-    
-    <script>
-    // Add O'Level result item
-    let olevelIndex = <?php echo count($olevel_results ?? [1]); ?>;
-    
-    document.getElementById('add-olevel').addEventListener('click', function() {
-        const container = document.getElementById('olevel-results-container');
-        const template = `
-            <div class="olevel-result-item mb-4 p-3 border rounded">
-                <div class="row">
-                    <div class="col-md-3 mb-2">
-                        <label class="form-label">Exam Type</label>
-                        <select class="form-select" name="olevel[${olevelIndex}][exam_type]" required>
-                            <option value="WAEC">WAEC</option>
-                            <option value="NECO">NECO</option>
-                            <option value="NABTEB">NABTEB</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2 mb-2">
-                        <label class="form-label">Year</label>
-                        <input type="text" class="form-control" name="olevel[${olevelIndex}][exam_year]" required>
-                    </div>
-                    <div class="col-md-3 mb-2">
-                        <label class="form-label">Exam Number</label>
-                        <input type="text" class="form-control" name="olevel[${olevelIndex}][exam_number]">
-                    </div>
-                    <div class="col-md-2 mb-2">
-                        <label class="form-label">Sitting</label>
-                        <select class="form-select" name="olevel[${olevelIndex}][sitting]">
-                            <option value="1st">1st Sitting</option>
-                            <option value="2nd">2nd Sitting</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2 mb-2">
-                        <label class="form-label">&nbsp;</label>
-                        <button type="button" class="btn btn-danger btn-sm remove-olevel w-100" onclick="this.closest('.olevel-result-item').remove()">
-                            <i class="fas fa-trash"></i> Remove
-                        </button>
+
+    <!-- ===== PROGRESS STEPS ===== -->
+    <div class="steps-bar">
+        <div class="step-item done">
+            <div class="step-inner">
+                <div class="step-num"><i class="fas fa-check" style="font-size:11px;"></i></div>
+                <div class="step-label">JAMB Verified</div>
+            </div>
+        </div>
+        <div class="step-connector done"></div>
+        <div class="step-item active">
+            <div class="step-inner">
+                <div class="step-num">2</div>
+                <div class="step-label">Application Form</div>
+            </div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item">
+            <div class="step-inner">
+                <div class="step-num">3</div>
+                <div class="step-label">Payment</div>
+            </div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item">
+            <div class="step-inner">
+                <div class="step-num">4</div>
+                <div class="step-label">Exam Slip</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FLASH MESSAGES ===== -->
+    <?php if (!empty($flash_success)): ?>
+    <div class="flash-alert success">
+        <i class="fas fa-check-circle"></i>
+        <span><?php echo e($flash_success); ?></span>
+    </div>
+    <?php unset($_SESSION['flash_success']); endif; ?>
+
+    <?php if (!empty($flash_error)): ?>
+    <div class="flash-alert error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span><?php echo e($flash_error); ?></span>
+    </div>
+    <?php unset($_SESSION['flash_error']); endif; ?>
+
+    <?php if (!empty($temp_password)): ?>
+    <div class="temp-pw-box">
+        <h6><i class="fas fa-key" style="color:var(--gold);margin-right:6px;"></i> Your Login Password</h6>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:4px;">
+            Save this password — you'll need it to log in later. It will also be sent to your email.
+        </p>
+        <div class="temp-pw-code"><?php echo e($temp_password); ?></div>
+    </div>
+    <?php endif; ?>
+
+    <!-- ===== JAMB VERIFIED BANNER ===== -->
+    <div class="jamb-banner">
+        <div class="jamb-banner-left">
+            <div class="jamb-check"><i class="fas fa-check"></i></div>
+            <div>
+                <div class="jamb-info-title">JAMB Verified Successfully</div>
+                <div class="jamb-info-sub">
+                    <strong><?php echo e(($jamb_data['first_name'] ?? $application['first_name'] ?? '') . ' ' . ($jamb_data['last_name'] ?? $application['last_name'] ?? '')); ?></strong>
+                    &nbsp;|&nbsp;
+                    JAMB Reg: <strong><?php echo e($jamb_data['jamb_number'] ?? $application['jamb_number'] ?? '—'); ?></strong>
+                </div>
+            </div>
+        </div>
+        <?php if (!empty($jamb_data['score'] ?? $application['utme_score'] ?? '')): ?>
+        <div class="jamb-score-pill">
+            Score: <?php echo e($jamb_data['score'] ?? $application['utme_score']); ?>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- ===== ERROR DISPLAY ===== -->
+    <?php if (!empty($errors)): ?>
+    <div class="error-list">
+        <h6><i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i>Please fix the following errors:</h6>
+        <ul>
+            <?php foreach ($errors as $err): ?>
+            <li><?php echo e($err); ?></li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+    <?php endif; ?>
+
+    <!-- ===== MAIN FORM CARD ===== -->
+    <div class="form-card">
+        <form method="POST" action="/apply/save-application" enctype="multipart/form-data"
+              class="needs-validation" novalidate id="mainForm">
+            <input type="hidden" name="csrf_token"       value="<?php echo e($csrf_token); ?>">
+            <input type="hidden" name="action"            id="form_action" value="save">
+            <input type="hidden" name="jamb_number"       value="<?php echo e($jamb_data['jamb_number']       ?? $application['jamb_number']       ?? ''); ?>">
+            <input type="hidden" name="utme_score"        value="<?php echo e($jamb_data['score']             ?? $application['utme_score']         ?? ''); ?>">
+            <input type="hidden" name="first_name"        value="<?php echo e($jamb_data['first_name']        ?? $application['first_name']         ?? ''); ?>">
+            <input type="hidden" name="last_name"         value="<?php echo e($jamb_data['last_name']         ?? $application['last_name']          ?? ''); ?>">
+            <input type="hidden" name="other_names"       value="<?php echo e($jamb_data['other_names']       ?? $application['other_names']        ?? ''); ?>">
+            <input type="hidden" name="gender"            value="<?php echo e($jamb_data['gender']            ?? $application['gender']             ?? ''); ?>">
+            <input type="hidden" name="state_of_origin"   value="<?php echo e($jamb_data['state_of_origin']   ?? $application['state_of_origin']    ?? ''); ?>">
+            <input type="hidden" name="lga"               value="<?php echo e($jamb_data['lga']               ?? $application['lga']                ?? ''); ?>">
+            <input type="hidden" name="program_choice_2"  value="">
+            <input type="hidden" name="program_choice_3"  value="">
+
+            <!-- ── SECTION 1: Personal Information ── -->
+            <div class="f-section">
+                <div class="f-section-head">
+                    <div class="f-section-icon"><i class="fas fa-user"></i></div>
+                    <div>
+                        <div class="f-section-title">Personal Information</div>
+                        <div class="f-section-sub">Fields from your JAMB record are read-only. Please verify they are correct.</div>
                     </div>
                 </div>
-                
-                <div class="row mt-2">
-                    <div class="col-md-2 mb-2">
-                        <label class="form-label">English</label>
-                        <select class="form-select" name="olevel[${olevelIndex}][english_grade]" required>
-                            <option value="">Select</option>
-                            <option value="A1">A1</option>
-                            <option value="B2">B2</option>
-                            <option value="B3">B3</option>
-                            <option value="C4">C4</option>
-                            <option value="C5">C5</option>
-                            <option value="C6">C6</option>
-                            <option value="D7">D7</option>
-                            <option value="E8">E8</option>
-                            <option value="F9">F9</option>
-                        </select>
+
+                <!-- Row 1: Names — 3 columns -->
+                <div class="f-row cols-3">
+                    <div>
+                        <label class="field-label">First Name</label>
+                        <input type="text" class="form-control"
+                               value="<?php echo e($jamb_data['first_name'] ?? $application['first_name'] ?? ''); ?>" readonly>
                     </div>
-                    <div class="col-md-2 mb-2">
-                        <label class="form-label">Mathematics</label>
-                        <select class="form-select" name="olevel[${olevelIndex}][mathematics_grade]" required>
-                            <option value="">Select</option>
-                            <option value="A1">A1</option>
-                            <option value="B2">B2</option>
-                            <option value="B3">B3</option>
-                            <option value="C4">C4</option>
-                            <option value="C5">C5</option>
-                            <option value="C6">C6</option>
-                            <option value="D7">D7</option>
-                            <option value="E8">E8</option>
-                            <option value="F9">F9</option>
-                        </select>
+                    <div>
+                        <label class="field-label">Last Name</label>
+                        <input type="text" class="form-control"
+                               value="<?php echo e($jamb_data['last_name'] ?? $application['last_name'] ?? ''); ?>" readonly>
                     </div>
-                    <div class="col-md-2 mb-2">
-                        <label class="form-label">Biology</label>
-                        <select class="form-select" name="olevel[${olevelIndex}][biology_grade]" required>
-                            <option value="">Select</option>
-                            <option value="A1">A1</option>
-                            <option value="B2">B2</option>
-                            <option value="B3">B3</option>
-                            <option value="C4">C4</option>
-                            <option value="C5">C5</option>
-                            <option value="C6">C6</option>
-                            <option value="D7">D7</option>
-                            <option value="E8">E8</option>
-                            <option value="F9">F9</option>
-                        </select>
+                    <div>
+                        <label class="field-label">Other Names</label>
+                        <input type="text" class="form-control"
+                               value="<?php echo e($jamb_data['other_names'] ?? $application['other_names'] ?? ''); ?>" readonly>
                     </div>
-                    <div class="col-md-2 mb-2">
-                        <label class="form-label">Chemistry</label>
-                        <select class="form-select" name="olevel[${olevelIndex}][chemistry_grade]" required>
-                            <option value="">Select</option>
-                            <option value="A1">A1</option>
-                            <option value="B2">B2</option>
-                            <option value="B3">B3</option>
-                            <option value="C4">C4</option>
-                            <option value="C5">C5</option>
-                            <option value="C6">C6</option>
-                            <option value="D7">D7</option>
-                            <option value="E8">E8</option>
-                            <option value="F9">F9</option>
-                        </select>
+                </div>
+
+                <!-- Row 2: Gender / State / LGA — 3 columns -->
+                <div class="f-row cols-3">
+                    <div>
+                        <label class="field-label">Gender</label>
+                        <?php
+                            $g = $jamb_data['gender'] ?? $application['gender'] ?? '';
+                            $gText = $g === 'M' ? 'Male' : ($g === 'F' ? 'Female' : $g);
+                        ?>
+                        <input type="text" class="form-control" value="<?php echo e($gText); ?>" readonly>
                     </div>
-                    <div class="col-md-2 mb-2">
-                        <label class="form-label">Physics</label>
-                        <select class="form-select" name="olevel[${olevelIndex}][physics_grade]" required>
-                            <option value="">Select</option>
-                            <option value="A1">A1</option>
-                            <option value="B2">B2</option>
-                            <option value="B3">B3</option>
-                            <option value="C4">C4</option>
-                            <option value="C5">C5</option>
-                            <option value="C6">C6</option>
-                            <option value="D7">D7</option>
-                            <option value="E8">E8</option>
-                            <option value="F9">F9</option>
-                        </select>
+                    <div>
+                        <label class="field-label">State of Origin</label>
+                        <input type="text" class="form-control"
+                               value="<?php echo e($jamb_data['state_of_origin'] ?? $application['state_of_origin'] ?? ''); ?>" readonly>
+                    </div>
+                    <div>
+                        <label class="field-label">LGA</label>
+                        <input type="text" class="form-control"
+                               value="<?php echo e($jamb_data['lga'] ?? $application['lga'] ?? ''); ?>" readonly>
+                    </div>
+                </div>
+
+                <!-- Row 3: DOB / Nationality — 2 columns -->
+                <div class="f-row cols-2">
+                    <div>
+                        <label class="field-label">Date of Birth <span class="req">*</span></label>
+                        <input type="date" class="form-control" id="date_of_birth" name="date_of_birth"
+                               value="<?php echo e($application['date_of_birth'] ?? ''); ?>" required>
+                        <div class="invalid-feedback">Date of birth is required.</div>
+                    </div>
+                    <div>
+                        <label class="field-label">Nationality</label>
+                        <input type="text" class="form-control" id="nationality" name="nationality"
+                               value="<?php echo e($application['nationality'] ?? 'Nigerian'); ?>">
+                    </div>
+                </div>
+
+                <!-- Row 4: Email / Phone — 2 columns -->
+                <div class="f-row cols-2">
+                    <div>
+                        <label class="field-label">Email Address <span class="req">*</span></label>
+                        <input type="email" class="form-control" id="email" name="email"
+                               value="<?php echo e($application['email'] ?? ($applicant['email'] ?? '')); ?>" required>
+                        <div class="field-hint">Login credentials will be sent to this email</div>
+                        <div class="invalid-feedback">A valid email address is required.</div>
+                    </div>
+                    <div>
+                        <label class="field-label">Phone Number <span class="req">*</span></label>
+                        <input type="tel" class="form-control" id="phone" name="phone"
+                               value="<?php echo e($application['phone'] ?? ($applicant['phone'] ?? '')); ?>"
+                               pattern="[0-9]{11}" maxlength="11" placeholder="08012345678" required>
+                        <div class="field-hint">11-digit Nigerian mobile number</div>
+                        <div class="invalid-feedback">A valid 11-digit phone number is required.</div>
+                    </div>
+                </div>
+
+                <!-- Row 5: Address — full width -->
+                <div class="f-row cols-2" style="grid-template-columns:1fr;">
+                    <div>
+                        <label class="field-label">Contact Address <span class="req">*</span></label>
+                        <textarea class="form-control" id="address" name="address" rows="2"
+                                  placeholder="Enter your full residential address" required><?php echo e($application['address'] ?? ''); ?></textarea>
+                        <div class="invalid-feedback">Address is required.</div>
                     </div>
                 </div>
             </div>
-        `;
-        
-        container.insertAdjacentHTML('beforeend', template);
-        olevelIndex++;
-    });
-    
-    // Confirm passport upload
-    function confirmPassportUpload(input) {
-        if (input.files && input.files[0]) {
-            var reader = new FileReader();
-            
-            reader.onload = function(e) {
-                if (confirm('Is this your correct passport photograph? Click OK to upload.')) {
-                    document.getElementById('passport-preview').src = e.target.result;
-                    document.getElementById('passport-preview').style.display = 'block';
-                    document.getElementById('passport-confirmed').value = '1';
-                } else {
-                    input.value = '';
-                    document.getElementById('passport-preview').style.display = 'none';
-                    document.getElementById('passport-confirmed').value = '0';
-                }
-            }
-            
-            reader.readAsDataURL(input.files[0]);
-        }
+
+            <!-- ── SECTION 2: Programme Choice ── -->
+            <div class="f-section">
+                <div class="f-section-head">
+                    <div class="f-section-icon"><i class="fas fa-graduation-cap"></i></div>
+                    <div>
+                        <div class="f-section-title">Programme Choice</div>
+                        <div class="f-section-sub">Select your preferred programme of study</div>
+                    </div>
+                </div>
+
+                <div class="f-row cols-3">
+                    <div>
+                        <label class="field-label">Select Programme <span class="req">*</span></label>
+                        <select class="form-select" id="program_choice_1" name="program_choice_1" required>
+                            <option value="">— Select Programme —</option>
+                            <option value="ND Nursing"       <?php echo ($application['program_choice_1'] ?? '') == 'ND Nursing'       ? 'selected' : ''; ?>>ND Nursing</option>
+                            <option value="Post Basic Nursing" <?php echo ($application['program_choice_1'] ?? '') == 'Post Basic Nursing' ? 'selected' : ''; ?>>Post Basic Nursing</option>
+                        </select>
+                        <div class="invalid-feedback">Please select your programme.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── SECTION 3: O'Level Results ── -->
+            <div class="f-section">
+                <div class="f-section-head">
+                    <div class="f-section-icon"><i class="fas fa-certificate"></i></div>
+                    <div>
+                        <div class="f-section-title">O'Level Results</div>
+                        <div class="f-section-sub">Credit passes required in English, Mathematics, Biology, Chemistry, and Physics</div>
+                    </div>
+                </div>
+
+                <div id="olevel-results-container">
+                    <?php
+                    $olevelItems = !empty($olevel_results) ? $olevel_results : [[]];
+                    foreach ($olevelItems as $idx => $result):
+                        $examType = $result['exam_type'] ?? 'WAEC';
+                        $examYear = $result['exam_year'] ?? '';
+                        $examNum  = $result['exam_number'] ?? '';
+                        $sitting  = $result['sitting'] ?? '1st';
+                        $grades   = ['english','mathematics','biology','chemistry','physics'];
+                        $allGrades = ['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
+                    ?>
+                    <div class="olevel-item">
+                        <div class="olevel-item-head">
+                            <div class="olevel-item-label">
+                                <span class="idx-badge"><?php echo $idx + 1; ?></span>
+                                O'Level Result — Sitting <?php echo $idx + 1; ?>
+                            </div>
+                            <?php if ($idx > 0): ?>
+                            <button type="button" class="btn-remove" onclick="this.closest('.olevel-item').remove()">
+                                <i class="fas fa-trash-alt"></i> Remove
+                            </button>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Exam meta: 4 columns -->
+                        <div class="f-row cols-4">
+                            <div>
+                                <label class="field-label">Exam Type</label>
+                                <select class="form-select" name="olevel[<?php echo $idx; ?>][exam_type]" required>
+                                    <?php foreach (['WAEC','NECO','NABTEB'] as $et): ?>
+                                    <option value="<?php echo $et; ?>" <?php echo $examType == $et ? 'selected' : ''; ?>><?php echo $et; ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">Exam Year</label>
+                                <input type="text" class="form-control" name="olevel[<?php echo $idx; ?>][exam_year]"
+                                       value="<?php echo e($examYear); ?>" placeholder="e.g. 2022" required>
+                            </div>
+                            <div>
+                                <label class="field-label">Exam / Centre Number</label>
+                                <input type="text" class="form-control" name="olevel[<?php echo $idx; ?>][exam_number]"
+                                       value="<?php echo e($examNum); ?>" placeholder="Optional">
+                            </div>
+                            <div>
+                                <label class="field-label">Sitting</label>
+                                <select class="form-select" name="olevel[<?php echo $idx; ?>][sitting]">
+                                    <option value="1st" <?php echo $sitting == '1st' ? 'selected' : ''; ?>>1st Sitting</option>
+                                    <option value="2nd" <?php echo $sitting == '2nd' ? 'selected' : ''; ?>>2nd Sitting</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Grade dropdowns: 5 subjects across full width -->
+                        <div class="grades-divider">Subject Grades</div>
+                        <div class="f-row cols-5">
+                            <?php foreach ($grades as $subj): ?>
+                            <div>
+                                <label class="field-label"><?php echo ucfirst($subj); ?></label>
+                                <select class="form-select" name="olevel[<?php echo $idx; ?>][<?php echo $subj; ?>_grade]" required>
+                                    <option value="">Grade</option>
+                                    <?php foreach ($allGrades as $grade): ?>
+                                    <option value="<?php echo $grade; ?>"
+                                        <?php echo ($result[$subj.'_grade'] ?? '') == $grade ? 'selected' : ''; ?>>
+                                        <?php echo $grade; ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="mt-4">
+                    <button type="button" class="btn btn-outline-teal btn-sm" id="add-olevel">
+                        <i class="fas fa-plus"></i> Add Another Sitting
+                    </button>
+                    <span style="font-size:12px;color:var(--text-muted);margin-left:10px;">Maximum 2 sittings</span>
+                </div>
+            </div>
+
+            <!-- ── SECTION 4: Passport Photo ── -->
+            <div class="f-section">
+                <div class="f-section-head">
+                    <div class="f-section-icon"><i class="fas fa-camera"></i></div>
+                    <div>
+                        <div class="f-section-title">Passport Photograph</div>
+                        <div class="f-section-sub">Recent passport photograph — max 500KB, JPG or PNG only</div>
+                    </div>
+                </div>
+
+                <div class="passport-wrap">
+                    <div class="passport-preview-box" id="passportBox">
+                        <i class="fas fa-user placeholder-icon" id="passportPlaceholder"></i>
+                        <?php if (!empty($passport['file_path'])): ?>
+                        <img src="<?php echo e($passport['file_path']); ?>" alt="Passport" id="passport-preview"
+                             style="display:block;" onload="document.getElementById('passportBox').classList.add('has-image');document.getElementById('passportPlaceholder').style.display='none';">
+                        <?php else: ?>
+                        <img src="" alt="Passport Preview" id="passport-preview">
+                        <?php endif; ?>
+                    </div>
+                    <div class="passport-upload-area">
+                        <h6>Select Passport Photo</h6>
+                        <p>Ensure the photo clearly shows your face on a plain white background.</p>
+                        <input type="hidden" name="passport_confirmed" id="passport-confirmed" value="0">
+                        <input type="file" class="form-control" id="passport" name="passport"
+                               accept="image/jpeg,image/png"
+                               onchange="confirmPassportUpload(this)"
+                               style="margin-bottom:8px;">
+                        <div class="field-hint">Allowed formats: JPG, PNG &nbsp;|&nbsp; Maximum size: 500 KB</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── ACTION BAR ── -->
+            <div class="action-bar">
+                <a href="/apply/step/1" class="btn btn-ghost"
+                   onclick="return confirm('Go back to JAMB verification? Unsaved changes may be lost.');">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+                <div class="action-bar-right">
+                    <button type="submit" class="btn btn-navy"
+                            onclick="document.getElementById('form_action').value='save'">
+                        <i class="fas fa-save"></i> Save Progress
+                    </button>
+                    <button type="submit" class="btn btn-teal btn-lg"
+                            onclick="document.getElementById('form_action').value='next'">
+                        Save &amp; Continue <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <div class="page-footer">
+        <p style="margin-bottom:6px;">
+            &copy; <?php echo date('Y'); ?> FCT College of Nursing Sciences. All rights reserved.
+        </p>
+        <p>
+            <i class="fas fa-phone-alt"></i> 07039837749
+            &nbsp;|&nbsp;
+            <i class="fas fa-envelope"></i>
+            <a href="mailto:info@fctcns.edu.ng">info@fctcns.edu.ng</a>
+        </p>
+    </div>
+
+</div><!-- end page-shell -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ======================================================
+   O'Level — Add another sitting
+====================================================== */
+let olevelIndex = <?php echo max(count($olevel_results ?: [[]]), 1); ?>;
+
+document.getElementById('add-olevel').addEventListener('click', function () {
+    if (olevelIndex >= 2) {
+        alert('Maximum of 2 sittings allowed.');
+        return;
     }
-    
-    // Form validation
-    (function() {
-        'use strict';
-        
-        var forms = document.querySelectorAll('.needs-validation');
-        
-        Array.prototype.slice.call(forms).forEach(function(form) {
-            form.addEventListener('submit', function(event) {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                
-                form.classList.add('was-validated');
-            }, false);
-        });
-    })();
-    </script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    const grades = ['English','Mathematics','Biology','Chemistry','Physics'];
+    const gradeKeys = ['english','mathematics','biology','chemistry','physics'];
+    const gradeOptions = ['A1','B2','B3','C4','C5','C6','D7','E8','F9']
+        .map(g => `<option value="${g}">${g}</option>`).join('');
+
+    const gradeFields = gradeKeys.map((key, i) => `
+        <div>
+            <label class="field-label">${grades[i]}</label>
+            <select class="form-select" name="olevel[${olevelIndex}][${key}_grade]" required>
+                <option value="">Grade</option>${gradeOptions}
+            </select>
+        </div>`).join('');
+
+    const html = `
+    <div class="olevel-item">
+        <div class="olevel-item-head">
+            <div class="olevel-item-label">
+                <span class="idx-badge">${olevelIndex + 1}</span>
+                O'Level Result — Sitting ${olevelIndex + 1}
+            </div>
+            <button type="button" class="btn-remove" onclick="this.closest('.olevel-item').remove()">
+                <i class="fas fa-trash-alt"></i> Remove
+            </button>
+        </div>
+        <div class="f-row cols-4">
+            <div>
+                <label class="field-label">Exam Type</label>
+                <select class="form-select" name="olevel[${olevelIndex}][exam_type]" required>
+                    <option value="WAEC">WAEC</option>
+                    <option value="NECO">NECO</option>
+                    <option value="NABTEB">NABTEB</option>
+                </select>
+            </div>
+            <div>
+                <label class="field-label">Exam Year</label>
+                <input type="text" class="form-control" name="olevel[${olevelIndex}][exam_year]" placeholder="e.g. 2023" required>
+            </div>
+            <div>
+                <label class="field-label">Exam / Centre Number</label>
+                <input type="text" class="form-control" name="olevel[${olevelIndex}][exam_number]" placeholder="Optional">
+            </div>
+            <div>
+                <label class="field-label">Sitting</label>
+                <select class="form-select" name="olevel[${olevelIndex}][sitting]">
+                    <option value="1st">1st Sitting</option>
+                    <option value="2nd" selected>2nd Sitting</option>
+                </select>
+            </div>
+        </div>
+        <div class="grades-divider">Subject Grades</div>
+        <div class="f-row cols-5">${gradeFields}</div>
+    </div>`;
+
+    document.getElementById('olevel-results-container').insertAdjacentHTML('beforeend', html);
+    olevelIndex++;
+});
+
+/* ======================================================
+   Passport upload confirmation
+====================================================== */
+function confirmPassportUpload(input) {
+    if (!input.files || !input.files[0]) return;
+
+    const file = input.files[0];
+    if (file.size > 500 * 1024) {
+        alert('File is too large. Maximum size is 500 KB.');
+        input.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        if (confirm('Is this your correct passport photograph? Click OK to use this photo.')) {
+            const img = document.getElementById('passport-preview');
+            const box = document.getElementById('passportBox');
+            const placeholder = document.getElementById('passportPlaceholder');
+            img.src = e.target.result;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+            box.classList.add('has-image');
+            document.getElementById('passport-confirmed').value = '1';
+        } else {
+            input.value = '';
+            document.getElementById('passport-confirmed').value = '0';
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+/* ======================================================
+   Bootstrap native validation
+====================================================== */
+(function () {
+    'use strict';
+    document.querySelectorAll('.needs-validation').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            if (!form.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
+</script>
 </body>
 </html>
