@@ -265,6 +265,29 @@ class ApplicationModel extends BaseModel {
     }
     
     /**
+     * Check if application form is complete (all required fields filled)
+     */
+    public function isFormComplete($applicationId) {
+        $application = $this->find($applicationId);
+        
+        if (!$application) {
+            return false;
+        }
+        
+        // Check if all required fields are filled
+        $required = ['date_of_birth', 'phone', 'address', 'program_choice_1'];
+        
+        foreach ($required as $field) {
+            if (empty($application[$field])) {
+                return false;
+            }
+        }
+        
+        // Check if documents are uploaded (you might want to check this separately)
+        return true;
+    }
+    
+    /**
      * Check if application is complete
      */
     public function isComplete($applicationId) {
