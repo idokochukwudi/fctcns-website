@@ -3,7 +3,8 @@
  * Public Application Controller
  * 
  * Handles public-facing application processes
- * FIXED: Added birth certificate persistence, view buttons support, remove document endpoint
+ * ENHANCED: Added application creation during JAMB verification, specific login error messages, password reset functionality
+ * FIXED: Redirect from application form to step 2, proper JAMB data restoration, saveApplication field mapping and update method
  * 
  * @package FCT_CNS
  */
@@ -438,7 +439,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show application form (Step 2 - New Flow)
-     * FIXED: Load existing file paths from database including birth certificate
+     * FIXED: Redirect to step 2 instead of rendering form
      */
     public function showApplicationForm() {
         // Start session
@@ -508,12 +509,24 @@ class PublicApplicationController extends ApplicationBaseController {
             }
         }
         
+        // Get O'Level results from dedicated model if exists
+        require_once MODELS_PATH . '/application/OlevelResultModel.php';
+        $olevelModel = new OlevelResultModel();
+        $olevel_results = $olevelModel->getByApplicationId($application['id']);
+        
+        // Get passport from document model if exists
+        require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
+        $docModel = new ApplicationDocumentModel();
+        $passport = $docModel->getPassport($application['id']);
+        
         // Pass data to view including file paths
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Application Form - Step 2',
             'application' => $application,
             'applicant' => $applicant,
             'jamb_data' => $_SESSION['jamb_verification'] ?? null,
+            'olevel_results' => $olevel_results,
+            'passport' => $passport,
             'states' => $this->getStates(),
             'programs' => $this->getPrograms(),
             'csrf_token' => $this->csrfToken(),
@@ -537,11 +550,14 @@ class PublicApplicationController extends ApplicationBaseController {
             ] : null
         ]);
         
-        $this->render('applications/application-form');
+        // FIXED: Redirect to step 2 instead of rendering form
+        header('Location: /apply/step/2');
+        exit;
     }
 
     /**
-     * Save application form - FIXED with birth certificate persistence
+     * Save application form - FIXED with proper JAMB data handling and field mapping
+     * Now uses updateApplication() method instead of direct update
      */
     public function saveApplication() {
         // Set header to JSON first thing
@@ -567,7 +583,7 @@ class PublicApplicationController extends ApplicationBaseController {
         try {
             $applicantId = $_SESSION['applicant_id'];
             
-            // Get JAMB data from session or hidden fields
+            // Get JAMB data from hidden fields - these come from sessionStorage via hidden inputs
             $jambNumber = $_POST['jamb_number'] ?? '';
             $firstName = $_POST['first_name'] ?? '';
             $lastName = $_POST['last_name'] ?? '';
@@ -577,26 +593,51 @@ class PublicApplicationController extends ApplicationBaseController {
             $lga = $_POST['lga'] ?? '';
             $utmeScore = $_POST['utme_score'] ?? '';
             
-            // Get editable fields
+            // Get editable fields - handle both possible field names
             $dateOfBirth = $_POST['date_of_birth'] ?? '';
             $phone = $_POST['phone'] ?? '';
             $address = $_POST['address'] ?? '';
-            $programChoice = $_POST['program_choice'] ?? '';
+            $nationality = $_POST['nationality'] ?? 'Nigerian';
+            $programChoice = $_POST['program_choice'] ?? $_POST['program_choice_1'] ?? '';
+            $email = $_POST['email'] ?? '';
+            
+            // Debug log
+            error_log("Save Application - POST data: " . print_r($_POST, true));
+            if (!empty($_FILES)) {
+                error_log("Save Application - FILES data: " . print_r($_FILES, true));
+            }
             
             // Validate required fields
-            if (empty($dateOfBirth) || empty($phone) || empty($address) || empty($programChoice)) {
-                echo json_encode(['success' => false, 'message' => 'Please fill all required fields']);
+            $missingFields = [];
+            if (empty($dateOfBirth)) $missingFields[] = 'date_of_birth';
+            if (empty($phone)) $missingFields[] = 'phone';
+            if (empty($address)) $missingFields[] = 'address';
+            if (empty($programChoice)) $missingFields[] = 'program_choice';
+            
+            if (!empty($missingFields)) {
+                error_log("Missing fields: " . implode(', ', $missingFields));
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Please fill all required fields: ' . implode(', ', $missingFields)
+                ]);
                 return;
             }
             
-            // Check if application exists
+            // Get existing application
             $application = $this->applicationModel->getByApplicantId($applicantId);
+            
+            if (!$application) {
+                echo json_encode(['success' => false, 'message' => 'Application not found']);
+                return;
+            }
             
             // Prepare update data
             $updateData = [
                 'date_of_birth' => $dateOfBirth,
                 'phone' => $phone,
+                'email' => $email,
                 'address' => $address,
+                'nationality' => $nationality,
                 'program_choice_1' => $programChoice,
                 'application_step' => 2,
                 'updated_at' => date('Y-m-d H:i:s')
@@ -610,31 +651,53 @@ class PublicApplicationController extends ApplicationBaseController {
                 $passportResult = $this->uploadFile($_FILES['passport'], $applicantId, 'passport');
                 if ($passportResult['success']) {
                     $updateData['passport_photo'] = $passportResult['path'];
+                    error_log("Passport uploaded: " . $passportResult['path']);
                 } else {
                     $uploadErrors[] = 'Passport: ' . $passportResult['message'];
                 }
             }
             
-            // Upload O'Level results
+            // Handle JAMB result upload
+            if (isset($_FILES['jamb_result']) && $_FILES['jamb_result']['error'] === UPLOAD_ERR_OK) {
+                $jambResultResult = $this->uploadFile($_FILES['jamb_result'], $applicantId, 'jamb_result');
+                if ($jambResultResult['success']) {
+                    $updateData['qualification_file'] = $jambResultResult['path'];
+                    error_log("JAMB result uploaded: " . $jambResultResult['path']);
+                } else {
+                    $uploadErrors[] = 'JAMB Result: ' . $jambResultResult['message'];
+                }
+            }
+            
+            // Handle birth certificate upload
+            if (isset($_FILES['birth_certificate']) && $_FILES['birth_certificate']['error'] === UPLOAD_ERR_OK) {
+                $birthCertResult = $this->uploadFile($_FILES['birth_certificate'], $applicantId, 'birth_certificate');
+                if ($birthCertResult['success']) {
+                    $updateData['birth_certificate'] = $birthCertResult['path'];
+                    error_log("Birth certificate uploaded: " . $birthCertResult['path']);
+                } else {
+                    $uploadErrors[] = 'Birth Certificate: ' . $birthCertResult['message'];
+                }
+            }
+            
+            // Handle O'Level files
             if (isset($_FILES['olevel'])) {
-                $files = $_FILES['olevel'];
                 $olevelFiles = [];
                 
-                // Handle both single file and multiple files
-                if (is_array($files['name'])) {
+                if (is_array($_FILES['olevel']['name'])) {
                     // Multiple files
-                    for ($i = 0; $i < count($files['name']); $i++) {
-                        if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    for ($i = 0; $i < count($_FILES['olevel']['name']); $i++) {
+                        if ($_FILES['olevel']['error'][$i] === UPLOAD_ERR_OK) {
                             $file = [
-                                'name' => $files['name'][$i],
-                                'type' => $files['type'][$i],
-                                'tmp_name' => $files['tmp_name'][$i],
-                                'error' => $files['error'][$i],
-                                'size' => $files['size'][$i]
+                                'name' => $_FILES['olevel']['name'][$i],
+                                'type' => $_FILES['olevel']['type'][$i],
+                                'tmp_name' => $_FILES['olevel']['tmp_name'][$i],
+                                'error' => $_FILES['olevel']['error'][$i],
+                                'size' => $_FILES['olevel']['size'][$i]
                             ];
                             $result = $this->uploadFile($file, $applicantId, 'olevel');
                             if ($result['success']) {
                                 $olevelFiles[] = $result['path'];
+                                error_log("O'Level file uploaded: " . $result['path']);
                             } else {
                                 $uploadErrors[] = 'O\'Level: ' . $result['message'];
                             }
@@ -642,10 +705,11 @@ class PublicApplicationController extends ApplicationBaseController {
                     }
                 } else {
                     // Single file
-                    if ($files['error'] === UPLOAD_ERR_OK) {
-                        $result = $this->uploadFile($files, $applicantId, 'olevel');
+                    if ($_FILES['olevel']['error'] === UPLOAD_ERR_OK) {
+                        $result = $this->uploadFile($_FILES['olevel'], $applicantId, 'olevel');
                         if ($result['success']) {
                             $olevelFiles[] = $result['path'];
+                            error_log("O'Level file uploaded: " . $result['path']);
                         } else {
                             $uploadErrors[] = 'O\'Level: ' . $result['message'];
                         }
@@ -653,84 +717,74 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
                 
                 if (!empty($olevelFiles)) {
-                    // If there are existing files, merge with new ones
-                    if (!empty($application['olevel_results'])) {
-                        $existingFiles = json_decode($application['olevel_results'], true);
-                        if (is_array($existingFiles)) {
-                            $olevelFiles = array_merge($existingFiles, $olevelFiles);
-                        }
+                    // Get existing O'Level files
+                    $existingFiles = [];
+                    if ($application && !empty($application['olevel_results'])) {
+                        $existingFiles = json_decode($application['olevel_results'], true) ?: [];
                     }
-                    // Store as JSON in olevel_results field
-                    $updateData['olevel_results'] = json_encode($olevelFiles);
+                    $allFiles = array_merge($existingFiles, $olevelFiles);
+                    $updateData['olevel_results'] = json_encode($allFiles);
                 }
             }
             
-            // Upload JAMB result (optional)
-            if (isset($_FILES['jamb_result']) && $_FILES['jamb_result']['error'] === UPLOAD_ERR_OK) {
-                $jambResultResult = $this->uploadFile($_FILES['jamb_result'], $applicantId, 'jamb_result');
-                if ($jambResultResult['success']) {
-                    $updateData['qualification_file'] = $jambResultResult['path'];
-                } else {
-                    $uploadErrors[] = 'JAMB Result: ' . $jambResultResult['message'];
+            // Handle O'Level data (form inputs for subjects)
+            if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
+                error_log("O'Level subject data received: " . print_r($_POST['olevel'], true));
+                
+                // If your application model has a method to save O'Level subjects, call it here
+                if (method_exists($this->applicationModel, 'saveOlevelSubjects')) {
+                    $this->applicationModel->saveOlevelSubjects($application['id'], $_POST['olevel']);
                 }
             }
             
-            // Upload birth certificate (optional) - FIXED: Now saves to database
-            if (isset($_FILES['birth_certificate']) && $_FILES['birth_certificate']['error'] === UPLOAD_ERR_OK) {
-                $birthCertResult = $this->uploadFile($_FILES['birth_certificate'], $applicantId, 'birth_certificate');
-                if ($birthCertResult['success']) {
-                    $updateData['birth_certificate'] = $birthCertResult['path'];
-                } else {
-                    $uploadErrors[] = 'Birth Certificate: ' . $birthCertResult['message'];
+            // Update existing application using the dedicated updateApplication method
+            $updated = $this->applicationModel->updateApplication($application['id'], $updateData);
+            
+            if (!$updated) {
+                error_log("Failed to update application ID: " . $application['id']);
+                echo json_encode(['success' => false, 'message' => 'Failed to update application']);
+                return;
+            }
+            
+            error_log("Updated existing application ID: " . $application['id']);
+            
+            // Update applicant phone and email if needed - FIXED: Use correct method signature for ApplicantModel
+            if (!empty($phone) || !empty($email)) {
+                try {
+                    // ApplicantModel's update method expects: update($data, $where, $params)
+                    $this->applicantModel->update(
+                        ['phone' => $phone, 'email' => $email, 'updated_at' => date('Y-m-d H:i:s')],
+                        'id = :id',
+                        ['id' => $applicantId]
+                    );
+                    error_log("Updated applicant ID: " . $applicantId);
+                } catch (Exception $e) {
+                    error_log("Failed to update applicant: " . $e->getMessage());
+                    // Don't return error, application update succeeded
                 }
             }
             
-            if (!$application) {
-                // Create new application
-                $applicationId = $this->applicationModel->insert([
-                    'applicant_id' => $applicantId,
-                    'application_number' => $this->applicationModel->generateApplicationNumber(),
-                    'jamb_number' => $jambNumber,
-                    'first_name' => $firstName,
-                    'last_name' => $lastName,
-                    'other_names' => $otherNames,
-                    'gender' => $gender,
-                    'state_of_origin' => $stateOfOrigin,
-                    'lga' => $lga,
-                    'utme_score' => $utmeScore,
-                    'date_of_birth' => $dateOfBirth,
-                    'phone' => $phone,
-                    'address' => $address,
-                    'program_choice_1' => $programChoice,
-                    'passport_photo' => $updateData['passport_photo'] ?? null,
-                    'olevel_results' => $updateData['olevel_results'] ?? null,
-                    'qualification_file' => $updateData['qualification_file'] ?? null,
-                    'birth_certificate' => $updateData['birth_certificate'] ?? null,
-                    'application_step' => 2,
-                    'status' => 'pending',
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
-                ]);
-            } else {
-                // Update existing application
-                $applicationId = $application['id'];
-                $this->applicationModel->update(
-                    $updateData,
-                    'id = :id',
-                    ['id' => $application['id']]
-                );
-            }
-            
-            // Return success response
-            echo json_encode([
+            // Prepare success response
+            $response = [
                 'success' => true,
                 'message' => 'Application saved successfully',
-                'application_id' => $applicationId,
-                'upload_errors' => $uploadErrors
-            ]);
+                'application_id' => $application['id']
+            ];
+            
+            if (!empty($uploadErrors)) {
+                $response['upload_errors'] = $uploadErrors;
+            }
+            
+            // If action is 'next', include redirect
+            if (isset($_POST['action']) && $_POST['action'] === 'next') {
+                $response['redirect'] = '/apply/step/3';
+            }
+            
+            echo json_encode($response);
             
         } catch (Exception $e) {
             error_log("Save application error: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             echo json_encode([
                 'success' => false,
                 'message' => 'Server error: ' . $e->getMessage()
@@ -739,7 +793,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Remove document - NEW endpoint for removing files
+     * Remove document - FIXED with correct update method handling
      */
     public function removeDocument() {
         // Set header to JSON first thing
@@ -823,17 +877,21 @@ class PublicApplicationController extends ApplicationBaseController {
                 $fullPath = PUBLIC_PATH . $filePath;
                 if (file_exists($fullPath)) {
                     unlink($fullPath);
+                    error_log("Deleted file: " . $fullPath);
                 }
             }
             
             // Update database if we have changes
             if (!empty($updateData)) {
                 $updateData['updated_at'] = date('Y-m-d H:i:s');
-                $this->applicationModel->update(
-                    $updateData,
-                    'id = :id',
-                    ['id' => $application['id']]
-                );
+                
+                // Use updateApplication method for consistency
+                $updated = $this->applicationModel->updateApplication($application['id'], $updateData);
+                
+                if (!$updated) {
+                    echo json_encode(['success' => false, 'message' => 'Failed to update application']);
+                    return;
+                }
             }
             
             echo json_encode(['success' => true, 'message' => 'File removed successfully']);
@@ -1311,6 +1369,10 @@ class PublicApplicationController extends ApplicationBaseController {
             session_start();
         }
         
+        // Clear any existing login errors from previous attempts
+        unset($_SESSION['login_error']);
+        unset($_SESSION['password_error']);
+        
         // If already logged in, redirect
         if (isset($_SESSION['applicant_id'])) {
             header('Location: /apply/step/1');
@@ -1326,13 +1388,19 @@ class PublicApplicationController extends ApplicationBaseController {
     }
     
     /**
-     * Process applicant login - FIXED for proper step redirection
+     * Process applicant login - ENHANCED with specific error messages
+     * FIXED: Updated redirect URLs to use step2 instead of form
      */
     public function processLogin() {
         // Start session
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+        
+        // Clear any existing form errors
+        unset($_SESSION['login_error']);
+        unset($_SESSION['password_error']);
+        unset($_SESSION['login_value']);
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: /applicant/login');
@@ -1341,7 +1409,7 @@ class PublicApplicationController extends ApplicationBaseController {
         
         // Validate CSRF
         if (!$this->validateCsrfToken()) {
-            $_SESSION['flash_error'] = 'Security token expired. Please try again.';
+            $_SESSION['flash_error'] = 'Security token expired. Please refresh the page and try again.';
             header('Location: /applicant/login');
             exit;
         }
@@ -1349,97 +1417,177 @@ class PublicApplicationController extends ApplicationBaseController {
         $login = trim($_POST['login'] ?? '');
         $password = $_POST['password'] ?? '';
         
-        if (empty($login) || empty($password)) {
-            $_SESSION['flash_error'] = 'Please enter your login details and password.';
+        // Store login value to repopulate form on error
+        $_SESSION['login_value'] = $login;
+        
+        // Validate input
+        if (empty($login)) {
+            $_SESSION['login_error'] = 'Please enter your email, phone, or JAMB number.';
+            $_SESSION['flash_error'] = 'Please enter your login details.';
             header('Location: /applicant/login');
             exit;
         }
         
-        // Find by email or phone
+        if (empty($password)) {
+            $_SESSION['password_error'] = 'Please enter your password.';
+            $_SESSION['flash_error'] = 'Please enter your password.';
+            header('Location: /applicant/login');
+            exit;
+        }
+        
+        // Determine the type of login (email, phone, or JAMB)
+        $loginType = 'unknown';
+        if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
+            $loginType = 'email';
+        } elseif (preg_match('/^[0-9]{11}$/', $login)) {
+            $loginType = 'phone';
+        } elseif (preg_match('/^[0-9]{10,14}$/', $login) || preg_match('/^[0-9]{10,14}$/', str_replace('-', '', $login))) {
+            $loginType = 'jamb';
+        }
+        
+        // Try to find by email first
         $applicant = $this->applicantModel->findByEmail($login);
+        
+        // If not found by email, try by phone
         if (!$applicant) {
             $applicant = $this->applicantModel->findByPhone($login);
         }
         
+        // If still not found, try by JAMB number through application
         if (!$applicant) {
-            $_SESSION['flash_error'] = 'Invalid login credentials.';
+            $application = $this->applicationModel->getByJambNumber($login);
+            if ($application && !empty($application['applicant_id'])) {
+                $applicant = $this->applicantModel->find($application['applicant_id']);
+            }
+        }
+        
+        // If no applicant found - show specific error based on login type
+        if (!$applicant) {
+            error_log("Login failed: No applicant found with login: " . $login);
+            
+            $errorMessage = '';
+            switch ($loginType) {
+                case 'email':
+                    $errorMessage = 'Invalid email address or password. Please check your email and try again.';
+                    break;
+                case 'phone':
+                    $errorMessage = 'Invalid phone number or password. Please check your phone number and try again.';
+                    break;
+                case 'jamb':
+                    $errorMessage = 'Invalid JAMB number or password. Please check your JAMB registration number and try again.';
+                    break;
+                default:
+                    $errorMessage = 'Invalid login credentials. Please check your details and try again.';
+            }
+            
+            $_SESSION['login_error'] = $errorMessage;
+            $_SESSION['flash_error'] = $errorMessage;
             header('Location: /applicant/login');
             exit;
         }
         
         // Check if email is verified
-        if (!$applicant['email_verified']) {
-            $_SESSION['flash_error'] = 'Please verify your email before logging in.';
+        if (!isset($applicant['email_verified']) || $applicant['email_verified'] != 1) {
+            error_log("Login failed: Email not verified for applicant ID: " . $applicant['id']);
+            $_SESSION['flash_error'] = 'Please verify your email before logging in. Check your inbox for the verification link.';
+            $_SESSION['verification_email'] = $applicant['email'];
             header('Location: /applicant/login');
             exit;
         }
         
         // Verify password
         if (!password_verify($password, $applicant['password'])) {
-            $_SESSION['flash_error'] = 'Invalid login credentials.';
+            error_log("Login failed: Invalid password for applicant ID: " . $applicant['id']);
+            
+            $errorMessage = '';
+            switch ($loginType) {
+                case 'email':
+                    $errorMessage = 'Invalid email address or password. Please check your email and password and try again.';
+                    break;
+                case 'phone':
+                    $errorMessage = 'Invalid phone number or password. Please check your phone number and password and try again.';
+                    break;
+                case 'jamb':
+                    $errorMessage = 'Invalid JAMB number or password. Please check your JAMB number and password and try again.';
+                    break;
+                default:
+                    $errorMessage = 'Invalid login credentials. Please check your password and try again.';
+            }
+            
+            $_SESSION['password_error'] = $errorMessage;
+            $_SESSION['flash_error'] = $errorMessage;
             header('Location: /applicant/login');
             exit;
         }
         
+        // Check if account is active
+        if (isset($applicant['status']) && $applicant['status'] !== 'active') {
+            error_log("Login failed: Account inactive for applicant ID: " . $applicant['id'] . ", Status: " . ($applicant['status'] ?? 'unknown'));
+            $_SESSION['flash_error'] = 'Your account is inactive. Please contact support at info@fctcns.edu.ng';
+            header('Location: /applicant/login');
+            exit;
+        }
+        
+        // Clear login value from session on successful login
+        unset($_SESSION['login_value']);
+        unset($_SESSION['login_error']);
+        unset($_SESSION['password_error']);
+        
         // Set session
         $_SESSION['applicant_id'] = $applicant['id'];
         $_SESSION['applicant_email'] = $applicant['email'];
-        $_SESSION['applicant_name'] = ($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? '');
+        $_SESSION['applicant_name'] = trim(($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? ''));
         $_SESSION['applicant_login_time'] = time();
+        
+        // Log successful login
+        error_log("Login successful for applicant ID: " . $applicant['id'] . ", Email: " . $applicant['email']);
         
         // Get the application for this applicant
         $application = $this->applicationModel->getByApplicantId($applicant['id']);
         
-        // CASE 1: No application yet
-        if (!$application) {
-            error_log("No application found for applicant {$applicant['id']}, redirecting to JAMB verification");
-            $_SESSION['flash_info'] = 'Please verify your JAMB number to begin.';
-            header('Location: /apply/step/1');
-            exit;
+        // Determine redirect URL based on application status
+        $redirectUrl = '/apply/step/1'; // Default to JAMB verification
+        
+        if ($application) {
+            // Restore JAMB data to session if not present
+            if (!isset($_SESSION['jamb_verification']) && !empty($application['jamb_number'])) {
+                $_SESSION['jamb_verification'] = [
+                    'jamb_number' => $application['jamb_number'],
+                    'first_name' => $application['first_name'],
+                    'last_name' => $application['last_name'],
+                    'other_names' => $application['other_names'],
+                    'gender' => $application['gender'],
+                    'state_of_origin' => $application['state_of_origin'],
+                    'lga' => $application['lga'],
+                    'score' => $application['utme_score']
+                ];
+            }
+            
+            // Determine step based on application progress - FIXED: Use step2 instead of form
+            if (empty($application['jamb_number'])) {
+                $redirectUrl = '/apply/step/1';
+            } elseif (empty($application['date_of_birth']) || 
+                      empty($application['phone']) || 
+                      empty($application['address']) || 
+                      empty($application['program_choice_1'])) {
+                $redirectUrl = '/apply/step/2'; // Changed from /apply/form to /apply/step/2
+            } elseif ($application['application_step'] >= 3) {
+                // Check if payment is complete
+                $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+                if ($hasPaid) {
+                    $redirectUrl = '/apply/step/4';
+                } else {
+                    $redirectUrl = '/apply/step/3';
+                }
+            } else {
+                $redirectUrl = '/apply/step/2'; // Changed from /apply/form to /apply/step/2
+            }
         }
         
-        // Restore JAMB data to session if not present
-        if (!isset($_SESSION['jamb_verification']) && !empty($application['jamb_number'])) {
-            $_SESSION['jamb_verification'] = [
-                'jamb_number' => $application['jamb_number'],
-                'first_name' => $application['first_name'],
-                'last_name' => $application['last_name'],
-                'other_names' => $application['other_names'],
-                'gender' => $application['gender'],
-                'state_of_origin' => $application['state_of_origin'],
-                'lga' => $application['lga'],
-                'score' => $application['utme_score']
-            ];
-            error_log("Restored JAMB data to session for applicant {$applicant['id']}");
-        }
+        // Set success flash message
+        $_SESSION['flash_success'] = 'Login successful! Welcome back, ' . $_SESSION['applicant_name'] . '.';
         
-        // Get current step
-        $step = (int)$application['application_step'];
-        error_log("Applicant {$applicant['id']} at step {$step}");
-        
-        // CASE 2: JAMB not verified yet
-        if (empty($application['jamb_number'])) {
-            header('Location: /apply/step/1');
-            exit;
-        }
-        
-        // CASE 3: JAMB verified but form not complete - go to form
-        if (empty($application['date_of_birth']) || empty($application['phone']) || empty($application['address']) || empty($application['program_choice_1'])) {
-            error_log("Form not complete for applicant {$applicant['id']}, redirecting to form");
-            header('Location: /apply/form');
-            exit;
-        }
-        
-        // CASE 4: Form complete, ready for payment
-        if ($step >= 3) {
-            error_log("Form complete, redirecting to payment for applicant {$applicant['id']}");
-            header('Location: /apply/step/3');
-            exit;
-        }
-        
-        // CASE 5: Fallback - go to form
-        error_log("Fallback redirect to form for applicant {$applicant['id']}");
-        header('Location: /apply/form');
+        header('Location: ' . $redirectUrl);
         exit;
     }
     
@@ -1478,6 +1626,11 @@ class PublicApplicationController extends ApplicationBaseController {
      * Show forgot password page
      */
     public function forgotPassword() {
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Forgot Password - Application Portal',
             'csrf_token' => $this->csrfToken()
@@ -1487,24 +1640,178 @@ class PublicApplicationController extends ApplicationBaseController {
     }
     
     /**
-     * Process forgot password
+     * Process forgot password - Send reset link to email
      */
     public function processForgotPassword() {
-        // Implementation here
-        $_SESSION['flash_success'] = 'Password reset instructions have been sent to your email.';
-        header('Location: /applicant/login');
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Clear any existing email value
+        unset($_SESSION['email_value']);
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        // Validate CSRF
+        if (!$this->validateCsrfToken()) {
+            $_SESSION['flash_error'] = 'Security token expired. Please try again.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        $email = trim($_POST['email'] ?? '');
+        
+        // Store email to repopulate form on error
+        $_SESSION['email_value'] = $email;
+        
+        // Validate email
+        if (empty($email)) {
+            $_SESSION['flash_error'] = 'Please enter your email address.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['flash_error'] = 'Please enter a valid email address.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        // Find applicant by email
+        $applicant = $this->applicantModel->findByEmail($email);
+        
+        if (!$applicant) {
+            // For security, don't reveal that email doesn't exist
+            error_log("Password reset requested for non-existent email: " . $email);
+            $_SESSION['flash_success'] = 'If your email is registered, you will receive a password reset link shortly.';
+            unset($_SESSION['email_value']);
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        try {
+            // Generate reset token
+            $resetToken = bin2hex(random_bytes(32));
+            $resetExpiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
+            
+            // Save reset token to database (you'll need to add this column to applicants table)
+            $this->applicantModel->update(
+                [
+                    'reset_token' => $resetToken,
+                    'reset_expires' => $resetExpiry
+                ],
+                'id = :id',
+                ['id' => $applicant['id']]
+            );
+            
+            // Send reset email
+            $this->sendPasswordResetEmail($email, $resetToken);
+            
+            $_SESSION['flash_success'] = 'Password reset instructions have been sent to your email.';
+            unset($_SESSION['email_value']);
+            
+        } catch (Exception $e) {
+            error_log("Password reset error: " . $e->getMessage());
+            $_SESSION['flash_error'] = 'An error occurred. Please try again later.';
+        }
+        
+        header('Location: /applicant/forgot-password');
         exit;
+    }
+    
+    /**
+     * Send password reset email
+     */
+    private function sendPasswordResetEmail($email, $token) {
+        $resetLink = BASE_URL . '/applicant/reset-password?token=' . $token;
+        
+        $subject = "Password Reset - FCT College of Nursing Sciences";
+        
+        $message = "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #6B4E9B; color: white; padding: 20px; text-align: center; }
+                .content { padding: 20px; background: #f9f9f9; }
+                .button { display: inline-block; padding: 10px 20px; background: #6B4E9B; color: white; text-decoration: none; border-radius: 5px; }
+                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>FCT College of Nursing Sciences</h2>
+                    <p>Password Reset Request</p>
+                </div>
+                <div class='content'>
+                    <h3>Hello!</h3>
+                    <p>You recently requested to reset your password. Click the button below to proceed:</p>
+                    
+                    <p style='text-align: center;'>
+                        <a href='{$resetLink}' class='button'>Reset Password</a>
+                    </p>
+                    
+                    <p>If you didn't request this, please ignore this email. The link will expire in 1 hour.</p>
+                    
+                    <p><strong>Note:</strong> For security, never share this link with anyone.</p>
+                </div>
+                <div class='footer'>
+                    <p>&copy; " . date('Y') . " FCT College of Nursing Sciences</p>
+                    <p>Contact: info@fctcns.edu.ng | Support: 07039837749</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+        
+        // Use your email helper
+        if (file_exists(APP_PATH . '/helpers/EmailHelper.php')) {
+            require_once APP_PATH . '/helpers/EmailHelper.php';
+            $emailHelper = new EmailHelper();
+            $emailHelper->sendEmail($email, $subject, $message);
+        } else {
+            // Fallback - log the email
+            error_log("Password reset email would be sent to: $email with link: $resetLink");
+        }
     }
     
     /**
      * Show reset password page
      */
     public function resetPassword() {
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         $token = $_GET['token'] ?? '';
+        
+        if (empty($token)) {
+            $_SESSION['flash_error'] = 'Invalid password reset link.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        // Verify token (you'll need to implement this in your model)
+        $applicant = $this->applicantModel->findByResetToken($token);
+        
+        if (!$applicant) {
+            $_SESSION['flash_error'] = 'Invalid or expired reset link. Please request a new one.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
         
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Reset Password',
             'token' => $token,
+            'email' => $applicant['email'],
             'csrf_token' => $this->csrfToken()
         ]);
         
@@ -1515,9 +1822,82 @@ class PublicApplicationController extends ApplicationBaseController {
      * Process reset password
      */
     public function processResetPassword() {
-        // Implementation here
-        $_SESSION['flash_success'] = 'Password reset successfully. You can now login with your new password.';
-        header('Location: /applicant/login');
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        // Validate CSRF
+        if (!$this->validateCsrfToken()) {
+            $_SESSION['flash_error'] = 'Security token expired. Please try again.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        $token = $_POST['token'] ?? '';
+        $password = $_POST['password'] ?? '';
+        $confirm = $_POST['confirm_password'] ?? '';
+        
+        if (empty($token)) {
+            $_SESSION['flash_error'] = 'Invalid reset token.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        // Validate password
+        if (empty($password)) {
+            $_SESSION['flash_error'] = 'Please enter a new password.';
+            header('Location: /applicant/reset-password?token=' . urlencode($token));
+            exit;
+        }
+        
+        if (strlen($password) < 8) {
+            $_SESSION['flash_error'] = 'Password must be at least 8 characters long.';
+            header('Location: /applicant/reset-password?token=' . urlencode($token));
+            exit;
+        }
+        
+        if ($password !== $confirm) {
+            $_SESSION['flash_error'] = 'Passwords do not match.';
+            header('Location: /applicant/reset-password?token=' . urlencode($token));
+            exit;
+        }
+        
+        // Verify token
+        $applicant = $this->applicantModel->findByResetToken($token);
+        
+        if (!$applicant) {
+            $_SESSION['flash_error'] = 'Invalid or expired reset link. Please request a new one.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        try {
+            // Update password
+            $this->applicantModel->update(
+                [
+                    'password' => password_hash($password, PASSWORD_DEFAULT),
+                    'reset_token' => null,
+                    'reset_expires' => null
+                ],
+                'id = :id',
+                ['id' => $applicant['id']]
+            );
+            
+            $_SESSION['flash_success'] = 'Password reset successfully. You can now login with your new password.';
+            header('Location: /applicant/login');
+            
+        } catch (Exception $e) {
+            error_log("Password reset error: " . $e->getMessage());
+            $_SESSION['flash_error'] = 'An error occurred. Please try again.';
+            header('Location: /applicant/reset-password?token=' . urlencode($token));
+        }
+        
         exit;
     }
 
@@ -1568,8 +1948,8 @@ class PublicApplicationController extends ApplicationBaseController {
             
             // If application step is 2, redirect to form
             if ($application['application_step'] == 2) {
-                error_log("Application step 2 detected, redirecting to form");
-                header('Location: /apply/form');
+                error_log("Application step 2 detected, redirecting to step2");
+                header('Location: /apply/step/2');
                 exit;
             }
         }
@@ -1588,9 +1968,15 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Show step 2: Application form (Legacy Flow)
+     * Show step 2: Application form (Legacy Flow) - FIXED
+     * This method now properly restores JAMB data from database and renders the form
      */
     public function step2() {
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         // Check login
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
@@ -1598,14 +1984,81 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // Check if JAMB has been verified
+        $applicantId = $_SESSION['applicant_id'];
+        
+        // Check if JAMB has been verified in session
         if (!isset($_SESSION['jamb_verification']) || !$_SESSION['jamb_verification']) {
-            $_SESSION['flash_error'] = 'Please verify your JAMB number first';
+            // Try to restore from database
+            $application = $this->applicationModel->getByApplicantId($applicantId);
+            
+            if ($application && !empty($application['jamb_number'])) {
+                // Restore JAMB data to session
+                $_SESSION['jamb_verification'] = [
+                    'jamb_number' => $application['jamb_number'],
+                    'first_name' => $application['first_name'],
+                    'last_name' => $application['last_name'],
+                    'other_names' => $application['other_names'],
+                    'gender' => $application['gender'],
+                    'state_of_origin' => $application['state_of_origin'],
+                    'lga' => $application['lga'],
+                    'score' => $application['utme_score']
+                ];
+                
+                error_log("Restored JAMB data to session from database in step2 for applicant: " . $applicantId);
+            } else {
+                $_SESSION['flash_error'] = 'Please verify your JAMB number first';
+                header('Location: /apply/step/1');
+                return;
+            }
+        }
+        
+        // Get application data
+        $application = $this->applicationModel->getByApplicantId($applicantId);
+        
+        if (!$application) {
+            $_SESSION['flash_error'] = 'Application not found. Please start over.';
             header('Location: /apply/step/1');
             return;
         }
         
-        $this->data['pageTitle'] = 'Step 2: Application Form';
+        // Get O'Level results from database if they exist
+        require_once MODELS_PATH . '/application/OlevelResultModel.php';
+        $olevelModel = new OlevelResultModel();
+        $olevel_results = $olevelModel->getByApplicationId($application['id']);
+        
+        // Get passport if exists
+        require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
+        $docModel = new ApplicationDocumentModel();
+        $passport = $docModel->getPassport($application['id']);
+        
+        // Get applicant details
+        $applicant = $this->applicantModel->find($applicantId);
+        
+        // Parse O'Level results from JSON if exists
+        $olevelFiles = [];
+        if (!empty($application['olevel_results'])) {
+            $olevelFiles = json_decode($application['olevel_results'], true);
+            if (!is_array($olevelFiles)) {
+                $olevelFiles = [];
+            }
+        }
+        
+        // Prepare JAMB data for view
+        $jamb_data = $_SESSION['jamb_verification'];
+        
+        $this->data = array_merge($this->data, [
+            'pageTitle' => 'Step 2: Application Form',
+            'application' => $application,
+            'applicant' => $applicant,
+            'jamb_data' => $jamb_data,
+            'olevel_results' => $olevel_results,
+            'passport' => $passport,
+            'states' => $this->getStates(),
+            'programs' => $this->getPrograms(),
+            'csrf_token' => $this->csrfToken()
+        ]);
+        
+        // Render the step2 view
         $this->render('applications/step2');
     }
 
@@ -1613,6 +2066,11 @@ class PublicApplicationController extends ApplicationBaseController {
      * Show step 3: Payment (Legacy Flow)
      */
     public function step3() {
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         // Check login
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
@@ -1620,14 +2078,20 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        $this->data['pageTitle'] = 'Step 3: Payment';
-        $this->render('applications/step3');
+        // Redirect to new payment page
+        header('Location: /apply/step/3');
+        exit;
     }
 
     /**
      * Show step 4: Exam Slip (Legacy Flow)
      */
     public function step4() {
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         // Check login
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
@@ -1635,20 +2099,26 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        $this->data['pageTitle'] = 'Step 4: Examination Slip';
-        $this->render('applications/step4');
+        // Redirect to new exam slip page
+        header('Location: /apply/step/4');
+        exit;
     }
 
     // ============================================
-    // JAMB VERIFICATION METHODS
+    // JAMB VERIFICATION METHODS - FIXED
     // ============================================
 
     /**
-     * Verify JAMB number (AJAX endpoint) - FIXED VERSION
+     * Verify JAMB number (AJAX endpoint) - FIXED to create application record
      */
     public function verifyJamb() {
         // Set header for JSON response
         header('Content-Type: application/json');
+        
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         
         // Check if user is logged in
         if (!isset($_SESSION['applicant_id'])) {
@@ -1702,9 +2172,76 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // Start session if not already started
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+        // Get applicant ID from session
+        $applicantId = $_SESSION['applicant_id'];
+        
+        // Check if application already exists for this applicant
+        $existingApplication = $this->applicationModel->getByApplicantId($applicantId);
+        
+        if (!$existingApplication) {
+            // Create new application record
+            try {
+                $applicationData = [
+                    'applicant_id' => $applicantId,
+                    'jamb_number' => $jambCandidate['jamb_number'],
+                    'jamb_candidate_id' => $jambCandidate['id'],
+                    'first_name' => $jambCandidate['first_name'],
+                    'last_name' => $jambCandidate['last_name'],
+                    'other_names' => $jambCandidate['other_names'],
+                    'gender' => $jambCandidate['gender'],
+                    'state_of_origin' => $jambCandidate['state_of_origin'],
+                    'lga' => $jambCandidate['lga'],
+                    'utme_score' => $jambCandidate['aggregate_score'],
+                    'program' => 'ND Nursing',
+                    'program_choice_1' => 'ND Nursing',
+                    'application_step' => 2,
+                    'status' => 'pending'
+                ];
+                
+                $applicationId = $this->applicationModel->createApplication($applicantId, $applicationData);
+                
+                if (!$applicationId) {
+                    throw new Exception("Failed to create application record");
+                }
+                
+                error_log("Created new application ID: " . $applicationId . " for applicant: " . $applicantId);
+                
+            } catch (Exception $e) {
+                error_log("Error creating application: " . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'Failed to create application record. Please try again.']);
+                return;
+            }
+        } else {
+            // Update existing application with JAMB data
+            try {
+                $updateData = [
+                    'jamb_number' => $jambCandidate['jamb_number'],
+                    'jamb_candidate_id' => $jambCandidate['id'],
+                    'first_name' => $jambCandidate['first_name'],
+                    'last_name' => $jambCandidate['last_name'],
+                    'other_names' => $jambCandidate['other_names'],
+                    'gender' => $jambCandidate['gender'],
+                    'state_of_origin' => $jambCandidate['state_of_origin'],
+                    'lga' => $jambCandidate['lga'],
+                    'utme_score' => $jambCandidate['aggregate_score'],
+                    'application_step' => 2,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ];
+                
+                // Use updateApplication method for consistency
+                $updated = $this->applicationModel->updateApplication($existingApplication['id'], $updateData);
+                
+                if (!$updated) {
+                    throw new Exception("Failed to update application record");
+                }
+                
+                error_log("Updated existing application ID: " . $existingApplication['id'] . " with JAMB data");
+                
+            } catch (Exception $e) {
+                error_log("Error updating application: " . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'Failed to update application record. Please try again.']);
+                return;
+            }
         }
         
         // Store in session
@@ -1719,6 +2256,9 @@ class PublicApplicationController extends ApplicationBaseController {
             'lga' => $jambCandidate['lga'],
             'score' => $jambCandidate['aggregate_score']
         ];
+        
+        // Mark JAMB candidate as used
+        $this->jambModel->markAsUsed($jambCandidate['id'], $applicantId);
         
         // Return complete data
         echo json_encode([
