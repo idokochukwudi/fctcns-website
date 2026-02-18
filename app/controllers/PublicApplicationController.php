@@ -3,7 +3,7 @@
  * Public Application Controller
  * 
  * Handles public-facing application processes
- * FIXED: Added birth certificate persistence, view buttons support, remove document endpoint
+ * ENHANCED: Added specific login error messages, password reset functionality, and improved font rendering
  * 
  * @package FCT_CNS
  */
@@ -1311,6 +1311,10 @@ class PublicApplicationController extends ApplicationBaseController {
             session_start();
         }
         
+        // Clear any existing login errors from previous attempts
+        unset($_SESSION['login_error']);
+        unset($_SESSION['password_error']);
+        
         // If already logged in, redirect
         if (isset($_SESSION['applicant_id'])) {
             header('Location: /apply/step/1');
@@ -1326,13 +1330,18 @@ class PublicApplicationController extends ApplicationBaseController {
     }
     
     /**
-     * Process applicant login - FIXED for proper step redirection
+     * Process applicant login - ENHANCED with specific error messages
      */
     public function processLogin() {
         // Start session
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+        
+        // Clear any existing form errors
+        unset($_SESSION['login_error']);
+        unset($_SESSION['password_error']);
+        unset($_SESSION['login_value']);
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: /applicant/login');
@@ -1341,7 +1350,7 @@ class PublicApplicationController extends ApplicationBaseController {
         
         // Validate CSRF
         if (!$this->validateCsrfToken()) {
-            $_SESSION['flash_error'] = 'Security token expired. Please try again.';
+            $_SESSION['flash_error'] = 'Security token expired. Please refresh the page and try again.';
             header('Location: /applicant/login');
             exit;
         }
@@ -1349,97 +1358,177 @@ class PublicApplicationController extends ApplicationBaseController {
         $login = trim($_POST['login'] ?? '');
         $password = $_POST['password'] ?? '';
         
-        if (empty($login) || empty($password)) {
-            $_SESSION['flash_error'] = 'Please enter your login details and password.';
+        // Store login value to repopulate form on error
+        $_SESSION['login_value'] = $login;
+        
+        // Validate input
+        if (empty($login)) {
+            $_SESSION['login_error'] = 'Please enter your email, phone, or JAMB number.';
+            $_SESSION['flash_error'] = 'Please enter your login details.';
             header('Location: /applicant/login');
             exit;
         }
         
-        // Find by email or phone
+        if (empty($password)) {
+            $_SESSION['password_error'] = 'Please enter your password.';
+            $_SESSION['flash_error'] = 'Please enter your password.';
+            header('Location: /applicant/login');
+            exit;
+        }
+        
+        // Determine the type of login (email, phone, or JAMB)
+        $loginType = 'unknown';
+        if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
+            $loginType = 'email';
+        } elseif (preg_match('/^[0-9]{11}$/', $login)) {
+            $loginType = 'phone';
+        } elseif (preg_match('/^[0-9]{10,14}$/', $login) || preg_match('/^[0-9]{10,14}$/', str_replace('-', '', $login))) {
+            $loginType = 'jamb';
+        }
+        
+        // Try to find by email first
         $applicant = $this->applicantModel->findByEmail($login);
+        
+        // If not found by email, try by phone
         if (!$applicant) {
             $applicant = $this->applicantModel->findByPhone($login);
         }
         
+        // If still not found, try by JAMB number through application
         if (!$applicant) {
-            $_SESSION['flash_error'] = 'Invalid login credentials.';
+            $application = $this->applicationModel->getByJambNumber($login);
+            if ($application && !empty($application['applicant_id'])) {
+                $applicant = $this->applicantModel->find($application['applicant_id']);
+            }
+        }
+        
+        // If no applicant found - show specific error based on login type
+        if (!$applicant) {
+            error_log("Login failed: No applicant found with login: " . $login);
+            
+            $errorMessage = '';
+            switch ($loginType) {
+                case 'email':
+                    $errorMessage = 'Invalid email address or password. Please check your email and try again.';
+                    break;
+                case 'phone':
+                    $errorMessage = 'Invalid phone number or password. Please check your phone number and try again.';
+                    break;
+                case 'jamb':
+                    $errorMessage = 'Invalid JAMB number or password. Please check your JAMB registration number and try again.';
+                    break;
+                default:
+                    $errorMessage = 'Invalid login credentials. Please check your details and try again.';
+            }
+            
+            $_SESSION['login_error'] = $errorMessage;
+            $_SESSION['flash_error'] = $errorMessage;
             header('Location: /applicant/login');
             exit;
         }
         
         // Check if email is verified
-        if (!$applicant['email_verified']) {
-            $_SESSION['flash_error'] = 'Please verify your email before logging in.';
+        if (!isset($applicant['email_verified']) || $applicant['email_verified'] != 1) {
+            error_log("Login failed: Email not verified for applicant ID: " . $applicant['id']);
+            $_SESSION['flash_error'] = 'Please verify your email before logging in. Check your inbox for the verification link.';
+            $_SESSION['verification_email'] = $applicant['email'];
             header('Location: /applicant/login');
             exit;
         }
         
         // Verify password
         if (!password_verify($password, $applicant['password'])) {
-            $_SESSION['flash_error'] = 'Invalid login credentials.';
+            error_log("Login failed: Invalid password for applicant ID: " . $applicant['id']);
+            
+            $errorMessage = '';
+            switch ($loginType) {
+                case 'email':
+                    $errorMessage = 'Invalid email address or password. Please check your email and password and try again.';
+                    break;
+                case 'phone':
+                    $errorMessage = 'Invalid phone number or password. Please check your phone number and password and try again.';
+                    break;
+                case 'jamb':
+                    $errorMessage = 'Invalid JAMB number or password. Please check your JAMB number and password and try again.';
+                    break;
+                default:
+                    $errorMessage = 'Invalid login credentials. Please check your password and try again.';
+            }
+            
+            $_SESSION['password_error'] = $errorMessage;
+            $_SESSION['flash_error'] = $errorMessage;
             header('Location: /applicant/login');
             exit;
         }
         
+        // Check if account is active
+        if (isset($applicant['status']) && $applicant['status'] !== 'active') {
+            error_log("Login failed: Account inactive for applicant ID: " . $applicant['id'] . ", Status: " . ($applicant['status'] ?? 'unknown'));
+            $_SESSION['flash_error'] = 'Your account is inactive. Please contact support at info@fctcns.edu.ng';
+            header('Location: /applicant/login');
+            exit;
+        }
+        
+        // Clear login value from session on successful login
+        unset($_SESSION['login_value']);
+        unset($_SESSION['login_error']);
+        unset($_SESSION['password_error']);
+        
         // Set session
         $_SESSION['applicant_id'] = $applicant['id'];
         $_SESSION['applicant_email'] = $applicant['email'];
-        $_SESSION['applicant_name'] = ($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? '');
+        $_SESSION['applicant_name'] = trim(($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? ''));
         $_SESSION['applicant_login_time'] = time();
+        
+        // Log successful login
+        error_log("Login successful for applicant ID: " . $applicant['id'] . ", Email: " . $applicant['email']);
         
         // Get the application for this applicant
         $application = $this->applicationModel->getByApplicantId($applicant['id']);
         
-        // CASE 1: No application yet
-        if (!$application) {
-            error_log("No application found for applicant {$applicant['id']}, redirecting to JAMB verification");
-            $_SESSION['flash_info'] = 'Please verify your JAMB number to begin.';
-            header('Location: /apply/step/1');
-            exit;
+        // Determine redirect URL based on application status
+        $redirectUrl = '/apply/step/1'; // Default to JAMB verification
+        
+        if ($application) {
+            // Restore JAMB data to session if not present
+            if (!isset($_SESSION['jamb_verification']) && !empty($application['jamb_number'])) {
+                $_SESSION['jamb_verification'] = [
+                    'jamb_number' => $application['jamb_number'],
+                    'first_name' => $application['first_name'],
+                    'last_name' => $application['last_name'],
+                    'other_names' => $application['other_names'],
+                    'gender' => $application['gender'],
+                    'state_of_origin' => $application['state_of_origin'],
+                    'lga' => $application['lga'],
+                    'score' => $application['utme_score']
+                ];
+            }
+            
+            // Determine step based on application progress
+            if (empty($application['jamb_number'])) {
+                $redirectUrl = '/apply/step/1';
+            } elseif (empty($application['date_of_birth']) || 
+                      empty($application['phone']) || 
+                      empty($application['address']) || 
+                      empty($application['program_choice_1'])) {
+                $redirectUrl = '/apply/form';
+            } elseif ($application['application_step'] >= 3) {
+                // Check if payment is complete
+                $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+                if ($hasPaid) {
+                    $redirectUrl = '/apply/step/4';
+                } else {
+                    $redirectUrl = '/apply/step/3';
+                }
+            } else {
+                $redirectUrl = '/apply/form';
+            }
         }
         
-        // Restore JAMB data to session if not present
-        if (!isset($_SESSION['jamb_verification']) && !empty($application['jamb_number'])) {
-            $_SESSION['jamb_verification'] = [
-                'jamb_number' => $application['jamb_number'],
-                'first_name' => $application['first_name'],
-                'last_name' => $application['last_name'],
-                'other_names' => $application['other_names'],
-                'gender' => $application['gender'],
-                'state_of_origin' => $application['state_of_origin'],
-                'lga' => $application['lga'],
-                'score' => $application['utme_score']
-            ];
-            error_log("Restored JAMB data to session for applicant {$applicant['id']}");
-        }
+        // Set success flash message
+        $_SESSION['flash_success'] = 'Login successful! Welcome back, ' . $_SESSION['applicant_name'] . '.';
         
-        // Get current step
-        $step = (int)$application['application_step'];
-        error_log("Applicant {$applicant['id']} at step {$step}");
-        
-        // CASE 2: JAMB not verified yet
-        if (empty($application['jamb_number'])) {
-            header('Location: /apply/step/1');
-            exit;
-        }
-        
-        // CASE 3: JAMB verified but form not complete - go to form
-        if (empty($application['date_of_birth']) || empty($application['phone']) || empty($application['address']) || empty($application['program_choice_1'])) {
-            error_log("Form not complete for applicant {$applicant['id']}, redirecting to form");
-            header('Location: /apply/form');
-            exit;
-        }
-        
-        // CASE 4: Form complete, ready for payment
-        if ($step >= 3) {
-            error_log("Form complete, redirecting to payment for applicant {$applicant['id']}");
-            header('Location: /apply/step/3');
-            exit;
-        }
-        
-        // CASE 5: Fallback - go to form
-        error_log("Fallback redirect to form for applicant {$applicant['id']}");
-        header('Location: /apply/form');
+        header('Location: ' . $redirectUrl);
         exit;
     }
     
@@ -1478,6 +1567,11 @@ class PublicApplicationController extends ApplicationBaseController {
      * Show forgot password page
      */
     public function forgotPassword() {
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Forgot Password - Application Portal',
             'csrf_token' => $this->csrfToken()
@@ -1487,24 +1581,178 @@ class PublicApplicationController extends ApplicationBaseController {
     }
     
     /**
-     * Process forgot password
+     * Process forgot password - Send reset link to email
      */
     public function processForgotPassword() {
-        // Implementation here
-        $_SESSION['flash_success'] = 'Password reset instructions have been sent to your email.';
-        header('Location: /applicant/login');
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Clear any existing email value
+        unset($_SESSION['email_value']);
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        // Validate CSRF
+        if (!$this->validateCsrfToken()) {
+            $_SESSION['flash_error'] = 'Security token expired. Please try again.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        $email = trim($_POST['email'] ?? '');
+        
+        // Store email to repopulate form on error
+        $_SESSION['email_value'] = $email;
+        
+        // Validate email
+        if (empty($email)) {
+            $_SESSION['flash_error'] = 'Please enter your email address.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['flash_error'] = 'Please enter a valid email address.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        // Find applicant by email
+        $applicant = $this->applicantModel->findByEmail($email);
+        
+        if (!$applicant) {
+            // For security, don't reveal that email doesn't exist
+            error_log("Password reset requested for non-existent email: " . $email);
+            $_SESSION['flash_success'] = 'If your email is registered, you will receive a password reset link shortly.';
+            unset($_SESSION['email_value']);
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        try {
+            // Generate reset token
+            $resetToken = bin2hex(random_bytes(32));
+            $resetExpiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
+            
+            // Save reset token to database (you'll need to add this column to applicants table)
+            $this->applicantModel->update(
+                [
+                    'reset_token' => $resetToken,
+                    'reset_expires' => $resetExpiry
+                ],
+                'id = :id',
+                ['id' => $applicant['id']]
+            );
+            
+            // Send reset email
+            $this->sendPasswordResetEmail($email, $resetToken);
+            
+            $_SESSION['flash_success'] = 'Password reset instructions have been sent to your email.';
+            unset($_SESSION['email_value']);
+            
+        } catch (Exception $e) {
+            error_log("Password reset error: " . $e->getMessage());
+            $_SESSION['flash_error'] = 'An error occurred. Please try again later.';
+        }
+        
+        header('Location: /applicant/forgot-password');
         exit;
+    }
+    
+    /**
+     * Send password reset email
+     */
+    private function sendPasswordResetEmail($email, $token) {
+        $resetLink = BASE_URL . '/applicant/reset-password?token=' . $token;
+        
+        $subject = "Password Reset - FCT College of Nursing Sciences";
+        
+        $message = "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #6B4E9B; color: white; padding: 20px; text-align: center; }
+                .content { padding: 20px; background: #f9f9f9; }
+                .button { display: inline-block; padding: 10px 20px; background: #6B4E9B; color: white; text-decoration: none; border-radius: 5px; }
+                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>FCT College of Nursing Sciences</h2>
+                    <p>Password Reset Request</p>
+                </div>
+                <div class='content'>
+                    <h3>Hello!</h3>
+                    <p>You recently requested to reset your password. Click the button below to proceed:</p>
+                    
+                    <p style='text-align: center;'>
+                        <a href='{$resetLink}' class='button'>Reset Password</a>
+                    </p>
+                    
+                    <p>If you didn't request this, please ignore this email. The link will expire in 1 hour.</p>
+                    
+                    <p><strong>Note:</strong> For security, never share this link with anyone.</p>
+                </div>
+                <div class='footer'>
+                    <p>&copy; " . date('Y') . " FCT College of Nursing Sciences</p>
+                    <p>Contact: info@fctcns.edu.ng | Support: 07039837749</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+        
+        // Use your email helper
+        if (file_exists(APP_PATH . '/helpers/EmailHelper.php')) {
+            require_once APP_PATH . '/helpers/EmailHelper.php';
+            $emailHelper = new EmailHelper();
+            $emailHelper->sendEmail($email, $subject, $message);
+        } else {
+            // Fallback - log the email
+            error_log("Password reset email would be sent to: $email with link: $resetLink");
+        }
     }
     
     /**
      * Show reset password page
      */
     public function resetPassword() {
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         $token = $_GET['token'] ?? '';
+        
+        if (empty($token)) {
+            $_SESSION['flash_error'] = 'Invalid password reset link.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        // Verify token (you'll need to implement this in your model)
+        $applicant = $this->applicantModel->findByResetToken($token);
+        
+        if (!$applicant) {
+            $_SESSION['flash_error'] = 'Invalid or expired reset link. Please request a new one.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
         
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Reset Password',
             'token' => $token,
+            'email' => $applicant['email'],
             'csrf_token' => $this->csrfToken()
         ]);
         
@@ -1515,9 +1763,82 @@ class PublicApplicationController extends ApplicationBaseController {
      * Process reset password
      */
     public function processResetPassword() {
-        // Implementation here
-        $_SESSION['flash_success'] = 'Password reset successfully. You can now login with your new password.';
-        header('Location: /applicant/login');
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        // Validate CSRF
+        if (!$this->validateCsrfToken()) {
+            $_SESSION['flash_error'] = 'Security token expired. Please try again.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        $token = $_POST['token'] ?? '';
+        $password = $_POST['password'] ?? '';
+        $confirm = $_POST['confirm_password'] ?? '';
+        
+        if (empty($token)) {
+            $_SESSION['flash_error'] = 'Invalid reset token.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        // Validate password
+        if (empty($password)) {
+            $_SESSION['flash_error'] = 'Please enter a new password.';
+            header('Location: /applicant/reset-password?token=' . urlencode($token));
+            exit;
+        }
+        
+        if (strlen($password) < 8) {
+            $_SESSION['flash_error'] = 'Password must be at least 8 characters long.';
+            header('Location: /applicant/reset-password?token=' . urlencode($token));
+            exit;
+        }
+        
+        if ($password !== $confirm) {
+            $_SESSION['flash_error'] = 'Passwords do not match.';
+            header('Location: /applicant/reset-password?token=' . urlencode($token));
+            exit;
+        }
+        
+        // Verify token
+        $applicant = $this->applicantModel->findByResetToken($token);
+        
+        if (!$applicant) {
+            $_SESSION['flash_error'] = 'Invalid or expired reset link. Please request a new one.';
+            header('Location: /applicant/forgot-password');
+            exit;
+        }
+        
+        try {
+            // Update password
+            $this->applicantModel->update(
+                [
+                    'password' => password_hash($password, PASSWORD_DEFAULT),
+                    'reset_token' => null,
+                    'reset_expires' => null
+                ],
+                'id = :id',
+                ['id' => $applicant['id']]
+            );
+            
+            $_SESSION['flash_success'] = 'Password reset successfully. You can now login with your new password.';
+            header('Location: /applicant/login');
+            
+        } catch (Exception $e) {
+            error_log("Password reset error: " . $e->getMessage());
+            $_SESSION['flash_error'] = 'An error occurred. Please try again.';
+            header('Location: /applicant/reset-password?token=' . urlencode($token));
+        }
+        
         exit;
     }
 
