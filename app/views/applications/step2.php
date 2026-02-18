@@ -1,7 +1,7 @@
 <?php
 /**
  * Step 2: Application Form View
- * FIXED: JAMB data loading, clean design, proper O'Level handling
+ * FIXED: JAMB score rendering, O'Level data loading, clean design
  * 
  * @package FCTCNS
  */
@@ -17,12 +17,14 @@ if (!function_exists('e')) {
 $baseUrl = $baseUrl ?? '/';
 $application = $application ?? [];
 $applicant = $applicant ?? [];
-$jamb_data = $jamb_data ?? null;
+$jamb_data = $jamb_data ?? [];
 $olevel_results = $olevel_results ?? [];
 $passport = $passport ?? [];
 $states = $states ?? [];
 $programs = $programs ?? [];
 $csrf_token = $csrf_token ?? '';
+$temp_password = $temp_password ?? '';
+$errors = $errors ?? [];
 
 // Get applicant name for welcome message
 $applicant_name = trim(($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? ''));
@@ -33,10 +35,22 @@ if (empty($applicant_name)) {
     $applicant_name = 'Applicant';
 }
 
+// Get JAMB data from various sources
+$jamb_first_name = $jamb_data['first_name'] ?? $application['first_name'] ?? '';
+$jamb_last_name = $jamb_data['last_name'] ?? $application['last_name'] ?? '';
+$jamb_other_names = $jamb_data['other_names'] ?? $application['other_names'] ?? '';
+$jamb_number = $jamb_data['jamb_number'] ?? $application['jamb_number'] ?? '';
+$jamb_gender = $jamb_data['gender'] ?? $application['gender'] ?? '';
+$jamb_state = $jamb_data['state_of_origin'] ?? $application['state_of_origin'] ?? '';
+$jamb_lga = $jamb_data['lga'] ?? $application['lga'] ?? '';
+$jamb_score = $jamb_data['score'] ?? $application['utme_score'] ?? '';
+
+// Debug log for JAMB data
+error_log("JAMB Data in view - Score: " . $jamb_score . ", First Name: " . $jamb_first_name . ", Last Name: " . $jamb_last_name);
+
 // Flash messages
 $flash_success = $flash_success ?? $_SESSION['flash_success'] ?? null;
 $flash_error = $flash_error ?? $_SESSION['flash_error'] ?? null;
-$errors = $errors ?? [];
 ?>
 
 <!DOCTYPE html>
@@ -371,6 +385,12 @@ $errors = $errors ?? [];
             color: #742a2a;
         }
         
+        .alert-warning {
+            background: #fffaf0;
+            border-left-color: #ed8936;
+            color: #744210;
+        }
+        
         .footer {
             text-align: center;
             margin-top: 30px;
@@ -389,6 +409,23 @@ $errors = $errors ?? [];
         
         .footer a:hover {
             border-bottom-color: white;
+        }
+        
+        .temp-password {
+            background: #ebf8ff;
+            border: 2px dashed #4299e1;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .temp-password .password {
+            font-size: 2rem;
+            font-family: monospace;
+            font-weight: bold;
+            color: #2b6cb0;
+            letter-spacing: 2px;
         }
         
         @media (max-width: 768px) {
@@ -450,19 +487,32 @@ $errors = $errors ?? [];
 
                 <!-- Flash Messages -->
                 <?php if (!empty($flash_success)): ?>
-                    <div class="alert alert-success">
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <i class="fas fa-check-circle me-2"></i>
                         <?php echo e($flash_success); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     <?php unset($_SESSION['flash_success']); ?>
                 <?php endif; ?>
                 
                 <?php if (!empty($flash_error)): ?>
-                    <div class="alert alert-danger">
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="fas fa-exclamation-circle me-2"></i>
                         <?php echo e($flash_error); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     <?php unset($_SESSION['flash_error']); ?>
+                <?php endif; ?>
+
+                <?php if (!empty($temp_password)): ?>
+                    <div class="temp-password">
+                        <h4><i class="fas fa-key me-2"></i>Your Login Password</h4>
+                        <p class="mb-3">Please save this password. You'll need it to log in later:</p>
+                        <div class="password"><?php echo e($temp_password); ?></div>
+                        <p class="mt-3 mb-0 small text-muted">
+                            <i class="fas fa-info-circle"></i> This password will also be sent to your email.
+                        </p>
+                    </div>
                 <?php endif; ?>
 
                 <?php if (!empty($errors)): ?>
@@ -484,42 +534,44 @@ $errors = $errors ?? [];
                     <div class="jamb-details">
                         <h4>JAMB Verified Successfully</h4>
                         <p>
-                            <strong><?php echo e($jamb_data['first_name'] ?? $application['first_name']); ?> <?php echo e($jamb_data['last_name'] ?? $application['last_name']); ?></strong> | 
-                            JAMB: <?php echo e($jamb_data['jamb_number'] ?? $application['jamb_number']); ?> | 
-                            Score: <span class="jamb-badge"><?php echo e($jamb_data['score'] ?? $application['utme_score']); ?></span>
+                            <strong><?php echo e($jamb_first_name); ?> <?php echo e($jamb_last_name); ?></strong> | 
+                            JAMB: <?php echo e($jamb_number); ?> | 
+                            Score: <span class="jamb-badge"><?php echo e($jamb_score); ?></span>
                         </p>
                     </div>
                 </div>
 
                 <!-- Main Form -->
-                <form method="POST" action="/apply/save-application" enctype="multipart/form-data" id="applicationForm">
+                <form method="POST" action="/apply/save-application" enctype="multipart/form-data" id="applicationForm" class="needs-validation" novalidate>
                     <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token); ?>">
-                    <input type="hidden" name="jamb_number" value="<?php echo e($jamb_data['jamb_number'] ?? $application['jamb_number']); ?>">
-                    <input type="hidden" name="utme_score" value="<?php echo e($jamb_data['score'] ?? $application['utme_score']); ?>">
-                    <input type="hidden" name="first_name" value="<?php echo e($jamb_data['first_name'] ?? $application['first_name']); ?>">
-                    <input type="hidden" name="last_name" value="<?php echo e($jamb_data['last_name'] ?? $application['last_name']); ?>">
-                    <input type="hidden" name="other_names" value="<?php echo e($jamb_data['other_names'] ?? $application['other_names']); ?>">
-                    <input type="hidden" name="gender" value="<?php echo e($jamb_data['gender'] ?? $application['gender']); ?>">
-                    <input type="hidden" name="state_of_origin" value="<?php echo e($jamb_data['state_of_origin'] ?? $application['state_of_origin']); ?>">
-                    <input type="hidden" name="lga" value="<?php echo e($jamb_data['lga'] ?? $application['lga']); ?>">
+                    <input type="hidden" name="action" id="form_action" value="save">
+                    <input type="hidden" name="jamb_number" value="<?php echo e($jamb_number); ?>">
+                    <input type="hidden" name="utme_score" value="<?php echo e($jamb_score); ?>">
+                    <input type="hidden" name="first_name" value="<?php echo e($jamb_first_name); ?>">
+                    <input type="hidden" name="last_name" value="<?php echo e($jamb_last_name); ?>">
+                    <input type="hidden" name="other_names" value="<?php echo e($jamb_other_names); ?>">
+                    <input type="hidden" name="gender" value="<?php echo e($jamb_gender); ?>">
+                    <input type="hidden" name="state_of_origin" value="<?php echo e($jamb_state); ?>">
+                    <input type="hidden" name="lga" value="<?php echo e($jamb_lga); ?>">
                     
                     <!-- Personal Information Section -->
                     <div class="section-title">
                         <h3><i class="fas fa-user-circle"></i> Personal Information</h3>
+                        <p class="text-muted small">Fields from JAMB record cannot be edited. Please verify they are correct.</p>
                     </div>
                     
                     <div class="row g-4">
                         <div class="col-md-4">
                             <label class="form-label">First Name <span class="required">*</span></label>
-                            <div class="readonly-field"><?php echo e($jamb_data['first_name'] ?? $application['first_name']); ?></div>
+                            <div class="readonly-field"><?php echo e($jamb_first_name); ?></div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Last Name <span class="required">*</span></label>
-                            <div class="readonly-field"><?php echo e($jamb_data['last_name'] ?? $application['last_name']); ?></div>
+                            <div class="readonly-field"><?php echo e($jamb_last_name); ?></div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Other Names</label>
-                            <div class="readonly-field"><?php echo e($jamb_data['other_names'] ?? $application['other_names']); ?></div>
+                            <div class="readonly-field"><?php echo e($jamb_other_names); ?></div>
                         </div>
                     </div>
 
@@ -528,22 +580,29 @@ $errors = $errors ?? [];
                             <label class="form-label">Gender <span class="required">*</span></label>
                             <div class="readonly-field">
                                 <?php 
-                                $gender = $jamb_data['gender'] ?? $application['gender'];
-                                echo $gender == 'M' ? 'Male' : ($gender == 'F' ? 'Female' : $gender);
+                                $gender_display = '';
+                                if ($jamb_gender == 'M') {
+                                    $gender_display = 'Male';
+                                } elseif ($jamb_gender == 'F') {
+                                    $gender_display = 'Female';
+                                } else {
+                                    $gender_display = $jamb_gender;
+                                }
+                                echo e($gender_display);
                                 ?>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">State of Origin <span class="required">*</span></label>
-                            <div class="readonly-field"><?php echo e($jamb_data['state_of_origin'] ?? $application['state_of_origin']); ?></div>
+                            <div class="readonly-field"><?php echo e($jamb_state); ?></div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">LGA <span class="required">*</span></label>
-                            <div class="readonly-field"><?php echo e($jamb_data['lga'] ?? $application['lga']); ?></div>
+                            <div class="readonly-field"><?php echo e($jamb_lga); ?></div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">UTME Score <span class="required">*</span></label>
-                            <div class="readonly-field fw-bold text-success"><?php echo e($jamb_data['score'] ?? $application['utme_score']); ?></div>
+                            <div class="readonly-field fw-bold text-success"><?php echo e($jamb_score); ?></div>
                         </div>
                     </div>
 
@@ -557,12 +616,14 @@ $errors = $errors ?? [];
                             <label class="form-label">Date of Birth <span class="required">*</span></label>
                             <input type="date" class="form-control" name="date_of_birth" 
                                    value="<?php echo e($application['date_of_birth'] ?? ''); ?>" required>
+                            <div class="invalid-feedback">Date of birth is required.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Phone Number <span class="required">*</span></label>
                             <input type="tel" class="form-control" name="phone" 
                                    value="<?php echo e($application['phone'] ?? ($applicant['phone'] ?? '')); ?>" 
                                    pattern="[0-9]{11}" maxlength="11" required>
+                            <div class="invalid-feedback">Phone number is required.</div>
                             <div class="info-text">Enter 11-digit Nigerian mobile number</div>
                         </div>
                     </div>
@@ -572,6 +633,7 @@ $errors = $errors ?? [];
                             <label class="form-label">Email Address <span class="required">*</span></label>
                             <input type="email" class="form-control" name="email" 
                                    value="<?php echo e($application['email'] ?? ($applicant['email'] ?? '')); ?>" required>
+                            <div class="invalid-feedback">Valid email is required.</div>
                             <div class="info-text">Your login credentials will be sent to this email</div>
                         </div>
                         <div class="col-md-6">
@@ -584,6 +646,7 @@ $errors = $errors ?? [];
                     <div class="mt-4">
                         <label class="form-label">Contact Address <span class="required">*</span></label>
                         <textarea class="form-control" name="address" rows="3" required><?php echo e($application['address'] ?? ''); ?></textarea>
+                        <div class="invalid-feedback">Address is required.</div>
                     </div>
 
                     <!-- Program Selection -->
@@ -601,21 +664,23 @@ $errors = $errors ?? [];
                                 <option value="Midwifery" <?php echo ($application['program_choice_1'] ?? '') == 'Midwifery' ? 'selected' : ''; ?>>Midwifery</option>
                                 <option value="Public Health Nursing" <?php echo ($application['program_choice_1'] ?? '') == 'Public Health Nursing' ? 'selected' : ''; ?>>Public Health Nursing</option>
                             </select>
+                            <div class="invalid-feedback">Please select your program.</div>
                         </div>
                     </div>
 
                     <!-- O'Level Results Section -->
                     <div class="section-title mt-5">
                         <h3><i class="fas fa-certificate"></i> O'Level Results</h3>
+                        <p class="text-muted small">Credit passes required in English, Mathematics, Biology, Chemistry, and Physics.</p>
                     </div>
 
                     <div class="olevel-section">
-                        <div id="olevel-container">
-                            <?php if (!empty($olevel_results)): ?>
+                        <div id="olevel-results-container">
+                            <?php if (!empty($olevel_results) && is_array($olevel_results)): ?>
                                 <?php foreach ($olevel_results as $index => $result): ?>
-                                <div class="olevel-item">
-                                    <div class="row g-3">
-                                        <div class="col-md-3">
+                                <div class="olevel-result-item mb-4 p-3 border rounded">
+                                    <div class="row">
+                                        <div class="col-md-3 mb-2">
                                             <label class="form-label">Exam Type</label>
                                             <select class="form-select" name="olevel[<?php echo $index; ?>][exam_type]" required>
                                                 <option value="WAEC" <?php echo ($result['exam_type'] ?? '') == 'WAEC' ? 'selected' : ''; ?>>WAEC</option>
@@ -623,66 +688,89 @@ $errors = $errors ?? [];
                                                 <option value="NABTEB" <?php echo ($result['exam_type'] ?? '') == 'NABTEB' ? 'selected' : ''; ?>>NABTEB</option>
                                             </select>
                                         </div>
-                                        <div class="col-md-2">
+                                        <div class="col-md-2 mb-2">
                                             <label class="form-label">Year</label>
                                             <input type="text" class="form-control" name="olevel[<?php echo $index; ?>][exam_year]" 
                                                    value="<?php echo e($result['exam_year'] ?? ''); ?>" required>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-3 mb-2">
                                             <label class="form-label">Exam Number</label>
                                             <input type="text" class="form-control" name="olevel[<?php echo $index; ?>][exam_number]" 
                                                    value="<?php echo e($result['exam_number'] ?? ''); ?>">
                                         </div>
-                                        <div class="col-md-2">
+                                        <div class="col-md-2 mb-2">
                                             <label class="form-label">Sitting</label>
                                             <select class="form-select" name="olevel[<?php echo $index; ?>][sitting]">
                                                 <option value="1st" <?php echo ($result['sitting'] ?? '') == '1st' ? 'selected' : ''; ?>>1st Sitting</option>
                                                 <option value="2nd" <?php echo ($result['sitting'] ?? '') == '2nd' ? 'selected' : ''; ?>>2nd Sitting</option>
                                             </select>
                                         </div>
-                                        <div class="col-md-2">
+                                        <div class="col-md-2 mb-2">
                                             <label class="form-label">&nbsp;</label>
-                                            <button type="button" class="btn btn-outline-danger w-100" onclick="this.closest('.olevel-item').remove()">
+                                            <button type="button" class="btn btn-danger btn-sm remove-olevel w-100" onclick="removeOlevelItem(this)">
                                                 <i class="fas fa-trash"></i> Remove
                                             </button>
                                         </div>
                                     </div>
                                     
-                                    <div class="row g-3 mt-3">
-                                        <?php
-                                        $subjects = [
-                                            'english' => 'English',
-                                            'mathematics' => 'Mathematics',
-                                            'biology' => 'Biology',
-                                            'chemistry' => 'Chemistry',
-                                            'physics' => 'Physics'
-                                        ];
-                                        foreach ($subjects as $key => $label):
-                                        ?>
-                                        <div class="col-md-2">
-                                            <label class="form-label"><?php echo $label; ?></label>
-                                            <select class="form-select" name="olevel[<?php echo $index; ?>][<?php echo $key; ?>_grade]" required>
+                                    <div class="row mt-2">
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label">English</label>
+                                            <select class="form-select" name="olevel[<?php echo $index; ?>][english_grade]" required>
                                                 <option value="">Select</option>
                                                 <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
-                                                <option value="<?php echo $grade; ?>" <?php echo ($result[$key.'_grade'] ?? '') == $grade ? 'selected' : ''; ?>>
-                                                    <?php echo $grade; ?>
-                                                </option>
+                                                    <option value="<?php echo $grade; ?>" <?php echo ($result['english_grade'] ?? '') == $grade ? 'selected' : ''; ?>><?php echo $grade; ?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
-                                        <?php endforeach; ?>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label">Mathematics</label>
+                                            <select class="form-select" name="olevel[<?php echo $index; ?>][mathematics_grade]" required>
+                                                <option value="">Select</option>
+                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
+                                                    <option value="<?php echo $grade; ?>" <?php echo ($result['mathematics_grade'] ?? '') == $grade ? 'selected' : ''; ?>><?php echo $grade; ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label">Biology</label>
+                                            <select class="form-select" name="olevel[<?php echo $index; ?>][biology_grade]" required>
+                                                <option value="">Select</option>
+                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
+                                                    <option value="<?php echo $grade; ?>" <?php echo ($result['biology_grade'] ?? '') == $grade ? 'selected' : ''; ?>><?php echo $grade; ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label">Chemistry</label>
+                                            <select class="form-select" name="olevel[<?php echo $index; ?>][chemistry_grade]" required>
+                                                <option value="">Select</option>
+                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
+                                                    <option value="<?php echo $grade; ?>" <?php echo ($result['chemistry_grade'] ?? '') == $grade ? 'selected' : ''; ?>><?php echo $grade; ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label">Physics</label>
+                                            <select class="form-select" name="olevel[<?php echo $index; ?>][physics_grade]" required>
+                                                <option value="">Select</option>
+                                                <?php foreach (['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'] as $grade): ?>
+                                                    <option value="<?php echo $grade; ?>" <?php echo ($result['physics_grade'] ?? '') == $grade ? 'selected' : ''; ?>><?php echo $grade; ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <div class="olevel-item">
+                                <div class="olevel-result-item mb-4 p-3 border rounded">
                                     <?php include 'olevel-template.php'; ?>
                                 </div>
                             <?php endif; ?>
                         </div>
                         
                         <div class="text-center mt-3">
-                            <button type="button" class="btn btn-outline-primary" onclick="addOlevel()">
+                            <button type="button" class="btn btn-outline-primary" id="add-olevel">
                                 <i class="fas fa-plus me-2"></i>Add Another Sitting
                             </button>
                         </div>
@@ -691,19 +779,27 @@ $errors = $errors ?? [];
                     <!-- Passport Upload Section -->
                     <div class="section-title mt-5">
                         <h3><i class="fas fa-camera"></i> Passport Photograph</h3>
+                        <p class="text-muted small">Upload a recent passport photograph (max 1MB, JPG or PNG)</p>
                     </div>
 
                     <div class="row align-items-center">
-                        <div class="col-md-4">
+                        <div class="col-md-4 text-center">
                             <div class="document-preview">
-                                <img src="<?php echo e($passport['file_path'] ?? '/assets/images/default-avatar.png'); ?>" 
-                                     alt="Passport Preview" id="passport-preview">
+                                <?php if (!empty($passport) && !empty($passport['file_path'])): ?>
+                                    <img src="<?php echo e($passport['file_path']); ?>" alt="Passport" id="passport-preview" style="max-width: 150px; max-height: 150px;">
+                                <?php else: ?>
+                                    <img src="/assets/images/default-avatar.png" alt="Passport Preview" id="passport-preview" style="max-width: 150px; max-height: 150px;">
+                                <?php endif; ?>
                             </div>
                         </div>
                         <div class="col-md-8">
-                            <input type="file" class="form-control" name="passport" id="passport" 
-                                   accept="image/jpeg,image/png" onchange="previewImage(this)">
-                            <div class="info-text mt-2">Max size: 1MB. Format: JPG, PNG</div>
+                            <input type="hidden" name="passport_confirmed" id="passport-confirmed" value="0">
+                            <div class="mb-3">
+                                <label for="passport" class="form-label">Select Passport Photo</label>
+                                <input type="file" class="form-control" id="passport" name="passport" 
+                                       accept="image/jpeg,image/png" onchange="previewImage(this)">
+                                <div class="info-text mt-2">Allowed: JPG, PNG. Max size: 1MB</div>
+                            </div>
                         </div>
                     </div>
 
@@ -714,10 +810,10 @@ $errors = $errors ?? [];
                             <i class="fas fa-arrow-left me-2"></i>Back
                         </a>
                         <div>
-                            <button type="submit" name="action" value="save" class="btn btn-primary me-2">
+                            <button type="submit" class="btn btn-primary me-2" onclick="document.getElementById('form_action').value='save'">
                                 <i class="fas fa-save me-2"></i>Save Progress
                             </button>
-                            <button type="submit" name="action" value="next" class="btn btn-success">
+                            <button type="submit" class="btn btn-success" onclick="document.getElementById('form_action').value='next'">
                                 Save & Continue <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
@@ -736,104 +832,169 @@ $errors = $errors ?? [];
         </div>
     </div>
 
-    <!-- O'Level Template -->
-    <template id="olevel-template">
-        <div class="olevel-item">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Exam Type</label>
-                    <select class="form-select" name="olevel[__INDEX__][exam_type]" required>
-                        <option value="WAEC">WAEC</option>
-                        <option value="NECO">NECO</option>
-                        <option value="NABTEB">NABTEB</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Year</label>
-                    <input type="text" class="form-control" name="olevel[__INDEX__][exam_year]" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Exam Number</label>
-                    <input type="text" class="form-control" name="olevel[__INDEX__][exam_number]">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Sitting</label>
-                    <select class="form-select" name="olevel[__INDEX__][sitting]">
-                        <option value="1st">1st Sitting</option>
-                        <option value="2nd">2nd Sitting</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">&nbsp;</label>
-                    <button type="button" class="btn btn-outline-danger w-100" onclick="this.closest('.olevel-item').remove()">
-                        <i class="fas fa-trash"></i> Remove
-                    </button>
-                </div>
-            </div>
-            
-            <div class="row g-3 mt-3">
-                <?php
-                $subjects = ['english', 'mathematics', 'biology', 'chemistry', 'physics'];
-                $labels = ['English', 'Mathematics', 'Biology', 'Chemistry', 'Physics'];
-                for ($i = 0; $i < 5; $i++):
-                ?>
-                <div class="col-md-2">
-                    <label class="form-label"><?php echo $labels[$i]; ?></label>
-                    <select class="form-select" name="olevel[__INDEX__][<?php echo $subjects[$i]; ?>_grade]" required>
-                        <option value="">Select</option>
-                        <option value="A1">A1</option>
-                        <option value="B2">B2</option>
-                        <option value="B3">B3</option>
-                        <option value="C4">C4</option>
-                        <option value="C5">C5</option>
-                        <option value="C6">C6</option>
-                        <option value="D7">D7</option>
-                        <option value="E8">E8</option>
-                        <option value="F9">F9</option>
-                    </select>
-                </div>
-                <?php endfor; ?>
-            </div>
-        </div>
-    </template>
-
     <script>
+    // Initialize O'Level index
     let olevelIndex = <?php echo count($olevel_results); ?>;
     
-    function addOlevel() {
-        const template = document.getElementById('olevel-template').innerHTML;
-        const html = template.replace(/__INDEX__/g, olevelIndex);
-        document.getElementById('olevel-container').insertAdjacentHTML('beforeend', html);
+    // Add O'Level result item
+    document.getElementById('add-olevel')?.addEventListener('click', function() {
+        const container = document.getElementById('olevel-results-container');
+        const template = `
+            <div class="olevel-result-item mb-4 p-3 border rounded">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label">Exam Type</label>
+                        <select class="form-select" name="olevel[${olevelIndex}][exam_type]" required>
+                            <option value="WAEC">WAEC</option>
+                            <option value="NECO">NECO</option>
+                            <option value="NABTEB">NABTEB</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">Year</label>
+                        <input type="text" class="form-control" name="olevel[${olevelIndex}][exam_year]" required>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label">Exam Number</label>
+                        <input type="text" class="form-control" name="olevel[${olevelIndex}][exam_number]">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">Sitting</label>
+                        <select class="form-select" name="olevel[${olevelIndex}][sitting]">
+                            <option value="1st">1st Sitting</option>
+                            <option value="2nd">2nd Sitting</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="button" class="btn btn-danger btn-sm remove-olevel w-100" onclick="removeOlevelItem(this)">
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="row mt-2">
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">English</label>
+                        <select class="form-select" name="olevel[${olevelIndex}][english_grade]" required>
+                            <option value="">Select</option>
+                            <option value="A1">A1</option>
+                            <option value="B2">B2</option>
+                            <option value="B3">B3</option>
+                            <option value="C4">C4</option>
+                            <option value="C5">C5</option>
+                            <option value="C6">C6</option>
+                            <option value="D7">D7</option>
+                            <option value="E8">E8</option>
+                            <option value="F9">F9</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">Mathematics</label>
+                        <select class="form-select" name="olevel[${olevelIndex}][mathematics_grade]" required>
+                            <option value="">Select</option>
+                            <option value="A1">A1</option>
+                            <option value="B2">B2</option>
+                            <option value="B3">B3</option>
+                            <option value="C4">C4</option>
+                            <option value="C5">C5</option>
+                            <option value="C6">C6</option>
+                            <option value="D7">D7</option>
+                            <option value="E8">E8</option>
+                            <option value="F9">F9</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">Biology</label>
+                        <select class="form-select" name="olevel[${olevelIndex}][biology_grade]" required>
+                            <option value="">Select</option>
+                            <option value="A1">A1</option>
+                            <option value="B2">B2</option>
+                            <option value="B3">B3</option>
+                            <option value="C4">C4</option>
+                            <option value="C5">C5</option>
+                            <option value="C6">C6</option>
+                            <option value="D7">D7</option>
+                            <option value="E8">E8</option>
+                            <option value="F9">F9</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">Chemistry</label>
+                        <select class="form-select" name="olevel[${olevelIndex}][chemistry_grade]" required>
+                            <option value="">Select</option>
+                            <option value="A1">A1</option>
+                            <option value="B2">B2</option>
+                            <option value="B3">B3</option>
+                            <option value="C4">C4</option>
+                            <option value="C5">C5</option>
+                            <option value="C6">C6</option>
+                            <option value="D7">D7</option>
+                            <option value="E8">E8</option>
+                            <option value="F9">F9</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">Physics</label>
+                        <select class="form-select" name="olevel[${olevelIndex}][physics_grade]" required>
+                            <option value="">Select</option>
+                            <option value="A1">A1</option>
+                            <option value="B2">B2</option>
+                            <option value="B3">B3</option>
+                            <option value="C4">C4</option>
+                            <option value="C5">C5</option>
+                            <option value="C6">C6</option>
+                            <option value="D7">D7</option>
+                            <option value="E8">E8</option>
+                            <option value="F9">F9</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', template);
         olevelIndex++;
+    });
+    
+    // Remove O'Level item
+    function removeOlevelItem(button) {
+        if (confirm('Are you sure you want to remove this O\'Level result?')) {
+            button.closest('.olevel-result-item').remove();
+        }
     }
     
+    // Preview image before upload
     function previewImage(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
+            
             reader.onload = function(e) {
                 document.getElementById('passport-preview').src = e.target.result;
+                document.getElementById('passport-confirmed').value = '1';
             }
+            
             reader.readAsDataURL(input.files[0]);
         }
     }
     
     // Form validation
-    document.getElementById('applicationForm').addEventListener('submit', function(e) {
-        const required = ['date_of_birth', 'phone', 'email', 'address', 'program_choice'];
-        let missing = [];
+    (function() {
+        'use strict';
         
-        required.forEach(field => {
-            const input = document.querySelector(`[name="${field}"]`);
-            if (input && !input.value) {
-                missing.push(field.replace('_', ' '));
-            }
+        var forms = document.querySelectorAll('.needs-validation');
+        
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
         });
-        
-        if (missing.length > 0) {
-            e.preventDefault();
-            alert('Please fill in: ' + missing.join(', '));
-        }
-    });
+    })();
     </script>
 </body>
 </html>
