@@ -108,7 +108,7 @@ class AdminApplicationController extends Controller {
     }
     
     /**
-     * List all applications - CORRECTED VERSION
+     * List all applications
      */
     public function index() {
         $page = intval($this->query('page', 1));
@@ -147,7 +147,7 @@ class AdminApplicationController extends Controller {
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Manage Applications',
             'applications' => $applications,
-            'pagination' => $pagination  // Make sure this is set
+            'pagination' => $pagination
         ]);
         
         $this->render('admin/applications/index');
@@ -237,21 +237,21 @@ class AdminApplicationController extends Controller {
         
         try {
             $updateData = [
-                'first_name' => $this->input('first_name'),
-                'last_name' => $this->input('last_name'),
-                'other_names' => $this->input('other_names'),
-                'email' => $this->input('email'),
-                'phone' => $this->input('phone'),
-                'date_of_birth' => $this->input('date_of_birth'),
-                'gender' => $this->input('gender'),
+                'first_name'      => $this->input('first_name'),
+                'last_name'       => $this->input('last_name'),
+                'other_names'     => $this->input('other_names'),
+                'email'           => $this->input('email'),
+                'phone'           => $this->input('phone'),
+                'date_of_birth'   => $this->input('date_of_birth'),
+                'gender'          => $this->input('gender'),
                 'state_of_origin' => $this->input('state_of_origin'),
-                'lga' => $this->input('lga'),
-                'address' => $this->input('address'),
-                'program_choice_1' => $this->input('program_choice_1'),
-                'program_choice_2' => $this->input('program_choice_2'),
-                'program_choice_3' => $this->input('program_choice_3'),
-                'status' => $this->input('status'),
-                'notes' => $this->input('notes')
+                'lga'             => $this->input('lga'),
+                'address'         => $this->input('address'),
+                'program_choice_1'=> $this->input('program_choice_1'),
+                'program_choice_2'=> $this->input('program_choice_2'),
+                'program_choice_3'=> $this->input('program_choice_3'),
+                'status'          => $this->input('status'),
+                'notes'           => $this->input('notes')
             ];
             
             $this->applicationModel->update($updateData, 'id = :id', ['id' => $id]);
@@ -297,9 +297,9 @@ class AdminApplicationController extends Controller {
             return;
         }
         
-        $id = $this->input('id');
+        $id     = $this->input('id');
         $status = $this->input('status');
-        $notes = $this->input('notes', '');
+        $notes  = $this->input('notes', '');
         
         if (empty($id) || empty($status)) {
             $this->flash('error', 'Invalid request.');
@@ -370,17 +370,17 @@ class AdminApplicationController extends Controller {
             try {
                 // Update general settings
                 $generalSettings = [
-                    'application_fee' => $this->input('application_fee'),
-                    'application_currency' => $this->input('application_currency'),
+                    'application_fee'        => $this->input('application_fee'),
+                    'application_currency'   => $this->input('application_currency'),
                     'application_start_date' => $this->input('application_start_date'),
-                    'application_end_date' => $this->input('application_end_date'),
-                    'cbt_start_date' => $this->input('cbt_start_date'),
-                    'cbt_end_date' => $this->input('cbt_end_date'),
-                    'min_utme_score' => $this->input('min_utme_score'),
-                    'min_age' => $this->input('min_age'),
-                    'max_olevel_sittings' => $this->input('max_olevel_sittings'),
-                    'portal_status' => $this->input('portal_status'),
-                    'portal_message' => $this->input('portal_message')
+                    'application_end_date'   => $this->input('application_end_date'),
+                    'cbt_start_date'         => $this->input('cbt_start_date'),
+                    'cbt_end_date'           => $this->input('cbt_end_date'),
+                    'min_utme_score'         => $this->input('min_utme_score'),
+                    'min_age'                => $this->input('min_age'),
+                    'max_olevel_sittings'    => $this->input('max_olevel_sittings'),
+                    'portal_status'          => $this->input('portal_status'),
+                    'portal_message'         => $this->input('portal_message')
                 ];
                 
                 foreach ($generalSettings as $key => $value) {
@@ -389,13 +389,13 @@ class AdminApplicationController extends Controller {
                 
                 // Update support settings
                 $supportSettings = [
-                    'support_phone_1' => $this->input('support_phone_1'),
-                    'support_phone_2' => $this->input('support_phone_2'),
-                    'support_whatsapp' => $this->input('support_whatsapp'),
-                    'support_email' => $this->input('support_email'),
-                    'support_hours' => $this->input('support_hours'),
-                    'institution_address' => $this->input('institution_address'),
-                    'office_hours' => $this->input('office_hours')
+                    'support_phone_1'      => $this->input('support_phone_1'),
+                    'support_phone_2'      => $this->input('support_phone_2'),
+                    'support_whatsapp'     => $this->input('support_whatsapp'),
+                    'support_email'        => $this->input('support_email'),
+                    'support_hours'        => $this->input('support_hours'),
+                    'institution_address'  => $this->input('institution_address'),
+                    'office_hours'         => $this->input('office_hours')
                 ];
                 
                 foreach ($supportSettings as $key => $value) {
@@ -418,7 +418,7 @@ class AdminApplicationController extends Controller {
         
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Application Settings',
-            'settings' => $settings
+            'settings'  => $settings
         ]);
         
         $this->render('admin/applications/settings');
@@ -432,7 +432,7 @@ class AdminApplicationController extends Controller {
         
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Manage Terms and Conditions',
-            'terms' => $terms
+            'terms'     => $terms
         ]);
         
         $this->render('admin/applications/terms');
@@ -454,10 +454,10 @@ class AdminApplicationController extends Controller {
             return;
         }
         
-        $title = $this->input('title');
-        $content = $this->input('content');
+        $title         = $this->input('title');
+        $content       = $this->input('content');
         $effectiveDate = $this->input('effective_date');
-        $version = $this->input('version');
+        $version       = $this->input('version');
         
         if (empty($title) || empty($content) || empty($effectiveDate)) {
             $this->flash('error', 'All fields are required.');
@@ -502,10 +502,10 @@ class AdminApplicationController extends Controller {
             return;
         }
         
-        $title = $this->input('title');
-        $content = $this->input('content');
+        $title         = $this->input('title');
+        $content       = $this->input('content');
         $effectiveDate = $this->input('effective_date');
-        $isActive = $this->input('is_active') ? 1 : 0;
+        $isActive      = $this->input('is_active') ? 1 : 0;
         
         if (empty($title) || empty($content) || empty($effectiveDate)) {
             $this->flash('error', 'All fields are required.');
@@ -515,10 +515,10 @@ class AdminApplicationController extends Controller {
         
         try {
             $updateData = [
-                'title' => $title,
-                'content' => $content,
+                'title'          => $title,
+                'content'        => $content,
                 'effective_date' => $effectiveDate,
-                'is_active' => $isActive
+                'is_active'      => $isActive
             ];
             
             $this->termsModel->updateTerms($id, $updateData, $_SESSION['user_id'] ?? 1);
@@ -565,12 +565,12 @@ class AdminApplicationController extends Controller {
      * JAMB import page
      */
     public function jambImport() {
-        // Get recent imports using the jambModel
+        // Get recent imports
         $imports = $this->db->fetchAll(
             "SELECT * FROM jamb_import_logs ORDER BY created_at DESC LIMIT 20"
         );
         
-        // Get stats using the jambModel
+        // Get stats
         $stats = $this->db->fetchOne(
             "SELECT 
                 COUNT(*) as total,
@@ -581,8 +581,8 @@ class AdminApplicationController extends Controller {
         
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Import JAMB Data',
-            'imports' => $imports,
-            'stats' => $stats
+            'imports'   => $imports,
+            'stats'     => $stats
         ]);
         
         $this->render('admin/applications/jamb-import');
@@ -629,20 +629,13 @@ class AdminApplicationController extends Controller {
         }
         
         try {
-            $results = [
-                'total' => 0,
-                'success' => 0,
-                'failed' => 0,
-                'errors' => []
-            ];
-            
             if ($extension === 'json') {
                 $results = $this->importJambJson($file['tmp_name']);
             } else {
                 $results = $this->importJambCsv($file['tmp_name']);
             }
             
-            // Log import using direct database insert
+            // Log import
             $this->logJambImport(
                 $file['name'],
                 $results['total'],
@@ -667,7 +660,7 @@ class AdminApplicationController extends Controller {
     }
     
     /**
-     * Import JAMB CSV - UPDATED to match template format
+     * Import JAMB CSV
      */
     private function importJambCsv($filePath) {
         $handle = fopen($filePath, 'r');
@@ -684,21 +677,9 @@ class AdminApplicationController extends Controller {
             throw new Exception("Empty or invalid CSV file");
         }
         
-        // Map your template headers to database fields
-        $fieldMap = [
-            'jambId' => 'jamb_number',
-            'lastName' => 'last_name',
-            'firstName' => 'first_name',
-            'otherNames' => 'other_names',
-            'gender' => 'gender',
-            'state' => 'state_of_origin',
-            'lga' => 'lga',
-            'aggregateScore' => 'aggregate_score'
-        ];
-        
         $results = [
-            'total' => 0,
-            'success' => 0,
+            'total'  => 0,
+            'success'=> 0,
             'failed' => 0,
             'errors' => []
         ];
@@ -715,7 +696,6 @@ class AdminApplicationController extends Controller {
                 
                 $row = array_combine($headers, $data);
                 
-                // Check required fields
                 if (empty($row['jambId'])) {
                     throw new Exception("Missing JAMB ID");
                 }
@@ -736,25 +716,24 @@ class AdminApplicationController extends Controller {
                     continue;
                 }
                 
-                // Map data to database fields
                 $candidateData = [
-                    'jamb_number' => $row['jambId'],
-                    'last_name' => $row['lastName'],
-                    'first_name' => $row['firstName'],
-                    'other_names' => $row['otherNames'] ?? null,
-                    'gender' => strtoupper(substr($row['gender'] ?? 'M', 0, 1)),
-                    'state_of_origin' => $row['state'] ?? '',
-                    'lga' => $row['lga'] ?? '',
-                    'aggregate_score' => intval($row['aggregateScore'] ?? 0),
-                    'program_applied' => 'ND Nursing', // Default program
-                    'institution' => 'FCT College of Nursing Sciences',
-                    'email' => null, // Not provided in template
-                    'phone' => null, // Not provided in template
-                    'date_of_birth' => null, // Not provided in template
-                    'exam_year' => 2025,
-                    'is_imported' => 1,
-                    'is_used' => 0,
-                    'created_at' => date('Y-m-d H:i:s')
+                    'jamb_number'    => $row['jambId'],
+                    'last_name'      => $row['lastName'],
+                    'first_name'     => $row['firstName'],
+                    'other_names'    => $row['otherNames'] ?? null,
+                    'gender'         => strtoupper(substr($row['gender'] ?? 'M', 0, 1)),
+                    'state_of_origin'=> $row['state'] ?? '',
+                    'lga'            => $row['lga'] ?? '',
+                    'aggregate_score'=> intval($row['aggregateScore'] ?? 0),
+                    'program_applied'=> 'ND Nursing',
+                    'institution'    => 'FCT College of Nursing Sciences',
+                    'email'          => null,
+                    'phone'          => null,
+                    'date_of_birth'  => null,
+                    'exam_year'      => 2025,
+                    'is_imported'    => 1,
+                    'is_used'        => 0,
+                    'created_at'     => date('Y-m-d H:i:s')
                 ];
                 
                 $this->jambModel->insert($candidateData);
@@ -771,30 +750,19 @@ class AdminApplicationController extends Controller {
     }
     
     /**
-     * Import JAMB JSON - UPDATED to match template format
+     * Import JAMB JSON
      */
     private function importJambJson($filePath) {
         $content = file_get_contents($filePath);
-        $data = json_decode($content, true);
+        $data    = json_decode($content, true);
         
         if (!is_array($data)) {
             throw new Exception("Invalid JSON format");
         }
         
-        $fieldMap = [
-            'jambId' => 'jamb_number',
-            'lastName' => 'last_name',
-            'firstName' => 'first_name',
-            'otherNames' => 'other_names',
-            'gender' => 'gender',
-            'state' => 'state_of_origin',
-            'lga' => 'lga',
-            'aggregateScore' => 'aggregate_score'
-        ];
-        
         $results = [
-            'total' => count($data),
-            'success' => 0,
+            'total'  => count($data),
+            'success'=> 0,
             'failed' => 0,
             'errors' => []
         ];
@@ -814,23 +782,23 @@ class AdminApplicationController extends Controller {
                 }
                 
                 $candidateData = [
-                    'jamb_number' => $row['jambId'],
-                    'last_name' => $row['lastName'] ?? '',
-                    'first_name' => $row['firstName'] ?? '',
-                    'other_names' => $row['otherNames'] ?? null,
-                    'gender' => strtoupper(substr($row['gender'] ?? 'M', 0, 1)),
-                    'state_of_origin' => $row['state'] ?? '',
-                    'lga' => $row['lga'] ?? '',
-                    'aggregate_score' => intval($row['aggregateScore'] ?? 0),
-                    'program_applied' => 'ND Nursing',
-                    'institution' => 'FCT College of Nursing Sciences',
-                    'email' => null,
-                    'phone' => null,
-                    'date_of_birth' => null,
-                    'exam_year' => 2025,
-                    'is_imported' => 1,
-                    'is_used' => 0,
-                    'created_at' => date('Y-m-d H:i:s')
+                    'jamb_number'    => $row['jambId'],
+                    'last_name'      => $row['lastName'] ?? '',
+                    'first_name'     => $row['firstName'] ?? '',
+                    'other_names'    => $row['otherNames'] ?? null,
+                    'gender'         => strtoupper(substr($row['gender'] ?? 'M', 0, 1)),
+                    'state_of_origin'=> $row['state'] ?? '',
+                    'lga'            => $row['lga'] ?? '',
+                    'aggregate_score'=> intval($row['aggregateScore'] ?? 0),
+                    'program_applied'=> 'ND Nursing',
+                    'institution'    => 'FCT College of Nursing Sciences',
+                    'email'          => null,
+                    'phone'          => null,
+                    'date_of_birth'  => null,
+                    'exam_year'      => 2025,
+                    'is_imported'    => 1,
+                    'is_used'        => 0,
+                    'created_at'     => date('Y-m-d H:i:s')
                 ];
                 
                 $this->jambModel->insert($candidateData);
@@ -857,10 +825,10 @@ class AdminApplicationController extends Controller {
             ");
             
             $stmt->execute([
-                'filename' => $filename,
-                'total' => $total,
-                'success' => $success,
-                'failed' => $failed,
+                'filename'    => $filename,
+                'total'       => $total,
+                'success'     => $success,
+                'failed'      => $failed,
                 'imported_by' => $_SESSION['username'] ?? 'Admin',
                 'log_details' => json_encode($errors)
             ]);
@@ -870,7 +838,7 @@ class AdminApplicationController extends Controller {
     }
     
     /**
-     * Download JAMB template - UPDATED to match your format
+     * Download JAMB template
      */
     public function downloadJambTemplate() {
         $headers = [
@@ -910,8 +878,8 @@ class AdminApplicationController extends Controller {
      * Payments list
      */
     public function payments() {
-        $page = intval($this->query('page', 1));
-        $limit = intval($this->query('limit', 20));
+        $page   = intval($this->query('page', 1));
+        $limit  = intval($this->query('limit', 20));
         $status = $this->query('status', '');
         $search = $this->query('search', '');
         
@@ -941,12 +909,12 @@ class AdminApplicationController extends Controller {
         $sql .= " ORDER BY p.created_at DESC LIMIT :offset, :limit";
         
         $params['offset'] = $offset;
-        $params['limit'] = $limit;
+        $params['limit']  = $limit;
         
         $payments = $this->db->fetchAll($sql, $params);
         
         // Get total count
-        $countSql = "SELECT COUNT(*) as total FROM application_payments p";
+        $countSql    = "SELECT COUNT(*) as total FROM application_payments p";
         $countParams = [];
         
         if (!empty($status) || !empty($search)) {
@@ -961,22 +929,22 @@ class AdminApplicationController extends Controller {
             }
         }
         
-        $total = $this->db->fetchOne($countSql, $countParams)['total'];
+        $total      = $this->db->fetchOne($countSql, $countParams)['total'];
         $totalPages = ceil($total / $limit);
         
         $stats = $this->paymentModel->getStats();
         
         $this->data = array_merge($this->data, [
-            'pageTitle' => 'Payment Transactions',
-            'payments' => $payments,
-            'stats' => $stats,
+            'pageTitle'  => 'Payment Transactions',
+            'payments'   => $payments,
+            'stats'      => $stats,
             'pagination' => [
-                'page' => $page,
-                'limit' => $limit,
-                'total' => $total,
+                'page'       => $page,
+                'limit'      => $limit,
+                'total'      => $total,
                 'totalPages' => $totalPages,
-                'status' => $status,
-                'search' => $search
+                'status'     => $status,
+                'search'     => $search
             ]
         ]);
         
@@ -1007,7 +975,7 @@ class AdminApplicationController extends Controller {
         
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Payment Details - ' . $payment['rrr'],
-            'payment' => $payment
+            'payment'   => $payment
         ]);
         
         $this->render('admin/applications/view-payment');
@@ -1017,12 +985,12 @@ class AdminApplicationController extends Controller {
      * Export applications
      */
     public function export() {
-        $format = $this->query('format', 'csv');
-        $status = $this->query('status', '');
+        $format        = $this->query('format', 'csv');
+        $status        = $this->query('status', '');
         $paymentStatus = $this->query('payment', '');
         
         $filters = [
-            'status' => $status,
+            'status'         => $status,
             'payment_status' => $paymentStatus
         ];
         
@@ -1044,32 +1012,14 @@ class AdminApplicationController extends Controller {
         
         $output = fopen('php://output', 'w');
         
-        // Headers
         fputcsv($output, [
-            'Application Number',
-            'JAMB Number',
-            'First Name',
-            'Last Name',
-            'Other Names',
-            'Email',
-            'Phone',
-            'Date of Birth',
-            'Gender',
-            'State of Origin',
-            'LGA',
-            'Program Choice 1',
-            'Program Choice 2',
-            'Program Choice 3',
-            'UTME Score',
-            'Status',
-            'Payment Status',
-            'Payment Amount',
-            'Payment Date',
-            'Submitted At',
-            'Created At'
+            'Application Number', 'JAMB Number', 'First Name', 'Last Name', 'Other Names',
+            'Email', 'Phone', 'Date of Birth', 'Gender', 'State of Origin', 'LGA',
+            'Program Choice 1', 'Program Choice 2', 'Program Choice 3', 'UTME Score',
+            'Status', 'Payment Status', 'Payment Amount', 'Payment Date',
+            'Submitted At', 'Created At'
         ]);
         
-        // Data
         foreach ($applications as $app) {
             fputcsv($output, [
                 $app['application_number'],
@@ -1104,58 +1054,38 @@ class AdminApplicationController extends Controller {
      * Export applications as Excel
      */
     private function exportApplicationsExcel($applications) {
-        // Simple HTML table export
         header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment; filename="applications_' . date('Y-m-d') . '.xls"');
         
         echo '<table border="1">';
         echo '<tr>';
-        echo '<th>Application Number</th>';
-        echo '<th>JAMB Number</th>';
-        echo '<th>First Name</th>';
-        echo '<th>Last Name</th>';
-        echo '<th>Other Names</th>';
-        echo '<th>Email</th>';
-        echo '<th>Phone</th>';
-        echo '<th>Date of Birth</th>';
-        echo '<th>Gender</th>';
-        echo '<th>State of Origin</th>';
-        echo '<th>LGA</th>';
-        echo '<th>Program Choice 1</th>';
-        echo '<th>Program Choice 2</th>';
-        echo '<th>Program Choice 3</th>';
-        echo '<th>UTME Score</th>';
-        echo '<th>Status</th>';
-        echo '<th>Payment Status</th>';
-        echo '<th>Payment Amount</th>';
-        echo '<th>Payment Date</th>';
-        echo '<th>Submitted At</th>';
-        echo '<th>Created At</th>';
+        foreach ([
+            'Application Number', 'JAMB Number', 'First Name', 'Last Name', 'Other Names',
+            'Email', 'Phone', 'Date of Birth', 'Gender', 'State of Origin', 'LGA',
+            'Program Choice 1', 'Program Choice 2', 'Program Choice 3', 'UTME Score',
+            'Status', 'Payment Status', 'Payment Amount', 'Payment Date',
+            'Submitted At', 'Created At'
+        ] as $heading) {
+            echo '<th>' . htmlspecialchars($heading) . '</th>';
+        }
         echo '</tr>';
         
         foreach ($applications as $app) {
             echo '<tr>';
-            echo '<td>' . htmlspecialchars($app['application_number']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['jamb_number']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['first_name']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['last_name']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['other_names']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['email']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['phone']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['date_of_birth']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['gender']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['state_of_origin']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['lga']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['program_choice_1']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['program_choice_2']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['program_choice_3']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['utme_score']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['status']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['payment_status'] ?? 'unpaid') . '</td>';
-            echo '<td>' . htmlspecialchars($app['amount'] ?? '') . '</td>';
-            echo '<td>' . htmlspecialchars($app['payment_date'] ?? '') . '</td>';
-            echo '<td>' . htmlspecialchars($app['submitted_at']) . '</td>';
-            echo '<td>' . htmlspecialchars($app['created_at']) . '</td>';
+            foreach ([
+                $app['application_number'], $app['jamb_number'],
+                $app['first_name'], $app['last_name'], $app['other_names'],
+                $app['email'], $app['phone'], $app['date_of_birth'], $app['gender'],
+                $app['state_of_origin'], $app['lga'],
+                $app['program_choice_1'], $app['program_choice_2'], $app['program_choice_3'],
+                $app['utme_score'], $app['status'],
+                $app['payment_status'] ?? 'unpaid',
+                $app['amount'] ?? '',
+                $app['payment_date'] ?? '',
+                $app['submitted_at'], $app['created_at']
+            ] as $cell) {
+                echo '<td>' . htmlspecialchars($cell) . '</td>';
+            }
             echo '</tr>';
         }
         
@@ -1167,8 +1097,7 @@ class AdminApplicationController extends Controller {
      * Send status notification email
      */
     private function sendStatusNotification($application, $status, $notes) {
-        // Implement email sending
-        // Use EmailHelper
+        // Implement email sending via EmailHelper
     }
     
     /**
@@ -1182,9 +1111,9 @@ class AdminApplicationController extends Controller {
             ");
             
             $stmt->execute([
-                'user_id' => $_SESSION['user_id'] ?? null,
-                'action' => $action,
-                'description' => $description,
+                'user_id'    => $_SESSION['user_id'] ?? null,
+                'action'     => $action,
+                'description'=> $description,
                 'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? ''
             ]);
@@ -1220,28 +1149,8 @@ class AdminApplicationController extends Controller {
     }
     
     /**
-     * Generate CSRF token
-     */
-    protected function csrfToken() {
-        if (!isset($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        }
-        return $_SESSION['csrf_token'];
-    }
-    
-    /**
-     * Validate CSRF token
-     */
-    protected function validateCsrfToken($token = null) {
-        if ($token === null) {
-            $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-        }
-        
-        return hash_equals($_SESSION['csrf_token'] ?? '', $token);
-    }
-    
-    /**
-     * Override render method
+     * Override render — injects CSRF token and flash messages
+     * Signature matches base: render($view = null, $data = [])
      */
     protected function render($view = null, $data = []) {
         // Add CSRF token
@@ -1249,38 +1158,12 @@ class AdminApplicationController extends Controller {
         
         // Add flash messages
         $data['flash_success'] = $this->getFlash('success');
-        $data['flash_error'] = $this->getFlash('error');
-        $data['flash_info'] = $this->getFlash('info');
+        $data['flash_error']   = $this->getFlash('error');
+        $data['flash_info']    = $this->getFlash('info');
         
-        // Merge with controller data
+        // Merge with controller data then delegate to parent
         $this->data = array_merge($this->data, $data);
         
         parent::render($view);
-    }
-    
-    /**
-     * Get flash message
-     */
-    private function getFlash($type) {
-        if (isset($_SESSION['flash_' . $type])) {
-            $message = $_SESSION['flash_' . $type];
-            unset($_SESSION['flash_' . $type]);
-            return $message;
-        }
-        return null;
-    }
-    
-    /**
-     * Input helper
-     */
-    protected function input($key, $default = '') {
-        return $_POST[$key] ?? $_GET[$key] ?? $default;
-    }
-    
-    /**
-     * Query helper
-     */
-    protected function query($key, $default = '') {
-        return $_GET[$key] ?? $default;
     }
 }
