@@ -1,10 +1,10 @@
 <?php
 /**
  * Application Form View - Step 2
- * FIXED: Displays existing uploaded files, view buttons, and birth certificate persistence
+ * FIXED: Added logout button, enhanced file indicators, PDF view icons, wider desktop layout
  * 
  * @package FCTCNS
- * @version 2.2 - Added view buttons and birth certificate persistence
+ * @version 2.3 - Enhanced with logout, file indicators, PDF icons, wider layout
  */
 
 extract($data ?? []);
@@ -28,6 +28,12 @@ $existing_passport = $existing_passport ?? null;
 $existing_olevel = $existing_olevel ?? [];
 $existing_jamb_result = $existing_jamb_result ?? null;
 $existing_birth_certificate = $existing_birth_certificate ?? null;
+
+// Get applicant name for welcome message
+$applicant_name = trim(($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? ''));
+if (empty($applicant_name)) {
+    $applicant_name = 'Applicant';
+}
 ?>
 
 <!DOCTYPE html>
@@ -48,7 +54,7 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
     
     <style>
     /* ==========================================================================
-       RESET & BASE STYLES - ABSOLUTELY NO GAPS
+       RESET & BASE STYLES
        ========================================================================== */
     * {
         margin: 0;
@@ -138,7 +144,7 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
         
         /* Spacing - Clean and Consistent */
         --gutter: clamp(1rem, 4vw, 4rem);
-        --container-max: 1400px;
+        --container-max: 1600px; /* INCREASED from 1400px to 1600px for wider desktop layout */
         
         --space-xs: 0.5rem;
         --space-sm: 1rem;
@@ -149,7 +155,7 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
     }
 
     /* ==========================================================================
-       CONTAINER & LAYOUT
+       CONTAINER & LAYOUT - ENHANCED FOR WIDER DESKTOP
        ========================================================================== */
     .container {
         width: 100%;
@@ -158,8 +164,110 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
         padding: var(--space-lg) var(--gutter);
     }
 
+    /* Wider columns for desktop */
+    .col-lg-10 {
+        width: 100%;
+    }
+    
+    @media (min-width: 1200px) {
+        .col-xl-9 {
+            width: 90%; /* Wider on large screens */
+            margin: 0 auto;
+        }
+    }
+    
+    @media (min-width: 1600px) {
+        .col-xxl-8 {
+            width: 85%; /* Even wider on extra large screens */
+            margin: 0 auto;
+        }
+    }
+
     .main-content {
         min-height: calc(100vh - 200px);
+    }
+
+    /* ==========================================================================
+       TOP BAR WITH WELCOME AND LOGOUT
+       ========================================================================== */
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        padding: var(--space-md) var(--space-lg);
+        margin-bottom: var(--space-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        flex-wrap: wrap;
+        gap: var(--space-md);
+    }
+
+    .welcome-message {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .welcome-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--purple-pale);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--purple);
+        font-size: 1.2rem;
+    }
+
+    .welcome-text {
+        font-size: 0.95rem;
+        color: var(--slate);
+    }
+
+    .welcome-text strong {
+        color: var(--purple-deep);
+        font-weight: 600;
+    }
+
+    .logout-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1.25rem;
+        background: transparent;
+        color: var(--danger);
+        border: 1.5px solid var(--danger-light);
+        border-radius: var(--radius-full);
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .logout-btn:hover {
+        background: var(--danger);
+        color: white;
+        border-color: var(--danger);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239,68,68,0.2);
+    }
+
+    .logout-btn i {
+        font-size: 0.9rem;
+    }
+
+    @media (max-width: 480px) {
+        .top-bar {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .logout-btn {
+            align-self: flex-end;
+        }
     }
 
     /* ==========================================================================
@@ -295,7 +403,7 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
         display: flex;
         justify-content: space-between;
         width: 100%;
-        max-width: 600px;
+        max-width: 700px; /* INCREASED from 600px to 700px */
         margin: 0 auto;
     }
 
@@ -388,6 +496,7 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
         box-shadow: var(--shadow-lg);
         overflow: hidden;
         transition: all 0.3s ease;
+        width: 100%;
     }
 
     .card:hover {
@@ -415,6 +524,12 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
 
     .card-body {
         padding: var(--space-xl);
+    }
+
+    @media (min-width: 1200px) {
+        .card-body {
+            padding: var(--space-xxl); /* More padding on larger screens */
+        }
     }
 
     .card-footer {
@@ -749,17 +864,23 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
         align-items: center;
         justify-content: space-between;
         margin-bottom: var(--space-xs);
+        flex-wrap: wrap;
+        gap: var(--space-xs);
     }
 
     .existing-file-title {
         font-size: 0.85rem;
         font-weight: 600;
         color: var(--purple-deep);
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
     }
 
     .existing-file-actions {
         display: flex;
         gap: var(--space-xs);
+        flex-wrap: wrap;
     }
 
     .existing-file-btn {
@@ -767,9 +888,13 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
         border: none;
         color: var(--purple);
         cursor: pointer;
-        padding: 0.25rem;
+        padding: 0.25rem 0.5rem;
         border-radius: var(--radius-sm);
         transition: all 0.3s ease;
+        font-size: 0.8rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
     }
 
     .existing-file-btn:hover {
@@ -778,6 +903,11 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
 
     .existing-file-btn.danger:hover {
         color: var(--danger);
+        background: var(--danger-light);
+    }
+
+    .existing-file-btn i {
+        font-size: 0.9rem;
     }
 
     .existing-file-preview {
@@ -785,6 +915,7 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
         align-items: center;
         gap: var(--space-sm);
         margin-bottom: var(--space-xs);
+        flex-wrap: wrap;
     }
 
     .existing-file-thumb {
@@ -801,6 +932,7 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
         font-size: 0.85rem;
         color: var(--slate);
         word-break: break-all;
+        min-width: 150px;
     }
 
     .existing-file-list {
@@ -813,10 +945,31 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
         justify-content: space-between;
         padding: var(--space-xs) 0;
         border-bottom: 1px solid var(--border);
+        gap: var(--space-sm);
+        flex-wrap: wrap;
     }
 
     .existing-file-list li:last-child {
         border-bottom: none;
+    }
+
+    /* File indicator badges */
+    .file-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.2rem 0.5rem;
+        background: var(--white);
+        border: 1px solid var(--success);
+        border-radius: var(--radius-full);
+        color: var(--success);
+        font-size: 0.7rem;
+        font-weight: 500;
+        margin-left: 0.5rem;
+    }
+
+    .file-indicator i {
+        font-size: 0.6rem;
     }
 
     /* ==========================================================================
@@ -851,23 +1004,23 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
     }
 
     /* ==========================================================================
-       GRID SYSTEM
+       GRID SYSTEM - ENHANCED FOR WIDER LAYOUT
        ========================================================================== */
     .row {
         display: flex;
         flex-wrap: wrap;
-        margin: calc(-1 * var(--space-sm));
+        margin: calc(-1 * var(--space-md)); /* Increased from -sm to -md for more spacing */
     }
 
     .col {
         flex: 1 0 0%;
-        padding: var(--space-sm);
+        padding: var(--space-md); /* Increased from sm to md */
     }
 
-    .col-12 { width: 100%; padding: var(--space-sm); }
-    .col-6 { width: 50%; padding: var(--space-sm); }
-    .col-4 { width: 33.333%; padding: var(--space-sm); }
-    .col-3 { width: 25%; padding: var(--space-sm); }
+    .col-12 { width: 100%; padding: var(--space-md); }
+    .col-6 { width: 50%; padding: var(--space-md); }
+    .col-4 { width: 33.333%; padding: var(--space-md); }
+    .col-3 { width: 25%; padding: var(--space-md); }
 
     @media (min-width: 768px) {
         .col-md-12 { width: 100%; }
@@ -878,10 +1031,17 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
     }
 
     @media (min-width: 992px) {
+        .col-lg-12 { width: 100%; }
         .col-lg-10 { width: 83.333%; }
         .col-lg-8 { width: 66.667%; }
         .col-lg-6 { width: 50%; }
         .col-lg-4 { width: 33.333%; }
+    }
+
+    @media (min-width: 1200px) {
+        .col-xl-10 { width: 83.333%; }
+        .col-xl-8 { width: 66.667%; }
+        .col-xl-6 { width: 50%; }
     }
 
     /* ==========================================================================
@@ -961,6 +1121,16 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
         .btn {
             white-space: normal;
         }
+        
+        .existing-file-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .existing-file-actions {
+            width: 100%;
+            justify-content: flex-end;
+        }
     }
 
     @media (max-width: 480px) {
@@ -981,6 +1151,10 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
             width: 100%;
             height: auto;
             max-height: 150px;
+        }
+        
+        .existing-file-actions {
+            justify-content: flex-start;
         }
     }
 
@@ -1037,7 +1211,23 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
     <main id="main-content" class="main-content" role="main">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-12 col-lg-10 col-xl-8">
+                <div class="col-12 col-lg-11 col-xl-10 col-xxl-9"> <!-- WIDER columns for desktop -->
+                    
+                    <!-- TOP BAR WITH WELCOME AND LOGOUT BUTTON -->
+                    <div class="top-bar fade-in">
+                        <div class="welcome-message">
+                            <div class="welcome-icon">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                            <div class="welcome-text">
+                                Welcome, <strong><?php echo e($applicant_name); ?></strong> | 
+                                <span class="text-muted">Application #: <?php echo e($application['application_number'] ?? 'Not assigned'); ?></span>
+                            </div>
+                        </div>
+                        <a href="/applicant/logout" class="logout-btn" onclick="return confirm('Are you sure you want to logout? Your progress will be saved.');">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
                     
                     <!-- Progress Indicator -->
                     <div class="text-center mb-5 fade-in">
@@ -1243,7 +1433,11 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
                                     <div class="col-12 col-md-6">
                                         <div class="upload-area" id="passportArea">
                                             <i class="fas fa-camera"></i>
-                                            <h6>Passport Photograph <span class="text-danger">*</span></h6>
+                                            <h6>Passport Photograph <span class="text-danger">*</span>
+                                                <?php if (isset($existing_passport)): ?>
+                                                <span class="file-indicator"><i class="fas fa-check-circle"></i> Uploaded</span>
+                                                <?php endif; ?>
+                                            </h6>
                                             <p>Upload a recent passport photo</p>
                                             <input type="file" class="form-control" id="passport" name="passport" 
                                                    accept="image/jpeg,image/png" style="display: none;">
@@ -1262,10 +1456,10 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
                                                         </span>
                                                         <div class="existing-file-actions">
                                                             <a href="<?php echo e($existing_passport['file_path']); ?>" target="_blank" class="existing-file-btn" title="View">
-                                                                <i class="fas fa-eye"></i>
+                                                                <i class="fas fa-eye"></i> View
                                                             </a>
                                                             <button type="button" class="existing-file-btn danger" onclick="removeExistingFile('passport')" title="Remove">
-                                                                <i class="fas fa-times"></i>
+                                                                <i class="fas fa-trash-alt"></i> Remove
                                                             </button>
                                                         </div>
                                                     </div>
@@ -1286,7 +1480,11 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
                                     <div class="col-12 col-md-6">
                                         <div class="upload-area" id="olevelArea">
                                             <i class="fas fa-file-pdf"></i>
-                                            <h6>O'Level Results <span class="text-danger">*</span></h6>
+                                            <h6>O'Level Results <span class="text-danger">*</span>
+                                                <?php if (isset($existing_olevel) && count($existing_olevel) > 0): ?>
+                                                <span class="file-indicator"><i class="fas fa-check-circle"></i> <?php echo count($existing_olevel); ?> file(s)</span>
+                                                <?php endif; ?>
+                                            </h6>
                                             <p>Upload WAEC/NECO results</p>
                                             <input type="file" class="form-control" id="olevel" name="olevel[]" 
                                                    multiple accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
@@ -1308,18 +1506,22 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
                                                         <?php foreach ($existing_olevel as $index => $file): ?>
                                                         <li>
                                                             <div class="d-flex align-items-center gap-2">
-                                                                <i class="fas fa-file-<?php echo pathinfo($file['file_path'], PATHINFO_EXTENSION) == 'pdf' ? 'pdf' : 'image'; ?> text-primary"></i>
-                                                                <small class="text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                                <?php 
+                                                                $ext = pathinfo($file['file_path'], PATHINFO_EXTENSION);
+                                                                $isPdf = strtolower($ext) == 'pdf';
+                                                                ?>
+                                                                <i class="fas fa-file-<?php echo $isPdf ? 'pdf' : 'image'; ?> text-primary"></i>
+                                                                <small class="text-muted" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                                                     <?php echo e(basename($file['file_path'])); ?>
 
                                                                 </small>
                                                             </div>
-                                                            <div class="d-flex gap-1">
+                                                            <div class="d-flex gap-2">
                                                                 <a href="<?php echo e($file['file_path']); ?>" target="_blank" class="existing-file-btn" title="View">
-                                                                    <i class="fas fa-eye"></i>
+                                                                    <i class="fas fa-eye"></i> View
                                                                 </a>
                                                                 <button type="button" class="existing-file-btn danger" onclick="removeExistingOlevel(<?php echo $index; ?>)" title="Remove">
-                                                                    <i class="fas fa-times"></i>
+                                                                    <i class="fas fa-trash-alt"></i> Remove
                                                                 </button>
                                                             </div>
                                                         </li>
@@ -1335,57 +1537,65 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
                                 <!-- Optional Documents -->
                                 <div class="row mt-4">
                                     <div class="col-12 col-md-6">
-                                        <label class="form-label">JAMB Result Slip (Optional)</label>
+                                        <label class="form-label">JAMB Result Slip (Optional)
+                                            <?php if (isset($existing_jamb_result)): ?>
+                                            <span class="file-indicator"><i class="fas fa-check-circle"></i> Uploaded</span>
+                                            <?php endif; ?>
+                                        </label>
                                         <div class="d-flex align-items-center gap-2 flex-wrap">
                                             <input type="file" class="form-control" id="jamb_result" name="jamb_result" 
                                                    accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
                                             <button type="button" class="btn btn--outline" onclick="document.getElementById('jamb_result').click()">
-                                                <i class="fas fa-upload me-2"></i><?php echo isset($existing_jamb_result) ? 'Replace' : 'Upload'; ?>
+                                                <i class="fas fa-upload me-2"></i><?php echo isset($existing_jamb_result) ? 'Replace File' : 'Upload File'; ?>
                                             </button>
                                             <?php if (isset($existing_jamb_result)): ?>
-                                            <span class="text-success d-flex align-items-center gap-2">
+                                            <span class="text-success d-flex align-items-center gap-2 flex-wrap">
                                                 <i class="fas fa-check-circle"></i>
-                                                <small class="text-muted" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                <small class="text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                                     <?php echo e(basename($existing_jamb_result['file_path'])); ?>
 
                                                 </small>
                                                 <a href="<?php echo e($existing_jamb_result['file_path']); ?>" target="_blank" class="existing-file-btn" title="View">
-                                                    <i class="fas fa-eye"></i>
+                                                    <i class="fas fa-eye"></i> View
                                                 </a>
                                                 <button type="button" class="btn btn--sm btn--outline text-danger" onclick="removeExistingJambResult()" title="Remove">
-                                                    <i class="fas fa-times"></i>
+                                                    <i class="fas fa-trash-alt"></i> Remove
                                                 </button>
                                             </span>
                                             <?php endif; ?>
                                         </div>
-                                        <div class="form-text">Upload your JAMB result slip. Max 2MB.</div>
+                                        <div class="form-text">Upload your JAMB result slip. Max 2MB. PDF or Image</div>
                                     </div>
                                     
                                     <div class="col-12 col-md-6">
-                                        <label class="form-label">Birth Certificate (Optional)</label>
+                                        <label class="form-label">Birth Certificate (Optional)
+                                            <?php if (isset($existing_birth_certificate)): ?>
+                                            <span class="file-indicator"><i class="fas fa-check-circle"></i> Uploaded</span>
+                                            <?php endif; ?>
+                                        </label>
                                         <div class="d-flex align-items-center gap-2 flex-wrap">
                                             <input type="file" class="form-control" id="birth_certificate" name="birth_certificate" 
                                                    accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
                                             <button type="button" class="btn btn--outline" onclick="document.getElementById('birth_certificate').click()">
-                                                <i class="fas fa-upload me-2"></i><?php echo isset($existing_birth_certificate) ? 'Replace' : 'Upload'; ?>
+                                                <i class="fas fa-upload me-2"></i><?php echo isset($existing_birth_certificate) ? 'Replace File' : 'Upload File'; ?>
                                             </button>
                                             <?php if (isset($existing_birth_certificate)): ?>
-                                            <span class="text-success d-flex align-items-center gap-2">
+                                            <span class="text-success d-flex align-items-center gap-2 flex-wrap">
                                                 <i class="fas fa-check-circle"></i>
-                                                <small class="text-muted" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                <small class="text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                                     <?php echo e(basename($existing_birth_certificate['file_path'])); ?>
 
                                                 </small>
                                                 <a href="<?php echo e($existing_birth_certificate['file_path']); ?>" target="_blank" class="existing-file-btn" title="View">
-                                                    <i class="fas fa-eye"></i>
+                                                    <i class="fas fa-eye"></i> View
                                                 </a>
                                                 <button type="button" class="btn btn--sm btn--outline text-danger" onclick="removeExistingBirthCertificate()" title="Remove">
-                                                    <i class="fas fa-times"></i>
+                                                    <i class="fas fa-trash-alt"></i> Remove
                                                 </button>
                                             </span>
                                             <?php endif; ?>
                                         </div>
-                                        <div class="form-text">Upload your birth certificate. Max 2MB.</div>
+                                        <div class="form-text">Upload your birth certificate. Max 2MB. PDF or Image</div>
                                     </div>
                                 </div>
 
@@ -1873,9 +2083,11 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
                             <span class="existing-file-title">
                                 <i class="fas fa-check-circle text-success me-1"></i>New File
                             </span>
-                            <button type="button" class="existing-file-btn danger" onclick="removePassport()" title="Remove">
-                                <i class="fas fa-times"></i>
-                            </button>
+                            <div class="existing-file-actions">
+                                <button type="button" class="existing-file-btn danger" onclick="removePassport()" title="Remove">
+                                    <i class="fas fa-trash-alt"></i> Remove
+                                </button>
+                            </div>
                         </div>
                         <div class="existing-file-preview">
                             <img src="${e.target.result}" class="existing-file-thumb" alt="Passport">
@@ -1886,8 +2098,13 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
                     </div>
                 `;
                 
-                // Update upload area styling
+                // Update upload area styling and indicator
                 document.getElementById('passportArea').classList.add('border-success');
+                // Update the heading indicator
+                const heading = document.querySelector('#passportArea h6');
+                if (heading && !heading.querySelector('.file-indicator')) {
+                    heading.innerHTML = heading.innerHTML + ' <span class="file-indicator"><i class="fas fa-check-circle"></i> Selected</span>';
+                }
             }
             reader.readAsDataURL(file);
         }
@@ -1898,7 +2115,7 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
         const preview = document.getElementById('olevelPreview');
         
         if (files.length > 0) {
-            let html = '<div class="existing-file"><div class="existing-file-header"><span class="existing-file-title"><i class="fas fa-check-circle text-success me-1"></i>New Files</span></div><ul class="existing-file-list">';
+            let html = '<div class="existing-file"><div class="existing-file-header"><span class="existing-file-title"><i class="fas fa-check-circle text-success me-1"></i>New Files (' + files.length + ')</span></div><ul class="existing-file-list">';
             let totalSize = 0;
             
             for (let i = 0; i < files.length; i++) {
@@ -1913,11 +2130,13 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
                     return;
                 }
                 
+                const isPdf = file.type.includes('pdf');
+                
                 html += `
                     <li>
                         <div class="d-flex align-items-center gap-2">
-                            <i class="fas fa-file-${file.type.includes('pdf') ? 'pdf' : 'image'} text-primary"></i>
-                            <small class="text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <i class="fas fa-file-${isPdf ? 'pdf' : 'image'} text-primary"></i>
+                            <small class="text-muted" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                 ${file.name} (${(file.size / 1024).toFixed(1)}KB)
                             </small>
                         </div>
@@ -1938,6 +2157,12 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
             
             // Update upload area styling
             document.getElementById('olevelArea').classList.add('border-success');
+            
+            // Update the heading indicator
+            const heading = document.querySelector('#olevelArea h6');
+            if (heading && !heading.querySelector('.file-indicator')) {
+                heading.innerHTML = heading.innerHTML + ' <span class="file-indicator"><i class="fas fa-check-circle"></i> ' + files.length + ' selected</span>';
+            }
         }
     });
 
@@ -1947,6 +2172,16 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
             if (file.size > 2 * 1024 * 1024) {
                 showAlert('File must be less than 2MB', 'warning');
                 this.value = '';
+            } else {
+                // Show file selected indicator
+                const parentDiv = this.closest('.d-flex');
+                const indicator = parentDiv.querySelector('.file-selected-indicator');
+                if (!indicator) {
+                    const span = document.createElement('span');
+                    span.className = 'text-success ms-2 small';
+                    span.innerHTML = '<i class="fas fa-check-circle"></i> File selected';
+                    parentDiv.appendChild(span);
+                }
             }
         }
     });
@@ -1957,6 +2192,16 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
             if (file.size > 2 * 1024 * 1024) {
                 showAlert('File must be less than 2MB', 'warning');
                 this.value = '';
+            } else {
+                // Show file selected indicator
+                const parentDiv = this.closest('.d-flex');
+                const indicator = parentDiv.querySelector('.file-selected-indicator');
+                if (!indicator) {
+                    const span = document.createElement('span');
+                    span.className = 'text-success ms-2 small';
+                    span.innerHTML = '<i class="fas fa-check-circle"></i> File selected';
+                    parentDiv.appendChild(span);
+                }
             }
         }
     });
@@ -1965,6 +2210,12 @@ $existing_birth_certificate = $existing_birth_certificate ?? null;
         document.getElementById('passport').value = '';
         document.getElementById('passportPreview').innerHTML = '';
         document.getElementById('passportArea').classList.remove('border-success');
+        
+        // Remove indicator from heading
+        const heading = document.querySelector('#passportArea h6 .file-indicator');
+        if (heading) {
+            heading.remove();
+        }
     }
 
     function confirmBack() {
