@@ -556,7 +556,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Save application form - FIXED with correct field mapping and update method handling
+     * Save application form - FIXED with proper JAMB data handling and field mapping
      */
     public function saveApplication() {
         // Set header to JSON first thing
@@ -582,7 +582,7 @@ class PublicApplicationController extends ApplicationBaseController {
         try {
             $applicantId = $_SESSION['applicant_id'];
             
-            // Get JAMB data from hidden fields
+            // Get JAMB data from hidden fields - these come from sessionStorage via hidden inputs
             $jambNumber = $_POST['jamb_number'] ?? '';
             $firstName = $_POST['first_name'] ?? '';
             $lastName = $_POST['last_name'] ?? '';
@@ -592,24 +592,26 @@ class PublicApplicationController extends ApplicationBaseController {
             $lga = $_POST['lga'] ?? '';
             $utmeScore = $_POST['utme_score'] ?? '';
             
-            // Get editable fields - FIXED: Match form field names
+            // Get editable fields - handle both possible field names
             $dateOfBirth = $_POST['date_of_birth'] ?? '';
             $phone = $_POST['phone'] ?? '';
-            $email = $_POST['email'] ?? '';
             $address = $_POST['address'] ?? '';
             $nationality = $_POST['nationality'] ?? 'Nigerian';
-            $programChoice = $_POST['program_choice_1'] ?? '';
+            $programChoice = $_POST['program_choice'] ?? $_POST['program_choice_1'] ?? '';
+            $email = $_POST['email'] ?? '';
             
             // Debug log
             error_log("Save Application - POST data: " . print_r($_POST, true));
+            if (!empty($_FILES)) {
+                error_log("Save Application - FILES data: " . print_r($_FILES, true));
+            }
             
             // Validate required fields
             $missingFields = [];
             if (empty($dateOfBirth)) $missingFields[] = 'date_of_birth';
             if (empty($phone)) $missingFields[] = 'phone';
-            if (empty($email)) $missingFields[] = 'email';
             if (empty($address)) $missingFields[] = 'address';
-            if (empty($programChoice)) $missingFields[] = 'program_choice_1';
+            if (empty($programChoice)) $missingFields[] = 'program_choice';
             
             if (!empty($missingFields)) {
                 error_log("Missing fields: " . implode(', ', $missingFields));
@@ -620,7 +622,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // Check if application exists
+            // Get existing application
             $application = $this->applicationModel->getByApplicantId($applicantId);
             
             if (!$application) {
@@ -628,14 +630,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // Handle O'Level results
-            $olevelData = [];
-            if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
-                $olevelData = $_POST['olevel'];
-                error_log("O'Level data received: " . print_r($olevelData, true));
-            }
-            
-            // Prepare update data - Match database column names
+            // Prepare update data
             $updateData = [
                 'date_of_birth' => $dateOfBirth,
                 'phone' => $phone,
@@ -646,11 +641,6 @@ class PublicApplicationController extends ApplicationBaseController {
                 'application_step' => 2,
                 'updated_at' => date('Y-m-d H:i:s')
             ];
-            
-            // Store O'Level results as JSON if present
-            if (!empty($olevelData)) {
-                $updateData['olevel_results'] = json_encode($olevelData);
-            }
             
             // Handle file uploads
             $uploadErrors = [];
@@ -666,26 +656,47 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
             }
             
-            // Upload O'Level files if any
+            // Handle JAMB result upload
+            if (isset($_FILES['jamb_result']) && $_FILES['jamb_result']['error'] === UPLOAD_ERR_OK) {
+                $jambResultResult = $this->uploadFile($_FILES['jamb_result'], $applicantId, 'jamb_result');
+                if ($jambResultResult['success']) {
+                    $updateData['qualification_file'] = $jambResultResult['path'];
+                    error_log("JAMB result uploaded: " . $jambResultResult['path']);
+                } else {
+                    $uploadErrors[] = 'JAMB Result: ' . $jambResultResult['message'];
+                }
+            }
+            
+            // Handle birth certificate upload
+            if (isset($_FILES['birth_certificate']) && $_FILES['birth_certificate']['error'] === UPLOAD_ERR_OK) {
+                $birthCertResult = $this->uploadFile($_FILES['birth_certificate'], $applicantId, 'birth_certificate');
+                if ($birthCertResult['success']) {
+                    $updateData['birth_certificate'] = $birthCertResult['path'];
+                    error_log("Birth certificate uploaded: " . $birthCertResult['path']);
+                } else {
+                    $uploadErrors[] = 'Birth Certificate: ' . $birthCertResult['message'];
+                }
+            }
+            
+            // Handle O'Level files
             if (isset($_FILES['olevel'])) {
-                $files = $_FILES['olevel'];
                 $olevelFiles = [];
                 
-                // Handle both single file and multiple files
-                if (is_array($files['name'])) {
+                if (is_array($_FILES['olevel']['name'])) {
                     // Multiple files
-                    for ($i = 0; $i < count($files['name']); $i++) {
-                        if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    for ($i = 0; $i < count($_FILES['olevel']['name']); $i++) {
+                        if ($_FILES['olevel']['error'][$i] === UPLOAD_ERR_OK) {
                             $file = [
-                                'name' => $files['name'][$i],
-                                'type' => $files['type'][$i],
-                                'tmp_name' => $files['tmp_name'][$i],
-                                'error' => $files['error'][$i],
-                                'size' => $files['size'][$i]
+                                'name' => $_FILES['olevel']['name'][$i],
+                                'type' => $_FILES['olevel']['type'][$i],
+                                'tmp_name' => $_FILES['olevel']['tmp_name'][$i],
+                                'error' => $_FILES['olevel']['error'][$i],
+                                'size' => $_FILES['olevel']['size'][$i]
                             ];
                             $result = $this->uploadFile($file, $applicantId, 'olevel');
                             if ($result['success']) {
                                 $olevelFiles[] = $result['path'];
+                                error_log("O'Level file uploaded: " . $result['path']);
                             } else {
                                 $uploadErrors[] = 'O\'Level: ' . $result['message'];
                             }
@@ -693,10 +704,11 @@ class PublicApplicationController extends ApplicationBaseController {
                     }
                 } else {
                     // Single file
-                    if ($files['error'] === UPLOAD_ERR_OK) {
-                        $result = $this->uploadFile($files, $applicantId, 'olevel');
+                    if ($_FILES['olevel']['error'] === UPLOAD_ERR_OK) {
+                        $result = $this->uploadFile($_FILES['olevel'], $applicantId, 'olevel');
                         if ($result['success']) {
                             $olevelFiles[] = $result['path'];
+                            error_log("O'Level file uploaded: " . $result['path']);
                         } else {
                             $uploadErrors[] = 'O\'Level: ' . $result['message'];
                         }
@@ -704,42 +716,30 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
                 
                 if (!empty($olevelFiles)) {
-                    // If there are existing files, merge with new ones
-                    if (!empty($application['olevel_results'])) {
-                        $existingFiles = json_decode($application['olevel_results'], true);
-                        if (is_array($existingFiles)) {
-                            $olevelFiles = array_merge($existingFiles, $olevelFiles);
-                        }
+                    // Get existing O'Level files
+                    $existingFiles = [];
+                    if ($application && !empty($application['olevel_results'])) {
+                        $existingFiles = json_decode($application['olevel_results'], true) ?: [];
                     }
-                    // Store as JSON in olevel_results field
-                    $updateData['olevel_results'] = json_encode($olevelFiles);
+                    $allFiles = array_merge($existingFiles, $olevelFiles);
+                    $updateData['olevel_results'] = json_encode($allFiles);
                 }
             }
             
-            // Upload JAMB result (optional)
-            if (isset($_FILES['jamb_result']) && $_FILES['jamb_result']['error'] === UPLOAD_ERR_OK) {
-                $jambResultResult = $this->uploadFile($_FILES['jamb_result'], $applicantId, 'jamb_result');
-                if ($jambResultResult['success']) {
-                    $updateData['qualification_file'] = $jambResultResult['path'];
-                } else {
-                    $uploadErrors[] = 'JAMB Result: ' . $jambResultResult['message'];
-                }
+            // Handle O'Level data (form inputs for subjects)
+            if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
+                // If we have subject data, store it separately or merge with existing
+                // This depends on your database structure - you might have a separate table
+                error_log("O'Level subject data received: " . print_r($_POST['olevel'], true));
+                
+                // If you have a separate OlevelResultModel, you would save it here
+                // For now, we'll just log it
             }
             
-            // Upload birth certificate (optional)
-            if (isset($_FILES['birth_certificate']) && $_FILES['birth_certificate']['error'] === UPLOAD_ERR_OK) {
-                $birthCertResult = $this->uploadFile($_FILES['birth_certificate'], $applicantId, 'birth_certificate');
-                if ($birthCertResult['success']) {
-                    $updateData['birth_certificate'] = $birthCertResult['path'];
-                } else {
-                    $uploadErrors[] = 'Birth Certificate: ' . $birthCertResult['message'];
-                }
-            }
-            
-            // Update existing application - FIXED: Try both possible method signatures
+            // Update existing application - Try both possible method signatures
             $updated = false;
             
-            // Try method 1: update($id, $data)
+            // Try method 1: update($id, $data) - for models that extend BaseModel with this signature
             if (method_exists($this->applicationModel, 'update')) {
                 try {
                     $updated = $this->applicationModel->update($application['id'], $updateData);
@@ -771,19 +771,26 @@ class PublicApplicationController extends ApplicationBaseController {
             
             error_log("Updated existing application ID: " . $application['id']);
             
-            // Update applicant phone and email if needed
-            try {
-                $this->applicantModel->update(
-                    ['phone' => $phone, 'email' => $email, 'updated_at' => date('Y-m-d H:i:s')],
-                    'id = :id',
-                    ['id' => $applicantId]
-                );
-            } catch (Exception $e) {
-                error_log("Failed to update applicant: " . $e->getMessage());
-                // Don't return error, application update succeeded
+            // Update applicant phone if needed
+            if (!empty($phone)) {
+                try {
+                    // Try both method signatures for applicant update
+                    if (method_exists($this->applicantModel, 'update')) {
+                        $this->applicantModel->update($applicantId, ['phone' => $phone, 'updated_at' => date('Y-m-d H:i:s')]);
+                    } else {
+                        $this->applicantModel->update(
+                            ['phone' => $phone, 'updated_at' => date('Y-m-d H:i:s')],
+                            'id = :id',
+                            ['id' => $applicantId]
+                        );
+                    }
+                } catch (Exception $e) {
+                    error_log("Failed to update applicant: " . $e->getMessage());
+                    // Don't return error, application update succeeded
+                }
             }
             
-            // Return success response
+            // Prepare success response
             $response = [
                 'success' => true,
                 'message' => 'Application saved successfully',
@@ -794,7 +801,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 $response['upload_errors'] = $uploadErrors;
             }
             
-            // If action is 'next', redirect to payment
+            // If action is 'next', include redirect
             if (isset($_POST['action']) && $_POST['action'] === 'next') {
                 $response['redirect'] = '/apply/step/3';
             }
@@ -896,6 +903,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 $fullPath = PUBLIC_PATH . $filePath;
                 if (file_exists($fullPath)) {
                     unlink($fullPath);
+                    error_log("Deleted file: " . $fullPath);
                 }
             }
             
@@ -2024,10 +2032,11 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
+        $applicantId = $_SESSION['applicant_id'];
+        
         // Check if JAMB has been verified in session
         if (!isset($_SESSION['jamb_verification']) || !$_SESSION['jamb_verification']) {
             // Try to restore from database
-            $applicantId = $_SESSION['applicant_id'];
             $application = $this->applicationModel->getByApplicantId($applicantId);
             
             if ($application && !empty($application['jamb_number'])) {
@@ -2051,8 +2060,6 @@ class PublicApplicationController extends ApplicationBaseController {
             }
         }
         
-        $applicantId = $_SESSION['applicant_id'];
-        
         // Get application data
         $application = $this->applicationModel->getByApplicantId($applicantId);
         
@@ -2075,46 +2082,22 @@ class PublicApplicationController extends ApplicationBaseController {
         // Get applicant details
         $applicant = $this->applicantModel->find($applicantId);
         
-        // Parse O'Level results from JSON if exists
-        $olevelFiles = [];
-        if (!empty($application['olevel_results'])) {
-            $olevelFiles = json_decode($application['olevel_results'], true);
-            if (!is_array($olevelFiles)) {
-                $olevelFiles = [];
-            }
-        }
+        // Prepare JAMB data for view
+        $jamb_data = $_SESSION['jamb_verification'];
         
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Step 2: Application Form',
             'application' => $application,
             'applicant' => $applicant,
-            'jamb_data' => $_SESSION['jamb_verification'],
+            'jamb_data' => $jamb_data,
             'olevel_results' => $olevel_results,
             'passport' => $passport,
             'states' => $this->getStates(),
             'programs' => $this->getPrograms(),
-            'csrf_token' => $this->csrfToken(),
-            'existing_passport' => !empty($application['passport_photo']) ? [
-                'file_path' => $application['passport_photo'],
-                'id' => 'passport'
-            ] : null,
-            'existing_olevel' => array_map(function($path, $index) {
-                return [
-                    'file_path' => $path,
-                    'id' => 'olevel_' . $index
-                ];
-            }, $olevelFiles, array_keys($olevelFiles)),
-            'existing_jamb_result' => !empty($application['qualification_file']) ? [
-                'file_path' => $application['qualification_file'],
-                'id' => 'jamb_result'
-            ] : null,
-            'existing_birth_certificate' => !empty($application['birth_certificate']) ? [
-                'file_path' => $application['birth_certificate'],
-                'id' => 'birth_certificate'
-            ] : null
+            'csrf_token' => $this->csrfToken()
         ]);
         
-        // Render the step2 view (application form)
+        // Render the step2 view
         $this->render('applications/step2');
     }
 

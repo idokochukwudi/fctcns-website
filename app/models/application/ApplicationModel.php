@@ -3,6 +3,7 @@
  * Application Model
  * 
  * Handles application data operations
+ * FIXED: Added proper update method that handles array data
  * 
  * @package FCT_CNS
  * @subpackage Application
@@ -145,6 +146,78 @@ class ApplicationModel extends BaseModel {
     }
     
     /**
+     * Insert new application
+     */
+    public function insert($data) {
+        try {
+            $fields = array_keys($data);
+            $placeholders = ':' . implode(', :', $fields);
+            
+            $sql = "INSERT INTO " . $this->table . " (" . implode(', ', $fields) . ") 
+                    VALUES (" . $placeholders . ")";
+            
+            $stmt = $this->db->prepare($sql);
+            
+            foreach ($data as $field => $value) {
+                $stmt->bindValue(':' . $field, $value);
+            }
+            
+            if ($stmt->execute()) {
+                return $this->db->lastInsertId();
+            }
+            
+            return false;
+        } catch (Exception $e) {
+            error_log("Error inserting application: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Update application - FIXED to handle array data properly
+     */
+    public function update($id, $data = null) {
+        try {
+            // Check if second parameter is array (new format) or null
+            if (is_array($id) && $data === null) {
+                // Called as update($data, $where, $params) from parent
+                return parent::update($id);
+            }
+            
+            // Handle array data format: update($id, $data)
+            if (is_numeric($id) && is_array($data)) {
+                $sets = [];
+                $params = [':id' => $id];
+                
+                foreach ($data as $field => $value) {
+                    $sets[] = "`$field` = :$field";
+                    $params[":$field"] = $value;
+                }
+                
+                $sql = "UPDATE " . $this->table . " SET " . implode(', ', $sets) . " WHERE id = :id";
+                
+                error_log("ApplicationModel Update SQL: " . $sql);
+                error_log("ApplicationModel Update params: " . print_r($params, true));
+                
+                $stmt = $this->db->prepare($sql);
+                return $stmt->execute($params);
+            }
+            
+            // Legacy format: update($data, $where, $params)
+            if (is_array($id) && is_array($data)) {
+                return parent::update($id, $data);
+            }
+            
+            return false;
+            
+        } catch (Exception $e) {
+            error_log("Error updating application: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            return false;
+        }
+    }
+    
+    /**
      * Get application by applicant ID
      */
     public function getByApplicantId($applicantId) {
@@ -227,7 +300,7 @@ class ApplicationModel extends BaseModel {
             $updateData['submitted_at'] = date('Y-m-d H:i:s');
         }
         
-        return $this->update($updateData, 'id = :id', ['id' => $applicationId]);
+        return $this->update($applicationId, $updateData);
     }
     
     /**
@@ -247,7 +320,7 @@ class ApplicationModel extends BaseModel {
             'application_step' => 2
         ];
         
-        return $this->update($updateData, 'id = :id', ['id' => $applicationId]);
+        return $this->update($applicationId, $updateData);
     }
     
     /**
@@ -261,7 +334,7 @@ class ApplicationModel extends BaseModel {
             'application_step' => 2
         ];
         
-        return $this->update($updateData, 'id = :id', ['id' => $applicationId]);
+        return $this->update($applicationId, $updateData);
     }
     
     /**
@@ -336,15 +409,11 @@ class ApplicationModel extends BaseModel {
             return false;
         }
         
-        return $this->update(
-            [
-                'submitted_at' => date('Y-m-d H:i:s'),
-                'application_step' => 3,
-                'status' => 'pending'
-            ],
-            'id = :id',
-            ['id' => $applicationId]
-        );
+        return $this->update($applicationId, [
+            'submitted_at' => date('Y-m-d H:i:s'),
+            'application_step' => 3,
+            'status' => 'pending'
+        ]);
     }
     
     /**
@@ -496,14 +565,10 @@ class ApplicationModel extends BaseModel {
             $slipId = $examSlipModel->create($slipData);
             
             // Update application
-            $this->update(
-                [
-                    'exam_slip_generated' => 1,
-                    'application_step' => 4
-                ],
-                'id = :id',
-                ['id' => $applicationId]
-            );
+            $this->update($applicationId, [
+                'exam_slip_generated' => 1,
+                'application_step' => 4
+            ]);
             
             $this->commit();
             
@@ -588,6 +653,16 @@ class ApplicationModel extends BaseModel {
              JOIN applicants app ON a.applicant_id = app.id
              WHERE DATE(a.submitted_at) = CURDATE()
              ORDER BY a.submitted_at DESC"
+        );
+    }
+    
+    /**
+     * Find by ID (overrides BaseModel)
+     */
+    public function find($id) {
+        return $this->fetchOne(
+            "SELECT * FROM {$this->table} WHERE id = :id",
+            ['id' => $id]
         );
     }
 }
