@@ -1152,7 +1152,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
     
     /**
-     * Process applicant login - FIXED to redirect to correct step
+     * Process applicant login - FIXED for proper step redirection
      */
     public function processLogin() {
         // Start session
@@ -1213,29 +1213,19 @@ class PublicApplicationController extends ApplicationBaseController {
         $_SESSION['applicant_name'] = ($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? '');
         $_SESSION['applicant_login_time'] = time();
         
-        // Get application to determine current step
+        // Get the application for this applicant
         $application = $this->applicationModel->getByApplicantId($applicant['id']);
-
+        
+        // CASE 1: No application yet
         if (!$application) {
-            // No application yet, go to JAMB verification
-            error_log("No application found for applicant {$applicant['id']}, redirecting to step 1");
+            error_log("No application found for applicant {$applicant['id']}, redirecting to JAMB verification");
+            $_SESSION['flash_info'] = 'Please verify your JAMB number to begin.';
             header('Location: /apply/step/1');
             exit;
         }
-
-        // Log the application step for debugging
-        error_log("Applicant {$applicant['id']} has application step: " . $application['application_step']);
-
-        // Check if JAMB is verified (has jamb_number)
-        if (empty($application['jamb_number'])) {
-            // No JAMB number yet, go to verification
-            error_log("No JAMB number for applicant {$applicant['id']}, redirecting to step 1");
-            header('Location: /apply/step/1');
-            exit;
-        }
-
+        
         // Restore JAMB data to session if not present
-        if (!isset($_SESSION['jamb_verification'])) {
+        if (!isset($_SESSION['jamb_verification']) && !empty($application['jamb_number'])) {
             $_SESSION['jamb_verification'] = [
                 'jamb_number' => $application['jamb_number'],
                 'first_name' => $application['first_name'],
@@ -1248,32 +1238,26 @@ class PublicApplicationController extends ApplicationBaseController {
             ];
             error_log("Restored JAMB data to session for applicant {$applicant['id']}");
         }
-
-        // Redirect based on application step
+        
+        // Get current step
         $step = (int)$application['application_step'];
-        error_log("Redirecting applicant {$applicant['id']} to step {$step}");
-
-        switch ($step) {
-            case 1:
-                // No JAMB yet, go to JAMB verification
-                header('Location: /apply/step/1');
-                break;
-            case 2:
-                // JAMB verified, application form in progress
-                // Go to the application form page (not back to step 1)
-                header('Location: /apply/form');
-                break;
-            case 3:
-                // Payment page
-                header('Location: /apply/step/3');
-                break;
-            case 4:
-                // Exam slip page
-                header('Location: /apply/step/4');
-                break;
-            default:
-                header('Location: /apply/step/1');
+        error_log("Applicant {$applicant['id']} at step {$step}");
+        
+        // CASE 2: JAMB not verified yet
+        if (empty($application['jamb_number'])) {
+            header('Location: /apply/step/1');
+            exit;
         }
+        
+        // CASE 3: Form filled, ready for payment
+        if ($step >= 3) {
+            header('Location: /apply/step/3');
+            exit;
+        }
+        
+        // CASE 4: JAMB verified but form not complete - go to form
+        // They can navigate back to step 1 if needed via the step indicator
+        header('Location: /apply/form');
         exit;
     }
     
