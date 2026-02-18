@@ -3,7 +3,7 @@
  * Public Application Controller
  * 
  * Handles public-facing application processes
- * ENHANCED: Added specific login error messages, password reset functionality, and improved font rendering
+ * ENHANCED: Added application creation during JAMB verification, specific login error messages, password reset functionality
  * 
  * @package FCT_CNS
  */
@@ -1961,15 +1961,20 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     // ============================================
-    // JAMB VERIFICATION METHODS
+    // JAMB VERIFICATION METHODS - FIXED
     // ============================================
 
     /**
-     * Verify JAMB number (AJAX endpoint) - FIXED VERSION
+     * Verify JAMB number (AJAX endpoint) - FIXED to create application record
      */
     public function verifyJamb() {
         // Set header for JSON response
         header('Content-Type: application/json');
+        
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         
         // Check if user is logged in
         if (!isset($_SESSION['applicant_id'])) {
@@ -2023,9 +2028,70 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // Start session if not already started
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+        // Get applicant ID from session
+        $applicantId = $_SESSION['applicant_id'];
+        
+        // Check if application already exists for this applicant
+        $existingApplication = $this->applicationModel->getByApplicantId($applicantId);
+        
+        if (!$existingApplication) {
+            // Create new application record
+            try {
+                $applicationData = [
+                    'applicant_id' => $applicantId,
+                    'jamb_number' => $jambCandidate['jamb_number'],
+                    'jamb_candidate_id' => $jambCandidate['id'],
+                    'first_name' => $jambCandidate['first_name'],
+                    'last_name' => $jambCandidate['last_name'],
+                    'other_names' => $jambCandidate['other_names'],
+                    'gender' => $jambCandidate['gender'],
+                    'state_of_origin' => $jambCandidate['state_of_origin'],
+                    'lga' => $jambCandidate['lga'],
+                    'utme_score' => $jambCandidate['aggregate_score'],
+                    'program' => 'ND Nursing',
+                    'program_choice_1' => 'ND Nursing',
+                    'application_step' => 2,
+                    'status' => 'pending'
+                ];
+                
+                $applicationId = $this->applicationModel->createApplication($applicantId, $applicationData);
+                
+                if (!$applicationId) {
+                    throw new Exception("Failed to create application record");
+                }
+                
+                error_log("Created new application ID: " . $applicationId . " for applicant: " . $applicantId);
+                
+            } catch (Exception $e) {
+                error_log("Error creating application: " . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'Failed to create application record. Please try again.']);
+                return;
+            }
+        } else {
+            // Update existing application with JAMB data
+            try {
+                $updateData = [
+                    'jamb_number' => $jambCandidate['jamb_number'],
+                    'jamb_candidate_id' => $jambCandidate['id'],
+                    'first_name' => $jambCandidate['first_name'],
+                    'last_name' => $jambCandidate['last_name'],
+                    'other_names' => $jambCandidate['other_names'],
+                    'gender' => $jambCandidate['gender'],
+                    'state_of_origin' => $jambCandidate['state_of_origin'],
+                    'lga' => $jambCandidate['lga'],
+                    'utme_score' => $jambCandidate['aggregate_score'],
+                    'application_step' => 2,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ];
+                
+                $this->applicationModel->update($existingApplication['id'], $updateData);
+                error_log("Updated existing application ID: " . $existingApplication['id'] . " with JAMB data");
+                
+            } catch (Exception $e) {
+                error_log("Error updating application: " . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'Failed to update application record. Please try again.']);
+                return;
+            }
         }
         
         // Store in session
@@ -2040,6 +2106,9 @@ class PublicApplicationController extends ApplicationBaseController {
             'lga' => $jambCandidate['lga'],
             'score' => $jambCandidate['aggregate_score']
         ];
+        
+        // Mark JAMB candidate as used
+        $this->jambModel->markAsUsed($jambCandidate['id'], $applicantId);
         
         // Return complete data
         echo json_encode([
