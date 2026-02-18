@@ -101,53 +101,8 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
     @media (max-width: 768px)  { .page-shell { padding: 16px 14px 40px; } }
 
     /* =========================================================
-       TOP BAR
+       LOGOUT BUTTON (inside JAMB banner)
     ========================================================= */
-    .top-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        background: var(--navy);
-        border-radius: var(--radius-lg);
-        padding: 16px 28px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-    }
-
-    .top-bar-left {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-    }
-
-    .top-bar-emblem {
-        width: 44px; height: 44px;
-        background: rgba(255,255,255,0.08);
-        border: 1.5px solid rgba(200,150,58,0.4);
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        color: var(--gold-light);
-        font-size: 18px;
-        flex-shrink: 0;
-    }
-
-    .top-bar-title { font-family: 'Playfair Display', serif; font-size: 18px; color: #fff; font-weight: 700; line-height: 1.2; }
-    .top-bar-sub   { font-size: 11px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-
-    .top-bar-right { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-
-    .applicant-chip {
-        display: flex; align-items: center; gap: 8px;
-        background: rgba(255,255,255,0.07);
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 50px;
-        padding: 6px 14px;
-        font-size: 13px; color: rgba(255,255,255,0.75);
-    }
-
-    .applicant-chip i { color: var(--gold-light); font-size: 12px; }
-
     .logout-btn {
         display: inline-flex; align-items: center; gap: 7px;
         background: rgba(192,57,43,0.15);
@@ -162,49 +117,6 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
     }
 
     .logout-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
-
-    /* =========================================================
-       PROGRESS STEPS
-    ========================================================= */
-    .steps-bar {
-        display: flex;
-        align-items: center;
-        background: var(--white);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 18px 32px;
-        margin-bottom: 24px;
-        gap: 0;
-        overflow-x: auto;
-    }
-
-    .step-item { flex: 1; display: flex; align-items: center; min-width: 0; }
-
-    .step-inner {
-        display: flex; align-items: center; gap: 10px;
-        white-space: nowrap;
-    }
-
-    .step-num {
-        width: 32px; height: 32px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 13px; font-weight: 700;
-        flex-shrink: 0;
-        border: 2px solid var(--border);
-        color: var(--text-muted);
-        background: var(--white);
-        transition: all 0.3s;
-    }
-
-    .step-item.done   .step-num { background: var(--teal);     border-color: var(--teal);     color: #fff; }
-    .step-item.active .step-num { background: var(--gold);     border-color: var(--gold);     color: var(--navy); box-shadow: 0 0 0 4px rgba(200,150,58,.2); }
-
-    .step-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .step-item.done   .step-label { color: var(--teal); }
-    .step-item.active .step-label { color: var(--gold); }
-
-    .step-connector { flex: 1; height: 1px; background: var(--border); margin: 0 10px; }
-    .step-connector.done { background: var(--teal); }
 
     /* =========================================================
        FLASH ALERTS
@@ -607,58 +519,6 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
 <body>
 <div class="page-shell">
 
-    <!-- ===== TOP BAR ===== -->
-    <div class="top-bar">
-        <div class="top-bar-left">
-            <div class="top-bar-emblem"><i class="fas fa-star-of-life"></i></div>
-            <div>
-                <div class="top-bar-title">FCT College of Nursing Sciences</div>
-                <div class="top-bar-sub">2025 / 2026 Admissions Portal</div>
-            </div>
-        </div>
-        <div class="top-bar-right">
-            <div class="applicant-chip">
-                <i class="fas fa-user-graduate"></i>
-                <?php echo e($applicant_name); ?>
-            </div>
-            <a href="/applicant/logout" class="logout-btn"
-               onclick="return confirm('Are you sure you want to logout? Your progress will be saved.');">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
-        </div>
-    </div>
-
-    <!-- ===== PROGRESS STEPS ===== -->
-    <div class="steps-bar">
-        <div class="step-item done">
-            <div class="step-inner">
-                <div class="step-num"><i class="fas fa-check" style="font-size:11px;"></i></div>
-                <div class="step-label">JAMB Verified</div>
-            </div>
-        </div>
-        <div class="step-connector done"></div>
-        <div class="step-item active">
-            <div class="step-inner">
-                <div class="step-num">2</div>
-                <div class="step-label">Application Form</div>
-            </div>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step-item">
-            <div class="step-inner">
-                <div class="step-num">3</div>
-                <div class="step-label">Payment</div>
-            </div>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step-item">
-            <div class="step-inner">
-                <div class="step-num">4</div>
-                <div class="step-label">Exam Slip</div>
-            </div>
-        </div>
-    </div>
-
     <!-- ===== FLASH MESSAGES ===== -->
     <?php if (!empty($flash_success)): ?>
     <div class="flash-alert success">
@@ -697,11 +557,17 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
                 </div>
             </div>
         </div>
-        <?php if (!empty($jamb_data['score'] ?? $application['utme_score'] ?? '')): ?>
-        <div class="jamb-score-pill">
-            Score: <?php echo e($jamb_data['score'] ?? $application['utme_score']); ?>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <?php if (!empty($jamb_data['score'] ?? $application['utme_score'] ?? '')): ?>
+            <div class="jamb-score-pill">
+                Score: <?php echo e($jamb_data['score'] ?? $application['utme_score']); ?>
+            </div>
+            <?php endif; ?>
+            <a href="/applicant/logout" class="logout-btn"
+               onclick="return confirm('Are you sure you want to logout? Your progress will be saved.');">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
         </div>
-        <?php endif; ?>
     </div>
 
     <!-- ===== ERROR DISPLAY ===== -->
