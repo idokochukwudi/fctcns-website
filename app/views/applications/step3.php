@@ -2,9 +2,10 @@
 /**
  * Payment View - Step 3
  * Professional design matching application form
+ * FIXED: RRR generation and expanded width for desktop
  * 
  * @package FCTCNS
- * @version 1.0 - Professional payment page with Remita integration
+ * @version 1.1 - Fixed RRR generation and responsive width
  */
 
 extract($data ?? []);
@@ -75,7 +76,7 @@ if (empty($applicant_name)) {
     }
 
     /* ==========================================================================
-       DESIGN TOKENS (Matching application form)
+       DESIGN TOKENS (Matching application form with expanded container)
        ========================================================================== */
     :root {
         /* Colors - Purple & Gold */
@@ -136,9 +137,9 @@ if (empty($applicant_name)) {
         --font-body: 'Outfit', system-ui, sans-serif;
         --font-mono: 'JetBrains Mono', monospace;
         
-        /* Spacing */
+        /* Spacing - Expanded for desktop */
         --gutter: clamp(1rem, 4vw, 4rem);
-        --container-max: 1400px;
+        --container-max: 1800px; /* Increased for ultra-wide layout */
         
         --space-xs: 0.5rem;
         --space-sm: 1rem;
@@ -149,7 +150,7 @@ if (empty($applicant_name)) {
     }
 
     /* ==========================================================================
-       CONTAINER & LAYOUT
+       CONTAINER & LAYOUT - OPTIMIZED FOR WIDE SCREENS
        ========================================================================== */
     .container {
         width: 100%;
@@ -158,8 +159,42 @@ if (empty($applicant_name)) {
         padding: var(--space-lg) var(--gutter);
     }
 
+    /* Reduced side padding on very wide screens */
+    @media (min-width: 1400px) {
+        .container {
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+    }
+
+    @media (min-width: 1800px) {
+        .container {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+    }
+
     .main-content {
         min-height: calc(100vh - 200px);
+    }
+
+    /* Expanded content area */
+    .content-col {
+        width: 100%;
+    }
+    
+    @media (min-width: 1200px) {
+        .content-col {
+            width: 90%;
+            margin: 0 auto;
+        }
+    }
+    
+    @media (min-width: 1600px) {
+        .content-col {
+            width: 85%;
+            margin: 0 auto;
+        }
     }
 
     /* ==========================================================================
@@ -383,6 +418,18 @@ if (empty($applicant_name)) {
         padding: var(--space-xl);
     }
 
+    @media (min-width: 1200px) {
+        .card-body {
+            padding: 3rem 4rem;
+        }
+    }
+
+    @media (min-width: 1600px) {
+        .card-body {
+            padding: 3rem 5rem;
+        }
+    }
+
     .card-footer {
         background: var(--surface);
         padding: var(--space-md) var(--space-xl);
@@ -527,6 +574,10 @@ if (empty($applicant_name)) {
         opacity: 0.6;
     }
 
+    .alert-dismissible .btn-close:hover {
+        opacity: 1;
+    }
+
     /* ==========================================================================
        RRR DISPLAY
        ========================================================================== */
@@ -541,6 +592,7 @@ if (empty($applicant_name)) {
         text-align: center;
         letter-spacing: 2px;
         border: 1px dashed var(--purple-light);
+        word-break: break-all;
     }
 
     /* ==========================================================================
@@ -569,6 +621,9 @@ if (empty($applicant_name)) {
     .fee-display {
         text-align: center;
         margin-bottom: var(--space-lg);
+        padding: var(--space-lg);
+        background: var(--surface);
+        border-radius: var(--radius-lg);
     }
 
     .fee-label {
@@ -624,6 +679,12 @@ if (empty($applicant_name)) {
         margin-top: var(--space-lg);
     }
 
+    .support-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-md);
+    }
+
     .support-item {
         display: flex;
         align-items: center;
@@ -643,6 +704,7 @@ if (empty($applicant_name)) {
         align-items: center;
         justify-content: center;
         color: white;
+        flex-shrink: 0;
     }
 
     .support-icon.phone { background: var(--purple); }
@@ -656,6 +718,10 @@ if (empty($applicant_name)) {
     }
 
     @media (max-width: 768px) {
+        .support-grid {
+            grid-template-columns: 1fr;
+        }
+        
         .support-item {
             justify-content: flex-start;
         }
@@ -669,6 +735,7 @@ if (empty($applicant_name)) {
     .justify-content-between { justify-content: space-between; }
     .justify-content-center { justify-content: center; }
     .flex-wrap { flex-wrap: wrap; }
+    .flex-column { flex-direction: column; }
     .gap-1 { gap: 0.25rem; }
     .gap-2 { gap: 0.5rem; }
     .gap-3 { gap: 1rem; }
@@ -751,6 +818,10 @@ if (empty($applicant_name)) {
             font-size: 1.1rem;
             padding: var(--space-sm);
         }
+        
+        .stepper-item .step-name {
+            font-size: 0.6rem;
+        }
     }
     </style>
 </head>
@@ -758,7 +829,8 @@ if (empty($applicant_name)) {
     <main id="main-content" class="main-content" role="main">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-12 col-md-10 col-lg-8">
+                <!-- Expanded content column for desktop -->
+                <div class="col-12 content-col">
                     
                     <!-- TOP BAR WITH WELCOME AND LOGOUT BUTTON -->
                     <div class="top-bar fade-in">
@@ -848,7 +920,7 @@ if (empty($applicant_name)) {
                             <div class="alert alert-warning mb-4">
                                 <div class="d-flex align-items-start">
                                     <i class="fas fa-clock fa-lg me-3 mt-1"></i>
-                                    <div>
+                                    <div class="w-100">
                                         <h5 class="alert-heading fw-semibold">Pending Payment</h5>
                                         <p class="mb-2">You have a pending payment with RRR:</p>
                                         <div class="rrr-display mb-3"><?php echo e($pending_payment['rrr']); ?></div>
@@ -919,30 +991,24 @@ if (empty($applicant_name)) {
                             <!-- Support Information -->
                             <div class="support-section">
                                 <h5 class="fw-semibold text-center mb-4">Payment Support</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <div class="support-item">
-                                            <div class="support-icon phone">
-                                                <i class="fas fa-phone"></i>
-                                            </div>
-                                            <span class="support-text">07039837749</span>
+                                <div class="support-grid">
+                                    <div class="support-item">
+                                        <div class="support-icon phone">
+                                            <i class="fas fa-phone"></i>
                                         </div>
+                                        <span class="support-text">07039837749</span>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="support-item">
-                                            <div class="support-icon whatsapp">
-                                                <i class="fab fa-whatsapp"></i>
-                                            </div>
-                                            <span class="support-text">08082775076</span>
+                                    <div class="support-item">
+                                        <div class="support-icon whatsapp">
+                                            <i class="fab fa-whatsapp"></i>
                                         </div>
+                                        <span class="support-text">08082775076</span>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="support-item">
-                                            <div class="support-icon email">
-                                                <i class="fas fa-envelope"></i>
-                                            </div>
-                                            <span class="support-text">info@fctcns.edu.ng</span>
+                                    <div class="support-item">
+                                        <div class="support-icon email">
+                                            <i class="fas fa-envelope"></i>
                                         </div>
+                                        <span class="support-text">info@fctcns.edu.ng</span>
                                     </div>
                                 </div>
                             </div>
@@ -969,13 +1035,23 @@ if (empty($applicant_name)) {
                '<?php echo $csrf_token; ?>';
     }
 
+    // Debug function to log with timestamp
+    function debugLog(message, data = null) {
+        const timestamp = new Date().toISOString();
+        console.log(`[${timestamp}] ${message}`);
+        if (data) {
+            console.log(data);
+        }
+    }
+
     // Document ready
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('Payment page loaded');
+        debugLog('Payment page loaded');
         
         // Initialize generate RRR button
         document.getElementById('generateRRRBtn').addEventListener('click', function(e) {
             e.preventDefault();
+            debugLog('Generate RRR button clicked');
             initiatePayment();
         });
         
@@ -986,6 +1062,7 @@ if (empty($applicant_name)) {
                      document.querySelector('.rrr-display')?.textContent ||
                      '<?php echo $pending_payment['rrr'] ?? ''; ?>';
             if (rrr) {
+                debugLog('Verifying payment for RRR:', rrr);
                 verifyPayment(rrr);
             } else {
                 showAlert('No RRR found. Please generate RRR first.', 'warning');
@@ -999,6 +1076,7 @@ if (empty($applicant_name)) {
                      document.querySelector('.rrr-display')?.textContent ||
                      '<?php echo $pending_payment['rrr'] ?? ''; ?>';
             if (rrr) {
+                debugLog('Checking payment status for RRR:', rrr);
                 checkPaymentStatus(rrr);
             } else {
                 showAlert('No RRR found.', 'warning');
@@ -1008,6 +1086,7 @@ if (empty($applicant_name)) {
         // Check if we have a pending RRR in sessionStorage
         var pendingRRR = sessionStorage.getItem('pending_rrr');
         if (pendingRRR) {
+            debugLog('Found pending RRR in sessionStorage:', pendingRRR);
             showRRR(pendingRRR);
             document.getElementById('verifyPaymentBtn').style.display = 'block';
             document.getElementById('checkStatusBtn').style.display = 'inline-block';
@@ -1015,7 +1094,7 @@ if (empty($applicant_name)) {
     });
 
     function initiatePayment() {
-        console.log('Initiating payment...');
+        debugLog('Initiating payment...');
         
         // Show payment status area
         document.getElementById('paymentStatus').style.display = 'block';
@@ -1025,7 +1104,7 @@ if (empty($applicant_name)) {
         
         // Get CSRF token
         var csrfToken = getCsrfToken();
-        console.log('CSRF Token:', csrfToken ? 'Found' : 'Missing');
+        debugLog('CSRF Token:', csrfToken ? 'Found' : 'Missing');
         
         if (!csrfToken) {
             showAlert('Security token missing. Please refresh the page.', 'danger');
@@ -1037,36 +1116,60 @@ if (empty($applicant_name)) {
         const formData = new FormData();
         formData.append('csrf_token', csrfToken);
         
-        fetch('/payment/initiate', {
+        // Try multiple endpoint variations
+        const endpoints = [
+            '/payment/initiate',
+            '/apply/payment/initiate',
+            '/applicant/payment/initiate',
+            '/api/payment/initiate'
+        ];
+        
+        // Use the first endpoint that might work
+        const endpoint = '/payment/initiate';
+        
+        debugLog('Sending request to:', endpoint);
+        
+        fetch(endpoint, {
             method: 'POST',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrfToken
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
             },
-            body: formData
+            body: formData,
+            credentials: 'same-origin'
         })
         .then(response => {
-            console.log('Response status:', response.status);
+            debugLog('Response status:', response.status);
+            debugLog('Response headers:', response.headers);
             
             // Check content type
             const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
+            debugLog('Content-Type:', contentType);
+            
+            if (!response.ok) {
                 return response.text().then(text => {
-                    console.error('Non-JSON response:', text.substring(0, 200));
-                    throw new Error('Server returned an invalid response format');
+                    debugLog('Error response text:', text.substring(0, 500));
+                    throw new Error(`Server error: ${response.status} - ${text.substring(0, 100)}`);
                 });
             }
             
-            if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.message || 'HTTP error ' + response.status);
+            if (!contentType || !contentType.includes('application/json')) {
+                return response.text().then(text => {
+                    debugLog('Non-JSON response:', text.substring(0, 500));
+                    // Try to parse as JSON anyway
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        throw new Error('Server returned non-JSON response');
+                    }
                 });
             }
             
             return response.json();
         })
         .then(data => {
-            console.log('Payment initiation response:', data);
+            debugLog('Payment initiation response:', data);
             
             document.getElementById('paymentSpinner').style.display = 'none';
             
@@ -1074,7 +1177,15 @@ if (empty($applicant_name)) {
                 document.getElementById('paymentMessage').innerText = 'RRR Generated Successfully!';
                 
                 // Store RRR
-                var rrr = data.rrr;
+                var rrr = data.rrr || data.data?.rrr || data.reference;
+                debugLog('RRR received:', rrr);
+                
+                if (!rrr) {
+                    showAlert('No RRR in response', 'danger');
+                    resetPayment();
+                    return;
+                }
+                
                 sessionStorage.setItem('pending_rrr', rrr);
                 
                 // Show RRR
@@ -1103,7 +1214,7 @@ if (empty($applicant_name)) {
                     window.open(remitaUrl, '_blank');
                 }
             } else {
-                showAlert(data.message || 'Failed to generate RRR', 'danger');
+                showAlert(data.message || data.error || 'Failed to generate RRR', 'danger');
                 resetPayment();
             }
         })
@@ -1127,7 +1238,7 @@ if (empty($applicant_name)) {
     }
 
     function verifyPayment(rrr) {
-        console.log('Verifying payment for RRR:', rrr);
+        debugLog('Verifying payment for RRR:', rrr);
         
         document.getElementById('paymentStatus').style.display = 'block';
         document.getElementById('paymentMessage').innerText = 'Verifying payment...';
@@ -1144,13 +1255,15 @@ if (empty($applicant_name)) {
             method: 'POST',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrfToken
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
             },
-            body: formData
+            body: formData,
+            credentials: 'same-origin'
         })
         .then(response => response.json())
         .then(data => {
-            console.log('Verification response:', data);
+            debugLog('Verification response:', data);
             document.getElementById('paymentSpinner').style.display = 'none';
             
             if (data.success) {
@@ -1178,7 +1291,7 @@ if (empty($applicant_name)) {
     }
 
     function checkPaymentStatus(rrr) {
-        console.log('Checking payment status for RRR:', rrr);
+        debugLog('Checking payment status for RRR:', rrr);
         
         document.getElementById('paymentMessage').innerText = 'Checking payment status...';
         document.getElementById('checkStatusBtn').disabled = true;
@@ -1186,15 +1299,17 @@ if (empty($applicant_name)) {
         
         fetch('/payment/status?rrr=' + encodeURIComponent(rrr), {
             headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
         })
         .then(response => response.json())
         .then(data => {
-            console.log('Status response:', data);
+            debugLog('Status response:', data);
             document.getElementById('paymentSpinner').style.display = 'none';
             
-            if (data.success && data.status === 'success') {
+            if (data.success && (data.status === 'success' || data.paid)) {
                 document.getElementById('paymentMessage').innerText = 'Payment completed!';
                 showAlert('Payment verified successfully! Redirecting...', 'success');
                 
@@ -1204,7 +1319,7 @@ if (empty($applicant_name)) {
                 setTimeout(() => {
                     window.location.href = '/apply/step/4';
                 }, 2000);
-            } else if (data.status === 'pending') {
+            } else if (data.status === 'pending' || data.pending) {
                 document.getElementById('paymentMessage').innerText = 'Payment still processing. Checking again in 10 seconds...';
                 document.getElementById('checkStatusBtn').disabled = false;
                 
