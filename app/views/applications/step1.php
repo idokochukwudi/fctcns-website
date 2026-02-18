@@ -1,7 +1,7 @@
 <?php
 /**
  * JAMB Verification View - Step 1
- * ENHANCED: Fixed font colors, removed duplicate footer, updated placeholder
+ * FIXED: All fonts now visible on any background with proper contrast
  * 
  * @package FCTCNS
  */
@@ -59,7 +59,6 @@ $portal_message = $portal_message ?? '';
             justify-content: center;
             padding: 20px;
             margin: 0;
-            color: #1A1F2E;
         }
 
         /* ==========================================================================
@@ -112,7 +111,7 @@ $portal_message = $portal_message ?? '';
         }
 
         /* ==========================================================================
-           HEADER - FIXED FONT COLORS
+           HEADER - MAXIMUM VISIBILITY
            ========================================================================== */
         .header {
             text-align: center;
@@ -123,33 +122,40 @@ $portal_message = $portal_message ?? '';
             font-family: 'Cormorant Garamond', serif;
             font-size: clamp(28px, 5vw, 42px);
             font-weight: 700;
-            color: #FFFFFF !important; /* Force white */
+            color: #FFFFFF !important;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5), 0 0 10px rgba(0,0,0,0.3);
             letter-spacing: -0.5px;
         }
 
         .header p {
             font-size: clamp(14px, 2vw, 16px);
-            color: rgba(255,255,255,0.95) !important; /* Force white with opacity */
-            font-weight: 400;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            color: #FFFFFF !important;
+            font-weight: 500;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            opacity: 1;
+            background: rgba(0,0,0,0.2);
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 50px;
+            backdrop-filter: blur(5px);
         }
 
         /* ==========================================================================
-           STEP INDICATOR - FIXED FONT COLORS
+           STEP INDICATOR - MAXIMUM VISIBILITY
            ========================================================================== */
         .step-indicator {
             display: flex;
             justify-content: space-between;
             margin-bottom: 40px;
             position: relative;
-            background: rgba(255,255,255,0.15);
+            background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border-radius: 50px;
             padding: 15px 20px;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
 
         .step-indicator::before {
@@ -159,7 +165,7 @@ $portal_message = $portal_message ?? '';
             left: 60px;
             right: 60px;
             height: 2px;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.3);
             transform: translateY(-50%);
             z-index: 1;
         }
@@ -175,23 +181,25 @@ $portal_message = $portal_message ?? '';
         .step-number {
             width: 40px;
             height: 40px;
-            background: rgba(255,255,255,0.2);
-            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.6);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 8px;
             font-weight: 700;
-            color: #FFFFFF !important; /* Force white */
+            font-size: 18px;
+            color: #FFFFFF !important;
             transition: all 0.3s;
             backdrop-filter: blur(5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
 
         .step.active .step-number {
             background: var(--primary);
             border-color: #FFFFFF;
-            box-shadow: var(--shadow-primary);
+            box-shadow: 0 0 15px rgba(107, 78, 155, 0.5);
             color: #FFFFFF !important;
         }
 
@@ -204,24 +212,24 @@ $portal_message = $portal_message ?? '';
         .step-label {
             font-size: 13px;
             font-weight: 600;
-            color: #FFFFFF !important; /* Force white */
+            color: #FFFFFF !important;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.5);
         }
 
         .step.active .step-label {
-            color: #FFD700 !important; /* Gold color for active */
+            color: #FFD700 !important;
             font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         @media (max-width: 768px) {
             .step-indicator {
                 flex-wrap: wrap;
                 gap: 10px;
-                background: rgba(255,255,255,0.2);
+                background: rgba(0, 0, 0, 0.5);
                 backdrop-filter: blur(10px);
-                border: 1px solid rgba(255,255,255,0.2);
                 padding: 15px;
             }
             
@@ -232,13 +240,15 @@ $portal_message = $portal_message ?? '';
             .step {
                 flex: 0 0 calc(50% - 5px);
                 padding: 10px 5px;
-                background: rgba(255,255,255,0.1);
+                background: rgba(255, 255, 255, 0.1);
                 border-radius: 30px;
                 backdrop-filter: blur(5px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
             }
             
             .step-label {
                 font-size: 11px;
+                color: #FFFFFF !important;
             }
         }
 
@@ -276,13 +286,14 @@ $portal_message = $portal_message ?? '';
             font-weight: 700;
             margin-bottom: 10px;
             color: #FFFFFF !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
 
         .card-header p {
             font-size: 14px;
-            opacity: 0.9;
             margin: 0;
             color: rgba(255,255,255,0.95) !important;
+            font-weight: 400;
         }
 
         .card-body {
@@ -320,6 +331,7 @@ $portal_message = $portal_message ?? '';
             align-items: center;
             gap: 10px;
             color: #FFFFFF !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
 
         .terms-body {
@@ -611,31 +623,32 @@ $portal_message = $portal_message ?? '';
         }
 
         /* ==========================================================================
-           FOOTER - SINGLE FOOTER (REMOVED DUPLICATE)
+           FOOTER
            ========================================================================== */
         .app-footer {
             text-align: center;
             margin-top: 30px;
-            color: rgba(255,255,255,0.95) !important;
+            color: #FFFFFF !important;
             font-size: 13px;
             padding: 20px;
-            background: rgba(0,0,0,0.25);
+            background: rgba(0, 0, 0, 0.4);
             border-radius: var(--radius-lg);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .app-footer p {
-            color: rgba(255,255,255,0.95) !important;
+            color: #FFFFFF !important;
             margin-bottom: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
         .app-footer a {
             color: #FFFFFF !important;
             text-decoration: none;
             font-weight: 500;
-            border-bottom: 1px dotted rgba(255,255,255,0.5);
+            border-bottom: 1px dotted rgba(255, 255, 255, 0.6);
         }
 
         .app-footer a:hover {
@@ -644,8 +657,7 @@ $portal_message = $portal_message ?? '';
 
         .app-footer i {
             margin: 0 5px;
-            opacity: 0.9;
-            color: rgba(255,255,255,0.9);
+            color: #FFFFFF !important;
         }
 
         /* ==========================================================================
@@ -713,13 +725,13 @@ $portal_message = $portal_message ?? '';
 </head>
 <body>
     <div class="verification-container">
-        <!-- Header - Fixed colors -->
+        <!-- Header - Maximum Visibility -->
         <div class="header">
             <h1>FCT College of Nursing Sciences</h1>
             <p>2025/2026 Admissions Application Portal</p>
         </div>
 
-        <!-- Step Indicator - Fixed colors -->
+        <!-- Step Indicator - Maximum Visibility -->
         <div class="step-indicator">
             <div class="step active">
                 <div class="step-number">1</div>
@@ -842,7 +854,7 @@ $portal_message = $portal_message ?? '';
                         <span>OR</span>
                     </div>
                     
-                    <!-- Login Link - Fixed to point to login page -->
+                    <!-- Login Link -->
                     <div class="text-center">
                         <p class="mb-2" style="color: var(--text-muted);">Already have an account?</p>
                         <a href="/applicant/login" class="btn btn-outline-primary">
@@ -853,7 +865,7 @@ $portal_message = $portal_message ?? '';
             </div>
         <?php endif; ?>
 
-        <!-- SINGLE FOOTER - Using app-footer class to avoid conflict with layout -->
+        <!-- Footer -->
         <div class="app-footer">
             <p>© <?php echo date('Y'); ?> FCT College of Nursing Sciences. All rights reserved.</p>
             <p>
@@ -1002,7 +1014,6 @@ $portal_message = $portal_message ?? '';
     // Check if already verified on page load
     document.addEventListener('DOMContentLoaded', function() {
         // Clear any stale session data if needed
-        // This prevents unwanted redirects
         const jambVerified = sessionStorage.getItem('jamb_verified');
         const jambData = sessionStorage.getItem('jamb_data');
         
