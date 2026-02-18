@@ -4,7 +4,7 @@
  * 
  * Handles public-facing application processes
  * ENHANCED: Added application creation during JAMB verification, specific login error messages, password reset functionality
- * FIXED: Step2 method now properly restores JAMB data from database and redirects to /apply/form
+ * FIXED: Redirect from application form to step 2, proper JAMB data restoration
  * 
  * @package FCT_CNS
  */
@@ -439,7 +439,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show application form (Step 2 - New Flow)
-     * FIXED: Load existing file paths from database including birth certificate
+     * FIXED: Redirect to step 2 instead of rendering form
      */
     public function showApplicationForm() {
         // Start session
@@ -550,7 +550,9 @@ class PublicApplicationController extends ApplicationBaseController {
             ] : null
         ]);
         
-        $this->render('applications/application-form');
+        // FIXED: Redirect to step 2 instead of rendering form
+        header('Location: /apply/step/2');
+        exit;
     }
 
     /**
@@ -1344,6 +1346,7 @@ class PublicApplicationController extends ApplicationBaseController {
     
     /**
      * Process applicant login - ENHANCED with specific error messages
+     * FIXED: Updated redirect URLs to use step2 instead of form
      */
     public function processLogin() {
         // Start session
@@ -1517,14 +1520,14 @@ class PublicApplicationController extends ApplicationBaseController {
                 ];
             }
             
-            // Determine step based on application progress
+            // Determine step based on application progress - FIXED: Use step2 instead of form
             if (empty($application['jamb_number'])) {
                 $redirectUrl = '/apply/step/1';
             } elseif (empty($application['date_of_birth']) || 
                       empty($application['phone']) || 
                       empty($application['address']) || 
                       empty($application['program_choice_1'])) {
-                $redirectUrl = '/apply/form';
+                $redirectUrl = '/apply/step/2'; // Changed from /apply/form to /apply/step/2
             } elseif ($application['application_step'] >= 3) {
                 // Check if payment is complete
                 $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
@@ -1534,7 +1537,7 @@ class PublicApplicationController extends ApplicationBaseController {
                     $redirectUrl = '/apply/step/3';
                 }
             } else {
-                $redirectUrl = '/apply/form';
+                $redirectUrl = '/apply/step/2'; // Changed from /apply/form to /apply/step/2
             }
         }
         
@@ -1902,8 +1905,8 @@ class PublicApplicationController extends ApplicationBaseController {
             
             // If application step is 2, redirect to form
             if ($application['application_step'] == 2) {
-                error_log("Application step 2 detected, redirecting to form");
-                header('Location: /apply/form');
+                error_log("Application step 2 detected, redirecting to step2");
+                header('Location: /apply/step/2');
                 exit;
             }
         }
@@ -1923,7 +1926,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show step 2: Application form (Legacy Flow) - FIXED
-     * This method now properly restores JAMB data from database and redirects to /apply/form
+     * This method now properly restores JAMB data from database and redirects to /apply/step/2
      */
     public function step2() {
         // Start session
@@ -1989,6 +1992,15 @@ class PublicApplicationController extends ApplicationBaseController {
         // Get applicant details
         $applicant = $this->applicantModel->find($applicantId);
         
+        // Parse O'Level results from JSON if exists
+        $olevelFiles = [];
+        if (!empty($application['olevel_results'])) {
+            $olevelFiles = json_decode($application['olevel_results'], true);
+            if (!is_array($olevelFiles)) {
+                $olevelFiles = [];
+            }
+        }
+        
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Step 2: Application Form',
             'application' => $application,
@@ -1998,12 +2010,29 @@ class PublicApplicationController extends ApplicationBaseController {
             'passport' => $passport,
             'states' => $this->getStates(),
             'programs' => $this->getPrograms(),
-            'csrf_token' => $this->csrfToken()
+            'csrf_token' => $this->csrfToken(),
+            'existing_passport' => !empty($application['passport_photo']) ? [
+                'file_path' => $application['passport_photo'],
+                'id' => 'passport'
+            ] : null,
+            'existing_olevel' => array_map(function($path, $index) {
+                return [
+                    'file_path' => $path,
+                    'id' => 'olevel_' . $index
+                ];
+            }, $olevelFiles, array_keys($olevelFiles)),
+            'existing_jamb_result' => !empty($application['qualification_file']) ? [
+                'file_path' => $application['qualification_file'],
+                'id' => 'jamb_result'
+            ] : null,
+            'existing_birth_certificate' => !empty($application['birth_certificate']) ? [
+                'file_path' => $application['birth_certificate'],
+                'id' => 'birth_certificate'
+            ] : null
         ]);
         
-        // Instead of rendering step2, redirect to the new application form
-        header('Location: /apply/form');
-        exit;
+        // Render the step2 view (application form)
+        $this->render('applications/step2');
     }
 
     /**
