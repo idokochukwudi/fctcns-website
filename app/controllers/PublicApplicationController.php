@@ -437,6 +437,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show application form (Step 2 - New Flow)
+     * FIXED: Properly restore JAMB data from database if session missing
      */
     public function showApplicationForm() {
         // Start session
@@ -451,7 +452,8 @@ class PublicApplicationController extends ApplicationBaseController {
             exit;
         }
         
-        $applicant = $this->applicantModel->find($_SESSION['applicant_id']);
+        $applicantId = $_SESSION['applicant_id'];
+        $applicant = $this->applicantModel->find($applicantId);
         
         if (!$applicant) {
             $_SESSION['flash_error'] = 'Applicant not found';
@@ -465,52 +467,43 @@ class PublicApplicationController extends ApplicationBaseController {
             exit;
         }
         
-        // Check if JAMB has been verified
-        if (!isset($_SESSION['jamb_verification']) || !$_SESSION['jamb_verification']) {
+        // Get application
+        $application = $this->applicationModel->getByApplicantId($applicantId);
+        
+        if (!$application) {
+            $_SESSION['flash_error'] = 'Application not found. Please start over.';
+            header('Location: /apply/step/1');
+            exit;
+        }
+        
+        // CRITICAL: Check if JAMB is verified in database, even if not in session
+        if (empty($application['jamb_number'])) {
             $_SESSION['flash_error'] = 'Please verify your JAMB number first';
             header('Location: /apply/step/1');
             exit;
         }
         
-        // Check if application exists
-        $application = $this->applicationModel->getByApplicantId($applicant['id']);
-        
-        if (!$application) {
-            // Create new application with JAMB data
-            $jambData = $_SESSION['jamb_verification'];
-            $applicationId = $this->applicationModel->insert([
-                'applicant_id' => $applicant['id'],
-                'application_number' => $this->applicationModel->generateApplicationNumber(),
-                'jamb_number' => $jambData['jamb_number'],
-                'first_name' => $jambData['first_name'],
-                'last_name' => $jambData['last_name'],
-                'other_names' => $jambData['other_names'],
-                'gender' => $jambData['gender'],
-                'state_of_origin' => $jambData['state_of_origin'],
-                'lga' => $jambData['lga'],
-                'utme_score' => $jambData['score'],
-                'application_step' => 2,
-                'status' => 'pending',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
-            ]);
-            
-            if ($applicationId) {
-                $application = $this->applicationModel->find($applicationId);
-            }
+        // Restore JAMB data to session if missing but application has it
+        if (!isset($_SESSION['jamb_verification']) && !empty($application['jamb_number'])) {
+            $_SESSION['jamb_verification'] = [
+                'jamb_number' => $application['jamb_number'],
+                'first_name' => $application['first_name'],
+                'last_name' => $application['last_name'],
+                'other_names' => $application['other_names'],
+                'gender' => $application['gender'],
+                'state_of_origin' => $application['state_of_origin'],
+                'lga' => $application['lga'],
+                'score' => $application['utme_score']
+            ];
+            error_log("Restored JAMB data to session from database in showApplicationForm for applicant: " . $applicantId);
         }
         
-        if (!$application) {
-            $_SESSION['flash_error'] = 'Failed to create application';
-            header('Location: /apply/step/1');
-            exit;
-        }
-        
+        // Pass data to view
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Application Form - Step 2',
             'application' => $application,
             'applicant' => $applicant,
-            'jamb_data' => $_SESSION['jamb_verification'],
+            'jamb_data' => $_SESSION['jamb_verification'] ?? null,
             'states' => $this->getStates(),
             'programs' => $this->getPrograms(),
             'csrf_token' => $this->csrfToken()
@@ -1249,14 +1242,22 @@ class PublicApplicationController extends ApplicationBaseController {
             exit;
         }
         
-        // CASE 3: Form filled, ready for payment
+        // CASE 3: JAMB verified but form not complete - go to form
+        if (empty($application['date_of_birth']) || empty($application['phone']) || empty($application['address']) || empty($application['program_choice_1'])) {
+            error_log("Form not complete for applicant {$applicant['id']}, redirecting to form");
+            header('Location: /apply/form');
+            exit;
+        }
+        
+        // CASE 4: Form complete, ready for payment
         if ($step >= 3) {
+            error_log("Form complete, redirecting to payment for applicant {$applicant['id']}");
             header('Location: /apply/step/3');
             exit;
         }
         
-        // CASE 4: JAMB verified but form not complete - go to form
-        // They can navigate back to step 1 if needed via the step indicator
+        // CASE 5: Fallback - go to form
+        error_log("Fallback redirect to form for applicant {$applicant['id']}");
         header('Location: /apply/form');
         exit;
     }
