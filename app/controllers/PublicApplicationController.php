@@ -4,6 +4,7 @@
  * 
  * Handles public-facing application processes
  * ENHANCED: Added application creation during JAMB verification, specific login error messages, password reset functionality
+ * FIXED: Step2 method now properly restores JAMB data from database and redirects to /apply/form
  * 
  * @package FCT_CNS
  */
@@ -508,12 +509,24 @@ class PublicApplicationController extends ApplicationBaseController {
             }
         }
         
+        // Get O'Level results from dedicated model if exists
+        require_once MODELS_PATH . '/application/OlevelResultModel.php';
+        $olevelModel = new OlevelResultModel();
+        $olevel_results = $olevelModel->getByApplicationId($application['id']);
+        
+        // Get passport from document model if exists
+        require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
+        $docModel = new ApplicationDocumentModel();
+        $passport = $docModel->getPassport($application['id']);
+        
         // Pass data to view including file paths
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Application Form - Step 2',
             'application' => $application,
             'applicant' => $applicant,
             'jamb_data' => $_SESSION['jamb_verification'] ?? null,
+            'olevel_results' => $olevel_results,
+            'passport' => $passport,
             'states' => $this->getStates(),
             'programs' => $this->getPrograms(),
             'csrf_token' => $this->csrfToken(),
@@ -1909,9 +1922,15 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Show step 2: Application form (Legacy Flow)
+     * Show step 2: Application form (Legacy Flow) - FIXED
+     * This method now properly restores JAMB data from database and redirects to /apply/form
      */
     public function step2() {
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         // Check login
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
@@ -1919,21 +1938,83 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // Check if JAMB has been verified
+        // Check if JAMB has been verified in session
         if (!isset($_SESSION['jamb_verification']) || !$_SESSION['jamb_verification']) {
-            $_SESSION['flash_error'] = 'Please verify your JAMB number first';
+            // Try to restore from database
+            $applicantId = $_SESSION['applicant_id'];
+            $application = $this->applicationModel->getByApplicantId($applicantId);
+            
+            if ($application && !empty($application['jamb_number'])) {
+                // Restore JAMB data to session
+                $_SESSION['jamb_verification'] = [
+                    'jamb_number' => $application['jamb_number'],
+                    'first_name' => $application['first_name'],
+                    'last_name' => $application['last_name'],
+                    'other_names' => $application['other_names'],
+                    'gender' => $application['gender'],
+                    'state_of_origin' => $application['state_of_origin'],
+                    'lga' => $application['lga'],
+                    'score' => $application['utme_score']
+                ];
+                
+                error_log("Restored JAMB data to session from database in step2 for applicant: " . $applicantId);
+            } else {
+                $_SESSION['flash_error'] = 'Please verify your JAMB number first';
+                header('Location: /apply/step/1');
+                return;
+            }
+        }
+        
+        $applicantId = $_SESSION['applicant_id'];
+        
+        // Get application data
+        $application = $this->applicationModel->getByApplicantId($applicantId);
+        
+        if (!$application) {
+            $_SESSION['flash_error'] = 'Application not found. Please start over.';
             header('Location: /apply/step/1');
             return;
         }
         
-        $this->data['pageTitle'] = 'Step 2: Application Form';
-        $this->render('applications/step2');
+        // Get O'Level results from database if they exist
+        require_once MODELS_PATH . '/application/OlevelResultModel.php';
+        $olevelModel = new OlevelResultModel();
+        $olevel_results = $olevelModel->getByApplicationId($application['id']);
+        
+        // Get passport if exists
+        require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
+        $docModel = new ApplicationDocumentModel();
+        $passport = $docModel->getPassport($application['id']);
+        
+        // Get applicant details
+        $applicant = $this->applicantModel->find($applicantId);
+        
+        $this->data = array_merge($this->data, [
+            'pageTitle' => 'Step 2: Application Form',
+            'application' => $application,
+            'applicant' => $applicant,
+            'jamb_data' => $_SESSION['jamb_verification'],
+            'olevel_results' => $olevel_results,
+            'passport' => $passport,
+            'states' => $this->getStates(),
+            'programs' => $this->getPrograms(),
+            'csrf_token' => $this->csrfToken()
+        ]);
+        
+        // Instead of rendering step2, redirect to the new application form
+        header('Location: /apply/form');
+        exit;
     }
 
     /**
      * Show step 3: Payment (Legacy Flow)
      */
     public function step3() {
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         // Check login
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
@@ -1941,14 +2022,20 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        $this->data['pageTitle'] = 'Step 3: Payment';
-        $this->render('applications/step3');
+        // Redirect to new payment page
+        header('Location: /apply/step/3');
+        exit;
     }
 
     /**
      * Show step 4: Exam Slip (Legacy Flow)
      */
     public function step4() {
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         // Check login
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
@@ -1956,8 +2043,9 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        $this->data['pageTitle'] = 'Step 4: Examination Slip';
-        $this->render('applications/step4');
+        // Redirect to new exam slip page
+        header('Location: /apply/step/4');
+        exit;
     }
 
     // ============================================
