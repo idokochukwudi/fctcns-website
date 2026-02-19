@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c46fac502e9e6ff3b9ae98142341d9ba",
+    "content-hash": "62fefa4e8ef1666fbcf100e1f271a797",
     "packages": [
         {
             "name": "mpdf/mpdf",
@@ -393,6 +393,44 @@
             "time": "2024-09-11T13:17:53+00:00"
         },
         {
+            "name": "remita/rits",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/RemitaNet/rits-php.git",
+                "reference": "de5f96d10f014a6cacba67c2ac8b83c8f9eb54e4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/RemitaNet/rits-php/zipball/de5f96d10f014a6cacba67c2ac8b83c8f9eb54e4",
+                "reference": "de5f96d10f014a6cacba67c2ac8b83c8f9eb54e4",
+                "shasum": ""
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "com\\systemspecs\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "ISC"
+            ],
+            "authors": [
+                {
+                    "name": "Ilesanmi Omoniyi",
+                    "email": "ilesanmi@systemspecs.com.ng"
+                }
+            ],
+            "description": "This is the official package for Remita Interbank Transfer Service from SystemSpecs.",
+            "support": {
+                "issues": "https://github.com/RemitaNet/rits-php/issues",
+                "source": "https://github.com/RemitaNet/rits-php/tree/master"
+            },
+            "time": "2023-09-12T13:48:16+00:00"
+        },
+        {
             "name": "setasign/fpdi",
             "version": "v2.6.4",
             "source": {
@@ -468,7 +506,9 @@
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "remita/rits": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {},
