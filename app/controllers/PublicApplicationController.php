@@ -1115,7 +1115,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Verify payment (AJAX endpoint) - FIXED: Properly generates exam slip
+     * Verify payment (AJAX endpoint) - FIXED: Requires actual payment verification
      */
     public function verifyPayment() {
         header('Content-Type: application/json');
@@ -1156,7 +1156,22 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // For demo, mark as success
+            // CRITICAL: Check if payment is already successful
+            if ($payment['status'] === 'success') {
+                // Payment already verified - check if exam slip exists
+                $examSlip = $this->generateExamSlip($payment['application_id']);
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Payment already verified',
+                    'redirect' => '/apply/step/4'
+                ]);
+                return;
+            }
+            
+            // For DEMO/TESTING ONLY - Uncomment this section if you want to simulate payment
+            /*
+            // SIMULATE PAYMENT VERIFICATION (FOR TESTING ONLY)
             $updateResult = $this->paymentModel->markAsSuccess($payment['id'], [
                 'transaction_id' => 'TXN' . time(),
                 'payment_method' => 'remita',
@@ -1170,14 +1185,8 @@ class PublicApplicationController extends ApplicationBaseController {
                     'application_step' => 4
                 ]);
                 
-                // Generate exam slip - FIXED: Use the method that exists
+                // Generate exam slip
                 $examSlip = $this->generateExamSlip($payment['application_id']);
-                
-                if (!$examSlip) {
-                    error_log("Failed to generate exam slip for application: " . $payment['application_id']);
-                } else {
-                    error_log("Exam slip generated successfully for application: " . $payment['application_id']);
-                }
                 
                 echo json_encode([
                     'success' => true,
@@ -1190,6 +1199,50 @@ class PublicApplicationController extends ApplicationBaseController {
                     'message' => 'Failed to verify payment'
                 ]);
             }
+            return;
+            */
+            
+            // PRODUCTION: Check with Remita API if payment is actually completed
+            // This is where you would integrate with Remita's verification API
+            $remitaVerified = $this->verifyWithRemita($rrr);
+            
+            if ($remitaVerified) {
+                // Payment confirmed by Remita - mark as success
+                $updateResult = $this->paymentModel->markAsSuccess($payment['id'], [
+                    'transaction_id' => $remitaVerified['transactionId'] ?? 'TXN' . time(),
+                    'payment_method' => 'remita',
+                    'payer_email' => $remitaVerified['payerEmail'] ?? null,
+                    'payer_name' => $remitaVerified['payerName'] ?? null
+                ]);
+                
+                if ($updateResult) {
+                    // Update application step
+                    $this->applicationModel->updateApplication($payment['application_id'], [
+                        'application_step' => 4
+                    ]);
+                    
+                    // Generate exam slip
+                    $examSlip = $this->generateExamSlip($payment['application_id']);
+                    
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Payment verified successfully',
+                        'redirect' => '/apply/step/4'
+                    ]);
+                } else {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to update payment status'
+                    ]);
+                }
+            } else {
+                // Payment not completed on Remita
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Payment not completed. Please complete your payment on Remita.',
+                    'pending' => true
+                ]);
+            }
             
         } catch (Exception $e) {
             error_log("Verify payment error: " . $e->getMessage());
@@ -1198,6 +1251,35 @@ class PublicApplicationController extends ApplicationBaseController {
                 'message' => 'Server error occurred'
             ]);
         }
+    }
+
+    /**
+     * Verify payment with Remita API - Add this helper method
+     */
+    private function verifyWithRemita($rrr) {
+        // TODO: Implement actual Remita API verification here
+        // This is a placeholder that always returns false for production
+        // In production, you would call Remita's API to check payment status
+        
+        // For now, always return false to force actual payment
+        return false;
+        
+        /*
+        // Example Remita API integration (commented out)
+        try {
+            $remitaModel = new RemitaModel();
+            $result = $remitaModel->verifyPayment($rrr);
+            
+            if ($result['status'] === 'success' && $result['payment_data']['paymentStatus'] === 'PAID') {
+                return $result['payment_data'];
+            }
+            
+            return false;
+        } catch (Exception $e) {
+            error_log("Remita verification error: " . $e->getMessage());
+            return false;
+        }
+        */
     }
 
     // ============================================
