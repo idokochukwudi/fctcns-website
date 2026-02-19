@@ -912,7 +912,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     // ============================================
-    // STEP 3: PAYMENT
+    // STEP 3: PAYMENT - FIXED VERSION
     // ============================================
 
     /**
@@ -2035,13 +2035,17 @@ class PublicApplicationController extends ApplicationBaseController {
     }
     
     /**
-     * Show step 3: Payment (Legacy Flow)
+     * Show step 3: Payment (Legacy Flow) - FIXED - RENDERS CORRECT VIEW
      */
     public function step3() {
         // Start session
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+        
+        error_log("=== STEP 3 LOADED ===");
+        error_log("Session ID: " . session_id());
+        error_log("Applicant ID: " . ($_SESSION['applicant_id'] ?? 'not set'));
         
         // Check login
         if (!$this->isApplicantLoggedIn()) {
@@ -2050,8 +2054,9 @@ class PublicApplicationController extends ApplicationBaseController {
             exit;
         }
         
-        // Get application
         $applicantId = $_SESSION['applicant_id'];
+        
+        // Get application
         $application = $this->applicationModel->getByApplicantId($applicantId);
         
         if (!$application) {
@@ -2060,16 +2065,25 @@ class PublicApplicationController extends ApplicationBaseController {
             exit;
         }
         
+        error_log("Application found: ID=" . $application['id'] . ", Step=" . $application['application_step']);
+        
+        // Check if application is complete enough for payment
+        if (empty($application['date_of_birth']) || empty($application['phone']) || empty($application['address'])) {
+            $_SESSION['flash_error'] = 'Please complete your application form first';
+            header('Location: /apply/step/2');
+            exit;
+        }
+        
         // Check if already paid
         $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
-        
         if ($hasPaid) {
+            error_log("Already paid, redirecting to step 4");
             header('Location: /apply/step/4');
             exit;
         }
         
         // Restore JAMB data if needed
-        if (!isset($_SESSION['jamb_verification']) && $application['jamb_number']) {
+        if (!isset($_SESSION['jamb_verification']) && !empty($application['jamb_number'])) {
             $_SESSION['jamb_verification'] = [
                 'jamb_number' => $application['jamb_number'],
                 'first_name' => $application['first_name'],
@@ -2094,17 +2108,45 @@ class PublicApplicationController extends ApplicationBaseController {
         $fee = $this->settingsModel->getApplicationFee();
         $currency = $this->settingsModel->getCurrency();
         
-        // Render the payment page
+        // Check for pending payment
+        $pending_payment = null;
+        $payments = $this->paymentModel->getByApplicationId($application['id']);
+        if (!empty($payments)) {
+            foreach ($payments as $payment) {
+                if ($payment['status'] === 'pending') {
+                    $pending_payment = $payment;
+                    break;
+                }
+            }
+        }
+        
+        // Get applicant for name display
+        $applicant = $this->applicantModel->find($applicantId);
+        $applicant_name = trim(
+            ($application['first_name'] ?? '') . ' ' . 
+            ($application['last_name'] ?? '')
+        );
+        if (empty($applicant_name)) {
+            $applicant_name = $applicant['email'] ?? 'Applicant';
+        }
+        
+        // Prepare data for view
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Payment - Step 3',
             'application' => $application,
+            'applicant' => $applicant,
+            'applicant_name' => $applicant_name,
             'fee' => $fee,
             'currency' => $currency,
             'formatted_fee' => $this->settingsModel->getFormattedFee(),
-            'csrf_token' => $csrfToken
+            'csrf_token' => $csrfToken,
+            'pending_payment' => $pending_payment,
+            'baseUrl' => defined('BASE_URL') ? BASE_URL : '/'
         ]);
         
-        $this->render('applications/payment');
+        // IMPORTANT: Render step3.php, NOT payment.php
+        error_log("Rendering applications/step3 for applicant: " . $applicantId);
+        $this->render('applications/step3');
     }
 
     /**
@@ -2123,9 +2165,41 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // Redirect to new exam slip page
-        header('Location: /apply/step/4');
-        exit;
+        // Get application
+        $applicantId = $_SESSION['applicant_id'];
+        $application = $this->applicationModel->getByApplicantId($applicantId);
+        
+        if (!$application) {
+            $_SESSION['flash_error'] = 'Application not found';
+            header('Location: /apply/step/1');
+            exit;
+        }
+        
+        // Check if payment is successful
+        $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+        
+        if (!$hasPaid) {
+            header('Location: /apply/step/3');
+            exit;
+        }
+        
+        // Get exam slip
+        require_once MODELS_PATH . '/application/ExamSlipModel.php';
+        $examSlipModel = new ExamSlipModel();
+        $examSlip = $examSlipModel->getByApplicationId($application['id']);
+        
+        if (!$examSlip) {
+            $this->generateExamSlip($application['id']);
+            $examSlip = $examSlipModel->getByApplicationId($application['id']);
+        }
+        
+        $this->data = array_merge($this->data, [
+            'pageTitle' => 'Examination Slip - Step 4',
+            'application' => $application,
+            'exam_slip' => $examSlip
+        ]);
+        
+        $this->render('applications/step4');
     }
 
     // ============================================
