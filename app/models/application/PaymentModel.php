@@ -3,6 +3,7 @@
  * Payment Model
  * 
  * Handles payment data operations
+ * FIXED: generateRRR() now returns 12-digit format for Remita
  * 
  * @package FCT_CNS
  * @subpackage Application
@@ -33,13 +34,13 @@ class PaymentModel extends BaseModel {
     }
     
     /**
-     * Generate RRR (Remita Retrieval Reference)
+     * Generate RRR (Remita Retrieval Reference) - FIXED for 12-digit format
      */
     public function generateRRR() {
-        // Format: YYMMDDHHMMSS + random 4 digits
-        $datePart = date('ymdHis');
-        $randomPart = mt_rand(1000, 9999);
-        return $datePart . $randomPart;
+        // Format: 6 digits date (ymd) + 6 random digits = 12 digits total
+        $datePart = date('ymd'); // 6 digits (e.g., 240219)
+        $randomPart = rand(100000, 999999); // 6 digits
+        return $datePart . $randomPart; // 12 digits total
     }
     
     /**

@@ -2,8 +2,11 @@
 /**
  * Payment View - Step 3
  * Redesigned: Premium institutional design
+ * FIXED: Removed HTML escaping from Remita payment URL
+ * FIXED: Updated copy button to pass RRR directly
+ * 
  * @package FCTCNS
- * @version 2.0
+ * @version 2.1
  */
 
 extract($data ?? []);
@@ -681,7 +684,7 @@ if (empty($applicant_name)) {
                         </ol>
                     </div>
 
-                    <!-- Pending Payment Block -->
+                    <!-- Pending Payment Block - FIXED: Removed HTML escaping from URL -->
                     <?php if (isset($pending_payment) && $pending_payment): ?>
                     <div class="pending-box">
                         <div class="pending-box-header">
@@ -693,16 +696,17 @@ if (empty($applicant_name)) {
                         </div>
                         <div class="rrr-box" style="margin-bottom:1.25rem">
                             <div class="rrr-value"><?php echo e($pending_payment['rrr']); ?></div>
-                            <button class="rrr-copy-btn" onclick="navigator.clipboard.writeText('<?php echo e($pending_payment['rrr']); ?>').then(()=>this.innerHTML='<i class=\'fas fa-check\'></i> Copied')">
+                            <button class="rrr-copy-btn" onclick="copyRRR('<?php echo $pending_payment['rrr']; ?>')">
                                 <i class="fas fa-copy"></i> Copy
                             </button>
                         </div>
                         <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-                            <a href="https://remitademo.net/remita/ecomm/frame/handleCCD.action?rrr=<?php echo e($pending_payment['rrr']); ?>"
+                            <!-- FIXED: Removed e() escaping from URL -->
+                            <a href="https://remitademo.net/remita/ecomm/frame/handleCCD.action?rrr=<?php echo $pending_payment['rrr']; ?>"
                                target="_blank" class="btn-amber">
                                 <i class="fas fa-external-link-alt"></i> Complete Payment
                             </a>
-                            <button class="btn-ghost" onclick="verifyPayment('<?php echo e($pending_payment['rrr']); ?>')">
+                            <button class="btn-ghost" onclick="verifyPayment('<?php echo $pending_payment['rrr']; ?>')">
                                 <i class="fas fa-check-circle"></i> I've Paid — Verify Now
                             </button>
                         </div>

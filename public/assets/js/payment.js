@@ -5,6 +5,7 @@
  * FIXED: Added proper error handling for missing elements
  * FIXED: Remita payment button display after RRR generation
  * FIXED: Verify button visibility
+ * FIXED: CopyRRR function now accepts parameter for pending payment
  */
 
 $(document).ready(function() {
@@ -534,10 +535,12 @@ function showAlert(message, type) {
 }
 
 /**
- * Copy RRR to clipboard
+ * Copy RRR to clipboard - FIXED: Accepts parameter for direct RRR
  */
-function copyRRR() {
-    var rrr = $('#generatedRRR').text() || sessionStorage.getItem('pending_rrr');
+function copyRRR(rrr = null) {
+    if (!rrr) {
+        rrr = $('#generatedRRR').text() || sessionStorage.getItem('pending_rrr');
+    }
     
     if (!rrr) {
         showAlert('No RRR to copy', 'warning');
