@@ -112,71 +112,149 @@
         .portal-header-inner {
             display: flex;
             align-items: center;
-            gap: 28px;
-            padding: 32px 40px;
+            gap: 20px;
+            padding: 28px 40px;
             position: relative;
             z-index: 1;
         }
 
         .portal-emblem {
             flex-shrink: 0;
-            width: 72px;
-            height: 72px;
+            width: 64px;
+            height: 64px;
             background: rgba(255,255,255,0.07);
             border: 1.5px solid rgba(200,150,58,0.45);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
+            font-size: 24px;
             color: var(--gold-light);
         }
 
         .portal-header-text {
             flex: 1;
+            min-width: 0;
         }
 
         .portal-header-text h1 {
             font-family: 'Playfair Display', Georgia, serif;
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 700;
             color: #FFFFFF;
             letter-spacing: -0.3px;
             line-height: 1.2;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .portal-header-text p {
-            font-size: 14px;
+            font-size: 12.5px;
             font-weight: 400;
-            color: rgba(255,255,255,0.60);
+            color: rgba(255,255,255,0.50);
             letter-spacing: 0.4px;
             text-transform: uppercase;
             margin: 0;
         }
 
-        .portal-header-badge {
+        /* ── Header Right: badge + user info + logout ── */
+        .portal-header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
             flex-shrink: 0;
+        }
+
+        .portal-header-top-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .portal-header-badge {
             background: rgba(200,150,58,0.15);
             border: 1px solid rgba(200,150,58,0.3);
             border-radius: 50px;
-            padding: 8px 18px;
-            font-size: 12px;
+            padding: 6px 14px;
+            font-size: 11px;
             font-weight: 600;
             color: var(--gold-light);
             letter-spacing: 0.5px;
             white-space: nowrap;
         }
 
+        /* User info row */
+        .portal-user-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .portal-user-avatar {
+            width: 28px;
+            height: 28px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.6);
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .portal-user-name {
+            font-size: 12.5px;
+            color: rgba(255,255,255,0.65);
+            white-space: nowrap;
+        }
+
+        .portal-user-name strong {
+            color: rgba(255,255,255,0.9);
+            font-weight: 600;
+        }
+
+        /* Logout button */
+        .portal-logout-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 13px;
+            background: rgba(192,57,43,0.12);
+            border: 1px solid rgba(192,57,43,0.3);
+            border-radius: 50px;
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #F9A89E;
+            letter-spacing: 0.3px;
+            text-decoration: none;
+            transition: all .2s;
+            white-space: nowrap;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .portal-logout-btn:hover {
+            background: rgba(192,57,43,0.25);
+            border-color: rgba(192,57,43,0.5);
+            color: #FFC5BF;
+        }
+
+        .portal-logout-btn i { font-size: 10px; }
+
         /* =========================================================
            PROGRESS TRACKER
         ========================================================= */
         .progress-track {
             background: var(--navy-mid);
-            padding: 22px 40px;
+            padding: 20px 40px;
             display: flex;
             align-items: center;
             gap: 0;
+            border-top: 1px solid rgba(255,255,255,0.06);
         }
 
         .track-step {
@@ -194,17 +272,17 @@
         }
 
         .track-num {
-            width: 34px;
-            height: 34px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.15);
             background: transparent;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
-            color: rgba(255,255,255,0.35);
+            color: rgba(255,255,255,0.3);
             transition: all 0.3s;
             flex-shrink: 0;
         }
@@ -232,34 +310,32 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.6px;
-            color: rgba(255,255,255,0.35);
+            color: rgba(255,255,255,0.3);
             transition: color 0.3s;
+            line-height: 1.3;
         }
 
-        .track-step.active .track-label { color: var(--gold-light); }
+        .track-step.active    .track-label { color: var(--gold-light); }
         .track-step.completed .track-label { color: rgba(255,255,255,0.6); }
 
         .track-sublabel {
-            font-size: 12px;
-            color: rgba(255,255,255,0.25);
+            font-size: 11px;
+            color: rgba(255,255,255,0.2);
             margin-top: 1px;
             transition: color 0.3s;
         }
 
-        .track-step.active .track-sublabel { color: rgba(255,255,255,0.5); }
-        .track-step.completed .track-sublabel { color: rgba(255,255,255,0.4); }
+        .track-step.active    .track-sublabel { color: rgba(255,255,255,0.45); }
+        .track-step.completed .track-sublabel { color: rgba(255,255,255,0.35); }
 
         .track-connector {
             flex: 1;
             height: 1px;
-            background: rgba(255,255,255,0.1);
-            margin: 0 10px;
-            position: relative;
+            background: rgba(255,255,255,0.08);
+            margin: 0 8px;
         }
 
-        .track-connector.done {
-            background: var(--teal);
-        }
+        .track-connector.done { background: var(--teal); }
 
         /* =========================================================
            BODY SHELL
@@ -367,9 +443,7 @@
             margin-left: auto;
         }
 
-        .form-section-body {
-            padding: 28px 24px;
-        }
+        .form-section-body { padding: 28px 24px; }
 
         .form-group { margin-bottom: 22px; }
         .form-group:last-child { margin-bottom: 0; }
@@ -383,10 +457,7 @@
             letter-spacing: 0.2px;
         }
 
-        .form-label .required {
-            color: var(--red);
-            margin-left: 2px;
-        }
+        .form-label .required { color: var(--red); margin-left: 2px; }
 
         .form-control,
         .form-select {
@@ -688,11 +759,7 @@
         }
 
         .footer-contact-item:hover { color: var(--gold-light); }
-
-        .footer-contact-item i {
-            color: var(--gold);
-            font-size: 12px;
-        }
+        .footer-contact-item i { color: var(--gold); font-size: 12px; }
 
         /* =========================================================
            ANIMATION
@@ -713,25 +780,36 @@
             body { padding: 16px 12px 32px; }
 
             .portal-header-inner {
-                flex-direction: column;
-                text-align: center;
-                padding: 28px 24px;
-                gap: 16px;
+                flex-wrap: wrap;
+                padding: 24px 20px 20px;
+                gap: 14px;
             }
 
-            .portal-header-badge { align-self: center; }
-            .portal-header-text h1 { font-size: 22px; }
+            .portal-header-text h1 {
+                font-size: 18px;
+                white-space: normal;
+            }
+
+            .portal-header-right {
+                width: 100%;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+            }
+
+            .portal-header-top-row { flex-direction: row; }
 
             .progress-track {
-                padding: 18px 20px;
+                padding: 16px 20px;
                 flex-wrap: wrap;
-                gap: 12px;
+                gap: 10px;
             }
 
             .track-connector { display: none; }
 
             .track-step {
-                flex: 0 0 calc(50% - 6px);
+                flex: 0 0 calc(50% - 5px);
                 background: rgba(255,255,255,0.04);
                 border: 1px solid rgba(255,255,255,0.08);
                 border-radius: var(--radius-md);
@@ -747,13 +825,13 @@
             }
 
             .slip-grid { grid-template-columns: 1fr; }
-
             .payment-amount { font-size: 44px; }
         }
 
         @media (max-width: 480px) {
             .track-step { flex: 0 0 100%; }
-            .portal-header-text h1 { font-size: 19px; }
+            .portal-header-text h1 { font-size: 16px; }
+            .portal-emblem { width: 52px; height: 52px; font-size: 20px; }
         }
 
         /* =========================================================
@@ -771,25 +849,89 @@
         <!-- ===================== HEADER ===================== -->
         <header class="portal-header">
             <div class="portal-header-inner">
+
+                <!-- Emblem -->
                 <div class="portal-emblem">
                     <i class="fas fa-star-of-life"></i>
                 </div>
+
+                <!-- Title -->
                 <div class="portal-header-text">
                     <h1>FCT College of Nursing Sciences</h1>
                     <p>Admissions Application Portal &mdash; 2025 / 2026 Session</p>
                 </div>
-                <div class="portal-header-badge">
-                    <i class="fas fa-shield-alt" style="margin-right:6px;font-size:11px;"></i>
-                    Secure Portal
+
+                <!-- Right side: badge + user + logout -->
+                <div class="portal-header-right">
+                    <div class="portal-header-top-row">
+                        <div class="portal-header-badge">
+                            <i class="fas fa-shield-alt" style="margin-right:5px;font-size:10px;"></i>
+                            Secure Portal
+                        </div>
+                    </div>
+
+                    <?php
+                        // Derive applicant name from application data if available
+                        $applicantDisplayName = null;
+                        if (isset($application) && is_array($application)) {
+                            $fn = trim($application['first_name'] ?? '');
+                            $ln = trim($application['last_name']  ?? '');
+                            $full = trim("$fn $ln");
+                            if (!empty($full)) {
+                                $applicantDisplayName = $full;
+                            }
+                        }
+                        // Fall back to a session-level variable if set
+                        if (!$applicantDisplayName && isset($applicant_name) && trim($applicant_name)) {
+                            $applicantDisplayName = trim($applicant_name);
+                        }
+                    ?>
+
+                    <?php if ($applicantDisplayName): ?>
+                    <div class="portal-user-row">
+                        <div class="portal-user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span class="portal-user-name">
+                            <strong><?php echo htmlspecialchars($applicantDisplayName); ?></strong>
+                        </span>
+                        <a href="/applicant/logout" class="portal-logout-btn"
+                           onclick="return confirm('Are you sure you want to logout? Your progress is saved.');">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                    <?php endif; ?>
                 </div>
-            </div>
+
+            </div><!-- /portal-header-inner -->
 
             <?php
-                $showSteps  = false;
+                // ── Step tracking logic ──────────────────────────────────────
+                // Determine current step from application data.
+                // application_step column is the source of truth; fall back to
+                // inferring from payment/form status if the column is absent.
+                $showSteps   = false;
                 $currentStep = 1;
-                if (isset($application) && is_array($application) && isset($application['application_step'])) {
-                    $showSteps   = true;
-                    $currentStep = (int)$application['application_step'];
+
+                if (isset($application) && is_array($application)) {
+                    $showSteps = true;
+
+                    if (isset($application['application_step']) && $application['application_step'] > 0) {
+                        // Direct step column — most reliable
+                        $currentStep = (int) $application['application_step'];
+                    } else {
+                        // Infer step from available data fields
+                        $hasJamb    = !empty($application['jamb_reg_number']);
+                        $hasForm    = !empty($application['first_name']) && !empty($application['last_name']);
+                        $hasPaid    = !empty($application['payment_status']) && $application['payment_status'] === 'paid';
+                        $hasSlip    = !empty($application['exam_slip_generated']);
+
+                        if      ($hasSlip)  $currentStep = 4;
+                        elseif  ($hasPaid)  $currentStep = 4; // paid → show exam slip step as active
+                        elseif  ($hasForm)  $currentStep = 3;
+                        elseif  ($hasJamb)  $currentStep = 2;
+                        else                $currentStep = 1;
+                    }
                 }
 
                 $steps = [
@@ -802,18 +944,17 @@
 
             <?php if (!isset($hideSteps) && $showSteps): ?>
             <div class="progress-track">
-                <?php foreach ($steps as $n => $step): ?>
-                    <?php
-                        $cls = '';
-                        if ($currentStep >  $n) $cls = 'completed';
-                        if ($currentStep == $n) $cls = 'active';
-                        $isLast = ($n === array_key_last($steps));
-                    ?>
+                <?php foreach ($steps as $n => $step):
+                    $cls    = '';
+                    if ($currentStep >  $n) $cls = 'completed';
+                    if ($currentStep == $n) $cls = 'active';
+                    $isLast = ($n === array_key_last($steps));
+                ?>
                     <div class="track-step <?php echo $cls; ?>">
                         <div class="track-step-inner">
                             <div class="track-num">
                                 <?php if ($currentStep > $n): ?>
-                                    <i class="fas fa-check" style="font-size:11px;"></i>
+                                    <i class="fas fa-check" style="font-size:10px;"></i>
                                 <?php else: ?>
                                     <?php echo $n; ?>
                                 <?php endif; ?>
@@ -825,13 +966,14 @@
                         </div>
                     </div>
                     <?php if (!$isLast): ?>
-                        <div class="track-connector <?php echo $currentStep > $n ? 'done' : ''; ?>"></div>
+                        <div class="track-connector <?php echo ($currentStep > $n) ? 'done' : ''; ?>"></div>
                     <?php endif; ?>
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>
+
         </header>
-        <!-- end header -->
+        <!-- /header -->
 
 
         <!-- ===================== BODY ===================== -->
@@ -869,7 +1011,7 @@
             <?php echo $content; ?>
 
         </main>
-        <!-- end body -->
+        <!-- /body -->
 
 
         <!-- ===================== FOOTER ===================== -->
@@ -882,11 +1024,9 @@
                         : '07039837749';
                 ?>">
                     <i class="fas fa-phone-alt"></i>
-                    <?php
-                        echo isset($settings['key_value']['support_phone_1'])
-                            ? htmlspecialchars($settings['key_value']['support_phone_1'])
-                            : '07039837749';
-                    ?>
+                    <?php echo isset($settings['key_value']['support_phone_1'])
+                        ? htmlspecialchars($settings['key_value']['support_phone_1'])
+                        : '07039837749'; ?>
                 </a>
                 <a class="footer-contact-item" href="mailto:<?php
                     $email = $settings['key_value']['support_email'] ?? 'info@fctcns.edu.ng';
@@ -898,7 +1038,7 @@
             </div>
         </footer>
 
-    </div><!-- end portal-wrap -->
+    </div><!-- /portal-wrap -->
 
 
     <!-- Bootstrap JS -->
@@ -911,7 +1051,11 @@
     <script>
         // Auto-dismiss flash messages
         setTimeout(function () {
-            $('.flash-msg').fadeOut(400);
+            document.querySelectorAll('.flash-msg').forEach(function(el) {
+                el.style.transition = 'opacity 0.4s';
+                el.style.opacity = '0';
+                setTimeout(function() { el.remove(); }, 400);
+            });
         }, 5500);
 
         function confirmAction(msg) {
@@ -932,7 +1076,8 @@
             if (input.files && input.files[0]) {
                 const r = new FileReader();
                 r.onload = function (e) {
-                    $('#' + previewId).attr('src', e.target.result).show();
+                    document.getElementById(previewId).src = e.target.result;
+                    document.getElementById(previewId).style.display = 'block';
                 };
                 r.readAsDataURL(input.files[0]);
             }
@@ -943,12 +1088,13 @@
                 const r = new FileReader();
                 r.onload = function (e) {
                     if (confirm('Is this your correct passport photograph? Click OK to upload.')) {
-                        $('#passport-preview').attr('src', e.target.result).show();
-                        $('#passport-confirmed').val('1');
+                        document.getElementById('passport-preview').src = e.target.result;
+                        document.getElementById('passport-preview').style.display = 'block';
+                        document.getElementById('passport-confirmed').value = '1';
                     } else {
                         input.value = '';
-                        $('#passport-preview').hide();
-                        $('#passport-confirmed').val('0');
+                        document.getElementById('passport-preview').style.display = 'none';
+                        document.getElementById('passport-confirmed').value = '0';
                     }
                 };
                 r.readAsDataURL(input.files[0]);
