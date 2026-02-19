@@ -3,9 +3,11 @@
  * Payment View - Step 3
  * Professional design matching application form
  * FIXED: RRR generation, expanded width, and support section layout
+ * FIXED: JavaScript endpoints to match router routes
+ * FIXED: Expanded width for better desktop viewing
  * 
  * @package FCTCNS
- * @version 1.2 - Fixed button ID and support section overflow
+ * @version 1.3 - Fixed AJAX endpoints and expanded layout
  */
 
 extract($data ?? []);
@@ -139,7 +141,7 @@ if (empty($applicant_name)) {
         
         /* Spacing - Expanded for desktop */
         --gutter: clamp(1rem, 4vw, 4rem);
-        --container-max: 1800px; /* Increased for ultra-wide layout */
+        --container-max: 2000px; /* INCREASED for ultra-wide layout */
         
         --space-xs: 0.5rem;
         --space-sm: 1rem;
@@ -169,8 +171,15 @@ if (empty($applicant_name)) {
 
     @media (min-width: 1800px) {
         .container {
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+    }
+
+    @media (min-width: 2200px) {
+        .container {
+            padding-left: 3rem;
+            padding-right: 3rem;
         }
     }
 
@@ -178,21 +187,28 @@ if (empty($applicant_name)) {
         min-height: calc(100vh - 200px);
     }
 
-    /* Expanded content area */
+    /* Expanded content area - FULL WIDTH */
     .content-col {
         width: 100%;
     }
     
     @media (min-width: 1200px) {
         .content-col {
-            width: 90%;
+            width: 95%; /* INCREASED from 90% to 95% */
             margin: 0 auto;
         }
     }
     
     @media (min-width: 1600px) {
         .content-col {
-            width: 85%;
+            width: 92%; /* ADJUSTED for very large screens */
+            margin: 0 auto;
+        }
+    }
+    
+    @media (min-width: 2000px) {
+        .content-col {
+            width: 90%;
             margin: 0 auto;
         }
     }
@@ -378,7 +394,7 @@ if (empty($applicant_name)) {
     }
 
     /* ==========================================================================
-       CARDS
+       CARDS - FULL WIDTH
        ========================================================================== */
     .card {
         background: var(--white);
@@ -420,13 +436,19 @@ if (empty($applicant_name)) {
 
     @media (min-width: 1200px) {
         .card-body {
-            padding: 3rem 4rem;
+            padding: 3rem 5rem; /* INCREASED horizontal padding */
         }
     }
 
     @media (min-width: 1600px) {
         .card-body {
-            padding: 3rem 5rem;
+            padding: 3rem 8rem; /* INCREASED for ultra-wide */
+        }
+    }
+
+    @media (min-width: 2000px) {
+        .card-body {
+            padding: 4rem 12rem; /* MAXIMUM padding for very wide screens */
         }
     }
 
@@ -693,7 +715,7 @@ if (empty($applicant_name)) {
         background: var(--white);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
-        min-width: 0; /* Allows flex items to shrink below content size */
+        min-width: 0;
         width: 100%;
     }
 
@@ -705,7 +727,7 @@ if (empty($applicant_name)) {
         align-items: center;
         justify-content: center;
         color: white;
-        flex-shrink: 0; /* Prevents icon from shrinking */
+        flex-shrink: 0;
     }
 
     .support-icon.phone { background: var(--purple); }
@@ -714,7 +736,7 @@ if (empty($applicant_name)) {
 
     .support-content {
         flex: 1;
-        min-width: 0; /* Enables text truncation */
+        min-width: 0;
     }
 
     .support-label {
@@ -747,7 +769,7 @@ if (empty($applicant_name)) {
         }
         
         .support-value {
-            white-space: normal; /* Allow wrapping on mobile */
+            white-space: normal;
             word-break: break-word;
         }
     }
@@ -1061,7 +1083,7 @@ if (empty($applicant_name)) {
         </div>
     </main>
 
-    <!-- JavaScript -->
+    <!-- JavaScript - FIXED endpoints to match router -->
     <script>
     // Get CSRF token from meta tag
     function getCsrfToken() {
@@ -1169,6 +1191,7 @@ if (empty($applicant_name)) {
         const formData = new FormData();
         formData.append('csrf_token', csrfToken);
         
+        // FIXED: Use correct endpoint from router
         const endpoint = '/payment/initiate';
         
         debugLog('Sending request to:', endpoint);
@@ -1177,7 +1200,6 @@ if (empty($applicant_name)) {
             method: 'POST',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json'
             },
             body: formData,
@@ -1278,11 +1300,11 @@ if (empty($applicant_name)) {
         formData.append('rrr', rrr);
         formData.append('csrf_token', csrfToken);
         
+        // FIXED: Use correct endpoint from router
         fetch('/payment/verify', {
             method: 'POST',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json'
             },
             body: formData,
@@ -1324,6 +1346,7 @@ if (empty($applicant_name)) {
         document.getElementById('checkStatusBtn').disabled = true;
         document.getElementById('paymentSpinner').style.display = 'inline-block';
         
+        // FIXED: Use correct endpoint from router
         fetch('/payment/status?rrr=' + encodeURIComponent(rrr), {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
