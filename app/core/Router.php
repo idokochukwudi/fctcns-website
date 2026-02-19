@@ -283,6 +283,22 @@ class Router {
         $this->post('/apply/initiate-payment', 'PublicApplicationController@initiatePayment');
         $this->get('/apply/verify-payment', 'PublicApplicationController@verifyPayment');
 
+        // ============================================
+        // PAYMENT ROUTES - FIXED: Now using PublicApplicationController
+        // ============================================
+        $this->get('/apply/step/3', 'PublicApplicationController@step3');
+        $this->post('/payment/initiate', 'PublicApplicationController@initiatePayment');
+        $this->post('/payment/verify', 'PublicApplicationController@verifyPayment');
+        $this->get('/payment/status', 'PublicApplicationController@checkPaymentStatus');
+
+        // ============================================
+        // PAYMENT CONTROLLER ROUTES (for admin/internal use)
+        // ============================================
+        $this->get('/payment/remita-response', 'PaymentController@remitaResponse');
+        $this->post('/payment/remita-notification', 'PaymentController@remitaNotification');
+        $this->get('/payment/check-status', 'PaymentController@checkStatus');
+        $this->post('/payment/admin/verify', 'PaymentController@adminVerify');
+
         // Step 4: Exam Slip
         $this->get('/apply/exam-slip', 'PublicApplicationController@showExamSlip');
         $this->get('/apply/download-slip', 'PublicApplicationController@downloadExamSlip');
@@ -303,20 +319,8 @@ class Router {
         // Legacy application routes (keeping for backward compatibility)
         $this->get('/apply/step/1', 'PublicApplicationController@step1');
         $this->get('/apply/step/2', 'PublicApplicationController@step2');
-        $this->get('/apply/step/3', 'PublicApplicationController@step3');
         $this->get('/apply/step/4', 'PublicApplicationController@step4');
         $this->get('/apply/download-exam-slip', 'PublicApplicationController@downloadExamSlip');
-        
-        // ============================================
-        // PAYMENT ROUTES - UPDATED WITH ALL REQUIRED ENDPOINTS
-        // ============================================
-        $this->post('/payment/initiate', 'PaymentController@initiate');
-        $this->post('/payment/verify', 'PaymentController@verify');
-        // Note: '/payment/status' route removed to avoid conflict with parent Controller
-        $this->get('/payment/remita-response', 'PaymentController@remitaResponse');
-        $this->post('/payment/remita-notification', 'PaymentController@remitaNotification');
-        $this->get('/payment/check-status', 'PaymentController@checkStatus'); // FIXED: Using checkStatus instead of status
-        $this->post('/payment/admin/verify', 'PaymentController@adminVerify');
         
         // ============================================
         // ADMIN CONTACT MANAGEMENT ROUTES
