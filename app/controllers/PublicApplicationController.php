@@ -5,7 +5,8 @@
  * Handles public-facing application processes
  * ENHANCED: Added application creation during JAMB verification, specific login error messages, password reset functionality
  * FIXED: Redirect from application form to step 2, proper JAMB data restoration, saveApplication field mapping and update method
- * FIXED: O'Level results handling in saveApplication method
+ * FIXED: O'Level results handling in saveApplication method - prevents duplication on re-login
+ * FIXED: Exam slip generation and step 4 display - enhanced security
  * 
  * @package FCT_CNS
  */
@@ -558,7 +559,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Save application form - FIXED with proper O'Level data handling
-     * Now properly saves O'Level subjects data to olevel_results field
+     * Now properly saves O'Level subjects data to olevel_results field and prevents duplication
      */
     public function saveApplication() {
         // Set header to JSON first thing
@@ -605,7 +606,6 @@ class PublicApplicationController extends ApplicationBaseController {
             // DEBUG: Log all POST data
             error_log("=== SAVE APPLICATION DEBUG ===");
             error_log("POST keys: " . implode(', ', array_keys($_POST)));
-            error_log("POST data: " . print_r($_POST, true));
             
             // Validate required fields
             $missingFields = [];
@@ -643,9 +643,9 @@ class PublicApplicationController extends ApplicationBaseController {
                 'updated_at' => date('Y-m-d H:i:s')
             ];
             
-            // FIXED: Handle O'Level subject data from the form
+            // FIXED: Handle O'Level subject data from the form - PREVENTS DUPLICATION
             if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
-                error_log("O'Level data received: " . print_r($_POST['olevel'], true));
+                error_log("O'Level data received: " . count($_POST['olevel']) . " entries");
                 
                 // Format the O'Level data for storage
                 $formattedResults = [];
@@ -673,21 +673,25 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
                 
                 if (!empty($formattedResults)) {
-                    // Save to olevel_results field in JSON format
+                    // Save to olevel_results field in JSON format (overwrites existing)
                     $updateData['olevel_results'] = json_encode($formattedResults);
-                    error_log("Formatted O'Level data being saved: " . $updateData['olevel_results']);
+                    error_log("Formatted O'Level data being saved: " . count($formattedResults) . " entries");
                     
-                    // Also save to the dedicated olevel_results table using the model
+                    // Also save to the dedicated olevel_results table - BUT FIRST DELETE EXISTING TO PREVENT DUPLICATION
                     try {
                         require_once MODELS_PATH . '/application/OlevelResultModel.php';
                         $olevelModel = new OlevelResultModel();
                         
-                        // Save each sitting to the database
+                        // IMPORTANT: Delete existing records first to prevent duplication
+                        $olevelModel->deleteByApplicationId($application['id']);
+                        error_log("Deleted existing O'Level records for application ID: " . $application['id']);
+                        
+                        // Save each sitting to the database (fresh insert)
                         foreach ($formattedResults as $result) {
                             $result['application_id'] = $application['id'];
                             $olevelModel->insert($result);
                         }
-                        error_log("Saved O'Level results to olevel_results table");
+                        error_log("Saved " . count($formattedResults) . " new O'Level results to olevel_results table");
                     } catch (Exception $e) {
                         error_log("Error saving to olevel_results table: " . $e->getMessage());
                         // Don't fail the whole request, just log the error
@@ -912,7 +916,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     // ============================================
-    // STEP 3: PAYMENT - FIXED VERSION
+    // STEP 3: PAYMENT
     // ============================================
 
     /**
@@ -1111,7 +1115,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Verify payment (AJAX endpoint)
+     * Verify payment (AJAX endpoint) - FIXED: Properly generates exam slip
      */
     public function verifyPayment() {
         header('Content-Type: application/json');
@@ -1166,8 +1170,14 @@ class PublicApplicationController extends ApplicationBaseController {
                     'application_step' => 4
                 ]);
                 
-                // Generate exam slip
-                $this->generateExamSlip($payment['application_id']);
+                // Generate exam slip - FIXED: Use the method that exists
+                $examSlip = $this->generateExamSlip($payment['application_id']);
+                
+                if (!$examSlip) {
+                    error_log("Failed to generate exam slip for application: " . $payment['application_id']);
+                } else {
+                    error_log("Exam slip generated successfully for application: " . $payment['application_id']);
+                }
                 
                 echo json_encode([
                     'success' => true,
@@ -1183,12 +1193,15 @@ class PublicApplicationController extends ApplicationBaseController {
             
         } catch (Exception $e) {
             error_log("Verify payment error: " . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => 'Server error occurred']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error occurred'
+            ]);
         }
     }
 
     // ============================================
-    // STEP 4: EXAM SLIP
+    // STEP 4: EXAM SLIP - ENHANCED SECURITY
     // ============================================
 
     /**
@@ -1231,29 +1244,26 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!$examSlip) {
             // Generate exam slip if not exists
-            $slipNumber = 'SLIP-' . date('Y') . '-' . str_pad($application['id'], 5, '0', STR_PAD_LEFT);
-            
-            $examSlipId = $examSlipModel->insert([
-                'application_id' => $application['id'],
-                'slip_number' => $slipNumber,
-                'exam_date' => $this->settingsModel->get('cbt_start_date', date('Y-m-d', strtotime('+7 days'))),
-                'exam_time' => '10:00 AM',
-                'reporting_time' => '8:00 AM',
-                'exam_venue' => 'FCT College of Nursing Sciences, Gwagwalada (within UATH)',
-                'seat_number' => 'SEAT-' . rand(100, 999),
-                'instructions' => 'Bring this slip, valid ID, and writing materials.',
-                'created_at' => date('Y-m-d H:i:s')
-            ]);
-            
-            if ($examSlipId) {
-                $examSlip = $examSlipModel->find($examSlipId);
-            }
+            error_log("Exam slip not found for application: " . $application['id'] . ". Attempting to generate...");
+            $examSlip = $this->generateExamSlip($application['id']);
+        }
+        
+        // Get applicant for name display
+        $applicant = $this->applicantModel->find($applicantId);
+        $applicant_name = trim(
+            ($application['first_name'] ?? '') . ' ' . 
+            ($application['last_name'] ?? '')
+        );
+        if (empty($applicant_name)) {
+            $applicant_name = $applicant['email'] ?? 'Applicant';
         }
         
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Examination Slip - Step 4',
             'application' => $application,
             'exam_slip' => $examSlip,
+            'applicant' => $applicant,
+            'applicant_name' => $applicant_name,
             'exam_details' => [
                 'date' => $this->settingsModel->get('cbt_start_date', 'To be announced'),
                 'venue' => 'FCT College of Nursing Sciences, Gwagwalada (within UATH)',
@@ -1261,7 +1271,7 @@ class PublicApplicationController extends ApplicationBaseController {
             ]
         ]);
         
-        $this->render('applications/exam-slip');
+        $this->render('applications/step4');
     }
 
     /**
@@ -1424,7 +1434,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Generate exam slip (helper method)
+     * Generate exam slip (helper method) - FIXED: Returns the generated slip
      */
     private function generateExamSlip($applicationId) {
         require_once MODELS_PATH . '/application/ExamSlipModel.php';
@@ -1433,15 +1443,20 @@ class PublicApplicationController extends ApplicationBaseController {
         // Check if exam slip already exists
         $existing = $examSlipModel->getByApplicationId($applicationId);
         if ($existing) {
+            error_log("Exam slip already exists for application: " . $applicationId);
             return $existing;
         }
         
         // Generate slip number
         $slipNumber = 'SLIP-' . date('Y') . '-' . str_pad($applicationId, 5, '0', STR_PAD_LEFT);
         
+        // Get application for additional data if needed
+        $application = $this->applicationModel->find($applicationId);
+        
         // Create exam slip
         $examSlipId = $examSlipModel->insert([
             'application_id' => $applicationId,
+            'applicant_id' => $application['applicant_id'] ?? null,
             'slip_number' => $slipNumber,
             'exam_date' => $this->settingsModel->get('cbt_start_date', date('Y-m-d', strtotime('+7 days'))),
             'exam_time' => '10:00 AM',
@@ -1449,10 +1464,17 @@ class PublicApplicationController extends ApplicationBaseController {
             'exam_venue' => 'FCT College of Nursing Sciences, Gwagwalada (within UATH)',
             'seat_number' => 'SEAT-' . rand(100, 999),
             'instructions' => "1. Arrive at least 1 hour before examination time\n2. Bring this slip and a valid means of identification\n3. Bring writing materials (biro, pencil, eraser)\n4. Mobile phones and electronic devices are not allowed",
+            'generated_at' => date('Y-m-d H:i:s'),
             'created_at' => date('Y-m-d H:i:s')
         ]);
         
-        return $examSlipId ? $examSlipModel->find($examSlipId) : null;
+        if ($examSlipId) {
+            error_log("Exam slip created with ID: " . $examSlipId . " for application: " . $applicationId);
+            return $examSlipModel->find($examSlipId);
+        }
+        
+        error_log("Failed to create exam slip for application: " . $applicationId);
+        return null;
     }
 
     // ============================================
@@ -2277,7 +2299,8 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Show step 4: Exam Slip (Legacy Flow)
+     * Show step 4: Exam Slip (Legacy Flow) - ENHANCED SECURITY
+     * Multiple layers of verification to prevent unauthorized access
      */
     public function step4() {
         // Start session
@@ -2285,15 +2308,18 @@ class PublicApplicationController extends ApplicationBaseController {
             session_start();
         }
         
-        // Check login
+        error_log("=== STEP 4 LOADED ===");
+        
+        // Layer 1: Check login
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
             header('Location: /applicant/login');
-            return;
+            exit;
         }
         
-        // Get application
         $applicantId = $_SESSION['applicant_id'];
+        
+        // Layer 2: Get and validate application
         $application = $this->applicationModel->getByApplicantId($applicantId);
         
         if (!$application) {
@@ -2302,30 +2328,64 @@ class PublicApplicationController extends ApplicationBaseController {
             exit;
         }
         
-        // Check if payment is successful
+        // Layer 3: VERIFY PAYMENT STATUS IN DATABASE (not session)
+        // This is critical - always check the database, not session
         $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
         
         if (!$hasPaid) {
+            error_log("SECURITY: Unauthorized attempt to access step 4 - No payment found for application: " . $application['id']);
+            $_SESSION['flash_error'] = 'Payment required. Please complete your payment first.';
             header('Location: /apply/step/3');
             exit;
         }
         
-        // Get exam slip
+        // Layer 4: Double-check payment ownership and status
+        $payments = $this->paymentModel->getByApplicationId($application['id']);
+        $validPayment = false;
+        
+        foreach ($payments as $payment) {
+            if ($payment['status'] === 'success' && $payment['applicant_id'] == $applicantId) {
+                $validPayment = true;
+                break;
+            }
+        }
+        
+        if (!$validPayment) {
+            error_log("SECURITY: Invalid payment ownership for application: " . $application['id']);
+            $_SESSION['flash_error'] = 'Invalid payment record. Please contact support.';
+            header('Location: /apply/step/3');
+            exit;
+        }
+        
+        // Layer 5: Get exam slip - only proceed if all checks pass
         require_once MODELS_PATH . '/application/ExamSlipModel.php';
         $examSlipModel = new ExamSlipModel();
         $examSlip = $examSlipModel->getByApplicationId($application['id']);
         
+        // Generate exam slip if it doesn't exist (first time only)
         if (!$examSlip) {
-            $this->generateExamSlip($application['id']);
-            $examSlip = $examSlipModel->getByApplicationId($application['id']);
+            error_log("Generating exam slip for verified payment - Application: " . $application['id']);
+            $examSlip = $this->generateExamSlip($application['id']);
+            
+            if (!$examSlip) {
+                error_log("CRITICAL: Failed to generate exam slip despite valid payment");
+                $_SESSION['flash_error'] = 'Error generating exam slip. Please contact support.';
+                header('Location: /apply/step/3');
+                exit;
+            }
         }
+        
+        // Get applicant for display
+        $applicant = $this->applicantModel->find($applicantId);
         
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Examination Slip - Step 4',
             'application' => $application,
+            'applicant' => $applicant,
             'exam_slip' => $examSlip
         ]);
         
+        error_log("Granting access to step 4 for verified applicant: " . $applicantId);
         $this->render('applications/step4');
     }
 

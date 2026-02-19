@@ -213,7 +213,8 @@ class OlevelResultModel extends BaseModel {
     }
     
     /**
-     * Delete results for application
+     * Delete results for application - CRITICAL for preventing duplication
+     * This method ensures old results are removed before saving new ones
      */
     public function deleteByApplicationId($applicationId) {
         return $this->delete('application_id = :application_id', ['application_id' => $applicationId]);
@@ -245,6 +246,14 @@ class OlevelResultModel extends BaseModel {
     public function getSummary($applicationId) {
         $results = $this->getByApplicationId($applicationId);
         
+        if (empty($results)) {
+            return [
+                'total_sittings' => 0,
+                'subjects' => [],
+                'best_grades' => []
+            ];
+        }
+        
         $summary = [
             'total_sittings' => count($results),
             'subjects' => [],
@@ -271,7 +280,9 @@ class OlevelResultModel extends BaseModel {
                     $subjectGrades[$subject][] = [
                         'grade' => $grade,
                         'score' => $gradeScore[$grade] ?? 0,
-                        'sitting' => $result['sitting']
+                        'sitting' => $result['sitting'],
+                        'exam_type' => $result['exam_type'],
+                        'exam_year' => $result['exam_year']
                     ];
                 }
             }
@@ -284,9 +295,48 @@ class OlevelResultModel extends BaseModel {
                     return $b['score'] <=> $a['score'];
                 });
                 $summary['best_grades'][$subject] = $grades[0]['grade'];
+                $summary['subjects'][$subject] = $grades; // Store all grades for this subject
             }
         }
         
         return $summary;
+    }
+    
+    /**
+     * Get formatted results for display
+     */
+    public function getFormattedResults($applicationId) {
+        $results = $this->getByApplicationId($applicationId);
+        
+        if (empty($results)) {
+            return [];
+        }
+        
+        $formatted = [];
+        foreach ($results as $result) {
+            $sitting = $result['sitting'];
+            if (!isset($formatted[$sitting])) {
+                $formatted[$sitting] = [
+                    'exam_type' => $result['exam_type'],
+                    'exam_year' => $result['exam_year'],
+                    'exam_number' => $result['exam_number'],
+                    'subjects' => []
+                ];
+            }
+            
+            $formatted[$sitting]['subjects'] = [
+                'english' => $result['english_grade'],
+                'mathematics' => $result['mathematics_grade'],
+                'biology' => $result['biology_grade'],
+                'chemistry' => $result['chemistry_grade'],
+                'physics' => $result['physics_grade']
+            ];
+            
+            if (!empty($result['other_subjects'])) {
+                $formatted[$sitting]['other_subjects'] = json_decode($result['other_subjects'], true);
+            }
+        }
+        
+        return $formatted;
     }
 }
