@@ -992,72 +992,199 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Initiate payment
+     * Initiate payment - Generate RRR (AJAX endpoint)
      */
     public function initiatePayment() {
-        // Implementation here - would redirect to payment gateway
-        $_SESSION['flash_success'] = 'Payment initiated successfully';
-        header('Location: /apply/verify-payment?rrr=TEST123456');
-        exit;
-    }
-
-    /**
-     * Verify payment
-     */
-    public function verifyPayment() {
+        // Set header for JSON response
+        header('Content-Type: application/json');
+        
         // Start session
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         
-        // Check if logged in
+        error_log("=== INITIATE PAYMENT CALLED ===");
+        
+        // Check if user is logged in
         if (!isset($_SESSION['applicant_id'])) {
-            $_SESSION['flash_error'] = 'Please login to continue';
-            header('Location: /applicant/login');
-            exit;
+            echo json_encode(['success' => false, 'message' => 'Please login first']);
+            return;
         }
         
-        $rrr = $_GET['rrr'] ?? '';
+        // Get CSRF token from request
+        $input = json_decode(file_get_contents('php://input'), true);
+        $csrfToken = $input['csrf_token'] ?? $_POST['csrf_token'] ?? '';
+        
+        // Validate CSRF token
+        if (empty($csrfToken)) {
+            error_log("CSRF validation failed: Token is empty");
+            echo json_encode(['success' => false, 'message' => 'Security token missing']);
+            return;
+        }
+        
+        // Check token in session
+        if (!isset($_SESSION['csrf_tokens'][$csrfToken])) {
+            error_log("CSRF validation failed: Token not found in session");
+            echo json_encode(['success' => false, 'message' => 'Invalid security token']);
+            return;
+        }
+        
+        // Check token expiration (1 hour)
+        if (time() - $_SESSION['csrf_tokens'][$csrfToken] > 3600) {
+            unset($_SESSION['csrf_tokens'][$csrfToken]);
+            echo json_encode(['success' => false, 'message' => 'Security token expired']);
+            return;
+        }
+        
+        try {
+            $applicantId = $_SESSION['applicant_id'];
+            
+            // Get application
+            $application = $this->applicationModel->getByApplicantId($applicantId);
+            
+            if (!$application) {
+                echo json_encode(['success' => false, 'message' => 'Application not found']);
+                return;
+            }
+            
+            // Check if already paid
+            if ($this->paymentModel->hasSuccessfulPayment($application['id'])) {
+                echo json_encode(['success' => false, 'message' => 'Payment already completed']);
+                return;
+            }
+            
+            // Get fee
+            $fee = $this->settingsModel->getApplicationFee();
+            
+            // Generate RRR
+            $rrr = 'DEMO' . time() . rand(1000, 9999);
+            $orderId = 'ORD' . time() . rand(100, 999);
+            $reference = 'REF' . time() . rand(1000, 9999);
+            
+            // Create payment record
+            $paymentData = [
+                'application_id' => $application['id'],
+                'applicant_id' => $applicantId,
+                'reference' => $reference,
+                'rrr' => $rrr,
+                'order_id' => $orderId,
+                'amount' => $fee,
+                'payment_type' => 'application_fee',
+                'status' => 'pending',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+            
+            $paymentId = $this->paymentModel->insert($paymentData);
+            
+            if (!$paymentId) {
+                echo json_encode(['success' => false, 'message' => 'Failed to create payment record']);
+                return;
+            }
+            
+            // Store in session
+            $_SESSION['pending_payment'] = [
+                'payment_id' => $paymentId,
+                'rrr' => $rrr,
+                'amount' => $fee
+            ];
+            
+            // Remove used token
+            unset($_SESSION['csrf_tokens'][$csrfToken]);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'RRR generated successfully',
+                'rrr' => $rrr,
+                'reference' => $reference,
+                'order_id' => $orderId,
+                'amount' => $fee
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Initiate payment error: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error occurred'
+            ]);
+        }
+    }
+
+    /**
+     * Verify payment (AJAX endpoint)
+     */
+    public function verifyPayment() {
+        header('Content-Type: application/json');
+        
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        error_log("=== VERIFY PAYMENT CALLED ===");
+        
+        if (!isset($_SESSION['applicant_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Please login first']);
+            return;
+        }
+        
+        // Get RRR from request
+        $input = json_decode(file_get_contents('php://input'), true);
+        $rrr = $input['rrr'] ?? $_POST['rrr'] ?? '';
+        $csrfToken = $input['csrf_token'] ?? $_POST['csrf_token'] ?? '';
         
         if (empty($rrr)) {
-            $_SESSION['flash_error'] = 'Invalid payment reference';
-            header('Location: /apply/step/3');
-            exit;
+            echo json_encode(['success' => false, 'message' => 'RRR is required']);
+            return;
         }
         
-        $applicantId = $_SESSION['applicant_id'];
-        $application = $this->applicationModel->getByApplicantId($applicantId);
-        
-        if (!$application) {
-            $_SESSION['flash_error'] = 'Application not found';
-            header('Location: /apply/form');
-            exit;
+        try {
+            // Get payment by RRR
+            $payment = $this->paymentModel->getByRRR($rrr);
+            
+            if (!$payment) {
+                echo json_encode(['success' => false, 'message' => 'Payment record not found']);
+                return;
+            }
+            
+            // Verify ownership
+            if ($payment['applicant_id'] != $_SESSION['applicant_id']) {
+                echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+                return;
+            }
+            
+            // For demo, mark as success
+            $updateResult = $this->paymentModel->markAsSuccess($payment['id'], [
+                'transaction_id' => 'TXN' . time(),
+                'payment_method' => 'remita',
+                'payer_email' => $payment['payer_email'] ?? null,
+                'payer_name' => $payment['payer_name'] ?? null
+            ]);
+            
+            if ($updateResult) {
+                // Update application step
+                $this->applicationModel->updateApplication($payment['application_id'], [
+                    'application_step' => 4
+                ]);
+                
+                // Generate exam slip
+                $this->generateExamSlip($payment['application_id']);
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Payment verified successfully',
+                    'redirect' => '/apply/step/4'
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to verify payment'
+                ]);
+            }
+            
+        } catch (Exception $e) {
+            error_log("Verify payment error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Server error occurred']);
         }
-        
-        // For demo purposes, simulate successful payment
-        // In production, this would verify with payment gateway
-        
-        // Create payment record
-        $this->paymentModel->insert([
-            'application_id' => $application['id'],
-            'applicant_id' => $applicantId,
-            'amount' => $this->settingsModel->getApplicationFee(),
-            'rrr' => $rrr,
-            'order_id' => uniqid('ORD-'),
-            'status' => 'success',
-            'payment_method' => 'remita',
-            'transaction_id' => 'TXN' . time(),
-            'payment_date' => date('Y-m-d H:i:s'),
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
-        ]);
-        
-        // Generate exam slip
-        $this->generateExamSlip($application['id']);
-        
-        $_SESSION['flash_success'] = 'Payment verified successfully';
-        header('Location: /apply/step/4');
-        exit;
     }
 
     // ============================================
