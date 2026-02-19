@@ -2033,7 +2033,7 @@ class PublicApplicationController extends ApplicationBaseController {
         // Render the step2 view
         $this->render('applications/step2');
     }
-
+    
     /**
      * Show step 3: Payment (Legacy Flow)
      */
@@ -2047,12 +2047,64 @@ class PublicApplicationController extends ApplicationBaseController {
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
             header('Location: /applicant/login');
-            return;
+            exit;
         }
         
-        // Redirect to new payment page
-        header('Location: /apply/step/3');
-        exit;
+        // Get application
+        $applicantId = $_SESSION['applicant_id'];
+        $application = $this->applicationModel->getByApplicantId($applicantId);
+        
+        if (!$application) {
+            $_SESSION['flash_error'] = 'Application not found';
+            header('Location: /apply/step/1');
+            exit;
+        }
+        
+        // Check if already paid
+        $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+        
+        if ($hasPaid) {
+            header('Location: /apply/step/4');
+            exit;
+        }
+        
+        // Restore JAMB data if needed
+        if (!isset($_SESSION['jamb_verification']) && $application['jamb_number']) {
+            $_SESSION['jamb_verification'] = [
+                'jamb_number' => $application['jamb_number'],
+                'first_name' => $application['first_name'],
+                'last_name' => $application['last_name'],
+                'other_names' => $application['other_names'],
+                'gender' => $application['gender'],
+                'state_of_origin' => $application['state_of_origin'],
+                'lga' => $application['lga'],
+                'score' => $application['utme_score']
+            ];
+        }
+        
+        // Generate CSRF token
+        $csrfToken = bin2hex(random_bytes(32));
+        if (!isset($_SESSION['csrf_tokens'])) {
+            $_SESSION['csrf_tokens'] = [];
+        }
+        $_SESSION['csrf_tokens'][$csrfToken] = time();
+        $_SESSION['current_csrf_token'] = $csrfToken;
+        
+        // Get fee settings
+        $fee = $this->settingsModel->getApplicationFee();
+        $currency = $this->settingsModel->getCurrency();
+        
+        // Render the payment page
+        $this->data = array_merge($this->data, [
+            'pageTitle' => 'Payment - Step 3',
+            'application' => $application,
+            'fee' => $fee,
+            'currency' => $currency,
+            'formatted_fee' => $this->settingsModel->getFormattedFee(),
+            'csrf_token' => $csrfToken
+        ]);
+        
+        $this->render('applications/payment');
     }
 
     /**
