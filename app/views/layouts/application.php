@@ -227,7 +227,7 @@
         .portal-logout-btn i { font-size: 10px; }
 
         /* =========================================================
-           PROGRESS TRACKER — 5 steps
+           PROGRESS TRACKER — 5 steps (FIXED)
         ========================================================= */
         .progress-track {
             background: var(--navy-mid);
@@ -726,6 +726,29 @@
         .text-teal { color: var(--teal) !important; }
 
         /* =========================================================
+           PAYMENT BUTTON AREA (ADDED)
+        ========================================================= */
+        #paymentButtonArea .btn-amber {
+            display: block;
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: var(--amber, #D4860B);
+            color: white;
+            border: none;
+            border-radius: var(--r-md, 8px);
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            transition: all .25s;
+        }
+        
+        #paymentButtonArea .btn-amber:hover {
+            background: #b87209;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(212,134,11,0.3);
+        }
+
+        /* =========================================================
            RESPONSIVE
         ========================================================= */
         @media (max-width: 768px) {
@@ -844,37 +867,53 @@
         </div><!-- /portal-header-inner -->
 
         <?php
-            /* ── Step tracking ────────────────────────────────────────────
+            /* ── Step tracking - FIXED for 5-step flow ───────────────────
              *
              * Steps:
-             *   1 – Create Account    (account row exists in DB)
-             *   2 – JAMB Verification (jamb_reg_number present)
-             *   3 – Application Form  (first_name + last_name present)
-             *   4 – Payment           (payment_status === 'paid')
-             *   5 – Exam Slip         (exam_slip_generated truthy)
-             *
-             * Primary: application['application_step'] column.
-             * Fallback: infer from data fields.
-             * ─────────────────────────────────────────────────────────── */
+             *   1 – Create Account    (User is logged in)
+             *   2 – JAMB Verification (jamb_number present)
+             *   3 – Application Form  (date_of_birth, phone, address present)
+             *   4 – Payment           (payment_status === 'success')
+             *   5 – Exam Slip         (exam_slip_generated === 1)
+             */
             $showSteps   = false;
-            $currentStep = 1;
+            $currentStep = 1; // Default to step 1
 
             if (isset($application) && is_array($application)) {
                 $showSteps = true;
-
-                if (!empty($application['application_step'])) {
-                    $currentStep = (int) $application['application_step'];
-                } else {
-                    $hasJamb = !empty($application['jamb_reg_number']);
-                    $hasForm = !empty($application['first_name']) && !empty($application['last_name']);
-                    $hasPaid = isset($application['payment_status']) && $application['payment_status'] === 'paid';
-                    $hasSlip = !empty($application['exam_slip_generated']);
-
-                    if      ($hasSlip)  $currentStep = 5;
-                    elseif  ($hasPaid)  $currentStep = 5; // paid → exam slip is next active step
-                    elseif  ($hasForm)  $currentStep = 4;
-                    elseif  ($hasJamb)  $currentStep = 3;
-                    else                $currentStep = 2; // logged in but JAMB not done yet
+                
+                // Check if user is logged in (always true for step 1)
+                $currentStep = 1;
+                
+                // Step 2: JAMB Verification
+                if (!empty($application['jamb_number'])) {
+                    $currentStep = 2;
+                }
+                
+                // Step 3: Application Form (personal details filled)
+                if (!empty($application['date_of_birth']) && 
+                    !empty($application['phone']) && 
+                    !empty($application['address'])) {
+                    $currentStep = 3;
+                }
+                
+                // Step 4: Payment
+                $hasPaid = false;
+                if (isset($payment_status) && is_array($payment_status)) {
+                    $hasPaid = ($payment_status['status'] === 'success');
+                } elseif (isset($paymentModel)) {
+                    // Fallback to check directly
+                    $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+                }
+                
+                if ($hasPaid) {
+                    $currentStep = 4;
+                }
+                
+                // Step 5: Exam Slip
+                if (!empty($application['exam_slip_generated']) || 
+                    (isset($exam_slip) && !empty($exam_slip))) {
+                    $currentStep = 5;
                 }
             }
 
@@ -982,7 +1021,7 @@
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="<?php echo defined('BASE_URL') ? BASE_URL : ''; ?>/assets/js/payment.js"></script>
+<script src="<?php echo defined('BASE_URL') ? BASE_URL : ''; ?>/assets/js/Payment.js"></script>
 
 <script>
     // Auto-dismiss flash messages after 5.5s

@@ -4,9 +4,10 @@
  * Redesigned: Premium institutional design
  * FIXED: Removed HTML escaping from Remita payment URL
  * FIXED: Updated copy button to pass RRR directly
+ * FIXED: Added payment button area for after RRR generation
  * 
  * @package FCTCNS
- * @version 2.1
+ * @version 2.2
  */
 
 extract($data ?? []);
@@ -509,6 +510,38 @@ if (empty($applicant_name)) {
         font-weight: 500;
     }
 
+    /* ─── Payment Button Area (ADDED) ─── */
+    #paymentButtonArea {
+        margin-bottom: 1.5rem;
+    }
+    
+    #paymentButtonArea .alert-warning {
+        background: var(--orange-pale);
+        border: 1px solid var(--orange);
+        border-radius: var(--r-md);
+        padding: 1.5rem;
+    }
+    
+    #paymentButtonArea .btn-amber {
+        display: block;
+        width: 100%;
+        padding: 1rem 1.5rem;
+        background: var(--amber);
+        color: white;
+        border: none;
+        border-radius: var(--r-md);
+        font-weight: 600;
+        text-align: center;
+        text-decoration: none;
+        transition: all .25s;
+    }
+    
+    #paymentButtonArea .btn-amber:hover {
+        background: #b87209;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(212,134,11,0.3);
+    }
+
     /* ─── Divider ─── */
     .divider {
         height: 1px;
@@ -630,7 +663,7 @@ if (empty($applicant_name)) {
                         </div>
                         <div class="card-head-text">
                             <div class="card-head-title">Application Payment</div>
-                            <div class="card-head-sub">Step 3 of 4 &mdash; Complete your payment to proceed</div>
+                            <div class="card-head-sub">Step 4 of 5 &mdash; Complete your payment to proceed</div>
                         </div>
                         <div class="app-badge">
                             <div class="app-badge-label">App. Number</div>
@@ -667,15 +700,15 @@ if (empty($applicant_name)) {
                             </li>
                             <li>
                                 <span class="step-num">2</span>
-                                You'll be redirected to the Remita secure payment page.
+                                Click the <strong>Pay Now on Remita</strong> button that appears.
                             </li>
                             <li>
                                 <span class="step-num">3</span>
-                                Complete payment using your card, internet banking, or USSD.
+                                Complete payment on the Remita secure page.
                             </li>
                             <li>
                                 <span class="step-num">4</span>
-                                Return here and click <strong>Verify Payment</strong> to confirm your transaction.
+                                Return here and click <strong>I've Paid — Verify Payment</strong>.
                             </li>
                             <li>
                                 <span class="step-num">5</span>
@@ -726,6 +759,18 @@ if (empty($applicant_name)) {
                             <i class="fas fa-info-circle"></i>
                             Save this RRR in case you need to verify your payment later.
                         </p>
+                    </div>
+
+                    <!-- Payment Button Area - ADDED -->
+                    <div id="paymentButtonArea" style="display:none; margin-bottom:1.5rem">
+                        <div class="alert alert-warning">
+                            <h5><i class="fas fa-external-link-alt"></i> Proceed to Payment</h5>
+                            <p class="mb-3">Click the button below to complete your payment on Remita secure platform:</p>
+                            <a href="#" id="remitaPaymentLink" target="_blank" class="btn-amber w-100" style="text-align:center; display:block;">
+                                <i class="fas fa-credit-card me-2"></i> Pay Now on Remita
+                            </a>
+                            <p class="mt-3 small text-muted">After payment, return here and click "I've Paid — Verify Payment"</p>
+                        </div>
                     </div>
 
                     <!-- Processing Status -->
