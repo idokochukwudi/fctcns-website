@@ -584,7 +584,7 @@ class PublicApplicationController extends ApplicationBaseController {
         try {
             $applicantId = $_SESSION['applicant_id'];
             
-            // Get JAMB data from hidden fields - these come from sessionStorage via hidden inputs
+            // Get JAMB data from hidden fields
             $jambNumber = $_POST['jamb_number'] ?? '';
             $firstName = $_POST['first_name'] ?? '';
             $lastName = $_POST['last_name'] ?? '';
@@ -594,7 +594,7 @@ class PublicApplicationController extends ApplicationBaseController {
             $lga = $_POST['lga'] ?? '';
             $utmeScore = $_POST['utme_score'] ?? '';
             
-            // Get editable fields - handle both possible field names
+            // Get editable fields
             $dateOfBirth = $_POST['date_of_birth'] ?? '';
             $phone = $_POST['phone'] ?? '';
             $address = $_POST['address'] ?? '';
@@ -602,11 +602,10 @@ class PublicApplicationController extends ApplicationBaseController {
             $programChoice = $_POST['program_choice'] ?? $_POST['program_choice_1'] ?? '';
             $email = $_POST['email'] ?? '';
             
-            // Debug log
-            error_log("Save Application - POST data: " . print_r($_POST, true));
-            if (!empty($_FILES)) {
-                error_log("Save Application - FILES data: " . print_r($_FILES, true));
-            }
+            // DEBUG: Log all POST data
+            error_log("=== SAVE APPLICATION DEBUG ===");
+            error_log("POST keys: " . implode(', ', array_keys($_POST)));
+            error_log("POST data: " . print_r($_POST, true));
             
             // Validate required fields
             $missingFields = [];
@@ -644,21 +643,58 @@ class PublicApplicationController extends ApplicationBaseController {
                 'updated_at' => date('Y-m-d H:i:s')
             ];
             
-            // FIXED: Handle O'Level subject data - THIS WAS MISSING
+            // FIXED: Handle O'Level subject data from the form
             if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
-                error_log("O'Level subject data received: " . print_r($_POST['olevel'], true));
+                error_log("O'Level data received: " . print_r($_POST['olevel'], true));
                 
-                // Get existing O'Level data if any
-                $existingOlevel = [];
-                if (!empty($application['olevel_results'])) {
-                    $existingOlevel = json_decode($application['olevel_results'], true) ?: [];
+                // Format the O'Level data for storage
+                $formattedResults = [];
+                
+                foreach ($_POST['olevel'] as $index => $result) {
+                    // Skip if required fields are missing
+                    if (empty($result['exam_type']) || empty($result['exam_year'])) {
+                        continue;
+                    }
+                    
+                    // Build the result entry
+                    $formattedResult = [
+                        'exam_type' => $result['exam_type'],
+                        'exam_year' => $result['exam_year'],
+                        'exam_number' => $result['exam_number'] ?? '',
+                        'sitting' => $result['sitting'] ?? '1st',
+                        'english_grade' => $result['english_grade'] ?? '',
+                        'mathematics_grade' => $result['mathematics_grade'] ?? '',
+                        'biology_grade' => $result['biology_grade'] ?? '',
+                        'chemistry_grade' => $result['chemistry_grade'] ?? '',
+                        'physics_grade' => $result['physics_grade'] ?? ''
+                    ];
+                    
+                    $formattedResults[] = $formattedResult;
                 }
                 
-                // For O'Level subjects, we want to replace with the current form data
-                // This assumes $_POST['olevel'] contains the structured subject data
-                $updateData['olevel_results'] = json_encode($_POST['olevel']);
-                
-                error_log("O'Level data being saved: " . $updateData['olevel_results']);
+                if (!empty($formattedResults)) {
+                    // Save to olevel_results field in JSON format
+                    $updateData['olevel_results'] = json_encode($formattedResults);
+                    error_log("Formatted O'Level data being saved: " . $updateData['olevel_results']);
+                    
+                    // Also save to the dedicated olevel_results table using the model
+                    try {
+                        require_once MODELS_PATH . '/application/OlevelResultModel.php';
+                        $olevelModel = new OlevelResultModel();
+                        
+                        // Save each sitting to the database
+                        foreach ($formattedResults as $result) {
+                            $result['application_id'] = $application['id'];
+                            $olevelModel->insert($result);
+                        }
+                        error_log("Saved O'Level results to olevel_results table");
+                    } catch (Exception $e) {
+                        error_log("Error saving to olevel_results table: " . $e->getMessage());
+                        // Don't fail the whole request, just log the error
+                    }
+                }
+            } else {
+                error_log("No O'Level data found in POST");
             }
             
             // Handle file uploads
@@ -675,85 +711,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
             }
             
-            // Handle JAMB result upload
-            if (isset($_FILES['jamb_result']) && $_FILES['jamb_result']['error'] === UPLOAD_ERR_OK) {
-                $jambResultResult = $this->uploadFile($_FILES['jamb_result'], $applicantId, 'jamb_result');
-                if ($jambResultResult['success']) {
-                    $updateData['qualification_file'] = $jambResultResult['path'];
-                    error_log("JAMB result uploaded: " . $jambResultResult['path']);
-                } else {
-                    $uploadErrors[] = 'JAMB Result: ' . $jambResultResult['message'];
-                }
-            }
-            
-            // Handle birth certificate upload
-            if (isset($_FILES['birth_certificate']) && $_FILES['birth_certificate']['error'] === UPLOAD_ERR_OK) {
-                $birthCertResult = $this->uploadFile($_FILES['birth_certificate'], $applicantId, 'birth_certificate');
-                if ($birthCertResult['success']) {
-                    $updateData['birth_certificate'] = $birthCertResult['path'];
-                    error_log("Birth certificate uploaded: " . $birthCertResult['path']);
-                } else {
-                    $uploadErrors[] = 'Birth Certificate: ' . $birthCertResult['message'];
-                }
-            }
-            
-            // Handle O'Level file uploads (separate from subject data)
-            if (isset($_FILES['olevel_files'])) {
-                $olevelFiles = [];
-                
-                if (is_array($_FILES['olevel_files']['name'])) {
-                    // Multiple files
-                    for ($i = 0; $i < count($_FILES['olevel_files']['name']); $i++) {
-                        if ($_FILES['olevel_files']['error'][$i] === UPLOAD_ERR_OK) {
-                            $file = [
-                                'name' => $_FILES['olevel_files']['name'][$i],
-                                'type' => $_FILES['olevel_files']['type'][$i],
-                                'tmp_name' => $_FILES['olevel_files']['tmp_name'][$i],
-                                'error' => $_FILES['olevel_files']['error'][$i],
-                                'size' => $_FILES['olevel_files']['size'][$i]
-                            ];
-                            $result = $this->uploadFile($file, $applicantId, 'olevel');
-                            if ($result['success']) {
-                                $olevelFiles[] = $result['path'];
-                                error_log("O'Level file uploaded: " . $result['path']);
-                            } else {
-                                $uploadErrors[] = 'O\'Level: ' . $result['message'];
-                            }
-                        }
-                    }
-                } else {
-                    // Single file
-                    if ($_FILES['olevel_files']['error'] === UPLOAD_ERR_OK) {
-                        $result = $this->uploadFile($_FILES['olevel_files'], $applicantId, 'olevel');
-                        if ($result['success']) {
-                            $olevelFiles[] = $result['path'];
-                            error_log("O'Level file uploaded: " . $result['path']);
-                        } else {
-                            $uploadErrors[] = 'O\'Level: ' . $result['message'];
-                        }
-                    }
-                }
-                
-                if (!empty($olevelFiles)) {
-                    // Store file paths separately - you might need another field for this
-                    // For now, we'll log it and save to a separate field if available
-                    error_log("O'Level files to save: " . json_encode($olevelFiles));
-                    
-                    // If you have a field for O'Level file paths, save them here
-                    // For example, if you have an 'olevel_files' field:
-                    // $updateData['olevel_files'] = json_encode($olevelFiles);
-                    
-                    // Or if you want to append to existing file list:
-                    $existingFiles = [];
-                    if (!empty($application['olevel_file_paths'])) {
-                        $existingFiles = json_decode($application['olevel_file_paths'], true) ?: [];
-                    }
-                    $allFiles = array_merge($existingFiles, $olevelFiles);
-                    $updateData['olevel_file_paths'] = json_encode($allFiles);
-                }
-            }
-            
-            // Update existing application using the dedicated updateApplication method
+            // Update existing application
             $updated = $this->applicationModel->updateApplication($application['id'], $updateData);
             
             if (!$updated) {
@@ -764,10 +722,9 @@ class PublicApplicationController extends ApplicationBaseController {
             
             error_log("Updated existing application ID: " . $application['id']);
             
-            // Update applicant phone and email if needed - FIXED: Use correct method signature for ApplicantModel
+            // Update applicant phone and email if needed
             if (!empty($phone) || !empty($email)) {
                 try {
-                    // ApplicantModel's update method expects: update($data, $where, $params)
                     $this->applicantModel->update(
                         ['phone' => $phone, 'email' => $email, 'updated_at' => date('Y-m-d H:i:s')],
                         'id = :id',
@@ -776,7 +733,6 @@ class PublicApplicationController extends ApplicationBaseController {
                     error_log("Updated applicant ID: " . $applicantId);
                 } catch (Exception $e) {
                     error_log("Failed to update applicant: " . $e->getMessage());
-                    // Don't return error, application update succeeded
                 }
             }
             
