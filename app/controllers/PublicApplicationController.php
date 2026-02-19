@@ -640,7 +640,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 'address' => $address,
                 'nationality' => $nationality,
                 'program_choice_1' => $programChoice,
-                'application_step' => 2,
+                'application_step' => 3,
                 'updated_at' => date('Y-m-d H:i:s')
             ];
             
@@ -2592,7 +2592,7 @@ class PublicApplicationController extends ApplicationBaseController {
                     'utme_score' => $jambCandidate['aggregate_score'],
                     'program' => 'ND Nursing',
                     'program_choice_1' => 'ND Nursing',
-                    'application_step' => 2,
+                    'application_step' => 3,
                     'status' => 'pending'
                 ];
                 
@@ -2622,7 +2622,7 @@ class PublicApplicationController extends ApplicationBaseController {
                     'state_of_origin' => $jambCandidate['state_of_origin'],
                     'lga' => $jambCandidate['lga'],
                     'utme_score' => $jambCandidate['aggregate_score'],
-                    'application_step' => 2,
+                    'application_step' => 3,
                     'updated_at' => date('Y-m-d H:i:s')
                 ];
                 
