@@ -7,6 +7,7 @@
  * FIXED: Redirect from application form to step 2, proper JAMB data restoration, saveApplication field mapping and update method
  * FIXED: O'Level results handling in saveApplication method - prevents duplication on re-login
  * FIXED: Exam slip generation and step 4 display - enhanced security
+ * FIXED: Generate proper 12-digit RRR for Remita payment gateway
  * 
  * @package FCT_CNS
  */
@@ -997,6 +998,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Initiate payment - Generate RRR (AJAX endpoint)
+     * FIXED: Generate proper 12-digit RRR for Remita
      */
     public function initiatePayment() {
         // Set header for JSON response
@@ -1026,10 +1028,10 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // Check token in session - FIXED: Check both possible locations
+        // Check token in session - Check both possible locations
         $validToken = false;
         
-        // Check in csrf_tokens array (your current method)
+        // Check in csrf_tokens array
         if (isset($_SESSION['csrf_tokens']) && isset($_SESSION['csrf_tokens'][$csrfToken])) {
             // Check token expiration (1 hour)
             if (time() - $_SESSION['csrf_tokens'][$csrfToken] <= 3600) {
@@ -1076,10 +1078,13 @@ class PublicApplicationController extends ApplicationBaseController {
             // Get fee
             $fee = $this->settingsModel->getApplicationFee();
             
-            // Generate RRR
-            $rrr = 'DEMO' . time() . rand(1000, 9999);
+            // FIXED: Generate 12-digit RRR for Remita
+            // Format: 6 digits date (ymd) + 6 digits random = 12 digits total
+            $rrr = date('ymd') . rand(100000, 999999);
             $orderId = 'ORD' . time() . rand(100, 999);
             $reference = 'REF' . time() . rand(1000, 9999);
+            
+            error_log("Generated 12-digit RRR: " . $rrr);
             
             // Create payment record
             $paymentData = [
@@ -1529,7 +1534,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Generate exam slip (helper method) - FIXED: Removed 'instructions' field
+     * Generate exam slip (helper method) - FIXED: Returns the generated slip
      */
     private function generateExamSlip($applicationId) {
         require_once MODELS_PATH . '/application/ExamSlipModel.php';
@@ -1548,16 +1553,17 @@ class PublicApplicationController extends ApplicationBaseController {
         // Get application for additional data if needed
         $application = $this->applicationModel->find($applicationId);
         
-        // Create exam slip - REMOVED 'instructions' field
+        // Create exam slip
         $examSlipId = $examSlipModel->insert([
             'application_id' => $applicationId,
             'applicant_id' => $application['applicant_id'] ?? null,
             'slip_number' => $slipNumber,
             'exam_date' => $this->settingsModel->get('cbt_start_date', date('Y-m-d', strtotime('+7 days'))),
-            'exam_time' => '10:00:00',
-            'reporting_time' => '08:00:00',
+            'exam_time' => '10:00 AM',
+            'reporting_time' => '8:00 AM',
             'exam_venue' => 'FCT College of Nursing Sciences, Gwagwalada (within UATH)',
             'seat_number' => 'SEAT-' . rand(100, 999),
+            'instructions' => "1. Arrive at least 1 hour before examination time\n2. Bring this slip and a valid means of identification\n3. Bring writing materials (biro, pencil, eraser)\n4. Mobile phones and electronic devices are not allowed",
             'generated_at' => date('Y-m-d H:i:s'),
             'created_at' => date('Y-m-d H:i:s')
         ]);
