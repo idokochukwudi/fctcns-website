@@ -171,10 +171,8 @@ try {
     $router = new Router();
     
     // ============================================================================
-    // DEBUG ROUTE - ADDED FOR TROUBLESHOOTING
+    // DEBUG ROUTE - KEEP THIS FOR TESTING
     // ============================================================================
-    
-    // Debug route
     $router->get('/debug-test', function() {
         echo "<h1>Debug Test Route</h1>";
         echo "<p>This route works!</p>";
@@ -186,10 +184,10 @@ try {
     });
     
     // ============================================================================
-    // PUBLIC ROUTES - Using Controller Methods
+    // PUBLIC PAGES ROUTES - Keep these as they might not be in your router class
     // ============================================================================
     
-    // Homepage - Use PageController
+    // Homepage
     $router->get('/', 'PageController@home');
     
     // Static pages
@@ -198,8 +196,6 @@ try {
     $router->get('/admissions', 'PageController@admissions');
     $router->get('/research', 'PageController@research');
     $router->get('/contact', 'PageController@contact');
-    
-    // Additional pages
     $router->get('/news', 'PageController@news');
     $router->get('/faculty', 'PageController@faculty');
     $router->get('/alumni', 'PageController@alumni');
@@ -210,7 +206,7 @@ try {
     $router->post('/contact/submit', 'PageController@submitContact');
     
     // ============================================================================
-    // APPLICATION ROUTES - Scalable Multi-step Application
+    // APPLICATION ROUTES - Keep these
     // ============================================================================
 
     // Online application form (multi-step)
@@ -233,8 +229,6 @@ try {
     $router->get('/admin/contact/export', 'ContactController@export');
     $router->get('/admin/contact/settings', 'ContactController@settings');
     $router->post('/admin/contact/save-settings', 'ContactController@saveSettings');
-    
-    // Optional: Quick update routes
     $router->post('/admin/contact/quick-update/{id}', 'ContactController@quickUpdate');
     
     // ============================================================================
@@ -249,10 +243,6 @@ try {
     $router->post('/admin/carousel/update/{id}', 'AdminCarouselController@update');
     $router->post('/admin/carousel/delete/{id}', 'AdminCarouselController@delete');
     $router->post('/admin/carousel/toggle/{id}', 'AdminCarouselController@toggle');
-    
-    // ============================================================================
-    // CAROUSEL IMAGE UPLOAD ROUTE - ADD THIS BEFORE ADMIN CATCH-ALL
-    // ============================================================================
     
     // Image upload route for AJAX uploads
     $router->post('/admin/carousel/upload-image', 'AdminCarouselController@uploadImage');
@@ -287,45 +277,6 @@ try {
             echo "<h1>Database Test</h1>";
         }
     });
-    
-    // ============================================================================
-    // ADMIN ROUTES - COMMENT OUT THE CATCH-ALL ROUTES
-    // ============================================================================
-
-    // Admin area - ONLY the dashboard goes to admin SPA
-    $router->get('/admin', function() {
-        $path = APP_PATH . '/views/admin/index.php';
-        if (file_exists($path)) {
-            include $path;
-        } else {
-            echo "<h1>Admin Area</h1>";
-        }
-    });
-
-    // ============================================================================
-    // COMMENT OUT THESE CATCH-ALL ROUTES - THEY INTERFERE WITH SPECIFIC ROUTES
-    // ============================================================================
-    /*
-    // IMPORTANT: Catch-all for admin SPA routes must come AFTER specific admin routes
-    // This allows the specific contact routes above to work before falling back to SPA
-    $router->get('/admin/(.*)', function($any) {
-        $path = APP_PATH . '/views/admin/index.php';
-        if (file_exists($path)) {
-            include $path;
-        } else {
-            echo "<h1>Admin Area</h1>";
-        }
-    });
-
-    $router->post('/admin/(.*)', function($any) {
-        $path = APP_PATH . '/views/admin/index.php';
-        if (file_exists($path)) {
-            include $path;
-        } else {
-            echo "<h1>Admin Area</h1>";
-        }
-    });
-    */
     
     // ============================================================================
     // API ROUTES

@@ -5,9 +5,10 @@
  * FIXED: Removed HTML escaping from Remita payment URL
  * FIXED: Updated copy button to pass RRR directly
  * FIXED: Added payment button area for after RRR generation
+ * FIXED: Moved CSRF inputs from head to body for valid HTML
  * 
  * @package FCTCNS
- * @version 2.2
+ * @version 2.3
  */
 
 extract($data ?? []);
@@ -42,10 +43,6 @@ if (empty($applicant_name)) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- CSRF -->
-    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-    <meta name="csrf-token" content="<?php echo $csrf_token; ?>">
 
     <style>
     /* ─── Reset ─── */
@@ -845,6 +842,10 @@ if (empty($applicant_name)) {
     </main>
 
 </div><!-- /page-shell -->
+
+<!-- CSRF Token - MOVED FROM HEAD TO BODY (FIXED) -->
+<input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+<meta name="csrf-token" content="<?php echo $csrf_token; ?>">
 
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
