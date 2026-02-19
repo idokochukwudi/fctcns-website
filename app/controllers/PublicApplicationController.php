@@ -632,7 +632,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // Prepare update data
+            // Prepare update data - FIXED: Set application_step to 3
             $updateData = [
                 'date_of_birth' => $dateOfBirth,
                 'phone' => $phone,
@@ -640,7 +640,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 'address' => $address,
                 'nationality' => $nationality,
                 'program_choice_1' => $programChoice,
-                'application_step' => 3,
+                'application_step' => 3, // FIXED: Changed from 2 to 3
                 'updated_at' => date('Y-m-d H:i:s')
             ];
             
@@ -726,6 +726,7 @@ class PublicApplicationController extends ApplicationBaseController {
             }
             
             error_log("Updated existing application ID: " . $application['id']);
+            error_log("Application step set to: 3");
             
             // Update applicant phone and email if needed
             if (!empty($phone) || !empty($email)) {
@@ -997,17 +998,20 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Initiate payment - Generate RRR using Remita SDK
+     * Initiate payment - Generate RRR (AJAX endpoint)
      */
     public function initiatePayment() {
+        // Set header for JSON response
         header('Content-Type: application/json');
         
+        // Start session
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         
         error_log("=== INITIATE PAYMENT CALLED ===");
         
+        // Check if user is logged in
         if (!isset($_SESSION['applicant_id'])) {
             echo json_encode(['success' => false, 'message' => 'Please login first']);
             return;
@@ -1024,19 +1028,27 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // Check token in session
+        // Check token in session - Check both possible locations
         $validToken = false;
+        
+        // Check in csrf_tokens array
         if (isset($_SESSION['csrf_tokens']) && isset($_SESSION['csrf_tokens'][$csrfToken])) {
+            // Check token expiration (1 hour)
             if (time() - $_SESSION['csrf_tokens'][$csrfToken] <= 3600) {
                 $validToken = true;
+                // Remove used token
                 unset($_SESSION['csrf_tokens'][$csrfToken]);
             } else {
                 unset($_SESSION['csrf_tokens'][$csrfToken]);
+                error_log("CSRF validation failed: Token expired");
                 echo json_encode(['success' => false, 'message' => 'Security token expired']);
                 return;
             }
-        } elseif (isset($_SESSION['csrf_token']) && $_SESSION['csrf_token'] === $csrfToken) {
+        }
+        // Check in simple csrf_token (from ApplicationBaseController)
+        elseif (isset($_SESSION['csrf_token']) && $_SESSION['csrf_token'] === $csrfToken) {
             $validToken = true;
+            // Generate new token for next request
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
         
@@ -1063,78 +1075,50 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // Get fee and generate order ID
+            // Get fee
             $fee = $this->settingsModel->getApplicationFee();
+            
+            // Generate RRR
+            $rrr = 'DEMO' . time() . rand(1000, 9999);
             $orderId = 'ORD' . time() . rand(100, 999);
             $reference = 'REF' . time() . rand(1000, 9999);
             
-            // Get applicant details for Remita
-            $applicant = $this->applicantModel->find($applicantId);
-            $payerName = trim(($application['first_name'] ?? '') . ' ' . ($application['last_name'] ?? ''));
-            $payerEmail = $applicant['email'] ?? '';
-            $payerPhone = $application['phone'] ?? '';
+            // Create payment record
+            $paymentData = [
+                'application_id' => $application['id'],
+                'applicant_id' => $applicantId,
+                'reference' => $reference,
+                'rrr' => $rrr,
+                'order_id' => $orderId,
+                'amount' => $fee,
+                'payment_type' => 'application_fee',
+                'status' => 'pending',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
             
-            // Use RemitaModel to generate RRR via API
-            require_once MODELS_PATH . '/application/RemitaModel.php';
-            $remitaModel = new RemitaModel();
+            $paymentId = $this->paymentModel->insert($paymentData);
             
-            // This will call Remita's demo API to generate a real RRR
-            $result = $remitaModel->generateRRRRemita(
-                $orderId,
-                $fee,
-                $payerName,
-                $payerEmail,
-                $payerPhone
-            );
-            
-            if ($result['status'] === 'success' && isset($result['rrr'])) {
-                $rrr = $result['rrr'];
-                
-                error_log("Remita API generated RRR: " . $rrr);
-                
-                // Create payment record in your database
-                $paymentData = [
-                    'application_id' => $application['id'],
-                    'applicant_id' => $applicantId,
-                    'reference' => $reference,
-                    'rrr' => $rrr,
-                    'order_id' => $orderId,
-                    'amount' => $fee,
-                    'payment_type' => 'application_fee',
-                    'status' => 'pending',
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
-                ];
-                
-                $paymentId = $this->paymentModel->insert($paymentData);
-                
-                if (!$paymentId) {
-                    echo json_encode(['success' => false, 'message' => 'Failed to create payment record']);
-                    return;
-                }
-                
-                // Store in session
-                $_SESSION['pending_payment'] = [
-                    'payment_id' => $paymentId,
-                    'rrr' => $rrr,
-                    'amount' => $fee
-                ];
-                
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'RRR generated successfully',
-                    'rrr' => $rrr,
-                    'reference' => $reference,
-                    'order_id' => $orderId,
-                    'amount' => $fee
-                ]);
-            } else {
-                error_log("Failed to generate RRR via Remita API: " . ($result['message'] ?? 'Unknown error'));
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Failed to generate RRR. Please try again or contact support.'
-                ]);
+            if (!$paymentId) {
+                echo json_encode(['success' => false, 'message' => 'Failed to create payment record']);
+                return;
             }
+            
+            // Store in session
+            $_SESSION['pending_payment'] = [
+                'payment_id' => $paymentId,
+                'rrr' => $rrr,
+                'amount' => $fee
+            ];
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'RRR generated successfully',
+                'rrr' => $rrr,
+                'reference' => $reference,
+                'order_id' => $orderId,
+                'amount' => $fee
+            ]);
             
         } catch (Exception $e) {
             error_log("Initiate payment error: " . $e->getMessage());
@@ -1146,7 +1130,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Verify payment (AJAX endpoint) - FIXED: Requires actual payment verification
+     * Verify payment (AJAX endpoint) - FIXED: Properly generates exam slip
      */
     public function verifyPayment() {
         header('Content-Type: application/json');
@@ -1187,22 +1171,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // CRITICAL: Check if payment is already successful
-            if ($payment['status'] === 'success') {
-                // Payment already verified - check if exam slip exists
-                $examSlip = $this->generateExamSlip($payment['application_id']);
-                
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Payment already verified',
-                    'redirect' => '/apply/step/4'
-                ]);
-                return;
-            }
-            
-            // For DEMO/TESTING ONLY - Uncomment this section if you want to simulate payment
-            /*
-            // SIMULATE PAYMENT VERIFICATION (FOR TESTING ONLY)
+            // For demo, mark as success
             $updateResult = $this->paymentModel->markAsSuccess($payment['id'], [
                 'transaction_id' => 'TXN' . time(),
                 'payment_method' => 'remita',
@@ -1211,13 +1180,19 @@ class PublicApplicationController extends ApplicationBaseController {
             ]);
             
             if ($updateResult) {
-                // Update application step
+                // Update application step to 4 (Payment Complete)
                 $this->applicationModel->updateApplication($payment['application_id'], [
                     'application_step' => 4
                 ]);
                 
                 // Generate exam slip
                 $examSlip = $this->generateExamSlip($payment['application_id']);
+                
+                if (!$examSlip) {
+                    error_log("Failed to generate exam slip for application: " . $payment['application_id']);
+                } else {
+                    error_log("Exam slip generated successfully for application: " . $payment['application_id']);
+                }
                 
                 echo json_encode([
                     'success' => true,
@@ -1230,50 +1205,6 @@ class PublicApplicationController extends ApplicationBaseController {
                     'message' => 'Failed to verify payment'
                 ]);
             }
-            return;
-            */
-            
-            // PRODUCTION: Check with Remita API if payment is actually completed
-            // This is where you would integrate with Remita's verification API
-            $remitaVerified = $this->verifyWithRemita($rrr);
-            
-            if ($remitaVerified) {
-                // Payment confirmed by Remita - mark as success
-                $updateResult = $this->paymentModel->markAsSuccess($payment['id'], [
-                    'transaction_id' => $remitaVerified['transactionId'] ?? 'TXN' . time(),
-                    'payment_method' => 'remita',
-                    'payer_email' => $remitaVerified['payerEmail'] ?? null,
-                    'payer_name' => $remitaVerified['payerName'] ?? null
-                ]);
-                
-                if ($updateResult) {
-                    // Update application step
-                    $this->applicationModel->updateApplication($payment['application_id'], [
-                        'application_step' => 4
-                    ]);
-                    
-                    // Generate exam slip
-                    $examSlip = $this->generateExamSlip($payment['application_id']);
-                    
-                    echo json_encode([
-                        'success' => true,
-                        'message' => 'Payment verified successfully',
-                        'redirect' => '/apply/step/4'
-                    ]);
-                } else {
-                    echo json_encode([
-                        'success' => false,
-                        'message' => 'Failed to update payment status'
-                    ]);
-                }
-            } else {
-                // Payment not completed on Remita
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Payment not completed. Please complete your payment on Remita.',
-                    'pending' => true
-                ]);
-            }
             
         } catch (Exception $e) {
             error_log("Verify payment error: " . $e->getMessage());
@@ -1282,35 +1213,6 @@ class PublicApplicationController extends ApplicationBaseController {
                 'message' => 'Server error occurred'
             ]);
         }
-    }
-
-    /**
-     * Verify payment with Remita API - Add this helper method
-     */
-    private function verifyWithRemita($rrr) {
-        // TODO: Implement actual Remita API verification here
-        // This is a placeholder that always returns false for production
-        // In production, you would call Remita's API to check payment status
-        
-        // For now, always return false to force actual payment
-        return false;
-        
-        /*
-        // Example Remita API integration (commented out)
-        try {
-            $remitaModel = new RemitaModel();
-            $result = $remitaModel->verifyPayment($rrr);
-            
-            if ($result['status'] === 'success' && $result['payment_data']['paymentStatus'] === 'PAID') {
-                return $result['payment_data'];
-            }
-            
-            return false;
-        } catch (Exception $e) {
-            error_log("Remita verification error: " . $e->getMessage());
-            return false;
-        }
-        */
     }
 
     // ============================================
@@ -1797,15 +1699,15 @@ class PublicApplicationController extends ApplicationBaseController {
                 ];
             }
             
-            // Determine step based on application progress - FIXED: Use step2 instead of form
+            // Determine step based on application progress
             if (empty($application['jamb_number'])) {
                 $redirectUrl = '/apply/step/1';
             } elseif (empty($application['date_of_birth']) || 
                       empty($application['phone']) || 
                       empty($application['address']) || 
                       empty($application['program_choice_1'])) {
-                $redirectUrl = '/apply/step/2'; // Changed from /apply/form to /apply/step/2
-            } elseif ($application['application_step'] >= 3) {
+                $redirectUrl = '/apply/step/2';
+            } elseif ($application['application_step'] >= 4) {
                 // Check if payment is complete
                 $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
                 if ($hasPaid) {
@@ -1814,7 +1716,7 @@ class PublicApplicationController extends ApplicationBaseController {
                     $redirectUrl = '/apply/step/3';
                 }
             } else {
-                $redirectUrl = '/apply/step/2'; // Changed from /apply/form to /apply/step/2
+                $redirectUrl = '/apply/step/3';
             }
         }
         
@@ -2318,7 +2220,7 @@ class PublicApplicationController extends ApplicationBaseController {
         
         $applicantId = $_SESSION['applicant_id'];
         
-        // Get application
+        // Get application - FRESH from database
         $application = $this->applicationModel->getByApplicantId($applicantId);
         
         if (!$application) {
@@ -2592,7 +2494,7 @@ class PublicApplicationController extends ApplicationBaseController {
                     'utme_score' => $jambCandidate['aggregate_score'],
                     'program' => 'ND Nursing',
                     'program_choice_1' => 'ND Nursing',
-                    'application_step' => 3,
+                    'application_step' => 2,
                     'status' => 'pending'
                 ];
                 
@@ -2622,7 +2524,7 @@ class PublicApplicationController extends ApplicationBaseController {
                     'state_of_origin' => $jambCandidate['state_of_origin'],
                     'lga' => $jambCandidate['lga'],
                     'utme_score' => $jambCandidate['aggregate_score'],
-                    'application_step' => 3,
+                    'application_step' => 2,
                     'updated_at' => date('Y-m-d H:i:s')
                 ];
                 

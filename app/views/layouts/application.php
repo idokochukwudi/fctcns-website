@@ -867,14 +867,14 @@
         </div><!-- /portal-header-inner -->
 
         <?php
-            /* ── Step tracking - FIXED for 5-step flow ───────────────────
+            /* ── Step tracking - FIXED to read from database ─────────────
              *
              * Steps:
              *   1 – Create Account    (User is logged in)
              *   2 – JAMB Verification (jamb_number present)
-             *   3 – Application Form  (date_of_birth, phone, address present)
-             *   4 – Payment           (payment_status === 'success')
-             *   5 – Exam Slip         (exam_slip_generated === 1)
+             *   3 – Application Form  (application_step >= 3)
+             *   4 – Payment           (application_step >= 4 or payment successful)
+             *   5 – Exam Slip         (application_step >= 5)
              */
             $showSteps   = false;
             $currentStep = 1; // Default to step 1
@@ -882,40 +882,45 @@
             if (isset($application) && is_array($application)) {
                 $showSteps = true;
                 
-                // Check if user is logged in (always true for step 1)
-                $currentStep = 1;
-                
-                // Step 2: JAMB Verification
-                if (!empty($application['jamb_number'])) {
-                    $currentStep = 2;
-                }
-                
-                // Step 3: Application Form (personal details filled)
-                if (!empty($application['date_of_birth']) && 
-                    !empty($application['phone']) && 
-                    !empty($application['address'])) {
-                    $currentStep = 3;
-                }
-                
-                // Step 4: Payment
-                $hasPaid = false;
-                if (isset($payment_status) && is_array($payment_status)) {
-                    $hasPaid = ($payment_status['status'] === 'success');
-                } elseif (isset($paymentModel)) {
-                    // Fallback to check directly
-                    $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
-                }
-                
-                if ($hasPaid) {
-                    $currentStep = 4;
-                }
-                
-                // Step 5: Exam Slip
-                if (!empty($application['exam_slip_generated']) || 
-                    (isset($exam_slip) && !empty($exam_slip))) {
-                    $currentStep = 5;
+                // DIRECTLY READ FROM DATABASE - this is the source of truth
+                if (!empty($application['application_step'])) {
+                    $currentStep = (int)$application['application_step'];
+                    error_log("Layout: Application step from DB: " . $currentStep);
+                } else {
+                    // Fallback logic if application_step not set
+                    $currentStep = 1;
+                    
+                    // Step 2: JAMB Verification
+                    if (!empty($application['jamb_number'])) {
+                        $currentStep = 2;
+                    }
+                    
+                    // Step 3: Application Form
+                    if (!empty($application['date_of_birth']) && 
+                        !empty($application['phone']) && 
+                        !empty($application['address'])) {
+                        $currentStep = 3;
+                    }
+                    
+                    // Step 4: Payment
+                    $hasPaid = false;
+                    if (isset($payment_status) && is_array($payment_status)) {
+                        $hasPaid = ($payment_status['status'] === 'success');
+                    }
+                    
+                    if ($hasPaid) {
+                        $currentStep = 4;
+                    }
+                    
+                    // Step 5: Exam Slip
+                    if (!empty($application['exam_slip_generated'])) {
+                        $currentStep = 5;
+                    }
                 }
             }
+
+            // Log the final step for debugging
+            error_log("Layout: Final current step: " . $currentStep);
 
             $steps = [
                 1 => ['label' => 'Create Account',    'sub' => 'Register'],
