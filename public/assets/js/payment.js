@@ -3,6 +3,8 @@
  * Handles RRR generation and payment verification
  * FIXED: Button IDs to match HTML (generateRRRBtn instead of payNowBtn)
  * FIXED: Added proper error handling for missing elements
+ * FIXED: Remita payment button display after RRR generation
+ * FIXED: Verify button visibility
  */
 
 $(document).ready(function() {
@@ -406,7 +408,7 @@ function checkPaymentStatus(rrr) {
 }
 
 /**
- * Show RRR and payment instructions
+ * Show RRR and payment instructions - FIXED: Ensures verify button appears
  */
 function showRRR(rrr) {
     console.log('Showing RRR:', rrr);
@@ -416,51 +418,45 @@ function showRRR(rrr) {
     $('#paymentRRR, .rrr-display').text(rrr).show();
     $('#rrrDisplayArea').show();
     
-    // Create or update payment instructions
-    var instructionsHtml = '<div class="alert alert-info mt-3 payment-instructions">' +
-               '<h5><i class="fas fa-info-circle"></i> Payment Details</h5>' +
-               '<p><strong>RRR:</strong> <span class="text-primary fw-bold">' + rrr + '</span>' +
-               ' <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyRRR()">' +
-               '<i class="fas fa-copy"></i> Copy</button></p>' +
-               '<p><strong>Instructions:</strong></p>' +
-               '<ol>' +
-               '<li>Click the "Proceed to Payment" button below</li>' +
-               '<li>Complete your payment on the Remita payment page</li>' +
-               '<li>After payment, return here and click "Verify Payment"</li>' +
-               '</ol>' +
-               '</div>';
-    
-    if ($('#payment-instructions').length) {
-        $('#payment-instructions').html(instructionsHtml).show();
-    } else if ($('#paymentStatus').length) {
-        $('#paymentStatus').show();
-        $('#paymentMessage').html('RRR Generated: <strong>' + rrr + '</strong>');
-        $('#paymentStatus').after(instructionsHtml);
-    } else {
-        $('.payment-section, .card-body:first').prepend(instructionsHtml);
-    }
-    
     // Show verify button
     $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').show();
+    
+    // Make sure the verify button is visible
+    $('#verifyPaymentBtn').css('display', 'block');
 }
 
 /**
- * Show Remita payment link
+ * Show Remita payment link - FIXED: Properly displays the payment button
  */
 function showRemitaLink(rrr) {
     var remitaUrl = 'https://remitademo.net/remita/ecomm/frame/handleCCD.action?rrr=' + rrr;
     
-    var linkHtml = '<div class="alert alert-warning mt-2 remita-link">' +
-               '<p><i class="fas fa-external-link-alt"></i> <strong>Proceed to Payment:</strong></p>' +
-               '<a href="' + remitaUrl + '" target="_blank" class="btn btn-primary">' +
-               '<i class="fas fa-credit-card"></i> Pay Now on Remita</a>' +
-               '<p class="mt-2 small text-muted">After payment, click the "Verify Payment" button below.</p>' +
+    var linkHtml = '<div class="alert alert-warning mt-3 remita-link">' +
+               '<h5><i class="fas fa-external-link-alt"></i> Proceed to Payment</h5>' +
+               '<p class="mb-3">Click the button below to complete your payment on Remita secure platform:</p>' +
+               '<a href="' + remitaUrl + '" target="_blank" class="btn btn--warning btn--lg w-100">' +
+               '<i class="fas fa-credit-card me-2"></i> Pay Now on Remita</a>' +
+               '<p class="mt-3 small text-muted">After payment, return here and click "I\'ve Paid, Verify"</p>' +
                '</div>';
     
+    // Remove any existing Remita links to prevent duplicates
+    $('.remita-link').remove();
+    
+    // Try multiple possible locations for the link
     if ($('#remitaLink').length) {
         $('#remitaLink').html(linkHtml).show();
+    } else if ($('#paymentStatus').length) {
+        // Append to payment status area
+        $('#paymentStatus').after(linkHtml);
+    } else if ($('.action-buttons').length) {
+        // Insert before action buttons
+        $('.action-buttons').before(linkHtml);
+    } else if ($('#rrrDisplayArea').length) {
+        // Insert after RRR display area
+        $('#rrrDisplayArea').after(linkHtml);
     } else {
-        $('#payment-instructions, .payment-instructions').after(linkHtml);
+        // Last resort - append to card body
+        $('.card-body').append(linkHtml);
     }
     
     // Open automatically with confirmation
