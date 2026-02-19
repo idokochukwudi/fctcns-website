@@ -6,7 +6,6 @@
  * FIXED: Remita payment button display after RRR generation
  * FIXED: Verify button visibility
  * FIXED: CopyRRR function now accepts parameter for pending payment
- * FIXED: Added support for new paymentButtonArea element
  */
 
 $(document).ready(function() {
@@ -327,14 +326,9 @@ function verifyPayment(rrr) {
                 // Hide verify button
                 $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').hide();
                 
-                // Hide payment button area if it exists
-                if ($('#paymentButtonArea').length) {
-                    $('#paymentButtonArea').hide();
-                }
-                
-                // Redirect to exam slip (step 5 in the 5-step flow)
+                // Redirect to exam slip
                 setTimeout(function() {
-                    window.location.href = response.redirect || '/apply/step/5';
+                    window.location.href = response.redirect || '/apply/step/4';
                 }, 2000);
                 
             } else {
@@ -433,19 +427,11 @@ function showRRR(rrr) {
 }
 
 /**
- * Show Remita payment link - UPDATED: Supports new paymentButtonArea
+ * Show Remita payment link - FIXED: Properly displays the payment button
  */
 function showRemitaLink(rrr) {
     var remitaUrl = 'https://remitademo.net/remita/ecomm/frame/handleCCD.action?rrr=' + rrr;
     
-    // Check if the new paymentButtonArea exists (added in step3.php)
-    if ($('#paymentButtonArea').length) {
-        // Update the link in the new payment button area
-        $('#remitaPaymentLink').attr('href', remitaUrl);
-        $('#paymentButtonArea').show();
-    }
-    
-    // Also keep the existing method for backward compatibility
     var linkHtml = '<div class="alert alert-warning mt-3 remita-link">' +
                '<h5><i class="fas fa-external-link-alt"></i> Proceed to Payment</h5>' +
                '<p class="mb-3">Click the button below to complete your payment on Remita secure platform:</p>' +
@@ -457,7 +443,7 @@ function showRemitaLink(rrr) {
     // Remove any existing Remita links to prevent duplicates
     $('.remita-link').remove();
     
-    // Try multiple possible locations for the link (fallback)
+    // Try multiple possible locations for the link
     if ($('#remitaLink').length) {
         $('#remitaLink').html(linkHtml).show();
     } else if ($('#paymentStatus').length) {
@@ -466,11 +452,11 @@ function showRemitaLink(rrr) {
     } else if ($('.action-buttons').length) {
         // Insert before action buttons
         $('.action-buttons').before(linkHtml);
-    } else if ($('#rrrDisplayArea').length && !$('#paymentButtonArea').length) {
-        // Insert after RRR display area (only if new button area doesn't exist)
+    } else if ($('#rrrDisplayArea').length) {
+        // Insert after RRR display area
         $('#rrrDisplayArea').after(linkHtml);
-    } else if (!$('#paymentButtonArea').length) {
-        // Last resort - append to card body (only if new button area doesn't exist)
+    } else {
+        // Last resort - append to card body
         $('.card-body').append(linkHtml);
     }
     
