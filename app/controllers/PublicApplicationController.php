@@ -1434,7 +1434,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Generate exam slip (helper method) - FIXED: Returns the generated slip
+     * Generate exam slip (helper method) - FIXED: Removed 'instructions' field
      */
     private function generateExamSlip($applicationId) {
         require_once MODELS_PATH . '/application/ExamSlipModel.php';
@@ -1453,17 +1453,16 @@ class PublicApplicationController extends ApplicationBaseController {
         // Get application for additional data if needed
         $application = $this->applicationModel->find($applicationId);
         
-        // Create exam slip
+        // Create exam slip - REMOVED 'instructions' field
         $examSlipId = $examSlipModel->insert([
             'application_id' => $applicationId,
             'applicant_id' => $application['applicant_id'] ?? null,
             'slip_number' => $slipNumber,
             'exam_date' => $this->settingsModel->get('cbt_start_date', date('Y-m-d', strtotime('+7 days'))),
-            'exam_time' => '10:00 AM',
-            'reporting_time' => '8:00 AM',
+            'exam_time' => '10:00:00',
+            'reporting_time' => '08:00:00',
             'exam_venue' => 'FCT College of Nursing Sciences, Gwagwalada (within UATH)',
             'seat_number' => 'SEAT-' . rand(100, 999),
-            'instructions' => "1. Arrive at least 1 hour before examination time\n2. Bring this slip and a valid means of identification\n3. Bring writing materials (biro, pencil, eraser)\n4. Mobile phones and electronic devices are not allowed",
             'generated_at' => date('Y-m-d H:i:s'),
             'created_at' => date('Y-m-d H:i:s')
         ]);
