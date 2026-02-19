@@ -1,13 +1,9 @@
 <?php
 /**
  * Payment View - Step 3
- * Professional design matching application form
- * FIXED: RRR generation, expanded width, and support section layout
- * FIXED: Button ID to match JavaScript (generateRRRBtn)
- * FIXED: Responsive layout for laptop screens - no content hidden
- * 
+ * Redesigned: Premium institutional design
  * @package FCTCNS
- * @version 1.5 - Fixed button ID and laptop responsiveness
+ * @version 2.0
  */
 
 extract($data ?? []);
@@ -29,884 +25,983 @@ if (empty($applicant_name)) {
     $applicant_name = 'Applicant';
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="description" content="Payment - FCT College of Nursing Sciences">
-    <title>Payment - FCT College of Nursing Sciences</title>
-    
-    <!-- Premium Fonts -->
+    <title>Payment — FCT College of Nursing Sciences</title>
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- CSRF Token -->
+
+    <!-- CSRF -->
     <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
     <meta name="csrf-token" content="<?php echo $csrf_token; ?>">
-    
+
     <style>
-    /* ==========================================================================
-       RESET & BASE STYLES
-       ========================================================================== */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+    /* ─── Reset ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
 
-    html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        overflow-x: hidden;
-        background: #F7F9FC;
-    }
-
-    body {
-        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 16px;
-        line-height: 1.5;
-        color: #1A1F2E;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        min-height: 100vh;
-    }
-
-    /* ==========================================================================
-       DESIGN TOKENS - OPTIMIZED FOR ALL SCREENS
-       ========================================================================== */
+    /* ─── Tokens ─── */
     :root {
-        /* Colors - Purple & Gold */
-        --purple-deep: #4B1F5A;
-        --purple: #6C3082;
-        --purple-medium: #8A4FA0;
-        --purple-light: #A875BD;
-        --purple-pale: #F3EAF8;
-        
-        --gold-deep: #B48C3A;
-        --gold: #C9A44A;
-        --gold-light: #D8B86C;
-        --gold-pale: #FDF6E7;
-        
-        /* Status Colors */
-        --success: #10b981;
-        --success-light: #d1fae5;
-        --warning: #f59e0b;
-        --warning-light: #fef3c7;
-        --danger: #ef4444;
-        --danger-light: #fee2e2;
-        --info: #3b82f6;
-        --info-light: #dbeafe;
-        
-        /* Neutrals */
-        --ink: #1A1F2E;
-        --ink-mid: #2A3042;
-        --ink-soft: #3A4055;
-        --slate: #5B677B;
-        --mist: #8E9AAC;
-        --border: #E9EDF2;
-        --surface: #F7F9FC;
-        --white: #FFFFFF;
-        
-        /* Gradients */
-        --purple-gradient: linear-gradient(135deg, #4B1F5A 0%, #6C3082 50%, #8A4FA0 100%);
-        --gold-gradient: linear-gradient(135deg, #B48C3A 0%, #C9A44A 50%, #D8B86C 100%);
-        
-        /* Shadows */
-        --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
-        --shadow-md: 0 6px 24px rgba(0,0,0,0.06);
-        --shadow-lg: 0 16px 48px rgba(0,0,0,0.08);
-        --shadow-xl: 0 32px 80px rgba(0,0,0,0.12);
-        --shadow-purple: 0 10px 30px rgba(108,48,130,0.25);
-        --shadow-gold: 0 10px 30px rgba(201,164,74,0.2);
-        
-        /* Border Radius */
-        --radius-sm: 6px;
-        --radius-md: 12px;
-        --radius-lg: 20px;
-        --radius-xl: 28px;
-        --radius-full: 9999px;
-        
-        /* Typography */
-        --font-display: 'Cormorant Garamond', Georgia, serif;
-        --font-body: 'Outfit', system-ui, sans-serif;
-        --font-mono: 'JetBrains Mono', monospace;
-        
-        /* Spacing - OPTIMIZED for laptop screens */
-        --gutter: clamp(1rem, 3vw, 3rem);
-        --container-max: 1400px; /* OPTIMIZED for laptops */
-        
-        --space-xs: 0.5rem;
-        --space-sm: 1rem;
-        --space-md: 1.5rem;
-        --space-lg: 2rem;
-        --space-xl: 2.5rem;
-        --space-xxl: 4rem;
+        --navy:        #0B1D3A;
+        --navy-mid:    #152D56;
+        --navy-soft:   #1E3D6E;
+        --navy-ghost:  #EEF3FA;
+
+        --amber:       #D4860B;
+        --amber-light: #F2A830;
+        --amber-pale:  #FEF5E4;
+
+        --white:  #FFFFFF;
+        --grey-1: #F4F6FB;
+        --grey-2: #E8ECF5;
+        --grey-3: #C5CEDF;
+        --grey-4: #8695AE;
+        --grey-5: #4A5568;
+        --ink:    #1A2438;
+
+        --green:       #0E9462;
+        --green-pale:  #E6F7F1;
+        --red:         #D94F3A;
+        --red-pale:    #FDECEA;
+        --orange:      #E07B2A;
+        --orange-pale: #FEF0E2;
+        --blue:        #2563EB;
+        --blue-pale:   #EFF4FF;
+
+        --r-sm: 8px;
+        --r-md: 14px;
+        --r-lg: 20px;
+        --r-xl: 28px;
+
+        --sh-sm:  0 1px 4px rgba(11,29,58,.06), 0 2px 12px rgba(11,29,58,.04);
+        --sh-md:  0 4px 16px rgba(11,29,58,.08), 0 1px 4px rgba(11,29,58,.04);
+        --sh-lg:  0 12px 40px rgba(11,29,58,.10), 0 4px 12px rgba(11,29,58,.06);
+
+        --font-display: 'DM Serif Display', Georgia, serif;
+        --font-body:    'DM Sans', system-ui, sans-serif;
+        --font-mono:    'DM Mono', monospace;
+
+        --max-w: 900px;
+        --gap:   clamp(1rem, 3vw, 2rem);
     }
 
-    /* ==========================================================================
-       CONTAINER & LAYOUT - OPTIMIZED FOR LAPTOPS
-       ========================================================================== */
-    .container {
-        width: 100%;
-        max-width: var(--container-max);
+    /* ─── Base ─── */
+    body {
+        font-family: var(--font-body);
+        background: var(--grey-1);
+        color: var(--ink);
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Page Shell ─── */
+    .page-shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+    }
+
+    /* ─── Top Bar ─── */
+    .topbar {
+        background: var(--navy);
+        padding: 0 var(--gap);
+    }
+    .topbar-inner {
+        max-width: var(--max-w);
         margin: 0 auto;
-        padding: var(--space-lg) var(--gutter);
-    }
-
-    /* Laptop optimization - 1366x768 and above */
-    @media (min-width: 1200px) and (max-width: 1600px) {
-        :root {
-            --container-max: 1200px;
-            --gutter: 2rem;
-        }
-        
-        .container {
-            padding: 1.5rem 2rem;
-        }
-    }
-
-    /* Larger screens */
-    @media (min-width: 1600px) {
-        :root {
-            --container-max: 1400px;
-            --gutter: 3rem;
-        }
-    }
-
-    .main-content {
-        min-height: calc(100vh - 200px);
-    }
-
-    /* Content column - OPTIMIZED for laptops */
-    .content-col {
-        width: 100%;
-    }
-    
-    @media (min-width: 1200px) {
-        .content-col {
-            width: 100%;
-            margin: 0;
-        }
-    }
-
-    /* ==========================================================================
-       TOP BAR WITH WELCOME AND LOGOUT
-       ========================================================================== */
-    .top-bar {
+        height: 60px;
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        align-items: center;
-        background: var(--white);
-        border-radius: var(--radius-lg);
-        padding: var(--space-md) var(--space-lg);
-        margin-bottom: var(--space-lg);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--border);
-        flex-wrap: wrap;
-        gap: var(--space-md);
+        gap: 1rem;
     }
-
-    .welcome-message {
+    .topbar-brand {
         display: flex;
         align-items: center;
-        gap: var(--space-sm);
-        flex-wrap: wrap;
+        gap: 10px;
+        text-decoration: none;
     }
-
-    .welcome-icon {
-        width: 40px;
-        height: 40px;
-        background: var(--purple-pale);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--purple);
-        font-size: 1.2rem;
+    .topbar-brand-icon {
+        width: 34px; height: 34px;
+        background: var(--amber);
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        color: white;
+        font-size: 0.95rem;
         flex-shrink: 0;
     }
-
-    .welcome-text {
-        font-size: 0.95rem;
-        color: var(--slate);
-        line-height: 1.4;
+    .topbar-brand-name {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        color: white;
+        line-height: 1.2;
+        font-weight: 400;
     }
-
-    .welcome-text strong {
-        color: var(--purple-deep);
-        font-weight: 600;
+    .topbar-brand-name span {
+        display: block;
+        font-family: var(--font-body);
+        font-size: 0.68rem;
+        color: rgba(255,255,255,0.5);
+        font-weight: 400;
+        letter-spacing: .5px;
     }
-
-    .logout-btn {
+    .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .topbar-user {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255,255,255,0.75);
+        font-size: 0.82rem;
+    }
+    .topbar-user-avatar {
+        width: 28px; height: 28px;
+        background: var(--navy-soft);
+        border: 1.5px solid rgba(255,255,255,0.15);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.7);
+    }
+    .topbar-user strong {
+        color: white;
+        font-weight: 500;
+    }
+    .topbar-logout {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1.25rem;
-        background: transparent;
-        color: var(--danger);
-        border: 1.5px solid var(--danger-light);
-        border-radius: var(--radius-full);
-        font-size: 0.9rem;
-        font-weight: 500;
+        gap: 6px;
+        padding: 6px 14px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 6px;
+        color: rgba(255,255,255,0.75);
+        font-size: 0.8rem;
+        font-family: var(--font-body);
         text-decoration: none;
-        transition: all 0.3s ease;
-        white-space: nowrap;
-        flex-shrink: 0;
+        transition: all .2s;
+        cursor: pointer;
+    }
+    .topbar-logout:hover {
+        background: rgba(217,79,58,0.2);
+        border-color: rgba(217,79,58,0.4);
+        color: #FCA5A5;
     }
 
-    .logout-btn:hover {
-        background: var(--danger);
-        color: white;
-        border-color: var(--danger);
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(239,68,68,0.2);
+    /* ─── Main ─── */
+    .main {
+        padding: 2.5rem var(--gap) 4rem;
     }
-
-    /* ==========================================================================
-       TYPOGRAPHY
-       ========================================================================== */
-    h1, h2, h3, h4, h5, h6 {
-        font-family: var(--font-display);
-        font-weight: 700;
-        line-height: 1.2;
-        color: var(--ink);
-    }
-
-    /* ==========================================================================
-       STEPPER PROGRESS
-       ========================================================================== */
-    .stepper-wrapper {
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-        max-width: 800px;
+    .main-inner {
+        max-width: var(--max-w);
         margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.75rem;
     }
 
-    .stepper-item {
-        position: relative;
+    /* ─── Steps ─── */
+    .steps-row {
+        display: flex;
+        align-items: center;
+        gap: 0;
+    }
+    .step {
+        flex: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
-        flex: 1;
-    }
-
-    .stepper-item::before {
-        position: absolute;
-        content: "";
-        border-bottom: 2px solid var(--border);
-        width: 100%;
-        top: 20px;
-        left: -50%;
-        z-index: 2;
-    }
-
-    .stepper-item:first-child::before {
-        content: none;
-    }
-
-    .stepper-item .step-counter {
+        gap: 6px;
         position: relative;
-        z-index: 5;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: var(--white);
-        border: 2px solid var(--border);
-        color: var(--slate);
-        font-weight: 600;
-        margin-bottom: 8px;
-        transition: all 0.3s ease;
     }
-
-    .stepper-item.active .step-counter {
-        background: var(--purple-gradient);
-        border-color: transparent;
-        color: white;
-        box-shadow: var(--shadow-purple);
-    }
-
-    .stepper-item.completed .step-counter {
-        background: var(--success);
-        border-color: transparent;
-        color: white;
-    }
-
-    .stepper-item .step-name {
-        font-size: 0.8rem;
-        color: var(--slate);
-        font-weight: 500;
-        text-align: center;
-    }
-
-    .stepper-item.active .step-name {
-        color: var(--purple);
-        font-weight: 600;
-    }
-
-    /* ==========================================================================
-       CARDS - OPTIMIZED FOR LAPTOPS
-       ========================================================================== */
-    .card {
-        background: var(--white);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-lg);
-        overflow: hidden;
-        transition: all 0.3s ease;
-        width: 100%;
-        border: none;
-    }
-
-    .card-header {
-        background: var(--purple-gradient);
-        color: white;
-        padding: var(--space-lg) var(--space-xl);
-        position: relative;
-        overflow: hidden;
-        border-bottom: none;
-    }
-
-    .card-header::before {
+    .step + .step::before {
         content: '';
         position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        opacity: 0.5;
+        left: -50%;
+        top: 17px;
+        width: 100%;
+        height: 2px;
+        background: var(--grey-2);
+        z-index: 0;
     }
-
-    .card-body {
-        padding: var(--space-xl);
+    .step.done + .step::before,
+    .step.done + .step.active::before {
+        background: var(--green);
     }
-
-    /* Laptop-optimized padding */
-    @media (min-width: 1200px) and (max-width: 1600px) {
-        .card-body {
-            padding: 2rem;
-        }
+    .step-dot {
+        width: 34px; height: 34px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem;
+        font-weight: 600;
+        position: relative;
+        z-index: 1;
+        transition: all .3s;
     }
-
-    @media (min-width: 1600px) {
-        .card-body {
-            padding: 2.5rem 3rem;
-        }
+    .step.pending .step-dot {
+        background: var(--white);
+        border: 2px solid var(--grey-3);
+        color: var(--grey-4);
     }
-
-    .card-footer {
-        background: var(--surface);
-        padding: var(--space-md) var(--space-xl);
-        border-top: 1px solid var(--border);
+    .step.done .step-dot {
+        background: var(--green);
+        border: 2px solid var(--green);
+        color: white;
     }
-
-    /* ==========================================================================
-       BUTTONS
-       ========================================================================== */
-    .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        font-family: var(--font-body);
-        font-size: 0.95rem;
+    .step.active .step-dot {
+        background: var(--navy);
+        border: 2px solid var(--navy);
+        color: white;
+        box-shadow: 0 0 0 4px rgba(11,29,58,.12);
+    }
+    .step-label {
+        font-size: 0.72rem;
         font-weight: 500;
+        letter-spacing: .3px;
+        color: var(--grey-4);
+        text-align: center;
+    }
+    .step.active .step-label { color: var(--navy); font-weight: 600; }
+    .step.done .step-label  { color: var(--green); }
+
+    /* ─── Card ─── */
+    .card {
+        background: var(--white);
+        border-radius: var(--r-xl);
+        box-shadow: var(--sh-lg);
+        overflow: hidden;
+    }
+
+    /* Card Header */
+    .card-head {
+        background: var(--navy);
+        padding: 2rem 2.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .card-head::after {
+        content: '';
+        position: absolute;
+        right: -40px; top: -40px;
+        width: 220px; height: 220px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.03);
+        pointer-events: none;
+    }
+    .card-head::before {
+        content: '';
+        position: absolute;
+        right: 60px; bottom: -60px;
+        width: 160px; height: 160px;
+        border-radius: 50%;
+        background: rgba(212,134,11,0.08);
+        pointer-events: none;
+    }
+    .card-head-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+    }
+    .card-head-icon {
+        width: 52px; height: 52px;
+        background: rgba(212,134,11,0.15);
+        border: 1px solid rgba(212,134,11,0.25);
+        border-radius: var(--r-md);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--amber-light);
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+    .card-head-text {}
+    .card-head-title {
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        color: white;
+        font-weight: 400;
+        line-height: 1.1;
+    }
+    .card-head-sub {
+        color: rgba(255,255,255,0.45);
+        font-size: 0.82rem;
+        margin-top: 4px;
+        font-weight: 400;
+    }
+    .app-badge {
+        margin-left: auto;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: var(--r-sm);
+        padding: 6px 12px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+    .app-badge-label {
+        font-size: 0.65rem;
+        color: rgba(255,255,255,0.35);
+        text-transform: uppercase;
+        letter-spacing: .8px;
+    }
+    .app-badge-value {
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        color: rgba(255,255,255,0.7);
+        font-weight: 500;
+    }
+
+    /* Card Body */
+    .card-body {
+        padding: 2.5rem;
+    }
+
+    /* ─── Fee Panel ─── */
+    .fee-panel {
+        background: var(--navy-ghost);
+        border: 1px solid var(--grey-2);
+        border-radius: var(--r-lg);
+        padding: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    .fee-icon {
+        width: 56px; height: 56px;
+        background: var(--amber-pale);
+        border: 1px solid rgba(212,134,11,0.2);
+        border-radius: var(--r-md);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--amber);
+        font-size: 1.4rem;
+        flex-shrink: 0;
+    }
+    .fee-info { flex: 1; }
+    .fee-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .8px;
+        color: var(--grey-4);
+        margin-bottom: 4px;
+    }
+    .fee-amount {
+        font-family: var(--font-display);
+        font-size: 2.6rem;
+        color: var(--navy);
         line-height: 1;
-        text-decoration: none;
-        border: none;
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-        transition: all 0.3s ease;
+        font-weight: 400;
+    }
+    .fee-note {
+        font-size: 0.78rem;
+        color: var(--grey-4);
+        margin-top: 6px;
+    }
+    .fee-badge {
+        background: var(--amber-pale);
+        border: 1px solid rgba(212,134,11,0.2);
+        color: var(--amber);
+        padding: 6px 14px;
+        border-radius: 100px;
+        font-size: 0.78rem;
+        font-weight: 600;
         white-space: nowrap;
     }
 
-    .btn--primary {
-        background: var(--purple-gradient);
-        color: white;
-        background-size: 200% auto;
-        box-shadow: var(--shadow-purple);
+    /* ─── Instructions ─── */
+    .instructions-block {
+        margin-bottom: 2rem;
+    }
+    .instructions-title {
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .8px;
+        color: var(--grey-4);
+        margin-bottom: 1rem;
+    }
+    .steps-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: .6rem;
+    }
+    .steps-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: .75rem;
+        font-size: 0.9rem;
+        color: var(--grey-5);
+        line-height: 1.5;
+    }
+    .step-num {
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        background: var(--navy-ghost);
+        border: 1px solid var(--grey-2);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--navy-soft);
+        flex-shrink: 0;
+        margin-top: 1px;
     }
 
-    .btn--primary:hover {
-        background-position: right center;
-        transform: translateY(-2px);
-        box-shadow: 0 15px 35px rgba(108,48,130,0.35);
+    /* ─── Alert ─── */
+    #alertContainer { display: flex; flex-direction: column; gap: .75rem; }
+    .alert {
+        border-radius: var(--r-md);
+        padding: 1rem 1.25rem;
+        font-size: 0.88rem;
+        display: flex;
+        align-items: flex-start;
+        gap: .75rem;
+        border: 1px solid transparent;
+        animation: fadeSlideIn .3s ease;
     }
+    .alert i { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
+    .alert-success { background: var(--green-pale); border-color: rgba(14,148,98,.15); color: #065f46; }
+    .alert-danger   { background: var(--red-pale);   border-color: rgba(217,79,58,.15); color: #7f1d1d; }
+    .alert-warning  { background: var(--orange-pale); border-color: rgba(224,123,42,.15); color: #7c2d12; }
+    .alert-info     { background: var(--blue-pale);   border-color: rgba(37,99,235,.15); color: #1e3a8a; }
 
-    .btn--success {
-        background: var(--success);
-        color: white;
+    /* ─── Pending Payment ─── */
+    .pending-box {
+        border: 1px solid rgba(224,123,42,.3);
+        background: var(--orange-pale);
+        border-radius: var(--r-lg);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
     }
-
-    .btn--warning {
-        background: var(--warning);
-        color: white;
+    .pending-box-header {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        margin-bottom: 1rem;
     }
-
-    .btn--outline {
-        background: transparent;
-        color: var(--purple);
-        border: 2px solid var(--purple-light);
-    }
-
-    .btn--lg {
-        padding: 1rem 2rem;
+    .pending-icon {
+        width: 36px; height: 36px;
+        background: rgba(224,123,42,.15);
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--orange);
         font-size: 1rem;
     }
+    .pending-title { font-weight: 600; color: #7c2d12; font-size: 0.95rem; }
+    .pending-sub   { font-size: 0.8rem; color: rgba(124,45,18,.7); }
 
-    .btn--sm {
-        padding: 0.5rem 1rem;
-        font-size: 0.85rem;
+    /* ─── RRR Box ─── */
+    .rrr-box {
+        background: var(--navy-ghost);
+        border: 1px dashed var(--grey-3);
+        border-radius: var(--r-md);
+        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
     }
-
-    .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    /* ==========================================================================
-       ALERTS
-       ========================================================================== */
-    .alert {
-        padding: var(--space-md);
-        border-radius: var(--radius-md);
-        margin-bottom: var(--space-lg);
-        border-left: 4px solid transparent;
-        border: none;
-    }
-
-    .alert-success {
-        background: var(--success-light);
-        border-left-color: var(--success);
-        color: #065f46;
-    }
-
-    .alert-danger {
-        background: var(--danger-light);
-        border-left-color: var(--danger);
-        color: #991b1b;
-    }
-
-    .alert-warning {
-        background: var(--warning-light);
-        border-left-color: var(--warning);
-        color: #92400e;
-    }
-
-    .alert-info {
-        background: var(--info-light);
-        border-left-color: var(--info);
-        color: #1e40af;
-    }
-
-    /* ==========================================================================
-       RRR DISPLAY
-       ========================================================================== */
-    .rrr-display {
-        font-size: 1.5rem;
-        font-weight: 700;
+    .rrr-value {
         font-family: var(--font-mono);
-        color: var(--purple-deep);
-        background: var(--purple-pale);
-        padding: var(--space-md);
-        border-radius: var(--radius-md);
-        text-align: center;
-        letter-spacing: 2px;
-        border: 1px dashed var(--purple-light);
+        font-size: 1.35rem;
+        font-weight: 500;
+        color: var(--navy);
+        letter-spacing: 3px;
         word-break: break-all;
     }
+    .rrr-copy-btn {
+        background: var(--navy);
+        color: white;
+        border: none;
+        border-radius: var(--r-sm);
+        padding: 7px 14px;
+        font-size: 0.78rem;
+        font-family: var(--font-body);
+        font-weight: 500;
+        cursor: pointer;
+        display: flex; align-items: center; gap: 6px;
+        transition: background .2s;
+        flex-shrink: 0;
+    }
+    .rrr-copy-btn:hover { background: var(--navy-mid); }
 
-    /* ==========================================================================
-       FEE DISPLAY
-       ========================================================================== */
-    .fee-display {
+    /* ─── Buttons ─── */
+    .btn-primary {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        background: var(--navy);
+        color: white;
+        border: none;
+        border-radius: var(--r-md);
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center; gap: .6rem;
+        transition: all .25s;
+        text-decoration: none;
+        letter-spacing: .2px;
+    }
+    .btn-primary:hover:not(:disabled) {
+        background: var(--navy-mid);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(11,29,58,.2);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+
+    .btn-success {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        background: var(--green);
+        color: white;
+        border: none;
+        border-radius: var(--r-md);
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center; gap: .6rem;
+        transition: all .25s;
+    }
+    .btn-success:hover:not(:disabled) {
+        background: #0a7a52;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(14,148,98,.25);
+    }
+    .btn-success:disabled { opacity: .55; cursor: not-allowed; }
+
+    .btn-amber {
+        padding: .7rem 1.25rem;
+        background: var(--amber);
+        color: white;
+        border: none;
+        border-radius: var(--r-sm);
+        font-family: var(--font-body);
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex; align-items: center; gap: .5rem;
+        transition: all .25s;
+        text-decoration: none;
+    }
+    .btn-amber:hover {
+        background: #b87209;
+        transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+        padding: .7rem 1.25rem;
+        background: transparent;
+        color: var(--navy);
+        border: 1.5px solid var(--grey-2);
+        border-radius: var(--r-sm);
+        font-family: var(--font-body);
+        font-size: 0.88rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex; align-items: center; gap: .5rem;
+        transition: all .25s;
+        text-decoration: none;
+    }
+    .btn-ghost:hover {
+        border-color: var(--navy);
+        background: var(--navy-ghost);
+    }
+
+    .action-stack {
+        display: flex;
+        flex-direction: column;
+        gap: .75rem;
+        margin-bottom: 2rem;
+    }
+    .action-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    /* ─── Status Area ─── */
+    .status-area {
+        background: var(--grey-1);
+        border: 1px solid var(--grey-2);
+        border-radius: var(--r-md);
+        padding: 1.5rem;
         text-align: center;
-        margin-bottom: var(--space-lg);
-        padding: var(--space-lg);
-        background: var(--surface);
-        border-radius: var(--radius-lg);
+        margin-bottom: 1.5rem;
     }
-
-    .fee-label {
+    .spinner {
+        width: 36px; height: 36px;
+        border: 3px solid var(--grey-2);
+        border-top-color: var(--navy);
+        border-radius: 50%;
+        animation: spin .8s linear infinite;
+        margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .status-message {
         font-size: 0.9rem;
-        color: var(--slate);
+        color: var(--grey-5);
+        font-weight: 500;
+    }
+
+    /* ─── Divider ─── */
+    .divider {
+        height: 1px;
+        background: var(--grey-2);
+        margin: 2rem 0;
+    }
+
+    /* ─── Support ─── */
+    .support-block {}
+    .support-title {
+        font-size: 0.75rem;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: .8px;
+        color: var(--grey-4);
+        margin-bottom: 1rem;
+        text-align: center;
     }
-
-    .fee-amount {
-        font-size: 3rem;
-        font-weight: 700;
-        color: var(--purple-deep);
-        line-height: 1.2;
-        font-family: var(--font-display);
-    }
-
-    /* ==========================================================================
-       SUPPORT SECTION - FIXED FOR LAPTOP VISIBILITY
-       ========================================================================== */
-    .support-section {
-        background: var(--surface);
-        border-radius: var(--radius-lg);
-        padding: var(--space-lg);
-        margin-top: var(--space-lg);
-    }
-
     .support-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: var(--space-md);
+        gap: .75rem;
     }
-
     .support-item {
+        background: var(--grey-1);
+        border: 1px solid var(--grey-2);
+        border-radius: var(--r-md);
+        padding: 1rem;
         display: flex;
         align-items: center;
-        gap: var(--space-sm);
-        padding: var(--space-sm) var(--space-md);
-        background: var(--white);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        min-width: 0;
-        width: 100%;
+        gap: .75rem;
+        transition: border-color .2s, box-shadow .2s;
+    }
+    .support-item:hover {
+        border-color: var(--grey-3);
+        box-shadow: var(--sh-sm);
+    }
+    .support-dot {
+        width: 36px; height: 36px;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.95rem;
+        color: white;
+        flex-shrink: 0;
+    }
+    .support-dot.phone    { background: var(--navy-soft); }
+    .support-dot.whatsapp { background: #1BA950; }
+    .support-dot.email    { background: var(--red); }
+    .support-text {}
+    .support-label {
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--grey-4);
+        margin-bottom: 2px;
+    }
+    .support-value {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--ink);
+        line-height: 1.3;
+        word-break: break-word;
     }
 
-    .support-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
+    /* ─── Card Footer ─── */
+    .card-foot {
+        padding: 1.25rem 2.5rem;
+        background: var(--grey-1);
+        border-top: 1px solid var(--grey-2);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        flex-shrink: 0;
-        font-size: 1.1rem;
+        gap: .6rem;
+        font-size: 0.78rem;
+        color: var(--grey-4);
     }
+    .card-foot i { font-size: 0.85rem; color: var(--green); }
 
-    .support-icon.phone { background: var(--purple); }
-    .support-icon.whatsapp { background: #25D366; }
-    .support-icon.email { background: var(--danger); }
-
-    .support-content {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .support-label {
-        font-size: 0.75rem;
-        color: var(--mist);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.2rem;
-    }
-
-    .support-value {
-        font-size: 1rem;
-        font-weight: 500;
-        color: var(--ink);
-        white-space: normal; /* Allow wrapping on laptop */
-        word-break: break-word;
-        line-height: 1.4;
-    }
-
-    /* ==========================================================================
-       LOADING SPINNER
-       ========================================================================== */
-    .spinner-border {
-        display: inline-block;
-        width: 1.5rem;
-        height: 1.5rem;
-        border: 3px solid currentColor;
-        border-right-color: transparent;
-        border-radius: 50%;
-        animation: spinner 0.75s linear infinite;
-    }
-
-    @keyframes spinner {
-        to { transform: rotate(360deg); }
-    }
-
-    /* ==========================================================================
-       RESPONSIVE - LAPTOP OPTIMIZATION
-       ========================================================================== */
-    @media (max-width: 1200px) {
-        .fee-amount {
-            font-size: 2.5rem;
-        }
-        
-        .support-grid {
-            gap: var(--space-sm);
-        }
-    }
-
-    @media (max-width: 992px) {
-        .support-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
+    /* ─── Responsive ─── */
     @media (max-width: 768px) {
-        .support-grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .stepper-item .step-name {
-            font-size: 0.7rem;
-        }
-        
-        .card-body {
-            padding: var(--space-lg);
-        }
+        .card-head { padding: 1.5rem; }
+        .app-badge { display: none; }
+        .card-body { padding: 1.5rem; }
+        .card-foot { padding: 1rem 1.5rem; }
+        .fee-panel { flex-direction: column; align-items: flex-start; gap: 1rem; }
+        .fee-amount { font-size: 2rem; }
+        .support-grid { grid-template-columns: 1fr; }
     }
-
-    @media (max-width: 480px) {
-        .fee-amount {
-            font-size: 2rem;
-        }
-        
-        .rrr-display {
-            font-size: 1.1rem;
-        }
-        
-        .top-bar {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        
-        .logout-btn {
-            align-self: flex-end;
-        }
+    @media (max-width: 540px) {
+        .card-head-content { flex-wrap: wrap; }
+        .topbar-user { display: none; }
+        .main { padding: 1.5rem var(--gap) 3rem; }
+        .action-row { flex-direction: column; }
+        .action-row .btn-ghost { width: 100%; justify-content: center; }
+    }
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .support-grid { grid-template-columns: repeat(3, 1fr); }
     }
     </style>
 </head>
 <body>
-    <main id="main-content" class="main-content" role="main">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-12 content-col">
-                    
-                    <!-- TOP BAR WITH WELCOME AND LOGOUT BUTTON -->
-                    <div class="top-bar fade-in">
-                        <div class="welcome-message">
-                            <div class="welcome-icon">
-                                <i class="fas fa-user-graduate"></i>
-                            </div>
-                            <div class="welcome-text">
-                                Welcome, <strong><?php echo e($applicant_name); ?></strong> | 
-                                <span class="text-muted">Application #: <?php echo e($application['application_number'] ?? 'Not assigned'); ?></span>
-                            </div>
+<div class="page-shell">
+
+    <!-- ── Top Bar ── -->
+    <header class="topbar">
+        <div class="topbar-inner">
+            <a class="topbar-brand" href="/">
+                <div class="topbar-brand-icon">
+                    <i class="fas fa-hospital"></i>
+                </div>
+                <div class="topbar-brand-name">
+                    FCT College of Nursing Sciences
+                    <span>2025/2026 Admissions Portal</span>
+                </div>
+            </a>
+            <div class="topbar-right">
+                <div class="topbar-user">
+                    <div class="topbar-user-avatar"><i class="fas fa-user fa-xs"></i></div>
+                    <span>Welcome, <strong><?php echo e($applicant_name); ?></strong></span>
+                </div>
+                <a href="/applicant/logout" class="topbar-logout"
+                   onclick="return confirm('Are you sure you want to logout? Your progress will be saved.');">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── Main ── -->
+    <main class="main">
+        <div class="main-inner">
+
+            <!-- Progress Steps -->
+            <div class="steps-row">
+                <div class="step done">
+                    <div class="step-dot"><i class="fas fa-check" style="font-size:.7rem"></i></div>
+                    <div class="step-label">JAMB Verified</div>
+                </div>
+                <div class="step done">
+                    <div class="step-dot"><i class="fas fa-check" style="font-size:.7rem"></i></div>
+                    <div class="step-label">Application</div>
+                </div>
+                <div class="step active">
+                    <div class="step-dot">3</div>
+                    <div class="step-label">Payment</div>
+                </div>
+                <div class="step pending">
+                    <div class="step-dot">4</div>
+                    <div class="step-label">Exam Slip</div>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Main Card -->
+            <div class="card">
+
+                <!-- Header -->
+                <div class="card-head">
+                    <div class="card-head-content">
+                        <div class="card-head-icon">
+                            <i class="fas fa-credit-card"></i>
                         </div>
-                        <a href="/applicant/logout" class="logout-btn" onclick="return confirm('Are you sure you want to logout? Your progress will be saved.');">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </a>
-                    </div>
-                    
-                    <!-- Progress Indicator -->
-                    <div class="text-center mb-5 fade-in">
-                        <h1 class="display-5 fw-bold text-primary">FCT College of Nursing Sciences</h1>
-                        <p class="text-muted">2025/2026 Admissions Application Portal</p>
-                        
-                        <!-- Step Progress -->
-                        <div class="stepper-wrapper mt-4">
-                            <div class="stepper-item completed">
-                                <div class="step-counter"><i class="fas fa-check"></i></div>
-                                <div class="step-name">JAMB Verified</div>
-                            </div>
-                            <div class="stepper-item completed">
-                                <div class="step-counter"><i class="fas fa-check"></i></div>
-                                <div class="step-name">Application</div>
-                            </div>
-                            <div class="stepper-item active">
-                                <div class="step-counter">3</div>
-                                <div class="step-name">Payment</div>
-                            </div>
-                            <div class="stepper-item">
-                                <div class="step-counter">4</div>
-                                <div class="step-name">Exam Slip</div>
-                            </div>
+                        <div class="card-head-text">
+                            <div class="card-head-title">Application Payment</div>
+                            <div class="card-head-sub">Step 3 of 4 &mdash; Complete your payment to proceed</div>
                         </div>
-                    </div>
-
-                    <!-- Alert Container -->
-                    <div id="alertContainer" class="mb-4"></div>
-
-                    <!-- Payment Card -->
-                    <div class="card fade-in">
-                        <!-- Card Header -->
-                        <div class="card-header">
-                            <div class="d-flex align-items-center">
-                                <div class="rounded-circle bg-white bg-opacity-20 p-3 me-3">
-                                    <i class="fas fa-credit-card fa-2x text-white"></i>
-                                </div>
-                                <div>
-                                    <h2 class="h3 mb-1 fw-bold">Payment</h2>
-                                    <p class="mb-0 opacity-75">Step 3 of 4 - Complete your payment</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Card Body -->
-                        <div class="card-body">
-                            <!-- Fee Display -->
-                            <div class="fee-display">
-                                <div class="fee-label">Application Fee</div>
-                                <div class="fee-amount"><?php echo $currency; ?><?php echo number_format($fee); ?></div>
-                                <div class="fee-note">This fee is non-refundable</div>
-                            </div>
-
-                            <!-- Payment Instructions -->
-                            <div class="payment-instructions mb-4">
-                                <h5 class="fw-semibold mb-3">
-                                    <i class="fas fa-info-circle text-info me-2"></i>Payment Instructions:
-                                </h5>
-                                <ol class="mb-0">
-                                    <li>Click "Generate RRR" to create a payment RRR (Remita Retrieval Reference)</li>
-                                    <li>You'll be redirected to Remita secure payment page</li>
-                                    <li>Complete payment using your card, internet banking, or USSD</li>
-                                    <li>After payment, return here and click "Verify Payment"</li>
-                                    <li>Your exam slip will be available immediately after verification</li>
-                                </ol>
-                            </div>
-
-                            <!-- Pending Payment (if exists) -->
-                            <?php if (isset($pending_payment) && $pending_payment): ?>
-                            <div class="alert alert-warning mb-4">
-                                <div class="d-flex align-items-start">
-                                    <i class="fas fa-clock fa-lg me-3 mt-1"></i>
-                                    <div class="w-100">
-                                        <h5 class="alert-heading fw-semibold">Pending Payment</h5>
-                                        <p class="mb-2">You have a pending payment with RRR:</p>
-                                        <div class="rrr-display mb-3"><?php echo e($pending_payment['rrr']); ?></div>
-                                        <div class="d-flex gap-2 flex-wrap">
-                                            <a href="https://remitademo.net/remita/ecomm/frame/handleCCD.action?rrr=<?php echo $pending_payment['rrr']; ?>" 
-                                               target="_blank" class="btn btn--warning">
-                                                <i class="fas fa-external-link-alt me-2"></i>Complete Payment
-                                            </a>
-                                            <button class="btn btn--success" onclick="verifyPayment('<?php echo $pending_payment['rrr']; ?>')">
-                                                <i class="fas fa-check-circle me-2"></i>I've Paid, Verify
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php endif; ?>
-
-                            <!-- RRR Display Area -->
-                            <div id="rrrDisplayArea" class="mb-4" style="display: none;">
-                                <div class="card bg-light border-0">
-                                    <div class="card-body">
-                                        <h5 class="card-title fw-semibold mb-3">
-                                            <i class="fas fa-receipt me-2 text-primary"></i>
-                                            Your Payment RRR
-                                        </h5>
-                                        <div class="rrr-display mb-3" id="generatedRRR"></div>
-                                        <button class="btn btn--outline btn--sm" id="copyRRRBtn" onclick="copyRRR()">
-                                            <i class="fas fa-copy me-2"></i>Copy RRR
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Payment Status Area -->
-                            <div id="paymentStatus" class="mb-4" style="display: none;">
-                                <div class="card bg-light border-0">
-                                    <div class="card-body text-center">
-                                        <div id="paymentSpinner" class="spinner-border text-primary mb-3" role="status">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
-                                        <h5 id="paymentMessage" class="fw-semibold mb-3">Processing payment...</h5>
-                                        <div id="paymentRRR" class="rrr-display mt-3" style="display: none;"></div>
-                                        <div id="remitaLink" class="mt-3" style="display: none;"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Action Buttons -->
-                            <div class="d-flex flex-column gap-3">
-                                <!-- FIXED: Button ID matches JavaScript -->
-                                <button class="btn btn--primary btn--lg w-100" id="generateRRRBtn">
-                                    <i class="fas fa-play me-2"></i>Generate RRR
-                                </button>
-                                
-                                <button class="btn btn--success btn--lg w-100" id="verifyPaymentBtn" style="display: none;">
-                                    <i class="fas fa-check-circle me-2"></i>I've Paid, Verify
-                                </button>
-                                
-                                <div class="d-flex justify-content-between mt-3">
-                                    <a href="/apply/form" class="btn btn--outline">
-                                        <i class="fas fa-arrow-left me-2"></i>Back to Form
-                                    </a>
-                                    <button class="btn btn--outline" id="checkStatusBtn" style="display: none;">
-                                        <i class="fas fa-sync me-2"></i>Check Status
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Support Information - FIXED for laptop visibility -->
-                            <div class="support-section">
-                                <h5 class="fw-semibold text-center mb-4">Payment Support</h5>
-                                <div class="support-grid">
-                                    <div class="support-item">
-                                        <div class="support-icon phone">
-                                            <i class="fas fa-phone"></i>
-                                        </div>
-                                        <div class="support-content">
-                                            <div class="support-label">Phone</div>
-                                            <div class="support-value">07039837749</div>
-                                        </div>
-                                    </div>
-                                    <div class="support-item">
-                                        <div class="support-icon whatsapp">
-                                            <i class="fab fa-whatsapp"></i>
-                                        </div>
-                                        <div class="support-content">
-                                            <div class="support-label">WhatsApp</div>
-                                            <div class="support-value">08082775076</div>
-                                        </div>
-                                    </div>
-                                    <div class="support-item">
-                                        <div class="support-icon email">
-                                            <i class="fas fa-envelope"></i>
-                                        </div>
-                                        <div class="support-content">
-                                            <div class="support-label">Email</div>
-                                            <div class="support-value">info@fctcns.edu.ng</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Card Footer -->
-                        <div class="card-footer">
-                            <div class="d-flex align-items-center justify-content-center">
-                                <i class="fas fa-lock text-muted me-2"></i>
-                                <small class="text-muted">Secured by Remita Payment Gateway</small>
-                            </div>
+                        <div class="app-badge">
+                            <div class="app-badge-label">App. Number</div>
+                            <div class="app-badge-value"><?php echo e($application['application_number'] ?? 'Pending'); ?></div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+
+                <!-- Body -->
+                <div class="card-body">
+
+                    <!-- Fee Panel -->
+                    <div class="fee-panel">
+                        <div class="fee-icon">
+                            <i class="fas fa-naira-sign"></i>
+                        </div>
+                        <div class="fee-info">
+                            <div class="fee-label">Application Fee</div>
+                            <div class="fee-amount"><?php echo $currency; ?><?php echo number_format($fee); ?></div>
+                            <div class="fee-note"><i class="fas fa-info-circle" style="font-size:.75rem;margin-right:4px"></i>This fee is non-refundable once payment is confirmed.</div>
+                        </div>
+                        <div class="fee-badge">
+                            <i class="fas fa-shield-check" style="font-size:.75rem;margin-right:4px"></i>Secure Payment
+                        </div>
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="instructions-block">
+                        <div class="instructions-title">How to complete payment</div>
+                        <ol class="steps-list">
+                            <li>
+                                <span class="step-num">1</span>
+                                Click <strong>Generate RRR</strong> to create your unique Remita Retrieval Reference number.
+                            </li>
+                            <li>
+                                <span class="step-num">2</span>
+                                You'll be redirected to the Remita secure payment page.
+                            </li>
+                            <li>
+                                <span class="step-num">3</span>
+                                Complete payment using your card, internet banking, or USSD.
+                            </li>
+                            <li>
+                                <span class="step-num">4</span>
+                                Return here and click <strong>Verify Payment</strong> to confirm your transaction.
+                            </li>
+                            <li>
+                                <span class="step-num">5</span>
+                                Your exam slip will be available immediately after successful verification.
+                            </li>
+                        </ol>
+                    </div>
+
+                    <!-- Pending Payment Block -->
+                    <?php if (isset($pending_payment) && $pending_payment): ?>
+                    <div class="pending-box">
+                        <div class="pending-box-header">
+                            <div class="pending-icon"><i class="fas fa-clock"></i></div>
+                            <div>
+                                <div class="pending-title">Pending Payment Found</div>
+                                <div class="pending-sub">You have an existing RRR that hasn't been confirmed yet</div>
+                            </div>
+                        </div>
+                        <div class="rrr-box" style="margin-bottom:1.25rem">
+                            <div class="rrr-value"><?php echo e($pending_payment['rrr']); ?></div>
+                            <button class="rrr-copy-btn" onclick="navigator.clipboard.writeText('<?php echo e($pending_payment['rrr']); ?>').then(()=>this.innerHTML='<i class=\'fas fa-check\'></i> Copied')">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                        <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+                            <a href="https://remitademo.net/remita/ecomm/frame/handleCCD.action?rrr=<?php echo e($pending_payment['rrr']); ?>"
+                               target="_blank" class="btn-amber">
+                                <i class="fas fa-external-link-alt"></i> Complete Payment
+                            </a>
+                            <button class="btn-ghost" onclick="verifyPayment('<?php echo e($pending_payment['rrr']); ?>')">
+                                <i class="fas fa-check-circle"></i> I've Paid — Verify Now
+                            </button>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Generated RRR Display -->
+                    <div id="rrrDisplayArea" style="display:none;margin-bottom:1.5rem">
+                        <div class="instructions-title" style="margin-bottom:.75rem">Your Payment Reference (RRR)</div>
+                        <div class="rrr-box">
+                            <div class="rrr-value" id="generatedRRR"></div>
+                            <button class="rrr-copy-btn" id="copyRRRBtn" onclick="copyRRR()">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                        <p style="font-size:.8rem;color:var(--grey-4);display:flex;align-items:center;gap:5px">
+                            <i class="fas fa-info-circle"></i>
+                            Save this RRR in case you need to verify your payment later.
+                        </p>
+                    </div>
+
+                    <!-- Processing Status -->
+                    <div id="paymentStatus" style="display:none;margin-bottom:1.5rem">
+                        <div class="status-area">
+                            <div id="paymentSpinner" class="spinner"></div>
+                            <div id="paymentMessage" class="status-message">Processing…</div>
+                            <div id="paymentRRR" class="rrr-value" style="display:none;margin-top:1rem;text-align:center"></div>
+                            <div id="remitaLink" style="display:none;margin-top:1rem"></div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-stack">
+                        <button class="btn-primary" id="generateRRRBtn">
+                            <i class="fas fa-bolt"></i> Generate RRR
+                        </button>
+                        <button class="btn-success" id="verifyPaymentBtn" style="display:none">
+                            <i class="fas fa-check-circle"></i> I've Paid — Verify Payment
+                        </button>
+                        <div class="action-row">
+                            <a href="/apply/form" class="btn-ghost">
+                                <i class="fas fa-arrow-left"></i> Back to Form
+                            </a>
+                            <button class="btn-ghost" id="checkStatusBtn" style="display:none">
+                                <i class="fas fa-sync"></i> Check Status
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Support -->
+                    <div class="support-block">
+                        <div class="support-title">Need help with payment?</div>
+                        <div class="support-grid">
+                            <div class="support-item">
+                                <div class="support-dot phone"><i class="fas fa-phone"></i></div>
+                                <div class="support-text">
+                                    <div class="support-label">Phone</div>
+                                    <div class="support-value">07039837749</div>
+                                </div>
+                            </div>
+                            <div class="support-item">
+                                <div class="support-dot whatsapp"><i class="fab fa-whatsapp"></i></div>
+                                <div class="support-text">
+                                    <div class="support-label">WhatsApp</div>
+                                    <div class="support-value">08082775076</div>
+                                </div>
+                            </div>
+                            <div class="support-item">
+                                <div class="support-dot email"><i class="fas fa-envelope"></i></div>
+                                <div class="support-text">
+                                    <div class="support-label">Email</div>
+                                    <div class="support-value">info@fctcns.edu.ng</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /card-body -->
+
+                <!-- Footer -->
+                <div class="card-foot">
+                    <i class="fas fa-lock"></i>
+                    <span>Payments are secured and processed by <strong>Remita Payment Gateway</strong></span>
+                </div>
+
+            </div><!-- /card -->
+
+        </div><!-- /main-inner -->
     </main>
 
-    <!-- jQuery (required for your JavaScript) -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
-    <!-- Bootstrap JS (optional, for alerts) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Your Payment JavaScript -->
-    <script src="/assets/js/Payment.js"></script>
+</div><!-- /page-shell -->
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/assets/js/Payment.js"></script>
 </body>
 </html>
