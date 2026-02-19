@@ -997,21 +997,17 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Initiate payment - Generate RRR (AJAX endpoint)
-     * FIXED: Generate proper 12-digit RRR for Remita
+     * Initiate payment - Generate RRR using Remita SDK
      */
     public function initiatePayment() {
-        // Set header for JSON response
         header('Content-Type: application/json');
         
-        // Start session
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         
         error_log("=== INITIATE PAYMENT CALLED ===");
         
-        // Check if user is logged in
         if (!isset($_SESSION['applicant_id'])) {
             echo json_encode(['success' => false, 'message' => 'Please login first']);
             return;
@@ -1028,27 +1024,19 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // Check token in session - Check both possible locations
+        // Check token in session
         $validToken = false;
-        
-        // Check in csrf_tokens array
         if (isset($_SESSION['csrf_tokens']) && isset($_SESSION['csrf_tokens'][$csrfToken])) {
-            // Check token expiration (1 hour)
             if (time() - $_SESSION['csrf_tokens'][$csrfToken] <= 3600) {
                 $validToken = true;
-                // Remove used token
                 unset($_SESSION['csrf_tokens'][$csrfToken]);
             } else {
                 unset($_SESSION['csrf_tokens'][$csrfToken]);
-                error_log("CSRF validation failed: Token expired");
                 echo json_encode(['success' => false, 'message' => 'Security token expired']);
                 return;
             }
-        }
-        // Check in simple csrf_token (from ApplicationBaseController)
-        elseif (isset($_SESSION['csrf_token']) && $_SESSION['csrf_token'] === $csrfToken) {
+        } elseif (isset($_SESSION['csrf_token']) && $_SESSION['csrf_token'] === $csrfToken) {
             $validToken = true;
-            // Generate new token for next request
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
         
@@ -1075,53 +1063,78 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // Get fee
+            // Get fee and generate order ID
             $fee = $this->settingsModel->getApplicationFee();
-            
-            // FIXED: Generate 12-digit RRR for Remita
-            // Format: 6 digits date (ymd) + 6 digits random = 12 digits total
-            $rrr = date('ymd') . rand(100000, 999999);
             $orderId = 'ORD' . time() . rand(100, 999);
             $reference = 'REF' . time() . rand(1000, 9999);
             
-            error_log("Generated 12-digit RRR: " . $rrr);
+            // Get applicant details for Remita
+            $applicant = $this->applicantModel->find($applicantId);
+            $payerName = trim(($application['first_name'] ?? '') . ' ' . ($application['last_name'] ?? ''));
+            $payerEmail = $applicant['email'] ?? '';
+            $payerPhone = $application['phone'] ?? '';
             
-            // Create payment record
-            $paymentData = [
-                'application_id' => $application['id'],
-                'applicant_id' => $applicantId,
-                'reference' => $reference,
-                'rrr' => $rrr,
-                'order_id' => $orderId,
-                'amount' => $fee,
-                'payment_type' => 'application_fee',
-                'status' => 'pending',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
-            ];
+            // Use RemitaModel to generate RRR via API
+            require_once MODELS_PATH . '/application/RemitaModel.php';
+            $remitaModel = new RemitaModel();
             
-            $paymentId = $this->paymentModel->insert($paymentData);
+            // This will call Remita's demo API to generate a real RRR
+            $result = $remitaModel->generateRRRRemita(
+                $orderId,
+                $fee,
+                $payerName,
+                $payerEmail,
+                $payerPhone
+            );
             
-            if (!$paymentId) {
-                echo json_encode(['success' => false, 'message' => 'Failed to create payment record']);
-                return;
+            if ($result['status'] === 'success' && isset($result['rrr'])) {
+                $rrr = $result['rrr'];
+                
+                error_log("Remita API generated RRR: " . $rrr);
+                
+                // Create payment record in your database
+                $paymentData = [
+                    'application_id' => $application['id'],
+                    'applicant_id' => $applicantId,
+                    'reference' => $reference,
+                    'rrr' => $rrr,
+                    'order_id' => $orderId,
+                    'amount' => $fee,
+                    'payment_type' => 'application_fee',
+                    'status' => 'pending',
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ];
+                
+                $paymentId = $this->paymentModel->insert($paymentData);
+                
+                if (!$paymentId) {
+                    echo json_encode(['success' => false, 'message' => 'Failed to create payment record']);
+                    return;
+                }
+                
+                // Store in session
+                $_SESSION['pending_payment'] = [
+                    'payment_id' => $paymentId,
+                    'rrr' => $rrr,
+                    'amount' => $fee
+                ];
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'RRR generated successfully',
+                    'rrr' => $rrr,
+                    'reference' => $reference,
+                    'order_id' => $orderId,
+                    'amount' => $fee
+                ]);
+            } else {
+                error_log("Failed to generate RRR via Remita API: " . ($result['message'] ?? 'Unknown error'));
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to generate RRR. Please try again or contact support.'
+                ]);
             }
-            
-            // Store in session
-            $_SESSION['pending_payment'] = [
-                'payment_id' => $paymentId,
-                'rrr' => $rrr,
-                'amount' => $fee
-            ];
-            
-            echo json_encode([
-                'success' => true,
-                'message' => 'RRR generated successfully',
-                'rrr' => $rrr,
-                'reference' => $reference,
-                'order_id' => $orderId,
-                'amount' => $fee
-            ]);
             
         } catch (Exception $e) {
             error_log("Initiate payment error: " . $e->getMessage());
