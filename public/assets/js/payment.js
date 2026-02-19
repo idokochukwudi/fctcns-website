@@ -1,25 +1,25 @@
 /**
  * Payment handling JavaScript
  * Handles RRR generation and payment verification
- * FIXED: Proper CSRF token handling from hidden input
- * FIXED: Updated status endpoint to /payment/check-status
+ * FIXED: Button IDs to match HTML (generateRRRBtn instead of payNowBtn)
+ * FIXED: Added proper error handling for missing elements
  */
 
 $(document).ready(function() {
     console.log('Payment.js loaded - Document ready');
     
-    // Handle Pay Now button click
-    $('#payNowBtn, #pay-now-btn').on('click', function(e) {
+    // Handle Generate RRR button click - FIXED: Use correct ID from HTML
+    $('#generateRRRBtn').on('click', function(e) {
         e.preventDefault();
-        console.log('Pay Now button clicked');
+        console.log('Generate RRR button clicked');
         initiatePayment();
     });
     
-    // Handle Verify Payment button click
+    // Handle Verify Payment button click - Keep existing handlers
     $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').on('click', function(e) {
         e.preventDefault();
         console.log('Verify button clicked');
-        var rrr = $(this).data('rrr') || sessionStorage.getItem('pending_rrr') || $('#rrr-input').val();
+        var rrr = $(this).data('rrr') || sessionStorage.getItem('pending_rrr') || $('#generatedRRR').text() || $('#rrr-input').val();
         if (rrr) {
             verifyPayment(rrr);
         } else {
@@ -38,8 +38,8 @@ $(document).ready(function() {
         }
     });
     
-    // Handle copy RRR button
-    $('#copy-rrr-btn').on('click', function(e) {
+    // Handle copy RRR button - FIXED: Use correct button ID from HTML
+    $('#copyRRRBtn, #copy-rrr-btn').on('click', function(e) {
         e.preventDefault();
         copyRRR();
     });
@@ -49,7 +49,15 @@ $(document).ready(function() {
     if (pendingRRR) {
         console.log('Found pending RRR in session:', pendingRRR);
         showRRR(pendingRRR);
+        
+        // Show verify button
+        $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').show();
     }
+    
+    // Log available buttons for debugging
+    console.log('Generate RRR button exists:', $('#generateRRRBtn').length > 0);
+    console.log('Verify button exists:', $('#verifyPaymentBtn').length > 0);
+    console.log('Check status button exists:', $('#checkStatusBtn').length > 0);
 });
 
 /**
@@ -110,15 +118,16 @@ function getCookie(name) {
 
 /**
  * Initiate payment - generate RRR
- * FIXED: Prioritizes hidden input for CSRF token
+ * FIXED: Use correct button ID (generateRRRBtn)
  */
 function initiatePayment() {
     console.log('initiatePayment() called');
     
-    // Get button
-    var btn = $('#payNowBtn, #pay-now-btn').first();
+    // Get button - FIXED: Use correct ID
+    var btn = $('#generateRRRBtn');
     if (!btn.length) {
-        console.error('Pay button not found');
+        console.error('Generate RRR button not found');
+        showAlert('Technical error: Button not found. Please refresh.', 'danger');
         return;
     }
     
@@ -132,6 +141,7 @@ function initiatePayment() {
     if ($('#paymentStatus').length) {
         $('#paymentStatus').show();
         $('#paymentMessage').text('Generating RRR...');
+        $('#paymentSpinner').show();
     }
     
     // Get CSRF token - prioritize hidden input
@@ -148,7 +158,6 @@ function initiatePayment() {
     }
     
     console.log('CSRF token status:', csrfToken ? 'Found ✓' : 'Missing ✗');
-    console.log('CSRF token value:', csrfToken ? csrfToken.substring(0, 10) + '...' : 'none');
     
     if (!csrfToken) {
         showAlert('Security token missing. Please refresh the page and try again.', 'danger');
@@ -161,7 +170,7 @@ function initiatePayment() {
         csrf_token: csrfToken
     };
     
-    console.log('Sending payment initiation request...');
+    console.log('Sending payment initiation request to /payment/initiate...');
     
     $.ajax({
         url: '/payment/initiate',
@@ -174,7 +183,7 @@ function initiatePayment() {
             console.log('Payment initiation response:', response);
             
             if (response.success) {
-                var rrr = response.rrr;
+                var rrr = response.rrr || response.data?.rrr || response.reference;
                 
                 if (rrr) {
                     // Store RRR in session storage for later use
@@ -192,6 +201,12 @@ function initiatePayment() {
                     
                     // Show verify button
                     $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').show();
+                    
+                    // Hide payment status spinner
+                    if ($('#paymentSpinner').length) {
+                        $('#paymentSpinner').hide();
+                    }
+                    $('#paymentMessage').text('RRR Generated Successfully!');
                 } else {
                     console.error('RRR not found in response:', response);
                     showAlert('RRR not found in server response', 'danger');
@@ -208,7 +223,6 @@ function initiatePayment() {
             console.error('Status:', status);
             console.error('Error:', error);
             console.error('Response Text:', xhr.responseText);
-            console.error('Response Status:', xhr.status);
             
             // Try to parse error response
             var errorMessage = 'An error occurred. Please try again.';
@@ -219,7 +233,6 @@ function initiatePayment() {
                     errorMessage = response.message || response.error || errorMessage;
                 }
             } catch(e) {
-                // If response is not JSON, use status-based message
                 if (xhr.status === 500) {
                     errorMessage = 'Server error (500). Please try again later.';
                 } else if (xhr.status === 404) {
@@ -235,6 +248,11 @@ function initiatePayment() {
             
             showAlert(errorMessage, 'danger');
             resetButton(btn, originalText);
+            
+            // Hide payment status spinner
+            if ($('#paymentSpinner').length) {
+                $('#paymentSpinner').hide();
+            }
         }
     });
 }
@@ -246,7 +264,7 @@ function verifyPayment(rrr) {
     console.log('verifyPayment() called with RRR:', rrr);
     
     if (!rrr) {
-        rrr = sessionStorage.getItem('pending_rrr');
+        rrr = sessionStorage.getItem('pending_rrr') || $('#generatedRRR').text();
         if (!rrr) {
             showAlert('No pending payment found. Please generate RRR first.', 'danger');
             return;
@@ -260,6 +278,13 @@ function verifyPayment(rrr) {
     // Show loading state
     btn.html('<i class="fas fa-spinner fa-spin"></i> Verifying...');
     btn.prop('disabled', true);
+    
+    // Show payment status
+    if ($('#paymentStatus').length) {
+        $('#paymentStatus').show();
+        $('#paymentMessage').text('Verifying payment...');
+        $('#paymentSpinner').show();
+    }
     
     // Get CSRF token
     var csrfToken = $('input[name="csrf_token"]').val() || $('meta[name="csrf-token"]').attr('content') || getCsrfToken();
@@ -283,7 +308,12 @@ function verifyPayment(rrr) {
         success: function(response) {
             console.log('Payment verification response:', response);
             
+            if ($('#paymentSpinner').length) {
+                $('#paymentSpinner').hide();
+            }
+            
             if (response.success) {
+                $('#paymentMessage').text('Payment Verified!');
                 showAlert('Payment verified successfully! Redirecting...', 'success');
                 
                 // Clear stored RRR
@@ -299,13 +329,18 @@ function verifyPayment(rrr) {
                 }, 2000);
                 
             } else {
+                $('#paymentMessage').text('Verification Failed');
                 showAlert(response.message || 'Payment verification failed', 'danger');
                 resetButton(btn, originalText);
             }
         },
         error: function(xhr, status, error) {
             console.error('Payment verification error:', error);
-            console.error('Response:', xhr.responseText);
+            
+            if ($('#paymentSpinner').length) {
+                $('#paymentSpinner').hide();
+            }
+            $('#paymentMessage').text('Verification Error');
             
             try {
                 var response = JSON.parse(xhr.responseText);
@@ -327,7 +362,10 @@ function verifyPayment(rrr) {
  * Check payment status without verification
  */
 function checkPaymentStatus(rrr) {
-    if (!rrr) return;
+    if (!rrr) {
+        rrr = sessionStorage.getItem('pending_rrr') || $('#generatedRRR').text();
+        if (!rrr) return;
+    }
     
     console.log('Checking payment status for RRR:', rrr);
     
@@ -374,7 +412,9 @@ function showRRR(rrr) {
     console.log('Showing RRR:', rrr);
     
     // Update RRR display elements
+    $('#generatedRRR').text(rrr);
     $('#paymentRRR, .rrr-display').text(rrr).show();
+    $('#rrrDisplayArea').show();
     
     // Create or update payment instructions
     var instructionsHtml = '<div class="alert alert-info mt-3 payment-instructions">' +
@@ -417,8 +457,8 @@ function showRemitaLink(rrr) {
                '<p class="mt-2 small text-muted">After payment, click the "Verify Payment" button below.</p>' +
                '</div>';
     
-    if ($('#remita-link').length) {
-        $('#remita-link').html(linkHtml).show();
+    if ($('#remitaLink').length) {
+        $('#remitaLink').html(linkHtml).show();
     } else {
         $('#payment-instructions, .payment-instructions').after(linkHtml);
     }
@@ -501,7 +541,7 @@ function showAlert(message, type) {
  * Copy RRR to clipboard
  */
 function copyRRR() {
-    var rrr = $('#paymentRRR').text() || sessionStorage.getItem('pending_rrr');
+    var rrr = $('#generatedRRR').text() || sessionStorage.getItem('pending_rrr');
     
     if (!rrr) {
         showAlert('No RRR to copy', 'warning');

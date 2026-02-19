@@ -3,11 +3,11 @@
  * Payment View - Step 3
  * Professional design matching application form
  * FIXED: RRR generation, expanded width, and support section layout
- * FIXED: JavaScript endpoints to match router routes
- * FIXED: Expanded width for better desktop viewing
+ * FIXED: Button ID to match JavaScript (generateRRRBtn)
+ * FIXED: Responsive layout for laptop screens - no content hidden
  * 
  * @package FCTCNS
- * @version 1.3 - Fixed AJAX endpoints and expanded layout
+ * @version 1.5 - Fixed button ID and laptop responsiveness
  */
 
 extract($data ?? []);
@@ -34,7 +34,7 @@ if (empty($applicant_name)) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="description" content="Payment - FCT College of Nursing Sciences">
     <title>Payment - FCT College of Nursing Sciences</title>
     
@@ -46,12 +46,13 @@ if (empty($applicant_name)) {
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- CSRF Token Meta Tag -->
+    <!-- CSRF Token -->
+    <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
     <meta name="csrf-token" content="<?php echo $csrf_token; ?>">
     
     <style>
     /* ==========================================================================
-       RESET & BASE STYLES (Matching application form)
+       RESET & BASE STYLES
        ========================================================================== */
     * {
         margin: 0;
@@ -60,8 +61,8 @@ if (empty($applicant_name)) {
     }
 
     html, body {
-        margin: 0 !important;
-        padding: 0 !important;
+        margin: 0;
+        padding: 0;
         width: 100%;
         overflow-x: hidden;
         background: #F7F9FC;
@@ -70,7 +71,7 @@ if (empty($applicant_name)) {
     body {
         font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         font-size: 16px;
-        line-height: 1.6;
+        line-height: 1.5;
         color: #1A1F2E;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
@@ -78,7 +79,7 @@ if (empty($applicant_name)) {
     }
 
     /* ==========================================================================
-       DESIGN TOKENS (Matching application form with expanded container)
+       DESIGN TOKENS - OPTIMIZED FOR ALL SCREENS
        ========================================================================== */
     :root {
         /* Colors - Purple & Gold */
@@ -87,13 +88,11 @@ if (empty($applicant_name)) {
         --purple-medium: #8A4FA0;
         --purple-light: #A875BD;
         --purple-pale: #F3EAF8;
-        --purple-soft: #F9F3FC;
         
         --gold-deep: #B48C3A;
         --gold: #C9A44A;
         --gold-light: #D8B86C;
         --gold-pale: #FDF6E7;
-        --gold-soft: #FFFAF0;
         
         /* Status Colors */
         --success: #10b981;
@@ -139,20 +138,20 @@ if (empty($applicant_name)) {
         --font-body: 'Outfit', system-ui, sans-serif;
         --font-mono: 'JetBrains Mono', monospace;
         
-        /* Spacing - Expanded for desktop */
-        --gutter: clamp(1rem, 4vw, 4rem);
-        --container-max: 2000px; /* INCREASED for ultra-wide layout */
+        /* Spacing - OPTIMIZED for laptop screens */
+        --gutter: clamp(1rem, 3vw, 3rem);
+        --container-max: 1400px; /* OPTIMIZED for laptops */
         
         --space-xs: 0.5rem;
         --space-sm: 1rem;
         --space-md: 1.5rem;
         --space-lg: 2rem;
-        --space-xl: 3rem;
-        --space-xxl: 5rem;
+        --space-xl: 2.5rem;
+        --space-xxl: 4rem;
     }
 
     /* ==========================================================================
-       CONTAINER & LAYOUT - OPTIMIZED FOR WIDE SCREENS
+       CONTAINER & LAYOUT - OPTIMIZED FOR LAPTOPS
        ========================================================================== */
     .container {
         width: 100%;
@@ -161,25 +160,23 @@ if (empty($applicant_name)) {
         padding: var(--space-lg) var(--gutter);
     }
 
-    /* Reduced side padding on very wide screens */
-    @media (min-width: 1400px) {
+    /* Laptop optimization - 1366x768 and above */
+    @media (min-width: 1200px) and (max-width: 1600px) {
+        :root {
+            --container-max: 1200px;
+            --gutter: 2rem;
+        }
+        
         .container {
-            padding-left: 2rem;
-            padding-right: 2rem;
+            padding: 1.5rem 2rem;
         }
     }
 
-    @media (min-width: 1800px) {
-        .container {
-            padding-left: 2rem;
-            padding-right: 2rem;
-        }
-    }
-
-    @media (min-width: 2200px) {
-        .container {
-            padding-left: 3rem;
-            padding-right: 3rem;
+    /* Larger screens */
+    @media (min-width: 1600px) {
+        :root {
+            --container-max: 1400px;
+            --gutter: 3rem;
         }
     }
 
@@ -187,29 +184,15 @@ if (empty($applicant_name)) {
         min-height: calc(100vh - 200px);
     }
 
-    /* Expanded content area - FULL WIDTH */
+    /* Content column - OPTIMIZED for laptops */
     .content-col {
         width: 100%;
     }
     
     @media (min-width: 1200px) {
         .content-col {
-            width: 95%; /* INCREASED from 90% to 95% */
-            margin: 0 auto;
-        }
-    }
-    
-    @media (min-width: 1600px) {
-        .content-col {
-            width: 92%; /* ADJUSTED for very large screens */
-            margin: 0 auto;
-        }
-    }
-    
-    @media (min-width: 2000px) {
-        .content-col {
-            width: 90%;
-            margin: 0 auto;
+            width: 100%;
+            margin: 0;
         }
     }
 
@@ -234,6 +217,7 @@ if (empty($applicant_name)) {
         display: flex;
         align-items: center;
         gap: var(--space-sm);
+        flex-wrap: wrap;
     }
 
     .welcome-icon {
@@ -246,11 +230,13 @@ if (empty($applicant_name)) {
         justify-content: center;
         color: var(--purple);
         font-size: 1.2rem;
+        flex-shrink: 0;
     }
 
     .welcome-text {
         font-size: 0.95rem;
         color: var(--slate);
+        line-height: 1.4;
     }
 
     .welcome-text strong {
@@ -271,6 +257,8 @@ if (empty($applicant_name)) {
         font-weight: 500;
         text-decoration: none;
         transition: all 0.3s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .logout-btn:hover {
@@ -279,17 +267,6 @@ if (empty($applicant_name)) {
         border-color: var(--danger);
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(239,68,68,0.2);
-    }
-
-    @media (max-width: 480px) {
-        .top-bar {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        
-        .logout-btn {
-            align-self: flex-end;
-        }
     }
 
     /* ==========================================================================
@@ -303,13 +280,13 @@ if (empty($applicant_name)) {
     }
 
     /* ==========================================================================
-       STEPPER PROGRESS (Matching application form)
+       STEPPER PROGRESS
        ========================================================================== */
     .stepper-wrapper {
         display: flex;
         justify-content: space-between;
         width: 100%;
-        max-width: 900px;
+        max-width: 800px;
         margin: 0 auto;
     }
 
@@ -366,7 +343,7 @@ if (empty($applicant_name)) {
     }
 
     .stepper-item .step-name {
-        font-size: 0.75rem;
+        font-size: 0.8rem;
         color: var(--slate);
         font-weight: 500;
         text-align: center;
@@ -377,24 +354,8 @@ if (empty($applicant_name)) {
         font-weight: 600;
     }
 
-    .stepper-item.completed .step-name {
-        color: var(--success);
-    }
-
-    @media (max-width: 768px) {
-        .stepper-item .step-name {
-            font-size: 0.65rem;
-        }
-        
-        .stepper-item .step-counter {
-            width: 32px;
-            height: 32px;
-            font-size: 0.875rem;
-        }
-    }
-
     /* ==========================================================================
-       CARDS - FULL WIDTH
+       CARDS - OPTIMIZED FOR LAPTOPS
        ========================================================================== */
     .card {
         background: var(--white);
@@ -404,10 +365,6 @@ if (empty($applicant_name)) {
         transition: all 0.3s ease;
         width: 100%;
         border: none;
-    }
-
-    .card:hover {
-        box-shadow: var(--shadow-xl);
     }
 
     .card-header {
@@ -434,21 +391,16 @@ if (empty($applicant_name)) {
         padding: var(--space-xl);
     }
 
-    @media (min-width: 1200px) {
+    /* Laptop-optimized padding */
+    @media (min-width: 1200px) and (max-width: 1600px) {
         .card-body {
-            padding: 3rem 5rem; /* INCREASED horizontal padding */
+            padding: 2rem;
         }
     }
 
     @media (min-width: 1600px) {
         .card-body {
-            padding: 3rem 8rem; /* INCREASED for ultra-wide */
-        }
-    }
-
-    @media (min-width: 2000px) {
-        .card-body {
-            padding: 4rem 12rem; /* MAXIMUM padding for very wide screens */
+            padding: 2.5rem 3rem;
         }
     }
 
@@ -459,7 +411,7 @@ if (empty($applicant_name)) {
     }
 
     /* ==========================================================================
-       BUTTONS (Matching application form)
+       BUTTONS
        ========================================================================== */
     .btn {
         display: inline-flex;
@@ -497,21 +449,9 @@ if (empty($applicant_name)) {
         color: white;
     }
 
-    .btn--success:hover {
-        background: #0ca678;
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(16,185,129,0.3);
-    }
-
     .btn--warning {
         background: var(--warning);
         color: white;
-    }
-
-    .btn--warning:hover {
-        background: #e08e0b;
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(245,158,11,0.3);
     }
 
     .btn--outline {
@@ -520,15 +460,8 @@ if (empty($applicant_name)) {
         border: 2px solid var(--purple-light);
     }
 
-    .btn--outline:hover {
-        background: var(--purple);
-        border-color: var(--purple);
-        color: white;
-        transform: translateY(-2px);
-    }
-
     .btn--lg {
-        padding: 0.875rem 2rem;
+        padding: 1rem 2rem;
         font-size: 1rem;
     }
 
@@ -540,7 +473,6 @@ if (empty($applicant_name)) {
     .btn:disabled {
         opacity: 0.6;
         cursor: not-allowed;
-        transform: none !important;
     }
 
     /* ==========================================================================
@@ -578,28 +510,6 @@ if (empty($applicant_name)) {
         color: #1e40af;
     }
 
-    .alert-dismissible {
-        position: relative;
-        padding-right: 3rem;
-    }
-
-    .alert-dismissible .btn-close {
-        position: absolute;
-        top: 50%;
-        right: var(--space-md);
-        transform: translateY(-50%);
-        background: transparent;
-        border: none;
-        font-size: 1.2rem;
-        cursor: pointer;
-        color: currentColor;
-        opacity: 0.6;
-    }
-
-    .alert-dismissible .btn-close:hover {
-        opacity: 1;
-    }
-
     /* ==========================================================================
        RRR DISPLAY
        ========================================================================== */
@@ -615,26 +525,6 @@ if (empty($applicant_name)) {
         letter-spacing: 2px;
         border: 1px dashed var(--purple-light);
         word-break: break-all;
-    }
-
-    /* ==========================================================================
-       PAYMENT INSTRUCTIONS
-       ========================================================================== */
-    .payment-instructions {
-        background: var(--info-light);
-        border-radius: var(--radius-lg);
-        padding: var(--space-lg);
-        border-left: 4px solid var(--info);
-    }
-
-    .payment-instructions ol {
-        margin-top: var(--space-sm);
-        padding-left: var(--space-lg);
-    }
-
-    .payment-instructions li {
-        margin-bottom: var(--space-xs);
-        color: var(--ink-mid);
     }
 
     /* ==========================================================================
@@ -656,43 +546,15 @@ if (empty($applicant_name)) {
     }
 
     .fee-amount {
-        font-size: 3.5rem;
+        font-size: 3rem;
         font-weight: 700;
         color: var(--purple-deep);
         line-height: 1.2;
         font-family: var(--font-display);
     }
 
-    .fee-note {
-        font-size: 0.85rem;
-        color: var(--mist);
-    }
-
     /* ==========================================================================
-       LOADING SPINNER
-       ========================================================================== */
-    .spinner-border {
-        display: inline-block;
-        width: 1.5rem;
-        height: 1.5rem;
-        border: 3px solid currentColor;
-        border-right-color: transparent;
-        border-radius: 50%;
-        animation: spinner 0.75s linear infinite;
-    }
-
-    .spinner-border-sm {
-        width: 1rem;
-        height: 1rem;
-        border-width: 2px;
-    }
-
-    @keyframes spinner {
-        to { transform: rotate(360deg); }
-    }
-
-    /* ==========================================================================
-       SUPPORT SECTION - FIXED FOR EMAIL OVERFLOW
+       SUPPORT SECTION - FIXED FOR LAPTOP VISIBILITY
        ========================================================================== */
     .support-section {
         background: var(--surface);
@@ -720,14 +582,15 @@ if (empty($applicant_name)) {
     }
 
     .support-icon {
-        width: 36px;
-        height: 36px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
         flex-shrink: 0;
+        font-size: 1.1rem;
     }
 
     .support-icon.phone { background: var(--purple); }
@@ -740,134 +603,88 @@ if (empty($applicant_name)) {
     }
 
     .support-label {
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         color: var(--mist);
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        margin-bottom: 0.1rem;
+        margin-bottom: 0.2rem;
     }
 
     .support-value {
-        font-size: 0.9rem;
+        font-size: 1rem;
         font-weight: 500;
         color: var(--ink);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        width: 100%;
+        white-space: normal; /* Allow wrapping on laptop */
+        word-break: break-word;
+        line-height: 1.4;
     }
 
-    /* Mobile styles */
+    /* ==========================================================================
+       LOADING SPINNER
+       ========================================================================== */
+    .spinner-border {
+        display: inline-block;
+        width: 1.5rem;
+        height: 1.5rem;
+        border: 3px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner 0.75s linear infinite;
+    }
+
+    @keyframes spinner {
+        to { transform: rotate(360deg); }
+    }
+
+    /* ==========================================================================
+       RESPONSIVE - LAPTOP OPTIMIZATION
+       ========================================================================== */
+    @media (max-width: 1200px) {
+        .fee-amount {
+            font-size: 2.5rem;
+        }
+        
+        .support-grid {
+            gap: var(--space-sm);
+        }
+    }
+
+    @media (max-width: 992px) {
+        .support-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
     @media (max-width: 768px) {
         .support-grid {
             grid-template-columns: 1fr;
-            gap: var(--space-sm);
         }
         
-        .support-item {
-            padding: var(--space-sm) var(--space-md);
-        }
-        
-        .support-value {
-            white-space: normal;
-            word-break: break-word;
-        }
-    }
-
-    /* ==========================================================================
-       UTILITIES
-       ========================================================================== */
-    .d-flex { display: flex; }
-    .align-items-center { align-items: center; }
-    .justify-content-between { justify-content: space-between; }
-    .justify-content-center { justify-content: center; }
-    .flex-wrap { flex-wrap: wrap; }
-    .flex-column { flex-direction: column; }
-    .gap-1 { gap: 0.25rem; }
-    .gap-2 { gap: 0.5rem; }
-    .gap-3 { gap: 1rem; }
-    .gap-4 { gap: 1.5rem; }
-
-    .mt-1 { margin-top: 0.25rem; }
-    .mt-2 { margin-top: 0.5rem; }
-    .mt-3 { margin-top: 1rem; }
-    .mt-4 { margin-top: 1.5rem; }
-    .mt-5 { margin-top: 2rem; }
-
-    .mb-1 { margin-bottom: 0.25rem; }
-    .mb-2 { margin-bottom: 0.5rem; }
-    .mb-3 { margin-bottom: 1rem; }
-    .mb-4 { margin-bottom: 1.5rem; }
-    .mb-5 { margin-bottom: 2rem; }
-
-    .text-primary { color: var(--purple); }
-    .text-success { color: var(--success); }
-    .text-danger { color: var(--danger); }
-    .text-warning { color: var(--warning); }
-    .text-muted { color: var(--mist); }
-
-    .fw-bold { font-weight: 700; }
-    .fw-semibold { font-weight: 600; }
-
-    .text-center { text-align: center; }
-
-    .w-100 { width: 100%; }
-
-    /* ==========================================================================
-       ANIMATIONS
-       ========================================================================== */
-    .fade-in {
-        animation: fadeIn 0.5s ease forwards;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ==========================================================================
-       RESPONSIVE
-       ========================================================================== */
-    @media (max-width: 768px) {
-        .fee-amount {
-            font-size: 2.5rem;
+        .stepper-item .step-name {
+            font-size: 0.7rem;
         }
         
         .card-body {
             padding: var(--space-lg);
         }
-        
-        .d-flex.justify-content-between {
-            flex-direction: column;
-            gap: var(--space-md);
-        }
-        
-        .d-flex.justify-content-between a,
-        .d-flex.justify-content-between button {
-            width: 100%;
-        }
-        
-        .btn {
-            white-space: normal;
-        }
     }
 
     @media (max-width: 480px) {
-        .card-body {
-            padding: var(--space-md);
-        }
-        
         .fee-amount {
             font-size: 2rem;
         }
         
         .rrr-display {
             font-size: 1.1rem;
-            padding: var(--space-sm);
         }
         
-        .stepper-item .step-name {
-            font-size: 0.6rem;
+        .top-bar {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .logout-btn {
+            align-self: flex-end;
         }
     }
     </style>
@@ -876,7 +693,6 @@ if (empty($applicant_name)) {
     <main id="main-content" class="main-content" role="main">
         <div class="container">
             <div class="row justify-content-center">
-                <!-- Expanded content column for desktop -->
                 <div class="col-12 content-col">
                     
                     <!-- TOP BAR WITH WELCOME AND LOGOUT BUTTON -->
@@ -994,7 +810,7 @@ if (empty($applicant_name)) {
                                             Your Payment RRR
                                         </h5>
                                         <div class="rrr-display mb-3" id="generatedRRR"></div>
-                                        <button class="btn btn--outline btn--sm" onclick="copyRRR()">
+                                        <button class="btn btn--outline btn--sm" id="copyRRRBtn" onclick="copyRRR()">
                                             <i class="fas fa-copy me-2"></i>Copy RRR
                                         </button>
                                     </div>
@@ -1017,6 +833,7 @@ if (empty($applicant_name)) {
 
                             <!-- Action Buttons -->
                             <div class="d-flex flex-column gap-3">
+                                <!-- FIXED: Button ID matches JavaScript -->
                                 <button class="btn btn--primary btn--lg w-100" id="generateRRRBtn">
                                     <i class="fas fa-play me-2"></i>Generate RRR
                                 </button>
@@ -1035,7 +852,7 @@ if (empty($applicant_name)) {
                                 </div>
                             </div>
 
-                            <!-- Support Information - FIXED for email overflow -->
+                            <!-- Support Information - FIXED for laptop visibility -->
                             <div class="support-section">
                                 <h5 class="fw-semibold text-center mb-4">Payment Support</h5>
                                 <div class="support-grid">
@@ -1083,384 +900,13 @@ if (empty($applicant_name)) {
         </div>
     </main>
 
-    <!-- JavaScript - FIXED endpoints to match router -->
-    <script>
-    // Get CSRF token from meta tag
-    function getCsrfToken() {
-        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
-               '<?php echo $csrf_token; ?>';
-    }
-
-    // Debug function to log with timestamp
-    function debugLog(message, data = null) {
-        const timestamp = new Date().toISOString();
-        console.log(`[${timestamp}] ${message}`);
-        if (data) {
-            console.log(data);
-        }
-    }
-
-    // Document ready
-    document.addEventListener('DOMContentLoaded', function() {
-        debugLog('Payment page loaded');
-        
-        // Check if generate button exists
-        const generateBtn = document.getElementById('generateRRRBtn');
-        if (!generateBtn) {
-            debugLog('ERROR: Generate RRR button not found!');
-        } else {
-            debugLog('Generate RRR button found');
-            generateBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                debugLog('Generate RRR button clicked');
-                initiatePayment();
-            });
-        }
-        
-        // Initialize verify button
-        const verifyBtn = document.getElementById('verifyPaymentBtn');
-        if (verifyBtn) {
-            verifyBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                var rrr = document.getElementById('generatedRRR')?.textContent || 
-                         document.querySelector('.rrr-display')?.textContent ||
-                         '<?php echo $pending_payment['rrr'] ?? ''; ?>';
-                if (rrr) {
-                    debugLog('Verifying payment for RRR:', rrr);
-                    verifyPayment(rrr);
-                } else {
-                    showAlert('No RRR found. Please generate RRR first.', 'warning');
-                }
-            });
-        }
-        
-        // Initialize check status button
-        const checkBtn = document.getElementById('checkStatusBtn');
-        if (checkBtn) {
-            checkBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                var rrr = document.getElementById('generatedRRR')?.textContent || 
-                         document.querySelector('.rrr-display')?.textContent ||
-                         '<?php echo $pending_payment['rrr'] ?? ''; ?>';
-                if (rrr) {
-                    debugLog('Checking payment status for RRR:', rrr);
-                    checkPaymentStatus(rrr);
-                } else {
-                    showAlert('No RRR found.', 'warning');
-                }
-            });
-        }
-        
-        // Check if we have a pending RRR in sessionStorage
-        var pendingRRR = sessionStorage.getItem('pending_rrr');
-        if (pendingRRR) {
-            debugLog('Found pending RRR in sessionStorage:', pendingRRR);
-            showRRR(pendingRRR);
-            document.getElementById('verifyPaymentBtn').style.display = 'block';
-            document.getElementById('checkStatusBtn').style.display = 'inline-block';
-        }
-    });
-
-    function initiatePayment() {
-        debugLog('initiatePayment() called');
-        
-        const generateBtn = document.getElementById('generateRRRBtn');
-        if (!generateBtn) {
-            debugLog('ERROR: generateRRRBtn not found in initiatePayment');
-            showAlert('Technical error: Button not found. Please refresh.', 'danger');
-            return;
-        }
-        
-        // Show payment status area
-        document.getElementById('paymentStatus').style.display = 'block';
-        generateBtn.disabled = true;
-        document.getElementById('paymentMessage').innerText = 'Generating RRR...';
-        document.getElementById('paymentSpinner').style.display = 'inline-block';
-        
-        // Get CSRF token
-        var csrfToken = getCsrfToken();
-        debugLog('CSRF Token:', csrfToken ? 'Found' : 'Missing');
-        
-        if (!csrfToken) {
-            showAlert('Security token missing. Please refresh the page.', 'danger');
-            resetPayment();
-            return;
-        }
-        
-        // Create form data
-        const formData = new FormData();
-        formData.append('csrf_token', csrfToken);
-        
-        // FIXED: Use correct endpoint from router
-        const endpoint = '/payment/initiate';
-        
-        debugLog('Sending request to:', endpoint);
-        
-        fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            },
-            body: formData,
-            credentials: 'same-origin'
-        })
-        .then(response => {
-            debugLog('Response status:', response.status);
-            
-            if (!response.ok) {
-                return response.text().then(text => {
-                    debugLog('Error response text:', text.substring(0, 500));
-                    throw new Error(`Server error: ${response.status}`);
-                });
-            }
-            
-            return response.json();
-        })
-        .then(data => {
-            debugLog('Payment initiation response:', data);
-            
-            document.getElementById('paymentSpinner').style.display = 'none';
-            
-            if (data.success) {
-                document.getElementById('paymentMessage').innerText = 'RRR Generated Successfully!';
-                
-                // Store RRR - handle different response formats
-                var rrr = data.rrr || data.data?.rrr || data.reference;
-                debugLog('RRR received:', rrr);
-                
-                if (!rrr) {
-                    showAlert('No RRR in response', 'danger');
-                    resetPayment();
-                    return;
-                }
-                
-                sessionStorage.setItem('pending_rrr', rrr);
-                
-                // Show RRR
-                showRRR(rrr);
-                
-                // Show Remita link
-                var remitaUrl = 'https://remitademo.net/remita/ecomm/frame/handleCCD.action?rrr=' + rrr;
-                
-                // Create Remita link HTML
-                var remitaHtml = '<div class="mt-3">' +
-                    '<p class="mb-2 fw-semibold">Proceed to payment:</p>' +
-                    '<a href="' + remitaUrl + '" target="_blank" class="btn btn--warning w-100">' +
-                    '<i class="fas fa-external-link-alt me-2"></i>Pay Now on Remita</a>' +
-                    '</div>';
-                document.getElementById('remitaLink').innerHTML = remitaHtml;
-                document.getElementById('remitaLink').style.display = 'block';
-                
-                // Show verify and check buttons
-                document.getElementById('verifyPaymentBtn').style.display = 'block';
-                document.getElementById('checkStatusBtn').style.display = 'inline-block';
-                
-                showAlert('RRR generated successfully: ' + rrr, 'success');
-                
-                // Open Remita in new window with confirmation
-                if (confirm('RRR generated: ' + rrr + '\n\nClick OK to proceed to Remita payment page.')) {
-                    window.open(remitaUrl, '_blank');
-                }
-            } else {
-                showAlert(data.message || data.error || 'Failed to generate RRR', 'danger');
-                resetPayment();
-            }
-        })
-        .catch(error => {
-            console.error('Fetch error:', error);
-            document.getElementById('paymentSpinner').style.display = 'none';
-            showAlert('Error: ' + error.message, 'danger');
-            resetPayment();
-        });
-    }
-
-    function showRRR(rrr) {
-        document.getElementById('generatedRRR').textContent = rrr;
-        document.getElementById('rrrDisplayArea').style.display = 'block';
-        
-        // Also update paymentRRR element if it exists
-        if (document.getElementById('paymentRRR')) {
-            document.getElementById('paymentRRR').innerHTML = '<strong>RRR:</strong> ' + rrr;
-            document.getElementById('paymentRRR').style.display = 'block';
-        }
-    }
-
-    function verifyPayment(rrr) {
-        debugLog('Verifying payment for RRR:', rrr);
-        
-        document.getElementById('paymentStatus').style.display = 'block';
-        document.getElementById('paymentMessage').innerText = 'Verifying payment...';
-        document.getElementById('verifyPaymentBtn').disabled = true;
-        document.getElementById('paymentSpinner').style.display = 'inline-block';
-        
-        var csrfToken = getCsrfToken();
-        
-        const formData = new FormData();
-        formData.append('rrr', rrr);
-        formData.append('csrf_token', csrfToken);
-        
-        // FIXED: Use correct endpoint from router
-        fetch('/payment/verify', {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            },
-            body: formData,
-            credentials: 'same-origin'
-        })
-        .then(response => response.json())
-        .then(data => {
-            debugLog('Verification response:', data);
-            document.getElementById('paymentSpinner').style.display = 'none';
-            
-            if (data.success) {
-                document.getElementById('paymentMessage').innerText = 'Payment Verified!';
-                showAlert('Payment verified successfully! Redirecting...', 'success');
-                
-                // Clear session storage
-                sessionStorage.removeItem('pending_rrr');
-                
-                setTimeout(function() {
-                    window.location.href = data.redirect || '/apply/step/4';
-                }, 2000);
-            } else {
-                document.getElementById('paymentMessage').innerText = 'Verification Failed';
-                showAlert(data.message || 'Payment verification failed', 'danger');
-                document.getElementById('verifyPaymentBtn').disabled = false;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('paymentSpinner').style.display = 'none';
-            showAlert('Error verifying payment', 'danger');
-            document.getElementById('verifyPaymentBtn').disabled = false;
-        });
-    }
-
-    function checkPaymentStatus(rrr) {
-        debugLog('Checking payment status for RRR:', rrr);
-        
-        document.getElementById('paymentMessage').innerText = 'Checking payment status...';
-        document.getElementById('checkStatusBtn').disabled = true;
-        document.getElementById('paymentSpinner').style.display = 'inline-block';
-        
-        // FIXED: Use correct endpoint from router
-        fetch('/payment/status?rrr=' + encodeURIComponent(rrr), {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            },
-            credentials: 'same-origin'
-        })
-        .then(response => response.json())
-        .then(data => {
-            debugLog('Status response:', data);
-            document.getElementById('paymentSpinner').style.display = 'none';
-            
-            if (data.success && (data.status === 'success' || data.paid)) {
-                document.getElementById('paymentMessage').innerText = 'Payment completed!';
-                showAlert('Payment verified successfully! Redirecting...', 'success');
-                
-                // Clear session storage
-                sessionStorage.removeItem('pending_rrr');
-                
-                setTimeout(() => {
-                    window.location.href = '/apply/step/4';
-                }, 2000);
-            } else if (data.status === 'pending' || data.pending) {
-                document.getElementById('paymentMessage').innerText = 'Payment still processing. Checking again in 10 seconds...';
-                document.getElementById('checkStatusBtn').disabled = false;
-                
-                // Check again after 10 seconds
-                setTimeout(() => checkPaymentStatus(rrr), 10000);
-            } else {
-                document.getElementById('paymentMessage').innerText = 'Payment not yet completed';
-                showAlert('Payment not completed. Please complete payment first.', 'warning');
-                document.getElementById('checkStatusBtn').disabled = false;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('paymentSpinner').style.display = 'none';
-            showAlert('Error checking payment status', 'danger');
-            document.getElementById('checkStatusBtn').disabled = false;
-        });
-    }
-
-    function showAlert(message, type) {
-        const alertContainer = document.getElementById('alertContainer');
-        const icon = type === 'success' ? 'fa-check-circle' : 
-                     type === 'danger' ? 'fa-exclamation-circle' : 
-                     type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
-        
-        alertContainer.innerHTML = `
-            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                <div class="d-flex align-items-center">
-                    <i class="fas ${icon} fa-lg me-2"></i>
-                    <span>${message}</span>
-                    <button type="button" class="btn-close" onclick="this.closest('.alert').remove()" aria-label="Close">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        // Auto dismiss after 5 seconds (8 for errors)
-        const timeout = type === 'danger' ? 8000 : 5000;
-        setTimeout(() => {
-            const alert = alertContainer.querySelector('.alert');
-            if (alert) {
-                alert.classList.remove('show');
-                setTimeout(() => {
-                    if (alertContainer.querySelector('.alert') === alert) {
-                        alertContainer.innerHTML = '';
-                    }
-                }, 300);
-            }
-        }, timeout);
-    }
-
-    function copyRRR() {
-        var rrr = document.getElementById('generatedRRR')?.textContent || 
-                 document.querySelector('.rrr-display')?.textContent ||
-                 sessionStorage.getItem('pending_rrr');
-        
-        if (!rrr) {
-            showAlert('No RRR to copy', 'warning');
-            return;
-        }
-        
-        // Use modern clipboard API if available
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(rrr).then(() => {
-                showAlert('RRR copied to clipboard!', 'success');
-            }).catch(() => {
-                fallbackCopy(rrr);
-            });
-        } else {
-            fallbackCopy(rrr);
-        }
-    }
-
-    function fallbackCopy(text) {
-        var textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        showAlert('RRR copied to clipboard!', 'success');
-    }
-
-    function resetPayment() {
-        document.getElementById('paymentStatus').style.display = 'none';
-        document.getElementById('generateRRRBtn').disabled = false;
-        document.getElementById('verifyPaymentBtn').style.display = 'none';
-        document.getElementById('checkStatusBtn').style.display = 'none';
-        document.getElementById('paymentSpinner').style.display = 'none';
-    }
-    </script>
+    <!-- jQuery (required for your JavaScript) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Bootstrap JS (optional, for alerts) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Your Payment JavaScript -->
+    <script src="/assets/js/Payment.js"></script>
 </body>
 </html>
