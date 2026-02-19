@@ -5,6 +5,7 @@
  * Handles all Remita payment integration using official SDK
  * FIXED: Correct autoloader path for both local and production
  * FIXED: Proper SDK integration with 12-digit RRR generation
+ * ADDED: Detailed debug logging for API responses
  * 
  * @package FCT_CNS
  * @subpackage Application
@@ -82,11 +83,11 @@ class RemitaModel extends BaseModel {
         // Generate API Token for SDK
         $this->apiToken = $this->generateApiToken();
         
-        // Set the correct API base URL based on environment
+        // Set the correct API base URL based on environment - FIXED: Corrected demo URL
         if ($this->environment === 'live') {
             $this->baseUrl = 'https://login.remita.net/remita/exapp/api/v1/send/api';
         } else {
-            $this->baseUrl = 'https://remitademo.net/remita/exapp/api/v1/send/api';
+            $this->baseUrl = 'https://demo.remita.net/remita/exapp/api/v1/send/api'; // FIXED: Changed from remitademo.net
         }
         
         // Initialize Remita SDK if autoloader was found
@@ -94,6 +95,7 @@ class RemitaModel extends BaseModel {
         
         // Log for debugging
         error_log("Remita SDK initialized with environment: " . $this->environment);
+        error_log("Remita Base URL: " . $this->baseUrl);
     }
     
     /**
@@ -335,7 +337,7 @@ class RemitaModel extends BaseModel {
     }
     
     /**
-     * Fallback method - Direct API call (without SDK)
+     * Fallback method - Direct API call (without SDK) with DEBUG LOGGING
      */
     private function generateRRRDirect($orderId, $amount, $payerName, $payerEmail, $payerPhone) {
         try {
@@ -369,9 +371,42 @@ class RemitaModel extends BaseModel {
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
             curl_close($ch);
             
-            error_log("Direct API Response (HTTP $httpCode): " . substr($response, 0, 500));
+            // ==================== ADDED: DETAILED DEBUG LOGGING ====================
+            error_log("=== REMITA API DEBUG ===");
+            error_log("URL: " . $this->baseUrl . '/rrr');
+            error_log("Environment: " . $this->environment);
+            error_log("Merchant ID: " . $this->merchantId);
+            error_log("Service Type ID: " . $this->serviceTypeId);
+            error_log("Order ID: " . $orderId);
+            error_log("Amount: " . $amount);
+            error_log("HTTP Code: " . $httpCode);
+            error_log("CURL Error: " . $curlError);
+            error_log("Raw Response: " . $response);
+            
+            // Also log to file for easier reading
+            $logDir = __DIR__ . '/../../storage/logs';
+            if (!is_dir($logDir)) {
+                mkdir($logDir, 0755, true);
+            }
+            
+            $logFile = $logDir . '/remita_debug.log';
+            $logEntry = date('Y-m-d H:i:s') . "\n";
+            $logEntry .= "Environment: " . $this->environment . "\n";
+            $logEntry .= "Base URL: " . $this->baseUrl . "\n";
+            $logEntry .= "Merchant ID: " . $this->merchantId . "\n";
+            $logEntry .= "Service Type ID: " . $this->serviceTypeId . "\n";
+            $logEntry .= "Order ID: " . $orderId . "\n";
+            $logEntry .= "Amount: " . $amount . "\n";
+            $logEntry .= "HTTP Code: " . $httpCode . "\n";
+            $logEntry .= "CURL Error: " . $curlError . "\n";
+            $logEntry .= "Response: " . $response . "\n";
+            $logEntry .= "----------------------------------------\n\n";
+            
+            file_put_contents($logFile, $logEntry, FILE_APPEND);
+            // ==================== END DEBUG LOGGING ====================
             
             if ($httpCode === 200 || $httpCode === 201) {
                 $result = json_decode($response, true);
@@ -414,52 +449,19 @@ class RemitaModel extends BaseModel {
                 }
             }
             
-            // If API call fails in demo, generate a valid 12-digit RRR for testing
-            if ($this->environment === 'demo') {
-                $demoRRR = $this->generateDemoRRR();
-                error_log("Using generated demo RRR (12-digit) for testing: " . $demoRRR);
-                
-                // Store the demo transaction
-                $this->createTransaction(
-                    null, 
-                    $demoRRR, 
-                    $orderId, 
-                    $amount,
-                    $requestData,
-                    ['rrr' => $demoRRR, 'note' => 'Demo mode - generated locally']
-                );
-                
-                return [
-                    'status' => 'success',
-                    'rrr' => $demoRRR,
-                    'message' => 'Demo RRR generated (test mode)',
-                    'response_data' => ['rrr' => $demoRRR, 'note' => 'Test mode - not a real Remita RRR']
-                ];
-            }
+            // If API call fails in demo, we should NOT generate fake RRR
+            // Instead, return the error so we can see what's happening
+            error_log("Remita API call failed with HTTP $httpCode");
             
             return [
                 'status' => 'error',
-                'message' => 'Failed to generate RRR',
-                'response_data' => $response
+                'message' => 'Failed to generate RRR. HTTP Code: ' . $httpCode,
+                'response' => $response,
+                'curl_error' => $curlError
             ];
             
         } catch (Exception $e) {
             error_log("RemitaModel::generateRRRDirect - Error: " . $e->getMessage());
-            
-            // Ultimate fallback for demo
-            if ($this->environment === 'demo') {
-                $demoRRR = $this->generateDemoRRR();
-                error_log("Demo fallback RRR: " . $demoRRR);
-                
-                $this->createTransaction(null, $demoRRR, $orderId, $amount, null, ['rrr' => $demoRRR]);
-                
-                return [
-                    'status' => 'success',
-                    'rrr' => $demoRRR,
-                    'message' => 'Demo RRR generated (fallback)',
-                    'response_data' => ['rrr' => $demoRRR, 'note' => 'Fallback demo mode']
-                ];
-            }
             
             return [
                 'status' => 'error',
@@ -469,13 +471,12 @@ class RemitaModel extends BaseModel {
     }
     
     /**
-     * Generate a valid 12-digit RRR for demo environment
+     * Generate a valid 12-digit RRR for demo environment - DISABLED to prevent fake RRRs
      */
     private function generateDemoRRR() {
-        // Format: 3 digits (service type) + 9 random digits = 12 digits total
-        $servicePrefix = rand(100, 999); // 3 digits
-        $randomPart = rand(100000000, 999999999); // 9 digits
-        return $servicePrefix . $randomPart; // 12 digits total
+        // This function is kept but should not be used
+        // We want to see the real API response, not fake it
+        return null;
     }
     
     /**
@@ -595,21 +596,7 @@ class RemitaModel extends BaseModel {
                 }
             }
             
-            // For demo, if we can't reach Remita, simulate success
-            if ($this->environment === 'demo') {
-                error_log("Demo mode - auto-verifying payment for RRR: $rrr");
-                return [
-                    'status' => 'success',
-                    'message' => 'Demo payment auto-verified',
-                    'payment_data' => [
-                        'rrr' => $rrr,
-                        'paymentStatus' => 'PAID',
-                        'transactionId' => 'TXN' . time(),
-                        'paymentDate' => date('Y-m-d H:i:s')
-                    ]
-                ];
-            }
-            
+            // For demo, if we can't reach Remita, return error - don't auto-verify
             return [
                 'status' => 'error',
                 'message' => 'Payment not found or not completed',
@@ -618,19 +605,6 @@ class RemitaModel extends BaseModel {
             
         } catch (Exception $e) {
             error_log("RemitaModel::verifyPaymentDirect - Error: " . $e->getMessage());
-            
-            // For demo, fallback to success
-            if ($this->environment === 'demo') {
-                return [
-                    'status' => 'success',
-                    'message' => 'Demo payment verified (fallback)',
-                    'payment_data' => [
-                        'rrr' => $rrr,
-                        'paymentStatus' => 'PAID',
-                        'transactionId' => 'TXN' . time()
-                    ]
-                ];
-            }
             
             return [
                 'status' => 'error',
