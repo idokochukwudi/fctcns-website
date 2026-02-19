@@ -1026,17 +1026,33 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // Check token in session
-        if (!isset($_SESSION['csrf_tokens'][$csrfToken])) {
-            error_log("CSRF validation failed: Token not found in session");
-            echo json_encode(['success' => false, 'message' => 'Invalid security token']);
-            return;
+        // Check token in session - FIXED: Check both possible locations
+        $validToken = false;
+        
+        // Check in csrf_tokens array (your current method)
+        if (isset($_SESSION['csrf_tokens']) && isset($_SESSION['csrf_tokens'][$csrfToken])) {
+            // Check token expiration (1 hour)
+            if (time() - $_SESSION['csrf_tokens'][$csrfToken] <= 3600) {
+                $validToken = true;
+                // Remove used token
+                unset($_SESSION['csrf_tokens'][$csrfToken]);
+            } else {
+                unset($_SESSION['csrf_tokens'][$csrfToken]);
+                error_log("CSRF validation failed: Token expired");
+                echo json_encode(['success' => false, 'message' => 'Security token expired']);
+                return;
+            }
+        }
+        // Check in simple csrf_token (from ApplicationBaseController)
+        elseif (isset($_SESSION['csrf_token']) && $_SESSION['csrf_token'] === $csrfToken) {
+            $validToken = true;
+            // Generate new token for next request
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
         
-        // Check token expiration (1 hour)
-        if (time() - $_SESSION['csrf_tokens'][$csrfToken] > 3600) {
-            unset($_SESSION['csrf_tokens'][$csrfToken]);
-            echo json_encode(['success' => false, 'message' => 'Security token expired']);
+        if (!$validToken) {
+            error_log("CSRF validation failed: Token not found in session");
+            echo json_encode(['success' => false, 'message' => 'Invalid security token']);
             return;
         }
         
@@ -1092,9 +1108,6 @@ class PublicApplicationController extends ApplicationBaseController {
                 'rrr' => $rrr,
                 'amount' => $fee
             ];
-            
-            // Remove used token
-            unset($_SESSION['csrf_tokens'][$csrfToken]);
             
             echo json_encode([
                 'success' => true,
