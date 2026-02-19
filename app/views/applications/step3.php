@@ -105,98 +105,6 @@ if (empty($applicant_name)) {
     /* ─── Page Shell ─── */
     .page-shell {
         min-height: 100vh;
-        display: grid;
-        grid-template-rows: auto 1fr auto;
-    }
-
-    /* ─── Top Bar ─── */
-    .topbar {
-        background: var(--navy);
-        padding: 0 var(--gap);
-    }
-    .topbar-inner {
-        max-width: var(--max-w);
-        margin: 0 auto;
-        height: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-    }
-    .topbar-brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        text-decoration: none;
-    }
-    .topbar-brand-icon {
-        width: 34px; height: 34px;
-        background: var(--amber);
-        border-radius: 8px;
-        display: flex; align-items: center; justify-content: center;
-        color: white;
-        font-size: 0.95rem;
-        flex-shrink: 0;
-    }
-    .topbar-brand-name {
-        font-family: var(--font-display);
-        font-size: 1rem;
-        color: white;
-        line-height: 1.2;
-        font-weight: 400;
-    }
-    .topbar-brand-name span {
-        display: block;
-        font-family: var(--font-body);
-        font-size: 0.68rem;
-        color: rgba(255,255,255,0.5);
-        font-weight: 400;
-        letter-spacing: .5px;
-    }
-    .topbar-right {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-    .topbar-user {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: rgba(255,255,255,0.75);
-        font-size: 0.82rem;
-    }
-    .topbar-user-avatar {
-        width: 28px; height: 28px;
-        background: var(--navy-soft);
-        border: 1.5px solid rgba(255,255,255,0.15);
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.7rem;
-        color: rgba(255,255,255,0.7);
-    }
-    .topbar-user strong {
-        color: white;
-        font-weight: 500;
-    }
-    .topbar-logout {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 6px;
-        color: rgba(255,255,255,0.75);
-        font-size: 0.8rem;
-        font-family: var(--font-body);
-        text-decoration: none;
-        transition: all .2s;
-        cursor: pointer;
-    }
-    .topbar-logout:hover {
-        background: rgba(217,79,58,0.2);
-        border-color: rgba(217,79,58,0.4);
-        color: #FCA5A5;
     }
 
     /* ─── Main ─── */
@@ -210,70 +118,6 @@ if (empty($applicant_name)) {
         flex-direction: column;
         gap: 1.75rem;
     }
-
-    /* ─── Steps ─── */
-    .steps-row {
-        display: flex;
-        align-items: center;
-        gap: 0;
-    }
-    .step {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-        position: relative;
-    }
-    .step + .step::before {
-        content: '';
-        position: absolute;
-        left: -50%;
-        top: 17px;
-        width: 100%;
-        height: 2px;
-        background: var(--grey-2);
-        z-index: 0;
-    }
-    .step.done + .step::before,
-    .step.done + .step.active::before {
-        background: var(--green);
-    }
-    .step-dot {
-        width: 34px; height: 34px;
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.8rem;
-        font-weight: 600;
-        position: relative;
-        z-index: 1;
-        transition: all .3s;
-    }
-    .step.pending .step-dot {
-        background: var(--white);
-        border: 2px solid var(--grey-3);
-        color: var(--grey-4);
-    }
-    .step.done .step-dot {
-        background: var(--green);
-        border: 2px solid var(--green);
-        color: white;
-    }
-    .step.active .step-dot {
-        background: var(--navy);
-        border: 2px solid var(--navy);
-        color: white;
-        box-shadow: 0 0 0 4px rgba(11,29,58,.12);
-    }
-    .step-label {
-        font-size: 0.72rem;
-        font-weight: 500;
-        letter-spacing: .3px;
-        color: var(--grey-4);
-        text-align: center;
-    }
-    .step.active .step-label { color: var(--navy); font-weight: 600; }
-    .step.done .step-label  { color: var(--green); }
 
     /* ─── Card ─── */
     .card {
@@ -753,7 +597,6 @@ if (empty($applicant_name)) {
     }
     @media (max-width: 540px) {
         .card-head-content { flex-wrap: wrap; }
-        .topbar-user { display: none; }
         .main { padding: 1.5rem var(--gap) 3rem; }
         .action-row { flex-direction: column; }
         .action-row .btn-ghost { width: 100%; justify-content: center; }
@@ -766,54 +609,9 @@ if (empty($applicant_name)) {
 <body>
 <div class="page-shell">
 
-    <!-- ── Top Bar ── -->
-    <header class="topbar">
-        <div class="topbar-inner">
-            <a class="topbar-brand" href="/">
-                <div class="topbar-brand-icon">
-                    <i class="fas fa-hospital"></i>
-                </div>
-                <div class="topbar-brand-name">
-                    FCT College of Nursing Sciences
-                    <span>2025/2026 Admissions Portal</span>
-                </div>
-            </a>
-            <div class="topbar-right">
-                <div class="topbar-user">
-                    <div class="topbar-user-avatar"><i class="fas fa-user fa-xs"></i></div>
-                    <span>Welcome, <strong><?php echo e($applicant_name); ?></strong></span>
-                </div>
-                <a href="/applicant/logout" class="topbar-logout"
-                   onclick="return confirm('Are you sure you want to logout? Your progress will be saved.');">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-        </div>
-    </header>
-
     <!-- ── Main ── -->
     <main class="main">
         <div class="main-inner">
-
-            <!-- Progress Steps -->
-            <div class="steps-row">
-                <div class="step done">
-                    <div class="step-dot"><i class="fas fa-check" style="font-size:.7rem"></i></div>
-                    <div class="step-label">JAMB Verified</div>
-                </div>
-                <div class="step done">
-                    <div class="step-dot"><i class="fas fa-check" style="font-size:.7rem"></i></div>
-                    <div class="step-label">Application</div>
-                </div>
-                <div class="step active">
-                    <div class="step-dot">3</div>
-                    <div class="step-label">Payment</div>
-                </div>
-                <div class="step pending">
-                    <div class="step-dot">4</div>
-                    <div class="step-label">Exam Slip</div>
-                </div>
-            </div>
 
             <!-- Alert Container -->
             <div id="alertContainer"></div>
