@@ -1,14 +1,13 @@
 <?php
 /**
  * Forgot Password View
- * 
+ * Redesigned to match portal navy/gold design system.
+ *
  * @package FCTCNS
  */
 
-// Extract data array to variables
 extract($data ?? []);
 
-// Helper function for safe output
 if (!function_exists('e')) {
     function e($text) {
         return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
@@ -16,372 +15,555 @@ if (!function_exists('e')) {
 }
 
 $csrf_token = $csrf_token ?? '';
-$baseUrl = $baseUrl ?? '/';
+$baseUrl    = $baseUrl    ?? '/';
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forgot Password - FCT College of Nursing Sciences</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Forgot Password &mdash; FCT College of Nursing Sciences</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
+        /* ── Reset ─────────────────────────────────────────────── */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ── Tokens ─────────────────────────────────────────────── */
+        :root {
+            --navy:        #0F1B35;
+            --navy-mid:    #1A2D55;
+            --navy-light:  #243E73;
+            --gold:        #C8963A;
+            --gold-light:  #E2B05F;
+            --gold-pale:   #FDF6E9;
+            --teal:        #1D8A7A;
+            --teal-light:  #E8F7F5;
+            --red:         #C0392B;
+            --red-light:   #FDEEEC;
+            --white:       #FFFFFF;
+            --off-white:   #F8FAFD;
+            --border:      #E2E8F4;
+            --border-dark: #C8D3E8;
+            --text-dark:   #0F1B35;
+            --text-body:   #374160;
+            --text-muted:  #7A86A0;
+        }
+
+        /* ── Body ───────────────────────────────────────────────── */
+        html, body { height: 100%; }
+
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            background: var(--navy);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
-        
-        .forgot-container {
-            max-width: 450px;
-            width: 100%;
-            margin: 0 auto;
-        }
-        
-        .forgot-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            overflow: hidden;
-            animation: slideUp 0.5s ease;
-        }
-        
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-        }
-        
-        .card-header h2 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 600;
-        }
-        
-        .card-header p {
-            margin: 10px 0 0;
-            opacity: 0.9;
-            font-size: 14px;
-        }
-        
-        .card-body {
-            padding: 40px 30px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            font-weight: 500;
-            color: #333;
-            margin-bottom: 8px;
-            display: block;
-        }
-        
-        .form-control {
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 12px 15px;
-            font-size: 14px;
-            width: 100%;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            outline: none;
-        }
-        
-        .form-control.is-invalid {
-            border-color: #dc3545;
-        }
-        
-        .btn-reset {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-reset:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn-reset:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-        
-        .btn-outline-primary {
-            border: 2px solid #667eea;
-            color: #667eea;
-            background: transparent;
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-        }
-        
-        .btn-outline-primary:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-        }
-        
-        .alert {
-            border-radius: 8px;
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .alert-success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-        
-        .alert-danger {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-        
-        .alert-info {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-        }
-        
-        .alert .btn-close {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            opacity: 0.5;
-            padding: 0;
-            line-height: 1;
-            color: inherit;
-        }
-        
-        .alert .btn-close:hover {
-            opacity: 1;
-        }
-        
-        .divider {
-            text-align: center;
-            margin: 30px 0 20px;
+            padding: 24px 16px;
             position: relative;
+            overflow-x: hidden;
         }
-        
-        .divider::before {
+
+        /* Decorative rings */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        body::before {
+            width: 600px; height: 600px;
+            border: 1px solid rgba(200,150,58,0.08);
+            top: -200px; right: -150px;
+        }
+        body::after {
+            width: 400px; height: 400px;
+            border: 1px solid rgba(200,150,58,0.06);
+            bottom: -150px; left: -100px;
+        }
+
+        /* ── Wrapper ─────────────────────────────────────────────── */
+        .forgot-wrap {
+            width: 100%;
+            max-width: 440px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            animation: rise 0.45s cubic-bezier(0.22,0.61,0.36,1) both;
+        }
+
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Card ────────────────────────────────────────────────── */
+        .forgot-card {
+            background: var(--white);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+        }
+
+        /* ── Card Header ─────────────────────────────────────────── */
+        .card-head {
+            background: var(--navy-mid);
+            padding: 32px 36px 28px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-head::before {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #e0e0e0;
-            z-index: 1;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
         }
-        
-        .divider span {
-            background: white;
-            padding: 0 15px;
-            color: #999;
-            font-size: 14px;
+
+        .card-head::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: repeating-linear-gradient(
+                45deg, transparent, transparent 40px,
+                rgba(255,255,255,0.012) 40px, rgba(255,255,255,0.012) 41px
+            );
+            pointer-events: none;
+        }
+
+        .card-head-emblem {
             position: relative;
-            z-index: 2;
+            z-index: 1;
+            width: 56px; height: 56px;
+            background: rgba(200,150,58,0.12);
+            border: 1.5px solid rgba(200,150,58,0.35);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 14px;
+            color: var(--gold-light);
+            font-size: 1.3rem;
         }
-        
-        .back-to-login {
-            text-align: center;
-            margin-top: 20px;
+
+        .card-head h1 {
+            position: relative;
+            z-index: 1;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.3;
+            margin-bottom: 6px;
         }
-        
-        .back-to-login a {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.3s ease;
+
+        .card-head p {
+            position: relative;
+            z-index: 1;
+            font-size: 12px;
+            color: rgba(255,255,255,0.45);
+            margin: 0;
+            line-height: 1.5;
         }
-        
-        .back-to-login a:hover {
-            color: #764ba2;
-            text-decoration: underline;
+
+        .card-head-rule {
+            position: relative;
+            z-index: 1;
+            width: 36px;
+            height: 2px;
+            background: var(--gold);
+            border-radius: 2px;
+            margin: 12px auto 0;
         }
-        
-        /* REMOVED: .footer styles - now using layout footer */
-        
-        .info-text {
+
+        /* ── Card Body ───────────────────────────────────────────── */
+        .card-body {
+            padding: 32px 36px 28px;
+        }
+
+        /* ── Info banner ─────────────────────────────────────────── */
+        .info-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: var(--off-white);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--gold);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 22px;
             font-size: 13px;
-            color: #666;
-            margin-top: 5px;
+            color: var(--text-body);
+            line-height: 1.5;
+        }
+
+        .info-banner i {
+            color: var(--gold);
+            font-size: .9rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* ── Alerts ──────────────────────────────────────────────── */
+        .alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 13.5px;
+            border: 1px solid transparent;
+            animation: popIn .3s ease;
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-danger  { background: var(--red-light);  border-color: rgba(192,57,43,.2);  color: #7f1d1d; }
+        .alert-success { background: var(--teal-light); border-color: rgba(29,138,122,.2); color: #134e42; }
+        .alert-info    { background: #EFF4FF;           border-color: rgba(37,99,235,.15); color: #1e3a8a; }
+
+        .alert i { font-size: .95rem; flex-shrink: 0; margin-top: 1px; }
+        .alert-danger  i { color: var(--red); }
+        .alert-success i { color: var(--teal); }
+        .alert-info    i { color: #2563EB; }
+
+        .alert-close {
+            margin-left: auto;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: inherit;
+            opacity: .45;
+            font-size: 1rem;
+            line-height: 1;
+            padding: 0;
+            flex-shrink: 0;
+        }
+        .alert-close:hover { opacity: .9; }
+
+        /* ── Form ────────────────────────────────────────────────── */
+        .form-group { margin-bottom: 18px; }
+
+        .form-label {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 6px;
+            letter-spacing: .2px;
+        }
+
+        .form-label .req { color: var(--red); margin-left: 2px; }
+
+        .input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrap .input-icon {
+            position: absolute;
+            left: 13px;
+            color: var(--text-muted);
+            font-size: .85rem;
+            pointer-events: none;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 11px 14px 11px 36px;
+            border: 1.5px solid var(--border-dark);
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text-dark);
+            background: var(--white);
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        .form-control::placeholder { color: var(--text-muted); font-size: 13px; }
+
+        .form-control:focus {
+            border-color: var(--navy-mid);
+            box-shadow: 0 0 0 3px rgba(26,45,85,.1);
+            outline: none;
+        }
+
+        .form-control.is-invalid {
+            border-color: var(--red);
+            background: #fff8f8;
+        }
+
+        .invalid-msg {
+            font-size: 11.5px;
+            color: var(--red);
+            margin-top: 4px;
+            display: none;
+        }
+
+        /* ── Submit button ───────────────────────────────────────── */
+        .btn-reset {
+            width: 100%;
+            padding: 12px;
+            background: var(--navy);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: .95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: all .25s;
+            box-shadow: 0 4px 14px rgba(15,27,53,.25);
+            letter-spacing: .2px;
+            margin-top: 4px;
+        }
+
+        .btn-reset:hover:not(:disabled) {
+            background: var(--navy-light);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 22px rgba(15,27,53,.3);
+        }
+
+        .btn-reset:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+        /* ── Spinner ─────────────────────────────────────────────── */
+        .spinner {
+            display: inline-block;
+            width: 14px; height: 14px;
+            border: 2px solid rgba(255,255,255,.35);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Divider ─────────────────────────────────────────────── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 22px 0 18px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── Secondary actions ───────────────────────────────────── */
+        .actions-block {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-outline {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            width: 100%;
+            padding: 11px;
+            background: transparent;
+            color: var(--navy);
+            border: 1.5px solid var(--border-dark);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: .88rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .btn-outline:hover {
+            background: var(--off-white);
+            border-color: var(--navy);
+            color: var(--navy);
+        }
+
+        /* ── Return link ─────────────────────────────────────────── */
+        .page-foot {
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        .page-foot a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--gold);
+            text-decoration: none;
+            transition: color .2s;
+        }
+
+        .page-foot a:hover { color: var(--gold-light); }
+
+        /* ── Responsive ──────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .card-body { padding: 24px 22px 22px; }
+            .card-head { padding: 26px 22px 22px; }
         }
     </style>
 </head>
 <body>
-    <div class="forgot-container">
+
+    <div class="forgot-wrap">
+
         <div class="forgot-card">
-            <div class="card-header">
-                <i class="fas fa-key fa-2x mb-2"></i>
-                <h2>Forgot Password</h2>
-                <p>Reset your password to access your account</p>
+
+            <!-- Header -->
+            <div class="card-head">
+                <div class="card-head-emblem">
+                    <i class="fas fa-key"></i>
+                </div>
+                <h1>Forgot Password</h1>
+                <p>Reset your password to regain access to your account</p>
+                <div class="card-head-rule"></div>
             </div>
-            
+
+            <!-- Body -->
             <div class="card-body">
-                <!-- PHP Flash Messages -->
-                <?php if (isset($_SESSION['flash_success']) && !empty($_SESSION['flash_success'])): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <div>
-                        <i class="fas fa-check-circle me-2"></i>
-                        <?php echo e($_SESSION['flash_success']); ?>
-                    </div>
-                    <button type="button" class="btn-close" onclick="this.parentElement.remove()" aria-label="Close">×</button>
+
+                <!-- Info banner -->
+                <div class="info-banner">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Enter your registered email address and we'll send you a link to reset your password.</span>
+                </div>
+
+                <!-- Flash messages -->
+                <?php if (!empty($_SESSION['flash_success'])): ?>
+                <div class="alert alert-success" role="alert">
+                    <i class="fas fa-check-circle"></i>
+                    <span><?php echo e($_SESSION['flash_success']); ?></span>
+                    <button class="alert-close" onclick="this.closest('.alert').remove()" aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
                 <?php unset($_SESSION['flash_success']); ?>
                 <?php endif; ?>
-                
-                <?php if (isset($_SESSION['flash_error']) && !empty($_SESSION['flash_error'])): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <div>
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        <?php echo e($_SESSION['flash_error']); ?>
-                    </div>
-                    <button type="button" class="btn-close" onclick="this.parentElement.remove()" aria-label="Close">×</button>
+
+                <?php if (!empty($_SESSION['flash_error'])): ?>
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span><?php echo e($_SESSION['flash_error']); ?></span>
+                    <button class="alert-close" onclick="this.closest('.alert').remove()" aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
                 <?php unset($_SESSION['flash_error']); ?>
                 <?php endif; ?>
-                
-                <!-- Forgot Password Form -->
+
+                <!-- Form -->
                 <form method="POST" action="/applicant/forgot-password" id="forgotForm" novalidate>
                     <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token); ?>">
-                    
+
                     <div class="form-group">
                         <label for="email" class="form-label">
-                            <i class="fas fa-envelope me-1"></i> Email Address <span class="text-danger">*</span>
+                            Email Address <span class="req">*</span>
                         </label>
-                        <input type="email" 
-                               class="form-control" 
-                               id="email" 
-                               name="email" 
-                               value="<?php echo e($_SESSION['email_value'] ?? ''); ?>" 
-                               placeholder="Enter your registered email address"
-                               required>
-                        <div class="info-text">
-                            <i class="fas fa-info-circle"></i> We'll send a password reset link to this email
+                        <div class="input-wrap">
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input type="email"
+                                   class="form-control"
+                                   id="email"
+                                   name="email"
+                                   value="<?php echo e($_SESSION['email_value'] ?? ''); ?>"
+                                   placeholder="Enter your registered email address"
+                                   autocomplete="email"
+                                   required>
                         </div>
+                        <div class="invalid-msg" id="emailError">Please enter a valid email address.</div>
                     </div>
-                    
+
                     <button type="submit" class="btn-reset" id="resetBtn">
-                        <span id="resetText"><i class="fas fa-paper-plane me-2"></i>Send Reset Link</span>
-                        <span id="resetSpinner" style="display: none;">
-                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                            Sending...
+                        <span id="resetText">
+                            <i class="fas fa-paper-plane"></i> Send Reset Link
+                        </span>
+                        <span id="resetSpinner" style="display:none">
+                            <span class="spinner"></span> Sending&hellip;
                         </span>
                     </button>
                 </form>
-                
-                <div class="divider">
-                    <span>OR</span>
-                </div>
-                
-                <div class="back-to-login">
-                    <a href="/applicant/login">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Login
+
+                <!-- Secondary actions -->
+                <div class="divider">OR</div>
+
+                <div class="actions-block">
+                    <a href="/applicant/login" class="btn-outline">
+                        <i class="fas fa-arrow-left"></i> Back to Login
+                    </a>
+                    <a href="/apply/register" class="btn-outline">
+                        <i class="fas fa-user-plus"></i> Start New Application
                     </a>
                 </div>
-                
-                <div class="text-center mt-3">
-                    <p class="mb-0" style="color: #666;">Don't have an account?</p>
-                    <a href="/apply/register" class="btn-outline-primary mt-2">
-                        <i class="fas fa-user-plus me-2"></i>Start New Application
-                    </a>
-                </div>
-            </div>
+
+            </div><!-- /card-body -->
+        </div><!-- /forgot-card -->
+
+        <!-- Return to Home -->
+        <div class="page-foot">
+            <a href="/">
+                <i class="fas fa-arrow-left" style="font-size:.7rem"></i> Return to Home
+            </a>
         </div>
-        
-        <!-- REMOVED: Duplicate footer - now using layout footer -->
-        
-    </div>
-    
+
+    </div><!-- /forgot-wrap -->
+
+
     <script>
-    // Form submission loading state
-    document.getElementById('forgotForm').addEventListener('submit', function(e) {
-        const email = document.getElementById('email').value.trim();
-        
-        if (!email) {
-            e.preventDefault();
-            alert('Please enter your email address');
-            return false;
-        }
-        
-        // Show loading state
-        document.getElementById('resetText').style.display = 'none';
-        document.getElementById('resetSpinner').style.display = 'inline-block';
-        document.getElementById('resetBtn').disabled = true;
-        
-        return true;
-    });
-    
-    // Auto-dismiss alerts after 5 seconds
-    setTimeout(function() {
-        document.querySelectorAll('.alert').forEach(function(alert) {
-            alert.style.transition = 'opacity 0.5s ease';
-            alert.style.opacity = '0';
-            setTimeout(function() {
-                if (alert.parentNode) {
-                    alert.remove();
-                }
-            }, 500);
+        document.getElementById('forgotForm').addEventListener('submit', function (e) {
+            const email     = document.getElementById('email');
+            const errorMsg  = document.getElementById('emailError');
+            const val       = email.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            email.classList.remove('is-invalid');
+            errorMsg.style.display = 'none';
+
+            if (!val || !emailRegex.test(val)) {
+                email.classList.add('is-invalid');
+                errorMsg.style.display = 'block';
+                e.preventDefault();
+                return;
+            }
+
+            // Loading state
+            document.getElementById('resetText').style.display   = 'none';
+            document.getElementById('resetSpinner').style.display = 'inline-flex';
+            document.getElementById('resetBtn').disabled          = true;
         });
-    }, 5000);
+
+        // Auto-dismiss alerts after 5.5 s
+        setTimeout(function () {
+            document.querySelectorAll('.alert').forEach(function (el) {
+                el.style.transition = 'opacity .4s';
+                el.style.opacity    = '0';
+                setTimeout(function () { el.remove(); }, 400);
+            });
+        }, 5500);
+
+        <?php unset($_SESSION['email_value']); ?>
     </script>
 </body>
 </html>
