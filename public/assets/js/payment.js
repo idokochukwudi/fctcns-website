@@ -6,6 +6,7 @@
  * FIXED: Remita payment button display after RRR generation
  * FIXED: Verify button visibility
  * FIXED: CopyRRR function now accepts parameter for pending payment
+ * FIXED: Updated Remita payment URL with correct format from support
  */
 
 $(document).ready(function() {
@@ -427,17 +428,32 @@ function showRRR(rrr) {
 }
 
 /**
- * Show Remita payment link - FIXED: Properly displays the payment button
+ * Show Remita payment link - UPDATED with correct URL from Remita support
  */
 function showRemitaLink(rrr) {
-    var remitaUrl = 'https://remitademo.net/remita/ecomm/frame/handleCCD.action?rrr=' + rrr;
+    console.log('Showing Remita payment link for RRR:', rrr);
+    
+    // Remove any hyphens if present (clean the RRR)
+    var cleanRrr = rrr.replace(/-/g, '');
+    
+    // Correct payment URL from Remita support
+    var paymentUrl = 'https://login.remita.net/remita/onepage/payment/init.reg?rrr=' + cleanRrr + '&channel=CARD,USSD,ENAIRA,TRANSFER';
+    
+    // Backup URL if the main one doesn't work
+    var backupUrl = 'https://remitademo.net/remita/ecomm/frame/handleCCD.action?rrr=' + cleanRrr;
     
     var linkHtml = '<div class="alert alert-warning mt-3 remita-link">' +
                '<h5><i class="fas fa-external-link-alt"></i> Proceed to Payment</h5>' +
-               '<p class="mb-3">Click the button below to complete your payment on Remita secure platform:</p>' +
-               '<a href="' + remitaUrl + '" target="_blank" class="btn btn--warning btn--lg w-100">' +
-               '<i class="fas fa-credit-card me-2"></i> Pay Now on Remita</a>' +
-               '<p class="mt-3 small text-muted">After payment, return here and click "I\'ve Paid, Verify"</p>' +
+               '<p class="mb-3">Your RRR: <strong>' + rrr + '</strong></p>' +
+               '<p class="mb-2">Click the button below to complete your payment on Remita secure platform:</p>' +
+               '<a href="' + paymentUrl + '" target="_blank" class="btn btn--warning btn--lg w-100 mb-2" style="background:#f39c12; color:#fff; font-weight:bold;">' +
+               '<i class="fas fa-credit-card me-2"></i> Pay Now on Remita (Card, USSD, Transfer)</a>' +
+               '<div class="mt-2">' +
+               '<p><small>If the above link doesn\'t work, try this alternative:</small></p>' +
+               '<a href="' + backupUrl + '" target="_blank" class="btn btn-outline-secondary btn--sm w-100">' +
+               '<i class="fas fa-external-link-alt me-2"></i> Alternative Payment Page</a>' +
+               '</div>' +
+               '<p class="mt-3 small text-muted">After payment, return here and click "Verify Payment" button below.</p>' +
                '</div>';
     
     // Remove any existing Remita links to prevent duplicates
@@ -460,9 +476,9 @@ function showRemitaLink(rrr) {
         $('.card-body').append(linkHtml);
     }
     
-    // Open automatically with confirmation
+    // Optional: Open automatically with confirmation
     if (confirm('RRR generated: ' + rrr + '\n\nClick OK to proceed to Remita payment page.')) {
-        window.open(remitaUrl, '_blank');
+        window.open(paymentUrl, '_blank');
     }
 }
 
