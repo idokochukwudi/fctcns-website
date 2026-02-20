@@ -8,6 +8,7 @@
  * FIXED: O'Level results handling in saveApplication method - prevents duplication on re-login
  * FIXED: Exam slip generation and step 4 display - enhanced security
  * FIXED: Generate proper RRR using Remita API (no fake DEMO RRRs)
+ * FIXED: Landing page redirects to registration, email verification redirects to step 1
  * 
  * @package FCT_CNS
  */
@@ -44,10 +45,35 @@ class PublicApplicationController extends ApplicationBaseController {
     // ============================================
     
     /**
-     * Show application landing page
+     * Show application landing page - FIXED: Redirects logged-in users appropriately
      */
     public function landing() {
-        // Get settings for display
+        // Check if user is already logged in
+        if ($this->isApplicantLoggedIn()) {
+            // If logged in, check application progress
+            $application = $this->getApplication();
+            
+            if ($application) {
+                // Redirect to appropriate step based on application progress
+                if (empty($application['jamb_number'])) {
+                    $this->redirect('/apply/step/1');
+                } elseif (empty($application['date_of_birth']) || 
+                          empty($application['phone']) || 
+                          empty($application['address'])) {
+                    $this->redirect('/apply/step/2');
+                } elseif ($this->paymentModel->hasSuccessfulPayment($application['id'])) {
+                    $this->redirect('/apply/step/4');
+                } else {
+                    $this->redirect('/apply/step/3');
+                }
+            } else {
+                // Logged in but no application - start JAMB verification
+                $this->redirect('/apply/step/1');
+            }
+            return;
+        }
+        
+        // Not logged in - show landing page with register button
         $settings = $this->settingsModel->getAllSettings();
         
         $this->data = array_merge($this->data, [
@@ -210,9 +236,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Verify email with token or show email sent page - FIXED
-     * Handles two scenarios:
-     * 1. No token - show "check your email" page
-     * 2. With token - verify the email
+     * Now redirects to step 1 (JAMB verification) after successful verification
      */
     public function verifyEmail() {
         // Start session
@@ -238,10 +262,7 @@ class PublicApplicationController extends ApplicationBaseController {
             // Show email sent page
             $this->data['email'] = $email;
             $this->data['pageTitle'] = 'Verify Your Email';
-            $this->data['email_sent'] = true; // Add this flag
-            
-            // Don't clear session email yet - keep it for resend
-            // But we'll use it in the view
+            $this->data['email_sent'] = true;
             
             $this->render('applications/verify-email');
             return;
@@ -292,11 +313,17 @@ class PublicApplicationController extends ApplicationBaseController {
             // Clear registration email from session
             unset($_SESSION['registration_email']);
             
-            // Show success page
-            $this->data['verified'] = true;
-            $this->data['applicant_name'] = $applicant['first_name'] . ' ' . $applicant['last_name'];
-            $this->data['applicant_email'] = $applicant['email'];
-            $this->data['pageTitle'] = 'Email Verified Successfully';
+            // Check if application exists
+            $application = $this->applicationModel->getByApplicantId($applicant['id']);
+            if (!$application) {
+                // Create empty application record to start the process
+                // This will be filled during JAMB verification
+                $this->applicationModel->createEmptyApplication($applicant['id']);
+            }
+            
+            // FIXED: Redirect to step 1 (JAMB verification) instead of showing success page
+            header('Location: /apply/step/1');
+            exit;
         } else {
             // Failed to update
             error_log("Failed to update applicant ID: " . $applicant['id']);

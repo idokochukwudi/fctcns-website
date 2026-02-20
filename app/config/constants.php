@@ -4,9 +4,10 @@
  * 
  * Defines all constant values used throughout the application.
  * This is the first file loaded in the application bootstrap.
+ * FIXED: Now loads environment-specific files (.env.local for local, .env.production for production)
  * 
  * @package FCT_CNS
- * @version 2.0
+ * @version 2.1
  */
 
 // ============================================================================
@@ -26,7 +27,7 @@ if (!defined('ROOT_PATH') && basename($_SERVER['SCRIPT_FILENAME']) == basename(_
 }
 
 // ============================================================================
-// ENVIRONMENT CONFIGURATION - MUST BE LOADED BEFORE PATHS
+// ENVIRONMENT CONFIGURATION - FIXED: Now uses environment-specific files
 // ============================================================================
 
 // Determine root path for .env file - different approach for local vs production
@@ -37,9 +38,28 @@ $possibleRootPaths = [
 
 $envLoaded = false;
 foreach ($possibleRootPaths as $envRootPath) {
-    $envFile = $envRootPath . '/.env';
-    if (file_exists($envFile)) {
-        // Load .env file
+    // Determine which environment file to use
+    $envFile = null;
+    
+    // Check if we're on production server (by checking if production path exists)
+    if ($envRootPath === '/home2/fctcnsed/fctcns-app' && file_exists($envRootPath)) {
+        // We're on production - try .env.production first, then fallback to .env
+        if (file_exists($envRootPath . '/.env.production')) {
+            $envFile = $envRootPath . '/.env.production';
+        } elseif (file_exists($envRootPath . '/.env')) {
+            $envFile = $envRootPath . '/.env';
+        }
+    } else {
+        // Local development - try .env.local first, then fallback to .env
+        if (file_exists($envRootPath . '/.env.local')) {
+            $envFile = $envRootPath . '/.env.local';
+        } elseif (file_exists($envRootPath . '/.env')) {
+            $envFile = $envRootPath . '/.env';
+        }
+    }
+    
+    if ($envFile && file_exists($envFile)) {
+        // Load the environment file
         $env_lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         foreach ($env_lines as $line) {
             $line = trim($line);
@@ -49,10 +69,36 @@ foreach ($possibleRootPaths as $envRootPath) {
             if (strpos($line, '=') !== false) {
                 list($key, $value) = explode('=', $line, 2);
                 $_ENV[trim($key)] = trim($value);
+                putenv(trim($key) . '=' . trim($value));
             }
         }
         $envLoaded = true;
+        error_log("Loaded environment file: " . $envFile);
         break;
+    }
+}
+
+// If still not loaded, try the original .env as last resort
+if (!$envLoaded) {
+    foreach ($possibleRootPaths as $envRootPath) {
+        $envFile = $envRootPath . '/.env';
+        if (file_exists($envFile)) {
+            $env_lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            foreach ($env_lines as $line) {
+                $line = trim($line);
+                if (strpos($line, '#') === 0 || empty($line)) {
+                    continue;
+                }
+                if (strpos($line, '=') !== false) {
+                    list($key, $value) = explode('=', $line, 2);
+                    $_ENV[trim($key)] = trim($value);
+                    putenv(trim($key) . '=' . trim($value));
+                }
+            }
+            $envLoaded = true;
+            error_log("Loaded fallback environment file: " . $envFile);
+            break;
+        }
     }
 }
 
@@ -185,7 +231,8 @@ if (!defined('PUBLIC_URL')) {
 
 // Application name
 if (!defined('APP_NAME')) {
-    define('APP_NAME', 'FCT College of Nursing Sciences');
+    $app_name = isset($_ENV['APP_NAME']) ? $_ENV['APP_NAME'] : 'FCT College of Nursing Sciences';
+    define('APP_NAME', $app_name);
 }
 
 // Application environment (development, staging, production)
@@ -213,7 +260,8 @@ if (!defined('APP_VERSION')) {
 
 // Default timezone
 if (!defined('DEFAULT_TIMEZONE')) {
-    define('DEFAULT_TIMEZONE', 'Africa/Lagos');
+    $timezone = isset($_ENV['DEFAULT_TIMEZONE']) ? $_ENV['DEFAULT_TIMEZONE'] : 'Africa/Lagos';
+    define('DEFAULT_TIMEZONE', $timezone);
     date_default_timezone_set(DEFAULT_TIMEZONE);
 }
 
@@ -262,6 +310,40 @@ if (!defined('ALLOW_REVERSE_ADMISSION_UPDATES')) {
     // Set to true to allow Accepted → Approved updates
     // Set to false for normal operation (Approved → Accepted only)
     define('ALLOW_REVERSE_ADMISSION_UPDATES', false);
+}
+
+// ============================================================================
+// REMITA PAYMENT CONFIGURATION - FIXED: Loaded from environment
+// ============================================================================
+
+// Remita Merchant ID
+if (!defined('REMITA_MERCHANT_ID')) {
+    define('REMITA_MERCHANT_ID', isset($_ENV['REMITA_MERCHANT_ID']) ? $_ENV['REMITA_MERCHANT_ID'] : '2547916');
+}
+
+// Remita API Key
+if (!defined('REMITA_API_KEY')) {
+    define('REMITA_API_KEY', isset($_ENV['REMITA_API_KEY']) ? $_ENV['REMITA_API_KEY'] : '1946');
+}
+
+// Remita Service Type ID
+if (!defined('REMITA_SERVICE_TYPE_ID')) {
+    define('REMITA_SERVICE_TYPE_ID', isset($_ENV['REMITA_SERVICE_TYPE_ID']) ? $_ENV['REMITA_SERVICE_TYPE_ID'] : '4430731');
+}
+
+// Remita Public Key
+if (!defined('REMITA_PUBLIC_KEY')) {
+    define('REMITA_PUBLIC_KEY', isset($_ENV['REMITA_PUBLIC_KEY']) ? $_ENV['REMITA_PUBLIC_KEY'] : '');
+}
+
+// Remita Secret Key
+if (!defined('REMITA_SECRET_KEY')) {
+    define('REMITA_SECRET_KEY', isset($_ENV['REMITA_SECRET_KEY']) ? $_ENV['REMITA_SECRET_KEY'] : '');
+}
+
+// Remita Environment
+if (!defined('REMITA_ENVIRONMENT')) {
+    define('REMITA_ENVIRONMENT', isset($_ENV['REMITA_ENVIRONMENT']) ? $_ENV['REMITA_ENVIRONMENT'] : 'demo');
 }
 
 // ============================================================================
@@ -333,17 +415,42 @@ if (!defined('MIN_PASSWORD_LENGTH')) {
 
 // Maximum upload size (5MB)
 if (!defined('MAX_UPLOAD_SIZE')) {
-    define('MAX_UPLOAD_SIZE', 5242880);
+    $max_upload = isset($_ENV['MAX_UPLOAD_SIZE']) ? $_ENV['MAX_UPLOAD_SIZE'] : 5242880;
+    define('MAX_UPLOAD_SIZE', $max_upload);
 }
 
 // Allowed image types
 if (!defined('ALLOWED_IMAGE_TYPES')) {
-    define('ALLOWED_IMAGE_TYPES', ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+    $allowed_images = isset($_ENV['ALLOWED_IMAGE_TYPES']) ? explode(',', $_ENV['ALLOWED_IMAGE_TYPES']) : ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    define('ALLOWED_IMAGE_TYPES', $allowed_images);
 }
 
 // Allowed document types
 if (!defined('ALLOWED_DOC_TYPES')) {
-    define('ALLOWED_DOC_TYPES', ['pdf', 'doc', 'docx']);
+    $allowed_docs = isset($_ENV['ALLOWED_DOC_TYPES']) ? explode(',', $_ENV['ALLOWED_DOC_TYPES']) : ['pdf', 'doc', 'docx'];
+    define('ALLOWED_DOC_TYPES', $allowed_docs);
+}
+
+// ============================================================================
+// CAROUSEL SETTINGS
+// ============================================================================
+
+// Carousel auto-rotate
+if (!defined('CAROUSEL_AUTO_ROTATE')) {
+    $auto_rotate = isset($_ENV['CAROUSEL_AUTO_ROTATE']) ? filter_var($_ENV['CAROUSEL_AUTO_ROTATE'], FILTER_VALIDATE_BOOLEAN) : true;
+    define('CAROUSEL_AUTO_ROTATE', $auto_rotate);
+}
+
+// Carousel interval
+if (!defined('CAROUSEL_INTERVAL')) {
+    $interval = isset($_ENV['CAROUSEL_INTERVAL']) ? (int)$_ENV['CAROUSEL_INTERVAL'] : 5000;
+    define('CAROUSEL_INTERVAL', $interval);
+}
+
+// Carousel transition speed
+if (!defined('CAROUSEL_TRANSITION')) {
+    $transition = isset($_ENV['CAROUSEL_TRANSITION']) ? (int)$_ENV['CAROUSEL_TRANSITION'] : 500;
+    define('CAROUSEL_TRANSITION', $transition);
 }
 
 // ============================================================================
