@@ -7,6 +7,7 @@
  * FIXED: Proper SDK integration with 12-digit RRR generation
  * FIXED: Removed ALL fake RRR generation - only real API calls
  * FIXED: Resolved 400 Bad Request with detailed debug logging & correct endpoint/hash
+ * FIXED: Corrected demo endpoint from remitademo.net to demo.remita.net (fixes 302 redirect)
  *
  * @package FCT_CNS
  * @subpackage Application
@@ -41,11 +42,6 @@ foreach ($possibleAutoloadPaths as $path) {
 if (!$autoloadLoaded) {
     error_log("RemitaModel: WARNING - Could not find Composer autoloader. Will use direct API calls.");
 }
-
-// NOTE: No `use` statements for Remita SDK classes.
-// `use` cannot appear inside conditionals or blocks, and placing them at the top level
-// causes a fatal error when the SDK autoloader is missing.
-// Instead, we reference the full namespaced class names inside class_exists() guards below.
 
 class RemitaModel extends BaseModel {
 
@@ -85,18 +81,16 @@ class RemitaModel extends BaseModel {
         $this->apiToken = $this->generateApiToken();
 
         /*
-         * FIXED: Correct Remita base URLs.
-         *
-         * Demo RRR generation endpoint (confirmed working):
-         *   POST https://remitademo.net/remita/exapp/api/v1/send/api/echannelsvc/merchant/api/paymentinit
-         *
-         * The demo base we expose here is the root; the specific path is appended per method.
+         * FIXED: Correct Remita base URLs based on environment.
+         * 
+         * IMPORTANT: The logs show a 302 redirect from remitademo.net to demo.remita.net
+         * The correct demo endpoint is demo.remita.net, not remitademo.net
          */
         if ($this->environment === 'live') {
             $this->baseUrl = 'https://login.remita.net/remita/exapp/api/v1/send/api';
         } else {
-            // FIXED: Use remitademo.net (not demo.remita.net which returns 400/404)
-            $this->baseUrl = 'https://remitademo.net/remita/exapp/api/v1/send/api';
+            // FIXED: Changed from remitademo.net to demo.remita.net (resolves 302 redirect)
+            $this->baseUrl = 'https://demo.remita.net/remita/exapp/api/v1/send/api';
         }
 
         // Initialize SDK if classes are available
@@ -167,8 +161,6 @@ class RemitaModel extends BaseModel {
     /**
      * Generate hash for RRR generation:
      *   SHA-512( merchantId + serviceTypeId + orderId + amount + apiKey )
-     *
-     * FIXED: Confirmed correct field order per Remita docs.
      */
     public function generateRRRHash($orderId, $amount) {
         $raw = $this->merchantId . $this->serviceTypeId . $orderId . $amount . $this->apiKey;
@@ -266,9 +258,6 @@ class RemitaModel extends BaseModel {
 
     /**
      * Generate RRR - NO FALLBACKS, ONLY REAL RRRs
-     *
-     * This is the single public method called by your controllers.
-     * It uses the direct cURL approach (most reliable; SDK wraps this anyway).
      */
     public function generateRRRRemita($orderId, $amount, $payerName, $payerEmail, $payerPhone) {
         return $this->generateRRRDirect($orderId, $amount, $payerName, $payerEmail, $payerPhone);
@@ -280,29 +269,17 @@ class RemitaModel extends BaseModel {
 
     /**
      * Direct cURL call to Remita RRR generation endpoint.
-     *
-     * KEY FIXES vs original code:
-     *  1. Correct demo hostname: remitademo.net  (not demo.remita.net)
-     *  2. Correct RRR endpoint path:
-     *       /echannelsvc/merchant/api/paymentinit   (not /rrr)
-     *  3. Amount MUST be a string (Remita rejects numeric type in JSON)
-     *  4. Authorization header format confirmed against Remita docs
-     *  5. Exhaustive debug logging to storage/logs/remita_debug.log
-     *  6. Handles all known response envelope shapes
      */
     private function generateRRRDirect($orderId, $amount, $payerName, $payerEmail, $payerPhone) {
         try {
-            // ------------------------------------------------------------------
-            // 1. Build hash & request payload
-            // ------------------------------------------------------------------
+            // Build hash & request payload
             $apiHash = $this->generateRRRHash($orderId, $amount);
 
-            // FIXED: amount must be sent as a STRING, not a number
             $requestData = [
                 'merchantId'    => $this->merchantId,
                 'serviceTypeId' => $this->serviceTypeId,
                 'orderId'       => (string) $orderId,
-                'amount'        => (string) $amount,          // ← must be string
+                'amount'        => (string) $amount,
                 'payerName'     => $payerName,
                 'payerEmail'    => $payerEmail,
                 'payerPhone'    => $payerPhone,
@@ -311,17 +288,10 @@ class RemitaModel extends BaseModel {
             ];
 
             /*
-             * FIXED endpoint path:
-             *   Demo:  https://remitademo.net/remita/exapp/api/v1/send/api/echannelsvc/merchant/api/paymentinit
-             *   Live:  https://login.remita.net/remita/exapp/api/v1/send/api/echannelsvc/merchant/api/paymentinit
-             *
-             * The old path "/rrr" does NOT exist and causes 400/404.
+             * FIXED endpoint path using corrected baseUrl (demo.remita.net)
              */
             $endpoint = $this->baseUrl . '/echannelsvc/merchant/api/paymentinit';
 
-            // ------------------------------------------------------------------
-            // 2. Verbose debug logging (request side)
-            // ------------------------------------------------------------------
             error_log("=== REMITA RRR REQUEST ===");
             error_log("Endpoint      : " . $endpoint);
             error_log("Environment   : " . $this->environment);
@@ -332,27 +302,24 @@ class RemitaModel extends BaseModel {
             error_log("Payer Name    : " . $payerName);
             error_log("Payer Email   : " . $payerEmail);
             error_log("Payer Phone   : " . $payerPhone);
-            error_log("API Key (partial): " . substr($this->apiKey, 0, 4) . '****');
             error_log("API Hash      : " . $apiHash);
             error_log("JSON Payload  : " . json_encode($requestData));
 
-            // ------------------------------------------------------------------
-            // 3. Execute cURL request
-            // ------------------------------------------------------------------
+            // Execute cURL request
             $ch = curl_init($endpoint);
             curl_setopt_array($ch, [
                 CURLOPT_POST           => true,
                 CURLOPT_POSTFIELDS     => json_encode($requestData),
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT        => 30,
-                CURLOPT_SSL_VERIFYPEER => false, // set true in production with valid cert bundle
+                CURLOPT_SSL_VERIFYPEER => false,
                 CURLOPT_SSL_VERIFYHOST => false,
                 CURLOPT_HTTPHEADER     => [
                     'Content-Type: application/json',
                     'Cache-Control: no-cache',
-                    // FIXED: Correct Authorization header format
                     'Authorization: remitaConsumerKey=' . $this->apiKey . ',remitaConsumerToken=' . $apiHash,
                 ],
+                CURLOPT_FOLLOWLOCATION => false, // Don't follow redirects
             ]);
 
             $response  = curl_exec($ch);
@@ -360,15 +327,11 @@ class RemitaModel extends BaseModel {
             $curlError = curl_error($ch);
             curl_close($ch);
 
-            // ------------------------------------------------------------------
-            // 4. Verbose debug logging (response side)
-            // ------------------------------------------------------------------
             error_log("=== REMITA RRR RESPONSE ===");
             error_log("HTTP Code  : " . $httpCode);
             error_log("cURL Error : " . ($curlError ?: 'none'));
             error_log("Raw Body   : " . $response);
 
-            // Write to dedicated log file
             $this->writeDebugLog([
                 'type'      => 'RRR_GENERATION',
                 'endpoint'  => $endpoint,
@@ -378,21 +341,32 @@ class RemitaModel extends BaseModel {
                 'curl_error'=> $curlError,
             ]);
 
-            // ------------------------------------------------------------------
-            // 5. Handle non-2xx responses with actionable messages
-            // ------------------------------------------------------------------
+            // Handle response
+            if ($httpCode === 302) {
+                error_log("❌ Received 302 redirect. This indicates wrong endpoint URL.");
+                
+                // Try to extract redirect location
+                if (preg_match('/Location: (.*)/i', $response, $matches)) {
+                    error_log("   Redirect location: " . $matches[1]);
+                }
+                
+                return [
+                    'status'     => 'error',
+                    'message'    => 'Remita API endpoint redirected. Please check configuration.',
+                    'http_code'  => 302,
+                    'debug_hint' => 'The API endpoint may be incorrect. Using: ' . $this->baseUrl,
+                ];
+            }
+
             if ($httpCode === 400) {
                 $decoded = json_decode($response, true);
                 $remitaMsg = $decoded['responseMsg'] ?? $decoded['message'] ?? 'No message in body';
-                error_log("❌ 400 Bad Request from Remita. Remita message: " . $remitaMsg);
-                error_log("   Check: (a) merchant credentials, (b) serviceTypeId is active, (c) amount format is string, (d) orderId is unique.");
-
+                error_log("❌ 400 Bad Request from Remita. Message: " . $remitaMsg);
                 return [
                     'status'     => 'error',
                     'message'    => '400 Bad Request from Remita: ' . $remitaMsg,
                     'http_code'  => 400,
                     'response'   => $decoded ?? $response,
-                    'debug_hint' => 'Check merchant ID, serviceTypeId, and that orderId has not been used before.',
                 ];
             }
 
@@ -400,9 +374,8 @@ class RemitaModel extends BaseModel {
                 error_log("❌ Auth error ($httpCode) - check API key and hash generation.");
                 return [
                     'status'    => 'error',
-                    'message'   => "Authentication error ($httpCode). Verify REMITA_API_KEY and REMITA_SECRET_KEY.",
+                    'message'   => "Authentication error ($httpCode). Verify credentials.",
                     'http_code' => $httpCode,
-                    'response'  => $response,
                 ];
             }
 
@@ -412,27 +385,21 @@ class RemitaModel extends BaseModel {
                     'status'     => 'error',
                     'message'    => "Remita API returned HTTP $httpCode.",
                     'http_code'  => $httpCode,
-                    'response'   => $response,
-                    'curl_error' => $curlError,
                 ];
             }
 
-            // ------------------------------------------------------------------
-            // 6. Parse successful response
-            // ------------------------------------------------------------------
+            // Parse successful response
             $result = json_decode($response, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
                 error_log("❌ JSON parse error: " . json_last_error_msg());
-                error_log("   Raw response was: " . $response);
                 return [
                     'status'   => 'error',
-                    'message'  => 'Remita returned non-JSON response: ' . substr($response, 0, 200),
+                    'message'  => 'Remita returned non-JSON response',
                     'response' => $response,
                 ];
             }
 
-            // Remita can wrap the RRR in several envelope shapes; handle all known ones.
             $rrr = $this->extractRRR($result);
 
             if ($rrr) {
@@ -455,18 +422,15 @@ class RemitaModel extends BaseModel {
                 ];
             }
 
-            // 2xx but no RRR found - log everything so we can diagnose
             error_log("❌ 2xx response but no RRR found. Full result: " . json_encode($result));
             return [
                 'status'        => 'error',
-                'message'       => 'Remita returned success HTTP code but no RRR in the response body.',
+                'message'       => 'No RRR in response body',
                 'response_data' => $result,
             ];
 
         } catch (Exception $e) {
             error_log("❌ RemitaModel::generateRRRDirect exception: " . $e->getMessage());
-            error_log($e->getTraceAsString());
-
             return [
                 'status'  => 'error',
                 'message' => 'Exception during RRR generation: ' . $e->getMessage(),
@@ -475,39 +439,21 @@ class RemitaModel extends BaseModel {
     }
 
     /**
-     * Extract RRR value from any known Remita response envelope shape.
-     *
-     * Known shapes:
-     *   { "rrr": "...", ... }
-     *   { "responseCode": "00", "rrr": "..." }
-     *   { "responseCode": "00", "data": { "rrr": "..." } }
-     *   { "RRR": "..." }   (some older endpoints)
+     * Extract RRR value from Remita response
      */
     private function extractRRR(array $result): ?string {
-        // Shape 1: top-level rrr
         if (!empty($result['rrr'])) {
             return $result['rrr'];
         }
-
-        // Shape 2: uppercase RRR key
         if (!empty($result['RRR'])) {
             return $result['RRR'];
         }
-
-        // Shape 3: nested in data
         if (!empty($result['data']['rrr'])) {
             return $result['data']['rrr'];
         }
-
-        // Shape 4: responseCode 00 + rrr at top level (sometimes seen)
-        if (
-            isset($result['responseCode']) &&
-            $result['responseCode'] === '00' &&
-            !empty($result['rrr'])
-        ) {
+        if (isset($result['responseCode']) && $result['responseCode'] === '00' && !empty($result['rrr'])) {
             return $result['rrr'];
         }
-
         return null;
     }
 
@@ -516,26 +462,14 @@ class RemitaModel extends BaseModel {
     // -------------------------------------------------------------------------
 
     /**
-     * Verify payment status for a given RRR.
-     *
-     * FIXED endpoint:
-     *   /echannelsvc/{merchantId}/{rrr}/{hash}/orderstatus.reg
+     * Verify payment status for a given RRR
      */
     public function verifyPayment($rrr) {
         try {
             error_log("RemitaModel: verifying RRR $rrr");
 
-            // For status check, amount is not known here so we pass empty string.
-            // Some integrations use "0.00"; others omit amount from hash entirely.
-            // FIXED: Use the correct status-check hash format per Remita docs:
-            //   SHA-512( merchantId + rrr + apiKey )
             $statusHash = hash('sha512', $this->merchantId . $rrr . $this->apiKey);
 
-            /*
-             * FIXED status endpoint:
-             *   Demo: https://remitademo.net/remita/exapp/api/v1/send/api/echannelsvc/{mid}/{rrr}/{hash}/orderstatus.reg
-             *   Live: https://login.remita.net/remita/exapp/api/v1/send/api/echannelsvc/{mid}/{rrr}/{hash}/orderstatus.reg
-             */
             $endpoint = sprintf(
                 '%s/echannelsvc/%s/%s/%s/orderstatus.reg',
                 $this->baseUrl,
@@ -557,6 +491,7 @@ class RemitaModel extends BaseModel {
                     'Cache-Control: no-cache',
                     'Authorization: remitaConsumerKey=' . $this->apiKey . ',remitaConsumerToken=' . $statusHash,
                 ],
+                CURLOPT_FOLLOWLOCATION => false,
             ]);
 
             $response  = curl_exec($ch);
@@ -579,13 +514,11 @@ class RemitaModel extends BaseModel {
                 $result = json_decode($response, true);
 
                 if (json_last_error() === JSON_ERROR_NONE) {
-                    // Determine status from multiple possible fields
                     $paymentStatus = $result['status']
                         ?? $result['paymentStatus']
                         ?? $result['message']
                         ?? null;
 
-                    // responseCode 00 generally means success
                     if (!empty($result['responseCode']) && $result['responseCode'] === '00' && empty($paymentStatus)) {
                         $paymentStatus = 'PAID';
                     }
@@ -626,7 +559,7 @@ class RemitaModel extends BaseModel {
     }
 
     // -------------------------------------------------------------------------
-    // STATUS CHECK  (DB + Remita)
+    // STATUS CHECK
     // -------------------------------------------------------------------------
 
     public function checkStatus($rrr) {
@@ -792,9 +725,7 @@ class RemitaModel extends BaseModel {
             }
 
             if (!empty($data['request'])) {
-                // Mask sensitive fields
-                $req = $data['request'];
-                $entry .= "Request   : " . json_encode($req, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
+                $entry .= "Request   : " . json_encode($data['request'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
             }
 
             $entry .= "Response  : " . (is_string($data['response']) ? $data['response'] : json_encode($data['response'])) . "\n";
