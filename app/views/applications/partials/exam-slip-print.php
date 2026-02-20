@@ -152,7 +152,6 @@
         }
 
         /* Push footer to bottom */
-        .slip-spacer { flex: 1; }
 
         /* ═══════════════════════════════════
            INSTITUTION HEADER WITH LOGO
@@ -751,16 +750,16 @@
     <div class="signature-row">
         <div class="sig-block">
             <div class="sig-line"></div>
-            <div class="sig-name">Chairman</div>
-            <div class="sig-title">Admissions Committee</div>
+            <div class="sig-name">Hall Name</div>
+            <div class="sig-title">Examination Hall</div>
         </div>
         <div class="sig-block" style="text-align:center;">
             <div class="stamp-circle">Official<br>Stamp</div>
         </div>
         <div class="sig-block">
             <div class="sig-line"></div>
-            <div class="sig-name">Registrar</div>
-            <div class="sig-title">FCT College of Nursing Sciences</div>
+            <div class="sig-name">Verification Officer</div>
+            <div class="sig-title">Signature</div>
         </div>
     </div>
 
@@ -769,7 +768,7 @@
         <div class="footer-left">
             This slip is computer-generated and does not require a handwritten signature.<br>
             Any alteration or falsification of this document is a criminal offence.<br>
-            Enquiries: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5637323b3f25253f3938251630352235382578333223783831">[email&#160;protected]</a> &nbsp;|&nbsp; +234 000 0000 000
+            Enquiries: admissions@fctcns.edu.ng &nbsp;|&nbsp; +234 000 0000 000
         </div>
         <div class="footer-right">
             Verification URL:<br>
@@ -790,7 +789,7 @@
      Server endpoint (/application-verify/qr/) SKIPPED — returns 500.
      Chain: QRCode.js → Google Charts → slip number text fallback.
 ═════════════════════════════════════════ -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 document.addEventListener('DOMContentLoaded', function () {
 
     var slipNumber      = '<?php echo addslashes($exam_slip['slip_number']); ?>';
