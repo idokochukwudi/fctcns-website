@@ -8,6 +8,7 @@
  * FIXED: CopyRRR function now accepts parameter for pending payment
  * FIXED: Updated Remita payment URL with correct format from support
  * FIXED: Using demo.remita.net for demo environment (not login.remita.net)
+ * FIXED: Using server-generated payment URL for security
  */
 
 $(document).ready(function() {
@@ -55,6 +56,12 @@ $(document).ready(function() {
         console.log('Found pending RRR in session:', pendingRRR);
         showRRR(pendingRRR);
         $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').show();
+        
+        // Restore payment URL if available
+        var pendingUrl = sessionStorage.getItem('payment_url');
+        if (pendingUrl) {
+            showRemitaLink(pendingRRR, pendingUrl);
+        }
     }
     
     // Log available buttons for debugging
@@ -115,6 +122,7 @@ function getCookie(name) {
 
 /**
  * Initiate payment - generate RRR
+ * FIXED: Uses server-generated payment URL for security
  */
 function initiatePayment() {
     console.log('initiatePayment() called');
@@ -163,24 +171,34 @@ function initiatePayment() {
             
             if (response.success) {
                 var rrr = response.rrr || response.data?.rrr || response.reference;
+                var paymentUrl = response.payment_url; // Use server-generated URL
                 
-                if (rrr) {
+                if (rrr && paymentUrl) {
                     sessionStorage.setItem('pending_rrr', rrr);
                     sessionStorage.setItem('payment_id', response.payment_id || '');
+                    sessionStorage.setItem('payment_url', paymentUrl); // Store URL too
                     
                     showAlert('RRR generated successfully: ' + rrr, 'success');
-                    showRRR(rrr);
-                    showRemitaLink(rrr);
                     
+                    // Show RRR and payment button immediately
+                    showRRR(rrr);
+                    showRemitaLink(rrr, paymentUrl); // Pass URL to function
+                    
+                    // Show verify button
                     $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').show();
                     
                     if ($('#paymentSpinner').length) {
                         $('#paymentSpinner').hide();
                     }
                     $('#paymentMessage').text('RRR Generated Successfully!');
+                    
+                    // Hide payment status after 2 seconds
+                    setTimeout(function() {
+                        $('#paymentStatus').fadeOut();
+                    }, 2000);
                 } else {
-                    console.error('RRR not found in response:', response);
-                    showAlert('RRR not found in server response', 'danger');
+                    console.error('RRR or payment URL not found in response:', response);
+                    showAlert('Payment information missing in server response', 'danger');
                 }
             } else {
                 showAlert(response.message || 'Failed to generate RRR', 'danger');
@@ -282,6 +300,7 @@ function verifyPayment(rrr) {
                 
                 sessionStorage.removeItem('pending_rrr');
                 sessionStorage.removeItem('payment_id');
+                sessionStorage.removeItem('payment_url');
                 
                 $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').hide();
                 
@@ -380,15 +399,11 @@ function showRRR(rrr) {
 }
 
 /**
- * Show Remita payment link - USING DEMO URL
+ * Show Remita payment link - USING SERVER-GENERATED URL
+ * FIXED: Uses server-generated payment URL for security
  */
-function showRemitaLink(rrr) {
+function showRemitaLink(rrr, paymentUrl) {
     console.log('Showing Remita payment link for RRR:', rrr);
-    
-    var cleanRrr = rrr.replace(/-/g, '');
-    
-    // DEMO payment URL (NOT live)
-    var paymentUrl = 'https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + cleanRrr + '&channel=CARD,USSD,ENAIRA,TRANSFER';
     
     var linkHtml = '<div class="alert alert-success mt-3 remita-link" style="border-left: 4px solid #28a745;">' +
                '<h5><i class="fas fa-check-circle text-success"></i> RRR Generated Successfully!</h5>' +
@@ -409,10 +424,14 @@ function showRemitaLink(rrr) {
                '</p>' +
                '</div>';
     
+    // Remove any existing Remita links to prevent duplicates
     $('.remita-link').remove();
     
+    // Insert the link in the appropriate location
     if ($('#remitaLink').length) {
         $('#remitaLink').html(linkHtml).show();
+    } else if ($('#paymentButtonArea').length) {
+        $('#paymentButtonArea').html(linkHtml).show();
     } else if ($('#paymentStatus').length) {
         $('#paymentStatus').after(linkHtml);
     } else if ($('.action-buttons').length) {
@@ -423,6 +442,7 @@ function showRemitaLink(rrr) {
         $('.card-body').append(linkHtml);
     }
     
+    // Optional: Auto-open payment link in new tab
     if (confirm('RRR generated: ' + rrr + '\n\nClick OK to proceed to Remita demo payment page.\n\nDemo Card: 5178 6810 0000 0002\nExpiry: 05/30\nCVV: 000\nOTP: 123456')) {
         window.open(paymentUrl, '_blank');
     }
