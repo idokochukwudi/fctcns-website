@@ -8,6 +8,7 @@
  * FIXED: CopyRRR function now accepts parameter for pending payment
  * FIXED: Updated Remita payment URL with correct format from support
  * FIXED: Removed backup URL that was causing 404 errors
+ * FIXED: Updated button text to "Complete Payment" with correct URL
  */
 
 $(document).ready(function() {
@@ -429,7 +430,7 @@ function showRRR(rrr) {
 }
 
 /**
- * Show Remita payment link - FIXED: Using only the correct URL from Remita support
+ * Show Remita payment link - UPDATED with "Complete Payment" button
  */
 function showRemitaLink(rrr) {
     console.log('Showing Remita payment link for RRR:', rrr);
@@ -437,7 +438,7 @@ function showRemitaLink(rrr) {
     // Remove any hyphens if present (clean the RRR)
     var cleanRrr = rrr.replace(/-/g, '');
     
-    // CORRECT payment URL from Remita support (THIS IS THE ONLY WORKING URL)
+    // CORRECT payment URL from Remita support
     var paymentUrl = 'https://login.remita.net/remita/onepage/payment/init.reg?rrr=' + cleanRrr + '&channel=CARD,USSD,ENAIRA,TRANSFER';
     
     var linkHtml = '<div class="alert alert-success mt-3 remita-link" style="border-left: 4px solid #28a745;">' +
@@ -446,13 +447,13 @@ function showRemitaLink(rrr) {
                '<div class="payment-instructions mb-3 p-3 bg-light rounded">' +
                '<p class="mb-2"><strong>📝 Next Steps:</strong></p>' +
                '<ol class="mb-0">' +
-               '<li>Click the button below to proceed to Remita payment page</li>' +
+               '<li>Click the <strong>"Complete Payment"</strong> button below</li>' +
                '<li>Complete your payment using Card, USSD, Transfer, or E-Naira</li>' +
-               '<li>After payment, return to this page and click "Verify Payment"</li>' +
+               '<li>After payment, return to this page and click <strong>"Verify Payment"</strong></li>' +
                '</ol>' +
                '</div>' +
-               '<a href="' + paymentUrl + '" target="_blank" class="btn btn-success btn--lg w-100 mb-2" style="background:#28a745; color:#fff; font-weight:bold; padding:12px;">' +
-               '<i class="fas fa-credit-card me-2"></i> Proceed to Pay on Remita</a>' +
+               '<a href="' + paymentUrl + '" target="_blank" class="btn btn-success btn--lg w-100 mb-2" style="background:#28a745; color:#fff; font-weight:bold; padding:12px; font-size:1.1rem;">' +
+               '<i class="fas fa-credit-card me-2"></i> Complete Payment</a>' +
                '<p class="mt-2 small text-muted text-center">' +
                '<i class="fas fa-lock text-success"></i> Secure payment powered by Remita<br>' +
                'After payment, return here and click "Verify Payment" button below.' +
