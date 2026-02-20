@@ -6,9 +6,10 @@
  * FIXED: Updated copy button to pass RRR directly
  * FIXED: Added payment button area for after RRR generation
  * FIXED: Moved CSRF inputs from head to body for valid HTML
+ * FIXED: Updated both Remita URLs to correct format from support
  * 
  * @package FCTCNS
- * @version 2.3
+ * @version 2.4
  */
 
 extract($data ?? []);
@@ -714,7 +715,7 @@ if (empty($applicant_name)) {
                         </ol>
                     </div>
 
-                    <!-- Pending Payment Block - FIXED: Removed HTML escaping from URL -->
+                    <!-- Pending Payment Block - FIXED: Updated to correct Remita URL -->
                     <?php if (isset($pending_payment) && $pending_payment): ?>
                     <div class="pending-box">
                         <div class="pending-box-header">
@@ -731,8 +732,8 @@ if (empty($applicant_name)) {
                             </button>
                         </div>
                         <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-                            <!-- FIXED: Removed e() escaping from URL -->
-                            <a href="https://remitademo.net/remita/ecomm/frame/handleCCD.action?rrr=<?php echo $pending_payment['rrr']; ?>"
+                            <!-- FIXED: Updated to correct Remita payment URL -->
+                            <a href="https://login.remita.net/remita/onepage/payment/init.reg?rrr=<?php echo $pending_payment['rrr']; ?>&channel=CARD,USSD,ENAIRA,TRANSFER"
                                target="_blank" class="btn-amber">
                                 <i class="fas fa-external-link-alt"></i> Complete Payment
                             </a>
@@ -758,7 +759,7 @@ if (empty($applicant_name)) {
                         </p>
                     </div>
 
-                    <!-- Payment Button Area - ADDED -->
+                    <!-- Payment Button Area - ADDED with correct URL -->
                     <div id="paymentButtonArea" style="display:none; margin-bottom:1.5rem">
                         <div class="alert alert-warning">
                             <h5><i class="fas fa-external-link-alt"></i> Proceed to Payment</h5>
