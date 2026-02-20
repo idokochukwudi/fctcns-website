@@ -79,113 +79,6 @@
         }
 
         /* ═══════════════════════════════════════════════════════════
-           HEADER
-        ═══════════════════════════════════════════════════════════ */
-        .header {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding-bottom: 10px;
-            border-bottom: 3px double var(--navy);
-            margin-bottom: 10px;
-        }
-
-        .logo-circle {
-            width: 68px;
-            height: 68px;
-            border-radius: 50%;
-            border: 2.5px solid var(--navy);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: var(--navy);
-            flex-shrink: 0;
-            color: var(--white);
-            text-align: center;
-            line-height: 1.15;
-        }
-
-        .logo-circle .logo-top {
-            font-size: 5.5pt;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-        }
-
-        .logo-circle .logo-mid {
-            font-size: 13pt;
-            font-weight: 900;
-            line-height: 1;
-        }
-
-        .logo-circle .logo-btm {
-            font-size: 4.5pt;
-            letter-spacing: 0.05em;
-        }
-
-        .header-text {
-            flex: 1;
-            text-align: center;
-        }
-
-        .header-text .institution {
-            font-size: 17pt;
-            font-weight: 900;
-            text-transform: uppercase;
-            color: var(--navy);
-            letter-spacing: 0.04em;
-            line-height: 1.15;
-        }
-
-        .header-text .location {
-            font-size: 10pt;
-            color: var(--gray-2);
-            margin: 1px 0 4px;
-        }
-
-        .header-text .session-label {
-            display: inline-block;
-            background: var(--navy);
-            color: var(--white);
-            font-size: 8pt;
-            font-weight: 700;
-            letter-spacing: 0.09em;
-            text-transform: uppercase;
-            padding: 2px 10px;
-        }
-
-        .slip-badge {
-            text-align: right;
-            flex-shrink: 0;
-        }
-
-        .slip-badge .badge-box {
-            display: inline-block;
-            border: 2px solid var(--gold);
-            padding: 4px 8px;
-            text-align: center;
-        }
-
-        .slip-badge .badge-title {
-            font-size: 6pt;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: var(--gold);
-            font-weight: 700;
-            display: block;
-        }
-
-        .slip-badge .badge-main {
-            font-size: 8.5pt;
-            font-weight: 900;
-            text-transform: uppercase;
-            color: var(--navy);
-            display: block;
-            letter-spacing: 0.06em;
-        }
-
-        /* ═══════════════════════════════════════════════════════════
            SLIP NUMBER BANNER
         ═══════════════════════════════════════════════════════════ */
         .slip-number-bar {
@@ -564,29 +457,17 @@
 <div class="border-frame-inner">
 
     <!-- ════════════════════════════════════════════════════════
-         HEADER
+         INSTITUTION TITLE (compact, print-only)
     ═════════════════════════════════════════════════════════ -->
-    <div class="header">
-        <!-- Logo -->
-        <div class="logo-circle">
-            <span class="logo-top">FCT</span>
-            <span class="logo-mid">CNS</span>
-            <span class="logo-btm">Nursing</span>
+    <div style="text-align:center; padding-bottom:8px; border-bottom:3px double var(--navy); margin-bottom:10px;">
+        <div style="font-size:16pt; font-weight:900; text-transform:uppercase; color:var(--navy); letter-spacing:0.04em; line-height:1.2;">
+            FCT College of Nursing Sciences
         </div>
-
-        <!-- Institution name -->
-        <div class="header-text">
-            <div class="institution">FCT College of Nursing Sciences</div>
-            <div class="location">Gwagwalada, Abuja — Federal Capital Territory</div>
-            <div class="session-label">2025 / 2026 Admissions Screening Exercise</div>
+        <div style="font-size:9pt; color:var(--gray-2); margin:2px 0 5px;">
+            Gwagwalada, Abuja — Federal Capital Territory
         </div>
-
-        <!-- Badge -->
-        <div class="slip-badge">
-            <div class="badge-box">
-                <span class="badge-title">Document Type</span>
-                <span class="badge-main">Official<br>Exam Slip</span>
-            </div>
+        <div style="display:inline-block; background:var(--navy); color:var(--white); font-size:7.5pt; font-weight:700; letter-spacing:0.09em; text-transform:uppercase; padding:2px 14px;">
+            Official Examination Slip &mdash; 2025 / 2026 Admissions Screening Exercise
         </div>
     </div>
 
