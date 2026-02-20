@@ -1,44 +1,158 @@
-# Environment files
+# ============================================================================
+# ENVIRONMENT FILES
+# ============================================================================
+# Environment files - NEVER commit these to repository
 .env
-!.env.example
+.env.local
+.env.development
+.env.staging
 .env.production
+.env.*
+!.env.example
 
-# Logs
+# ============================================================================
+# APPLICATION LOGS
+# ============================================================================
 logs/
 *.log
+*.error
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+storage/logs/
+storage/*.log
+!storage/.gitkeep
 
-# Runtime data
+# ============================================================================
+# RUNTIME DATA
+# ============================================================================
 storage/
+storage/*.cache
+storage/*.session
+storage/*.lock
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/framework/testing/
 *.sqlite
+*.sqlite3
 *.sqlite-journal
+*.db
 
-# Dependencies
-node_modules/
+# ============================================================================
+# DEPENDENCIES
+# ============================================================================
+# Composer
 vendor/
+composer.lock
+composer.phar
 
-# IDE files
+# NPM / Node
+node_modules/
+npm-debug.log
+package-lock.json
+yarn.lock
+yarn-error.log
+
+# ============================================================================
+# IDE FILES
+# ============================================================================
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
 *.swp
 *.swo
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Uploads (user-generated content)
-public/assets/uploads/
-!public/assets/uploads/.gitkeep
-
-# Temporary files
+*~
+*.lock
 *.tmp
 *.temp
+.project
+.classpath
+.settings/
 
-# Cache
+# ============================================================================
+# OS FILES
+# ============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ============================================================================
+# USER UPLOADS (user-generated content)
+# ============================================================================
+public/assets/uploads/
+public/uploads/
+uploads/
+!public/assets/uploads/.gitkeep
+!public/uploads/.gitkeep
+!uploads/.gitkeep
+
+# ============================================================================
+# TEMPORARY FILES
+# ============================================================================
+*.tmp
+*.temp
+*.cache
+*.backup
+*.bak
+*.old
+*.swp
+*.swo
+*~
+
+# ============================================================================
+# CACHE
+# ============================================================================
 .cache/
-# SonarQube
+.cache/*
+*.cache
+bootstrap/cache/*.php
+!bootstrap/cache/.gitkeep
+
+# ============================================================================
+# TESTING / CODE QUALITY
+# ============================================================================
+.phpunit.result.cache
+phpunit.xml
+phpcs.xml
+phpstan.neon
 .sonar/
 .scannerwork/
-*.bak
 sonar-scanner.properties
+test-reports/
+coverage/
+
+# ============================================================================
+# APPLICATION-SPECIFIC
+# ============================================================================
+# Debug files
+debug_log.txt
+session_debug.log
+*.debug.log
+error.log
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# ============================================================================
+# COMPOSER SPECIFIC
+# ============================================================================
+/auth.json
+/composer.lock
+
+# ============================================================================
+# MISC
+# ============================================================================
+.htaccess.bak
+.htaccess.backup
+.commit_message.txt
+*.txt~
+*.md~
