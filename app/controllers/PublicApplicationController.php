@@ -9,8 +9,6 @@
  * FIXED: Exam slip generation and step 4 display - enhanced security
  * FIXED: Generate proper RRR using Remita API (no fake DEMO RRRs)
  * FIXED: Landing page redirects to registration, email verification redirects to step 1
- * FIXED: Issue 1 - Email verification link error (HTTP 500 then "Verification Failed")
- * FIXED: Issue 2 - Payment link security (server-side URL generation)
  * 
  * @package FCT_CNS
  */
@@ -274,43 +272,40 @@ class PublicApplicationController extends ApplicationBaseController {
         $applicant = $this->applicantModel->findByVerificationToken($token);
         
         if (!$applicant) {
-            // Token not found - check if email is already verified
+            // Token not found or expired - try to find by email as fallback
             error_log("No applicant found with token: " . $token);
             
             if (!empty($email)) {
                 // Try to find by email
                 $applicantByEmail = $this->applicantModel->findByEmail($email);
                 
-                if ($applicantByEmail) {
-                    if ($applicantByEmail['email_verified'] == 1) {
-                        // Email already verified, just log them in
-                        error_log("Email already verified for: " . $email . " - logging in");
-                        
-                        // Auto-login the applicant
-                        $_SESSION['applicant_id'] = $applicantByEmail['id'];
-                        $_SESSION['applicant_email'] = $applicantByEmail['email'];
-                        $_SESSION['applicant_name'] = ($applicantByEmail['first_name'] ?? '') . ' ' . ($applicantByEmail['last_name'] ?? '');
-                        $_SESSION['applicant_login_time'] = time();
-                        
-                        // Clear registration email from session
-                        unset($_SESSION['registration_email']);
-                        
-                        // Check if application exists
-                        $application = $this->applicationModel->getByApplicantId($applicantByEmail['id']);
-                        if (!$application) {
-                            // Create empty application record
-                            $this->applicationModel->createEmptyApplication($applicantByEmail['id']);
-                        }
-                        
-                        // Redirect to step 1 with success message
-                        $_SESSION['flash_success'] = 'Email verified successfully! Welcome ' . $_SESSION['applicant_name'];
-                        header('Location: /apply/step/1');
-                        exit;
+                if ($applicantByEmail && $applicantByEmail['email_verified'] == 1) {
+                    // Email already verified, just log them in
+                    error_log("Email already verified for: " . $email . " - logging in");
+                    
+                    // Auto-login the applicant
+                    $_SESSION['applicant_id'] = $applicantByEmail['id'];
+                    $_SESSION['applicant_email'] = $applicantByEmail['email'];
+                    $_SESSION['applicant_name'] = ($applicantByEmail['first_name'] ?? '') . ' ' . ($applicantByEmail['last_name'] ?? '');
+                    $_SESSION['applicant_login_time'] = time();
+                    
+                    // Clear registration email from session
+                    unset($_SESSION['registration_email']);
+                    
+                    // Check if application exists
+                    $application = $this->applicationModel->getByApplicantId($applicantByEmail['id']);
+                    if (!$application) {
+                        // Create empty application record
+                        $this->applicationModel->createEmptyApplication($applicantByEmail['id']);
                     }
+                    
+                    // Redirect to step 1
+                    header('Location: /apply/step/1');
+                    exit;
                 }
             }
             
-            // Show error page with resend option
+            // Show error page
             $this->data['error'] = 'Invalid or expired verification link. Please request a new verification email.';
             $this->data['resend_email'] = $email;
             $this->data['pageTitle'] = 'Verification Failed';
@@ -340,8 +335,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 $this->applicationModel->createEmptyApplication($applicant['id']);
             }
             
-            // Redirect to step 1 with success message
-            $_SESSION['flash_success'] = 'Welcome back! Your email is already verified.';
+            // Redirect to step 1
             header('Location: /apply/step/1');
             exit;
         }
@@ -376,8 +370,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 $this->applicationModel->createEmptyApplication($applicant['id']);
             }
             
-            // Redirect to step 1 with success message
-            $_SESSION['flash_success'] = 'Email verified successfully! Welcome ' . $_SESSION['applicant_name'];
+            // Redirect to step 1 (JAMB verification)
             header('Location: /apply/step/1');
             exit;
         } else {
@@ -1006,24 +999,6 @@ class PublicApplicationController extends ApplicationBaseController {
     // ============================================
 
     /**
-     * Generate secure Remita payment URL (server-side)
-     * FIXED: Issue 2 - Payment link security
-     */
-    private function generatePaymentUrl($rrr) {
-        // Clean RRR - remove any non-numeric characters
-        $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
-        
-        // Build URL with proper encoding
-        $baseUrl = 'https://demo.remita.net/remita/onepage/payment/init.reg';
-        $params = http_build_query([
-            'rrr' => $cleanRrr,
-            'channel' => 'CARD,USSD,ENAIRA,TRANSFER'
-        ]);
-        
-        return $baseUrl . '?' . $params;
-    }
-
-    /**
      * Show payment page (Step 3 - New Flow)
      * FIXED: Generate fresh CSRF token and store in session, restore JAMB data if needed
      */
@@ -1101,7 +1076,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Initiate payment - Generate RRR using Remita API (NO FAKE RRRs)
-     * FIXED: Added server-side payment URL generation
+     * FIXED: Added server-side payment URL generation for security
      */
     public function initiatePayment() {
         // Set header for JSON response
@@ -1274,6 +1249,24 @@ class PublicApplicationController extends ApplicationBaseController {
         }
     }
 
+    /**
+     * Generate secure Remita payment URL (server-side)
+     * FIXED: Issue 2 - Payment link security
+     */
+    private function generatePaymentUrl($rrr) {
+        // Clean RRR - remove any non-numeric characters
+        $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
+        
+        // Build URL with proper encoding
+        $baseUrl = 'https://demo.remita.net/remita/onepage/payment/init.reg';
+        $params = http_build_query([
+            'rrr' => $cleanRrr,
+            'channel' => 'CARD,USSD,ENAIRA,TRANSFER'
+        ]);
+        
+        return $baseUrl . '?' . $params;
+    }
+    
     /**
      * Verify payment (AJAX endpoint) - FIXED: Properly generates exam slip
      */
