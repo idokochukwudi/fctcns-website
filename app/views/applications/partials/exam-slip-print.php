@@ -5,56 +5,118 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Examination Slip - <?php echo htmlspecialchars($exam_slip['slip_number']); ?></title>
 
-    <!-- QR Code Library — MUST load before any script references QRCode -->
+    <!-- QR Code Library — synchronous, must be before body scripts -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
     <style>
-        /* ═══════════════════════════════════════════════════════════
-           RESET & BASE
-        ═══════════════════════════════════════════════════════════ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* ═══════════════════════════════════
+           RESET
+        ═══════════════════════════════════ */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
             --navy:       #0d2b4e;
             --navy-mid:   #174070;
             --gold:       #b8860b;
             --gold-light: #e6c04a;
-            --black:      #000000;
-            --gray-1:     #1a1a1a;
-            --gray-2:     #4a4a4a;
-            --gray-3:     #888888;
-            --gray-light: #f5f5f5;
-            --gray-rule:  #cccccc;
-            --white:      #ffffff;
+            --black:      #000;
+            --g1:         #1a1a1a;
+            --g2:         #4a4a4a;
+            --g3:         #888;
+            --gbg:        #f5f5f5;
+            --rule:       #cccccc;
+            --white:      #fff;
             --red:        #b00020;
         }
 
+        /* ═══════════════════════════════════
+           SCREEN BODY
+        ═══════════════════════════════════ */
         body {
             font-family: 'Times New Roman', Times, serif;
-            background: white;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
+            background: #a8a8a8;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 0 40px;
         }
 
-        /* ═══════════════════════════════════════════════════════════
-           SLIP CONTAINER
-        ═══════════════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════
+           TOP TOOLBAR (screen only)
+        ═══════════════════════════════════ */
+        .toolbar {
+            width: 100%;
+            background: var(--navy);
+            color: #fff;
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+        }
+
+        .toolbar-title {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .toolbar-title strong { font-size: 14px; letter-spacing: 0.02em; }
+        .toolbar-title span   { font-size: 11px; opacity: 0.65; }
+
+        .toolbar-actions { display: flex; gap: 10px; align-items: center; }
+
+        .tbtn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.02em;
+            text-decoration: none;
+            transition: opacity 0.15s;
+        }
+
+        .tbtn:hover { opacity: 0.85; }
+        .tbtn-print { background: var(--gold); color: #fff; }
+        .tbtn-close { background: rgba(255,255,255,0.18); color: #fff; }
+
+        /* ═══════════════════════════════════
+           SLIP WRAPPER — centres on screen
+        ═══════════════════════════════════ */
+        .slip-wrapper {
+            margin-top: 28px;
+            width: 100%;
+            max-width: 820px;
+            padding: 0 16px;
+        }
+
+        /* ═══════════════════════════════════
+           SLIP — fills A4 proportions
+        ═══════════════════════════════════ */
         .slip {
             background: var(--white);
-            width: 210mm;
-            min-height: 297mm;
-            padding: 14mm 16mm 12mm;
+            width: 100%;
+            /* A4 aspect ratio: 297/210 ≈ 1.414 — enforced via padding-bottom */
+            min-height: calc((100vw - 32px) * 1.414);
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 12mm 14mm 10mm;
             position: relative;
             overflow: hidden;
-            margin: 0 auto;
-            box-shadow: none;
+            box-shadow: 0 6px 40px rgba(0,0,0,0.38);
+            display: flex;
+            flex-direction: column;
         }
 
         /* Watermark */
@@ -63,63 +125,67 @@
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%) rotate(-35deg);
-            font-size: 72pt;
+            font-size: 68pt;
             font-weight: 900;
-            color: rgba(13, 43, 78, 0.045);
+            color: rgba(13,43,78,0.04);
             letter-spacing: 0.15em;
             pointer-events: none;
             white-space: nowrap;
             z-index: 0;
         }
 
-        /* ── Decorative border frame ── */
+        /* All direct children above watermark */
+        .border-frame { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
+
+        /* ── Double border frame ── */
         .border-frame {
             border: 3px solid var(--navy);
-            padding: 2px;
-            height: 100%;
-            position: relative;
-            z-index: 1;
-            background: white;
+            padding: 3px;
         }
 
         .border-frame-inner {
             border: 1px solid var(--gold);
-            padding: 12px 14px 10px;
+            padding: 10px 13px 8px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* ═══════════════════════════════════════════════════════════
-           INSTITUTION HEADER — with logo
-        ═══════════════════════════════════════════════════════════ */
+        /* Push footer to bottom */
+        .slip-spacer { flex: 1; }
+
+        /* ═══════════════════════════════════
+           INSTITUTION HEADER WITH LOGO
+        ═══════════════════════════════════ */
         .institution-header {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             padding-bottom: 8px;
             border-bottom: 3px double var(--navy);
-            margin-bottom: 10px;
+            margin-bottom: 9px;
         }
 
-        /* Logo on the left */
+        /* Logo */
         .logo-box {
             flex-shrink: 0;
-            width: 72px;
-            height: 72px;
+            width: 68px;
+            height: 68px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .logo-box img {
-            width: 72px;
-            height: 72px;
+            width: 68px;
+            height: 68px;
             object-fit: contain;
             display: block;
         }
 
-        /* Text fallback circle if logo file is missing */
         .logo-fallback {
-            width: 72px;
-            height: 72px;
+            width: 68px;
+            height: 68px;
             border-radius: 50%;
             background: var(--navy);
             display: flex;
@@ -131,18 +197,19 @@
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
-        .logo-fallback .lf-top { font-size: 6pt; font-weight: 700; letter-spacing: 0.05em; }
-        .logo-fallback .lf-mid { font-size: 16pt; font-weight: 900; line-height: 1; }
-        .logo-fallback .lf-btm { font-size: 4.5pt; letter-spacing: 0.04em; }
 
-        /* Centre text block */
+        .lf-top { font-size: 5.5pt; font-weight: 700; letter-spacing: 0.05em; display: block; }
+        .lf-mid { font-size: 15pt;  font-weight: 900; line-height: 1; display: block; }
+        .lf-btm { font-size: 4.5pt; letter-spacing: 0.04em; display: block; }
+
+        /* Centre text */
         .institution-text {
             flex: 1;
             text-align: center;
         }
 
         .institution-name {
-            font-size: 16pt;
+            font-size: 15pt;
             font-weight: 900;
             text-transform: uppercase;
             color: var(--navy);
@@ -151,72 +218,69 @@
         }
 
         .institution-address {
-            font-size: 9pt;
-            color: var(--gray-2);
-            margin: 2px 0 5px;
+            font-size: 8.5pt;
+            color: var(--g2);
+            margin: 2px 0 4px;
         }
 
         .slip-badge {
             display: inline-block;
             background: var(--navy);
             color: var(--white);
-            font-size: 7.5pt;
+            font-size: 7pt;
             font-weight: 700;
             letter-spacing: 0.09em;
             text-transform: uppercase;
-            padding: 2px 14px;
+            padding: 2px 12px;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
-        /* Mirror logo space on the right to keep text truly centred */
-        .logo-spacer {
-            flex-shrink: 0;
-            width: 72px;
-        }
+        /* Mirror spacer keeps text centred */
+        .logo-spacer { flex-shrink: 0; width: 68px; }
 
-        /* ═══════════════════════════════════════════════════════════
-           SLIP NUMBER BANNER
-        ═══════════════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════
+           SLIP NUMBER BAR
+        ═══════════════════════════════════ */
         .slip-number-bar {
-            background: var(--gray-light);
-            border: 1px solid var(--gray-rule);
+            background: var(--gbg);
+            border: 1px solid var(--rule);
             border-left: 4px solid var(--gold);
             padding: 4px 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 8.5pt;
+            margin-bottom: 9px;
+            font-size: 8pt;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
-        .slip-number-bar .sn-label  { color: var(--gray-2); }
-        .slip-number-bar .sn-value  { font-weight: 900; color: var(--navy); font-size: 10pt; letter-spacing: 0.06em; }
-        .slip-number-bar .sn-generated { color: var(--gray-3); font-size: 7.5pt; }
+        .sn-label     { color: var(--g2); }
+        .sn-value     { font-weight: 900; color: var(--navy); font-size: 10pt; letter-spacing: 0.06em; }
+        .sn-generated { color: var(--g3); font-size: 7.5pt; }
 
-        /* ═══════════════════════════════════════════════════════════
-           PHOTO + QR + CANDIDATE INFO
-        ═══════════════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════
+           MEDIA ROW: PHOTO | QR | INFO
+        ═══════════════════════════════════ */
         .media-row {
             display: flex;
-            gap: 12px;
-            margin-bottom: 10px;
+            gap: 10px;
+            margin-bottom: 9px;
         }
 
         /* Passport Photo */
-        .photo-panel { flex: 0 0 100px; }
+        .photo-panel { flex: 0 0 96px; }
 
         .photo-box {
-            width: 100px;
-            height: 120px;
+            width: 96px;
+            height: 116px;
             border: 2px solid var(--navy);
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--gray-light);
+            background: var(--gbg);
         }
 
         .photo-box img {
@@ -228,7 +292,7 @@
 
         .photo-box .no-photo {
             font-size: 7pt;
-            color: var(--gray-3);
+            color: var(--g3);
             text-align: center;
             padding: 8px;
             line-height: 1.5;
@@ -236,122 +300,126 @@
 
         .media-caption {
             text-align: center;
-            font-size: 6.5pt;
-            color: var(--gray-3);
+            font-size: 6pt;
+            color: var(--g3);
             margin-top: 3px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
         /* QR Code */
-        .qr-panel { flex: 0 0 100px; }
+        .qr-panel { flex: 0 0 96px; }
 
         .qr-box {
-            width: 100px;
-            height: 100px;
+            width: 96px;
+            height: 96px;
             border: 2px solid var(--navy);
             display: flex;
             align-items: center;
             justify-content: center;
             background: var(--white);
             padding: 4px;
+            overflow: hidden;
         }
 
-        /* All QR output images/canvases sized to fill the box */
+        /* All QR output children sized to fill box */
         #qrContainer canvas,
         #qrContainer img {
-            width: 88px !important;
-            height: 88px !important;
+            width: 84px !important;
+            height: 84px !important;
             display: block;
         }
 
-        /* Candidate Info */
+        /* Candidate Info rows */
         .candidate-info {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
         }
 
         .info-row {
             display: flex;
-            border: 1px solid var(--gray-rule);
+            border: 1px solid var(--rule);
         }
 
-        .info-row .ir-label {
-            background: var(--gray-light);
-            font-size: 7.5pt;
+        .ir-label {
+            background: var(--gbg);
+            font-size: 7pt;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            color: var(--gray-2);
-            padding: 4px 7px;
-            width: 110px;
+            color: var(--g2);
+            padding: 4px 6px;
+            width: 106px;
             flex-shrink: 0;
-            border-right: 1px solid var(--gray-rule);
+            border-right: 1px solid var(--rule);
             display: flex;
             align-items: center;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
-        .info-row .ir-value {
-            font-size: 9pt;
+        .ir-value {
+            font-size: 8.5pt;
             font-weight: 700;
-            color: var(--gray-1);
-            padding: 4px 8px;
+            color: var(--g1);
+            padding: 4px 7px;
             display: flex;
             align-items: center;
             flex: 1;
         }
 
-        .ir-value.name-field      { font-size: 10pt; color: var(--navy); }
+        .ir-value.name-field      { font-size: 9.5pt; color: var(--navy); }
         .ir-value.programme-field { color: var(--navy-mid); font-style: italic; }
 
-        /* ═══════════════════════════════════════════════════════════
+        /* ═══════════════════════════════════
            EXAM DETAILS
-        ═══════════════════════════════════════════════════════════ */
+        ═══════════════════════════════════ */
         .section-title {
             background: var(--navy);
             color: var(--white);
-            font-size: 8pt;
+            font-size: 7.5pt;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            padding: 4px 10px;
-            margin: 10px 0 0;
+            padding: 3px 10px;
+            margin-bottom: 0;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
+        .exam-cols { display: flex; gap: 8px; }
+
         .exam-table {
+            flex: 1;
             width: 100%;
             border-collapse: collapse;
-            font-size: 9pt;
+            font-size: 8.5pt;
         }
 
         .exam-table td {
-            border: 1px solid var(--gray-rule);
-            padding: 5px 8px;
+            border: 1px solid var(--rule);
+            padding: 4px 7px;
             vertical-align: middle;
         }
 
-        .exam-table .et-label {
-            background: var(--gray-light);
+        .et-label {
+            background: var(--gbg);
             font-weight: 700;
-            color: var(--gray-2);
-            font-size: 8pt;
+            color: var(--g2);
+            font-size: 7pt;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            width: 35%;
+            width: 38%;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
-        .exam-table .et-value { font-weight: 600; color: var(--gray-1); }
+        .et-value { font-weight: 600; color: var(--g1); }
 
-        .exam-table .highlight-row .et-label,
-        .exam-table .highlight-row .et-value {
+        .highlight-row .et-label,
+        .highlight-row .et-value {
             background: #fdf6e3;
             color: var(--navy);
             font-weight: 900;
@@ -359,8 +427,8 @@
             print-color-adjust: exact;
         }
 
-        .exam-table .highlight-row .et-value { font-size: 10pt; }
-        .exam-table .danger-row .et-value    { color: var(--red); font-weight: 700; }
+        .highlight-row .et-value { font-size: 9.5pt; }
+        .danger-row .et-value    { color: var(--red); font-weight: 700; }
 
         .seat-display {
             font-size: 15pt;
@@ -369,22 +437,19 @@
             letter-spacing: 0.08em;
         }
 
-        .exam-cols          { display: flex; gap: 10px; margin-top: 0; }
-        .exam-cols .exam-table { flex: 1; }
-
-        /* ═══════════════════════════════════════════════════════════
+        /* ═══════════════════════════════════
            INSTRUCTIONS
-        ═══════════════════════════════════════════════════════════ */
+        ═══════════════════════════════════ */
         .instructions {
             border: 1.5px solid var(--navy);
-            margin: 10px 0 0;
+            margin-top: 8px;
             page-break-inside: avoid;
         }
 
-        .instructions .instr-header {
+        .instr-header {
             background: var(--navy);
             color: var(--white);
-            font-size: 8pt;
+            font-size: 7.5pt;
             font-weight: 700;
             letter-spacing: 0.1em;
             text-transform: uppercase;
@@ -395,80 +460,79 @@
 
         .instructions ol {
             margin: 0;
-            padding: 7px 8px 7px 26px;
+            padding: 6px 8px 6px 24px;
         }
 
         .instructions ol li {
-            font-size: 8pt;
-            color: var(--gray-1);
+            font-size: 7.5pt;
+            color: var(--g1);
             padding: 1.5px 0;
             line-height: 1.45;
         }
 
-        /* ═══════════════════════════════════════════════════════════
+        /* ═══════════════════════════════════
            SIGNATURES
-        ═══════════════════════════════════════════════════════════ */
+        ═══════════════════════════════════ */
         .signature-row {
             display: flex;
             justify-content: space-between;
-            margin-top: 12px;
+            margin-top: 10px;
             align-items: flex-end;
         }
 
-        .sig-block      { text-align: center; width: 160px; }
-        .sig-line       { border-bottom: 1px solid var(--black); height: 28px; margin-bottom: 4px; }
-        .sig-name       { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray-2); }
-        .sig-title      { font-size: 6.5pt; color: var(--gray-3); margin-top: 1px; }
+        .sig-block    { text-align: center; width: 150px; }
+        .sig-line     { border-bottom: 1px solid var(--black); height: 26px; margin-bottom: 4px; }
+        .sig-name     { font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--g2); }
+        .sig-title    { font-size: 6.5pt; color: var(--g3); margin-top: 1px; }
 
         .stamp-circle {
-            width: 70px;
-            height: 70px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
-            border: 2px dashed var(--gray-rule);
+            border: 2px dashed var(--rule);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            color: var(--gray-rule);
-            font-size: 5.5pt;
+            color: var(--rule);
+            font-size: 5pt;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.05em;
             text-align: center;
             margin: 0 auto;
         }
 
-        /* ═══════════════════════════════════════════════════════════
+        /* ═══════════════════════════════════
            FOOTER
-        ═══════════════════════════════════════════════════════════ */
+        ═══════════════════════════════════ */
         .footer {
-            margin-top: 10px;
-            padding-top: 7px;
+            margin-top: 8px;
+            padding-top: 6px;
             border-top: 2px solid var(--navy);
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             gap: 10px;
         }
 
-        .footer-left  { font-size: 6.5pt; color: var(--gray-3); line-height: 1.7; }
-        .footer-right { text-align: right; font-size: 6.5pt; color: var(--gray-3); line-height: 1.7; }
-
-        .verification-url { font-size: 7pt; color: var(--navy); word-break: break-all; }
+        .footer-left  { font-size: 6pt; color: var(--g3); line-height: 1.7; }
+        .footer-right { text-align: right; font-size: 6pt; color: var(--g3); line-height: 1.7; }
+        .verification-url { font-size: 6.5pt; color: var(--navy); word-break: break-all; }
 
         .gold-strip {
             height: 4px;
             background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
-            margin-top: 8px;
+            margin-top: 7px;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
-        /* ═══════════════════════════════════════════════════════════
+        /* ═══════════════════════════════════
            PRINT RULES
-        ═══════════════════════════════════════════════════════════ */
+        ═══════════════════════════════════ */
         @media print {
             @page {
-                size: A4;
+                size: A4 portrait;
                 margin: 0;
             }
 
@@ -479,52 +543,95 @@
                 display: block;
             }
 
+            .toolbar      { display: none !important; }
+            .slip-wrapper { padding: 0; max-width: 100%; margin: 0; }
+
             .slip {
-                width: 100%;
-                min-height: 100vh;
+                width: 210mm;
+                min-height: 297mm;
+                max-width: none;
                 padding: 12mm 14mm 10mm;
                 box-shadow: none;
                 margin: 0;
+                display: flex;
+                flex-direction: column;
             }
 
+            .border-frame,
+            .border-frame-inner { flex: 1; display: flex; flex-direction: column; }
+
             .slip::before { opacity: 0.03; }
+        }
+
+        /* ═══════════════════════════════════
+           RESPONSIVE — smaller screens
+        ═══════════════════════════════════ */
+        @media (max-width: 650px) {
+            .slip { padding: 6mm 5mm; }
+            .institution-name { font-size: 11pt; }
+            .logo-box, .logo-spacer { width: 50px; }
+            .logo-box img { width: 50px; height: 50px; }
+            .media-row { flex-wrap: wrap; }
+            .photo-panel, .qr-panel { flex: 0 0 80px; }
+            .photo-box  { width: 80px; height: 96px; }
+            .qr-box     { width: 80px; height: 80px; }
+            #qrContainer canvas, #qrContainer img { width: 70px !important; height: 70px !important; }
         }
     </style>
 </head>
 <body>
 
+<!-- ════════════════════════════════════════
+     TOOLBAR — screen only, hidden on print
+═════════════════════════════════════════ -->
+<div class="toolbar">
+    <div class="toolbar-title">
+        <strong>📄 Examination Slip Preview</strong>
+        <span>Slip No: <?php echo htmlspecialchars($exam_slip['slip_number']); ?></span>
+    </div>
+    <div class="toolbar-actions">
+        <button class="tbtn tbtn-print" onclick="triggerPrint()">
+            🖨&nbsp; Print / Save PDF
+        </button>
+        <button class="tbtn tbtn-close" onclick="window.close()">
+            ✕&nbsp; Close
+        </button>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SLIP
+═════════════════════════════════════════ -->
+<div class="slip-wrapper">
 <div class="slip">
 <div class="border-frame">
 <div class="border-frame-inner">
 
-    <!-- ════════════════════════════════════════════════════════
-         INSTITUTION HEADER WITH LOGO
-    ═════════════════════════════════════════════════════════ -->
+    <!-- INSTITUTION HEADER WITH LOGO -->
     <div class="institution-header">
 
-        <!-- Logo — path: /public/uploads/applications/print/logo.png -->
+        <!-- Logo: path confirmed at /public/uploads/applications/print/logo.png
+             NOTE: if your app is served from a subfolder e.g. /fctcns-app/public/...
+             adjust the src below to match your actual web-accessible URL. -->
         <div class="logo-box">
-            <img src="/public/uploads/applications/print/logo.png"
-                 alt="FCT College of Nursing Sciences"
-                 onerror="this.style.display='none';
-                          this.parentNode.innerHTML='<div class=\'logo-fallback\'><span class=\'lf-top\'>FCT</span><span class=\'lf-mid\'>CNS</span><span class=\'lf-btm\'>Nursing</span></div>';">
+            <img src="/uploads/applications/print/logo.png"
+                 alt="FCT CNS Logo"
+                 onerror="
+                     this.style.display='none';
+                     this.parentNode.innerHTML='<div class=\'logo-fallback\'><span class=\'lf-top\'>FCT</span><span class=\'lf-mid\'>CNS</span><span class=\'lf-btm\'>Nursing</span></div>';
+                 ">
         </div>
 
-        <!-- Centre: institution name & badge -->
         <div class="institution-text">
             <div class="institution-name">FCT College of Nursing Sciences</div>
             <div class="institution-address">Gwagwalada, Abuja — Federal Capital Territory</div>
             <div class="slip-badge">Official Examination Slip — 2025/2026 Admissions Screening Exercise</div>
         </div>
 
-        <!-- Right spacer keeps text truly centred -->
         <div class="logo-spacer"></div>
-
     </div>
 
-    <!-- ════════════════════════════════════════════════════════
-         SLIP NUMBER BAR
-    ═════════════════════════════════════════════════════════ -->
+    <!-- SLIP NUMBER BAR -->
     <div class="slip-number-bar">
         <span>
             <span class="sn-label">SLIP NO: </span>
@@ -536,16 +643,12 @@
         </span>
     </div>
 
-    <!-- ════════════════════════════════════════════════════════
-         MEDIA ROW: PHOTO + QR + CANDIDATE INFO
-    ═════════════════════════════════════════════════════════ -->
+    <!-- MEDIA ROW: PHOTO | QR | CANDIDATE INFO -->
     <div class="media-row">
 
         <!-- Passport Photo
-             FIX: Always render the <img> tag using the web path directly.
-             The file_exists() check was blocking display because DOCUMENT_ROOT
-             resolution differs between web and CLI contexts. The browser will
-             show a broken icon if the file is truly missing — no blank box. -->
+             FIX: render img directly from DB web path — no file_exists() check.
+             The onerror handles truly missing files gracefully. -->
         <div class="photo-panel">
             <div class="photo-box">
                 <?php if (!empty($application['passport_photo'])): ?>
@@ -559,10 +662,12 @@
             <div class="media-caption">Passport Photograph</div>
         </div>
 
-        <!-- QR Code -->
+        <!-- QR Code
+             FIX: server /application-verify/qr/ returns 500 — skipped entirely.
+             Chain: QRCode.js canvas → Google Charts → slip number text. -->
         <div class="qr-panel">
             <div class="qr-box" id="qrContainer">
-                <div id="qrLoading" style="font-size:7pt;color:#999;text-align:center;">
+                <div id="qrLoading" style="font-size:6.5pt;color:#999;text-align:center;line-height:1.4;">
                     Loading<br>QR...
                 </div>
             </div>
@@ -591,11 +696,8 @@
 
     </div><!-- /media-row -->
 
-    <!-- ════════════════════════════════════════════════════════
-         EXAMINATION DETAILS
-    ═════════════════════════════════════════════════════════ -->
+    <!-- EXAMINATION DETAILS -->
     <div class="section-title">Examination Details</div>
-
     <div class="exam-cols">
 
         <table class="exam-table">
@@ -611,7 +713,7 @@
                 <td class="et-label">Reporting Time</td>
                 <td class="et-value">
                     ⚠ <?php echo date('h:i A', strtotime($exam_slip['reporting_time'])); ?>
-                    <span style="font-size:7.5pt;font-weight:400;"> (Arrive 30 mins early)</span>
+                    <span style="font-size:7pt;font-weight:400;"> (Arrive 30 mins early)</span>
                 </td>
             </tr>
         </table>
@@ -631,9 +733,7 @@
 
     </div><!-- /exam-cols -->
 
-    <!-- ════════════════════════════════════════════════════════
-         INSTRUCTIONS
-    ═════════════════════════════════════════════════════════ -->
+    <!-- INSTRUCTIONS -->
     <div class="instructions">
         <div class="instr-header">Important Instructions — Please Read Carefully</div>
         <ol>
@@ -647,9 +747,9 @@
         </ol>
     </div>
 
-    <!-- ════════════════════════════════════════════════════════
-         SIGNATURES
-    ═════════════════════════════════════════════════════════ -->
+    <div class="slip-spacer"></div>
+
+    <!-- SIGNATURES -->
     <div class="signature-row">
         <div class="sig-block">
             <div class="sig-line"></div>
@@ -666,17 +766,15 @@
         </div>
     </div>
 
-    <!-- ════════════════════════════════════════════════════════
-         FOOTER
-    ═════════════════════════════════════════════════════════ -->
+    <!-- FOOTER -->
     <div class="footer">
         <div class="footer-left">
             This slip is computer-generated and does not require a handwritten signature.<br>
             Any alteration or falsification of this document is a criminal offence.<br>
-            For enquiries: admissions@fctcns.edu.ng &nbsp;|&nbsp; +234 000 0000 000
+            Enquiries: admissions@fctcns.edu.ng &nbsp;|&nbsp; +234 000 0000 000
         </div>
         <div class="footer-right">
-            <span>Verification URL:</span><br>
+            Verification URL:<br>
             <span class="verification-url"><?php echo BASE_URL; ?>/verify/slip/<?php echo $exam_slip['slip_number']; ?></span>
         </div>
     </div>
@@ -686,81 +784,83 @@
 </div><!-- /border-frame-inner -->
 </div><!-- /border-frame -->
 </div><!-- /slip -->
+</div><!-- /slip-wrapper -->
 
-<!-- ════════════════════════════════════════════════════════════
-     QR CODE — runs after DOM ready so library is guaranteed loaded
-═══════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════
+     QR CODE SCRIPT
+     FIX: runs on DOMContentLoaded so QRCode lib is guaranteed ready.
+     Server endpoint (/application-verify/qr/) SKIPPED — returns 500.
+     Chain: QRCode.js → Google Charts → slip number text fallback.
+═════════════════════════════════════════ -->
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
 
-        var slipNumber      = '<?php echo addslashes($exam_slip['slip_number']); ?>';
-        var baseUrl         = '<?php echo addslashes(BASE_URL); ?>';
-        var verificationUrl = baseUrl + '/verify/slip/' + encodeURIComponent(slipNumber);
-        var qrContainer     = document.getElementById('qrContainer');
-        var loadingEl       = document.getElementById('qrLoading');
+    var slipNumber      = '<?php echo addslashes($exam_slip['slip_number']); ?>';
+    var baseUrl         = '<?php echo addslashes(BASE_URL); ?>';
+    var verificationUrl = baseUrl + '/verify/slip/' + encodeURIComponent(slipNumber);
+    var container       = document.getElementById('qrContainer');
 
-        function clearContainer() {
-            qrContainer.innerHTML = '';
-        }
+    function clearContainer() {
+        container.innerHTML = '';
+    }
 
-        function showTextFallback() {
+    /* ── Fallback C: plain slip number text ── */
+    function showTextFallback() {
+        clearContainer();
+        container.innerHTML =
+            '<div style="font-size:6pt;color:#555;text-align:center;' +
+            'padding:4px;word-break:break-all;line-height:1.4;">' +
+            '<div style="font-size:5pt;color:#999;margin-bottom:2px;">Slip No.</div>' +
+            slipNumber + '</div>';
+    }
+
+    /* ── Fallback B: Google Charts API ── */
+    function loadGoogleQR() {
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = 'https://chart.googleapis.com/chart?chs=84x84&cht=qr&chl=' +
+                  encodeURIComponent(verificationUrl) + '&choe=UTF-8';
+        img.alt = 'QR Code';
+        img.style.cssText = 'width:84px;height:84px;display:block;';
+        img.onload  = function () { clearContainer(); container.appendChild(img); };
+        img.onerror = showTextFallback;
+    }
+
+    /* ── Primary: QRCode.js canvas ── */
+    if (typeof QRCode !== 'undefined') {
+        var canvas = document.createElement('canvas');
+        QRCode.toCanvas(canvas, verificationUrl, {
+            width:  84,
+            margin: 1,
+            color:  { dark: '#0d2b4e', light: '#ffffff' }
+        }, function (err) {
             clearContainer();
-            qrContainer.innerHTML =
-                '<div style="font-size:6pt;color:#666;text-align:center;padding:4px;word-break:break-all;">' +
-                slipNumber + '</div>';
-        }
+            if (!err) {
+                canvas.style.cssText = 'width:84px;height:84px;display:block;';
+                container.appendChild(canvas);
+            } else {
+                loadGoogleQR();
+            }
+        });
+    } else {
+        /* QRCode.js didn't load — go straight to Google Charts */
+        clearContainer();
+        loadGoogleQR();
+    }
 
-        /* ── Method 3: Google Charts (last resort before text) ── */
-        function loadGoogleQR() {
-            var img  = new Image();
-            img.src  = 'https://chart.googleapis.com/chart?chs=88x88&cht=qr&chl=' +
-                       encodeURIComponent(verificationUrl) + '&choe=UTF-8';
-            img.alt  = 'QR Code';
-            img.style.cssText = 'width:88px;height:88px;display:block;';
-            img.onload  = function () { clearContainer(); qrContainer.appendChild(img); };
-            img.onerror = showTextFallback;
-        }
+});
 
-        /* ── Method 2: Server-generated QR endpoint ── */
-        function loadServerQR() {
-            var img  = new Image();
-            img.src  = '/application-verify/qr/' + encodeURIComponent(slipNumber) + '?t=' + Date.now();
-            img.alt  = 'QR Code';
-            img.style.cssText = 'width:88px;height:88px;display:block;';
-            img.onload  = function () { clearContainer(); qrContainer.appendChild(img); };
-            img.onerror = loadGoogleQR;
-        }
+/* ── Print trigger — 1.2s delay lets QR canvas render first ── */
+function triggerPrint() {
+    setTimeout(function () { window.print(); }, 1200);
+}
 
-        /* ── Method 1: QRCode.js canvas (preferred) ── */
-        if (typeof QRCode !== 'undefined') {
-            var canvas = document.createElement('canvas');
-            QRCode.toCanvas(canvas, verificationUrl, {
-                width:  88,
-                margin: 1,
-                color:  { dark: '#0d2b4e', light: '#ffffff' }
-            }, function (err) {
-                clearContainer();
-                if (!err) {
-                    canvas.style.cssText = 'width:88px;height:88px;display:block;';
-                    qrContainer.appendChild(canvas);
-                } else {
-                    loadServerQR();
-                }
-            });
-        } else {
-            /* Library didn't load — fall straight to server QR */
-            clearContainer();
-            loadServerQR();
-        }
-
-    });
-</script>
-
-<!-- Auto-print: 1 s delay lets QR canvas render before dialog opens -->
-<script>
-    window.addEventListener('load', function () {
-        setTimeout(function () { window.print(); }, 1000);
-    });
+/* Auto-print when opened as popup from step4.php printExamSlip() */
+window.addEventListener('load', function () {
+    if (window.opener) {
+        setTimeout(function () { window.print(); }, 1200);
+    }
+});
 </script>
 
 </body>
