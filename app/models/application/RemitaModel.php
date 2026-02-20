@@ -9,6 +9,7 @@
  * FIXED: Resolved 400 Bad Request with detailed debug logging & correct endpoint/hash
  * FIXED: Corrected demo endpoint from remitademo.net to demo.remita.net (fixes 302 redirect)
  * FIXED: Authorization header now uses merchantId as Consumer Key (not apiKey)
+ * FIXED: Added JSONP response handling to extract RRR from jsonp() wrapper
  *
  * @package FCT_CNS
  * @subpackage Application
@@ -389,17 +390,34 @@ class RemitaModel extends BaseModel {
                 ];
             }
 
-            // Parse successful response
-            $result = json_decode($response, true);
-
+            // ------------------------------------------------------------------
+            // FIXED: Handle JSONP response (Remita returns jsonp wrapped responses)
+            // ------------------------------------------------------------------
+            
+            // Parse successful response - handle both JSON and JSONP
+            $result = null;
+            
+            // Check if response is JSONP (wrapped in jsonp())
+            if (preg_match('/^jsonp\s*\((.+)\)\s*;?\s*$/', $response, $matches)) {
+                $jsonStr = $matches[1];
+                $result = json_decode($jsonStr, true);
+                error_log("✅ Extracted JSON from JSONP wrapper");
+            } else {
+                // Try direct JSON decode
+                $result = json_decode($response, true);
+            }
+            
             if (json_last_error() !== JSON_ERROR_NONE) {
                 error_log("❌ JSON parse error: " . json_last_error_msg());
+                error_log("   Raw response was: " . $response);
                 return [
                     'status'   => 'error',
                     'message'  => 'Remita returned non-JSON response',
                     'response' => $response,
                 ];
             }
+
+            error_log("✅ Parsed response: " . print_r($result, true));
 
             $rrr = $this->extractRRR($result);
 
@@ -513,7 +531,18 @@ class RemitaModel extends BaseModel {
             ]);
 
             if ($httpCode === 200) {
-                $result = json_decode($response, true);
+                // Handle JSONP response for verification as well
+                $result = null;
+                
+                // Check if response is JSONP (wrapped in jsonp())
+                if (preg_match('/^jsonp\s*\((.+)\)\s*;?\s*$/', $response, $matches)) {
+                    $jsonStr = $matches[1];
+                    $result = json_decode($jsonStr, true);
+                    error_log("✅ Extracted JSON from JSONP wrapper in verifyPayment");
+                } else {
+                    // Try direct JSON decode
+                    $result = json_decode($response, true);
+                }
 
                 if (json_last_error() === JSON_ERROR_NONE) {
                     $paymentStatus = $result['status']
