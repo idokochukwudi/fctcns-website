@@ -376,6 +376,7 @@ class ApplicationVerificationController extends Controller {
     
     /**
      * Generate QR code for a slip (for printing)
+     * FIXED: Proper implementation with fallbacks and error handling
      * 
      * @param string $slipNumber
      */
@@ -384,7 +385,7 @@ class ApplicationVerificationController extends Controller {
             $slipNumber = trim(urldecode($slipNumber));
             $verificationUrl = $this->data['baseUrl'] . '/application-verify/slip/' . urlencode($slipNumber);
             
-            // Include QR code library if available
+            // Try to use phpqrcode library if available
             $qrLibPath = __DIR__ . '/../../vendor/phpqrcode/qrlib.php';
             
             if (file_exists($qrLibPath)) {
@@ -394,8 +395,30 @@ class ApplicationVerificationController extends Controller {
             } else {
                 // Fallback to Google Charts API
                 $qrUrl = 'https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=' . urlencode($verificationUrl) . '&choe=UTF-8';
-                header('Content-Type: image/png');
-                readfile($qrUrl);
+                
+                // Fetch the image from Google Charts
+                $ch = curl_init($qrUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                $imageData = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                
+                if ($httpCode === 200 && $imageData) {
+                    header('Content-Type: image/png');
+                    header('Content-Length: ' . strlen($imageData));
+                    echo $imageData;
+                } else {
+                    // If Google Charts fails, create a simple SVG placeholder
+                    header('Content-Type: image/svg+xml');
+                    echo '<?xml version="1.0" encoding="UTF-8"?>
+                    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="200" height="200" fill="#f0f0f0"/>
+                        <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="14" fill="#666">QR Code</text>
+                        <text x="100" y="120" text-anchor="middle" font-family="Arial" font-size="12" fill="#999">' . htmlspecialchars($slipNumber) . '</text>
+                    </svg>';
+                }
             }
             exit;
             

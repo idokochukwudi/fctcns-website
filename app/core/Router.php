@@ -333,7 +333,7 @@ class Router {
         $this->get('/application-verify/jamb/{jambNumber}', 'ApplicationVerificationController@verifyByJamb');
         $this->get('/application-verify/application/{appNumber}', 'ApplicationVerificationController@verifyByApplication');
         $this->get('/application-verify/api/{slipNumber}', 'ApplicationVerificationController@apiVerify');
-        $this->get('/application-verify/qr/{slipNumber}', 'ApplicationVerificationController@generateQR');
+        $this->get('/application-verify/qr/{slipNumber}', 'ApplicationVerificationController@generateQR'); // QR Generation Route
         $this->post('/application-verify/check-status', 'ApplicationVerificationController@checkStatus');
         
         // ============================================
