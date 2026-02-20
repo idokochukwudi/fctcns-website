@@ -161,9 +161,9 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            padding-bottom: 8px;
+            padding-bottom: 12px;
             border-bottom: 3px double var(--navy);
-            margin-bottom: 9px;
+            margin-bottom: 13px;
         }
 
         /* Logo */
@@ -220,7 +220,7 @@
         .institution-address {
             font-size: 8.5pt;
             color: var(--g2);
-            margin: 2px 0 4px;
+            margin: 5px 0 7px;
         }
 
         .slip-badge {
@@ -246,11 +246,11 @@
             background: var(--gbg);
             border: 1px solid var(--rule);
             border-left: 4px solid var(--gold);
-            padding: 4px 10px;
+            padding: 7px 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 9px;
+            margin-bottom: 13px;
             font-size: 8pt;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
@@ -266,7 +266,7 @@
         .media-row {
             display: flex;
             gap: 10px;
-            margin-bottom: 9px;
+            margin-bottom: 13px;
         }
 
         /* Passport Photo */
@@ -335,7 +335,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
         }
 
         .info-row {
@@ -350,7 +350,7 @@
             text-transform: uppercase;
             letter-spacing: 0.04em;
             color: var(--g2);
-            padding: 4px 6px;
+            padding: 7px 6px;
             width: 106px;
             flex-shrink: 0;
             border-right: 1px solid var(--rule);
@@ -364,7 +364,7 @@
             font-size: 8.5pt;
             font-weight: 700;
             color: var(--g1);
-            padding: 4px 7px;
+            padding: 7px 7px;
             display: flex;
             align-items: center;
             flex: 1;
@@ -383,7 +383,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            padding: 3px 10px;
+            padding: 5px 10px;
             margin-bottom: 0;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
@@ -400,7 +400,7 @@
 
         .exam-table td {
             border: 1px solid var(--rule);
-            padding: 4px 7px;
+            padding: 7px 7px;
             vertical-align: middle;
         }
 
@@ -442,7 +442,7 @@
         ═══════════════════════════════════ */
         .instructions {
             border: 1.5px solid var(--navy);
-            margin-top: 8px;
+            margin-top: 13px;
             page-break-inside: avoid;
         }
 
@@ -453,21 +453,21 @@
             font-weight: 700;
             letter-spacing: 0.1em;
             text-transform: uppercase;
-            padding: 3px 10px;
+            padding: 5px 10px;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
         .instructions ol {
             margin: 0;
-            padding: 6px 8px 6px 24px;
+            padding: 9px 8px 9px 24px;
         }
 
         .instructions ol li {
-            font-size: 7.5pt;
+            font-size: 8pt;
             color: var(--g1);
-            padding: 1.5px 0;
-            line-height: 1.45;
+            padding: 3.5px 0;
+            line-height: 1.55;
         }
 
         /* ═══════════════════════════════════
@@ -476,14 +476,14 @@
         .signature-row {
             display: flex;
             justify-content: space-between;
-            margin-top: 10px;
+            margin-top: 16px;
             align-items: flex-end;
         }
 
         .sig-block    { text-align: center; width: 150px; }
-        .sig-line     { border-bottom: 1px solid var(--black); height: 26px; margin-bottom: 4px; }
+        .sig-line     { border-bottom: 1px solid var(--black); height: 32px; margin-bottom: 5px; }
         .sig-name     { font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--g2); }
-        .sig-title    { font-size: 6.5pt; color: var(--g3); margin-top: 1px; }
+        .sig-title    { font-size: 6.5pt; color: var(--g3); margin-top: 2px; }
 
         .stamp-circle {
             width: 64px;
@@ -506,8 +506,8 @@
            FOOTER
         ═══════════════════════════════════ */
         .footer {
-            margin-top: 8px;
-            padding-top: 6px;
+            margin-top: 14px;
+            padding-top: 8px;
             border-top: 2px solid var(--navy);
             display: flex;
             align-items: flex-start;
@@ -515,14 +515,14 @@
             gap: 10px;
         }
 
-        .footer-left  { font-size: 6pt; color: var(--g3); line-height: 1.7; }
-        .footer-right { text-align: right; font-size: 6pt; color: var(--g3); line-height: 1.7; }
-        .verification-url { font-size: 6.5pt; color: var(--navy); word-break: break-all; }
+        .footer-left  { font-size: 6.5pt; color: var(--g3); line-height: 1.9; }
+        .footer-right { text-align: right; font-size: 6.5pt; color: var(--g3); line-height: 1.9; }
+        .verification-url { font-size: 7pt; color: var(--navy); word-break: break-all; }
 
         .gold-strip {
-            height: 4px;
+            height: 5px;
             background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
-            margin-top: 7px;
+            margin-top: 10px;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -747,8 +747,6 @@
         </ol>
     </div>
 
-    <div class="slip-spacer"></div>
-
     <!-- SIGNATURES -->
     <div class="signature-row">
         <div class="sig-block">
@@ -771,7 +769,7 @@
         <div class="footer-left">
             This slip is computer-generated and does not require a handwritten signature.<br>
             Any alteration or falsification of this document is a criminal offence.<br>
-            Enquiries: admissions@fctcns.edu.ng &nbsp;|&nbsp; +234 000 0000 000
+            Enquiries: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5637323b3f25253f3938251630352235382578333223783831">[email&#160;protected]</a> &nbsp;|&nbsp; +234 000 0000 000
         </div>
         <div class="footer-right">
             Verification URL:<br>
@@ -792,7 +790,7 @@
      Server endpoint (/application-verify/qr/) SKIPPED — returns 500.
      Chain: QRCode.js → Google Charts → slip number text fallback.
 ═════════════════════════════════════════ -->
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 document.addEventListener('DOMContentLoaded', function () {
 
     var slipNumber      = '<?php echo addslashes($exam_slip['slip_number']); ?>';
