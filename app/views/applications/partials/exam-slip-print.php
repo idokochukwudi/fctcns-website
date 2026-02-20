@@ -5,14 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Examination Slip - <?php echo htmlspecialchars($exam_slip['slip_number']); ?></title>
 
-    <!-- QR Code Library — load early so it's ready by DOMContentLoaded -->
+    <!-- QR Code Library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
     <style>
         /* ═══════════════════════════════════════════════════════════
-           RESET & BASE
+           RESET & BASE — NO EXTERNAL LAYOUT/HEADER/FOOTER
         ═══════════════════════════════════════════════════════════ */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         :root {
             --navy:       #0d2b4e;
@@ -29,27 +33,28 @@
             --red:        #b00020;
         }
 
-        /* Screen preview wrapper */
         body {
             font-family: 'Times New Roman', Times, serif;
-            background: #d8d8d8;
+            background: white;
+            margin: 0;
+            padding: 0;
             display: flex;
             justify-content: center;
-            padding: 24px;
             min-height: 100vh;
         }
 
         /* ═══════════════════════════════════════════════════════════
-           SLIP CONTAINER — exact A4 proportions for screen preview
+           SLIP CONTAINER — NO EXTERNAL LAYOUT/HEADER/FOOTER
         ═══════════════════════════════════════════════════════════ */
         .slip {
             background: var(--white);
             width: 210mm;
             min-height: 297mm;
             padding: 14mm 16mm 12mm;
-            box-shadow: 0 4px 32px rgba(0,0,0,0.28);
             position: relative;
             overflow: hidden;
+            margin: 0 auto;
+            box-shadow: none;
         }
 
         /* Watermark */
@@ -64,6 +69,7 @@
             letter-spacing: 0.15em;
             pointer-events: none;
             white-space: nowrap;
+            z-index: 0;
         }
 
         /* ── Decorative border frame ── */
@@ -71,11 +77,50 @@
             border: 3px solid var(--navy);
             padding: 2px;
             height: 100%;
+            position: relative;
+            z-index: 1;
+            background: white;
         }
 
         .border-frame-inner {
             border: 1px solid var(--gold);
             padding: 12px 14px 10px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           INSTITUTION TITLE
+        ═══════════════════════════════════════════════════════════ */
+        .institution-header {
+            text-align: center;
+            padding-bottom: 8px;
+            border-bottom: 3px double var(--navy);
+            margin-bottom: 10px;
+        }
+
+        .institution-name {
+            font-size: 16pt;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: var(--navy);
+            letter-spacing: 0.04em;
+            line-height: 1.2;
+        }
+
+        .institution-address {
+            font-size: 9pt;
+            color: var(--gray-2);
+            margin: 2px 0 5px;
+        }
+
+        .slip-badge {
+            display: inline-block;
+            background: var(--navy);
+            color: var(--white);
+            font-size: 7.5pt;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            padding: 2px 14px;
         }
 
         /* ═══════════════════════════════════════════════════════════
@@ -163,7 +208,8 @@
 
         #qrCanvas canvas,
         #qrCanvas img,
-        #qrFallback img {
+        #qrFallback img,
+        .qr-box img {
             width: 88px !important;
             height: 88px !important;
             display: block;
@@ -414,7 +460,7 @@
         }
 
         /* ═══════════════════════════════════════════════════════════
-           PRINT RULES
+           PRINT RULES — NO EXTERNAL HEADER/FOOTER
         ═══════════════════════════════════════════════════════════ */
         @media print {
             @page {
@@ -423,8 +469,9 @@
             }
 
             body {
-                background: #fff;
+                background: white;
                 padding: 0;
+                margin: 0;
                 display: block;
             }
 
@@ -433,42 +480,34 @@
                 min-height: 100vh;
                 padding: 12mm 14mm 10mm;
                 box-shadow: none;
+                margin: 0 auto;
             }
 
-            .no-print { display: none !important; }
+            .slip::before {
+                opacity: 0.03;
+            }
 
-            .slip::before { opacity: 1; }
+            /* Hide any potential browser header/footer */
+            @page {
+                margin-top: 0;
+                margin-bottom: 0;
+            }
         }
     </style>
 </head>
 <body>
 
-<!-- ── No-Print bar (screen only) ─────────────────────────── -->
-<div class="no-print" style="position:fixed;top:0;left:0;right:0;background:#0d2b4e;color:#fff;padding:8px 20px;display:flex;align-items:center;justify-content:space-between;z-index:999;font-family:Arial,sans-serif;font-size:13px;">
-    <span>📄 Examination Slip Preview</span>
-    <div style="display:flex;gap:10px;">
-        <button onclick="window.print()" style="background:#b8860b;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-size:13px;font-weight:600;">🖨 Print / Save PDF</button>
-        <button onclick="window.close()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:13px;">✕ Close</button>
-    </div>
-</div>
-
-<div class="slip" style="margin-top:44px;" id="printSlip">
+<div class="slip">
 <div class="border-frame">
 <div class="border-frame-inner">
 
     <!-- ════════════════════════════════════════════════════════
-         INSTITUTION TITLE (compact, print-only)
+         INSTITUTION TITLE
     ═════════════════════════════════════════════════════════ -->
-    <div style="text-align:center; padding-bottom:8px; border-bottom:3px double var(--navy); margin-bottom:10px;">
-        <div style="font-size:16pt; font-weight:900; text-transform:uppercase; color:var(--navy); letter-spacing:0.04em; line-height:1.2;">
-            FCT College of Nursing Sciences
-        </div>
-        <div style="font-size:9pt; color:var(--gray-2); margin:2px 0 5px;">
-            Gwagwalada, Abuja — Federal Capital Territory
-        </div>
-        <div style="display:inline-block; background:var(--navy); color:var(--white); font-size:7.5pt; font-weight:700; letter-spacing:0.09em; text-transform:uppercase; padding:2px 14px;">
-            Official Examination Slip &mdash; 2025 / 2026 Admissions Screening Exercise
-        </div>
+    <div class="institution-header">
+        <div class="institution-name">FCT College of Nursing Sciences</div>
+        <div class="institution-address">Gwagwalada, Abuja — Federal Capital Territory</div>
+        <div class="slip-badge">Official Examination Slip — 2025/2026 Admissions Screening Exercise</div>
     </div>
 
     <!-- ════════════════════════════════════════════════════════
@@ -494,8 +533,21 @@
         <div class="photo-panel">
             <div class="photo-box">
                 <?php if (!empty($application['passport_photo'])): ?>
-                    <img src="<?php echo htmlspecialchars($_SERVER['DOCUMENT_ROOT'] . $application['passport_photo']); ?>"
-                         alt="Passport Photo">
+                    <?php 
+                    // Fix passport photo path
+                    $photoPath = $application['passport_photo'];
+                    // If it's a relative path starting with /, use it directly
+                    if (strpos($photoPath, '/') === 0) {
+                        $fullPath = $_SERVER['DOCUMENT_ROOT'] . $photoPath;
+                    } else {
+                        $fullPath = $photoPath;
+                    }
+                    ?>
+                    <?php if (file_exists($fullPath)): ?>
+                        <img src="<?php echo htmlspecialchars($photoPath); ?>" alt="Passport Photo">
+                    <?php else: ?>
+                        <div class="no-photo">Photo File<br>Not Found</div>
+                    <?php endif; ?>
                 <?php else: ?>
                     <div class="no-photo">Photograph<br>Not Available</div>
                 <?php endif; ?>
@@ -503,17 +555,11 @@
             <div class="media-caption">Passport Photograph</div>
         </div>
 
-        <!-- QR Code -->
+        <!-- QR Code - FIXED: Multiple fallbacks -->
         <div class="qr-panel">
-            <div class="qr-box">
-                <?php if (!empty($exam_slip['qr_code'])): ?>
-                    <img src="<?php echo htmlspecialchars($exam_slip['qr_code']); ?>" alt="QR Code" style="width:88px;height:88px;">
-                <?php else: ?>
-                    <div id="qrCanvas"></div>
-                    <div id="qrFallback" style="display:none;">
-                        <img src="/application-verify/qr/<?php echo urlencode($exam_slip['slip_number']); ?>" alt="QR Code">
-                    </div>
-                <?php endif; ?>
+            <div class="qr-box" id="qrContainer">
+                <!-- QR will be generated here by JavaScript -->
+                <div id="qrLoading" style="font-size: 7pt; color: #999;">Loading QR...</div>
             </div>
             <div class="media-caption">Scan to Verify</div>
         </div>
@@ -545,7 +591,7 @@
     ═════════════════════════════════════════════════════════ -->
     <div class="section-title">Examination Details</div>
 
-    <div class="exam-cols" style="margin-top:0;">
+    <div class="exam-cols">
 
         <!-- Left column -->
         <table class="exam-table">
@@ -643,47 +689,107 @@
 </div><!-- /slip -->
 
 <!-- ════════════════════════════════════════════════════════════
-     QR CODE GENERATION
+     QR CODE GENERATION - FIXED WITH MULTIPLE FALLBACKS
 ═══════════════════════════════════════════════════════════ -->
-<?php if (empty($exam_slip['qr_code'])): ?>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var verificationUrl = '<?php echo addslashes(BASE_URL); ?>/verify/slip/<?php echo urlencode($exam_slip['slip_number']); ?>';
-        var container = document.getElementById('qrCanvas');
-        var fallback  = document.getElementById('qrFallback');
+    (function() {
+        // Configuration
+        const slipNumber = '<?php echo addslashes($exam_slip['slip_number']); ?>';
+        const baseUrl = '<?php echo addslashes(BASE_URL); ?>';
+        const verificationUrl = baseUrl + '/verify/slip/' + encodeURIComponent(slipNumber);
+        const qrContainer = document.getElementById('qrContainer');
+        const loadingEl = document.getElementById('qrLoading');
 
-        if (!container) return;
-
-        if (typeof QRCode !== 'undefined') {
-            var canvas = document.createElement('canvas');
-            container.appendChild(canvas);
-
-            QRCode.toCanvas(canvas, verificationUrl, {
-                width:  88,
-                margin: 1,
-                color:  { dark: '#0d2b4e', light: '#ffffff' }
-            }, function (err) {
-                if (err) {
-                    console.error('QR error:', err);
-                    container.style.display = 'none';
-                    if (fallback) fallback.style.display = 'block';
-                }
-            });
-        } else {
-            container.style.display = 'none';
-            if (fallback) fallback.style.display = 'block';
+        // Function to remove loading indicator
+        function removeLoading() {
+            if (loadingEl) loadingEl.style.display = 'none';
         }
-    });
-</script>
-<?php endif; ?>
 
-<!-- Auto-print on load -->
+        // Function to show error
+        function showError() {
+            qrContainer.innerHTML = '<div style="font-size:7pt;color:#999;text-align:center;">QR<br>Unavailable</div>';
+        }
+
+        // Try Method 1: QRCode library (canvas)
+        if (typeof QRCode !== 'undefined') {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.style.width = '88px';
+                canvas.style.height = '88px';
+                
+                QRCode.toCanvas(canvas, verificationUrl, {
+                    width: 88,
+                    margin: 1,
+                    color: { dark: '#0d2b4e', light: '#ffffff' }
+                }, function(error) {
+                    removeLoading();
+                    if (!error) {
+                        qrContainer.innerHTML = '';
+                        qrContainer.appendChild(canvas);
+                    } else {
+                        console.warn('QRCode canvas error:', error);
+                        // Try Method 2: Server-generated QR
+                        loadServerQR();
+                    }
+                });
+                return; // Exit if canvas method starts
+            } catch (e) {
+                console.warn('QRCode exception:', e);
+                removeLoading();
+            }
+        }
+
+        // Method 2: Server-generated QR
+        function loadServerQR() {
+            const img = new Image();
+            img.src = '/application-verify/qr/' + encodeURIComponent(slipNumber) + '?t=' + Date.now();
+            img.alt = 'QR Code';
+            img.style.width = '88px';
+            img.style.height = '88px';
+            img.onload = function() {
+                qrContainer.innerHTML = '';
+                qrContainer.appendChild(img);
+            };
+            img.onerror = function() {
+                console.warn('Server QR failed');
+                // Method 3: Google Charts
+                loadGoogleQR();
+            };
+        }
+
+        // Method 3: Google Charts API
+        function loadGoogleQR() {
+            const img = new Image();
+            img.src = 'https://chart.googleapis.com/chart?chs=88x88&cht=qr&chl=' + encodeURIComponent(verificationUrl) + '&choe=UTF-8';
+            img.alt = 'QR Code';
+            img.style.width = '88px';
+            img.style.height = '88px';
+            img.onload = function() {
+                qrContainer.innerHTML = '';
+                qrContainer.appendChild(img);
+            };
+            img.onerror = function() {
+                console.warn('Google QR failed');
+                // Method 4: Text fallback
+                qrContainer.innerHTML = '<div style="font-size:6pt;color:#666;text-align:center;">' + slipNumber + '</div>';
+            };
+        }
+
+        // Start with Method 2 if QRCode library not available
+        if (typeof QRCode === 'undefined') {
+            removeLoading();
+            loadServerQR();
+        }
+    })();
+</script>
+
+<!-- Auto-print / PDF generation on load -->
 <script>
-    window.addEventListener('load', function () {
-        // Small delay ensures QR canvas has rendered before print dialog
-        setTimeout(function () {
+    window.addEventListener('load', function() {
+        // Small delay to ensure QR code renders
+        setTimeout(function() {
             window.print();
-        }, 800);
+        }, 1000);
     });
 </script>
 
