@@ -302,6 +302,8 @@ class Router {
         // Step 4: Exam Slip
         $this->get('/apply/exam-slip', 'PublicApplicationController@showExamSlip');
         $this->get('/apply/download-slip', 'PublicApplicationController@downloadExamSlip');
+        // Print exam slip
+        $this->get('/apply/print-exam-slip', 'PublicApplicationController@printExamSlip');
 
         // Applicant authentication
         $this->get('/applicant/login', 'PublicApplicationController@login');

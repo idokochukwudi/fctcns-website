@@ -1449,6 +1449,64 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
+     * Print exam slip - uses print-optimized view
+     */
+    public function printExamSlip() {
+        // Start session
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Check if logged in
+        if (!isset($_SESSION['applicant_id'])) {
+            header('Location: /applicant/login');
+            exit;
+        }
+        
+        $applicantId = $_SESSION['applicant_id'];
+        $application = $this->applicationModel->getByApplicantId($applicantId);
+        
+        if (!$application) {
+            header('Location: /apply/step/1');
+            exit;
+        }
+        
+        // Check if payment is successful
+        $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+        
+        if (!$hasPaid) {
+            header('Location: /apply/step/3');
+            exit;
+        }
+        
+        // Get exam slip
+        require_once MODELS_PATH . '/application/ExamSlipModel.php';
+        $examSlipModel = new ExamSlipModel();
+        $examSlip = $examSlipModel->getByApplicationId($application['id']);
+        
+        if (!$examSlip) {
+            $_SESSION['flash_error'] = 'Exam slip not found';
+            header('Location: /apply/step/4');
+            exit;
+        }
+        
+        // Get applicant
+        $applicant = $this->applicantModel->find($applicantId);
+        
+        // Load the print-optimized view
+        $this->data = array_merge($this->data, [
+            'pageTitle' => 'Print Examination Slip',
+            'application' => $application,
+            'exam_slip' => $examSlip,
+            'applicant' => $applicant
+        ]);
+        
+        // Use a different layout or no layout for print view
+        $this->layout = false; // Disable layout for print view
+        $this->render('applications/partials/exam-slip-print');
+    }
+
+    /**
      * Download exam slip
      */
     public function downloadExamSlip() {

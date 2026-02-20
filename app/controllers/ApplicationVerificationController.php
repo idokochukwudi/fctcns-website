@@ -385,53 +385,95 @@ class ApplicationVerificationController extends Controller {
             $slipNumber = trim(urldecode($slipNumber));
             $verificationUrl = $this->data['baseUrl'] . '/application-verify/slip/' . urlencode($slipNumber);
             
+            // Set headers for PNG image
+            header('Content-Type: image/png');
+            header('Cache-Control: no-cache, must-revalidate');
+            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            
             // Try to use phpqrcode library if available
             $qrLibPath = __DIR__ . '/../../vendor/phpqrcode/qrlib.php';
             
             if (file_exists($qrLibPath)) {
                 require_once $qrLibPath;
-                header('Content-Type: image/png');
                 QRcode::png($verificationUrl, false, QR_ECLEVEL_L, 10, 2);
             } else {
                 // Fallback to Google Charts API
-                $qrUrl = 'https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=' . urlencode($verificationUrl) . '&choe=UTF-8';
+                $qrUrl = 'https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=' . urlencode($verificationUrl) . '&choe=UTF-8';
                 
                 // Fetch the image from Google Charts
                 $ch = curl_init($qrUrl);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
                 curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
                 $imageData = curl_exec($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 curl_close($ch);
                 
                 if ($httpCode === 200 && $imageData) {
-                    header('Content-Type: image/png');
-                    header('Content-Length: ' . strlen($imageData));
                     echo $imageData;
                 } else {
-                    // If Google Charts fails, create a simple SVG placeholder
-                    header('Content-Type: image/svg+xml');
-                    echo '<?xml version="1.0" encoding="UTF-8"?>
-                    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="200" height="200" fill="#f0f0f0"/>
-                        <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="14" fill="#666">QR Code</text>
-                        <text x="100" y="120" text-anchor="middle" font-family="Arial" font-size="12" fill="#999">' . htmlspecialchars($slipNumber) . '</text>
-                    </svg>';
+                    // If all else fails, create a simple HTML representation
+                    echo $this->generateSimpleQR($slipNumber, $verificationUrl);
                 }
             }
             exit;
             
         } catch (Exception $e) {
             error_log("ApplicationVerificationController::generateQR error: " . $e->getMessage());
-            header('Content-Type: image/svg+xml');
-            echo '<?xml version="1.0" encoding="UTF-8"?>
-            <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-                <rect width="200" height="200" fill="#f0f0f0"/>
-                <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="14" fill="#666">QR Error</text>
-            </svg>';
+            echo $this->generateSimpleQR($slipNumber, $verificationUrl ?? '');
             exit;
         }
+    }
+
+    /**
+     * Generate a simple HTML representation of QR (fallback)
+     */
+    private function generateSimpleQR($slipNumber, $verificationUrl) {
+        header('Content-Type: text/html');
+        return '<!DOCTYPE html>
+        <html>
+        <head>
+            <title>QR Code</title>
+            <style>
+                body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0f0f0; font-family: Arial, sans-serif; }
+                .container { text-align: center; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); max-width: 400px; }
+                .qr-placeholder { margin: 20px auto; width: 200px; height: 200px; background: #f5f5f5; border: 2px solid #ddd; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+                .qr-pattern { font-family: monospace; font-size: 18px; line-height: 1.2; color: #333; }
+                .qr-text { font-family: monospace; font-size: 16px; margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 5px; word-break: break-all; }
+                .url { color: #666; font-size: 12px; word-break: break-all; }
+                .button { display: inline-block; margin-top: 15px; padding: 10px 20px; background: #6B4E9B; color: white; text-decoration: none; border-radius: 5px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>QR Code for Examination Slip</h2>
+                <p>Slip Number: <strong>' . htmlspecialchars($slipNumber) . '</strong></p>
+                
+                <div class="qr-placeholder">
+                    <div class="qr-pattern">
+                        ████████████████████<br>
+                        ██                ██<br>
+                        ██  ████  ████    ██<br>
+                        ██  ████  ████    ██<br>
+                        ██  ████  ████    ██<br>
+                        ██                ██<br>
+                        ████████████████████
+                    </div>
+                </div>
+                
+                <div class="qr-text">
+                    ' . htmlspecialchars($verificationUrl) . '
+                </div>
+                
+                <p><small>Copy and paste this URL to verify the slip</small></p>
+                
+                <a href="' . htmlspecialchars($verificationUrl) . '" class="button">Proceed to Verification</a>
+                
+                <p class="url">Or scan this QR code with your mobile device</p>
+            </div>
+        </body>
+        </html>';
     }
     
     /**
