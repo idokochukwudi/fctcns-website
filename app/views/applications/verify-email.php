@@ -401,7 +401,7 @@
     </div>
 
     <?php elseif (isset($error)): ?>
-    <!-- ══ STATE 2: Verification Failed ══ -->
+    <!-- ══ STATE 2: Verification Failed with Resend Option ══ -->
     <div class="verify-card">
         <div class="verify-head danger">
             <div class="verify-head-emblem">
@@ -422,6 +422,23 @@
                 <li>The link may have already been used</li>
                 <li>The verification token is invalid or corrupted</li>
             </ul>
+
+            <?php if (isset($resend_email) && $resend_email): ?>
+            <!-- Resend option when email is available -->
+            <div class="resend-block">
+                <p><i class="fas fa-paper-plane" style="margin-right:4px"></i> Need a new verification link?</p>
+                <a href="/apply/resend-verification?email=<?php echo urlencode($resend_email); ?>" 
+                   class="btn-v-outline" style="width:auto;padding:.65rem 1.25rem;font-size:.85rem;margin-bottom:0">
+                    <i class="fas fa-redo-alt"></i> Resend Verification Email
+                </a>
+                <?php if (!empty($resend_email)): ?>
+                <div style="margin-top:.75rem;font-size:.8rem;color:var(--text-muted)">
+                    <i class="fas fa-envelope"></i> 
+                    Email: <?php echo htmlspecialchars($resend_email); ?>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
 
             <a href="/apply/register" class="btn-v-primary">
                 <i class="fas fa-redo"></i> Register Again
@@ -491,7 +508,7 @@
                 <p><i class="fas fa-question-circle" style="margin-right:4px"></i> Didn't receive the email?</p>
                 <a href="/apply/resend-verification?email=<?php echo urlencode($email ?? ''); ?>"
                    class="btn-v-outline" style="width:auto;padding:.65rem 1.25rem;font-size:.85rem;margin-bottom:0">
-                    <i class="fas fa-redo"></i> Resend Verification Email
+                    <i class="fas fa-redo-alt"></i> Resend Verification Email
                 </a>
             </div>
 
