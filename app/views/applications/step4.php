@@ -24,7 +24,6 @@ $pageTitle = $pageTitle ?? 'Examination Slip - FCT College of Nursing Sciences';
             --primary:       #1a3a5c;
             --primary-light: #234f7a;
             --accent:        #c8960c;
-            --accent-light:  #f5c842;
             --success:       #1a7a4a;
             --success-bg:    #edfaf3;
             --info:          #0d5fa3;
@@ -123,101 +122,8 @@ $pageTitle = $pageTitle ?? 'Examination Slip - FCT College of Nursing Sciences';
             overflow: hidden;
         }
 
-        .slip-header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            padding: 2rem 2.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .slip-header::before {
-            content: '';
-            position: absolute;
-            top: -40px; right: -40px;
-            width: 180px; height: 180px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.06);
-        }
-
-        .slip-header::after {
-            content: '';
-            position: absolute;
-            bottom: -60px; left: 30%;
-            width: 250px; height: 250px;
-            border-radius: 50%;
-            background: rgba(200,150,12,0.12);
-        }
-
-        .slip-header .header-inner {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            align-items: center;
-            gap: 1.25rem;
-        }
-
-        .slip-header .header-icon {
-            width: 60px; height: 60px;
-            background: rgba(255,255,255,0.14);
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            color: var(--accent-light);
-            flex-shrink: 0;
-        }
-
-        .slip-header h3 {
-            color: #fff;
-            margin: 0 0 0.2rem;
-            font-size: 1.6rem;
-            letter-spacing: 0.02em;
-        }
-
-        .slip-header small {
-            color: rgba(255,255,255,0.7);
-            font-size: 0.88rem;
-        }
-
         .slip-body {
             padding: 2.5rem;
-        }
-
-        /* ── Institution Header ──────────────────────────────── */
-        .institution-header {
-            text-align: center;
-            padding-bottom: 2rem;
-            margin-bottom: 2rem;
-            border-bottom: 2px dashed var(--border);
-            position: relative;
-        }
-
-        .institution-header h2 {
-            color: var(--primary);
-            font-size: 1.55rem;
-            margin-bottom: 0.3rem;
-        }
-
-        .institution-header h5 {
-            color: var(--text-muted);
-            font-size: 1rem;
-            font-weight: 400;
-            margin-bottom: 1rem;
-        }
-
-        .official-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: linear-gradient(135deg, var(--accent), var(--accent-light));
-            color: #5a3a00;
-            font-weight: 600;
-            font-size: 0.82rem;
-            letter-spacing: 0.06em;
-            padding: 0.45rem 1.2rem;
-            border-radius: 50px;
-            box-shadow: 0 2px 10px rgba(200,150,12,0.3);
         }
 
         /* ── Photo / QR Row ──────────────────────────────────── */
@@ -661,30 +567,7 @@ $pageTitle = $pageTitle ?? 'Examination Slip - FCT College of Nursing Sciences';
         <!-- ── Left: Examination Slip ─────────────────────────── -->
         <div class="slip-card" id="examSlipCard">
 
-            <!-- Header -->
-            <div class="slip-header">
-                <div class="header-inner">
-                    <div class="header-icon">
-                        <i class="fas fa-ticket-alt"></i>
-                    </div>
-                    <div>
-                        <h3>EXAMINATION SLIP</h3>
-                        <small>2025/2026 Admission Screening &bull; FCT College of Nursing Sciences</small>
-                    </div>
-                </div>
-            </div>
-
             <div class="slip-body">
-
-                <!-- Institution -->
-                <div class="institution-header">
-                    <h2>FCT College of Nursing Sciences</h2>
-                    <h5>Gwagwalada, Abuja</h5>
-                    <span class="official-badge">
-                        <i class="fas fa-certificate"></i>
-                        OFFICIAL EXAMINATION SLIP
-                    </span>
-                </div>
 
                 <!-- Photo / QR / Verify row -->
                 <div class="photo-qr-row">
@@ -828,7 +711,7 @@ $pageTitle = $pageTitle ?? 'Examination Slip - FCT College of Nursing Sciences';
                     <i class="fas fa-chevron-right btn-arrow"></i>
                 </a>
 
-                <button class="action-btn btn-print" onclick="window.print()">
+                <button class="action-btn btn-print" onclick="printExamSlip()">
                     <span class="btn-icon"><i class="fas fa-print"></i></span>
                     <span class="btn-label">Print Slip</span>
                     <i class="fas fa-chevron-right btn-arrow"></i>
@@ -932,51 +815,91 @@ $pageTitle = $pageTitle ?? 'Examination Slip - FCT College of Nursing Sciences';
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // ── QR Code Generation ──────────────────────────────────────
+    // ── QR Code — server → Google Charts → icon fallback ─────────
     document.addEventListener('DOMContentLoaded', function () {
         <?php if (!empty($exam_slip)): ?>
-        generateQRCode();
+        loadQRCode();
         <?php endif; ?>
     });
 
-    function generateQRCode() {
-        const qrEl       = document.getElementById('qrcode');
-        const fallbackEl = document.getElementById('qrcode-fallback');
+    function loadQRCode() {
+        const qrContainer  = document.getElementById('qrcode');
+        const slipNumber   = '<?php echo addslashes($exam_slip['slip_number']); ?>';
+        const verificationUrl = '<?php echo addslashes(BASE_URL); ?>/application-verify/slip/' + encodeURIComponent(slipNumber);
 
-        if (!qrEl) return;
+        if (!qrContainer) return;
 
-        // Build a canvas element to give QRCode a proper target
-        const canvas = document.createElement('canvas');
-        canvas.style.cssText = 'width:100%;height:100%;display:block;';
-        qrEl.appendChild(canvas);
+        // ── Attempt 1: server-generated QR image ─────────────────
+        const serverQR = new Image();
+        serverQR.src = '/application-verify/qr/' + encodeURIComponent(slipNumber) + '?t=' + Date.now();
+        serverQR.alt = 'QR Code';
+        serverQR.style.cssText = 'width:100%;height:100%;display:block;object-fit:contain;';
 
-        const verificationUrl = '<?php echo addslashes(BASE_URL); ?>/application-verify/slip/<?php echo urlencode($exam_slip['slip_number']); ?>';
+        serverQR.onload = function () {
+            qrContainer.innerHTML = '';
+            qrContainer.appendChild(serverQR);
+        };
 
-        if (typeof QRCode !== 'undefined') {
-            try {
-                QRCode.toCanvas(canvas, verificationUrl, {
-                    width:  Math.min(qrEl.offsetWidth || 180, 200),
-                    margin: 1,
-                    color:  { dark: '#1a3a5c', light: '#ffffff' }
-                }, function (error) {
-                    if (error) {
-                        console.error('QR generation error:', error);
-                        showFallbackQR(qrEl, fallbackEl);
+        serverQR.onerror = function () {
+            // ── Attempt 2: Google Charts API ─────────────────────
+            const googleQR = new Image();
+            googleQR.src = 'https://chart.googleapis.com/chart?chs=180x180&cht=qr&chl=' + encodeURIComponent(verificationUrl) + '&choe=UTF-8';
+            googleQR.alt = 'QR Code';
+            googleQR.style.cssText = 'width:100%;height:100%;display:block;object-fit:contain;';
+
+            googleQR.onload = function () {
+                qrContainer.innerHTML = '';
+                qrContainer.appendChild(googleQR);
+            };
+
+            googleQR.onerror = function () {
+                // ── Attempt 3: QRCode.js library ─────────────────
+                if (typeof QRCode !== 'undefined') {
+                    qrContainer.innerHTML = '';
+                    const canvas = document.createElement('canvas');
+                    canvas.style.cssText = 'width:100%;height:100%;display:block;';
+                    qrContainer.appendChild(canvas);
+                    try {
+                        QRCode.toCanvas(canvas, verificationUrl, {
+                            width: Math.min(qrContainer.offsetWidth || 180, 200),
+                            margin: 1,
+                            color: { dark: '#1a3a5c', light: '#ffffff' }
+                        }, function (err) {
+                            if (err) showQRIconFallback(qrContainer, slipNumber);
+                        });
+                    } catch (e) {
+                        showQRIconFallback(qrContainer, slipNumber);
                     }
-                });
-            } catch (e) {
-                console.error('QR exception:', e);
-                showFallbackQR(qrEl, fallbackEl);
-            }
-        } else {
-            console.warn('QRCode library not loaded — using fallback');
-            showFallbackQR(qrEl, fallbackEl);
-        }
+                } else {
+                    // ── Attempt 4: icon + slip number ────────────
+                    showQRIconFallback(qrContainer, slipNumber);
+                }
+            };
+        };
     }
 
-    function showFallbackQR(qrEl, fallbackEl) {
-        qrEl.style.display    = 'none';
-        if (fallbackEl) fallbackEl.style.display = 'block';
+    function showQRIconFallback(container, slipNumber) {
+        container.innerHTML = `
+            <div style="width:100%;height:100%;background:#f0f4f8;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;border-radius:4px;">
+                <i class="fas fa-qrcode fa-3x" style="color:#1a3a5c;opacity:0.5;"></i>
+                <span style="font-size:0.7rem;color:#6b7c8d;text-align:center;padding:0 6px;word-break:break-all;">${slipNumber}</span>
+            </div>`;
+    }
+
+    // ── Print: opens the dedicated print-optimised page ──────────
+    function printExamSlip() {
+        const printWindow = window.open('/apply/print-exam-slip', '_blank');
+        if (printWindow) {
+            printWindow.onload = function () {
+                printWindow.focus();
+                // slight delay so QR has time to render before dialog
+                setTimeout(function () { printWindow.print(); }, 800);
+            };
+        } else {
+            // Pop-up blocked — fall back to current page print
+            showToast('Pop-up blocked. Printing current page instead…');
+            setTimeout(function () { window.print(); }, 1200);
+        }
     }
 
     // ── Copy Link ────────────────────────────────────────────────
@@ -985,10 +908,9 @@ $pageTitle = $pageTitle ?? 'Examination Slip - FCT College of Nursing Sciences';
         input.select();
         input.setSelectionRange(0, 99999);
         try {
-            navigator.clipboard.writeText(input.value).then(() => showToast('Verification link copied!')).catch(() => {
-                document.execCommand('copy');
-                showToast('Verification link copied!');
-            });
+            navigator.clipboard.writeText(input.value)
+                .then(() => showToast('Verification link copied!'))
+                .catch(() => { document.execCommand('copy'); showToast('Verification link copied!'); });
         } catch (e) {
             document.execCommand('copy');
             showToast('Verification link copied!');
@@ -1021,10 +943,10 @@ $pageTitle = $pageTitle ?? 'Examination Slip - FCT College of Nursing Sciences';
         }, 2800);
     }
 
-    // ── Download button → print fallback ─────────────────────────
+    // ── Download button → opens print page ───────────────────────
     document.getElementById('downloadBtn')?.addEventListener('click', function (e) {
         e.preventDefault();
-        window.print();
+        printExamSlip();
     });
 </script>
 
