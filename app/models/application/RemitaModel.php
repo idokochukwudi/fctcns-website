@@ -10,7 +10,7 @@
  * FIXED: Corrected demo endpoint from remitademo.net to demo.remita.net (fixes 302 redirect)
  * FIXED: Authorization header now uses merchantId as Consumer Key (not apiKey)
  * FIXED: Added JSONP response handling to extract RRR from jsonp() wrapper
- * FIXED: Updated verification endpoint for demo environment using /payment/query/rrr/{rrr}
+ * FIXED: Updated verification endpoint to /echannelsvc/{merchantId}/{rrr}/orderstatus.reg
  *
  * @package FCT_CNS
  * @subpackage Application
@@ -478,19 +478,19 @@ class RemitaModel extends BaseModel {
     }
 
     // -------------------------------------------------------------------------
-    // PAYMENT VERIFICATION - FIXED with correct demo endpoint
+    // PAYMENT VERIFICATION - FIXED with alternative endpoint
     // -------------------------------------------------------------------------
 
     /**
      * Verify payment status for a given RRR
-     * FIXED: Updated with correct demo verification endpoint /payment/query/rrr/{rrr}
+     * FIXED: Using alternative verification endpoint /echannelsvc/{merchantId}/{rrr}/orderstatus.reg
      */
     public function verifyPayment($rrr) {
         try {
             error_log("RemitaModel: verifying RRR $rrr");
 
-            // CORRECT demo verification endpoint (from Remita support)
-            $endpoint = $this->baseUrl . '/payment/query/rrr/' . $rrr;
+            // Alternative demo verification endpoint (from Remita support)
+            $endpoint = $this->baseUrl . '/echannelsvc/' . $this->merchantId . '/' . $rrr . '/orderstatus.reg';
             
             error_log("RemitaModel: status endpoint = $endpoint");
 
@@ -502,8 +502,7 @@ class RemitaModel extends BaseModel {
                 CURLOPT_SSL_VERIFYHOST => false,
                 CURLOPT_HTTPHEADER     => [
                     'Content-Type: application/json',
-                    'Accept: application/json',
-                    'publicKey: ' . $this->publicKey
+                    'Accept: application/json'
                 ],
                 CURLOPT_FOLLOWLOCATION => false,
             ]);
@@ -529,15 +528,16 @@ class RemitaModel extends BaseModel {
 
                 if (json_last_error() === JSON_ERROR_NONE) {
                     // Check for success status in response
-                    $paymentStatus = $result['paymentStatus'] ?? $result['status'] ?? $result['message'] ?? '';
+                    $paymentStatus = $result['status'] ?? $result['message'] ?? $result['responseCode'] ?? '';
                     
-                    if (strtoupper($paymentStatus) === 'PAID' || strtoupper($paymentStatus) === 'SUCCESS') {
+                    // Demo environment returns "00" for success
+                    if ($paymentStatus === '00' || $paymentStatus === 'SUCCESS' || $paymentStatus === 'PAID') {
                         return [
                             'status'       => 'success',
                             'message'      => 'Payment verified',
                             'payment_data' => $result,
                         ];
-                    } elseif (strtoupper($paymentStatus) === 'PENDING') {
+                    } elseif ($paymentStatus === 'PENDING' || $paymentStatus === '01' || $paymentStatus === 'pending') {
                         return [
                             'status'       => 'pending',
                             'message'      => 'Payment pending',
