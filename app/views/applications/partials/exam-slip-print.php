@@ -350,7 +350,7 @@
             text-transform: uppercase;
             letter-spacing: 0.04em;
             color: var(--g2);
-            padding: 7px 6px;
+            padding: 10px 6px;
             width: 106px;
             flex-shrink: 0;
             border-right: 1px solid var(--rule);
@@ -364,7 +364,7 @@
             font-size: 8.5pt;
             font-weight: 700;
             color: var(--g1);
-            padding: 7px 7px;
+            padding: 10px 7px;
             display: flex;
             align-items: center;
             flex: 1;
@@ -400,7 +400,7 @@
 
         .exam-table td {
             border: 1px solid var(--rule);
-            padding: 7px 7px;
+            padding: 10px 7px;
             vertical-align: middle;
         }
 
@@ -460,14 +460,14 @@
 
         .instructions ol {
             margin: 0;
-            padding: 9px 8px 9px 24px;
+            padding: 11px 8px 11px 24px;
         }
 
         .instructions ol li {
             font-size: 8pt;
             color: var(--g1);
-            padding: 3.5px 0;
-            line-height: 1.55;
+            padding: 5px 0;
+            line-height: 1.6;
         }
 
         /* ═══════════════════════════════════
@@ -476,12 +476,12 @@
         .signature-row {
             display: flex;
             justify-content: space-between;
-            margin-top: 16px;
+            margin-top: 22px;
             align-items: flex-end;
         }
 
         .sig-block    { text-align: center; width: 150px; }
-        .sig-line     { border-bottom: 1px solid var(--black); height: 32px; margin-bottom: 5px; }
+        .sig-line     { border-bottom: 1px solid var(--black); height: 38px; margin-bottom: 5px; }
         .sig-name     { font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--g2); }
         .sig-title    { font-size: 6.5pt; color: var(--g3); margin-top: 2px; }
 
@@ -506,7 +506,7 @@
            FOOTER
         ═══════════════════════════════════ */
         .footer {
-            margin-top: 14px;
+            margin-top: 20px;
             padding-top: 8px;
             border-top: 2px solid var(--navy);
             display: flex;
