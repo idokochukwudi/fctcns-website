@@ -13,6 +13,7 @@
  * FIXED: Updated verification endpoint to /echannelsvc/{merchantId}/{rrr}/orderstatus.reg
  * FIXED: Payment verification now properly handles RRR with dashes
  * FIXED: Added demo mode simulation for testing
+ * FIXED: Corrected SettingsModel path to /application/SettingsModel.php
  *
  * @package FCT_CNS
  * @subpackage Application
@@ -103,8 +104,8 @@ class RemitaModel extends BaseModel {
         // Initialize SDK if classes are available
         $this->initSDK();
         
-        // Load settings model for fee retrieval
-        require_once MODELS_PATH . '/SettingsModel.php';
+        // Load settings model for fee retrieval - FIXED PATH
+        require_once MODELS_PATH . '/application/SettingsModel.php';
         $this->settingsModel = new SettingsModel();
 
         error_log("RemitaModel initialized | env={$this->environment} | baseUrl={$this->baseUrl}");
