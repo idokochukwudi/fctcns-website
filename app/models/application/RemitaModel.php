@@ -10,6 +10,7 @@
  * FIXED: Corrected demo endpoint from remitademo.net to demo.remita.net (fixes 302 redirect)
  * FIXED: Authorization header now uses merchantId as Consumer Key (not apiKey)
  * FIXED: Added JSONP response handling to extract RRR from jsonp() wrapper
+ * FIXED: Updated verification endpoint for demo environment using /payment/query/rrr/{rrr}
  *
  * @package FCT_CNS
  * @subpackage Application
@@ -84,13 +85,13 @@ class RemitaModel extends BaseModel {
 
         /*
          * FIXED: Correct Remita base URLs based on environment.
-         * 
-         * The correct demo endpoint is demo.remita.net
+         * Demo: demo.remita.net
+         * Live: login.remita.net
          */
         if ($this->environment === 'live') {
             $this->baseUrl = 'https://login.remita.net/remita/exapp/api/v1/send/api';
         } else {
-            // FIXED: Use demo.remita.net (correct demo endpoint)
+            // DEMO environment - use demo.remita.net
             $this->baseUrl = 'https://demo.remita.net/remita/exapp/api/v1/send/api';
         }
 
@@ -477,26 +478,20 @@ class RemitaModel extends BaseModel {
     }
 
     // -------------------------------------------------------------------------
-    // PAYMENT VERIFICATION
+    // PAYMENT VERIFICATION - FIXED with correct demo endpoint
     // -------------------------------------------------------------------------
 
     /**
      * Verify payment status for a given RRR
+     * FIXED: Updated with correct demo verification endpoint /payment/query/rrr/{rrr}
      */
     public function verifyPayment($rrr) {
         try {
             error_log("RemitaModel: verifying RRR $rrr");
 
-            $statusHash = hash('sha512', $this->merchantId . $rrr . $this->apiKey);
-
-            $endpoint = sprintf(
-                '%s/echannelsvc/%s/%s/%s/orderstatus.reg',
-                $this->baseUrl,
-                $this->merchantId,
-                $rrr,
-                $statusHash
-            );
-
+            // CORRECT demo verification endpoint (from Remita support)
+            $endpoint = $this->baseUrl . '/payment/query/rrr/' . $rrr;
+            
             error_log("RemitaModel: status endpoint = $endpoint");
 
             $ch = curl_init($endpoint);
@@ -507,9 +502,8 @@ class RemitaModel extends BaseModel {
                 CURLOPT_SSL_VERIFYHOST => false,
                 CURLOPT_HTTPHEADER     => [
                     'Content-Type: application/json',
-                    'Cache-Control: no-cache',
-                    // FIXED: Use merchantId as Consumer Key (not apiKey)
-                    'Authorization: remitaConsumerKey=' . $this->merchantId . ',remitaConsumerToken=' . $statusHash,
+                    'Accept: application/json',
+                    'publicKey: ' . $this->publicKey
                 ],
                 CURLOPT_FOLLOWLOCATION => false,
             ]);
@@ -531,45 +525,24 @@ class RemitaModel extends BaseModel {
             ]);
 
             if ($httpCode === 200) {
-                // Handle JSONP response for verification as well
-                $result = null;
-                
-                // Check if response is JSONP (wrapped in jsonp())
-                if (preg_match('/^jsonp\s*\((.+)\)\s*;?\s*$/', $response, $matches)) {
-                    $jsonStr = $matches[1];
-                    $result = json_decode($jsonStr, true);
-                    error_log("✅ Extracted JSON from JSONP wrapper in verifyPayment");
-                } else {
-                    // Try direct JSON decode
-                    $result = json_decode($response, true);
-                }
+                $result = json_decode($response, true);
 
                 if (json_last_error() === JSON_ERROR_NONE) {
-                    $paymentStatus = $result['status']
-                        ?? $result['paymentStatus']
-                        ?? $result['message']
-                        ?? null;
-
-                    if (!empty($result['responseCode']) && $result['responseCode'] === '00' && empty($paymentStatus)) {
-                        $paymentStatus = 'PAID';
-                    }
-
-                    if ($paymentStatus) {
-                        $upperStatus = strtoupper($paymentStatus);
-                        if (in_array($upperStatus, ['PAID', 'SUCCESS', '00', 'SUCCESSFUL'], true)) {
-                            return [
-                                'status'       => 'success',
-                                'message'      => 'Payment verified',
-                                'payment_data' => $result,
-                            ];
-                        }
-                        if ($upperStatus === 'PENDING') {
-                            return [
-                                'status'       => 'pending',
-                                'message'      => 'Payment pending',
-                                'payment_data' => $result,
-                            ];
-                        }
+                    // Check for success status in response
+                    $paymentStatus = $result['paymentStatus'] ?? $result['status'] ?? $result['message'] ?? '';
+                    
+                    if (strtoupper($paymentStatus) === 'PAID' || strtoupper($paymentStatus) === 'SUCCESS') {
+                        return [
+                            'status'       => 'success',
+                            'message'      => 'Payment verified',
+                            'payment_data' => $result,
+                        ];
+                    } elseif (strtoupper($paymentStatus) === 'PENDING') {
+                        return [
+                            'status'       => 'pending',
+                            'message'      => 'Payment pending',
+                            'payment_data' => $result,
+                        ];
                     }
                 }
             }
