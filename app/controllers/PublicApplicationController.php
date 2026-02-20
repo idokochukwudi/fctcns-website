@@ -1493,17 +1493,34 @@ class PublicApplicationController extends ApplicationBaseController {
         // Get applicant
         $applicant = $this->applicantModel->find($applicantId);
         
-        // Load the print-optimized view
-        $this->data = array_merge($this->data, [
-            'pageTitle' => 'Print Examination Slip',
+        // CRITICAL FIX: Completely disable layout and any parent templates
+        $this->layout = false;
+        
+        // Also set a flag to prevent any auto-rendering of headers/footers
+        $this->autoRender = false;
+        
+        // Clear any existing output buffers
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // Load the print-optimized view directly
+        $viewPath = APP_PATH . '/views/applications/partials/exam-slip-print.php';
+        
+        if (!file_exists($viewPath)) {
+            die("Print view not found");
+        }
+        
+        // Extract data for the view
+        extract([
             'application' => $application,
             'exam_slip' => $examSlip,
             'applicant' => $applicant
         ]);
         
-        // Use a different layout or no layout for print view
-        $this->layout = false; // Disable layout for print view
-        $this->render('applications/partials/exam-slip-print');
+        // Include the view directly without any layout
+        include $viewPath;
+        exit;
     }
 
     /**
