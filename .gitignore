@@ -1,7 +1,6 @@
 # ============================================================================
-# ENVIRONMENT FILES
+# ENVIRONMENT FILES - NEVER COMMIT THESE TO REPOSITORY
 # ============================================================================
-# Environment files - NEVER commit these to repository
 .env
 .env.local
 .env.development
@@ -146,7 +145,6 @@ error.log
 # COMPOSER SPECIFIC
 # ============================================================================
 /auth.json
-/composer.lock
 
 # ============================================================================
 # MISC

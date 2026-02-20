@@ -8,6 +8,7 @@
  * FIXED: Removed ALL fake RRR generation - only real API calls
  * FIXED: Resolved 400 Bad Request with detailed debug logging & correct endpoint/hash
  * FIXED: Corrected demo endpoint from remitademo.net to demo.remita.net (fixes 302 redirect)
+ * FIXED: Authorization header now uses merchantId as Consumer Key (not apiKey)
  *
  * @package FCT_CNS
  * @subpackage Application
@@ -70,9 +71,9 @@ class RemitaModel extends BaseModel {
         parent::__construct();
 
         // Load from .env
-        $this->merchantId   = $_ENV['REMITA_MERCHANT_ID']    ?? '2547916';
-        $this->serviceTypeId = $_ENV['REMITA_SERVICE_TYPE_ID'] ?? '4430731';
-        $this->apiKey       = $_ENV['REMITA_API_KEY']         ?? '1946';
+        $this->merchantId   = $_ENV['REMITA_MERCHANT_ID']    ?? '27768931';
+        $this->serviceTypeId = $_ENV['REMITA_SERVICE_TYPE_ID'] ?? '35126630';
+        $this->apiKey       = $_ENV['REMITA_API_KEY']         ?? 'Q1dHREVNTzEyMzR8Q1dHREVNTw==';
         $this->publicKey    = $_ENV['REMITA_PUBLIC_KEY']      ?? '';
         $this->secretKey    = $_ENV['REMITA_SECRET_KEY']      ?? '';
         $this->environment  = $_ENV['REMITA_ENVIRONMENT']     ?? 'demo';
@@ -83,13 +84,12 @@ class RemitaModel extends BaseModel {
         /*
          * FIXED: Correct Remita base URLs based on environment.
          * 
-         * IMPORTANT: The logs show a 302 redirect from remitademo.net to demo.remita.net
-         * The correct demo endpoint is demo.remita.net, not remitademo.net
+         * The correct demo endpoint is demo.remita.net
          */
         if ($this->environment === 'live') {
             $this->baseUrl = 'https://login.remita.net/remita/exapp/api/v1/send/api';
         } else {
-            // FIXED: Changed from remitademo.net to demo.remita.net (resolves 302 redirect)
+            // FIXED: Use demo.remita.net (correct demo endpoint)
             $this->baseUrl = 'https://demo.remita.net/remita/exapp/api/v1/send/api';
         }
 
@@ -317,7 +317,8 @@ class RemitaModel extends BaseModel {
                 CURLOPT_HTTPHEADER     => [
                     'Content-Type: application/json',
                     'Cache-Control: no-cache',
-                    'Authorization: remitaConsumerKey=' . $this->apiKey . ',remitaConsumerToken=' . $apiHash,
+                    // FIXED: Use merchantId as Consumer Key (not apiKey)
+                    'Authorization: remitaConsumerKey=' . $this->merchantId . ',remitaConsumerToken=' . $apiHash,
                 ],
                 CURLOPT_FOLLOWLOCATION => false, // Don't follow redirects
             ]);
@@ -489,7 +490,8 @@ class RemitaModel extends BaseModel {
                 CURLOPT_HTTPHEADER     => [
                     'Content-Type: application/json',
                     'Cache-Control: no-cache',
-                    'Authorization: remitaConsumerKey=' . $this->apiKey . ',remitaConsumerToken=' . $statusHash,
+                    // FIXED: Use merchantId as Consumer Key (not apiKey)
+                    'Authorization: remitaConsumerKey=' . $this->merchantId . ',remitaConsumerToken=' . $statusHash,
                 ],
                 CURLOPT_FOLLOWLOCATION => false,
             ]);
