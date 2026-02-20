@@ -7,6 +7,7 @@
  * FIXED: Added payment button area for after RRR generation
  * FIXED: Moved CSRF inputs from head to body for valid HTML
  * FIXED: Updated both Remita URLs to correct format from support
+ * FIXED: Using demo.remita.net for demo environment (not login.remita.net)
  * 
  * @package FCTCNS
  * @version 2.4
@@ -508,7 +509,7 @@ if (empty($applicant_name)) {
         font-weight: 500;
     }
 
-    /* ─── Payment Button Area (ADDED) ─── */
+    /* ─── Payment Button Area ─── */
     #paymentButtonArea {
         margin-bottom: 1.5rem;
     }
@@ -698,11 +699,11 @@ if (empty($applicant_name)) {
                             </li>
                             <li>
                                 <span class="step-num">2</span>
-                                Click the <strong>Pay Now on Remita</strong> button that appears.
+                                Click the <strong>Complete Payment</strong> button that appears.
                             </li>
                             <li>
                                 <span class="step-num">3</span>
-                                Complete payment on the Remita secure page.
+                                Use demo card: <strong>5178 6810 0000 0002</strong> (Exp: 05/30, CVV: 000, OTP: 123456)
                             </li>
                             <li>
                                 <span class="step-num">4</span>
@@ -715,7 +716,7 @@ if (empty($applicant_name)) {
                         </ol>
                     </div>
 
-                    <!-- Pending Payment Block - FIXED: Updated to correct Remita URL -->
+                    <!-- Pending Payment Block - FIXED: Using demo URL -->
                     <?php if (isset($pending_payment) && $pending_payment): ?>
                     <div class="pending-box">
                         <div class="pending-box-header">
@@ -732,10 +733,10 @@ if (empty($applicant_name)) {
                             </button>
                         </div>
                         <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-                            <!-- FIXED: Updated to correct Remita payment URL -->
-                            <a href="https://login.remita.net/remita/onepage/payment/init.reg?rrr=<?php echo $pending_payment['rrr']; ?>&channel=CARD,USSD,ENAIRA,TRANSFER"
+                            <!-- FIXED: Using demo.remita.net for demo environment -->
+                            <a href="https://demo.remita.net/remita/onepage/payment/init.reg?rrr=<?php echo $pending_payment['rrr']; ?>&channel=CARD,USSD,ENAIRA,TRANSFER"
                                target="_blank" class="btn-amber">
-                                <i class="fas fa-external-link-alt"></i> Complete Payment
+                                <i class="fas fa-external-link-alt"></i> Complete Payment (Demo)
                             </a>
                             <button class="btn-ghost" onclick="verifyPayment('<?php echo $pending_payment['rrr']; ?>')">
                                 <i class="fas fa-check-circle"></i> I've Paid — Verify Now
@@ -759,13 +760,13 @@ if (empty($applicant_name)) {
                         </p>
                     </div>
 
-                    <!-- Payment Button Area - ADDED with correct URL -->
+                    <!-- Payment Button Area -->
                     <div id="paymentButtonArea" style="display:none; margin-bottom:1.5rem">
                         <div class="alert alert-warning">
                             <h5><i class="fas fa-external-link-alt"></i> Proceed to Payment</h5>
-                            <p class="mb-3">Click the button below to complete your payment on Remita secure platform:</p>
+                            <p class="mb-3">Click the button below to complete your payment on Remita demo platform:</p>
                             <a href="#" id="remitaPaymentLink" target="_blank" class="btn-amber w-100" style="text-align:center; display:block;">
-                                <i class="fas fa-credit-card me-2"></i> Pay Now on Remita
+                                <i class="fas fa-credit-card me-2"></i> Complete Payment (Demo)
                             </a>
                             <p class="mt-3 small text-muted">After payment, return here and click "I've Paid — Verify Payment"</p>
                         </div>
@@ -844,7 +845,7 @@ if (empty($applicant_name)) {
 
 </div><!-- /page-shell -->
 
-<!-- CSRF Token - MOVED FROM HEAD TO BODY (FIXED) -->
+<!-- CSRF Token -->
 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
 <meta name="csrf-token" content="<?php echo $csrf_token; ?>">
 

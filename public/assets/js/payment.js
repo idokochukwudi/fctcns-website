@@ -7,21 +7,20 @@
  * FIXED: Verify button visibility
  * FIXED: CopyRRR function now accepts parameter for pending payment
  * FIXED: Updated Remita payment URL with correct format from support
- * FIXED: Removed backup URL that was causing 404 errors
- * FIXED: Updated button text to "Complete Payment" with correct URL
+ * FIXED: Using demo.remita.net for demo environment (not login.remita.net)
  */
 
 $(document).ready(function() {
     console.log('Payment.js loaded - Document ready');
     
-    // Handle Generate RRR button click - FIXED: Use correct ID from HTML
+    // Handle Generate RRR button click
     $('#generateRRRBtn').on('click', function(e) {
         e.preventDefault();
         console.log('Generate RRR button clicked');
         initiatePayment();
     });
     
-    // Handle Verify Payment button click - Keep existing handlers
+    // Handle Verify Payment button click
     $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').on('click', function(e) {
         e.preventDefault();
         console.log('Verify button clicked');
@@ -44,7 +43,7 @@ $(document).ready(function() {
         }
     });
     
-    // Handle copy RRR button - FIXED: Use correct button ID from HTML
+    // Handle copy RRR button
     $('#copyRRRBtn, #copy-rrr-btn').on('click', function(e) {
         e.preventDefault();
         copyRRR();
@@ -55,8 +54,6 @@ $(document).ready(function() {
     if (pendingRRR) {
         console.log('Found pending RRR in session:', pendingRRR);
         showRRR(pendingRRR);
-        
-        // Show verify button
         $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').show();
     }
     
@@ -68,40 +65,34 @@ $(document).ready(function() {
 
 /**
  * Get CSRF token from multiple sources
- * This function tries various places where CSRF token might be stored
  */
 function getCsrfToken() {
     var token = '';
     
-    // Try hidden input fields first (most reliable for this page)
     token = $('input[name="csrf_token"]').val();
     if (token) {
         console.log('CSRF token found in input[name="csrf_token"]');
         return token;
     }
     
-    // Try meta tag (backup)
     token = $('meta[name="csrf-token"]').attr('content');
     if (token) {
         console.log('CSRF token found in meta tag');
         return token;
     }
     
-    // Try alternative field name
     token = $('input[name="_token"]').val();
     if (token) {
         console.log('CSRF token found in input[name="_token"]');
         return token;
     }
     
-    // Try any input with csrf in the name
     token = $('input[name*="csrf"]').first().val();
     if (token) {
         console.log('CSRF token found in input with csrf in name');
         return token;
     }
     
-    // Try to get from cookie (if using cookie-based CSRF)
     token = getCookie('XSRF-TOKEN');
     if (token) {
         console.log('CSRF token found in cookie');
@@ -124,12 +115,10 @@ function getCookie(name) {
 
 /**
  * Initiate payment - generate RRR
- * FIXED: Use correct button ID (generateRRRBtn)
  */
 function initiatePayment() {
     console.log('initiatePayment() called');
     
-    // Get button - FIXED: Use correct ID
     var btn = $('#generateRRRBtn');
     if (!btn.length) {
         console.error('Generate RRR button not found');
@@ -139,29 +128,16 @@ function initiatePayment() {
     
     var originalText = btn.html();
     
-    // Show loading state
     btn.html('<i class="fas fa-spinner fa-spin"></i> Generating RRR...');
     btn.prop('disabled', true);
     
-    // Show payment status area if it exists
     if ($('#paymentStatus').length) {
         $('#paymentStatus').show();
         $('#paymentMessage').text('Generating RRR...');
         $('#paymentSpinner').show();
     }
     
-    // Get CSRF token - prioritize hidden input
-    var csrfToken = $('input[name="csrf_token"]').val();
-    
-    // Fallback to meta tag if hidden input not found
-    if (!csrfToken) {
-        csrfToken = $('meta[name="csrf-token"]').attr('content');
-    }
-    
-    // Fallback to our comprehensive function
-    if (!csrfToken) {
-        csrfToken = getCsrfToken();
-    }
+    var csrfToken = $('input[name="csrf_token"]').val() || $('meta[name="csrf-token"]').attr('content') || getCsrfToken();
     
     console.log('CSRF token status:', csrfToken ? 'Found ✓' : 'Missing ✗');
     
@@ -171,10 +147,7 @@ function initiatePayment() {
         return;
     }
     
-    // Prepare request data
-    var requestData = {
-        csrf_token: csrfToken
-    };
+    var requestData = { csrf_token: csrfToken };
     
     console.log('Sending payment initiation request to /payment/initiate...');
     
@@ -192,23 +165,15 @@ function initiatePayment() {
                 var rrr = response.rrr || response.data?.rrr || response.reference;
                 
                 if (rrr) {
-                    // Store RRR in session storage for later use
                     sessionStorage.setItem('pending_rrr', rrr);
                     sessionStorage.setItem('payment_id', response.payment_id || '');
                     
-                    // Show success message
                     showAlert('RRR generated successfully: ' + rrr, 'success');
-                    
-                    // Update UI with RRR
                     showRRR(rrr);
-                    
-                    // Show Remita payment link
                     showRemitaLink(rrr);
                     
-                    // Show verify button
                     $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').show();
                     
-                    // Hide payment status spinner
                     if ($('#paymentSpinner').length) {
                         $('#paymentSpinner').hide();
                     }
@@ -221,7 +186,6 @@ function initiatePayment() {
                 showAlert(response.message || 'Failed to generate RRR', 'danger');
             }
             
-            // Reset button
             resetButton(btn, originalText);
         },
         error: function(xhr, status, error) {
@@ -230,7 +194,6 @@ function initiatePayment() {
             console.error('Error:', error);
             console.error('Response Text:', xhr.responseText);
             
-            // Try to parse error response
             var errorMessage = 'An error occurred. Please try again.';
             
             try {
@@ -255,7 +218,6 @@ function initiatePayment() {
             showAlert(errorMessage, 'danger');
             resetButton(btn, originalText);
             
-            // Hide payment status spinner
             if ($('#paymentSpinner').length) {
                 $('#paymentSpinner').hide();
             }
@@ -277,22 +239,18 @@ function verifyPayment(rrr) {
         }
     }
     
-    // Get button
     var btn = $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').first();
     var originalText = btn.html();
     
-    // Show loading state
     btn.html('<i class="fas fa-spinner fa-spin"></i> Verifying...');
     btn.prop('disabled', true);
     
-    // Show payment status
     if ($('#paymentStatus').length) {
         $('#paymentStatus').show();
         $('#paymentMessage').text('Verifying payment...');
         $('#paymentSpinner').show();
     }
     
-    // Get CSRF token
     var csrfToken = $('input[name="csrf_token"]').val() || $('meta[name="csrf-token"]').attr('content') || getCsrfToken();
     
     if (!csrfToken) {
@@ -322,14 +280,11 @@ function verifyPayment(rrr) {
                 $('#paymentMessage').text('Payment Verified!');
                 showAlert('Payment verified successfully! Redirecting...', 'success');
                 
-                // Clear stored RRR
                 sessionStorage.removeItem('pending_rrr');
                 sessionStorage.removeItem('payment_id');
                 
-                // Hide verify button
                 $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').hide();
                 
-                // Redirect to exam slip
                 setTimeout(function() {
                     window.location.href = response.redirect || '/apply/step/4';
                 }, 2000);
@@ -392,7 +347,6 @@ function checkPaymentStatus(rrr) {
                     .addClass('bg-warning')
                     .text('Pending');
                 
-                // Check again after 30 seconds
                 setTimeout(function() {
                     checkPaymentStatus(rrr);
                 }, 30000);
@@ -412,76 +366,64 @@ function checkPaymentStatus(rrr) {
 }
 
 /**
- * Show RRR and payment instructions - FIXED: Ensures verify button appears
+ * Show RRR and payment instructions
  */
 function showRRR(rrr) {
     console.log('Showing RRR:', rrr);
     
-    // Update RRR display elements
     $('#generatedRRR').text(rrr);
     $('#paymentRRR, .rrr-display').text(rrr).show();
     $('#rrrDisplayArea').show();
     
-    // Show verify button
     $('#verifyPaymentBtn, #verify-payment-btn, #checkStatusBtn').show();
-    
-    // Make sure the verify button is visible
     $('#verifyPaymentBtn').css('display', 'block');
 }
 
 /**
- * Show Remita payment link - UPDATED with "Complete Payment" button
+ * Show Remita payment link - USING DEMO URL
  */
 function showRemitaLink(rrr) {
     console.log('Showing Remita payment link for RRR:', rrr);
     
-    // Remove any hyphens if present (clean the RRR)
     var cleanRrr = rrr.replace(/-/g, '');
     
-    // CORRECT payment URL from Remita support
-    var paymentUrl = 'https://login.remita.net/remita/onepage/payment/init.reg?rrr=' + cleanRrr + '&channel=CARD,USSD,ENAIRA,TRANSFER';
+    // DEMO payment URL (NOT live)
+    var paymentUrl = 'https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + cleanRrr + '&channel=CARD,USSD,ENAIRA,TRANSFER';
     
     var linkHtml = '<div class="alert alert-success mt-3 remita-link" style="border-left: 4px solid #28a745;">' +
                '<h5><i class="fas fa-check-circle text-success"></i> RRR Generated Successfully!</h5>' +
                '<p class="mb-3">Your RRR: <strong style="font-size: 1.2rem;">' + rrr + '</strong></p>' +
                '<div class="payment-instructions mb-3 p-3 bg-light rounded">' +
-               '<p class="mb-2"><strong>📝 Next Steps:</strong></p>' +
+               '<p class="mb-2"><strong>📝 Demo Testing Instructions:</strong></p>' +
                '<ol class="mb-0">' +
-               '<li>Click the <strong>"Complete Payment"</strong> button below</li>' +
-               '<li>Complete your payment using Card, USSD, Transfer, or E-Naira</li>' +
-               '<li>After payment, return to this page and click <strong>"Verify Payment"</strong></li>' +
+               '<li>Click the <strong>"Complete Payment (Demo)"</strong> button below</li>' +
+               '<li>Use demo card: <strong>5178 6810 0000 0002</strong></li>' +
+               '<li>Expiry: <strong>05/30</strong> | CVV: <strong>000</strong> | OTP: <strong>123456</strong></li>' +
+               '<li>After payment, return here and click <strong>"Verify Payment"</strong></li>' +
                '</ol>' +
                '</div>' +
                '<a href="' + paymentUrl + '" target="_blank" class="btn btn-success btn--lg w-100 mb-2" style="background:#28a745; color:#fff; font-weight:bold; padding:12px; font-size:1.1rem;">' +
-               '<i class="fas fa-credit-card me-2"></i> Complete Payment</a>' +
+               '<i class="fas fa-credit-card me-2"></i> Complete Payment (Demo)</a>' +
                '<p class="mt-2 small text-muted text-center">' +
-               '<i class="fas fa-lock text-success"></i> Secure payment powered by Remita<br>' +
-               'After payment, return here and click "Verify Payment" button below.' +
+               '<i class="fas fa-flask"></i> Demo Environment | Card: 5178 6810 0000 0002 | OTP: 123456' +
                '</p>' +
                '</div>';
     
-    // Remove any existing Remita links to prevent duplicates
     $('.remita-link').remove();
     
-    // Try multiple possible locations for the link
     if ($('#remitaLink').length) {
         $('#remitaLink').html(linkHtml).show();
     } else if ($('#paymentStatus').length) {
-        // Append to payment status area
         $('#paymentStatus').after(linkHtml);
     } else if ($('.action-buttons').length) {
-        // Insert before action buttons
         $('.action-buttons').before(linkHtml);
     } else if ($('#rrrDisplayArea').length) {
-        // Insert after RRR display area
         $('#rrrDisplayArea').after(linkHtml);
     } else {
-        // Last resort - append to card body
         $('.card-body').append(linkHtml);
     }
     
-    // Optional: Open automatically with confirmation
-    if (confirm('RRR generated: ' + rrr + '\n\nClick OK to proceed to Remita payment page.')) {
+    if (confirm('RRR generated: ' + rrr + '\n\nClick OK to proceed to Remita demo payment page.\n\nDemo Card: 5178 6810 0000 0002\nExpiry: 05/30\nCVV: 000\nOTP: 123456')) {
         window.open(paymentUrl, '_blank');
     }
 }
@@ -495,7 +437,6 @@ function resetButton(btn, originalText) {
         btn.prop('disabled', false);
     }
     
-    // Hide payment status after delay
     if ($('#paymentStatus').length) {
         setTimeout(function() {
             $('#paymentStatus').fadeOut();
@@ -523,7 +464,6 @@ function showAlert(message, type) {
                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
                '</div>';
     
-    // Check multiple possible alert container IDs
     if ($('#payment-alerts').length) {
         $('#payment-alerts').html(alertHtml);
     } else if ($('#alertContainer').length) {
@@ -534,7 +474,6 @@ function showAlert(message, type) {
         $('#paymentStatus .alert').remove();
         $('#paymentStatus').prepend(alertHtml);
     } else {
-        // Create alert container if none exists
         var containerHtml = '<div id="payment-alerts" class="mt-3"></div>';
         if ($('.payment-section').length) {
             $('.payment-section').prepend(containerHtml);
@@ -545,7 +484,6 @@ function showAlert(message, type) {
         }
     }
     
-    // Auto-dismiss after 5 seconds (except for errors which stay longer)
     var timeout = type === 'danger' ? 8000 : 5000;
     setTimeout(function() {
         $('.alert').fadeOut('slow', function() {
@@ -555,7 +493,7 @@ function showAlert(message, type) {
 }
 
 /**
- * Copy RRR to clipboard - FIXED: Accepts parameter for direct RRR
+ * Copy RRR to clipboard
  */
 function copyRRR(rrr = null) {
     if (!rrr) {
@@ -567,16 +505,13 @@ function copyRRR(rrr = null) {
         return;
     }
     
-    // Modern clipboard API
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(rrr).then(function() {
             showAlert('RRR copied to clipboard!', 'success');
         }).catch(function() {
-            // Fallback to older method
             fallbackCopy(rrr);
         });
     } else {
-        // Fallback for older browsers
         fallbackCopy(rrr);
     }
 }
