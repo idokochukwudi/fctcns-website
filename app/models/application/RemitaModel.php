@@ -5,7 +5,7 @@
  * Handles all Remita payment integration using official SDK
  * FIXED: Correct autoloader path for both local and production
  * FIXED: Proper SDK integration with 12-digit RRR generation
- * ADDED: Detailed debug logging for API responses
+ * FIXED: Removed ALL fake RRR generation - only real API calls
  * 
  * @package FCT_CNS
  * @subpackage Application
@@ -87,7 +87,7 @@ class RemitaModel extends BaseModel {
         if ($this->environment === 'live') {
             $this->baseUrl = 'https://login.remita.net/remita/exapp/api/v1/send/api';
         } else {
-            $this->baseUrl = 'https://demo.remita.net/remita/exapp/api/v1/send/api'; // FIXED: Changed from remitademo.net
+            $this->baseUrl = 'https://demo.remita.net/remita/exapp/api/v1/send/api';
         }
         
         // Initialize Remita SDK if autoloader was found
@@ -266,80 +266,9 @@ class RemitaModel extends BaseModel {
     }
     
     /**
-     * Generate RRR using Remita SDK or fallback to direct API
+     * Generate RRR using Remita API - NO FALLBACKS, ONLY REAL RRRs
      */
     public function generateRRRRemita($orderId, $amount, $payerName, $payerEmail, $payerPhone) {
-        // Try SDK first if available
-        if ($this->billingService) {
-            try {
-                error_log("Generating RRR via SDK for order: $orderId, amount: $amount, payer: $payerName");
-                
-                // Create request object as per SDK documentation
-                $request = new GenerateRRRRequest();
-                $request->setServiceTypeId($this->serviceTypeId);
-                $request->setAmount($amount);
-                $request->setOrderId($orderId);
-                $request->setPayerName($payerName);
-                $request->setPayerEmail($payerEmail);
-                $request->setPayerPhone($payerPhone);
-                $request->setDescription('Application Fee Payment - FCT College of Nursing Sciences');
-                $request->setResponseUrl((defined('BASE_URL') ? BASE_URL : '') . '/payment/remita-response');
-                
-                // Generate RRR using SDK
-                $response = $this->billingService->generateRRR($request);
-                
-                if ($response) {
-                    // Try to get RRR from response using various possible methods
-                    $rrr = null;
-                    
-                    if (method_exists($response, 'getRrr')) {
-                        $rrr = $response->getRrr();
-                    } elseif (method_exists($response, 'getRRR')) {
-                        $rrr = $response->getRRR();
-                    } elseif (is_array($response) && isset($response['rrr'])) {
-                        $rrr = $response['rrr'];
-                    } elseif (is_object($response) && isset($response->rrr)) {
-                        $rrr = $response->rrr;
-                    }
-                    
-                    if ($rrr) {
-                        error_log("SDK Generated RRR: " . $rrr);
-                        
-                        // Store the transaction
-                        $this->createTransaction(
-                            null, 
-                            $rrr, 
-                            $orderId, 
-                            $amount,
-                            ['order_id' => $orderId, 'payer' => $payerName],
-                            ['rrr' => $rrr]
-                        );
-                        
-                        return [
-                            'status' => 'success',
-                            'rrr' => $rrr,
-                            'message' => 'RRR generated successfully via SDK',
-                            'response_data' => ['rrr' => $rrr, 'orderId' => $orderId]
-                        ];
-                    }
-                }
-                
-                error_log("SDK RRR generation failed - no RRR in response, falling back to direct API");
-                
-            } catch (Exception $e) {
-                error_log("RemitaModel::generateRRRRemita - SDK Error: " . $e->getMessage());
-                // Fall through to direct API
-            }
-        }
-        
-        // Fallback to direct API call
-        return $this->generateRRRDirect($orderId, $amount, $payerName, $payerEmail, $payerPhone);
-    }
-    
-    /**
-     * Fallback method - Direct API call (without SDK) with DEBUG LOGGING
-     */
-    private function generateRRRDirect($orderId, $amount, $payerName, $payerEmail, $payerPhone) {
         try {
             $apiHash = $this->generateRRRHash($orderId, $amount);
             
@@ -355,8 +284,9 @@ class RemitaModel extends BaseModel {
                 'responseUrl' => (defined('BASE_URL') ? BASE_URL : '') . '/payment/remita-response'
             ];
             
-            error_log("Using direct API call for RRR generation");
-            error_log("Request data: " . json_encode($requestData));
+            error_log("=== REMITA API REQUEST ===");
+            error_log("URL: " . $this->baseUrl . '/rrr');
+            error_log("Request Data: " . json_encode($requestData));
             
             $ch = curl_init($this->baseUrl . '/rrr');
             curl_setopt($ch, CURLOPT_POST, true);
@@ -374,47 +304,31 @@ class RemitaModel extends BaseModel {
             $curlError = curl_error($ch);
             curl_close($ch);
             
-            // ==================== ADDED: DETAILED DEBUG LOGGING ====================
-            error_log("=== REMITA API DEBUG ===");
-            error_log("URL: " . $this->baseUrl . '/rrr');
-            error_log("Environment: " . $this->environment);
-            error_log("Merchant ID: " . $this->merchantId);
-            error_log("Service Type ID: " . $this->serviceTypeId);
-            error_log("Order ID: " . $orderId);
-            error_log("Amount: " . $amount);
+            error_log("=== REMITA API RESPONSE ===");
             error_log("HTTP Code: " . $httpCode);
             error_log("CURL Error: " . $curlError);
             error_log("Raw Response: " . $response);
             
-            // Also log to file for easier reading
+            // Log to file
             $logDir = __DIR__ . '/../../storage/logs';
             if (!is_dir($logDir)) {
                 mkdir($logDir, 0755, true);
             }
             
-            $logFile = $logDir . '/remita_debug.log';
+            $logFile = $logDir . '/remita_api.log';
             $logEntry = date('Y-m-d H:i:s') . "\n";
-            $logEntry .= "Environment: " . $this->environment . "\n";
-            $logEntry .= "Base URL: " . $this->baseUrl . "\n";
-            $logEntry .= "Merchant ID: " . $this->merchantId . "\n";
-            $logEntry .= "Service Type ID: " . $this->serviceTypeId . "\n";
-            $logEntry .= "Order ID: " . $orderId . "\n";
-            $logEntry .= "Amount: " . $amount . "\n";
             $logEntry .= "HTTP Code: " . $httpCode . "\n";
-            $logEntry .= "CURL Error: " . $curlError . "\n";
             $logEntry .= "Response: " . $response . "\n";
             $logEntry .= "----------------------------------------\n\n";
-            
             file_put_contents($logFile, $logEntry, FILE_APPEND);
-            // ==================== END DEBUG LOGGING ====================
             
             if ($httpCode === 200 || $httpCode === 201) {
                 $result = json_decode($response, true);
                 
                 if (json_last_error() === JSON_ERROR_NONE) {
-                    // Check various possible response formats
+                    // Check for RRR in response
                     if (!empty($result['rrr'])) {
-                        error_log("RRR found in response: " . $result['rrr']);
+                        error_log("✅ REAL RRR received: " . $result['rrr']);
                         
                         // Store the transaction
                         $this->createTransaction(
@@ -433,9 +347,20 @@ class RemitaModel extends BaseModel {
                             'response_data' => $result
                         ];
                     } elseif (!empty($result['responseCode']) && $result['responseCode'] === '00' && !empty($result['data']['rrr'])) {
-                        // Alternative response format
                         $rrr = $result['data']['rrr'];
-                        error_log("RRR found in data.rrr: " . $rrr);
+                        error_log("✅ REAL RRR received in data: " . $rrr);
+                        
+                        $this->createTransaction(null, $rrr, $orderId, $amount, $requestData, $result);
+                        
+                        return [
+                            'status' => 'success',
+                            'rrr' => $rrr,
+                            'message' => 'RRR generated successfully',
+                            'response_data' => $result
+                        ];
+                    } elseif (!empty($result['responseCode']) && $result['responseCode'] === '00' && !empty($result['rrr'])) {
+                        $rrr = $result['rrr'];
+                        error_log("✅ REAL RRR received with responseCode 00: " . $rrr);
                         
                         $this->createTransaction(null, $rrr, $orderId, $amount, $requestData, $result);
                         
@@ -449,19 +374,18 @@ class RemitaModel extends BaseModel {
                 }
             }
             
-            // If API call fails in demo, we should NOT generate fake RRR
-            // Instead, return the error so we can see what's happening
-            error_log("Remita API call failed with HTTP $httpCode");
-            
+            // NO FALLBACK - return error
+            error_log("❌ Remita API call failed");
             return [
                 'status' => 'error',
-                'message' => 'Failed to generate RRR. HTTP Code: ' . $httpCode,
+                'message' => 'Failed to generate RRR from Remita. HTTP Code: ' . $httpCode,
+                'http_code' => $httpCode,
                 'response' => $response,
                 'curl_error' => $curlError
             ];
             
         } catch (Exception $e) {
-            error_log("RemitaModel::generateRRRDirect - Error: " . $e->getMessage());
+            error_log("❌ Remita API Exception: " . $e->getMessage());
             
             return [
                 'status' => 'error',
@@ -471,82 +395,16 @@ class RemitaModel extends BaseModel {
     }
     
     /**
-     * Generate a valid 12-digit RRR for demo environment - DISABLED to prevent fake RRRs
-     */
-    private function generateDemoRRR() {
-        // This function is kept but should not be used
-        // We want to see the real API response, not fake it
-        return null;
-    }
-    
-    /**
      * Verify payment using Remita SDK
      */
     public function verifyPayment($rrr) {
         try {
             error_log("Verifying payment for RRR: $rrr");
             
-            // Try SDK first if available
-            if ($this->billingService) {
-                try {
-                    $response = $this->billingService->checkStatus($rrr);
-                    
-                    if ($response) {
-                        // Try to get status from response
-                        $status = null;
-                        
-                        if (method_exists($response, 'getPaymentStatus')) {
-                            $status = $response->getPaymentStatus();
-                        } elseif (method_exists($response, 'getStatus')) {
-                            $status = $response->getStatus();
-                        } elseif (is_array($response) && isset($response['paymentStatus'])) {
-                            $status = $response['paymentStatus'];
-                        } elseif (is_object($response) && isset($response->paymentStatus)) {
-                            $status = $response->paymentStatus;
-                        }
-                        
-                        if ($status) {
-                            error_log("SDK verification status: $status");
-                            
-                            if ($status === 'PAID' || $status === 'SUCCESS' || $status === '00') {
-                                return [
-                                    'status' => 'success',
-                                    'message' => 'Payment verified via SDK',
-                                    'payment_data' => is_array($response) ? $response : ['status' => $status]
-                                ];
-                            } elseif ($status === 'PENDING') {
-                                return [
-                                    'status' => 'pending',
-                                    'message' => 'Payment is still pending',
-                                    'payment_data' => is_array($response) ? $response : ['status' => $status]
-                                ];
-                            }
-                        }
-                    }
-                } catch (Exception $e) {
-                    error_log("SDK verification error: " . $e->getMessage());
-                    // Fall through to direct API
-                }
-            }
-            
-            // Fallback to direct API
-            return $this->verifyPaymentDirect($rrr);
-            
-        } catch (Exception $e) {
-            error_log("RemitaModel::verifyPayment - Error: " . $e->getMessage());
-            return $this->verifyPaymentDirect($rrr);
-        }
-    }
-    
-    /**
-     * Verify payment directly (without SDK)
-     */
-    private function verifyPaymentDirect($rrr) {
-        try {
             $apiHash = $this->generateApiHash($rrr, '0');
             
             $url = $this->baseUrl . '/rrr/' . $rrr . '/status';
-            error_log("Verifying payment directly via: $url");
+            error_log("Verifying payment via: $url");
             
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -561,7 +419,7 @@ class RemitaModel extends BaseModel {
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
             
-            error_log("Direct Verification Response (HTTP $httpCode) for RRR $rrr");
+            error_log("Verification Response (HTTP $httpCode): " . $response);
             
             if ($httpCode === 200) {
                 $result = json_decode($response, true);
@@ -596,7 +454,6 @@ class RemitaModel extends BaseModel {
                 }
             }
             
-            // For demo, if we can't reach Remita, return error - don't auto-verify
             return [
                 'status' => 'error',
                 'message' => 'Payment not found or not completed',
@@ -604,7 +461,7 @@ class RemitaModel extends BaseModel {
             ];
             
         } catch (Exception $e) {
-            error_log("RemitaModel::verifyPaymentDirect - Error: " . $e->getMessage());
+            error_log("RemitaModel::verifyPayment - Error: " . $e->getMessage());
             
             return [
                 'status' => 'error',

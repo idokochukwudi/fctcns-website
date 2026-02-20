@@ -7,7 +7,7 @@
  * FIXED: Redirect from application form to step 2, proper JAMB data restoration, saveApplication field mapping and update method
  * FIXED: O'Level results handling in saveApplication method - prevents duplication on re-login
  * FIXED: Exam slip generation and step 4 display - enhanced security
- * FIXED: Generate proper 12-digit RRR for Remita payment gateway
+ * FIXED: Generate proper RRR using Remita API (no fake DEMO RRRs)
  * 
  * @package FCT_CNS
  */
@@ -918,7 +918,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     // ============================================
-    // STEP 3: PAYMENT
+    // STEP 3: PAYMENT - FIXED initiatePayment METHOD
     // ============================================
 
     /**
@@ -998,7 +998,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Initiate payment - Generate RRR (AJAX endpoint)
+     * Initiate payment - Generate RRR using Remita API (NO FAKE RRRs)
      */
     public function initiatePayment() {
         // Set header for JSON response
@@ -1077,54 +1077,91 @@ class PublicApplicationController extends ApplicationBaseController {
             
             // Get fee
             $fee = $this->settingsModel->getApplicationFee();
-            
-            // Generate RRR
-            $rrr = 'DEMO' . time() . rand(1000, 9999);
             $orderId = 'ORD' . time() . rand(100, 999);
             $reference = 'REF' . time() . rand(1000, 9999);
             
-            // Create payment record
-            $paymentData = [
-                'application_id' => $application['id'],
-                'applicant_id' => $applicantId,
-                'reference' => $reference,
-                'rrr' => $rrr,
-                'order_id' => $orderId,
-                'amount' => $fee,
-                'payment_type' => 'application_fee',
-                'status' => 'pending',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
-            ];
+            // Get applicant details for Remita
+            $applicant = $this->applicantModel->find($applicantId);
+            $payerName = trim(($application['first_name'] ?? '') . ' ' . ($application['last_name'] ?? ''));
+            $payerEmail = $applicant['email'] ?? '';
+            $payerPhone = $application['phone'] ?? '';
             
-            $paymentId = $this->paymentModel->insert($paymentData);
+            error_log("Calling Remita API with: OrderID=$orderId, Amount=$fee, Payer=$payerName, Email=$payerEmail");
             
-            if (!$paymentId) {
-                echo json_encode(['success' => false, 'message' => 'Failed to create payment record']);
-                return;
+            // Call Remita API to generate REAL RRR
+            require_once MODELS_PATH . '/application/RemitaModel.php';
+            $remitaModel = new RemitaModel();
+            
+            $result = $remitaModel->generateRRRRemita(
+                $orderId,
+                $fee,
+                $payerName,
+                $payerEmail,
+                $payerPhone
+            );
+            
+            error_log("Remita API Result: " . print_r($result, true));
+            
+            if ($result['status'] === 'success' && isset($result['rrr'])) {
+                $rrr = $result['rrr'];
+                
+                error_log("✅ REAL RRR generated from Remita API: " . $rrr);
+                
+                // Create payment record in database
+                $paymentData = [
+                    'application_id' => $application['id'],
+                    'applicant_id' => $applicantId,
+                    'reference' => $reference,
+                    'rrr' => $rrr,
+                    'order_id' => $orderId,
+                    'amount' => $fee,
+                    'payment_type' => 'application_fee',
+                    'status' => 'pending',
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ];
+                
+                $paymentId = $this->paymentModel->insert($paymentData);
+                
+                if (!$paymentId) {
+                    echo json_encode(['success' => false, 'message' => 'Failed to create payment record']);
+                    return;
+                }
+                
+                // Store in session
+                $_SESSION['pending_payment'] = [
+                    'payment_id' => $paymentId,
+                    'rrr' => $rrr,
+                    'amount' => $fee
+                ];
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'RRR generated successfully',
+                    'rrr' => $rrr,
+                    'reference' => $reference,
+                    'order_id' => $orderId,
+                    'amount' => $fee
+                ]);
+                
+            } else {
+                // API call failed
+                $errorMsg = $result['message'] ?? 'Unknown error';
+                error_log("❌ Remita API failed: " . $errorMsg);
+                
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to generate RRR. Please try again or contact support.',
+                    'debug' => $errorMsg
+                ]);
             }
-            
-            // Store in session
-            $_SESSION['pending_payment'] = [
-                'payment_id' => $paymentId,
-                'rrr' => $rrr,
-                'amount' => $fee
-            ];
-            
-            echo json_encode([
-                'success' => true,
-                'message' => 'RRR generated successfully',
-                'rrr' => $rrr,
-                'reference' => $reference,
-                'order_id' => $orderId,
-                'amount' => $fee
-            ]);
             
         } catch (Exception $e) {
             error_log("Initiate payment error: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             echo json_encode([
                 'success' => false,
-                'message' => 'Server error occurred'
+                'message' => 'Server error occurred: ' . $e->getMessage()
             ]);
         }
     }
@@ -1171,38 +1208,59 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // For demo, mark as success
-            $updateResult = $this->paymentModel->markAsSuccess($payment['id'], [
-                'transaction_id' => 'TXN' . time(),
-                'payment_method' => 'remita',
-                'payer_email' => $payment['payer_email'] ?? null,
-                'payer_name' => $payment['payer_name'] ?? null
-            ]);
+            // Call Remita to verify payment status
+            require_once MODELS_PATH . '/application/RemitaModel.php';
+            $remitaModel = new RemitaModel();
+            $verificationResult = $remitaModel->verifyPayment($rrr);
             
-            if ($updateResult) {
-                // Update application step to 4 (Payment Complete)
-                $this->applicationModel->updateApplication($payment['application_id'], [
-                    'application_step' => 4
+            error_log("Remita verification result: " . print_r($verificationResult, true));
+            
+            if ($verificationResult['status'] === 'success') {
+                // Payment is confirmed by Remita
+                $updateResult = $this->paymentModel->markAsSuccess($payment['id'], [
+                    'transaction_id' => $verificationResult['payment_data']['transactionId'] ?? 'TXN' . time(),
+                    'payment_method' => 'remita',
+                    'payer_email' => $verificationResult['payment_data']['payerEmail'] ?? null,
+                    'payer_name' => $verificationResult['payment_data']['payerName'] ?? null,
+                    'payment_details' => json_encode($verificationResult['payment_data'])
                 ]);
                 
-                // Generate exam slip
-                $examSlip = $this->generateExamSlip($payment['application_id']);
-                
-                if (!$examSlip) {
-                    error_log("Failed to generate exam slip for application: " . $payment['application_id']);
+                if ($updateResult) {
+                    // Update application step to 4 (Payment Complete)
+                    $this->applicationModel->updateApplication($payment['application_id'], [
+                        'application_step' => 4
+                    ]);
+                    
+                    // Generate exam slip
+                    $examSlip = $this->generateExamSlip($payment['application_id']);
+                    
+                    if (!$examSlip) {
+                        error_log("Failed to generate exam slip for application: " . $payment['application_id']);
+                    } else {
+                        error_log("Exam slip generated successfully for application: " . $payment['application_id']);
+                    }
+                    
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Payment verified successfully',
+                        'redirect' => '/apply/step/4'
+                    ]);
                 } else {
-                    error_log("Exam slip generated successfully for application: " . $payment['application_id']);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to update payment status'
+                    ]);
                 }
-                
+            } elseif ($verificationResult['status'] === 'pending') {
                 echo json_encode([
-                    'success' => true,
-                    'message' => 'Payment verified successfully',
-                    'redirect' => '/apply/step/4'
+                    'success' => false,
+                    'message' => 'Payment is still pending on Remita. Please check again later.',
+                    'pending' => true
                 ]);
             } else {
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Failed to verify payment'
+                    'message' => 'Payment not found or not completed on Remita.'
                 ]);
             }
             
