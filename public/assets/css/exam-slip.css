@@ -1,0 +1,164 @@
+/* Exam Slip Professional Styling */
+@media print {
+    body {
+        background: white !important;
+        padding: 0.5in;
+    }
+    
+    .btn, .modal, .input-group, .verification-link {
+        display: none !important;
+    }
+    
+    .card {
+        border: 2px solid #000 !important;
+        box-shadow: none !important;
+    }
+    
+    .table-bordered {
+        border: 1px solid #000 !important;
+    }
+    
+    .table-bordered th,
+    .table-bordered td {
+        border: 1px solid #000 !important;
+    }
+    
+    .badge {
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        background: #f0f0f0 !important;
+    }
+    
+    .qr-code-container {
+        border: 1px solid #000 !important;
+    }
+    
+    .alert {
+        border: 1px solid #000 !important;
+        background: #f9f9f9 !important;
+        color: #000 !important;
+    }
+}
+
+/* Screen Styles */
+.exam-slip-card {
+    transition: transform 0.3s ease;
+}
+
+.exam-slip-card:hover {
+    transform: translateY(-5px);
+}
+
+.candidate-photo-container {
+    border: 3px solid #fff;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.candidate-photo-container:hover {
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.qr-code-container {
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.qr-code-container:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.verification-badge {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 4px solid #28a745;
+}
+
+.table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    color: #212529;
+}
+
+.bg-success-light {
+    background: rgba(40, 167, 69, 0.1);
+}
+
+/* Animation for buttons */
+.btn {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn:after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1, 1) translate(-50%);
+    transform-origin: 50% 50%;
+}
+
+.btn:focus:not(:active)::after {
+    animation: ripple 1s ease-out;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+    }
+    20% {
+        transform: scale(25, 25);
+        opacity: 0.3;
+    }
+    100% {
+        opacity: 0;
+        transform: scale(40, 40);
+    }
+}
+
+/* Loading spinner */
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .candidate-photo-container,
+    .qr-code-container {
+        margin-bottom: 1rem;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Print button animation */
+.btn-print {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+}
+
+.btn-print:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}

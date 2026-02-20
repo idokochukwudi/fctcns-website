@@ -321,6 +321,20 @@ class Router {
         $this->get('/apply/step/2', 'PublicApplicationController@step2');
         $this->get('/apply/step/4', 'PublicApplicationController@step4');
         $this->get('/apply/download-exam-slip', 'PublicApplicationController@downloadExamSlip');
+
+        // ============================================
+        // APPLICATION VERIFICATION ROUTES (Public)
+        // ============================================
+        $this->get('/application-verify', 'ApplicationVerificationController@portal');
+        $this->get('/application-verify/portal', 'ApplicationVerificationController@portal');
+        $this->get('/application-verify/landing', 'ApplicationVerificationController@landing');
+        $this->get('/application-verify/home', 'ApplicationVerificationController@home');
+        $this->get('/application-verify/slip/{slipNumber}', 'ApplicationVerificationController@verifySlip');
+        $this->get('/application-verify/jamb/{jambNumber}', 'ApplicationVerificationController@verifyByJamb');
+        $this->get('/application-verify/application/{appNumber}', 'ApplicationVerificationController@verifyByApplication');
+        $this->get('/application-verify/api/{slipNumber}', 'ApplicationVerificationController@apiVerify');
+        $this->get('/application-verify/qr/{slipNumber}', 'ApplicationVerificationController@generateQR');
+        $this->post('/application-verify/check-status', 'ApplicationVerificationController@checkStatus');
         
         // ============================================
         // ADMIN CONTACT MANAGEMENT ROUTES
