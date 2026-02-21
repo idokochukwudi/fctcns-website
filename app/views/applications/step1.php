@@ -1,7 +1,7 @@
 <?php
 /**
  * JAMB Verification View - Step 1
- * FIXED: All fonts now visible on any background with proper contrast
+ * FIXED: 5-step progress tracker with proper visibility and font contrast
  * 
  * @package FCTCNS
  */
@@ -19,6 +19,26 @@ $terms = $terms ?? [];
 $settings = $settings ?? [];
 $portal_closed = $portal_closed ?? false;
 $portal_message = $portal_message ?? '';
+
+// Get current step from application if available
+$currentStep = 1;
+if (isset($application) && !empty($application['application_step'])) {
+    $currentStep = (int)$application['application_step'];
+    
+    // If application_step is 4 AND exam slip exists, show step 5
+    if ($currentStep == 4 && isset($has_exam_slip) && $has_exam_slip) {
+        $currentStep = 5;
+    }
+}
+
+// Define steps
+$steps = [
+    1 => ['label' => 'Create Account', 'sub' => 'Register'],
+    2 => ['label' => 'JAMB Verification', 'sub' => 'JAMB check'],
+    3 => ['label' => 'Application Form', 'sub' => 'Fill form'],
+    4 => ['label' => 'Payment', 'sub' => 'Remita RRR'],
+    5 => ['label' => 'Exam Slip', 'sub' => 'Download'],
+];
 ?>
 
 <!DOCTYPE html>
@@ -29,10 +49,10 @@ $portal_message = $portal_message ?? '';
     <meta name="description" content="JAMB Verification - FCT College of Nursing Sciences">
     <title>JAMB Verification - FCT College of Nursing Sciences</title>
     
-    <!-- Premium Fonts -->
+    <!-- Premium Fonts with better contrast -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -51,7 +71,7 @@ $portal_message = $portal_message ?? '';
         }
 
         body {
-            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -119,7 +139,7 @@ $portal_message = $portal_message ?? '';
         }
 
         .header h1 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Playfair Display', serif;
             font-size: clamp(28px, 5vw, 42px);
             font-weight: 700;
             color: #FFFFFF !important;
@@ -142,7 +162,7 @@ $portal_message = $portal_message ?? '';
         }
 
         /* ==========================================================================
-           STEP INDICATOR - MAXIMUM VISIBILITY
+           STEP INDICATOR - 5 STEPS WITH MAXIMUM VISIBILITY
            ========================================================================== */
         .step-indicator {
             display: flex;
@@ -153,7 +173,7 @@ $portal_message = $portal_message ?? '';
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border-radius: 50px;
-            padding: 15px 20px;
+            padding: 20px 25px;
             border: 1px solid rgba(255, 255, 255, 0.3);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
@@ -162,10 +182,10 @@ $portal_message = $portal_message ?? '';
             content: '';
             position: absolute;
             top: 50%;
-            left: 60px;
-            right: 60px;
+            left: 70px;
+            right: 70px;
             height: 2px;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
             transform: translateY(-50%);
             z-index: 1;
         }
@@ -175,14 +195,14 @@ $portal_message = $portal_message ?? '';
             z-index: 2;
             text-align: center;
             flex: 1;
-            padding: 8px 0;
+            padding: 5px 0;
         }
 
         .step-number {
             width: 40px;
             height: 40px;
-            background: rgba(255, 255, 255, 0.25);
-            border: 2px solid rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -198,9 +218,10 @@ $portal_message = $portal_message ?? '';
 
         .step.active .step-number {
             background: var(--primary);
-            border-color: #FFFFFF;
-            box-shadow: 0 0 15px rgba(107, 78, 155, 0.5);
+            border-color: #FFD700;
+            box-shadow: 0 0 20px rgba(107, 78, 155, 0.6);
             color: #FFFFFF !important;
+            transform: scale(1.1);
         }
 
         .step.completed .step-number {
@@ -210,27 +231,40 @@ $portal_message = $portal_message ?? '';
         }
 
         .step-label {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: #FFFFFF !important;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.5);
+            text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.6);
+            white-space: nowrap;
+        }
+
+        .step-sub {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.8) !important;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            margin-top: 2px;
         }
 
         .step.active .step-label {
             color: #FFD700 !important;
             font-weight: 700;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+        }
+
+        .step.active .step-sub {
+            color: rgba(255, 215, 0, 0.9) !important;
         }
 
         @media (max-width: 768px) {
             .step-indicator {
                 flex-wrap: wrap;
-                gap: 10px;
-                background: rgba(0, 0, 0, 0.5);
+                gap: 12px;
+                background: rgba(0, 0, 0, 0.6);
                 backdrop-filter: blur(10px);
                 padding: 15px;
+                border-radius: 30px;
             }
             
             .step-indicator::before {
@@ -238,17 +272,28 @@ $portal_message = $portal_message ?? '';
             }
             
             .step {
-                flex: 0 0 calc(50% - 5px);
-                padding: 10px 5px;
+                flex: 0 0 calc(50% - 6px);
+                padding: 8px 5px;
                 background: rgba(255, 255, 255, 0.1);
-                border-radius: 30px;
+                border-radius: 20px;
                 backdrop-filter: blur(5px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+            }
+            
+            .step-number {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+                margin-bottom: 4px;
             }
             
             .step-label {
-                font-size: 11px;
-                color: #FFFFFF !important;
+                font-size: 10px;
+                white-space: normal;
+            }
+            
+            .step-sub {
+                font-size: 8px;
             }
         }
 
@@ -307,7 +352,7 @@ $portal_message = $portal_message ?? '';
         }
 
         /* ==========================================================================
-           TERMS CARD
+           TERMS CARD - FIXED FONT CONTRAST
            ========================================================================== */
         .terms-card {
             background: var(--primary-soft);
@@ -342,7 +387,7 @@ $portal_message = $portal_message ?? '';
         }
 
         .terms-body h6 {
-            color: var(--primary);
+            color: var(--primary-dark);
             font-weight: 600;
             margin-bottom: 15px;
             font-size: 16px;
@@ -373,7 +418,7 @@ $portal_message = $portal_message ?? '';
         }
 
         /* ==========================================================================
-           FORM ELEMENTS
+           FORM ELEMENTS - IMPROVED CONTRAST
            ========================================================================== */
         .form-label {
             font-weight: 600;
@@ -391,7 +436,7 @@ $portal_message = $portal_message ?? '';
             padding: 14px 16px;
             font-size: 15px;
             transition: all 0.3s;
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Inter', sans-serif;
             color: var(--text-dark);
         }
 
@@ -451,7 +496,7 @@ $portal_message = $portal_message ?? '';
         }
 
         /* ==========================================================================
-           INFO ALERT
+           INFO ALERT - FIXED FONT CONTRAST
            ========================================================================== */
         .info-alert {
             background: var(--info-light);
@@ -482,7 +527,7 @@ $portal_message = $portal_message ?? '';
         }
 
         /* ==========================================================================
-           BUTTONS
+           BUTTONS - IMPROVED CONTRAST
            ========================================================================== */
         .btn {
             padding: 14px 30px;
@@ -506,6 +551,7 @@ $portal_message = $portal_message ?? '';
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 15px 35px rgba(107,78,155,0.4);
+            color: white;
         }
 
         .btn-primary:disabled {
@@ -623,7 +669,7 @@ $portal_message = $portal_message ?? '';
         }
 
         /* ==========================================================================
-           FOOTER
+           FOOTER - MAXIMUM VISIBILITY
            ========================================================================== */
         .app-footer {
             text-align: center;
@@ -731,24 +777,25 @@ $portal_message = $portal_message ?? '';
             <p>2025/2026 Admissions Application Portal</p>
         </div>
 
-        <!-- Step Indicator - Maximum Visibility -->
+        <!-- Step Indicator - 5 Steps with Maximum Visibility -->
         <div class="step-indicator">
-            <div class="step active">
-                <div class="step-number">1</div>
-                <div class="step-label">JAMB Verification</div>
+            <?php foreach ($steps as $num => $step): 
+                $stepClass = '';
+                if ($num < $currentStep) $stepClass = 'completed';
+                elseif ($num == $currentStep) $stepClass = 'active';
+            ?>
+            <div class="step <?php echo $stepClass; ?>">
+                <div class="step-number">
+                    <?php if ($num < $currentStep): ?>
+                        <i class="fas fa-check"></i>
+                    <?php else: ?>
+                        <?php echo $num; ?>
+                    <?php endif; ?>
+                </div>
+                <div class="step-label"><?php echo $step['label']; ?></div>
+                <div class="step-sub"><?php echo $step['sub']; ?></div>
             </div>
-            <div class="step">
-                <div class="step-number">2</div>
-                <div class="step-label">Application Form</div>
-            </div>
-            <div class="step">
-                <div class="step-number">3</div>
-                <div class="step-label">Payment</div>
-            </div>
-            <div class="step">
-                <div class="step-number">4</div>
-                <div class="step-label">Exam Slip</div>
-            </div>
+            <?php endforeach; ?>
         </div>
 
         <!-- Alert Container -->
@@ -827,7 +874,7 @@ $portal_message = $portal_message ?? '';
                             </label>
                         </div>
                         
-                        <!-- Requirements Alert -->
+                        <!-- Requirements Alert - Fixed Font Contrast -->
                         <div class="info-alert">
                             <i class="fas fa-info-circle"></i>
                             <strong>By proceeding, you confirm that:</strong>
