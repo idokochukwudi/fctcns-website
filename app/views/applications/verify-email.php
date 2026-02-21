@@ -1,90 +1,147 @@
 <?php
 /**
- * Email Verification View - International Standard Design
- * Handles all verification states with modern UI
+ * Email Verification View - Professional Design
+ * Wider cards with subtle colors that integrate seamlessly with layout
  */
 ?>
 
 <style>
-/* Modern CSS Reset & Variables */
+/* ==========================================================================
+   PROFESSIONAL DESIGN SYSTEM - SUBTLE & SOPHISTICATED
+   Wider cards for better content display
+   ========================================================================== */
+
 :root {
-    /* Success colors */
-    --success-primary: #10b981;
-    --success-primary-dark: #059669;
-    --success-primary-light: #d1fae5;
-    --success-soft: #ecfdf5;
+    /* Primary - Soft Lavender (minimal, professional) */
+    --primary-50: #f5f3ff;
+    --primary-100: #ede9fe;
+    --primary-200: #ddd6fe;
+    --primary-300: #c4b5fd;
+    --primary-400: #a78bfa;
+    --primary-500: #8b5cf6;
+    --primary-600: #7c3aed;
+    --primary-700: #6d28d9;
     
-    /* Error colors */
-    --error-primary: #ef4444;
-    --error-primary-dark: #dc2626;
-    --error-primary-light: #fee2e2;
-    --error-soft: #fef2f2;
+    /* Success - Muted Green */
+    --success-50: #ecfdf5;
+    --success-100: #d1fae5;
+    --success-200: #a7f3d0;
+    --success-300: #6ee7b7;
+    --success-400: #34d399;
+    --success-500: #10b981;
+    --success-600: #059669;
     
-    /* Info colors */
-    --info-primary: #3b82f6;
-    --info-primary-dark: #2563eb;
-    --info-primary-light: #dbeafe;
-    --info-soft: #eff6ff;
+    /* Error - Muted Rose */
+    --error-50: #fff1f2;
+    --error-100: #ffe4e6;
+    --error-200: #fecdd3;
+    --error-300: #fda4af;
+    --error-400: #fb7185;
+    --error-500: #f43f5e;
+    --error-600: #e11d48;
     
-    /* Warning colors */
-    --warning-primary: #f59e0b;
-    --warning-primary-dark: #d97706;
-    --warning-primary-light: #fef3c7;
-    --warning-soft: #fffbeb;
+    /* Warning - Muted Amber */
+    --warning-50: #fffbeb;
+    --warning-100: #fef3c7;
+    --warning-200: #fde68a;
+    --warning-300: #fcd34d;
+    --warning-400: #fbbf24;
+    --warning-500: #f59e0b;
+    --warning-600: #d97706;
     
-    /* Neutral colors */
-    --neutral-50: #f9fafb;
-    --neutral-100: #f3f4f6;
-    --neutral-200: #e5e7eb;
-    --neutral-300: #d1d5db;
-    --neutral-400: #9ca3af;
-    --neutral-500: #6b7280;
-    --neutral-600: #4b5563;
-    --neutral-700: #374151;
-    --neutral-800: #1f2937;
-    --neutral-900: #111827;
+    /* Info - Muted Blue */
+    --info-50: #eff6ff;
+    --info-100: #dbeafe;
+    --info-200: #bfdbfe;
+    --info-300: #93c5fd;
+    --info-400: #60a5fa;
+    --info-500: #3b82f6;
+    --info-600: #2563eb;
     
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    /* Neutral - Sophisticated Grays */
+    --neutral-50: #fafafa;
+    --neutral-100: #f4f4f5;
+    --neutral-200: #e4e4e7;
+    --neutral-300: #d4d4d8;
+    --neutral-400: #a1a1aa;
+    --neutral-500: #71717a;
+    --neutral-600: #52525b;
+    --neutral-700: #3f3f46;
+    --neutral-800: #27272a;
+    --neutral-900: #18181b;
     
-    /* Font */
-    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    /* Background & Surface */
+    --bg-body: var(--neutral-50);
+    --bg-surface: #ffffff;
+    --bg-subtle: var(--neutral-100);
+    
+    /* Borders */
+    --border-light: var(--neutral-200);
+    --border: var(--neutral-300);
+    
+    /* Shadows - Extremely Subtle */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.02);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.02), 0 2px 4px -2px rgb(0 0 0 / 0.01);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.02), 0 4px 6px -4px rgb(0 0 0 / 0.01);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.02), 0 8px 10px -6px rgb(0 0 0 / 0.01);
+    
+    /* Border Radius - Consistent */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.25rem;
+    
+    /* Typography */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    
+    /* Spacing - Responsive */
+    --space-1: clamp(0.125rem, 0.5vw, 0.25rem);
+    --space-2: clamp(0.25rem, 1vw, 0.5rem);
+    --space-3: clamp(0.375rem, 1.5vw, 0.75rem);
+    --space-4: clamp(0.5rem, 2vw, 1rem);
+    --space-5: clamp(0.625rem, 2.5vw, 1.25rem);
+    --space-6: clamp(0.75rem, 3vw, 1.5rem);
+    --space-8: clamp(1rem, 4vw, 2rem);
+    --space-10: clamp(1.25rem, 5vw, 2.5rem);
+    --space-12: clamp(1.5rem, 6vw, 3rem);
+    --space-16: clamp(2rem, 8vw, 4rem);
 }
 
 /* Base Styles */
 .verify-modern-wrap {
-    max-width: 560px;
-    margin: 2rem auto;
+    max-width: 720px; /* Increased from 560px for wider cards */
+    width: 100%;
+    margin: 0 auto; /* Removed vertical margin - will be handled by layout */
     font-family: var(--font-sans);
+    padding: 0 var(--space-4); /* Responsive padding */
 }
 
-/* Card Styles */
+/* Card Styles - Wider and more elegant */
 .verify-modern-card {
     background: white;
-    border-radius: 32px;
+    border-radius: var(--radius-2xl);
     overflow: hidden;
-    box-shadow: var(--shadow-xl);
-    border: 1px solid var(--neutral-200);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-light);
     animation: cardEntrance 0.4s ease-out;
+    width: 100%;
 }
 
 @keyframes cardEntrance {
     from {
         opacity: 0;
-        transform: translateY(20px) scale(0.98);
+        transform: translateY(10px);
     }
     to {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
     }
 }
 
-/* Header Styles - Dynamic by state */
+/* Header Styles - Subtle gradients */
 .verify-modern-header {
-    padding: 2.5rem 2rem;
+    padding: var(--space-8) var(--space-8);
     text-align: center;
     position: relative;
     isolation: isolate;
@@ -92,153 +149,153 @@
 }
 
 .verify-modern-header.success {
-    background: linear-gradient(145deg, #10b981, #059669);
+    background: linear-gradient(145deg, var(--success-50), var(--success-100));
+    border-bottom: 1px solid var(--success-200);
 }
 
 .verify-modern-header.danger {
-    background: linear-gradient(145deg, #ef4444, #dc2626);
+    background: linear-gradient(145deg, var(--error-50), var(--error-100));
+    border-bottom: 1px solid var(--error-200);
 }
 
 .verify-modern-header.info {
-    background: linear-gradient(145deg, #3b82f6, #2563eb);
+    background: linear-gradient(145deg, var(--info-50), var(--info-100));
+    border-bottom: 1px solid var(--info-200);
 }
 
 .verify-modern-header.warning {
-    background: linear-gradient(145deg, #f59e0b, #d97706);
+    background: linear-gradient(145deg, var(--warning-50), var(--warning-100));
+    border-bottom: 1px solid var(--warning-200);
 }
 
 .verify-modern-header.primary {
-    background: linear-gradient(145deg, #4f46e5, #4338ca);
+    background: linear-gradient(145deg, var(--primary-50), var(--primary-100));
+    border-bottom: 1px solid var(--primary-200);
 }
 
-.verify-modern-header::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2) 0%, transparent 70%);
-    z-index: -1;
-}
-
+/* Subtle pattern overlay */
 .verify-modern-header::after {
     content: '';
     position: absolute;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5L55 20L30 35L5 20L30 5Z' fill='rgba(255,255,255,0.05)'/%3E%3C/svg%3E");
-    opacity: 0.2;
+    background-image: radial-gradient(circle at 30% 50%, rgba(0,0,0,0.02) 0%, transparent 50%);
+    opacity: 0.4;
     z-index: -1;
 }
 
-/* Header Icon */
+/* Header Icon - Smaller and more elegant */
 .verify-modern-icon {
-    width: 88px;
-    height: 88px;
-    background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(8px);
-    border: 3px solid rgba(255,255,255,0.2);
+    width: 72px;
+    height: 72px;
+    background: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 1.5rem;
-    font-size: 2.5rem;
-    color: white;
-    animation: iconPulse 2s infinite;
+    margin: 0 auto var(--space-4);
+    font-size: 2rem;
+    color: var(--neutral-700);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-light);
 }
 
-@keyframes iconPulse {
-    0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(255,255,255,0.5);
-    }
-    50% {
-        transform: scale(1.05);
-        box-shadow: 0 0 20px 10px rgba(255,255,255,0.2);
-    }
+.verify-modern-header.success .verify-modern-icon {
+    color: var(--success-600);
+}
+
+.verify-modern-header.danger .verify-modern-icon {
+    color: var(--error-600);
+}
+
+.verify-modern-header.info .verify-modern-icon {
+    color: var(--info-600);
+}
+
+.verify-modern-header.warning .verify-modern-icon {
+    color: var(--warning-600);
+}
+
+.verify-modern-header.primary .verify-modern-icon {
+    color: var(--primary-600);
 }
 
 .verify-modern-header h2 {
-    font-size: 2rem;
-    font-weight: 800;
-    color: white;
-    margin: 0 0 0.5rem;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 600;
+    color: var(--neutral-800);
+    margin: 0 0 var(--space-2);
     letter-spacing: -0.02em;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .verify-modern-header p {
-    font-size: 1rem;
-    color: rgba(255,255,255,0.9);
+    font-size: clamp(0.875rem, 2vw, 1rem);
+    color: var(--neutral-600);
     margin: 0;
     font-weight: 400;
 }
 
-/* Body Styles */
+/* Body Styles - More breathing room */
 .verify-modern-body {
-    padding: 2.5rem;
+    padding: var(--space-8);
+}
+
+@media (max-width: 640px) {
+    .verify-modern-body {
+        padding: var(--space-6);
+    }
 }
 
 /* Greeting Section */
 .verify-modern-greeting {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-6);
     position: relative;
 }
 
-.verify-modern-greeting::after {
-    content: '';
-    position: absolute;
-    bottom: -1rem;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 4px;
-    background: linear-gradient(90deg, transparent, var(--neutral-300), transparent);
-    border-radius: 2px;
-}
-
 .greeting-icon {
-    width: 64px;
-    height: 64px;
+    width: 56px;
+    height: 56px;
     background: var(--neutral-100);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 1rem;
-    font-size: 1.5rem;
-    color: var(--neutral-600);
-    border: 2px solid var(--neutral-200);
+    margin: 0 auto var(--space-3);
+    font-size: 1.25rem;
+    color: var(--neutral-500);
+    border: 1px solid var(--border-light);
 }
 
 .verify-modern-greeting h4 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--neutral-900);
-    margin: 0 0 0.5rem;
+    font-size: clamp(1.125rem, 3vw, 1.25rem);
+    font-weight: 600;
+    color: var(--neutral-800);
+    margin: 0 0 var(--space-1);
 }
 
 .verify-modern-greeting p {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--neutral-600);
     line-height: 1.6;
     margin: 0;
 }
 
-/* Alert Banners */
+/* Alert Banners - Subtle and professional */
 .alert-modern {
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
-    padding: 1.25rem 1.5rem;
-    border-radius: 20px;
-    margin-bottom: 1.5rem;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-5);
     animation: slideInRight 0.3s ease-out;
+    border: 1px solid transparent;
 }
 
 @keyframes slideInRight {
     from {
         opacity: 0;
-        transform: translateX(20px);
+        transform: translateX(10px);
     }
     to {
         opacity: 1;
@@ -247,7 +304,7 @@
 }
 
 .alert-modern i {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     flex-shrink: 0;
 }
 
@@ -258,86 +315,89 @@
 }
 
 .alert-modern.success {
-    background: var(--success-soft);
-    border: 1px solid var(--success-primary-light);
-    color: var(--success-primary-dark);
+    background: var(--success-50);
+    border-color: var(--success-200);
+    color: var(--success-700);
 }
 
 .alert-modern.success i {
-    color: var(--success-primary);
+    color: var(--success-600);
 }
 
 .alert-modern.danger {
-    background: var(--error-soft);
-    border: 1px solid var(--error-primary-light);
-    color: var(--error-primary-dark);
+    background: var(--error-50);
+    border-color: var(--error-200);
+    color: var(--error-700);
 }
 
 .alert-modern.danger i {
-    color: var(--error-primary);
+    color: var(--error-600);
 }
 
 .alert-modern.info {
-    background: var(--info-soft);
-    border: 1px solid var(--info-primary-light);
-    color: var(--info-primary-dark);
+    background: var(--info-50);
+    border-color: var(--info-200);
+    color: var(--info-700);
 }
 
 .alert-modern.info i {
-    color: var(--info-primary);
+    color: var(--info-600);
 }
 
 .alert-modern.warning {
-    background: var(--warning-soft);
-    border: 1px solid var(--warning-primary-light);
-    color: var(--warning-primary-dark);
+    background: var(--warning-50);
+    border-color: var(--warning-200);
+    color: var(--warning-700);
 }
 
 .alert-modern.warning i {
-    color: var(--warning-primary);
+    color: var(--warning-600);
 }
 
 /* Email Chip */
 .email-chip-modern {
     display: inline-flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: var(--space-2);
     background: var(--neutral-100);
-    border: 1px solid var(--neutral-200);
+    border: 1px solid var(--border-light);
     border-radius: 100px;
-    padding: 0.75rem 1.5rem;
-    margin: 1rem 0;
-    font-size: 1rem;
+    padding: var(--space-2) var(--space-4);
+    margin: var(--space-3) 0;
+    font-size: 0.95rem;
     font-weight: 500;
-    color: var(--neutral-800);
+    color: var(--neutral-700);
     box-shadow: var(--shadow-sm);
+    max-width: 100%;
+    word-break: break-all;
 }
 
 .email-chip-modern i {
-    color: var(--info-primary);
+    color: var(--primary-500);
+    font-size: 0.9rem;
 }
 
-/* Reasons List */
+/* Reasons List - Clean and organized */
 .reasons-modern {
     background: var(--neutral-50);
-    border-radius: 20px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    margin-bottom: var(--space-5);
+    border: 1px solid var(--border-light);
 }
 
 .reasons-modern h5 {
     font-size: 1rem;
     font-weight: 600;
     color: var(--neutral-700);
-    margin: 0 0 1rem;
+    margin: 0 0 var(--space-3);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .reasons-modern h5 i {
-    color: var(--warning-primary);
+    color: var(--warning-500);
 }
 
 .reasons-modern ul {
@@ -346,22 +406,22 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-2);
 }
 
 .reasons-modern li {
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
+    gap: var(--space-2);
     font-size: 0.95rem;
     color: var(--neutral-600);
     line-height: 1.5;
 }
 
 .reason-bullet {
-    width: 20px;
-    height: 20px;
-    background: var(--error-soft);
+    width: 18px;
+    height: 18px;
+    background: var(--error-50);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -371,77 +431,77 @@
 }
 
 .reason-bullet i {
-    font-size: 0.7rem;
-    color: var(--error-primary);
+    font-size: 0.6rem;
+    color: var(--error-500);
 }
 
 /* Tips Block */
 .tips-modern {
     background: var(--neutral-50);
-    border-radius: 20px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    border: 1px solid var(--neutral-200);
-    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-light);
+    margin-bottom: var(--space-5);
 }
 
 .tips-header {
     background: var(--neutral-100);
-    padding: 1rem 1.5rem;
+    padding: var(--space-3) var(--space-5);
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    border-bottom: 1px solid var(--neutral-200);
+    gap: var(--space-2);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .tips-header i {
-    color: var(--warning-primary);
+    color: var(--warning-500);
     font-size: 1rem;
 }
 
 .tips-header span {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    color: var(--neutral-700);
+    color: var(--neutral-600);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
 }
 
 .tips-list {
-    padding: 1.25rem 1.5rem;
+    padding: var(--space-4) var(--space-5);
     margin: 0;
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-3);
 }
 
 .tips-list li {
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
+    gap: var(--space-2);
     font-size: 0.95rem;
     color: var(--neutral-600);
     line-height: 1.5;
 }
 
 .tips-list li i {
-    width: 18px;
-    font-size: 0.9rem;
+    width: 16px;
+    font-size: 0.85rem;
     margin-top: 3px;
     flex-shrink: 0;
 }
 
-.tips-list li i.fa-folder { color: #d97706; }
-.tips-list li i.fa-clock { color: #3b82f6; }
-.tips-list li i.fa-at { color: #10b981; }
+.tips-list li i.fa-folder { color: var(--warning-600); }
+.tips-list li i.fa-clock { color: var(--info-600); }
+.tips-list li i.fa-at { color: var(--success-600); }
 
 /* Resend Block */
 .resend-modern {
     background: white;
-    border: 1px solid var(--neutral-200);
-    border-radius: 20px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    margin-bottom: var(--space-5);
     text-align: center;
     box-shadow: var(--shadow-sm);
 }
@@ -449,94 +509,76 @@
 .resend-modern p {
     font-size: 0.95rem;
     color: var(--neutral-600);
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-3);
 }
 
 .resend-email-display {
-    background: var(--neutral-50);
-    border-radius: 12px;
-    padding: 0.75rem;
-    margin-top: 1rem;
+    background: var(--neutral-100);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    margin-top: var(--space-3);
     font-size: 0.9rem;
-    color: var(--neutral-500);
+    color: var(--neutral-600);
     word-break: break-all;
+    border: 1px solid var(--border-light);
 }
 
 .resend-email-display i {
-    color: var(--info-primary);
-    margin-right: 0.5rem;
+    color: var(--primary-500);
+    margin-right: var(--space-2);
 }
 
-/* Buttons */
+/* Buttons - Professional and consistent */
 .btn-modern-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    gap: var(--space-2);
     width: 100%;
-    padding: 1rem 1.5rem;
-    background: linear-gradient(145deg, #4f46e5, #4338ca);
+    padding: var(--space-3) var(--space-6);
+    background: var(--primary-600);
     color: white;
     border: none;
-    border-radius: 18px;
+    border-radius: var(--radius-lg);
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 500;
     text-decoration: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
-    margin-bottom: 0.75rem;
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-modern-primary::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.2);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-3);
+    cursor: pointer;
 }
 
 .btn-modern-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+    background: var(--primary-700);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
     color: white;
-    text-decoration: none;
-}
-
-.btn-modern-primary:hover::before {
-    width: 300px;
-    height: 300px;
 }
 
 .btn-modern-outline {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    gap: var(--space-2);
     width: 100%;
-    padding: 1rem 1.5rem;
-    background: white;
+    padding: var(--space-3) var(--space-6);
+    background: transparent;
     color: var(--neutral-700);
-    border: 1.5px solid var(--neutral-200);
-    border-radius: 18px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-lg);
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 500;
     text-decoration: none;
-    transition: all 0.3s ease;
-    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+    margin-bottom: var(--space-3);
+    cursor: pointer;
 }
 
 .btn-modern-outline:hover {
     background: var(--neutral-50);
-    border-color: var(--neutral-300);
+    border-color: var(--neutral-400);
     color: var(--neutral-900);
-    text-decoration: none;
     transform: translateY(-1px);
 }
 
@@ -544,30 +586,30 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-4);
     background: transparent;
     color: var(--neutral-500);
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     font-size: 0.9rem;
     font-weight: 500;
     text-decoration: none;
     transition: all 0.2s ease;
+    cursor: pointer;
 }
 
 .btn-modern-ghost:hover {
     background: var(--neutral-100);
     color: var(--neutral-700);
-    text-decoration: none;
 }
 
 /* Divider */
 .divider-modern {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin: 1.5rem 0;
+    gap: var(--space-3);
+    margin: var(--space-5) 0;
     color: var(--neutral-400);
     font-size: 0.85rem;
 }
@@ -577,7 +619,7 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: linear-gradient(90deg, transparent, var(--neutral-200), transparent);
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
 }
 
 /* Action Group */
@@ -585,82 +627,142 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    margin: 1.5rem 0;
+    gap: var(--space-2);
+    margin: var(--space-5) 0;
 }
 
-/* Support Footer */
+/* Support Footer - Integrated with layout */
 .support-modern {
     background: var(--neutral-50);
-    border: 1px solid var(--neutral-200);
-    border-radius: 100px;
-    padding: 1rem 1.5rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-full);
+    padding: var(--space-3) var(--space-6);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 1rem;
-    margin-top: 1.5rem;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
     font-size: 0.9rem;
     color: var(--neutral-600);
+    flex-wrap: wrap;
 }
 
 .support-modern i {
-    color: var(--info-primary);
-    font-size: 1.1rem;
+    color: var(--primary-500);
+    font-size: 1rem;
 }
 
 .support-modern a {
     color: var(--neutral-700);
-    font-weight: 600;
+    font-weight: 500;
     text-decoration: none;
     transition: color 0.2s ease;
+    border-bottom: 1px dotted transparent;
 }
 
 .support-modern a:hover {
-    color: var(--info-primary);
+    color: var(--primary-600);
+    border-bottom-color: var(--primary-200);
 }
 
 /* Loading Spinner */
 .spinner-modern {
-    width: 20px;
-    height: 20px;
-    border: 3px solid rgba(255,255,255,0.3);
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
     border-radius: 50%;
     border-top-color: white;
-    animation: spin 1s linear infinite;
+    animation: spin 0.6s linear infinite;
 }
 
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
 
-/* Responsive */
-@media (max-width: 640px) {
+/* Responsive Breakpoints - Optimized for all screens */
+@media (max-width: 768px) {
     .verify-modern-wrap {
-        margin: 1rem;
-    }
-    
-    .verify-modern-body {
-        padding: 1.5rem;
+        max-width: 600px;
+        padding: 0 var(--space-3);
     }
     
     .verify-modern-header {
-        padding: 2rem 1.5rem;
+        padding: var(--space-6) var(--space-5);
+    }
+    
+    .verify-modern-icon {
+        width: 64px;
+        height: 64px;
+        font-size: 1.75rem;
+    }
+    
+    .support-modern {
+        border-radius: var(--radius-lg);
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+    }
+}
+
+@media (max-width: 640px) {
+    .verify-modern-wrap {
+        max-width: 100%;
+    }
+    
+    .verify-modern-body {
+        padding: var(--space-5);
     }
     
     .verify-modern-header h2 {
-        font-size: 1.75rem;
+        font-size: 1.5rem;
+    }
+    
+    .verify-modern-header p {
+        font-size: 0.875rem;
     }
     
     .support-modern {
         flex-direction: column;
         text-align: center;
-        border-radius: 24px;
-        gap: 0.5rem;
+        gap: var(--space-2);
+        padding: var(--space-4);
     }
     
     .action-group {
         flex-direction: column;
+    }
+    
+    .btn-modern-primary,
+    .btn-modern-outline {
+        padding: var(--space-3) var(--space-4);
+    }
+}
+
+@media (max-width: 480px) {
+    .verify-modern-icon {
+        width: 56px;
+        height: 56px;
+        font-size: 1.5rem;
+    }
+    
+    .verify-modern-header {
+        padding: var(--space-5) var(--space-4);
+    }
+    
+    .email-chip-modern {
+        font-size: 0.85rem;
+        padding: var(--space-2) var(--space-3);
+    }
+    
+    .reasons-modern,
+    .tips-modern,
+    .resend-modern {
+        padding: var(--space-4);
+    }
+    
+    .alert-modern {
+        padding: var(--space-3) var(--space-4);
     }
 }
 
@@ -689,8 +791,8 @@
             <div class="verify-modern-icon">
                 <i class="fas fa-check-circle"></i>
             </div>
-            <h2>Email Verified!</h2>
-            <p>FCT College of Nursing Sciences</p>
+            <h2>Email Verified</h2>
+            <p>Your email has been successfully verified</p>
         </div>
         
         <div class="verify-modern-body">
@@ -699,12 +801,12 @@
                     <i class="fas fa-envelope-open-text"></i>
                 </div>
                 <h4>Welcome, <?php echo htmlspecialchars($applicant_name ?? 'Applicant'); ?>!</h4>
-                <p>Your email has been successfully verified. Your account is now active.</p>
+                <p>Your account is now active and ready for the next steps.</p>
             </div>
 
             <div class="alert-modern success">
                 <i class="fas fa-check-circle"></i>
-                <span><strong>Ready to proceed:</strong> Verify your JAMB registration number to continue.</span>
+                <span>Your email has been verified. Proceed to verify your JAMB number.</span>
             </div>
 
             <a href="/apply/step/1" class="btn-modern-primary" id="continueBtn">
@@ -722,7 +824,7 @@
                 <i class="fas fa-times-circle"></i>
             </div>
             <h2>Verification Failed</h2>
-            <p>Unable to verify your email</p>
+            <p>Unable to verify your email address</p>
         </div>
         
         <div class="verify-modern-body">
@@ -734,27 +836,27 @@
             <div class="reasons-modern">
                 <h5>
                     <i class="fas fa-search"></i>
-                    Common reasons
+                    Why this happened
                 </h5>
                 <ul>
                     <li>
                         <span class="reason-bullet"><i class="fas fa-times"></i></span>
-                        Link expired (valid for 24 hours only)
+                        The verification link has expired (valid for 24 hours)
                     </li>
                     <li>
                         <span class="reason-bullet"><i class="fas fa-times"></i></span>
-                        Link already used
+                        The link has already been used
                     </li>
                     <li>
                         <span class="reason-bullet"><i class="fas fa-times"></i></span>
-                        Invalid or corrupted token
+                        The verification token is invalid
                     </li>
                 </ul>
             </div>
 
             <?php if (isset($resend_email) && $resend_email): ?>
             <div class="resend-modern">
-                <p><i class="fas fa-paper-plane" style="color: var(--info-primary); margin-right: 0.5rem;"></i> Need a new verification link?</p>
+                <p>Need a new verification link?</p>
                 <a href="/apply/resend-verification?email=<?php echo urlencode($resend_email); ?>" 
                    class="btn-modern-outline" style="margin-bottom: 0;">
                     <i class="fas fa-redo-alt"></i> Resend Verification Email
@@ -787,7 +889,7 @@
                 <i class="fas fa-info-circle"></i>
             </div>
             <h2>Already Verified</h2>
-            <p>Email already confirmed</p>
+            <p>Your email has already been confirmed</p>
         </div>
         
         <div class="verify-modern-body">
@@ -810,7 +912,7 @@
                 <i class="fas fa-paper-plane"></i>
             </div>
             <h2>Check Your Inbox</h2>
-            <p>Verification email sent</p>
+            <p>Verification email has been sent</p>
         </div>
         
         <div class="verify-modern-body">
@@ -831,11 +933,11 @@
 
             <div class="alert-modern warning">
                 <i class="fas fa-clock"></i>
-                <span><strong>Valid for 24 hours.</strong> Please verify your email before the link expires.</span>
+                <span><strong>Link expires in 24 hours.</strong> Please verify your email before then.</span>
             </div>
 
             <div class="resend-modern">
-                <p><i class="fas fa-question-circle" style="color: var(--warning-primary);"></i> Didn't receive the email?</p>
+                <p>Didn't receive the email?</p>
                 <a href="/apply/resend-verification?email=<?php echo urlencode($email ?? ''); ?>"
                    class="btn-modern-outline" style="margin-bottom: 0;">
                     <i class="fas fa-redo-alt"></i> Resend Email
@@ -845,20 +947,20 @@
             <div class="tips-modern">
                 <div class="tips-header">
                     <i class="fas fa-lightbulb"></i>
-                    <span>Troubleshooting</span>
+                    <span>Quick tips</span>
                 </div>
                 <ul class="tips-list">
                     <li>
                         <i class="fas fa-folder"></i>
-                        Check your <strong>spam/junk folder</strong>
+                        Check your <strong>spam or junk folder</strong>
                     </li>
                     <li>
                         <i class="fas fa-clock"></i>
-                        Wait a few minutes — delivery may take time
+                        Wait a few minutes — delivery can take time
                     </li>
                     <li>
                         <i class="fas fa-at"></i>
-                        Verify you entered the <strong>correct email</strong>
+                        Make sure you entered the <strong>correct email</strong>
                     </li>
                 </ul>
             </div>
@@ -886,13 +988,13 @@
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
             <h2>Something Went Wrong</h2>
-            <p>Unexpected error occurred</p>
+            <p>An unexpected error occurred</p>
         </div>
         
         <div class="verify-modern-body">
             <div class="alert-modern warning">
                 <i class="fas fa-exclamation-triangle"></i>
-                <span>An unexpected error occurred. Please try again or contact support.</span>
+                <span>Please try again or contact support if the problem persists.</span>
             </div>
 
             <div class="action-group">
@@ -907,12 +1009,12 @@
     </div>
     <?php endif; ?>
 
-    <!-- Support Footer (shown on all states) -->
+    <!-- Support Footer -->
     <div class="support-modern">
         <i class="fas fa-headset"></i>
-        <span>Need help?</span>
+        <span>Need assistance?</span>
         <a href="mailto:support@fctcns.edu.ng">support@fctcns.edu.ng</a>
-        <span>•</span>
+        <span class="separator">•</span>
         <a href="tel:07039837749">0703 983 7749</a>
     </div>
 
@@ -927,13 +1029,16 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', function(e) {
             if (this.classList.contains('btn-modern-primary') && !this.hasAttribute('data-no-loading')) {
                 const originalText = this.innerHTML;
+                const icon = this.querySelector('i') ? this.querySelector('i').outerHTML : '';
                 this.innerHTML = '<span class="spinner-modern" style="margin-right: 0.5rem;"></span> Loading...';
                 this.style.pointerEvents = 'none';
                 
                 // Restore after 10 seconds if stuck (safety)
                 setTimeout(() => {
-                    this.innerHTML = originalText;
-                    this.style.pointerEvents = 'auto';
+                    if (this.innerHTML.includes('Loading')) {
+                        this.innerHTML = originalText;
+                        this.style.pointerEvents = 'auto';
+                    }
                 }, 10000);
             }
         });
