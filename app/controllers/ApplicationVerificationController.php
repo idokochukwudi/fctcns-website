@@ -10,7 +10,7 @@
 require_once __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'Controller.php';
 require_once MODELS_PATH . DIRECTORY_SEPARATOR . 'application' . DIRECTORY_SEPARATOR . 'ExamSlipModel.php';
 require_once MODELS_PATH . DIRECTORY_SEPARATOR . 'application' . DIRECTORY_SEPARATOR . 'ApplicationModel.php';
-require_once MODELS_PATH . DIRECTORY_SEPARATOR . 'ApplicantModel.php';
+require_once MODELS_PATH . DIRECTORY_SEPARATOR . 'application' . DIRECTORY_SEPARATOR . 'ApplicantModel.php';
 require_once MODELS_PATH . DIRECTORY_SEPARATOR . 'application' . DIRECTORY_SEPARATOR . 'PaymentModel.php';
 
 class ApplicationVerificationController extends Controller {
