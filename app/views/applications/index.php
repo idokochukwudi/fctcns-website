@@ -2,10 +2,8 @@
 /**
  * Home / Landing Page View
  * Fits inside the portal layout's $content slot.
- * All PHP logic and data bindings from the original are preserved.
  */
 
-// ── Date helpers ───────────────────────────────────────────────────────────
 $start_date   = isset($settings['key_value']['application_start_date'])
     ? date('j M Y', strtotime($settings['key_value']['application_start_date'])) : '15 Sep 2025';
 $end_date     = isset($settings['key_value']['application_end_date'])
@@ -32,24 +30,25 @@ $isOpen       = isset($portal_open) && $portal_open;
 ?>
 
 <style>
-/* ── Page-level tokens (inherits layout's :root) ──────────────────── */
+/* ── Page-level variables ──────────────────────────────────────────── */
 .hp {
-    --gap:    clamp(1rem, 3vw, 2rem);
-    --r-card: 14px;
+    /* inherits layout :root tokens */
+    --gap: clamp(.9rem, 2.5vw, 1.75rem);
+    --r:   12px;
 }
 
 /* ── Hero band ─────────────────────────────────────────────────────── */
 .hp-hero {
-    background: var(--navy);
-    border-radius: var(--r-card) var(--r-card) 0 0;
-    padding: clamp(2rem, 5vw, 3.5rem) clamp(1.5rem, 4vw, 3rem);
+    background: linear-gradient(150deg, var(--pu-deeper, #4C1D95) 0%, var(--pu-dark, #5B21B6) 55%, var(--pu, #7C3AED) 100%);
+    border-radius: var(--r) var(--r) 0 0;
+    padding: clamp(2rem, 5vw, 3rem) clamp(1.5rem, 4vw, 2.5rem);
+    margin: -36px -40px 1.75rem;   /* bleed into portal-body padding */
+    text-align: center;
     position: relative;
     overflow: hidden;
-    margin: -40px -40px 2rem; /* bleed to edge of .portal-body padding */
-    text-align: center;
 }
 
-/* Decorative rings */
+/* Decorative circle rings */
 .hp-hero::before,
 .hp-hero::after {
     content: '';
@@ -58,115 +57,112 @@ $isOpen       = isset($portal_open) && $portal_open;
     pointer-events: none;
 }
 .hp-hero::before {
-    width: 420px; height: 420px;
-    border: 1px solid rgba(200,150,58,0.12);
+    width: 400px; height: 400px;
+    border: 1px solid rgba(255,255,255,.06);
     top: -180px; right: -80px;
 }
 .hp-hero::after {
-    width: 280px; height: 280px;
-    border: 1px solid rgba(200,150,58,0.08);
-    bottom: -120px; left: -60px;
+    width: 260px; height: 260px;
+    border: 1px solid rgba(255,255,255,.04);
+    bottom: -110px; left: -60px;
 }
 
 .hp-hero-status {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    background: <?php echo $isOpen ? 'rgba(29,138,122,0.18)' : 'rgba(192,57,43,0.18)'; ?>;
-    border: 1px solid <?php echo $isOpen ? 'rgba(29,138,122,0.35)' : 'rgba(192,57,43,0.35)'; ?>;
     border-radius: 50px;
     padding: 5px 14px;
-    font-size: 11.5px;
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: .6px;
+    letter-spacing: .06em;
     text-transform: uppercase;
-    color: <?php echo $isOpen ? '#6ee7d8' : '#f9a8a0'; ?>;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.1rem;
     position: relative;
     z-index: 1;
+    background: <?php echo $isOpen ? 'rgba(26,107,69,.22)' : 'rgba(185,28,28,.22)'; ?>;
+    border: 1px solid <?php echo $isOpen ? 'rgba(26,107,69,.4)' : 'rgba(185,28,28,.4)'; ?>;
+    color: <?php echo $isOpen ? '#6ee7b7' : '#fca5a5'; ?>;
 }
 
-.hp-hero-status-dot {
+.hp-status-dot {
     width: 7px; height: 7px;
     border-radius: 50%;
-    background: <?php echo $isOpen ? '#1D8A7A' : '#C0392B'; ?>;
-    <?php if ($isOpen): ?>
-    animation: pulse-dot 1.8s ease infinite;
-    <?php endif; ?>
+    background: <?php echo $isOpen ? '#1a6b45' : '#b91c1c'; ?>;
+    <?php if ($isOpen): ?>animation: pulse-dot 1.8s ease infinite;<?php endif; ?>
 }
 
 @keyframes pulse-dot {
     0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: .5; transform: scale(1.4); }
+    50%       { opacity: .5; transform: scale(1.45); }
 }
 
 .hp-hero-title {
-    font-family: 'Playfair Display', Georgia, serif;
-    font-size: clamp(1.5rem, 4vw, 2.4rem);
-    font-weight: 700;
+    font-family: var(--font-serif, 'Source Serif 4', Georgia, serif);
+    font-size: clamp(1.4rem, 3.8vw, 2.2rem);
+    font-weight: 600;
     color: #fff;
-    line-height: 1.2;
-    margin-bottom: .6rem;
+    line-height: 1.22;
+    margin-bottom: .5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.hp-hero-rule {
+    width: 48px; height: 2px;
+    background: rgba(255,255,255,.3);
+    border-radius: 2px;
+    margin: 1rem auto;
     position: relative;
     z-index: 1;
 }
 
 .hp-hero-sub {
-    font-size: clamp(.85rem, 2vw, 1rem);
-    color: rgba(255,255,255,.5);
-    margin-bottom: 0;
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: clamp(.82rem, 2vw, .95rem);
+    color: rgba(255,255,255,.52);
     position: relative;
     z-index: 1;
+    margin: 0;
 }
 
-/* Gold accent line */
-.hp-hero-rule {
-    width: 56px;
-    height: 3px;
-    background: var(--gold);
-    border-radius: 2px;
-    margin: 1.25rem auto;
-    position: relative;
-    z-index: 1;
-}
-
-/* ── Key stats strip ───────────────────────────────────────────────── */
+/* ── Stats strip ───────────────────────────────────────────────────── */
 .hp-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: var(--r-card);
+    background: var(--border, #DDD6FE);
+    border: 1px solid var(--border, #DDD6FE);
+    border-radius: var(--r);
     overflow: hidden;
     margin-bottom: var(--gap);
 }
 
 .hp-stat {
-    background: var(--off-white);
-    padding: 1.25rem 1rem;
+    background: var(--pu-pale, #F5F3FF);
+    padding: 1.2rem 1rem;
     text-align: center;
 }
 
-.hp-stat-value {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(1.3rem, 3vw, 1.9rem);
+.hp-stat-val {
+    font-family: var(--font-serif, 'Source Serif 4', Georgia, serif);
+    font-size: clamp(1.3rem, 3vw, 1.8rem);
     font-weight: 700;
-    color: var(--navy);
+    color: var(--pu-dark, #5B21B6);
     line-height: 1;
-    margin-bottom: .35rem;
+    margin-bottom: .3rem;
 }
 
-.hp-stat-value span {
-    color: var(--gold);
-}
+.hp-stat-val em { font-style: normal; color: var(--pu, #7C3AED); }
 
-.hp-stat-label {
-    font-size: 11px;
+.hp-stat-lbl {
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: 10.5px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: .6px;
-    color: var(--text-muted);
+    letter-spacing: .06em;
+    color: var(--text-muted, #6D6A8A);
 }
 
 /* ── Info grid ─────────────────────────────────────────────────────── */
@@ -178,8 +174,8 @@ $isOpen       = isset($portal_open) && $portal_open;
 }
 
 .hp-card {
-    border: 1px solid var(--border);
-    border-radius: var(--r-card);
+    border: 1px solid var(--border, #DDD6FE);
+    border-radius: var(--r);
     overflow: hidden;
 }
 
@@ -187,163 +183,157 @@ $isOpen       = isset($portal_open) && $portal_open;
     display: flex;
     align-items: center;
     gap: .75rem;
-    padding: .9rem 1.25rem;
-    background: var(--navy);
-    border-bottom: 2px solid var(--gold);
+    padding: .85rem 1.2rem;
+    background: linear-gradient(135deg, var(--pu-deeper, #4C1D95), var(--pu-dark, #5B21B6));
 }
 
 .hp-card-icon {
-    width: 32px; height: 32px;
-    background: rgba(200,150,58,0.15);
+    width: 30px; height: 30px;
+    background: rgba(255,255,255,.12);
     border-radius: 7px;
     display: flex; align-items: center; justify-content: center;
-    color: var(--gold-light);
-    font-size: .85rem;
+    color: rgba(255,255,255,.85);
+    font-size: .8rem;
     flex-shrink: 0;
 }
 
 .hp-card-title {
-    font-family: 'Playfair Display', serif;
-    font-size: .95rem;
+    font-family: var(--font-serif, 'Source Serif 4', Georgia, serif);
+    font-size: .92rem;
     font-weight: 600;
     color: #fff;
     margin: 0;
 }
 
 .hp-card-body {
-    padding: 1.25rem;
-    background: var(--white);
+    padding: 1.1rem 1.2rem;
+    background: var(--surface, #fff);
 }
 
-/* Rows inside info cards */
 .hp-row {
     display: flex;
     align-items: baseline;
     gap: .5rem;
-    padding: .55rem 0;
-    border-bottom: 1px solid var(--border);
-    font-size: .875rem;
+    padding: .52rem 0;
+    border-bottom: 1px solid var(--border, #DDD6FE);
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: .86rem;
 }
 
-.hp-row:last-child { border-bottom: none; }
+.hp-row:last-child { border-bottom: none; padding-bottom: 0; }
 
-.hp-row-label {
+.hp-row-lbl {
     font-weight: 600;
-    color: var(--text-dark);
+    color: var(--pu-dark, #5B21B6);
     white-space: nowrap;
     flex-shrink: 0;
-    min-width: 110px;
+    min-width: 108px;
+    font-size: .82rem;
 }
 
-.hp-row-value {
-    color: var(--text-body);
-    line-height: 1.4;
-}
+.hp-row-val { color: var(--text-body, #312E81); line-height: 1.45; }
 
 /* Status badge */
-.status-badge {
+.status-pill {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     padding: 3px 10px;
     border-radius: 50px;
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: .3px;
+    letter-spacing: .03em;
+    font-family: var(--font-ui, 'Outfit', sans-serif);
 }
-.status-badge.open   { background: var(--teal-light);  color: #145f55; }
-.status-badge.closed { background: var(--red-light);   color: #8b1a12; }
+.status-pill.open   { background: var(--green-bg, #edf9f3); color: var(--green, #1a6b45); border: 1px solid #b2dfcc; }
+.status-pill.closed { background: var(--red-bg,   #fdf2f2); color: var(--red,   #b91c1c); border: 1px solid #fca5a5; }
 
 /* Eligibility list */
-.hp-eli-list {
+.eli-list {
     list-style: none;
     padding: 0; margin: 0;
     display: flex;
     flex-direction: column;
-    gap: .5rem;
+    gap: .42rem;
 }
 
-.hp-eli-list li {
+.eli-list li {
     display: flex;
     align-items: flex-start;
-    gap: .65rem;
-    font-size: .875rem;
-    color: var(--text-body);
+    gap: .6rem;
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: .84rem;
+    color: var(--text-body, #312E81);
     line-height: 1.45;
 }
 
-.hp-eli-list li::before {
+.eli-list li::before {
     content: '';
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    background: var(--teal-light);
-    border: 1.5px solid rgba(29,138,122,.3);
-    display: flex; align-items: center; justify-content: center;
+    width: 17px; height: 17px;
     flex-shrink: 0;
     margin-top: 1px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%231D8A7A' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-size: 11px;
-    background-repeat: no-repeat;
-    background-position: center;
+    border-radius: 50%;
+    background: var(--pu-pale, #F5F3FF) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%236E026F' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/10px no-repeat;
+    border: 1px solid var(--border, #DDD6FE);
 }
 
-/* ── Process steps ─────────────────────────────────────────────────── */
+/* ── Process section ───────────────────────────────────────────────── */
 .hp-process {
-    border: 1px solid var(--border);
-    border-radius: var(--r-card);
+    border: 1px solid var(--border, #DDD6FE);
+    border-radius: var(--r);
     overflow: hidden;
     margin-bottom: var(--gap);
 }
 
 .hp-process-head {
-    background: var(--off-white);
-    border-bottom: 1px solid var(--border);
-    padding: 1rem 1.5rem;
+    background: var(--pu-pale, #F5F3FF);
+    border-bottom: 1px solid var(--border, #DDD6FE);
+    padding: .9rem 1.25rem;
     display: flex;
     align-items: center;
-    gap: .75rem;
+    gap: .7rem;
 }
 
-.hp-process-head-icon {
-    width: 30px; height: 30px;
-    background: var(--navy);
+.hp-process-icon {
+    width: 28px; height: 28px;
+    background: var(--pu, #7C3AED);
     border-radius: 7px;
     display: flex; align-items: center; justify-content: center;
-    color: var(--gold-light);
-    font-size: .8rem;
+    color: #fff;
+    font-size: .75rem;
     flex-shrink: 0;
 }
 
 .hp-process-head h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1rem;
+    font-family: var(--font-serif, 'Source Serif 4', Georgia, serif);
+    font-size: .95rem;
     font-weight: 600;
-    color: var(--text-dark);
+    color: var(--pu-dark, #5B21B6);
     margin: 0;
 }
 
 .hp-process-body {
     padding: 1.75rem 1.5rem;
-    background: var(--white);
+    background: var(--surface, #fff);
 }
 
+/* Step bubbles */
 .hp-steps {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 0;
     position: relative;
-    margin-bottom: 2rem;
+    margin-bottom: 1.75rem;
 }
 
-/* Connecting line */
+/* Connector line */
 .hp-steps::before {
     content: '';
     position: absolute;
-    top: 24px;
-    left: calc(10% + 24px);
-    right: calc(10% + 24px);
-    height: 2px;
-    background: var(--border);
+    top: 23px;
+    left: calc(10% + 22px);
+    right: calc(10% + 22px);
+    height: 1.5px;
+    background: var(--border, #DDD6FE);
     z-index: 0;
 }
 
@@ -352,89 +342,100 @@ $isOpen       = isset($portal_open) && $portal_open;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 0 .5rem;
+    padding: 0 .4rem;
     position: relative;
     z-index: 1;
 }
 
 .hp-step-num {
-    width: 48px; height: 48px;
+    width: 46px; height: 46px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem;
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: 1rem;
     font-weight: 700;
-    margin-bottom: .85rem;
-    border: 2px solid transparent;
-    transition: transform .25s;
+    margin-bottom: .8rem;
+    transition: transform .22s;
+    flex-shrink: 0;
 }
 
 .hp-step:hover .hp-step-num { transform: translateY(-3px); }
 
-.hp-step-num.s1 { background: var(--navy);     color: var(--gold-light); border-color: var(--navy); }
-.hp-step-num.s2 { background: var(--off-white); color: var(--text-muted); border-color: var(--border-dark); }
-.hp-step-num.s3 { background: var(--off-white); color: var(--text-muted); border-color: var(--border-dark); }
-.hp-step-num.s4 { background: var(--off-white); color: var(--text-muted); border-color: var(--border-dark); }
-.hp-step-num.s5 { background: var(--off-white); color: var(--text-muted); border-color: var(--border-dark); }
+/* Step 1 = active/brand; rest = muted */
+.hp-step-num.s1 {
+    background: linear-gradient(135deg, var(--pu-dark, #5B21B6), var(--pu, #7C3AED));
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(110,2,111,.28);
+}
+
+.hp-step-num.s2,
+.hp-step-num.s3,
+.hp-step-num.s4,
+.hp-step-num.s5 {
+    background: var(--pu-pale, #F5F3FF);
+    color: var(--text-muted, #6D6A8A);
+    border: 1.5px solid var(--border-dark, #C4B5FD);
+}
 
 .hp-step-title {
-    font-size: .82rem;
-    font-weight: 600;
-    color: var(--text-dark);
-    margin-bottom: .3rem;
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: .8rem;
+    font-weight: 700;
+    color: var(--text, #1E1B4B);
+    margin-bottom: .25rem;
     line-height: 1.3;
 }
 
 .hp-step-sub {
-    font-size: .75rem;
-    color: var(--text-muted);
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: .73rem;
+    color: var(--text-muted, #6D6A8A);
     line-height: 1.4;
 }
 
 /* ── CTA ───────────────────────────────────────────────────────────── */
 .hp-cta {
-    border-top: 1px solid var(--border);
-    padding-top: 1.5rem;
+    border-top: 1px solid var(--border, #DDD6FE);
+    padding-top: 1.4rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: .75rem;
+    gap: .7rem;
     text-align: center;
 }
 
 .hp-cta-btn {
     display: inline-flex;
     align-items: center;
-    gap: 9px;
-    padding: .9rem 2.75rem;
-    background: var(--navy);
+    gap: 8px;
+    padding: .85rem 2.5rem;
+    background: linear-gradient(135deg, var(--pu-dark, #5B21B6), var(--pu, #7C3AED));
     color: #fff;
     border: none;
     border-radius: 10px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: .95rem;
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: .92rem;
     font-weight: 700;
-    letter-spacing: .2px;
     text-decoration: none;
     cursor: pointer;
-    transition: all .25s;
-    box-shadow: 0 4px 16px rgba(15,27,53,.2);
+    transition: transform .2s, box-shadow .2s, opacity .2s;
+    box-shadow: 0 3px 14px rgba(110,2,111,.28);
+    letter-spacing: .02em;
 }
 
 .hp-cta-btn:hover {
-    background: var(--navy-light);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(15,27,53,.28);
+    box-shadow: 0 6px 22px rgba(110,2,111,.38);
     color: #fff;
 }
 
 .hp-cta-btn.disabled {
-    background: var(--text-muted);
+    background: var(--border-dark, #C4B5FD);
     cursor: not-allowed;
     box-shadow: none;
     transform: none;
+    opacity: .7;
 }
-
-.hp-cta-btn i { font-size: .9rem; }
 
 .hp-cta-links {
     display: flex;
@@ -444,79 +445,75 @@ $isOpen       = isset($portal_open) && $portal_open;
 }
 
 .hp-cta-link {
-    font-size: .82rem;
-    color: var(--text-muted);
-    text-decoration: none;
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: .8rem;
+    color: var(--text-muted, #6D6A8A);
 }
 
 .hp-cta-link a {
-    color: var(--navy);
+    color: var(--pu, #7C3AED);
     font-weight: 600;
     text-decoration: none;
-    border-bottom: 1px solid var(--border-dark);
+    border-bottom: 1px solid var(--border-dark, #C4B5FD);
     padding-bottom: 1px;
-    transition: border-color .2s, color .2s;
+    transition: color .18s, border-color .18s;
 }
 
 .hp-cta-link a:hover {
-    color: var(--gold);
-    border-color: var(--gold);
+    color: var(--pu-dark, #5B21B6);
+    border-color: var(--pu, #7C3AED);
 }
 
 /* ── Notice ────────────────────────────────────────────────────────── */
 .hp-notice {
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
-    background: #FFFBF0;
-    border: 1px solid rgba(200,150,58,.3);
-    border-left: 4px solid var(--gold);
-    border-radius: var(--r-card);
-    padding: 1rem 1.25rem;
+    gap: .9rem;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 4px solid #d97706;
+    border-radius: var(--r);
+    padding: .95rem 1.2rem;
     margin-bottom: var(--gap);
-    font-size: .875rem;
-    color: #5a4010;
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: .85rem;
+    color: #78350f;
     line-height: 1.55;
 }
 
-.hp-notice-icon {
-    color: var(--gold);
-    font-size: 1rem;
-    flex-shrink: 0;
-    margin-top: 1px;
-}
+.hp-notice-icon { color: #d97706; font-size: .95rem; flex-shrink: 0; margin-top: 1px; }
 
-/* ── Support ───────────────────────────────────────────────────────── */
+/* ── Support grid ──────────────────────────────────────────────────── */
 .hp-support {
-    border: 1px solid var(--border);
-    border-radius: var(--r-card);
+    border: 1px solid var(--border, #DDD6FE);
+    border-radius: var(--r);
     overflow: hidden;
 }
 
 .hp-support-head {
-    background: var(--off-white);
-    border-bottom: 1px solid var(--border);
-    padding: .9rem 1.25rem;
+    background: var(--pu-pale, #F5F3FF);
+    border-bottom: 1px solid var(--border, #DDD6FE);
+    padding: .85rem 1.2rem;
     display: flex;
     align-items: center;
-    gap: .75rem;
+    gap: .7rem;
 }
 
-.hp-support-head-icon {
-    width: 30px; height: 30px;
-    background: var(--navy);
+.hp-support-icon {
+    width: 28px; height: 28px;
+    background: var(--pu, #7C3AED);
     border-radius: 7px;
     display: flex; align-items: center; justify-content: center;
-    color: var(--gold-light);
-    font-size: .8rem;
+    color: #fff;
+    font-size: .75rem;
     flex-shrink: 0;
 }
 
 .hp-support-head h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1rem;
+    font-family: var(--font-serif, 'Source Serif 4', Georgia, serif);
+    font-size: .92rem;
     font-weight: 600;
-    color: var(--text-dark);
+    color: var(--pu-dark, #5B21B6);
     margin: 0;
 }
 
@@ -524,48 +521,51 @@ $isOpen       = isset($portal_open) && $portal_open;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1px;
-    background: var(--border);
+    background: var(--border, #DDD6FE);
 }
 
 .hp-support-item {
-    background: var(--white);
-    padding: 1.25rem 1rem;
+    background: var(--surface, #fff);
+    padding: 1.2rem 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: .6rem;
-    transition: background .2s;
+    gap: .55rem;
+    transition: background .18s;
 }
 
-.hp-support-item:hover { background: var(--off-white); }
+.hp-support-item:hover { background: var(--pu-pale, #F5F3FF); }
 
 .hp-support-dot {
-    width: 42px; height: 42px;
+    width: 40px; height: 40px;
     border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     color: #fff;
+    flex-shrink: 0;
 }
 
-.hp-support-dot.phone    { background: var(--navy); }
-.hp-support-dot.whatsapp { background: #1BA950; }
-.hp-support-dot.email    { background: var(--red); }
-.hp-support-dot.hours    { background: var(--sky); }
+.hp-support-dot.phone    { background: var(--pu-dark, #5B21B6); }
+.hp-support-dot.whatsapp { background: #1ba950; }
+.hp-support-dot.email    { background: #b91c1c; }
+.hp-support-dot.hours    { background: #1d4ed8; }
 
-.hp-support-label {
-    font-size: 10px;
+.hp-support-lbl {
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: 9.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: .6px;
-    color: var(--text-muted);
+    letter-spacing: .07em;
+    color: var(--text-muted, #6D6A8A);
 }
 
-.hp-support-value {
-    font-size: .8rem;
+.hp-support-val {
+    font-family: var(--font-ui, 'Outfit', sans-serif);
+    font-size: .78rem;
     font-weight: 500;
-    color: var(--text-dark);
-    line-height: 1.45;
+    color: var(--text, #1E1B4B);
+    line-height: 1.5;
     word-break: break-word;
 }
 
@@ -575,87 +575,65 @@ $isOpen       = isset($portal_open) && $portal_open;
 }
 
 @media (max-width: 768px) {
-    .hp-hero {
-        margin: -24px -18px 1.5rem;
-        border-radius: 0;
-    }
-
-    .hp-stats { grid-template-columns: repeat(3, 1fr); }
-
-    .hp-grid  { grid-template-columns: 1fr; }
-
+    .hp-hero { margin: -24px -18px 1.4rem; border-radius: 0; }
+    .hp-grid { grid-template-columns: 1fr; }
     .hp-steps::before { display: none; }
-
-    .hp-steps {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem 0;
-    }
-
-    /* last step centred when count is odd */
-    .hp-step:last-child {
-        grid-column: 1 / -1;
-        max-width: 180px;
-        margin: 0 auto;
-    }
+    .hp-steps { grid-template-columns: repeat(2, 1fr); gap: 1rem 0; }
+    .hp-step:last-child { grid-column: 1 / -1; max-width: 170px; margin: 0 auto; }
 }
 
-@media (max-width: 540px) {
-    .hp-stats {
-        grid-template-columns: 1fr;
-        gap: 1px;
-    }
+@media (max-width: 560px) {
+    .hp-stats { grid-template-columns: 1fr; }
+    .hp-stat  { padding: .9rem 1rem; }
 
-    .hp-stat { padding: 1rem; }
-
-    .hp-steps { grid-template-columns: 1fr; gap: .75rem; }
+    .hp-steps { grid-template-columns: 1fr; gap: .6rem; }
 
     .hp-step {
         flex-direction: row;
         text-align: left;
-        gap: 1rem;
-        padding: .5rem 0;
+        gap: .9rem;
+        padding: .4rem 0;
     }
 
-    .hp-step-num { margin-bottom: 0; flex-shrink: 0; }
+    .hp-step-num  { margin-bottom: 0; }
+    .hp-step:last-child { grid-column: auto; max-width: none; margin: 0; }
 
-    .hp-support-grid { grid-template-columns: 1fr 1fr; }
+    .hp-support-grid { grid-template-columns: repeat(2, 1fr); }
+    .hp-cta-links    { flex-direction: column; gap: .4rem; }
 
-    .hp-cta-links { flex-direction: column; gap: .5rem; }
-
-    .hp-row-label { min-width: 90px; font-size: .82rem; }
-    .hp-row-value { font-size: .82rem; }
+    .hp-row-lbl { min-width: 88px; }
 }
 
 @media (max-width: 380px) {
     .hp-support-grid { grid-template-columns: 1fr; }
-    .hp-hero-title { font-size: 1.3rem; }
+    .hp-hero { padding: 1.5rem 1rem; }
 }
 </style>
 
-<!-- ── Hero ──────────────────────────────────────────────────────────── -->
+<!-- ── Hero ─────────────────────────────────────────────────────────── -->
 <div class="hp-hero">
     <div class="hp-hero-status">
-        <span class="hp-hero-status-dot"></span>
+        <span class="hp-status-dot"></span>
         Applications <?php echo $isOpen ? 'Open' : 'Closed'; ?>
     </div>
-    <h1 class="hp-hero-title">FCT College of Nursing Sciences</h1>
+    <h1 class="hp-hero-title">2025/2026 Admissions Application Portal</h1>
     <div class="hp-hero-rule"></div>
-    <p class="hp-hero-sub">2025/2026 Admissions Application Portal &mdash; ND/HND Nursing Programme</p>
+    <p class="hp-hero-sub">ND/HND Nursing Programme &mdash; FCT College of Nursing Sciences</p>
 </div>
 
-<!-- ── Key Stats ─────────────────────────────────────────────────────── -->
+<!-- ── Stats ─────────────────────────────────────────────────────────── -->
 <div class="hp-stats">
     <div class="hp-stat">
-        <div class="hp-stat-value"><?php echo $currency; ?><span><?php echo $fee; ?></span></div>
-        <div class="hp-stat-label">Application Fee</div>
+        <div class="hp-stat-val"><?php echo $currency; ?><em><?php echo $fee; ?></em></div>
+        <div class="hp-stat-lbl">Application Fee</div>
     </div>
     <div class="hp-stat">
-        <div class="hp-stat-value"><span><?php echo $min_score; ?>+</span></div>
-        <div class="hp-stat-label">Min UTME Score</div>
+        <div class="hp-stat-val"><em><?php echo $min_score; ?>+</em></div>
+        <div class="hp-stat-lbl">Min UTME Score</div>
     </div>
     <div class="hp-stat">
-        <div class="hp-stat-value"><span>4</span> Yrs</div>
-        <div class="hp-stat-label">Programme Duration</div>
+        <div class="hp-stat-val"><em>4</em> Yrs</div>
+        <div class="hp-stat-lbl">Programme Duration</div>
     </div>
 </div>
 
@@ -670,26 +648,26 @@ $isOpen       = isset($portal_open) && $portal_open;
         </div>
         <div class="hp-card-body">
             <div class="hp-row">
-                <span class="hp-row-label">Form Sales</span>
-                <span class="hp-row-value"><?php echo $start_date; ?> &ndash; <?php echo $end_date; ?></span>
+                <span class="hp-row-lbl">Form Sales</span>
+                <span class="hp-row-val"><?php echo $start_date; ?> &ndash; <?php echo $end_date; ?></span>
             </div>
             <div class="hp-row">
-                <span class="hp-row-label">CBT Screening</span>
-                <span class="hp-row-value"><?php echo $cbt_start; ?> &ndash; <?php echo $cbt_end; ?></span>
+                <span class="hp-row-lbl">CBT Screening</span>
+                <span class="hp-row-val"><?php echo $cbt_start; ?> &ndash; <?php echo $cbt_end; ?></span>
             </div>
             <div class="hp-row">
-                <span class="hp-row-label">CBT Venue</span>
-                <span class="hp-row-value">FCT College of Nursing Sciences, Gwagwalada (within UATH)</span>
+                <span class="hp-row-lbl">CBT Venue</span>
+                <span class="hp-row-val">FCT College of Nursing Sciences, Gwagwalada (within UATH)</span>
             </div>
             <div class="hp-row">
-                <span class="hp-row-label">Reporting Time</span>
-                <span class="hp-row-value">8:00 AM daily</span>
+                <span class="hp-row-lbl">Reporting Time</span>
+                <span class="hp-row-val">8:00 AM daily</span>
             </div>
             <div class="hp-row">
-                <span class="hp-row-label">Portal Status</span>
-                <span class="hp-row-value">
-                    <span class="status-badge <?php echo $isOpen ? 'open' : 'closed'; ?>">
-                        <i class="fas fa-<?php echo $isOpen ? 'check-circle' : 'times-circle'; ?>" style="font-size:.7rem"></i>
+                <span class="hp-row-lbl">Portal Status</span>
+                <span class="hp-row-val">
+                    <span class="status-pill <?php echo $isOpen ? 'open' : 'closed'; ?>">
+                        <i class="fas fa-<?php echo $isOpen ? 'check-circle' : 'times-circle'; ?>" style="font-size:.65rem;"></i>
                         <?php echo $isOpen ? 'Open' : 'Closed'; ?>
                     </span>
                 </span>
@@ -705,20 +683,20 @@ $isOpen       = isset($portal_open) && $portal_open;
         </div>
         <div class="hp-card-body">
             <div class="hp-row">
-                <span class="hp-row-label">Programme</span>
-                <span class="hp-row-value">ND/HND Nursing (Non-terminal)</span>
+                <span class="hp-row-lbl">Programme</span>
+                <span class="hp-row-val">ND/HND Nursing (Non-terminal)</span>
             </div>
             <div class="hp-row">
-                <span class="hp-row-label">Duration</span>
-                <span class="hp-row-value"><?php echo $duration; ?></span>
+                <span class="hp-row-lbl">Duration</span>
+                <span class="hp-row-val"><?php echo $duration; ?></span>
             </div>
             <div class="hp-row">
-                <span class="hp-row-label">Accreditation</span>
-                <span class="hp-row-value">NBTE &amp; NMCN Approved</span>
+                <span class="hp-row-lbl">Accreditation</span>
+                <span class="hp-row-val">NBTE &amp; NMCN Approved</span>
             </div>
-            <div class="hp-row" style="border-bottom:none;padding-bottom:0;align-items:flex-start">
-                <span class="hp-row-label" style="padding-top:2px">Requirements</span>
-                <ul class="hp-eli-list" style="flex:1">
+            <div class="hp-row" style="align-items:flex-start;">
+                <span class="hp-row-lbl" style="padding-top:2px;">Requirements</span>
+                <ul class="eli-list" style="flex:1;">
                     <li>Minimum UTME score of <?php echo $min_score; ?></li>
                     <li>First Choice: FCT College of Nursing Sciences</li>
                     <li>5 O'Level Credits in &le; <?php echo $max_sittings; ?> sittings</li>
@@ -729,12 +707,12 @@ $isOpen       = isset($portal_open) && $portal_open;
         </div>
     </div>
 
-</div>
+</div><!-- /hp-grid -->
 
-<!-- ── Application Process ───────────────────────────────────────────── -->
+<!-- ── Process ───────────────────────────────────────────────────────── -->
 <div class="hp-process">
     <div class="hp-process-head">
-        <div class="hp-process-head-icon"><i class="fas fa-route"></i></div>
+        <div class="hp-process-icon"><i class="fas fa-route"></i></div>
         <h3>Application Process</h3>
     </div>
     <div class="hp-process-body">
@@ -744,35 +722,35 @@ $isOpen       = isset($portal_open) && $portal_open;
                 <div class="hp-step-num s1">1</div>
                 <div>
                     <div class="hp-step-title">Create Account</div>
-                    <div class="hp-step-sub">Register &amp; verify your email address</div>
+                    <div class="hp-step-sub">Register &amp; verify email</div>
                 </div>
             </div>
             <div class="hp-step">
                 <div class="hp-step-num s2">2</div>
                 <div>
                     <div class="hp-step-title">JAMB Verification</div>
-                    <div class="hp-step-sub">Verify your JAMB registration number</div>
+                    <div class="hp-step-sub">Verify your JAMB number</div>
                 </div>
             </div>
             <div class="hp-step">
                 <div class="hp-step-num s3">3</div>
                 <div>
                     <div class="hp-step-title">Application Form</div>
-                    <div class="hp-step-sub">Fill in your personal details</div>
+                    <div class="hp-step-sub">Fill personal details</div>
                 </div>
             </div>
             <div class="hp-step">
                 <div class="hp-step-num s4">4</div>
                 <div>
                     <div class="hp-step-title">Payment</div>
-                    <div class="hp-step-sub"><?php echo $currency . $fee; ?> application fee via Remita</div>
+                    <div class="hp-step-sub"><?php echo $currency . $fee; ?> via Remita</div>
                 </div>
             </div>
             <div class="hp-step">
                 <div class="hp-step-num s5">5</div>
                 <div>
                     <div class="hp-step-title">Exam Slip</div>
-                    <div class="hp-step-sub">Download your CBT screening slip</div>
+                    <div class="hp-step-sub">Download CBT slip</div>
                 </div>
             </div>
         </div>
@@ -795,44 +773,44 @@ $isOpen       = isset($portal_open) && $portal_open;
         </div>
 
     </div>
-</div>
+</div><!-- /hp-process -->
 
-<!-- ── Important Notice ──────────────────────────────────────────────── -->
+<!-- ── Notice ────────────────────────────────────────────────────────── -->
 <div class="hp-notice">
     <i class="fas fa-exclamation-triangle hp-notice-icon"></i>
     <div>
         <strong>Important Notice:</strong> No extension of the application deadline will be granted.
         The College has <strong>NO AGENTS</strong>. Beware of fraudulent websites and individuals —
-        deal only through official channels listed below.
+        deal only through the official channels listed below.
     </div>
 </div>
 
 <!-- ── Support ───────────────────────────────────────────────────────── -->
 <div class="hp-support">
     <div class="hp-support-head">
-        <div class="hp-support-head-icon"><i class="fas fa-headset"></i></div>
+        <div class="hp-support-icon"><i class="fas fa-headset"></i></div>
         <h3>Support &amp; Enquiries</h3>
     </div>
     <div class="hp-support-grid">
         <div class="hp-support-item">
             <div class="hp-support-dot phone"><i class="fas fa-phone-alt"></i></div>
-            <div class="hp-support-label">Phone</div>
-            <div class="hp-support-value"><?php echo $ph1; ?><br><?php echo $ph2; ?></div>
+            <div class="hp-support-lbl">Phone</div>
+            <div class="hp-support-val"><?php echo $ph1; ?><br><?php echo $ph2; ?></div>
         </div>
         <div class="hp-support-item">
             <div class="hp-support-dot whatsapp"><i class="fab fa-whatsapp"></i></div>
-            <div class="hp-support-label">WhatsApp</div>
-            <div class="hp-support-value"><?php echo $wa; ?></div>
+            <div class="hp-support-lbl">WhatsApp</div>
+            <div class="hp-support-val"><?php echo $wa; ?></div>
         </div>
         <div class="hp-support-item">
             <div class="hp-support-dot email"><i class="fas fa-envelope"></i></div>
-            <div class="hp-support-label">Email</div>
-            <div class="hp-support-value"><?php echo $email; ?></div>
+            <div class="hp-support-lbl">Email</div>
+            <div class="hp-support-val"><?php echo $email; ?></div>
         </div>
         <div class="hp-support-item">
             <div class="hp-support-dot hours"><i class="fas fa-clock"></i></div>
-            <div class="hp-support-label">Office Hours</div>
-            <div class="hp-support-value"><?php echo $hours; ?></div>
+            <div class="hp-support-lbl">Office Hours</div>
+            <div class="hp-support-val"><?php echo $hours; ?></div>
         </div>
     </div>
 </div>

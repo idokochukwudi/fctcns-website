@@ -236,7 +236,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Verify email with token or show email sent page - FIXED
-     * Now properly handles already verified users and redirects to step 1
+     * Now properly shows verification success page before JAMB verification
      */
     public function verifyEmail() {
         // Start session
@@ -299,9 +299,14 @@ class PublicApplicationController extends ApplicationBaseController {
                         $this->applicationModel->createEmptyApplication($applicantByEmail['id']);
                     }
                     
-                    // Redirect to step 1
-                    header('Location: /apply/step/1');
-                    exit;
+                    // SHOW VERIFICATION SUCCESS PAGE - FIXED: Don't redirect, show the page
+                    $this->data['pageTitle'] = 'Email Verified Successfully';
+                    $this->data['verified'] = true;
+                    $this->data['applicant_name'] = $_SESSION['applicant_name'];
+                    $this->data['applicant'] = $applicantByEmail;
+                    $this->data['email'] = $applicantByEmail['email'];
+                    $this->render('applications/verification-success');
+                    return;
                 }
             }
             
@@ -335,9 +340,14 @@ class PublicApplicationController extends ApplicationBaseController {
                 $this->applicationModel->createEmptyApplication($applicant['id']);
             }
             
-            // Redirect to step 1
-            header('Location: /apply/step/1');
-            exit;
+            // SHOW VERIFICATION SUCCESS PAGE - FIXED: Don't redirect, show the page
+            $this->data['pageTitle'] = 'Email Verified Successfully';
+            $this->data['verified'] = true;
+            $this->data['applicant_name'] = $_SESSION['applicant_name'];
+            $this->data['applicant'] = $applicant;
+            $this->data['email'] = $applicant['email'];
+            $this->render('applications/verification-success');
+            return;
         }
         
         // Update applicant as verified
@@ -370,18 +380,24 @@ class PublicApplicationController extends ApplicationBaseController {
                 $this->applicationModel->createEmptyApplication($applicant['id']);
             }
             
-            // Redirect to step 1 (JAMB verification)
-            header('Location: /apply/step/1');
-            exit;
+            // SHOW VERIFICATION SUCCESS PAGE - FIXED: This is the key fix!
+            // Instead of redirecting to step 1, we show the success page
+            $this->data['pageTitle'] = 'Email Verified Successfully';
+            $this->data['verified'] = true;
+            $this->data['applicant_name'] = $_SESSION['applicant_name'];
+            $this->data['applicant'] = $applicant;
+            $this->data['email'] = $applicant['email'];
+            $this->render('applications/verification-success');
+            return;
+            
         } else {
             // Failed to update
             error_log("Failed to update applicant ID: " . $applicant['id']);
             $this->data['error'] = 'Failed to verify email. Please try again.';
             $this->data['resend_email'] = $applicant['email'];
             $this->data['pageTitle'] = 'Verification Failed';
+            $this->render('applications/verify-email');
         }
-        
-        $this->render('applications/verify-email');
     }
 
     /**
