@@ -48,8 +48,6 @@ if (empty($fullName)) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- QR Code Library -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     
     <style>
         :root {
@@ -179,32 +177,15 @@ if (empty($fullName)) {
             margin: 0 auto;
         }
         
-        .qr-container {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            display: inline-block;
-        }
-        
-        #qrcode {
-            width: 150px;
-            height: 150px;
-            margin: 0 auto;
-        }
-        
-        #qrcode canvas, #qrcode img {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        
         .verification-id-box {
             height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-color);
         }
         
         .info-grid {
@@ -391,9 +372,9 @@ if (empty($fullName)) {
             </div>
             
             <div class="result-body">
-                <!-- Candidate Photo and Basic Info -->
+                <!-- Candidate Photo and Verification Info Row -->
                 <div class="row mb-4">
-                    <div class="col-md-3 text-center">
+                    <div class="col-md-4 text-center">
                         <?php 
                         $photoPath = '';
                         if (!empty($applicant['passport_photo'])) {
@@ -418,26 +399,39 @@ if (empty($fullName)) {
                         </p>
                     </div>
                     
-                    <div class="col-md-4 text-center">
-                        <div class="qr-container">
-                            <div id="qrcode"></div>
-                            <p class="small text-muted mt-2 mb-0">
-                                <i class="fas fa-qrcode"></i> Scan to Verify Again
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-5">
-                        <div class="verification-id-box p-3 bg-light rounded">
-                            <h6 class="mb-2 text-primary">Verification Details</h6>
-                            <p class="mb-1 small">
-                                <strong>Verification ID:</strong><br>
-                                <code><?php echo htmlspecialchars($verificationData['verification_id']); ?></code>
-                            </p>
-                            <hr class="my-2">
+                    <div class="col-md-8">
+                        <div class="verification-id-box">
+                            <h5 class="text-primary mb-3">Verification Details</h5>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <p class="mb-2">
+                                        <strong>Verification ID:</strong><br>
+                                        <code><?php echo htmlspecialchars($verificationData['verification_id']); ?></code>
+                                    </p>
+                                </div>
+                                <div class="col-sm-6">
+                                    <p class="mb-2">
+                                        <strong>Verification Time:</strong><br>
+                                        <?php echo date('jS F Y, h:i A', strtotime($verificationData['verification_time'])); ?>
+                                    </p>
+                                </div>
+                                <div class="col-sm-6">
+                                    <p class="mb-2">
+                                        <strong>IP Address:</strong><br>
+                                        <?php echo htmlspecialchars($verificationData['verification_ip'] ?? $_SERVER['REMOTE_ADDR']); ?>
+                                    </p>
+                                </div>
+                                <div class="col-sm-6">
+                                    <p class="mb-2">
+                                        <strong>Status:</strong><br>
+                                        <span class="badge bg-success">Verified</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <hr class="my-3">
                             <p class="small text-muted mb-0">
                                 <i class="fas fa-shield-alt me-1"></i>
-                                Digitally Signed & Verified
+                                This verification is digitally signed and authenticated by FCT College of Nursing Sciences.
                             </p>
                         </div>
                     </div>
@@ -564,28 +558,6 @@ if (empty($fullName)) {
                         <i class="fas fa-redo-alt"></i> Verify Another
                     </a>
                 </div>
-                
-                <!-- Verification Metadata -->
-                <div class="mt-4 pt-3 border-top">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <p class="small text-muted mb-1">
-                                <i class="fas fa-fingerprint me-2"></i>
-                                Verification ID: <strong><?php echo htmlspecialchars($verificationData['verification_id']); ?></strong>
-                            </p>
-                            <p class="small text-muted mb-1">
-                                <i class="fas fa-clock me-2"></i>
-                                Verified on: <?php echo date('jS F Y, h:i A', strtotime($verificationData['verification_time'])); ?>
-                            </p>
-                        </div>
-                        <div class="col-md-6">
-                            <p class="small text-muted mb-1">
-                                <i class="fas fa-globe me-2"></i>
-                                IP Address: <?php echo htmlspecialchars($verificationData['verification_ip'] ?? $_SERVER['REMOTE_ADDR']); ?>
-                            </p>
-                        </div>
-                    </div>
-                </div>
             </div>
             
             <div class="verification-footer">
@@ -607,33 +579,6 @@ if (empty($fullName)) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Generate QR Code for re-verification
-        document.addEventListener('DOMContentLoaded', function() {
-            const verificationUrl = '<?php echo $baseUrl; ?>/application-verify/slip/<?php echo urlencode($exam_slip['slip_number'] ?? ''); ?>';
-            const qrContainer = document.getElementById('qrcode');
-            
-            if (qrContainer && verificationUrl) {
-                // Clear container
-                qrContainer.innerHTML = '';
-                
-                // Generate QR code
-                QRCode.toCanvas(qrContainer, verificationUrl, {
-                    width: 150,
-                    margin: 1,
-                    color: {
-                        dark: '#6B4E9B',
-                        light: '#ffffff'
-                    }
-                }, function(error) {
-                    if (error) {
-                        console.error('QR Code generation error:', error);
-                        // Fallback to simple text
-                        qrContainer.innerHTML = '<div style="font-size:10px;color:#999;">QR Code<br>unavailable</div>';
-                    }
-                });
-            }
-        });
-        
         // Print functionality
         document.querySelector('.btn-action.btn-primary')?.addEventListener('click', function(e) {
             e.preventDefault();
