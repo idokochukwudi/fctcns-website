@@ -6,11 +6,12 @@
  * @package FCT_CNS
  */
 
-require_once __DIR__ . '/Controller.php';
-require_once MODELS_PATH . '/application/ExamSlipModel.php';
-require_once MODELS_PATH . '/application/ApplicationModel.php';
-require_once MODELS_PATH . '/ApplicantModel.php';
-require_once MODELS_PATH . '/application/PaymentModel.php';
+// Fix the path - Controller.php is in app/core/
+require_once __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'Controller.php';
+require_once MODELS_PATH . DIRECTORY_SEPARATOR . 'application' . DIRECTORY_SEPARATOR . 'ExamSlipModel.php';
+require_once MODELS_PATH . DIRECTORY_SEPARATOR . 'application' . DIRECTORY_SEPARATOR . 'ApplicationModel.php';
+require_once MODELS_PATH . DIRECTORY_SEPARATOR . 'ApplicantModel.php';
+require_once MODELS_PATH . DIRECTORY_SEPARATOR . 'application' . DIRECTORY_SEPARATOR . 'PaymentModel.php';
 
 class ApplicationVerificationController extends Controller {
     
@@ -374,7 +375,7 @@ class ApplicationVerificationController extends Controller {
     
     /**
      * Generate QR code for a slip (for printing)
-     * FIXED: Multiple fallback methods for QR generation
+     * FIXED: Multiple fallback methods and proper path handling
      * 
      * @param string $slipNumber
      */
@@ -400,7 +401,6 @@ class ApplicationVerificationController extends Controller {
             
             if (file_exists($qrLibPath)) {
                 require_once $qrLibPath;
-                // Generate QR code with error correction
                 QRcode::png($verificationUrl, false, QR_ECLEVEL_L, 10, 2);
                 error_log("QR code generated using phpqrcode library");
                 exit;
