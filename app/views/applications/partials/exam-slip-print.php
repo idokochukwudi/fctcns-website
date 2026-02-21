@@ -55,7 +55,7 @@ $logoUrl    = $baseUrl . '/assets/images/logo/logo.png';
         /* ── Screen body ─────────────────────────────────────────── */
         body {
             font-family: 'Times New Roman', Times, serif;
-            background: #8a0060;
+            background: #e8e2ec;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
