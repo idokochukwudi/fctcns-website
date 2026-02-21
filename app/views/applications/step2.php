@@ -1,7 +1,7 @@
 <?php
 /**
  * Step 2: Application Form View
- * FIXED: Added AJAX form submission with redirect handling, passport preview improvements
+ * FIXED: Correct step tracking - this is Step 3 (Application Form)
  * 
  * @package FCTCNS
  */
@@ -25,6 +25,26 @@ $programs = $programs ?? [];
 $csrf_token = $csrf_token ?? '';
 $temp_password = $temp_password ?? '';
 $errors = $errors ?? [];
+$currentStep = 3; // This is step 3 (Application Form)
+
+// Get application step if available
+if (isset($application) && !empty($application['application_step'])) {
+    $currentStep = (int)$application['application_step'];
+    
+    // If application_step is 4 AND exam slip exists, show step 5
+    if ($currentStep == 4 && isset($has_exam_slip) && $has_exam_slip) {
+        $currentStep = 5;
+    }
+}
+
+// Define steps for tracking - CORRECT ORDER
+$steps = [
+    1 => ['label' => 'Create Account', 'sub' => 'Register'],
+    2 => ['label' => 'JAMB Verification', 'sub' => 'JAMB check'],
+    3 => ['label' => 'Application Form', 'sub' => 'Fill form'],
+    4 => ['label' => 'Payment', 'sub' => 'Remita RRR'],
+    5 => ['label' => 'Exam Slip', 'sub' => 'Download'],
+];
 
 $applicant_name = trim(($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? ''));
 if (empty($applicant_name) && !empty($application)) {
@@ -40,7 +60,7 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Step 2: Application Form – FCT College of Nursing Sciences</title>
+    <title>Step 3: Application Form – FCT College of Nursing Sciences</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -88,11 +108,11 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
     }
 
     /* =========================================================
-       PAGE SHELL — full width, generous but not excessive padding
+       PAGE SHELL
     ========================================================= */
     .page-shell {
         width: 100%;
-        max-width: 1540px;   /* wide but centred on huge monitors */
+        max-width: 1540px;
         margin: 0 auto;
         padding: 28px 32px 56px;
     }
@@ -101,7 +121,138 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
     @media (max-width: 768px)  { .page-shell { padding: 16px 14px 40px; } }
 
     /* =========================================================
-       LOGOUT BUTTON (inside JAMB banner)
+       STEP INDICATOR - 5 STEPS WITH PROPER TRACKING (STEP 3 ACTIVE)
+    ========================================================= */
+    .step-indicator {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        position: relative;
+        background: white;
+        border-radius: 50px;
+        padding: 15px 20px;
+        border: 1px solid var(--border);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .step-indicator::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 60px;
+        right: 60px;
+        height: 2px;
+        background: var(--border);
+        transform: translateY(-50%);
+        z-index: 1;
+    }
+
+    .step {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+        flex: 1;
+        padding: 5px 0;
+    }
+
+    .step-number {
+        width: 36px;
+        height: 36px;
+        background: white;
+        border: 2px solid var(--border);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 6px;
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--text-muted);
+        transition: all 0.3s;
+    }
+
+    .step.active .step-number {
+        background: var(--navy);
+        border-color: var(--navy);
+        color: white;
+        box-shadow: 0 0 0 4px rgba(15,27,53,0.1);
+    }
+
+    .step.completed .step-number {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: white;
+    }
+
+    .step-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+    }
+
+    .step-sub {
+        font-size: 9px;
+        color: var(--text-muted);
+        margin-top: 2px;
+        opacity: 0.8;
+    }
+
+    .step.active .step-label {
+        color: var(--navy);
+        font-weight: 700;
+    }
+
+    .step.active .step-sub {
+        color: var(--navy);
+        opacity: 0.9;
+    }
+
+    .step.completed .step-label {
+        color: var(--teal);
+    }
+
+    @media (max-width: 768px) {
+        .step-indicator {
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 15px;
+        }
+        
+        .step-indicator::before {
+            display: none;
+        }
+        
+        .step {
+            flex: 0 0 calc(33.33% - 7px);
+            padding: 8px 5px;
+            background: var(--off-white);
+            border-radius: 30px;
+            border: 1px solid var(--border);
+        }
+        
+        .step-number {
+            width: 30px;
+            height: 30px;
+            font-size: 12px;
+        }
+        
+        .step-label {
+            font-size: 9px;
+            white-space: normal;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .step {
+            flex: 0 0 calc(50% - 5px);
+        }
+    }
+
+    /* =========================================================
+       LOGOUT BUTTON
     ========================================================= */
     .logout-btn {
         display: inline-flex; align-items: center; gap: 7px;
@@ -206,7 +357,7 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
     }
 
     /* =========================================================
-       SECTION BLOCKS inside the card
+       SECTION BLOCKS
     ========================================================= */
     .f-section {
         padding: 32px 36px;
@@ -279,10 +430,6 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
 
     textarea.form-control { resize: vertical; min-height: 80px; }
 
-    /* 
-       GRID — we use a simple flex row system so we control gutter precisely
-       All columns get equal gap. No Bootstrap row negative-margin mess.
-    */
     .f-row {
         display: grid;
         gap: 18px 24px;
@@ -290,14 +437,12 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
     }
     .f-row:last-child { margin-bottom: 0; }
 
-    /* Column count variants */
     .f-row.cols-2  { grid-template-columns: repeat(2, 1fr); }
     .f-row.cols-3  { grid-template-columns: repeat(3, 1fr); }
     .f-row.cols-4  { grid-template-columns: repeat(4, 1fr); }
     .f-row.cols-5  { grid-template-columns: repeat(5, 1fr); }
     .f-row.cols-6  { grid-template-columns: repeat(6, 1fr); }
 
-    /* Responsive collapse */
     @media (max-width: 1100px) {
         .f-row.cols-6 { grid-template-columns: repeat(3, 1fr); }
         .f-row.cols-5 { grid-template-columns: repeat(3, 1fr); }
@@ -314,7 +459,6 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
         .f-row.cols-6 { grid-template-columns: 1fr; }
     }
 
-    /* span helpers */
     .col-span-2 { grid-column: span 2; }
     .col-span-3 { grid-column: span 3; }
 
@@ -368,7 +512,6 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
     }
     .btn-remove:hover { background: var(--red); color: #fff; border-color: var(--red); }
 
-    /* Grade dropdowns in the O'Level row — we use cols-5 which gives each subject full space */
     .grades-divider {
         font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
         color: var(--text-muted);
@@ -378,7 +521,7 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
     }
 
     /* =========================================================
-       PASSPORT SECTION - FIXED for full preview
+       PASSPORT SECTION - FIXED preview without prompt
     ========================================================= */
     .passport-wrap {
         display: grid;
@@ -416,15 +559,19 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
         height: 100%;
         object-fit: cover;
         display: none;
-        position: absolute;
-        top: 0;
-        left: 0;
+    }
+
+    .passport-preview-box.has-image img {
+        display: block;
     }
 
     .passport-preview-box .placeholder-icon {
         font-size: 48px;
         color: var(--border-dark);
-        z-index: 1;
+    }
+
+    .passport-preview-box.has-image .placeholder-icon {
+        display: none;
     }
 
     .passport-upload-area h6 { font-size: 14px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
@@ -478,7 +625,7 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
     .btn-sm { padding: 7px 16px; font-size: 12px; }
 
     /* =========================================================
-       FORM ACTION BAR (bottom nav)
+       FORM ACTION BAR
     ========================================================= */
     .action-bar {
         display: flex;
@@ -565,6 +712,27 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
 </head>
 <body>
 <div class="page-shell">
+
+    <!-- ===== STEP INDICATOR - 5 STEPS WITH PROPER TRACKING (STEP 3 ACTIVE) ===== -->
+    <div class="step-indicator">
+        <?php foreach ($steps as $num => $step): 
+            $stepClass = '';
+            if ($num < $currentStep) $stepClass = 'completed';
+            elseif ($num == $currentStep) $stepClass = 'active';
+        ?>
+        <div class="step <?php echo $stepClass; ?>">
+            <div class="step-number">
+                <?php if ($num < $currentStep): ?>
+                    <i class="fas fa-check"></i>
+                <?php else: ?>
+                    <?php echo $num; ?>
+                <?php endif; ?>
+            </div>
+            <div class="step-label"><?php echo $step['label']; ?></div>
+            <div class="step-sub"><?php echo $step['sub']; ?></div>
+        </div>
+        <?php endforeach; ?>
+    </div>
 
     <!-- ===== LOADING OVERLAY ===== -->
     <div class="loading-overlay" id="loadingOverlay">
@@ -878,10 +1046,10 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
                         <i class="fas fa-user placeholder-icon" id="passportPlaceholder"></i>
                         <?php if (!empty($application['passport_photo'])): ?>
                         <img src="<?php echo e($application['passport_photo']); ?>" alt="Passport" id="passport-preview"
-                             style="display:block; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;"
-                             onload="document.getElementById('passportBox').classList.add('has-image');document.getElementById('passportPlaceholder').style.display='none';">
+                             style="display:block; width:100%; height:100%; object-fit:cover;"
+                             onload="document.getElementById('passportBox').classList.add('has-image');">
                         <?php else: ?>
-                        <img src="" alt="Passport Preview" id="passport-preview" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;">
+                        <img src="" alt="Passport Preview" id="passport-preview" style="display:none;">
                         <?php endif; ?>
                     </div>
                     <div class="passport-upload-area">
@@ -890,7 +1058,7 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
                         <input type="hidden" name="passport_confirmed" id="passport-confirmed" value="<?php echo !empty($application['passport_photo']) ? '1' : '0'; ?>">
                         <input type="file" class="form-control" id="passport" name="passport"
                                accept="image/jpeg,image/png"
-                               onchange="confirmPassportUpload(this)"
+                               onchange="previewPassport(this)"
                                style="margin-bottom:8px;">
                         <div class="field-hint">Allowed formats: JPG, PNG &nbsp;|&nbsp; Maximum size: 500 KB</div>
                     </div>
@@ -899,7 +1067,7 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
 
             <!-- ── ACTION BAR ── -->
             <div class="action-bar">
-                <a href="/apply/step/1" class="btn btn-ghost"
+                <a href="/apply/step/2" class="btn btn-ghost"
                    onclick="return confirm('Go back to JAMB verification? Unsaved changes may be lost.');">
                     <i class="fas fa-arrow-left"></i> Back
                 </a>
@@ -933,6 +1101,11 @@ $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+/* ======================================================
+   STEP INDICATOR - Current step is 3 (Application Form)
+====================================================== */
+// This is handled by PHP above - currentStep = 3
+
 /* ======================================================
    O'Level — Add another sitting
 ====================================================== */
@@ -1002,9 +1175,9 @@ document.getElementById('add-olevel').addEventListener('click', function () {
 });
 
 /* ======================================================
-   Passport upload confirmation - FIXED for full preview
+   Passport upload - FIXED: No prompt, immediate preview
 ====================================================== */
-function confirmPassportUpload(input) {
+function previewPassport(input) {
     if (!input.files || !input.files[0]) return;
 
     const file = input.files[0];
@@ -1016,34 +1189,22 @@ function confirmPassportUpload(input) {
 
     const reader = new FileReader();
     reader.onload = function (e) {
-        if (confirm('Is this your correct passport photograph? Click OK to use this photo.')) {
-            const img = document.getElementById('passport-preview');
-            const box = document.getElementById('passportBox');
-            const placeholder = document.getElementById('passportPlaceholder');
-            
-            // FIXED: Ensure image fills the box completely
-            img.style.display = 'block';
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.objectFit = 'cover';
-            img.style.position = 'absolute';
-            img.style.top = '0';
-            img.style.left = '0';
-            img.src = e.target.result;
-            
-            placeholder.style.display = 'none';
-            box.classList.add('has-image');
-            document.getElementById('passport-confirmed').value = '1';
-        } else {
-            input.value = '';
-            document.getElementById('passport-confirmed').value = '0';
-        }
+        const img = document.getElementById('passport-preview');
+        const box = document.getElementById('passportBox');
+        const placeholder = document.getElementById('passportPlaceholder');
+        
+        // Show image, hide placeholder
+        img.src = e.target.result;
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+        box.classList.add('has-image');
+        document.getElementById('passport-confirmed').value = '1';
     };
     reader.readAsDataURL(file);
 }
 
 /* ======================================================
-   AJAX Form Submission with Redirect Handling - FIXED
+   AJAX Form Submission with Redirect Handling
 ====================================================== */
 (function() {
     'use strict';
@@ -1089,7 +1250,7 @@ function confirmPassportUpload(input) {
                 // Show success message
                 alert(data.message);
                 
-                // FIXED: Handle redirect if present
+                // Handle redirect if present
                 if (data.redirect) {
                     window.location.href = data.redirect;
                 } else {
@@ -1123,7 +1284,6 @@ function confirmPassportUpload(input) {
 ====================================================== */
 (function () {
     'use strict';
-    // Keep this as fallback but our AJAX handler will prevent default
     var forms = document.querySelectorAll('.needs-validation');
     Array.prototype.slice.call(forms).forEach(function (form) {
         form.addEventListener('submit', function (event) {
