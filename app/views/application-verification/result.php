@@ -14,6 +14,26 @@ $baseUrl = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
 $institution_name = $institution_name ?? 'FCT College of Nursing Sciences';
 $institution_address = $institution_address ?? 'Gwagwalada, Abuja';
 $support_email = $support_email ?? 'verification@fctcns.edu.ng';
+
+// Construct full name
+$fullName = trim(
+    ($applicant['title'] ?? '') . ' ' . 
+    ($applicant['first_name'] ?? '') . ' ' . 
+    ($applicant['last_name'] ?? '')
+);
+
+// If full name is empty, try to get from application
+if (empty($fullName)) {
+    $fullName = trim(
+        ($application['first_name'] ?? '') . ' ' . 
+        ($application['last_name'] ?? '')
+    );
+}
+
+// Default if still empty
+if (empty($fullName)) {
+    $fullName = 'Not Provided';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -28,6 +48,8 @@ $support_email = $support_email ?? 'verification@fctcns.edu.ng';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     
     <style>
         :root {
@@ -134,6 +156,57 @@ $support_email = $support_email ?? 'verification@fctcns.edu.ng';
             background: white;
         }
         
+        .candidate-photo {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border: 3px solid var(--primary-color);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .photo-placeholder {
+            width: 150px;
+            height: 150px;
+            background: #f0f0f0;
+            border: 3px solid #dee2e6;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            color: #adb5bd;
+            margin: 0 auto;
+        }
+        
+        .qr-container {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            display: inline-block;
+        }
+        
+        #qrcode {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+        }
+        
+        #qrcode canvas, #qrcode img {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .verification-id-box {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
         .info-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -234,6 +307,7 @@ $support_email = $support_email ?? 'verification@fctcns.edu.ng';
             align-items: center;
             gap: 8px;
             text-decoration: none;
+            cursor: pointer;
         }
         
         .btn-action:hover {
@@ -317,6 +391,58 @@ $support_email = $support_email ?? 'verification@fctcns.edu.ng';
             </div>
             
             <div class="result-body">
+                <!-- Candidate Photo and Basic Info -->
+                <div class="row mb-4">
+                    <div class="col-md-3 text-center">
+                        <?php 
+                        $photoPath = '';
+                        if (!empty($applicant['passport_photo'])) {
+                            $photoPath = $applicant['passport_photo'];
+                        } elseif (!empty($application['passport_photo'])) {
+                            $photoPath = $application['passport_photo'];
+                        }
+                        
+                        if (!empty($photoPath)): 
+                        ?>
+                            <img src="<?php echo htmlspecialchars($photoPath); ?>" 
+                                 alt="Passport" 
+                                 class="candidate-photo"
+                                 onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'150\' height=\'150\' viewBox=\'0 0 150 150\'%3E%3Crect width=\'150\' height=\'150\' fill=\'%23f0f0f0\'/%3E%3Ccircle cx=\'75\' cy=\'75\' r=\'40\' fill=\'%23ccc\'/%3E%3Ctext x=\'75\' y=\'120\' text-anchor=\'middle\' fill=\'%23999\' font-size=\'14\' font-family=\'Arial\'%3ENo Photo%3C/text%3E%3C/svg%3E';">
+                        <?php else: ?>
+                            <div class="photo-placeholder">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                        <?php endif; ?>
+                        <p class="small text-muted mt-2">
+                            <i class="fas fa-camera"></i> Passport Photograph
+                        </p>
+                    </div>
+                    
+                    <div class="col-md-4 text-center">
+                        <div class="qr-container">
+                            <div id="qrcode"></div>
+                            <p class="small text-muted mt-2 mb-0">
+                                <i class="fas fa-qrcode"></i> Scan to Verify Again
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-5">
+                        <div class="verification-id-box p-3 bg-light rounded">
+                            <h6 class="mb-2 text-primary">Verification Details</h6>
+                            <p class="mb-1 small">
+                                <strong>Verification ID:</strong><br>
+                                <code><?php echo htmlspecialchars($verificationData['verification_id']); ?></code>
+                            </p>
+                            <hr class="my-2">
+                            <p class="small text-muted mb-0">
+                                <i class="fas fa-shield-alt me-1"></i>
+                                Digitally Signed & Verified
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Verification Summary -->
                 <div class="alert alert-<?php echo $status['is_valid'] ? 'success' : 'danger'; ?> mb-4">
                     <div class="d-flex align-items-center">
@@ -363,24 +489,23 @@ $support_email = $support_email ?? 'verification@fctcns.edu.ng';
                     <div class="info-item">
                         <div class="info-label">Full Name</div>
                         <div class="info-value">
-                            <?php echo htmlspecialchars($applicant['first_name'] ?? '') . ' ' . 
-                                     htmlspecialchars($applicant['last_name'] ?? ''); ?>
+                            <?php echo htmlspecialchars($fullName); ?>
                         </div>
                     </div>
                     
                     <div class="info-item">
                         <div class="info-label">Application Number</div>
-                        <div class="info-value"><?php echo htmlspecialchars($application['application_number']); ?></div>
+                        <div class="info-value"><?php echo htmlspecialchars($application['application_number'] ?? 'N/A'); ?></div>
                     </div>
                     
                     <div class="info-item">
                         <div class="info-label">JAMB Number</div>
-                        <div class="info-value"><?php echo htmlspecialchars($application['jamb_number']); ?></div>
+                        <div class="info-value"><?php echo htmlspecialchars($application['jamb_number'] ?? 'N/A'); ?></div>
                     </div>
                     
                     <div class="info-item">
                         <div class="info-label">Programme</div>
-                        <div class="info-value"><?php echo htmlspecialchars($application['program_choice_1']); ?></div>
+                        <div class="info-value"><?php echo htmlspecialchars($application['program_choice_1'] ?? 'N/A'); ?></div>
                     </div>
                 </div>
                 
@@ -393,39 +518,39 @@ $support_email = $support_email ?? 'verification@fctcns.edu.ng';
                 <div class="info-grid">
                     <div class="info-item">
                         <div class="info-label">Slip Number</div>
-                        <div class="info-value"><?php echo htmlspecialchars($exam_slip['slip_number']); ?></div>
+                        <div class="info-value"><?php echo htmlspecialchars($exam_slip['slip_number'] ?? 'N/A'); ?></div>
                     </div>
                     
                     <div class="info-item">
                         <div class="info-label">Examination Date</div>
                         <div class="info-value">
-                            <?php echo date('l, jS F Y', strtotime($exam_slip['exam_date'])); ?>
+                            <?php echo !empty($exam_slip['exam_date']) ? date('l, jS F Y', strtotime($exam_slip['exam_date'])) : 'N/A'; ?>
                         </div>
                     </div>
                     
                     <div class="info-item">
                         <div class="info-label">Examination Time</div>
                         <div class="info-value">
-                            <?php echo date('h:i A', strtotime($exam_slip['exam_time'])); ?>
+                            <?php echo !empty($exam_slip['exam_time']) ? date('h:i A', strtotime($exam_slip['exam_time'])) : 'N/A'; ?>
                         </div>
                     </div>
                     
                     <div class="info-item">
                         <div class="info-label">Reporting Time</div>
                         <div class="info-value">
-                            <?php echo date('h:i A', strtotime($exam_slip['reporting_time'])); ?>
+                            <?php echo !empty($exam_slip['reporting_time']) ? date('h:i A', strtotime($exam_slip['reporting_time'])) : 'N/A'; ?>
                         </div>
                     </div>
                     
                     <div class="info-item">
                         <div class="info-label">Venue</div>
-                        <div class="info-value"><?php echo htmlspecialchars($exam_slip['exam_venue']); ?></div>
+                        <div class="info-value"><?php echo htmlspecialchars($exam_slip['exam_venue'] ?? 'N/A'); ?></div>
                     </div>
                     
                     <div class="info-item">
                         <div class="info-label">Seat Number</div>
                         <div class="info-value">
-                            <span class="badge bg-info"><?php echo htmlspecialchars($exam_slip['seat_number']); ?></span>
+                            <span class="badge bg-info"><?php echo htmlspecialchars($exam_slip['seat_number'] ?? 'N/A'); ?></span>
                         </div>
                     </div>
                 </div>
@@ -446,7 +571,7 @@ $support_email = $support_email ?? 'verification@fctcns.edu.ng';
                         <div class="col-md-6">
                             <p class="small text-muted mb-1">
                                 <i class="fas fa-fingerprint me-2"></i>
-                                Verification ID: <strong><?php echo $verificationData['verification_id']; ?></strong>
+                                Verification ID: <strong><?php echo htmlspecialchars($verificationData['verification_id']); ?></strong>
                             </p>
                             <p class="small text-muted mb-1">
                                 <i class="fas fa-clock me-2"></i>
@@ -456,7 +581,7 @@ $support_email = $support_email ?? 'verification@fctcns.edu.ng';
                         <div class="col-md-6">
                             <p class="small text-muted mb-1">
                                 <i class="fas fa-globe me-2"></i>
-                                IP Address: <?php echo htmlspecialchars($verificationData['verification_ip']); ?>
+                                IP Address: <?php echo htmlspecialchars($verificationData['verification_ip'] ?? $_SERVER['REMOTE_ADDR']); ?>
                             </p>
                         </div>
                     </div>
@@ -467,12 +592,12 @@ $support_email = $support_email ?? 'verification@fctcns.edu.ng';
                 <img src="/assets/img/college-seal.png" alt="College Seal" class="institution-seal" 
                      onerror="this.style.display='none'">
                 <p class="small text-muted mb-1">
-                    <strong><?php echo $institution_name; ?></strong><br>
-                    <?php echo $institution_address; ?>
+                    <strong><?php echo htmlspecialchars($institution_name); ?></strong><br>
+                    <?php echo htmlspecialchars($institution_address); ?>
                 </p>
                 <p class="small text-muted mb-0">
                     This is an official verification from FCT College of Nursing Sciences.<br>
-                    For inquiries: <a href="mailto:<?php echo $support_email; ?>"><?php echo $support_email; ?></a>
+                    For inquiries: <a href="mailto:<?php echo htmlspecialchars($support_email); ?>"><?php echo htmlspecialchars($support_email); ?></a>
                 </p>
             </div>
         </div>
@@ -482,6 +607,33 @@ $support_email = $support_email ?? 'verification@fctcns.edu.ng';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Generate QR Code for re-verification
+        document.addEventListener('DOMContentLoaded', function() {
+            const verificationUrl = '<?php echo $baseUrl; ?>/application-verify/slip/<?php echo urlencode($exam_slip['slip_number'] ?? ''); ?>';
+            const qrContainer = document.getElementById('qrcode');
+            
+            if (qrContainer && verificationUrl) {
+                // Clear container
+                qrContainer.innerHTML = '';
+                
+                // Generate QR code
+                QRCode.toCanvas(qrContainer, verificationUrl, {
+                    width: 150,
+                    margin: 1,
+                    color: {
+                        dark: '#6B4E9B',
+                        light: '#ffffff'
+                    }
+                }, function(error) {
+                    if (error) {
+                        console.error('QR Code generation error:', error);
+                        // Fallback to simple text
+                        qrContainer.innerHTML = '<div style="font-size:10px;color:#999;">QR Code<br>unavailable</div>';
+                    }
+                });
+            }
+        });
+        
         // Print functionality
         document.querySelector('.btn-action.btn-primary')?.addEventListener('click', function(e) {
             e.preventDefault();
@@ -495,6 +647,7 @@ $support_email = $support_email ?? 'verification@fctcns.edu.ng';
                 body { background: white; }
                 .result-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 .badge, .status-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .candidate-photo { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
         `;
         document.head.appendChild(style);
