@@ -101,6 +101,12 @@
             --gold-800:     #854d0e;
             --gold-900:     #713f12;
 
+            /* ── Cloudit Technologies brand colors ── */
+            --cloudit-primary: #7C75E0;
+            --cloudit-secondary: #5D54C6;
+            --cloudit-glow: rgba(124, 117, 224, 0.5);
+            --cloudit-light: #9B96FA;
+
             /* ── Neutrals for text and backgrounds ── */
             --text-primary:    var(--gray-900);
             --text-secondary:  var(--gray-700);
@@ -839,25 +845,150 @@
         }
 
         /* ═══════════════════════════════════════════════
-           FOOTER - GRAY THEME
+           FOOTER - GRAY THEME WITH CLOUDIT ANIMATION (LOGO REMOVED)
         ═══════════════════════════════════════════════ */
         .portal-footer {
-            background: var(--gray-900);
+            background: linear-gradient(145deg, var(--gray-900), #0a0a0f);
             border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-            padding: 20px 36px;
+            padding: 24px 36px;
+            border-top: 1px solid rgba(255,255,255,.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background effect */
+        .portal-footer::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -20%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(124, 117, 224, 0.03) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .footer-main {
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 10px;
-            border-top: 1px solid rgba(255,255,255,.06);
+            gap: 20px;
+            position: relative;
+            z-index: 2;
         }
 
         .portal-footer p {
             margin: 0;
             font-family: var(--font-ui);
             font-size: 12px;
-            color: rgba(255,255,255,.4);
+            color: rgba(255,255,255,.5);
+        }
+
+        /* Powered by Cloudit Technologies - Animated */
+        .powered-by-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .powered-by {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            background: rgba(124, 117, 224, 0.1);
+            border-radius: var(--radius-full);
+            border: 1px solid rgba(124, 117, 224, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .powered-by::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulseGlow 3s ease infinite;
+            pointer-events: none;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        .powered-by:hover {
+            background: rgba(124, 117, 224, 0.15);
+            border-color: rgba(124, 117, 224, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(124, 117, 224, 0.3);
+        }
+
+        .powered-text {
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 400;
+            color: rgba(255,255,255,.5);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .cloudit-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            position: relative;
+        }
+
+        .cloudit-name {
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, var(--cloudit-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 0.3px;
+        }
+
+        .cloud-icon {
+            color: var(--cloudit-primary);
+            font-size: 14px;
+            filter: drop-shadow(0 0 5px var(--cloudit-glow));
+            animation: floatCloud 3s ease-in-out infinite;
+        }
+
+        .lightning-icon {
+            color: var(--gold-400);
+            font-size: 10px;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            opacity: 0;
+            animation: lightningFlash 2s ease infinite;
+        }
+
+        @keyframes floatCloud {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        @keyframes lightningFlash {
+            0%, 90%, 100% { opacity: 0; transform: scale(0.5); }
+            92%, 98% { opacity: 1; transform: scale(1.2); }
+            94%, 96% { opacity: 0.8; transform: scale(1); }
         }
 
         .footer-contacts {
@@ -883,6 +1014,11 @@
         .footer-contact-item i { 
             color: var(--gold-400); 
             font-size: 11px; 
+            transition: transform 0.2s ease;
+        }
+
+        .footer-contact-item:hover i {
+            transform: scale(1.2);
         }
 
         /* ═══════════════════════════════════════════════
@@ -960,10 +1096,23 @@
 
             .portal-body { padding: 22px 18px; }
 
-            .portal-footer {
+            .footer-main {
                 flex-direction: column;
-                align-items: flex-start;
-                padding: 18px 22px;
+                align-items: center;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .footer-contacts {
+                justify-content: center;
+            }
+
+            .powered-by-wrapper {
+                width: 100%;
+            }
+
+            .portal-footer {
+                padding: 20px 22px;
             }
 
             .slip-grid { grid-template-columns: 1fr; }
@@ -975,6 +1124,19 @@
             .portal-logo { width: 56px; height: 56px; }
             .track-step { flex: 0 0 100%; }
             .portal-body { padding: 18px 14px; }
+            
+            .footer-contacts {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .powered-by {
+                padding: 6px 12px;
+            }
+            
+            .cloudit-name {
+                font-size: 12px;
+            }
         }
 
         @media (max-width: 360px) {
@@ -1159,27 +1321,37 @@
 
     <!-- ═══════════ FOOTER ═══════════ -->
     <footer class="portal-footer">
-        <p>&copy; <?php echo date('Y'); ?> FCT College of Nursing Sciences. All rights reserved.</p>
-        <div class="footer-contacts">
-            <?php
-                $supportPhone = $settings['key_value']['support_phone_1'] ?? '07039837749';
-                $supportEmail = $settings['key_value']['support_email']   ?? 'info@fctcns.edu.ng';
-            ?>
-            <a class="footer-contact-item" href="tel:<?php echo htmlspecialchars($supportPhone); ?>">
-                <i class="fas fa-phone-alt"></i>
-                <?php echo htmlspecialchars($supportPhone); ?>
-            </a>
-            <a class="footer-contact-item" href="mailto:<?php echo htmlspecialchars($supportEmail); ?>">
-                <i class="fas fa-envelope"></i>
-                <?php echo htmlspecialchars($supportEmail); ?>
-            </a>
+        <div class="footer-main">
+            <p>&copy; <?php echo date('Y'); ?> FCT College of Nursing Sciences. All rights reserved.</p>
+            
+            <!-- Powered by Cloudit Technologies with Animation -->
+            <div class="powered-by-wrapper">
+                <div class="powered-by">
+                    <span class="powered-text">Powered by</span>
+                    <a href="https://cloudit.ng" target="_blank" rel="noopener noreferrer" class="cloudit-link">
+                        <span class="cloudit-name">Cloudit Technologies</span>
+                        <i class="fas fa-cloud cloud-icon"></i>
+                        <i class="fas fa-bolt lightning-icon"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="footer-contacts">
+                <?php
+                    $supportPhone = $settings['key_value']['support_phone_1'] ?? '07039837749';
+                    $supportEmail = $settings['key_value']['support_email']   ?? 'info@fctcns.edu.ng';
+                ?>
+                <a class="footer-contact-item" href="tel:<?php echo htmlspecialchars($supportPhone); ?>">
+                    <i class="fas fa-phone-alt"></i>
+                    <?php echo htmlspecialchars($supportPhone); ?>
+                </a>
+                <a class="footer-contact-item" href="mailto:<?php echo htmlspecialchars($supportEmail); ?>">
+                    <i class="fas fa-envelope"></i>
+                    <?php echo htmlspecialchars($supportEmail); ?>
+                </a>
+            </div>
         </div>
     </footer>
-
-    <!-- Optional Footer Logo -->
-    <div style="text-align: center; margin-top: 10px;">
-        <img src="/assets/images/logo/logo-footer.png" alt="FCT College of Nursing Sciences" style="height: 30px; opacity: 0.6;">
-    </div>
 
 </div><!-- /portal-wrap -->
 
