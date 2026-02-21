@@ -292,14 +292,7 @@ class PublicApplicationController extends ApplicationBaseController {
                     // Clear registration email from session
                     unset($_SESSION['registration_email']);
                     
-                    // Check if application exists
-                    $application = $this->applicationModel->getByApplicantId($applicantByEmail['id']);
-                    if (!$application) {
-                        // Create empty application record
-                        $this->applicationModel->createEmptyApplication($applicantByEmail['id']);
-                    }
-                    
-                    // SHOW VERIFICATION SUCCESS PAGE - FIXED: Don't redirect, show the page
+                    // SHOW VERIFICATION SUCCESS PAGE - FIXED: Don't create application here
                     $this->data['pageTitle'] = 'Email Verified Successfully';
                     $this->data['verified'] = true;
                     $this->data['applicant_name'] = $_SESSION['applicant_name'];
@@ -333,14 +326,7 @@ class PublicApplicationController extends ApplicationBaseController {
             // Clear registration email from session
             unset($_SESSION['registration_email']);
             
-            // Check if application exists
-            $application = $this->applicationModel->getByApplicantId($applicant['id']);
-            if (!$application) {
-                // Create empty application record
-                $this->applicationModel->createEmptyApplication($applicant['id']);
-            }
-            
-            // SHOW VERIFICATION SUCCESS PAGE - FIXED: Don't redirect, show the page
+            // SHOW VERIFICATION SUCCESS PAGE - FIXED: Don't create application here
             $this->data['pageTitle'] = 'Email Verified Successfully';
             $this->data['verified'] = true;
             $this->data['applicant_name'] = $_SESSION['applicant_name'];
@@ -373,15 +359,11 @@ class PublicApplicationController extends ApplicationBaseController {
             // Clear registration email from session
             unset($_SESSION['registration_email']);
             
-            // Check if application exists
-            $application = $this->applicationModel->getByApplicantId($applicant['id']);
-            if (!$application) {
-                // Create empty application record to start the process
-                $this->applicationModel->createEmptyApplication($applicant['id']);
-            }
+            // IMPORTANT FIX: DO NOT create application here!
+            // Application is created during JAMB verification (step 1)
+            // Just show the success page
             
-            // SHOW VERIFICATION SUCCESS PAGE - FIXED: This is the key fix!
-            // Instead of redirecting to step 1, we show the success page
+            // SHOW VERIFICATION SUCCESS PAGE
             $this->data['pageTitle'] = 'Email Verified Successfully';
             $this->data['verified'] = true;
             $this->data['applicant_name'] = $_SESSION['applicant_name'];
