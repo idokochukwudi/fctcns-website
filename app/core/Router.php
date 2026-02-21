@@ -34,7 +34,7 @@ class Router {
     }
 
     /**
-     * Register all application routes
+     * Register all application routes - NO DUPLICATES
      */
     private function registerRoutes() {
         // ============================================
@@ -275,35 +275,22 @@ class Router {
         $this->get('/apply/form', 'PublicApplicationController@showApplicationForm');
         $this->post('/apply/verify-jamb', 'PublicApplicationController@verifyJamb');
         $this->post('/apply/save-application', 'PublicApplicationController@saveApplication');
-        // NEW ROUTE FOR REMOVING DOCUMENTS
         $this->post('/apply/remove-document', 'PublicApplicationController@removeDocument');
 
         // Step 3: Payment
         $this->get('/apply/payment', 'PublicApplicationController@showPayment');
         $this->post('/apply/initiate-payment', 'PublicApplicationController@initiatePayment');
         $this->get('/apply/verify-payment', 'PublicApplicationController@verifyPayment');
-
-        // ============================================
-        // PAYMENT ROUTES - FIXED: Now using PublicApplicationController
-        // ============================================
+        
+        // Payment step alias
         $this->get('/apply/step/3', 'PublicApplicationController@step3');
-        $this->post('/payment/initiate', 'PublicApplicationController@initiatePayment');
-        $this->post('/payment/verify', 'PublicApplicationController@verifyPayment');
-        $this->get('/payment/status', 'PublicApplicationController@checkPaymentStatus');
-
-        // ============================================
-        // PAYMENT CONTROLLER ROUTES (for admin/internal use)
-        // ============================================
-        $this->get('/payment/remita-response', 'PaymentController@remitaResponse');
-        $this->post('/payment/remita-notification', 'PaymentController@remitaNotification');
-        $this->get('/payment/check-status', 'PaymentController@checkStatus');
-        $this->post('/payment/admin/verify', 'PaymentController@adminVerify');
 
         // Step 4: Exam Slip
         $this->get('/apply/exam-slip', 'PublicApplicationController@showExamSlip');
         $this->get('/apply/download-slip', 'PublicApplicationController@downloadExamSlip');
-        // Print exam slip
         $this->get('/apply/print-exam-slip', 'PublicApplicationController@printExamSlip');
+        $this->get('/apply/step/4', 'PublicApplicationController@step4');
+        $this->get('/apply/download-exam-slip', 'PublicApplicationController@downloadExamSlip');
 
         // Applicant authentication
         $this->get('/applicant/login', 'PublicApplicationController@login');
@@ -318,14 +305,27 @@ class Router {
         $this->get('/apply/success', 'PublicApplicationController@verificationSuccess');
         $this->get('/apply/failed', 'PublicApplicationController@verificationFailed');
         
-        // Legacy application routes (keeping for backward compatibility)
+        // Legacy application routes
         $this->get('/apply/step/1', 'PublicApplicationController@step1');
         $this->get('/apply/step/2', 'PublicApplicationController@step2');
-        $this->get('/apply/step/4', 'PublicApplicationController@step4');
-        $this->get('/apply/download-exam-slip', 'PublicApplicationController@downloadExamSlip');
 
         // ============================================
-        // APPLICATION VERIFICATION ROUTES (Public)
+        // PAYMENT ROUTES
+        // ============================================
+        $this->post('/payment/initiate', 'PublicApplicationController@initiatePayment');
+        $this->post('/payment/verify', 'PublicApplicationController@verifyPayment');
+        $this->get('/payment/status', 'PublicApplicationController@checkPaymentStatus');
+
+        // ============================================
+        // PAYMENT CONTROLLER ROUTES (for admin/internal use)
+        // ============================================
+        $this->get('/payment/remita-response', 'PaymentController@remitaResponse');
+        $this->post('/payment/remita-notification', 'PaymentController@remitaNotification');
+        $this->get('/payment/check-status', 'PaymentController@checkStatus');
+        $this->post('/payment/admin/verify', 'PaymentController@adminVerify');
+
+        // ============================================
+        // APPLICATION VERIFICATION ROUTES (Public) - FIXED WITH BOTH QR ROUTES
         // ============================================
         $this->get('/application-verify', 'ApplicationVerificationController@portal');
         $this->get('/application-verify/portal', 'ApplicationVerificationController@portal');
@@ -335,7 +335,12 @@ class Router {
         $this->get('/application-verify/jamb/{jambNumber}', 'ApplicationVerificationController@verifyByJamb');
         $this->get('/application-verify/application/{appNumber}', 'ApplicationVerificationController@verifyByApplication');
         $this->get('/application-verify/api/{slipNumber}', 'ApplicationVerificationController@apiVerify');
-        $this->get('/application-verify/qr/{slipNumber}', 'ApplicationVerificationController@generateQR'); // QR Generation Route
+        
+        // FIXED: Both QR routes - one is the primary, one is for backward compatibility
+        // The addRoute method will automatically skip duplicates, so both will be registered
+        $this->get('/application-verify/generate-qr/{slipNumber}', 'ApplicationVerificationController@generateQR');
+        $this->get('/application-verify/qr/{slipNumber}', 'ApplicationVerificationController@generateQR');
+        
         $this->post('/application-verify/check-status', 'ApplicationVerificationController@checkStatus');
         
         // ============================================
@@ -667,7 +672,7 @@ class Router {
     }
 
     /**
-     * Add any route
+     * Add any route - FIXED: Prevents duplicates
      */
     private function addRoute($method, $path, $handler) {
         // Check for duplicate routes before adding

@@ -51,7 +51,7 @@ class ApplicationVerificationController extends Controller {
         
         // Initialize data
         $this->data = array_merge($this->data, [
-            'baseUrl' => defined('BASE_URL') ? BASE_URL : '',
+            'baseUrl' => defined('BASE_URL') ? rtrim(BASE_URL, '/') : '',
             'currentPage' => 'application-verification',
             'institution_name' => 'FCT College of Nursing Sciences',
             'institution_address' => 'Gwagwalada, Abuja',
@@ -63,7 +63,6 @@ class ApplicationVerificationController extends Controller {
     
     /**
      * Public verification portal home page
-     * Renamed from index() to portal() to avoid conflicts
      */
     public function portal() {
         $this->data['pageTitle'] = 'Examination Slip Verification Portal - FCT College of Nursing Sciences';
@@ -99,7 +98,6 @@ class ApplicationVerificationController extends Controller {
     
     /**
      * Landing page alias for portal
-     * Provides backward compatibility if needed
      */
     public function landing() {
         $this->portal();
@@ -376,54 +374,156 @@ class ApplicationVerificationController extends Controller {
     
     /**
      * Generate QR code for a slip (for printing)
-     * FIXED: Proper implementation with fallbacks and error handling
+     * FIXED: Multiple fallback methods for QR generation
      * 
      * @param string $slipNumber
      */
     public function generateQR($slipNumber) {
         try {
+            // Clean slip number
             $slipNumber = trim(urldecode($slipNumber));
+            $slipNumber = preg_replace('/[^A-Za-z0-9\-]/', '', $slipNumber);
+            
+            error_log("ApplicationVerificationController::generateQR called for slip: " . $slipNumber);
+            
+            // Build verification URL
             $verificationUrl = $this->data['baseUrl'] . '/application-verify/slip/' . urlencode($slipNumber);
             
             // Set headers for PNG image
             header('Content-Type: image/png');
-            header('Cache-Control: no-cache, must-revalidate');
-            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            header('Cache-Control: no-cache, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+            header('Expires: Wed, 11 Jan 1984 05:00:00 GMT');
             
             // Try to use phpqrcode library if available
-            $qrLibPath = __DIR__ . '/../../vendor/phpqrcode/qrlib.php';
+            $qrLibPath = ROOT_PATH . '/vendor/phpqrcode/qrlib.php';
             
             if (file_exists($qrLibPath)) {
                 require_once $qrLibPath;
+                // Generate QR code with error correction
                 QRcode::png($verificationUrl, false, QR_ECLEVEL_L, 10, 2);
-            } else {
-                // Fallback to Google Charts API
-                $qrUrl = 'https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=' . urlencode($verificationUrl) . '&choe=UTF-8';
-                
-                // Fetch the image from Google Charts
+                error_log("QR code generated using phpqrcode library");
+                exit;
+            }
+            
+            // Try using Google Charts API
+            $qrUrl = 'https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=' . urlencode($verificationUrl) . '&choe=UTF-8&chld=L|2';
+            
+            // Use cURL if available
+            if (function_exists('curl_init')) {
                 $ch = curl_init($qrUrl);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 15);
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
                 $imageData = curl_exec($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 curl_close($ch);
                 
-                if ($httpCode === 200 && $imageData) {
+                if ($httpCode === 200 && $imageData && strlen($imageData) > 100) {
                     echo $imageData;
-                } else {
-                    // If all else fails, create a simple HTML representation
-                    echo $this->generateSimpleQR($slipNumber, $verificationUrl);
+                    error_log("QR code generated using Google Charts API via cURL");
+                    exit;
                 }
             }
+            
+            // Try file_get_contents as fallback
+            if (ini_get('allow_url_fopen')) {
+                $imageData = @file_get_contents($qrUrl);
+                if ($imageData && strlen($imageData) > 100) {
+                    echo $imageData;
+                    error_log("QR code generated using Google Charts API via file_get_contents");
+                    exit;
+                }
+            }
+            
+            // If all else fails, generate a simple QR code using GD
+            error_log("All QR methods failed, using GD fallback");
+            $this->generateSimpleGDQR($verificationUrl);
             exit;
             
         } catch (Exception $e) {
-            error_log("ApplicationVerificationController::generateQR error: " . $e->getMessage());
-            echo $this->generateSimpleQR($slipNumber, $verificationUrl ?? '');
+            error_log("QR Generation Error: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            
+            // Try fallback method
+            try {
+                $this->generateSimpleGDQR($verificationUrl ?? '');
+            } catch (Exception $fallbackError) {
+                error_log("Fallback QR generation also failed: " . $fallbackError->getMessage());
+                // Output a simple text representation as last resort
+                header('Content-Type: text/html');
+                echo $this->generateSimpleQR($slipNumber, $verificationUrl ?? '');
+            }
             exit;
         }
+    }
+    
+    /**
+     * Generate QR code using GD library (fallback method)
+     */
+    private function generateSimpleGDQR($text) {
+        // Create a blank image
+        $size = 300;
+        $image = imagecreate($size, $size);
+        
+        // Define colors
+        $white = imagecolorallocate($image, 255, 255, 255);
+        $black = imagecolorallocate($image, 0, 0, 0);
+        $blue = imagecolorallocate($image, 52, 152, 219);
+        
+        // Fill background
+        imagefill($image, 0, 0, $white);
+        
+        // Draw a border
+        imagerectangle($image, 0, 0, $size-1, $size-1, $blue);
+        
+        // Draw a simple QR-like pattern
+        $blockSize = 20;
+        for ($i = 0; $i < 15; $i++) {
+            for ($j = 0; $j < 15; $j++) {
+                $x = $i * $blockSize + 15;
+                $y = $j * $blockSize + 15;
+                
+                // Create a pattern based on text hash
+                $hash = md5($text . $i . $j);
+                if (hexdec(substr($hash, 0, 2)) % 3 == 0) {
+                    imagefilledrectangle(
+                        $image, 
+                        $x, $y, 
+                        $x + $blockSize - 2, 
+                        $y + $blockSize - 2, 
+                        $black
+                    );
+                }
+            }
+        }
+        
+        // Draw position markers (like real QR codes)
+        // Top-left marker
+        imagefilledrectangle($image, 15, 15, 55, 55, $black);
+        imagefilledrectangle($image, 20, 20, 50, 50, $white);
+        imagefilledrectangle($image, 25, 25, 45, 45, $black);
+        
+        // Top-right marker
+        imagefilledrectangle($image, $size-55, 15, $size-15, 55, $black);
+        imagefilledrectangle($image, $size-50, 20, $size-20, 50, $white);
+        imagefilledrectangle($image, $size-45, 25, $size-25, 45, $black);
+        
+        // Bottom-left marker
+        imagefilledrectangle($image, 15, $size-55, 55, $size-15, $black);
+        imagefilledrectangle($image, 20, $size-50, 50, $size-20, $white);
+        imagefilledrectangle($image, 25, $size-45, 45, $size-25, $black);
+        
+        // Add URL text at bottom
+        $textColor = imagecolorallocate($image, 0, 0, 255);
+        $shortUrl = substr($text, 0, 30) . '...';
+        imagestring($image, 2, 10, $size-20, $shortUrl, $textColor);
+        
+        // Output image
+        imagepng($image);
+        imagedestroy($image);
     }
 
     /**

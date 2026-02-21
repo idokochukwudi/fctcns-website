@@ -1,6 +1,7 @@
 {
     "require": {
         "mpdf/mpdf": "^8.2.5",
-        "remita/rits": "dev-master"
+        "remita/rits": "dev-master",
+        "chillerlan/php-qrcode": "^5.0"
     }
 }
