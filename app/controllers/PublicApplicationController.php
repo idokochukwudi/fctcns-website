@@ -9,6 +9,7 @@
  * FIXED: Exam slip generation and step 4 display - enhanced security
  * FIXED: Generate proper RRR using Remita API (no fake DEMO RRRs)
  * FIXED: Landing page redirects to registration, email verification redirects to step 1
+ * FIXED: Progress tracker now shows step 5 (Exam Slip) correctly after payment
  * 
  * @package FCT_CNS
  */
@@ -1436,6 +1437,7 @@ class PublicApplicationController extends ApplicationBaseController {
             'exam_slip' => $examSlip,
             'applicant' => $applicant,
             'applicant_name' => $applicant_name,
+            'has_exam_slip' => true, // FIX: Add this line for progress tracker
             'exam_details' => [
                 'date' => $this->settingsModel->get('cbt_start_date', 'To be announced'),
                 'venue' => 'FCT College of Nursing Sciences, Gwagwalada (within UATH)',
@@ -1718,6 +1720,90 @@ class PublicApplicationController extends ApplicationBaseController {
         
         error_log("Failed to create exam slip for application: " . $applicationId);
         return null;
+    }
+
+    // ============================================
+    // HELPER METHODS - FIX: Add hasExamSlip method
+    // ============================================
+    
+    /**
+     * Check if exam slip exists for application
+     * 
+     * @param int $applicationId
+     * @return bool
+     */
+    private function hasExamSlip($applicationId) {
+        try {
+            require_once MODELS_PATH . '/application/ExamSlipModel.php';
+            $examSlipModel = new ExamSlipModel();
+            $examSlip = $examSlipModel->getByApplicationId($applicationId);
+            return !empty($examSlip);
+        } catch (Exception $e) {
+            error_log("Error checking exam slip: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Check if applicant is logged in
+     */
+    protected function isApplicantLoggedIn() {
+        return isset($_SESSION['applicant_id']) && !empty($_SESSION['applicant_id']);
+    }
+    
+    /**
+     * Get current application
+     */
+    protected function getApplication() {
+        if (!$this->isApplicantLoggedIn()) {
+            return null;
+        }
+        
+        return $this->applicationModel->getByApplicantId($_SESSION['applicant_id']);
+    }
+    
+    /**
+     * Get current applicant
+     */
+    protected function getApplicant() {
+        if (!$this->isApplicantLoggedIn()) {
+            return null;
+        }
+        
+        return $this->applicantModel->find($_SESSION['applicant_id']);
+    }
+    
+    /**
+     * Generate random password
+     */
+    private function generateRandomPassword($length = 10) {
+        $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
+        return substr(str_shuffle($chars), 0, $length);
+    }
+    
+    /**
+     * Get states of Nigeria
+     */
+    protected function getStates() {
+        return [
+            'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
+            'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu',
+            'FCT - Abuja', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina',
+            'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo',
+            'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
+        ];
+    }
+    
+    /**
+     * Get programs
+     */
+    protected function getPrograms() {
+        return [
+            'ND Nursing',
+            'Post Basic Nursing',
+            'Midwifery',
+            'Public Health Nursing'
+        ];
     }
 
     // ============================================
@@ -2522,6 +2608,9 @@ class PublicApplicationController extends ApplicationBaseController {
             $applicant_name = $applicant['email'] ?? 'Applicant';
         }
         
+        // FIX: Check if exam slip exists
+        $hasExamSlip = $this->hasExamSlip($application['id']);
+        
         // Prepare data for view
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Payment - Step 3',
@@ -2533,7 +2622,8 @@ class PublicApplicationController extends ApplicationBaseController {
             'formatted_fee' => $this->settingsModel->getFormattedFee(),
             'csrf_token' => $csrfToken,
             'pending_payment' => $pending_payment,
-            'baseUrl' => defined('BASE_URL') ? BASE_URL : '/'
+            'baseUrl' => defined('BASE_URL') ? BASE_URL : '/',
+            'has_exam_slip' => $hasExamSlip // FIX: Add this line
         ]);
         
         // IMPORTANT: Render step3.php, NOT payment.php
@@ -2543,7 +2633,6 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show step 4: Exam Slip (Legacy Flow) - ENHANCED SECURITY
-     * Multiple layers of verification to prevent unauthorized access
      */
     public function step4() {
         // Start session
@@ -2572,7 +2661,6 @@ class PublicApplicationController extends ApplicationBaseController {
         }
         
         // Layer 3: VERIFY PAYMENT STATUS IN DATABASE (not session)
-        // This is critical - always check the database, not session
         $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
         
         if (!$hasPaid) {
@@ -2625,7 +2713,8 @@ class PublicApplicationController extends ApplicationBaseController {
             'pageTitle' => 'Examination Slip - Step 4',
             'application' => $application,
             'applicant' => $applicant,
-            'exam_slip' => $examSlip
+            'exam_slip' => $examSlip,
+            'has_exam_slip' => true // FIX: Add this line
         ]);
         
         error_log("Granting access to step 4 for verified applicant: " . $applicantId);
@@ -2804,71 +2893,5 @@ class PublicApplicationController extends ApplicationBaseController {
             ]
         ]);
         exit;
-    }
-
-    // ============================================
-    // HELPER METHODS
-    // ============================================
-    
-    /**
-     * Check if applicant is logged in
-     */
-    protected function isApplicantLoggedIn() {
-        return isset($_SESSION['applicant_id']) && !empty($_SESSION['applicant_id']);
-    }
-    
-    /**
-     * Get current application
-     */
-    protected function getApplication() {
-        if (!$this->isApplicantLoggedIn()) {
-            return null;
-        }
-        
-        return $this->applicationModel->getByApplicantId($_SESSION['applicant_id']);
-    }
-    
-    /**
-     * Get current applicant
-     */
-    protected function getApplicant() {
-        if (!$this->isApplicantLoggedIn()) {
-            return null;
-        }
-        
-        return $this->applicantModel->find($_SESSION['applicant_id']);
-    }
-    
-    /**
-     * Generate random password
-     */
-    private function generateRandomPassword($length = 10) {
-        $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
-        return substr(str_shuffle($chars), 0, $length);
-    }
-    
-    /**
-     * Get states of Nigeria
-     */
-    protected function getStates() {
-        return [
-            'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
-            'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu',
-            'FCT - Abuja', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina',
-            'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo',
-            'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
-        ];
-    }
-    
-    /**
-     * Get programs
-     */
-    protected function getPrograms() {
-        return [
-            'ND Nursing',
-            'Post Basic Nursing',
-            'Midwifery',
-            'Public Health Nursing'
-        ];
     }
 }

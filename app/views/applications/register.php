@@ -34,9 +34,6 @@ $portal_message= $portal_message?? '';
     
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-    
-    <!-- Bootstrap 5 Reboot + Grid only (lightweight) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
         /* ============================================
@@ -107,6 +104,7 @@ $portal_message= $portal_message?? '';
             --radius-lg: 0.75rem;     /* 12px */
             --radius-xl: 1rem;        /* 16px */
             --radius-2xl: 1.5rem;     /* 24px */
+            --radius-full: 9999px;
             
             /* Shadows */
             --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -133,6 +131,7 @@ $portal_message= $portal_message?? '';
         html {
             font-size: 16px;
             -webkit-text-size-adjust: 100%;
+            scroll-behavior: smooth;
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -561,42 +560,188 @@ $portal_message= $portal_message?? '';
         }
 
         /* ============================================
-           CHECKBOX
+           TERMS CHECKBOX
            ============================================ */
-        .checkbox-group {
+        .terms-container {
+            margin: var(--space-8) 0 var(--space-4) 0;
+            padding: var(--space-4) 0;
+            border-top: 1px solid var(--neutral-200);
+            border-bottom: 1px solid var(--neutral-200);
+            background: var(--neutral-50);
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-wrapper {
             display: flex;
             align-items: flex-start;
             gap: var(--space-3);
-            margin: var(--space-6) 0;
+            padding: var(--space-2) 0;
         }
 
-        .checkbox-group input[type="checkbox"] {
+        .checkbox-wrapper input[type="checkbox"] {
             width: 1.25rem;
             height: 1.25rem;
             margin-top: 0.125rem;
             accent-color: var(--purple-600);
             cursor: pointer;
+            flex-shrink: 0;
         }
 
-        .checkbox-group label {
-            font-size: 0.875rem;
+        .checkbox-wrapper label {
+            font-size: 0.95rem;
             color: var(--neutral-700);
             line-height: 1.5;
             cursor: pointer;
+            flex: 1;
         }
 
-        .checkbox-group a {
+        .terms-link {
             color: var(--purple-700);
             text-decoration: none;
-            font-weight: 500;
+            font-weight: 600;
+            border-bottom: 1px dotted var(--purple-400);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
         }
 
-        .checkbox-group a:hover {
-            text-decoration: underline;
+        .terms-link:hover {
+            color: var(--purple-900);
+            border-bottom-color: var(--purple-700);
+        }
+
+        .terms-link i {
+            font-size: 0.75rem;
         }
 
         /* ============================================
-           BUTTONS
+           TERMS CONTENT SECTION (at the bottom)
+           ============================================ */
+        .terms-content-section {
+            margin: var(--space-8) 0;
+            padding: var(--space-6);
+            background: var(--neutral-50);
+            border: 1px solid var(--neutral-200);
+            border-radius: var(--radius-xl);
+            scroll-margin-top: var(--space-8);
+        }
+
+        .terms-content-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-6);
+            padding-bottom: var(--space-4);
+            border-bottom: 2px solid var(--purple-200);
+        }
+
+        .terms-content-header i {
+            font-size: 1.5rem;
+            color: var(--purple-600);
+            background: var(--purple-100);
+            padding: var(--space-2);
+            border-radius: var(--radius-lg);
+        }
+
+        .terms-content-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--purple-900);
+            margin: 0;
+        }
+
+        .terms-content-header p {
+            color: var(--neutral-600);
+            font-size: 0.875rem;
+            margin: var(--space-1) 0 0 0;
+        }
+
+        .terms-text {
+            color: var(--neutral-700);
+            line-height: 1.7;
+            font-size: 0.95rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: var(--space-2);
+        }
+
+        .terms-text p {
+            margin-bottom: var(--space-4);
+        }
+
+        .terms-text ul, 
+        .terms-text ol {
+            margin-bottom: var(--space-4);
+            padding-left: var(--space-5);
+        }
+
+        .terms-text li {
+            margin-bottom: var(--space-2);
+        }
+
+        .terms-text strong {
+            color: var(--purple-800);
+        }
+
+        /* Terms scrollbar styling */
+        .terms-text::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .terms-text::-webkit-scrollbar-track {
+            background: var(--neutral-100);
+            border-radius: var(--radius-sm);
+        }
+
+        .terms-text::-webkit-scrollbar-thumb {
+            background: var(--purple-300);
+            border-radius: var(--radius-sm);
+        }
+
+        .terms-text::-webkit-scrollbar-thumb:hover {
+            background: var(--purple-400);
+        }
+
+        .terms-footer-info {
+            margin-top: var(--space-6);
+            padding-top: var(--space-4);
+            border-top: 1px solid var(--neutral-200);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            font-size: 0.8rem;
+            color: var(--neutral-500);
+        }
+
+        .terms-version {
+            background: var(--purple-100);
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-full);
+            color: var(--purple-700);
+            font-weight: 500;
+        }
+
+        .back-to-top {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+            color: var(--purple-600);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .back-to-top:hover {
+            color: var(--purple-800);
+            transform: translateY(-2px);
+        }
+
+        /* ============================================
+           BUTTONS - MATCHING DESIGN
            ============================================ */
         .btn {
             display: inline-flex;
@@ -604,13 +749,14 @@ $portal_message= $portal_message?? '';
             justify-content: center;
             gap: var(--space-2);
             padding: var(--space-3) var(--space-6);
-            font-size: 0.875rem;
+            font-size: 0.95rem;
             font-weight: 600;
             border-radius: var(--radius-lg);
             border: 2px solid transparent;
             cursor: pointer;
             transition: all 0.2s ease;
             text-decoration: none;
+            letter-spacing: 0.3px;
         }
 
         .btn-primary {
@@ -622,7 +768,7 @@ $portal_message= $portal_message?? '';
 
         .btn-primary:hover:not(:disabled) {
             background: var(--purple-700);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
             box-shadow: var(--shadow-lg);
         }
 
@@ -637,8 +783,9 @@ $portal_message= $portal_message?? '';
 
         .btn-outline {
             background: white;
-            border-color: var(--neutral-200);
+            border: 2px solid var(--neutral-200);
             color: var(--neutral-700);
+            min-width: 100px;
         }
 
         .btn-outline:hover {
@@ -647,8 +794,27 @@ $portal_message= $portal_message?? '';
             background: var(--purple-50);
         }
 
+        .btn-success {
+            background: var(--success-600);
+            color: white;
+            border: 2px solid var(--success-600);
+            min-width: 100px;
+        }
+
+        .btn-success:hover {
+            background: var(--success-700);
+            border-color: var(--success-700);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
         .btn-block {
             width: 100%;
+        }
+
+        .btn-lg {
+            padding: var(--space-4) var(--space-8);
+            font-size: 1rem;
         }
 
         /* Spinner */
@@ -683,7 +849,7 @@ $portal_message= $portal_message?? '';
             content: '';
             flex: 1;
             height: 1px;
-            background: var(--neutral-200);
+            background: linear-gradient(90deg, transparent, var(--neutral-200), transparent);
         }
 
         /* ============================================
@@ -691,6 +857,7 @@ $portal_message= $portal_message?? '';
            ============================================ */
         .login-section {
             text-align: center;
+            margin-top: var(--space-6);
         }
 
         .login-section p {
@@ -738,41 +905,6 @@ $portal_message= $portal_message?? '';
         }
 
         /* ============================================
-           MODAL
-           ============================================ */
-        .modal-content {
-            border-radius: var(--radius-xl);
-            border: none;
-            box-shadow: var(--shadow-xl);
-        }
-
-        .modal-header {
-            background: linear-gradient(135deg, var(--purple-900), var(--purple-700));
-            color: white;
-            padding: var(--space-4) var(--space-6);
-            border: none;
-        }
-
-        .modal-title {
-            font-weight: 600;
-        }
-
-        .modal-body {
-            padding: var(--space-6);
-            color: var(--neutral-700);
-            line-height: 1.7;
-        }
-
-        .modal-footer {
-            padding: var(--space-4) var(--space-6);
-            border-top: 1px solid var(--neutral-200);
-        }
-
-        .btn-close {
-            filter: brightness(0) invert(1);
-        }
-
-        /* ============================================
            UTILITIES
            ============================================ */
         .text-purple {
@@ -803,6 +935,14 @@ $portal_message= $portal_message?? '';
             border: 0;
         }
 
+        .mt-6 {
+            margin-top: var(--space-6);
+        }
+
+        .mb-4 {
+            margin-bottom: var(--space-4);
+        }
+
         /* ============================================
            RESPONSIVE ADJUSTMENTS
            ============================================ */
@@ -823,6 +963,19 @@ $portal_message= $portal_message?? '';
 
             .step-item:not(:last-child)::after {
                 top: 1rem;
+            }
+
+            .checkbox-wrapper label {
+                font-size: 0.85rem;
+            }
+
+            .terms-footer-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .terms-content-section {
+                padding: var(--space-4);
             }
         }
 
@@ -1006,18 +1159,22 @@ $portal_message= $portal_message?? '';
                         </div>
                     </div>
 
-                    <!-- Terms Checkbox -->
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="terms" name="terms" required>
-                        <label for="terms">
-                            I agree to the 
-                            <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a>
-                            <span class="required">*</span>
-                        </label>
+                    <!-- TERMS CHECKBOX - LINKS TO SECTION BELOW -->
+                    <div class="terms-container">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="terms" name="terms" required>
+                            <label for="terms">
+                                I agree to the 
+                                <a href="#terms-section" class="terms-link">
+                                    Terms and Conditions <i class="fas fa-arrow-down"></i>
+                                </a>
+                                <span class="required">*</span>
+                            </label>
+                        </div>
                     </div>
 
                     <!-- Submit Button -->
-                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
                         <span id="btnText">
                             <i class="fas fa-user-plus"></i>
                             Create Account
@@ -1053,46 +1210,81 @@ $portal_message= $portal_message?? '';
 
         </div>
 
+        <!-- TERMS SECTION - AT THE BOTTOM (visible on page) -->
+        <div id="terms-section" class="terms-content-section">
+            <div class="terms-content-header">
+                <i class="fas fa-file-contract"></i>
+                <div>
+                    <h2>Terms and Conditions</h2>
+                    <p>Please read carefully before proceeding</p>
+                </div>
+            </div>
+            
+            <?php if (!empty($terms)): ?>
+                <div class="terms-text">
+                    <h6 style="color: var(--purple-800); margin-bottom: var(--space-4);">
+                        <?php echo e($terms['title'] ?? 'Terms and Conditions of Application'); ?>
+                    </h6>
+                    
+                    <?php echo nl2br(e($terms['content'] ?? '')); ?>
+                </div>
+                
+                <div class="terms-footer-info">
+                    <span class="terms-version">
+                        <i class="fas fa-code-branch me-1"></i>
+                        Version: <?php echo e($terms['version'] ?? '1.0'); ?>
+                    </span>
+                    <span>
+                        <i class="fas fa-calendar-alt me-1"></i>
+                        Effective: <?php echo isset($terms['effective_date']) ? date('F j, Y', strtotime($terms['effective_date'])) : 'September 15, 2025'; ?>
+                    </span>
+                    <a href="#" class="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">
+                        <i class="fas fa-arrow-up"></i> Back to Top
+                    </a>
+                </div>
+            <?php else: ?>
+                <div class="terms-text">
+                    <p><strong>1. Accuracy of Information</strong><br>
+                    You confirm that all information provided in your application is true, complete, and accurate. Providing false or misleading information may result in disqualification or revocation of admission.</p>
+                    
+                    <p><strong>2. Application Fee</strong><br>
+                    The application fee is non-refundable. Payment must be made through the official Remita platform only. The college does not accept cash payments.</p>
+                    
+                    <p><strong>3. Data Privacy</strong><br>
+                    Your personal data will be processed in accordance with the Nigeria Data Protection Regulation (NDPR). We will not share your information with third parties without your consent.</p>
+                    
+                    <p><strong>4. Admission Process</strong><br>
+                    Meeting the minimum requirements does not guarantee admission. The selection process is competitive and based on merit, catchment area, and other criteria as determined by the college.</p>
+                    
+                    <p><strong>5. Communication</strong><br>
+                    All official communication will be sent to the email address provided during registration. It is your responsibility to check this email regularly.</p>
+                    
+                    <p><strong>6. Code of Conduct</strong><br>
+                    Applicants must maintain proper conduct throughout the admission process. Any form of examination malpractice or unethical behavior will lead to automatic disqualification.</p>
+                    
+                    <p><strong>7. Changes to Terms</strong><br>
+                    The college reserves the right to modify these terms as necessary. Any changes will be communicated through the official portal.</p>
+                </div>
+                
+                <div class="terms-footer-info">
+                    <span class="terms-version">
+                        <i class="fas fa-code-branch me-1"></i>
+                        Version: 1.0
+                    </span>
+                    <span>
+                        <i class="fas fa-calendar-alt me-1"></i>
+                        Effective: September 15, 2025
+                    </span>
+                    <a href="#" class="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">
+                        <i class="fas fa-arrow-up"></i> Back to Top
+                    </a>
+                </div>
+            <?php endif; ?>
+        </div>
+
     <?php endif; ?>
 
 </div>
-
-<!-- Terms Modal -->
-<?php if (!empty($terms)): ?>
-<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="termsModalLabel">
-                    <i class="fas fa-file-contract me-2"></i>
-                    Terms and Conditions
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <h6 style="color: var(--purple-800); margin-bottom: var(--space-4);">
-                    <?php echo e($terms['title'] ?? 'Terms and Conditions'); ?>
-                </h6>
-                <div style="font-size: 0.875rem;">
-                    <?php echo nl2br(e($terms['content'] ?? '')); ?>
-                </div>
-                <hr style="margin: var(--space-6) 0; border-color: var(--neutral-200);">
-                <div style="font-size: 0.75rem; color: var(--neutral-500);">
-                    <i class="fas fa-clock me-1"></i>
-                    Version: <?php echo e($terms['version'] ?? '1.0'); ?> |
-                    Effective: <?php echo isset($terms['effective_date']) ? date('F j, Y', strtotime($terms['effective_date'])) : 'September 15, 2025'; ?>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Form Validation Script -->
 <script>
@@ -1217,6 +1409,20 @@ $portal_message= $portal_message?? '';
         }, 5000);
     }
 
+    // Smooth scroll for terms link
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+
     // Form submission
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1266,6 +1472,17 @@ $portal_message= $portal_message?? '';
 
         if (!terms.checked) {
             showAlert('You must accept the Terms and Conditions');
+            // Highlight the terms container
+            document.querySelector('.terms-container').style.animation = 'shake 0.3s ease';
+            setTimeout(() => {
+                document.querySelector('.terms-container').style.animation = '';
+            }, 300);
+            
+            // Scroll to terms section
+            document.getElementById('terms-section').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'center'
+            });
             return;
         }
 
@@ -1278,8 +1495,20 @@ $portal_message= $portal_message?? '';
         this.submit();
     });
 
+    // Add shake animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    `;
+    document.head.appendChild(style);
+
     // Initialize
     if (password.value) checkPasswordStrength();
+
 })();
 </script>
 
