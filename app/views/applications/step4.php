@@ -644,23 +644,39 @@ $baseUrl = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
                         </div>
                     </div>
 
-                    <!-- QR Code - FIXED: Using correct controller endpoint with cache busting and multiple fallbacks -->
+                    <!-- QR Code Section - FIXED to use standard routes -->
                     <div>
                         <div class="qr-box">
                             <div id="qrcode" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
-                                <!-- Direct server-generated QR with cache busting -->
-                                <img src="<?php echo $baseUrl; ?>/application-verify/generate-qr/<?php echo urlencode($exam_slip['slip_number']); ?>?t=<?php echo time(); ?>" 
-                                     alt="QR Code"
-                                     style="width:100%; height:100%; object-fit:contain;"
-                                     id="qrImage"
-                                     onerror="this.onerror=null; handleQRError(this, '<?php echo addslashes($exam_slip['slip_number']); ?>');"
-                                     onload="console.log('QR code loaded successfully');">
+                                <?php if (!empty($exam_slip['slip_number'])): ?>
+                                    <?php
+                                    // FIX: Use standard routes
+                                    $qrUrl = $baseUrl . '/application-verify/generate-qr/' . urlencode($exam_slip['slip_number']) . '?t=' . time();
+                                    $verificationUrl = $baseUrl . '/application-verify/slip/' . urlencode($exam_slip['slip_number']);
+                                    ?>
+                                    
+                                    <img src="<?php echo htmlspecialchars($qrUrl); ?>" 
+                                         alt="QR Code for Verification"
+                                         style="width:100%; height:100%; object-fit:contain;"
+                                         id="qrImage"
+                                         onerror="this.onerror=null; handleQRError(this, '<?php echo addslashes($exam_slip['slip_number']); ?>');"
+                                         onload="console.log('QR code loaded successfully');">
+                                <?php endif; ?>
                             </div>
                             <div id="qrcode-fallback" style="display:none;"></div>
                         </div>
                         <div class="qr-label">
                             <i class="fas fa-qrcode"></i> Scan to Verify
                         </div>
+                        
+                        <?php if (!empty($exam_slip['slip_number'])): ?>
+                        <div class="verification-link" style="margin-top:10px; text-align:center; font-size:0.75rem;">
+                            <small>Verification URL:</small><br>
+                            <a href="<?php echo htmlspecialchars($verificationUrl); ?>" target="_blank" style="color:var(--primary); word-break:break-all;">
+                                <?php echo htmlspecialchars($verificationUrl); ?>
+                            </a>
+                        </div>
+                        <?php endif; ?>
                     </div>
 
                     <!-- Verification Badge -->
@@ -790,7 +806,7 @@ $baseUrl = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
                 </a>
             </div>
 
-            <!-- Verification Link - FIXED: Using verify.php as primary with alternative endpoint -->
+            <!-- Verification Link - FIXED: Using standard routes -->
             <div class="verify-card">
                 <h6>Public Verification Link</h6>
                 <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.75rem; line-height:1.5;">
@@ -799,16 +815,12 @@ $baseUrl = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
                 <div class="verify-input-group">
                     <input type="text"
                            id="verificationLink"
-                           value="<?php echo $baseUrl; ?>/verify.php?slip=<?php echo urlencode($exam_slip['slip_number']); ?>"
+                           value="<?php echo $baseUrl; ?>/application-verify/slip/<?php echo urlencode($exam_slip['slip_number']); ?>"
                            readonly>
                     <button onclick="copyVerificationLink()">
                         <i class="fas fa-copy me-1"></i> Copy
                     </button>
                 </div>
-                <p style="font-size:0.7rem; color:var(--text-muted); margin-top:0.5rem;">
-                    <i class="fas fa-info-circle"></i> 
-                    Alternative: <a href="<?php echo $baseUrl; ?>/application-verify/slip/<?php echo urlencode($exam_slip['slip_number']); ?>" target="_blank">Application verify page</a>
-                </p>
             </div>
 
             <!-- Slip Summary Card -->
@@ -884,7 +896,7 @@ $baseUrl = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
         console.log('QR code failed to load, trying fallbacks...');
         const container = document.getElementById('qrcode');
         const baseUrl = '<?php echo addslashes($baseUrl); ?>';
-        const verificationUrl = baseUrl + '/verify.php?slip=' + encodeURIComponent(slipNumber);
+        const verificationUrl = baseUrl + '/application-verify/slip/' + encodeURIComponent(slipNumber);
         
         // Clear container
         container.innerHTML = '';
@@ -912,13 +924,46 @@ $baseUrl = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
             };
             
             qrServer.onerror = function() {
-                // Last resort - show text with verification link
-                container.innerHTML = `
-                    <div style="width:100%;height:100%;background:#f0f4f8;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;border-radius:4px;padding:10px;">
-                        <i class="fas fa-qrcode fa-3x" style="color:#1a3a5c;opacity:0.5;"></i>
-                        <span style="font-size:0.7rem;color:#6b7c8d;text-align:center;word-break:break-all;">${slipNumber}</span>
-                        <a href="${verificationUrl}" target="_blank" style="font-size:0.7rem;color:#1a3a5c;text-decoration:underline;">Click to verify</a>
-                    </div>`;
+                // Try QRCode.js library as third fallback
+                if (typeof QRCode !== 'undefined') {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.style.cssText = 'width:100%;height:100%;display:block;';
+                        container.appendChild(canvas);
+                        
+                        QRCode.toCanvas(canvas, verificationUrl, {
+                            width: 200,
+                            margin: 1,
+                            color: { dark: '#1a3a5c', light: '#ffffff' }
+                        }, function(err) {
+                            if (err) {
+                                // Last resort - show text with verification link
+                                container.innerHTML = `
+                                    <div style="width:100%;height:100%;background:#f0f4f8;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;border-radius:4px;padding:10px;">
+                                        <i class="fas fa-qrcode fa-3x" style="color:#1a3a5c;opacity:0.5;"></i>
+                                        <span style="font-size:0.7rem;color:#6b7c8d;text-align:center;word-break:break-all;">${slipNumber}</span>
+                                        <a href="${verificationUrl}" target="_blank" style="font-size:0.7rem;color:#1a3a5c;text-decoration:underline;">Click to verify</a>
+                                    </div>`;
+                            }
+                        });
+                    } catch (e) {
+                        // Last resort - show text with verification link
+                        container.innerHTML = `
+                            <div style="width:100%;height:100%;background:#f0f4f8;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;border-radius:4px;padding:10px;">
+                                <i class="fas fa-qrcode fa-3x" style="color:#1a3a5c;opacity:0.5;"></i>
+                                <span style="font-size:0.7rem;color:#6b7c8d;text-align:center;word-break:break-all;">${slipNumber}</span>
+                                <a href="${verificationUrl}" target="_blank" style="font-size:0.7rem;color:#1a3a5c;text-decoration:underline;">Click to verify</a>
+                            </div>`;
+                    }
+                } else {
+                    // Last resort - show text with verification link
+                    container.innerHTML = `
+                        <div style="width:100%;height:100%;background:#f0f4f8;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;border-radius:4px;padding:10px;">
+                            <i class="fas fa-qrcode fa-3x" style="color:#1a3a5c;opacity:0.5;"></i>
+                            <span style="font-size:0.7rem;color:#6b7c8d;text-align:center;word-break:break-all;">${slipNumber}</span>
+                            <a href="${verificationUrl}" target="_blank" style="font-size:0.7rem;color:#1a3a5c;text-decoration:underline;">Click to verify</a>
+                        </div>`;
+                }
             };
         };
     }

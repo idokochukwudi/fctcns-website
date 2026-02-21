@@ -113,6 +113,7 @@ class ApplicationVerificationController extends Controller {
     
     /**
      * Verify examination slip by slip number (QR code scanning)
+     * FIXED: Properly handles verification and renders results
      * 
      * @param string $slipNumber The examination slip number
      */
@@ -122,7 +123,7 @@ class ApplicationVerificationController extends Controller {
             $slipNumber = trim(urldecode($slipNumber));
             $slipNumber = preg_replace('/[^A-Za-z0-9\-]/', '', $slipNumber);
             
-            error_log("ApplicationVerificationController: Verifying slip: " . $slipNumber);
+            error_log("ApplicationVerificationController::verifySlip called for slip: " . $slipNumber);
             
             // Get slip by number
             $examSlip = $this->examSlipModel->getBySlipNumber($slipNumber);
@@ -428,17 +429,7 @@ class ApplicationVerificationController extends Controller {
                 }
             }
             
-            // ----- ATTEMPT 2: phpqrcode library -----
-            $qrLibPath = ROOT_PATH . '/vendor/phpqrcode/qrlib.php';
-            
-            if (file_exists($qrLibPath)) {
-                require_once $qrLibPath;
-                QRcode::png($verificationUrl, false, QR_ECLEVEL_L, 10, 2);
-                error_log("QR code generated using phpqrcode library");
-                exit;
-            }
-            
-            // ----- ATTEMPT 3: Google Charts API -----
+            // ----- ATTEMPT 2: Google Charts API -----
             $googleUrl = 'https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=' . urlencode($verificationUrl) . '&choe=UTF-8&chld=L|2';
             
             // Use cURL if available
@@ -470,14 +461,14 @@ class ApplicationVerificationController extends Controller {
                 }
             }
             
-            // ----- ATTEMPT 4: Generate using GD library -----
+            // ----- ATTEMPT 3: Generate using GD library -----
             if (extension_loaded('gd')) {
-                error_log("All QR methods failed, using GD fallback");
+                error_log("QR API methods failed, using GD fallback");
                 $this->generateSimpleGDQR($verificationUrl);
                 exit;
             }
             
-            // ----- ATTEMPT 5: HTML fallback (last resort) -----
+            // ----- ATTEMPT 4: HTML fallback (last resort) -----
             error_log("All QR methods failed, using HTML fallback");
             header('Content-Type: text/html');
             echo $this->generateSimpleQR($slipNumber, $verificationUrl);
@@ -507,6 +498,10 @@ class ApplicationVerificationController extends Controller {
      * @param string $text The URL/text to encode
      */
     private function generateSimpleGDQR($text) {
+        if (!extension_loaded('gd')) {
+            return;
+        }
+        
         // Create a blank image
         $size = 300;
         $image = imagecreate($size, $size);
@@ -514,7 +509,7 @@ class ApplicationVerificationController extends Controller {
         // Define colors
         $white = imagecolorallocate($image, 255, 255, 255);
         $black = imagecolorallocate($image, 0, 0, 0);
-        $blue = imagecolorallocate($image, 52, 152, 219);
+        $blue = imagecolorallocate($image, 107, 78, 155);
         
         // Fill background
         imagefill($image, 0, 0, $white);

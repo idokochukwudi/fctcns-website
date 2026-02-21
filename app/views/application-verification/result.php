@@ -1,3 +1,20 @@
+<?php
+/**
+ * Application Verification Result View
+ * 
+ * @var array $verificationData
+ * @var array $exam_slip
+ * @var array $application
+ * @var array $applicant
+ * @var bool $has_paid
+ * @var array $status
+ */
+
+$baseUrl = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
+$institution_name = $institution_name ?? 'FCT College of Nursing Sciences';
+$institution_address = $institution_address ?? 'Gwagwalada, Abuja';
+$support_email = $support_email ?? 'verification@fctcns.edu.ng';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,8 +28,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- QR Code Library -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     
     <style>
         :root {
@@ -119,28 +134,6 @@
             background: white;
         }
         
-        .candidate-photo {
-            width: 120px;
-            height: 140px;
-            object-fit: cover;
-            border: 3px solid var(--primary-color);
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        .photo-placeholder {
-            width: 120px;
-            height: 140px;
-            background: #f0f0f0;
-            border: 3px solid #dee2e6;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            color: #adb5bd;
-        }
-        
         .info-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -198,20 +191,6 @@
             color: #0c5460;
         }
         
-        .qr-container {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        
-        #qrcode {
-            width: 150px;
-            height: 150px;
-            margin: 0 auto;
-        }
-        
         .warnings-list {
             margin: 20px 0;
             padding: 15px;
@@ -254,6 +233,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            text-decoration: none;
         }
         
         .btn-action:hover {
@@ -266,13 +246,14 @@
             color: white;
         }
         
-        .btn-success {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
+        .btn-outline-primary {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
         }
         
-        .btn-info {
-            background: linear-gradient(135deg, #17a2b8, #138496);
+        .btn-outline-primary:hover {
+            background: var(--primary-color);
             color: white;
         }
         
@@ -289,17 +270,9 @@
             margin-bottom: 10px;
         }
         
-        .print-only {
-            display: none;
-        }
-        
         @media print {
             .no-print {
                 display: none !important;
-            }
-            
-            .print-only {
-                display: block;
             }
             
             body {
@@ -316,38 +289,6 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
-            
-            .btn-action {
-                display: none;
-            }
-        }
-        
-        .floating-print {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 1000;
-        }
-        
-        .print-button {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            box-shadow: 0 5px 20px rgba(107, 78, 155, 0.4);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
-        
-        .print-button:hover {
-            transform: scale(1.1);
-            box-shadow: 0 10px 30px rgba(107, 78, 155, 0.6);
         }
     </style>
 </head>
@@ -355,16 +296,11 @@
     <div class="container">
         <div class="result-card">
             <!-- Header based on verification status -->
-            <div class="result-header <?php 
-                echo $status['is_valid'] ? 'verified' : 'unverified'; 
-                echo !empty($status['warnings']) ? ' warning' : '';
-            ?>">
+            <div class="result-header <?php echo $status['is_valid'] ? 'verified' : 'unverified'; ?>">
                 <div class="result-icon">
-                    <i class="fas fa-<?php 
-                        echo $status['is_valid'] ? 'check-circle' : 'times-circle'; 
-                    ?>"></i>
+                    <i class="fas fa-<?php echo $status['is_valid'] ? 'check-circle' : 'times-circle'; ?>"></i>
                 </div>
-                <h2 class="h3 mb-2">Document Verification Result</h2>
+                <h2 class="h3 mb-2">Examination Slip Verification</h2>
                 <div class="verification-badge">
                     <i class="fas fa-clock me-2"></i>
                     <?php echo date('jS F Y, h:i A', strtotime($verificationData['verification_time'])); ?>
@@ -381,61 +317,16 @@
             </div>
             
             <div class="result-body">
-                <!-- Candidate Photo and QR Code Row -->
-                <div class="row mb-4">
-                    <div class="col-md-4 text-center">
-                        <?php if (!empty($applicant['passport_photo'])): ?>
-                            <img src="<?php echo htmlspecialchars($applicant['passport_photo']); ?>" 
-                                 alt="Passport" 
-                                 class="candidate-photo">
-                        <?php else: ?>
-                            <div class="photo-placeholder">
-                                <i class="fas fa-user-circle"></i>
-                            </div>
-                        <?php endif; ?>
-                        <p class="small text-muted mt-2">
-                            <i class="fas fa-camera"></i> Passport Photograph
-                        </p>
-                    </div>
-                    
-                    <div class="col-md-4 text-center">
-                        <div class="qr-container">
-                            <div id="qrcode"></div>
-                            <p class="small text-muted mt-2 mb-0">
-                                <i class="fas fa-qrcode"></i> Scan to Verify Again
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-4">
-                        <div class="qr-container bg-light">
-                            <h6 class="mb-2">Verification ID</h6>
-                            <p class="mb-1 small">
-                                <code><?php echo $verificationData['verification_id']; ?></code>
-                            </p>
-                            <hr>
-                            <p class="small text-muted mb-0">
-                                <i class="fas fa-shield-alt me-1"></i>
-                                Digitally Signed
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Verification Summary -->
-                <div class="alert alert-<?php 
-                    echo $status['is_valid'] ? 'success' : 'danger'; 
-                ?> mb-4">
+                <div class="alert alert-<?php echo $status['is_valid'] ? 'success' : 'danger'; ?> mb-4">
                     <div class="d-flex align-items-center">
-                        <i class="fas fa-<?php 
-                            echo $status['is_valid'] ? 'check-circle' : 'exclamation-triangle'; 
-                        ?> fa-2x me-3"></i>
+                        <i class="fas fa-<?php echo $status['is_valid'] ? 'check-circle' : 'exclamation-triangle'; ?> fa-2x me-3"></i>
                         <div>
                             <strong>
                                 <?php if ($status['is_valid']): ?>
-                                    This document is authentic and has been verified.
+                                    This examination slip is authentic and has been verified.
                                 <?php else: ?>
-                                    This document could not be verified.
+                                    This examination slip could not be verified.
                                 <?php endif; ?>
                             </strong>
                             <?php if ($has_paid): ?>
@@ -462,7 +353,7 @@
                 </div>
                 <?php endif; ?>
                 
-                <!-- Candidate Information Grid -->
+                <!-- Candidate Information -->
                 <h6 class="mb-3">
                     <i class="fas fa-user-graduate me-2 text-primary"></i>
                     Candidate Information
@@ -544,10 +435,7 @@
                     <button class="btn-action btn-primary" onclick="window.print()">
                         <i class="fas fa-print"></i> Print Result
                     </button>
-                    <button class="btn-action btn-success" onclick="downloadAsPDF()">
-                        <i class="fas fa-download"></i> Save as PDF
-                    </button>
-                    <a href="/application-verify/portal" class="btn-action btn-info">
+                    <a href="/application-verify/portal" class="btn-action btn-outline-primary">
                         <i class="fas fa-redo-alt"></i> Verify Another
                     </a>
                 </div>
@@ -570,20 +458,14 @@
                                 <i class="fas fa-globe me-2"></i>
                                 IP Address: <?php echo htmlspecialchars($verificationData['verification_ip']); ?>
                             </p>
-                            <?php if (!empty($verificationData['verifier_name'])): ?>
-                            <p class="small text-muted mb-1">
-                                <i class="fas fa-user me-2"></i>
-                                Verified by: <?php echo htmlspecialchars($verificationData['verifier_name']); ?>
-                            </p>
-                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
             </div>
             
             <div class="verification-footer">
-                <img src="<?php echo $institution_logo ?? '/assets/img/college-seal.png'; ?>" 
-                     alt="College Seal" class="institution-seal">
+                <img src="/assets/img/college-seal.png" alt="College Seal" class="institution-seal" 
+                     onerror="this.style.display='none'">
                 <p class="small text-muted mb-1">
                     <strong><?php echo $institution_name; ?></strong><br>
                     <?php echo $institution_address; ?>
@@ -596,40 +478,17 @@
         </div>
     </div>
     
-    <!-- Floating Print Button (Mobile) -->
-    <div class="floating-print no-print">
-        <button class="print-button" onclick="window.print()">
-            <i class="fas fa-print"></i>
-        </button>
-    </div>
-    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Generate QR Code for re-verification
-        document.addEventListener('DOMContentLoaded', function() {
-            const verificationUrl = '<?php echo $baseUrl; ?>/application-verify/slip/<?php echo urlencode($exam_slip['slip_number']); ?>';
-            
-            QRCode.toCanvas(document.getElementById('qrcode'), verificationUrl, {
-                width: 150,
-                margin: 1,
-                color: {
-                    dark: '#000000',
-                    light: '#ffffff'
-                }
-            }, function(error) {
-                if (error) console.error('QR Code generation error:', error);
-            });
+        // Print functionality
+        document.querySelector('.btn-action.btn-primary')?.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.print();
         });
         
-        // Download as PDF function
-        function downloadAsPDF() {
-            // Use browser's print to PDF functionality
-            window.print();
-        }
-        
-        // Add print-specific styles
+        // Add print styles
         const style = document.createElement('style');
         style.innerHTML = `
             @media print {
@@ -639,14 +498,6 @@
             }
         `;
         document.head.appendChild(style);
-        
-        // Track verification view
-        if (navigator.sendBeacon) {
-            navigator.sendBeacon('/application-verify/track-view', JSON.stringify({
-                slip: '<?php echo $exam_slip['slip_number']; ?>',
-                verification_id: '<?php echo $verificationData['verification_id']; ?>'
-            }));
-        }
     </script>
 </body>
 </html>
