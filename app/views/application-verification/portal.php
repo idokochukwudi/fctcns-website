@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($pageTitle ?? 'Examination Slip Verification Portal'); ?></title>
+    <title><?php echo htmlspecialchars($pageTitle ?? 'Examination Slip Verification Portal - FCT College of Nursing Sciences'); ?></title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -376,6 +376,25 @@
             display: block;
         }
         
+        .alert {
+            padding: 15px;
+            background: #f8d7da;
+            color: #721c24;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert.show {
+            display: flex;
+        }
+        
+        .alert i {
+            font-size: 20px;
+        }
+        
         @media (max-width: 768px) {
             .method-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -410,6 +429,12 @@
             </div>
             
             <div class="verification-body">
+                <!-- Error Alert -->
+                <div class="alert" id="errorAlert">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="errorMessage"></span>
+                </div>
+                
                 <!-- Stats Overview -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
@@ -694,6 +719,9 @@
                 // Clean the slip number
                 slipNumber = slipNumber.replace(/[^A-Za-z0-9\-]/g, '');
                 
+                // Stop scanner before redirect
+                stopScanner();
+                
                 // Redirect to verification page
                 window.location.href = '/application-verify/slip/' + encodeURIComponent(slipNumber);
             });
@@ -705,12 +733,12 @@
                     scanner.start(backCamera || cameras[0]);
                     activeScanner = true;
                 } else {
-                    alert('No cameras found on this device.');
+                    showError('No cameras found on this device.');
                     stopScanner();
                 }
             }).catch(function(e) {
                 console.error(e);
-                alert('Camera access denied or not available. Please ensure you have granted camera permissions.');
+                showError('Camera access denied or not available. Please ensure you have granted camera permissions.');
                 stopScanner();
             });
         }
@@ -726,18 +754,37 @@
             document.querySelector('.scan-area').style.display = 'block';
         }
         
+        // Show error message
+        function showError(message) {
+            const errorAlert = document.getElementById('errorAlert');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            errorMessage.textContent = message;
+            errorAlert.classList.add('show');
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                errorAlert.classList.remove('show');
+            }, 5000);
+        }
+        
         // Form validations
         function validateSlipForm() {
             const slipNumber = document.getElementById('slipNumber').value.trim();
             const captcha = document.getElementById('captcha').value.trim();
             
             if (!slipNumber) {
-                alert('Please enter a slip number');
+                showError('Please enter a slip number');
+                return false;
+            }
+            
+            if (!/^[A-Za-z0-9\-]+$/.test(slipNumber)) {
+                showError('Invalid slip number format. Use letters, numbers, and hyphens only.');
                 return false;
             }
             
             if (!captcha) {
-                alert('Please enter the verification code');
+                showError('Please enter the verification code');
                 return false;
             }
             
@@ -749,17 +796,17 @@
             const agreeTerms = document.getElementById('agreeTerms').checked;
             
             if (!jambNumber) {
-                alert('Please enter your JAMB number');
+                showError('Please enter your JAMB number');
                 return false;
             }
             
             if (jambNumber.length < 10) {
-                alert('JAMB number must be at least 10 characters');
+                showError('JAMB number must be at least 10 characters');
                 return false;
             }
             
             if (!agreeTerms) {
-                alert('You must agree to the verification terms');
+                showError('You must agree to the verification terms');
                 return false;
             }
             
@@ -770,7 +817,12 @@
             const appNumber = document.getElementById('appNumber').value.trim();
             
             if (!appNumber) {
-                alert('Please enter your application number');
+                showError('Please enter your application number');
+                return false;
+            }
+            
+            if (!/^[A-Za-z0-9\-]+$/.test(appNumber)) {
+                showError('Invalid application number format. Use letters, numbers, and hyphens only.');
                 return false;
             }
             
@@ -790,16 +842,6 @@
             }
         }
         
-        // Auto-dismiss alerts
-        setTimeout(() => {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(alert => {
-                alert.style.transition = 'opacity 0.5s';
-                alert.style.opacity = '0';
-                setTimeout(() => alert.remove(), 500);
-            });
-        }, 5000);
-        
         // Handle form input formatting
         document.getElementById('slipNumber')?.addEventListener('input', function(e) {
             this.value = this.value.toUpperCase();
@@ -817,6 +859,15 @@
         if (window.history.replaceState) {
             window.history.replaceState(null, null, window.location.href);
         }
+        
+        // Check URL parameters for scan trigger
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('scan') === '1') {
+                switchMethod('qr');
+                setTimeout(startScanner, 500);
+            }
+        });
     </script>
 </body>
 </html>

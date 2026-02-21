@@ -9,7 +9,8 @@
  */
 
 // Ensure BASE_URL is defined
-$baseUrl = defined('BASE_URL') ? BASE_URL : '';
+$baseUrl = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
+$slipNumber = $exam_slip['slip_number'] ?? '';
 ?>
 
 <!DOCTYPE html>
@@ -17,7 +18,7 @@ $baseUrl = defined('BASE_URL') ? BASE_URL : '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Examination Slip - <?php echo htmlspecialchars($exam_slip['slip_number']); ?></title>
+    <title>Examination Slip - <?php echo htmlspecialchars($slipNumber); ?></title>
 
     <!-- QR Code Library — synchronous, must be before body scripts -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
@@ -333,14 +334,59 @@ $baseUrl = defined('BASE_URL') ? BASE_URL : '';
             background: var(--white);
             padding: 4px;
             overflow: hidden;
+            position: relative;
         }
 
         /* All QR output children sized to fill box */
-        #qrContainer canvas,
-        #qrContainer img {
+        .qr-box canvas,
+        .qr-box img {
             width: 84px !important;
             height: 84px !important;
             display: block;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        /* Loading indicator */
+        .qr-loading {
+            font-size: 6.5pt;
+            color: #999;
+            text-align: center;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+        
+        .qr-loading .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--navy);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 5px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Fallback style */
+        .qr-fallback {
+            font-size: 5.5pt;
+            color: var(--g3);
+            text-align: center;
+            padding: 2px;
+            word-break: break-all;
+        }
+        
+        .qr-fallback a {
+            color: var(--navy);
+            text-decoration: none;
         }
 
         /* Candidate Info rows */
@@ -594,7 +640,7 @@ $baseUrl = defined('BASE_URL') ? BASE_URL : '';
             .photo-panel, .qr-panel { flex: 0 0 80px; }
             .photo-box  { width: 80px; height: 96px; }
             .qr-box     { width: 80px; height: 80px; }
-            #qrContainer canvas, #qrContainer img { width: 70px !important; height: 70px !important; }
+            .qr-box canvas, .qr-box img { width: 70px !important; height: 70px !important; }
         }
     </style>
 </head>
@@ -606,7 +652,7 @@ $baseUrl = defined('BASE_URL') ? BASE_URL : '';
 <div class="toolbar">
     <div class="toolbar-title">
         <strong>📄 Examination Slip Preview</strong>
-        <span>Slip No: <?php echo htmlspecialchars($exam_slip['slip_number']); ?></span>
+        <span>Slip No: <?php echo htmlspecialchars($slipNumber); ?></span>
     </div>
     <div class="toolbar-actions">
         <button class="tbtn tbtn-print" onclick="triggerPrint()">
@@ -652,7 +698,7 @@ $baseUrl = defined('BASE_URL') ? BASE_URL : '';
     <div class="slip-number-bar">
         <span>
             <span class="sn-label">SLIP NO: </span>
-            <span class="sn-value"><?php echo htmlspecialchars($exam_slip['slip_number']); ?></span>
+            <span class="sn-value"><?php echo htmlspecialchars($slipNumber); ?></span>
         </span>
         <span class="sn-generated">
             Generated: <?php echo date('d F Y, h:i A', strtotime($exam_slip['generated_at'])); ?>
@@ -677,11 +723,12 @@ $baseUrl = defined('BASE_URL') ? BASE_URL : '';
             <div class="media-caption">Passport Photograph</div>
         </div>
 
-        <!-- QR Code - FIXED: Using QRCode.js with multiple fallbacks -->
+        <!-- QR Code - FIXED: Enhanced with multiple fallbacks -->
         <div class="qr-panel">
             <div class="qr-box" id="qrContainer">
-                <div id="qrLoading" style="font-size:6.5pt;color:#999;text-align:center;line-height:1.4;">
-                    Loading<br>QR...
+                <div class="qr-loading" id="qrLoading">
+                    <div class="spinner"></div>
+                    <span>Loading QR...</span>
                 </div>
             </div>
             <div class="media-caption">Scan to Verify</div>
@@ -791,7 +838,7 @@ $baseUrl = defined('BASE_URL') ? BASE_URL : '';
         </div>
         <div class="footer-right">
             Verification URL:<br>
-            <span class="verification-url"><?php echo $baseUrl; ?>/application-verify/slip/<?php echo urlencode($exam_slip['slip_number']); ?></span>
+            <span class="verification-url"><?php echo $baseUrl; ?>/application-verify/slip/<?php echo urlencode($slipNumber); ?></span>
         </div>
     </div>
 
@@ -803,80 +850,174 @@ $baseUrl = defined('BASE_URL') ? BASE_URL : '';
 </div><!-- /slip-wrapper -->
 
 <!-- ════════════════════════════════════════
-     QR CODE SCRIPT - FIXED with 3-layer fallback
-     Chain: QRCode.js canvas → Google Charts → slip number text fallback.
+     QR CODE SCRIPT - FIXED with 4-layer fallback
 ═════════════════════════════════════════ -->
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-
-    var slipNumber      = '<?php echo addslashes($exam_slip['slip_number']); ?>';
+(function() {
+    // Configuration
+    var slipNumber      = '<?php echo addslashes($slipNumber); ?>';
     var baseUrl         = '<?php echo addslashes($baseUrl); ?>';
-    // FIXED: Using correct controller endpoint
+    
+    // FIXED: Using correct controller endpoint for verification
     var verificationUrl = baseUrl + '/application-verify/slip/' + encodeURIComponent(slipNumber);
+    
+    // Also create alternative URL for fallbacks
+    var altVerificationUrl = baseUrl + '/verify.php?slip=' + encodeURIComponent(slipNumber);
+    
     var container       = document.getElementById('qrContainer');
+    var loadingEl       = document.getElementById('qrLoading');
 
-    function clearContainer() {
+    // Helper to remove loading indicator
+    function removeLoading() {
+        if (loadingEl) {
+            loadingEl.style.display = 'none';
+        }
+    }
+
+    // Helper to clear container and add new element
+    function setQRContent(element) {
         container.innerHTML = '';
+        container.appendChild(element);
     }
 
-    /* ── Fallback C: plain slip number text ── */
+    /* ── Fallback 4: Plain text with link ── */
     function showTextFallback() {
-        clearContainer();
-        container.innerHTML =
-            '<div style="font-size:6pt;color:#555;text-align:center;' +
-            'padding:4px;word-break:break-all;line-height:1.4;">' +
+        var div = document.createElement('div');
+        div.className = 'qr-fallback';
+        div.innerHTML = 
             '<div style="font-size:5pt;color:#999;margin-bottom:2px;">Slip No.</div>' +
-            slipNumber + '</div>';
+            '<strong style="font-size:6pt;">' + slipNumber + '</strong>' +
+            '<div style="margin-top:4px;">' +
+            '<a href="' + altVerificationUrl + '" target="_blank" style="color:#0d2b4e;">Verify Online</a>' +
+            '</div>';
+        setQRContent(div);
     }
 
-    /* ── Fallback B: Google Charts API ── */
+    /* ── Fallback 3: Google Charts API ── */
     function loadGoogleQR() {
         var img = new Image();
         img.crossOrigin = 'anonymous';
         img.src = 'https://chart.googleapis.com/chart?chs=84x84&cht=qr&chl=' +
-                  encodeURIComponent(verificationUrl) + '&choe=UTF-8';
+                  encodeURIComponent(verificationUrl) + '&choe=UTF-8&chld=L|2';
         img.alt = 'QR Code';
         img.style.cssText = 'width:84px;height:84px;display:block;';
-        img.onload  = function () { clearContainer(); container.appendChild(img); };
-        img.onerror = showTextFallback;
+        img.onload = function() { 
+            removeLoading();
+            setQRContent(img); 
+        };
+        img.onerror = function() {
+            console.log('Google Charts failed, trying QR Server API...');
+            loadQRServer();
+        };
+    }
+
+    /* ── Fallback 2: QR Server API ── */
+    function loadQRServer() {
+        var img = new Image();
+        img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=84x84&data=' + 
+                  encodeURIComponent(verificationUrl);
+        img.alt = 'QR Code';
+        img.style.cssText = 'width:84px;height:84px;display:block;';
+        img.onload = function() {
+            removeLoading();
+            setQRContent(img);
+        };
+        img.onerror = function() {
+            console.log('QR Server failed, using text fallback');
+            removeLoading();
+            showTextFallback();
+        };
+    }
+
+    /* ── Fallback 1: Try server-generated QR from controller ── */
+    function loadServerQR() {
+        var img = new Image();
+        var serverUrl = baseUrl + '/application-verify/generate-qr/' + encodeURIComponent(slipNumber) + '?t=' + Date.now();
+        img.src = serverUrl;
+        img.alt = 'QR Code';
+        img.style.cssText = 'width:84px;height:84px;display:block;';
+        img.onload = function() {
+            removeLoading();
+            setQRContent(img);
+        };
+        img.onerror = function() {
+            console.log('Server QR failed, trying Google Charts...');
+            loadGoogleQR();
+        };
     }
 
     /* ── Primary: QRCode.js canvas ── */
-    if (typeof QRCode !== 'undefined') {
-        var canvas = document.createElement('canvas');
-        QRCode.toCanvas(canvas, verificationUrl, {
-            width:  84,
-            margin: 1,
-            color:  { dark: '#0d2b4e', light: '#ffffff' }
-        }, function (err) {
-            clearContainer();
-            if (!err) {
-                canvas.style.cssText = 'width:84px;height:84px;display:block;';
-                container.appendChild(canvas);
-            } else {
-                console.log('QRCode.js error, falling back to Google Charts');
-                loadGoogleQR();
-            }
-        });
-    } else {
-        /* QRCode.js didn't load — go straight to Google Charts */
-        clearContainer();
-        loadGoogleQR();
+    function loadQRCodeJS() {
+        if (typeof QRCode !== 'undefined') {
+            var canvas = document.createElement('canvas');
+            QRCode.toCanvas(canvas, verificationUrl, {
+                width:  84,
+                margin: 1,
+                color:  { dark: '#0d2b4e', light: '#ffffff' }
+            }, function (err) {
+                if (!err) {
+                    removeLoading();
+                    canvas.style.cssText = 'width:84px;height:84px;display:block;';
+                    setQRContent(canvas);
+                } else {
+                    console.log('QRCode.js error, trying server QR...');
+                    loadServerQR();
+                }
+            });
+        } else {
+            console.log('QRCode.js not loaded, trying server QR...');
+            loadServerQR();
+        }
     }
 
-});
+    // Start the QR generation
+    if (container) {
+        loadQRCodeJS();
+    }
 
-/* ── Print trigger — 1.2s delay lets QR canvas render first ── */
+})();
+
+/* ── Print trigger with proper delay for QR rendering ── */
 function triggerPrint() {
-    setTimeout(function () { window.print(); }, 1200);
+    // Show a brief message
+    var btn = event.target;
+    var originalText = btn.innerHTML;
+    btn.innerHTML = '🖨 Preparing...';
+    btn.disabled = true;
+    
+    // Delay to ensure QR code is rendered
+    setTimeout(function() {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        window.print();
+    }, 1500);
 }
 
-/* Auto-print when opened as popup from step4.php printExamSlip() */
+/* Auto-print when opened as popup from step4.php */
 window.addEventListener('load', function () {
     if (window.opener) {
-        setTimeout(function () { window.print(); }, 1200);
+        // Add a small delay to ensure QR code renders
+        setTimeout(function () { 
+            window.print(); 
+        }, 1500);
     }
 });
+
+// Add a backup timer to ensure loading indicator doesn't stay forever
+setTimeout(function() {
+    var loadingEl = document.getElementById('qrLoading');
+    var container = document.getElementById('qrContainer');
+    if (loadingEl && loadingEl.style.display !== 'none' && container.children.length === 1) {
+        console.log('Loading timeout - forcing fallback');
+        loadingEl.style.display = 'none';
+        // Trigger fallback manually
+        var fallbackDiv = document.createElement('div');
+        fallbackDiv.className = 'qr-fallback';
+        fallbackDiv.innerHTML = 'QR Code<br>unavailable';
+        container.innerHTML = '';
+        container.appendChild(fallbackDiv);
+    }
+}, 5000);
 </script>
 
 </body>

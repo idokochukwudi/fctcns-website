@@ -396,7 +396,39 @@ class ApplicationVerificationController extends Controller {
             header('Pragma: no-cache');
             header('Expires: Wed, 11 Jan 1984 05:00:00 GMT');
             
-            // Try to use phpqrcode library if available
+            // ----- ATTEMPT 1: QR Server API (most reliable) -----
+            $qrServerUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($verificationUrl);
+            
+            // Try cURL first
+            if (function_exists('curl_init')) {
+                $ch = curl_init($qrServerUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+                $imageData = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                
+                if ($httpCode === 200 && $imageData && strlen($imageData) > 100) {
+                    echo $imageData;
+                    error_log("QR code generated using QR Server API via cURL");
+                    exit;
+                }
+            }
+            
+            // Try file_get_contents as fallback for QR Server
+            if (ini_get('allow_url_fopen')) {
+                $imageData = @file_get_contents($qrServerUrl);
+                if ($imageData && strlen($imageData) > 100) {
+                    echo $imageData;
+                    error_log("QR code generated using QR Server API via file_get_contents");
+                    exit;
+                }
+            }
+            
+            // ----- ATTEMPT 2: phpqrcode library -----
             $qrLibPath = ROOT_PATH . '/vendor/phpqrcode/qrlib.php';
             
             if (file_exists($qrLibPath)) {
@@ -406,12 +438,12 @@ class ApplicationVerificationController extends Controller {
                 exit;
             }
             
-            // Try using Google Charts API
-            $qrUrl = 'https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=' . urlencode($verificationUrl) . '&choe=UTF-8&chld=L|2';
+            // ----- ATTEMPT 3: Google Charts API -----
+            $googleUrl = 'https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=' . urlencode($verificationUrl) . '&choe=UTF-8&chld=L|2';
             
             // Use cURL if available
             if (function_exists('curl_init')) {
-                $ch = curl_init($qrUrl);
+                $ch = curl_init($googleUrl);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
                 curl_setopt($ch, CURLOPT_TIMEOUT, 15);
@@ -428,9 +460,9 @@ class ApplicationVerificationController extends Controller {
                 }
             }
             
-            // Try file_get_contents as fallback
+            // Try file_get_contents as fallback for Google Charts
             if (ini_get('allow_url_fopen')) {
-                $imageData = @file_get_contents($qrUrl);
+                $imageData = @file_get_contents($googleUrl);
                 if ($imageData && strlen($imageData) > 100) {
                     echo $imageData;
                     error_log("QR code generated using Google Charts API via file_get_contents");
@@ -438,23 +470,31 @@ class ApplicationVerificationController extends Controller {
                 }
             }
             
-            // If all else fails, generate a simple QR code using GD
-            error_log("All QR methods failed, using GD fallback");
-            $this->generateSimpleGDQR($verificationUrl);
+            // ----- ATTEMPT 4: Generate using GD library -----
+            if (extension_loaded('gd')) {
+                error_log("All QR methods failed, using GD fallback");
+                $this->generateSimpleGDQR($verificationUrl);
+                exit;
+            }
+            
+            // ----- ATTEMPT 5: HTML fallback (last resort) -----
+            error_log("All QR methods failed, using HTML fallback");
+            header('Content-Type: text/html');
+            echo $this->generateSimpleQR($slipNumber, $verificationUrl);
             exit;
             
         } catch (Exception $e) {
             error_log("QR Generation Error: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());
             
-            // Try fallback method
+            // Ultimate fallback
             try {
-                $this->generateSimpleGDQR($verificationUrl ?? '');
-            } catch (Exception $fallbackError) {
-                error_log("Fallback QR generation also failed: " . $fallbackError->getMessage());
-                // Output a simple text representation as last resort
                 header('Content-Type: text/html');
-                echo $this->generateSimpleQR($slipNumber, $verificationUrl ?? '');
+                echo $this->generateSimpleQR($slipNumber ?? '', $verificationUrl ?? '');
+            } catch (Exception $fallbackError) {
+                error_log("Ultimate fallback failed: " . $fallbackError->getMessage());
+                header('Content-Type: text/plain');
+                echo "QR Code unavailable. Please use verification link: " . ($verificationUrl ?? '');
             }
             exit;
         }
@@ -462,6 +502,9 @@ class ApplicationVerificationController extends Controller {
     
     /**
      * Generate QR code using GD library (fallback method)
+     * Creates a visual representation when other methods fail
+     * 
+     * @param string $text The URL/text to encode
      */
     private function generateSimpleGDQR($text) {
         // Create a blank image
@@ -528,27 +571,99 @@ class ApplicationVerificationController extends Controller {
 
     /**
      * Generate a simple HTML representation of QR (fallback)
+     * Used when all image generation methods fail
+     * 
+     * @param string $slipNumber
+     * @param string $verificationUrl
+     * @return string HTML content
      */
     private function generateSimpleQR($slipNumber, $verificationUrl) {
-        header('Content-Type: text/html');
         return '<!DOCTYPE html>
         <html>
         <head>
             <title>QR Code</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0f0f0; font-family: Arial, sans-serif; }
-                .container { text-align: center; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); max-width: 400px; }
-                .qr-placeholder { margin: 20px auto; width: 200px; height: 200px; background: #f5f5f5; border: 2px solid #ddd; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-                .qr-pattern { font-family: monospace; font-size: 18px; line-height: 1.2; color: #333; }
-                .qr-text { font-family: monospace; font-size: 16px; margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 5px; word-break: break-all; }
-                .url { color: #666; font-size: 12px; word-break: break-all; }
-                .button { display: inline-block; margin-top: 15px; padding: 10px 20px; background: #6B4E9B; color: white; text-decoration: none; border-radius: 5px; }
+                body { 
+                    display: flex; 
+                    justify-content: center; 
+                    align-items: center; 
+                    height: 100vh; 
+                    margin: 0; 
+                    background: #f0f0f0; 
+                    font-family: Arial, sans-serif; 
+                }
+                .container { 
+                    text-align: center; 
+                    background: white; 
+                    padding: 30px; 
+                    border-radius: 10px; 
+                    box-shadow: 0 0 20px rgba(0,0,0,0.1); 
+                    max-width: 500px; 
+                    margin: 20px;
+                }
+                h2 { color: #333; }
+                .slip-number {
+                    font-size: 16px;
+                    font-weight: bold;
+                    color: #6B4E9B;
+                    margin: 10px 0;
+                }
+                .qr-placeholder { 
+                    margin: 20px auto; 
+                    width: 250px; 
+                    height: 250px; 
+                    background: #f5f5f5; 
+                    border: 2px solid #6B4E9B; 
+                    border-radius: 10px; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center;
+                    overflow: hidden;
+                }
+                .qr-pattern { 
+                    font-family: monospace; 
+                    font-size: 14px; 
+                    line-height: 1.2; 
+                    color: #333; 
+                    background: white;
+                    padding: 10px;
+                }
+                .qr-text { 
+                    font-family: monospace; 
+                    font-size: 12px; 
+                    margin: 15px 0; 
+                    padding: 12px; 
+                    background: #f0f0f0; 
+                    border-radius: 5px; 
+                    word-break: break-all; 
+                }
+                .button { 
+                    display: inline-block; 
+                    margin-top: 20px; 
+                    padding: 12px 30px; 
+                    background: #6B4E9B; 
+                    color: white; 
+                    text-decoration: none; 
+                    border-radius: 5px;
+                    font-weight: bold;
+                    transition: background 0.3s;
+                }
+                .button:hover {
+                    background: #5a3e8a;
+                }
+                .note {
+                    margin-top: 20px;
+                    font-size: 12px;
+                    color: #999;
+                }
             </style>
         </head>
         <body>
             <div class="container">
                 <h2>QR Code for Examination Slip</h2>
-                <p>Slip Number: <strong>' . htmlspecialchars($slipNumber) . '</strong></p>
+                <p class="slip-number">Slip Number: <strong>' . htmlspecialchars($slipNumber) . '</strong></p>
                 
                 <div class="qr-placeholder">
                     <div class="qr-pattern">
@@ -568,9 +683,11 @@ class ApplicationVerificationController extends Controller {
                 
                 <p><small>Copy and paste this URL to verify the slip</small></p>
                 
-                <a href="' . htmlspecialchars($verificationUrl) . '" class="button">Proceed to Verification</a>
+                <a href="' . htmlspecialchars($verificationUrl) . '" class="button" target="_blank">
+                    Proceed to Verification
+                </a>
                 
-                <p class="url">Or scan this QR code with your mobile device</p>
+                <p class="note">Or scan this QR code with your mobile device</p>
             </div>
         </body>
         </html>';
