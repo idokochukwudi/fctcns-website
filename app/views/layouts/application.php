@@ -5,37 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     
     <!-- ========================================================= -->
-    <!-- 1. Add security meta tags in the head -->
+    <!-- Security meta tags (using SecurityHelper) -->
     <!-- ========================================================= -->
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
-    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
-    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <?php 
+    // Make sure SecurityHelper is loaded
+    if (class_exists('SecurityHelper')) {
+        echo SecurityHelper::getSecurityMetaTags();
+    } else {
+        // Fallback security meta tags
+        echo '<meta http-equiv="X-Content-Type-Options" content="nosniff">';
+        echo '<meta http-equiv="X-Frame-Options" content="DENY">';
+        echo '<meta http-equiv="X-XSS-Protection" content="1; mode=block">';
+        echo '<meta name="referrer" content="strict-origin-when-cross-origin">';
+    }
+    ?>
     
     <!-- ========================================================= -->
-    <!-- 2. Add CSRF meta tag for JavaScript -->
+    <!-- CSRF Token for JavaScript -->
     <!-- ========================================================= -->
-    <meta name="csrf-token" content="<?php echo $csrf_token ?? ''; ?>">
+    <meta name="csrf-token" content="<?php echo isset($csrf_token) ? htmlspecialchars($csrf_token) : ''; ?>">
     
-    <title><?php echo $pageTitle ?? 'Application Portal - FCT College of Nursing Sciences'; ?></title>
-    <meta name="description" content="<?php echo $pageDescription ?? 'Apply for admission into ND/HND Nursing programme'; ?>">
+    <title><?php echo isset($pageTitle) ? htmlspecialchars($pageTitle) : 'Application Portal - FCT College of Nursing Sciences'; ?></title>
+    <meta name="description" content="<?php echo isset($pageDescription) ? htmlspecialchars($pageDescription) : 'Apply for admission into ND/HND Nursing programme'; ?>">
 
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
     <!-- ========================================================= -->
-    <!-- 3. Add SRI hashes to external scripts/styles -->
+    <!-- Google Fonts - NO SRI HASH (they change dynamically) -->
     <!-- ========================================================= -->
-    <!-- Source Serif 4: highly readable, gentle on the eyes; Outfit for UI labels -->
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" 
           rel="stylesheet"
-          integrity="sha384-0pCryB3hBqYHZO9dKsIIzN8wH+Z4k5P+GZ8TlqM9m8A3TlPI9c7JZ6nG+K/t9fb"
           crossorigin="anonymous">
     
+    <!-- ========================================================= -->
+    <!-- Font Awesome with conditional SRI -->
+    <!-- ========================================================= -->
+    <?php 
+    $faUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+    $faSri = '';
+    if (class_exists('SecurityHelper')) {
+        $faSri = SecurityHelper::getSriHash($faUrl);
+    }
+    ?>
     <link rel="stylesheet" 
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          href="<?php echo $faUrl; ?>"
+          <?php if (!empty($faSri)): ?>integrity="<?php echo $faSri; ?>"<?php endif; ?>
           crossorigin="anonymous" 
           referrerpolicy="no-referrer">
 
@@ -1171,6 +1187,11 @@
             .portal-body { padding: 16px 12px; }
         }
     </style>
+    
+    <!-- ========================================================= -->
+    <!-- Additional CSS can be injected from views -->
+    <!-- ========================================================= -->
+    <?php if (isset($extraStyles)) echo $extraStyles; ?>
 </head>
 <body>
 <div class="portal-wrap">
@@ -1340,7 +1361,7 @@
         </div>
         <?php endif; ?>
 
-        <?php echo $content; ?>
+        <?php echo isset($content) ? $content : ''; ?>
 
     </main>
     <!-- /body -->
@@ -1365,8 +1386,8 @@
             
             <div class="footer-contacts">
                 <?php
-                    $supportPhone = $settings['key_value']['support_phone_1'] ?? '07039837749';
-                    $supportEmail = $settings['key_value']['support_email']   ?? 'info@fctcns.edu.ng';
+                    $supportPhone = isset($settings['key_value']['support_phone_1']) ? $settings['key_value']['support_phone_1'] : '07039837749';
+                    $supportEmail = isset($settings['key_value']['support_email']) ? $settings['key_value']['support_email'] : 'info@fctcns.edu.ng';
                 ?>
                 <a class="footer-contact-item" href="tel:<?php echo htmlspecialchars($supportPhone, ENT_QUOTES, 'UTF-8'); ?>" rel="noopener noreferrer">
                     <i class="fas fa-phone-alt"></i>
@@ -1384,23 +1405,38 @@
 
 
 <!-- ========================================================= -->
-<!-- 4. Add CSP nonce to all script tags -->
-<!-- 5. Add SRI hashes to external scripts -->
+<!-- Bootstrap JS with conditional SRI -->
 <!-- ========================================================= -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+<?php 
+$bootstrapJsUrl = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
+$bootstrapJsSri = '';
+if (class_exists('SecurityHelper')) {
+    $bootstrapJsSri = SecurityHelper::getSriHash($bootstrapJsUrl);
+}
+?>
+<script src="<?php echo $bootstrapJsUrl; ?>" 
+        <?php if (!empty($bootstrapJsSri)): ?>integrity="<?php echo $bootstrapJsSri; ?>"<?php endif; ?>
         crossorigin="anonymous"
-        nonce="<?php echo $csp_nonce ?? ''; ?>"></script>
+        nonce="<?php echo isset($csp_nonce) ? htmlspecialchars($csp_nonce) : ''; ?>"></script>
 
+<!-- ========================================================= -->
+<!-- jQuery with SRI -->
+<!-- ========================================================= -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"
         integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
         crossorigin="anonymous"
-        nonce="<?php echo $csp_nonce ?? ''; ?>"></script>
+        nonce="<?php echo isset($csp_nonce) ? htmlspecialchars($csp_nonce) : ''; ?>"></script>
 
+<!-- ========================================================= -->
+<!-- Custom JavaScript -->
+<!-- ========================================================= -->
 <script src="<?php echo defined('BASE_URL') ? BASE_URL : ''; ?>/assets/js/Payment.js"
-        nonce="<?php echo $csp_nonce ?? ''; ?>"></script>
+        nonce="<?php echo isset($csp_nonce) ? htmlspecialchars($csp_nonce) : ''; ?>"></script>
 
-<script nonce="<?php echo $csp_nonce ?? ''; ?>">
+<!-- ========================================================= -->
+<!-- Portal Layout JavaScript with Security Enhancements -->
+<!-- ========================================================= -->
+<script nonce="<?php echo isset($csp_nonce) ? htmlspecialchars($csp_nonce) : ''; ?>">
     // ======================================================
     // Portal Layout JavaScript with Security Enhancements
     // ======================================================
@@ -1499,52 +1535,60 @@
     }
 
     // External link security
-    document.querySelectorAll('a[href^="http"]:not([rel*="noopener"])').forEach(link => {
-        if (link.hostname !== window.location.hostname) {
-            link.setAttribute('target', '_blank');
-            link.setAttribute('rel', 'noopener noreferrer');
-        }
-    });
-
-    // Add security for tel and mailto links
-    document.querySelectorAll('a[href^="tel:"], a[href^="mailto:"]').forEach(link => {
-        link.addEventListener('click', function(e) {
-            // Optional tracking
-            if (getCsrfToken()) {
-                fetch('/api/track-contact', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': getCsrfToken()
-                    },
-                    body: JSON.stringify({
-                        action: 'footer_contact_click',
-                        type: this.href.startsWith('tel:') ? 'phone' : 'email',
-                        timestamp: Date.now()
-                    })
-                }).catch(() => {});
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('a[href^="http"]:not([rel*="noopener"])').forEach(link => {
+            if (link.hostname !== window.location.hostname) {
+                link.setAttribute('target', '_blank');
+                link.setAttribute('rel', 'noopener noreferrer');
             }
         });
-    });
 
-    // Track logout attempts
-    document.querySelectorAll('.portal-logout-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            if (getCsrfToken()) {
-                fetch('/api/track-logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': getCsrfToken()
-                    },
-                    body: JSON.stringify({
-                        action: 'logout_click',
-                        timestamp: Date.now()
-                    })
-                }).catch(() => {});
-            }
+        // Add security for tel and mailto links
+        document.querySelectorAll('a[href^="tel:"], a[href^="mailto:"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                // Optional tracking
+                if (getCsrfToken()) {
+                    fetch('/api/track-contact', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken()
+                        },
+                        body: JSON.stringify({
+                            action: 'footer_contact_click',
+                            type: this.href.startsWith('tel:') ? 'phone' : 'email',
+                            timestamp: Date.now()
+                        })
+                    }).catch(() => {});
+                }
+            });
+        });
+
+        // Track logout attempts
+        document.querySelectorAll('.portal-logout-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (getCsrfToken()) {
+                    fetch('/api/track-logout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken()
+                        },
+                        body: JSON.stringify({
+                            action: 'logout_click',
+                            timestamp: Date.now()
+                        })
+                    }).catch(() => {});
+                }
+            });
         });
     });
 </script>
+
+<!-- ========================================================= -->
+<!-- Additional JavaScript can be injected from views -->
+<!-- ========================================================= -->
+<?php if (isset($extraScripts)) echo $extraScripts; ?>
+
 </body>
 </html>
