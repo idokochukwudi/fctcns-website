@@ -67,12 +67,13 @@ class SecurityHelper {
     
     /**
      * Generate security meta tags
+     * FIXED: Removed X-Frame-Options (must be HTTP header only)
      * @return string
      */
     public static function getSecurityMetaTags() {
         $nonce = self::getCspNonce();
 
-        // Content Security Policy
+        // Content Security Policy - Added 'unsafe-inline' for styles since you use inline styles with nonce
         $csp = "default-src 'self'; " .
                "script-src 'self' 'nonce-" . $nonce . "' " .
                "https://cdnjs.cloudflare.com " .
@@ -81,9 +82,10 @@ class SecurityHelper {
                "https://fonts.googleapis.com " .
                "https://www.google.com " .
                "https://www.gstatic.com; " .
-               "style-src 'self' 'nonce-" . $nonce . "' " .
+               "style-src 'self' 'unsafe-inline' 'nonce-" . $nonce . "' " .
                "https://fonts.googleapis.com " .
-               "https://cdnjs.cloudflare.com; " .
+               "https://cdnjs.cloudflare.com " .
+               "https://cdn.jsdelivr.net; " .
                "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
                "img-src 'self' data: https:; " .
                "connect-src 'self'; " .
@@ -91,7 +93,7 @@ class SecurityHelper {
 
         return implode("\n    ", [
             '<meta http-equiv="Content-Security-Policy" content="' . htmlspecialchars($csp) . '">',
-            '<meta http-equiv="X-Frame-Options" content="SAMEORIGIN">',
+            // X-Frame-Options REMOVED from meta - must be HTTP header only
             '<meta http-equiv="X-Content-Type-Options" content="nosniff">',
             '<meta name="referrer" content="strict-origin-when-cross-origin">',
             '<meta name="csrf-token" content="' . self::getCsrfToken() . '">'

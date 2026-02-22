@@ -17,7 +17,7 @@
     RewriteRule ^ index.php [QSA,L]
 </IfModule>
 
-# Security Headers (Optional but good)
+# Security Headers (Properly set as HTTP headers)
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
@@ -26,7 +26,7 @@
 # Disable directory browsing
 Options -Indexes
 
-# PROTECT SENSITIVE FILES - ADD THIS SECTION ONLY
+# PROTECT SENSITIVE FILES
 <FilesMatch "\.(htaccess|htpasswd|ini|log|sh|sql|bak|old)$">
     Order Allow,Deny
     Deny from all

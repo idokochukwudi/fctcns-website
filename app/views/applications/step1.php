@@ -1,7 +1,7 @@
 <?php
 /**
  * JAMB Verification View - Step 1
- * SECURITY FIXED: Using SecurityTrait for XSS protection, CSRF tokens, CSP nonce
+ * SECURITY FIXED: Proper header placement and Google Fonts handling
  * 
  * @package FCTCNS
  */
@@ -59,6 +59,7 @@ class JambVerificationView {
     <meta name="description" content="JAMB Verification - FCT College of Nursing Sciences">
     
     <!-- ===== SECURITY HEADERS ===== -->
+    <!-- IMPORTANT: These must be inside the <head> section -->
     <?php echo $this->getSecurityMetaTags(); ?>
     
     <!-- CSRF Token for JavaScript -->
@@ -67,7 +68,7 @@ class JambVerificationView {
     <title>JAMB Verification - FCT College of Nursing Sciences</title>
     
     <!-- ========================================================= -->
-    <!-- FIX 1: Google Fonts - NO SRI HASH (they change dynamically) -->
+    <!-- Google Fonts - NO SRI HASH (they change dynamically) -->
     <!-- ========================================================= -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,7 +77,7 @@ class JambVerificationView {
           crossorigin="anonymous">
     
     <!-- ========================================================= -->
-    <!-- Font Awesome with CORRECT SRI hash (conditional) -->
+    <!-- Font Awesome with conditional SRI -->
     <!-- ========================================================= -->
     <?php 
     $faUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
@@ -89,7 +90,7 @@ class JambVerificationView {
           referrerpolicy="no-referrer">
     
     <!-- ========================================================= -->
-    <!-- Bootstrap 5 with SRI (conditional) -->
+    <!-- Bootstrap 5 with conditional SRI -->
     <!-- ========================================================= -->
     <?php 
     $bootstrapCssUrl = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
@@ -998,7 +999,7 @@ class JambVerificationView {
     <?php endif; ?>
 
     <!-- ========================================================= -->
-    <!-- FIX 2: Bootstrap JS with conditional SRI -->
+    <!-- Bootstrap JS with conditional SRI -->
     <!-- ========================================================= -->
     <?php 
     $bootstrapJsUrl = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
@@ -1066,6 +1067,20 @@ class JambVerificationView {
                 }
             });
             
+            // Check if response is OK before parsing JSON
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Check content type to ensure it's JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                // Get the text response for debugging
+                const text = await response.text();
+                console.error('Non-JSON response:', text.substring(0, 200));
+                throw new Error('Server returned non-JSON response');
+            }
+            
             const data = await response.json();
             
             if (data.success) {
@@ -1086,11 +1101,13 @@ class JambVerificationView {
         } catch (error) {
             console.error('Error:', error);
             
-            // Check if it's a JSON parse error
-            if (error instanceof SyntaxError) {
-                showAlert('Server returned an invalid response. Please try again.', 'danger');
+            // User-friendly error message
+            if (error.message.includes('Failed to fetch')) {
+                showAlert('Network error. Please check your internet connection.', 'danger');
+            } else if (error.message.includes('non-JSON')) {
+                showAlert('Server error. Please try again later.', 'danger');
             } else {
-                showAlert('Network error. Please check your connection and try again.', 'danger');
+                showAlert('An error occurred. Please try again.', 'danger');
             }
             resetButton();
         }
