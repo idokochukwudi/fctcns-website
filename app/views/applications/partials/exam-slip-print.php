@@ -1,6 +1,7 @@
 <?php
 /**
  * Exam Slip Print View
+ * UPDATED: Added O'Level results section and improved layout
  * SIMPLIFIED: Using only server-generated QR - User clicks Print button before print preview
  *
  * @package FCTCNS
@@ -27,6 +28,28 @@ class ExamSlipPrintView {
 
         // ── Logo path: public/assets/images/logo/logo.png ──────────────
         $logoUrl    = $baseUrl . '/assets/images/logo/logo.png';
+        
+        // Helper function to format grade with color
+        function formatGrade($grade) {
+            $gradeColors = [
+                'A1' => '#2e7d32',
+                'B2' => '#2e7d32',
+                'B3' => '#2e7d32',
+                'C4' => '#f57c00',
+                'C5' => '#f57c00',
+                'C6' => '#f57c00',
+                'D7' => '#c62828',
+                'E8' => '#c62828',
+                'F9' => '#b71c1c'
+            ];
+            
+            $color = $gradeColors[$grade] ?? '#333';
+            $isCredit = in_array($grade, ['A1','B2','B3','C4','C5','C6']);
+            $badge = $isCredit ? ' ✓' : '';
+            
+            return '<span style="color:' . $color . '; font-weight:' . ($isCredit ? '700' : '400') . ';">' 
+                   . htmlspecialchars($grade) . $badge . '</span>';
+        }
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -76,6 +99,11 @@ class ExamSlipPrintView {
                     /* Gold accent (amounts / strips) */
                     --gold:       #b8860b;
                     --gold-light: #e6c04a;
+                    
+                    /* Grade colors */
+                    --grade-excellent: #2e7d32;
+                    --grade-good: #f57c00;
+                    --grade-poor: #c62828;
                 }
 
                 /* ── Screen body ─────────────────────────────────────────── */
@@ -404,6 +432,84 @@ class ExamSlipPrintView {
                 .ir-value.name-field      { font-size: 9.5pt; color: var(--pu-dark); }
                 .ir-value.programme-field { color: var(--pu);  font-style: italic; }
 
+                /* ── O'Level Results Section ────────────────────────────── */
+                .olevel-section {
+                    margin: 15px 0;
+                    border: 1px solid var(--rule);
+                    border-radius: 4px;
+                    overflow: hidden;
+                }
+
+                .olevel-header {
+                    background: var(--pu-dark);
+                    color: var(--white);
+                    font-size: 8pt;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: .1em;
+                    padding: 6px 10px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+                .olevel-status {
+                    font-size: 7pt;
+                    background: rgba(255,255,255,0.2);
+                    padding: 2px 8px;
+                    border-radius: 20px;
+                }
+
+                .olevel-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 8pt;
+                }
+
+                .olevel-table th {
+                    background: var(--pu-pale);
+                    color: var(--pu-dark);
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    font-size: 6.5pt;
+                    letter-spacing: .05em;
+                    padding: 8px 4px;
+                    border: 1px solid var(--rule);
+                }
+
+                .olevel-table td {
+                    padding: 8px 4px;
+                    border: 1px solid var(--rule);
+                    text-align: center;
+                }
+
+                .olevel-table .sitting-badge {
+                    background: var(--pu-pale);
+                    color: var(--pu-dark);
+                    font-weight: 700;
+                    font-size: 7pt;
+                    padding: 2px 6px;
+                    border-radius: 12px;
+                }
+
+                .olevel-credit-badge {
+                    background: #2e7d32;
+                    color: white;
+                    font-size: 6pt;
+                    padding: 2px 6px;
+                    border-radius: 10px;
+                    margin-left: 5px;
+                }
+
+                .olevel-note {
+                    background: #fff3e0;
+                    border-left: 3px solid var(--gold);
+                    padding: 6px 10px;
+                    font-size: 7pt;
+                    color: var(--g2);
+                    margin: 8px 0;
+                }
+
                 /* ── Exam details ────────────────────────────────────────── */
                 .section-title {
                     background: var(--pu-dark);
@@ -612,6 +718,14 @@ class ExamSlipPrintView {
                     .border-frame-inner { flex: 1; display: flex; flex-direction: column; }
 
                     .slip::before { opacity: .025; }
+                    
+                    .olevel-table th,
+                    .olevel-header,
+                    .section-title,
+                    .ir-label {
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
                 }
 
                 /* ── Responsive ──────────────────────────────────────────── */
@@ -625,6 +739,15 @@ class ExamSlipPrintView {
                     .photo-box  { width: 80px; height: 96px; }
                     .qr-box     { width: 80px; height: 80px; }
                     .qr-box img { width: 70px; height: 70px; }
+                    
+                    .olevel-table {
+                        font-size: 7pt;
+                    }
+                    
+                    .olevel-table th,
+                    .olevel-table td {
+                        padding: 4px 2px;
+                    }
                 }
             </style>
         </head>
@@ -748,6 +871,134 @@ class ExamSlipPrintView {
 
             </div><!-- /media-row -->
 
+            <!-- O'Level Results Section - NEW -->
+            <div class="olevel-section">
+                <div class="olevel-header">
+                    <span>O'Level Examination Results</span>
+                    <span class="olevel-status">Minimum 5 Credits Required (Incl. English, Maths, Biology, Chemistry, Physics)</span>
+                </div>
+                
+                <?php if (!empty($olevel_results)): ?>
+                    <?php foreach ($olevel_results as $sittingIndex => $sitting): ?>
+                        <?php 
+                        // Count credits in this sitting
+                        $creditSubjects = [];
+                        $requiredSubjects = ['english', 'mathematics', 'biology', 'chemistry', 'physics'];
+                        $creditGrades = ['A1', 'B2', 'B3', 'C4', 'C5', 'C6'];
+                        
+                        foreach ($requiredSubjects as $subject) {
+                            $gradeKey = $subject . '_grade';
+                            if (isset($sitting[$gradeKey]) && in_array($sitting[$gradeKey], $creditGrades)) {
+                                $creditSubjects[] = $subject;
+                            }
+                        }
+                        ?>
+                        <table class="olevel-table">
+                            <thead>
+                                <tr>
+                                    <th colspan="2">Sitting <?php echo $sittingIndex + 1; ?> 
+                                        <span class="sitting-badge"><?php echo $this->e($sitting['exam_type'] ?? 'WAEC'); ?> (<?php echo $this->e($sitting['exam_year'] ?? ''); ?>)</span>
+                                        <?php if (count($creditSubjects) >= 5): ?>
+                                            <span class="olevel-credit-badge">✓ Meets Requirement</span>
+                                        <?php endif; ?>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Grade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $subjects = [
+                                    'english' => 'English Language',
+                                    'mathematics' => 'Mathematics',
+                                    'biology' => 'Biology',
+                                    'chemistry' => 'Chemistry',
+                                    'physics' => 'Physics'
+                                ];
+                                
+                                foreach ($subjects as $key => $label):
+                                    $grade = $sitting[$key . '_grade'] ?? '';
+                                    $isCredit = in_array($grade, $creditGrades);
+                                ?>
+                                <tr>
+                                    <td style="text-align: left; padding-left: 10px;">
+                                        <?php echo $this->e($label); ?>
+                                        <?php if (in_array($key, $requiredSubjects)): ?>
+                                            <span style="color: #666; font-size: 6pt;"> (Required)</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($grade)): ?>
+                                            <?php echo formatGrade($grade); ?>
+                                        <?php else: ?>
+                                            <span style="color: #999;">—</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <?php if ($sittingIndex < count($olevel_results) - 1): ?>
+                            <div style="border-top: 1px dashed var(--rule); margin: 8px 0;"></div>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                    
+                    <!-- Calculate best combination across sittings -->
+                    <?php
+                    $bestGrades = [];
+                    $gradeOrder = ['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
+                    
+                    foreach ($olevel_results as $sitting) {
+                        foreach ($requiredSubjects as $subject) {
+                            $gradeKey = $subject . '_grade';
+                            if (!empty($sitting[$gradeKey])) {
+                                $grade = $sitting[$gradeKey];
+                                if (!isset($bestGrades[$subject]) || 
+                                    array_search($grade, $gradeOrder) < array_search($bestGrades[$subject], $gradeOrder)) {
+                                    $bestGrades[$subject] = $grade;
+                                }
+                            }
+                        }
+                    }
+                    
+                    $creditsAchieved = 0;
+                    foreach ($bestGrades as $grade) {
+                        if (in_array($grade, $creditGrades)) {
+                            $creditsAchieved++;
+                        }
+                    }
+                    ?>
+                    
+                    <?php if ($creditsAchieved >= 5): ?>
+                        <div class="olevel-note">
+                            <strong>✓ O'Level Requirement Met:</strong> 
+                            <?php echo $creditsAchieved; ?>/5 required credits achieved (Best grades across <?php echo count($olevel_results); ?> sitting(s))
+                        </div>
+                    <?php else: ?>
+                        <div class="olevel-note" style="background: #ffebee; border-left-color: #c62828;">
+                            <strong>⚠ O'Level Requirement Not Yet Met:</strong> 
+                            Only <?php echo $creditsAchieved; ?>/5 required credits achieved. You need credits in: 
+                            <?php 
+                            $missing = [];
+                            foreach ($requiredSubjects as $subject) {
+                                if (!isset($bestGrades[$subject]) || !in_array($bestGrades[$subject], $creditGrades)) {
+                                    $missing[] = ucfirst($subject);
+                                }
+                            }
+                            echo implode(', ', $missing);
+                            ?>
+                        </div>
+                    <?php endif; ?>
+                    
+                <?php else: ?>
+                    <div style="padding: 15px; text-align: center; color: var(--g3);">
+                        No O'Level results recorded
+                    </div>
+                <?php endif; ?>
+            </div>
+
             <!-- Exam details -->
             <div class="section-title">Examination Details</div>
             <div class="exam-cols">
@@ -796,6 +1047,7 @@ class ExamSlipPrintView {
                     <li>Electronic devices including mobile phones, calculators, and smartwatches are <strong>strictly prohibited</strong> inside the hall.</li>
                     <li>The QR code printed on this slip will be scanned at the entrance for identity verification.</li>
                     <li>Candidates must sit only at the seat number assigned on this slip.</li>
+                    <li>Original O'Level certificates/result slips must be presented at the screening center.</li>
                 </ol>
             </div>
 

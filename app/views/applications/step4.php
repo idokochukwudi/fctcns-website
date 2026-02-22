@@ -1,9 +1,11 @@
 <?php
 /**
  * Step 4 - Examination Slip View
+ * UPDATED: Added O'Level results section with credit validation
  * @var array $application
  * @var array $exam_slip
  * @var array $applicant
+ * @var array $olevel_results
  */
 
 // =========================================================
@@ -24,6 +26,51 @@ class ExamSlipView {
         
         $pageTitle = $pageTitle ?? 'Examination Slip - FCT College of Nursing Sciences';
         $baseUrl   = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
+        
+        // Helper function for grade formatting
+        $gradeColors = [
+            'A1' => '#2e7d32',
+            'B2' => '#2e7d32',
+            'B3' => '#2e7d32',
+            'C4' => '#f57c00',
+            'C5' => '#f57c00',
+            'C6' => '#f57c00',
+            'D7' => '#c62828',
+            'E8' => '#c62828',
+            'F9' => '#b71c1c'
+        ];
+        
+        $creditGrades = ['A1','B2','B3','C4','C5','C6'];
+        $requiredSubjects = ['english', 'mathematics', 'biology', 'chemistry', 'physics'];
+        
+        // Calculate best grades across sittings
+        $bestGrades = [];
+        $gradeOrder = ['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
+        
+        if (!empty($olevel_results)) {
+            foreach ($olevel_results as $sitting) {
+                foreach ($requiredSubjects as $subject) {
+                    $gradeKey = $subject . '_grade';
+                    if (!empty($sitting[$gradeKey])) {
+                        $grade = $sitting[$gradeKey];
+                        if (!isset($bestGrades[$subject]) || 
+                            array_search($grade, $gradeOrder) < array_search($bestGrades[$subject], $gradeOrder)) {
+                            $bestGrades[$subject] = $grade;
+                        }
+                    }
+                }
+            }
+        }
+        
+        $creditsAchieved = 0;
+        $missingSubjects = [];
+        foreach ($requiredSubjects as $subject) {
+            if (isset($bestGrades[$subject]) && in_array($bestGrades[$subject], $creditGrades)) {
+                $creditsAchieved++;
+            } else {
+                $missingSubjects[] = ucfirst($subject);
+            }
+        }
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -103,6 +150,11 @@ class ExamSlipView {
               --radius-sm:   8px;
               --shadow:      0 1px 4px rgba(110,2,111,.07), 0 4px 18px rgba(110,2,111,.09);
               --shadow-lg:   0 2px 8px rgba(110,2,111,.08), 0 8px 36px rgba(110,2,111,.12);
+              
+              /* Grade colors */
+              --grade-excellent: #2e7d32;
+              --grade-good: #f57c00;
+              --grade-poor: #c62828;
             }
 
             html { scroll-behavior: smooth; }
@@ -348,6 +400,90 @@ class ExamSlipView {
             .vi-val   { color: var(--text); font-weight: 600; font-size: 0.8rem; }
             .mono     { font-family: 'JetBrains Mono', monospace; font-size: 0.73rem !important; letter-spacing: .02em; }
 
+            /* ── O'Level Results Section ───────────────────────────────── */
+            .olevel-section {
+              margin: 1.5rem 0;
+              border: 1px solid var(--border);
+              border-radius: var(--radius-sm);
+              overflow: hidden;
+            }
+
+            .olevel-header {
+              background: linear-gradient(135deg, var(--pu-dark), var(--pu));
+              color: #fff;
+              font-size: 0.85rem;
+              font-weight: 700;
+              padding: 0.85rem 1.2rem;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+
+            .olevel-status-badge {
+              background: rgba(255,255,255,0.2);
+              padding: 0.3rem 0.9rem;
+              border-radius: 50px;
+              font-size: 0.7rem;
+              font-weight: 600;
+              letter-spacing: 0.05em;
+            }
+
+            .olevel-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+
+            .olevel-table th {
+              background: var(--pu-pale);
+              color: var(--pu-dark);
+              font-weight: 600;
+              font-size: 0.7rem;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              padding: 0.6rem 0.8rem;
+              border-bottom: 1px solid var(--border);
+            }
+
+            .olevel-table td {
+              padding: 0.6rem 0.8rem;
+              border-bottom: 1px solid var(--border);
+              font-size: 0.8rem;
+            }
+
+            .olevel-table tr:last-child td {
+              border-bottom: none;
+            }
+
+            .sitting-badge {
+              display: inline-block;
+              background: var(--pu-pale);
+              color: var(--pu-dark);
+              font-size: 0.65rem;
+              font-weight: 700;
+              padding: 0.2rem 0.6rem;
+              border-radius: 12px;
+              margin-left: 0.5rem;
+            }
+
+            .grade-excellent { color: #2e7d32; font-weight: 700; }
+            .grade-good { color: #f57c00; font-weight: 600; }
+            .grade-poor { color: #c62828; font-weight: 500; }
+
+            .credit-check {
+              background: <?php echo $creditsAchieved >= 5 ? '#edf9f3' : '#fff3e0'; ?>;
+              padding: 0.8rem 1.2rem;
+              font-size: 0.8rem;
+              border-top: 1px solid var(--border);
+              display: flex;
+              align-items: center;
+              gap: 0.7rem;
+            }
+
+            .credit-check i {
+              font-size: 1rem;
+              color: <?php echo $creditsAchieved >= 5 ? '#1a6b45' : '#f57c00'; ?>;
+            }
+
             /* ── Details table ───────────────────────────────────────────── */
             .details-table {
               width: 100%;
@@ -356,6 +492,7 @@ class ExamSlipView {
               border: 1.5px solid var(--border);
               border-radius: var(--radius-sm);
               overflow: hidden;
+              margin-top: 0.5rem;
             }
 
             .details-table tr:not(:last-child) th,
@@ -578,6 +715,40 @@ class ExamSlipView {
             .si-name { font-size: 0.67rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
             .si-val  { font-weight: 700; font-size: 0.86rem; color: var(--text); line-height: 1.3; }
 
+            /* ── O'Level Summary ───────────────────────────────────────── */
+            .olevel-summary {
+              margin-top: 0.5rem;
+              background: var(--pu-pale);
+              border: 1px solid var(--border);
+              border-radius: var(--radius-sm);
+              padding: 0.8rem;
+            }
+
+            .olevel-summary-item {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 0.4rem 0;
+              border-bottom: 1px dashed var(--border);
+            }
+
+            .olevel-summary-item:last-child {
+              border-bottom: none;
+            }
+
+            .olevel-subject {
+              font-size: 0.8rem;
+              font-weight: 500;
+              color: var(--text);
+            }
+
+            .olevel-grade {
+              font-weight: 700;
+              padding: 0.15rem 0.6rem;
+              border-radius: 12px;
+              font-size: 0.75rem;
+            }
+
             /* ── Toast ───────────────────────────────────────────────────── */
             .toast {
               position: fixed; top: 1.25rem; right: 1.25rem;
@@ -721,6 +892,99 @@ class ExamSlipView {
 
                 </div><!-- /top-trio -->
 
+                <!-- O'Level Results Section -->
+                <div class="olevel-section">
+                  <div class="olevel-header">
+                    <span><i class="fas fa-certificate" style="margin-right: 0.5rem;"></i> O'Level Examination Results</span>
+                    <span class="olevel-status-badge">
+                      <?php echo $creditsAchieved; ?>/5 Credits
+                    </span>
+                  </div>
+                  
+                  <?php if (!empty($olevel_results)): ?>
+                    <?php foreach ($olevel_results as $sittingIndex => $sitting): ?>
+                      <table class="olevel-table">
+                        <thead>
+                          <tr>
+                            <th colspan="2">
+                              Sitting <?php echo $sittingIndex + 1; ?> 
+                              <span class="sitting-badge">
+                                <?php echo $this->e($sitting['exam_type'] ?? 'WAEC'); ?> 
+                                (<?php echo $this->e($sitting['exam_year'] ?? ''); ?>)
+                              </span>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <?php
+                          $subjects = [
+                            'english' => 'English Language',
+                            'mathematics' => 'Mathematics',
+                            'biology' => 'Biology',
+                            'chemistry' => 'Chemistry',
+                            'physics' => 'Physics'
+                          ];
+                          
+                          foreach ($subjects as $key => $label):
+                            $grade = $sitting[$key . '_grade'] ?? '';
+                            $gradeClass = '';
+                            if (in_array($grade, ['A1','B2','B3'])) $gradeClass = 'grade-excellent';
+                            elseif (in_array($grade, ['C4','C5','C6'])) $gradeClass = 'grade-good';
+                            elseif (!empty($grade)) $gradeClass = 'grade-poor';
+                          ?>
+                          <tr>
+                            <td style="text-align: left; padding-left: 1.2rem;">
+                              <?php echo $this->e($label); ?>
+                              <?php if (in_array($key, $requiredSubjects)): ?>
+                                <span style="color: var(--text-muted); font-size: 0.65rem; margin-left: 0.3rem;">(Required)</span>
+                              <?php endif; ?>
+                            </td>
+                            <td style="text-align: center; width: 100px;">
+                              <?php if (!empty($grade)): ?>
+                                <span class="<?php echo $gradeClass; ?>">
+                                  <?php echo $this->e($grade); ?>
+                                  <?php if (in_array($grade, $creditGrades)): ?>
+                                    <i class="fas fa-check-circle" style="color: #2e7d32; margin-left: 0.3rem; font-size: 0.7rem;"></i>
+                                  <?php endif; ?>
+                                </span>
+                              <?php else: ?>
+                                <span style="color: var(--text-muted);">—</span>
+                              <?php endif; ?>
+                            </td>
+                          </tr>
+                          <?php endforeach; ?>
+                        </tbody>
+                      </table>
+                      <?php if ($sittingIndex < count($olevel_results) - 1): ?>
+                        <div style="border-top: 1px dashed var(--border); margin: 0.5rem 0;"></div>
+                      <?php endif; ?>
+                    <?php endforeach; ?>
+                    
+                    <!-- Credit Check Summary -->
+                    <div class="credit-check">
+                      <i class="fas fa-<?php echo $creditsAchieved >= 5 ? 'check-circle' : 'exclamation-triangle'; ?>"></i>
+                      <div>
+                        <strong style="color: <?php echo $creditsAchieved >= 5 ? '#1a6b45' : '#f57c00'; ?>;">
+                          <?php echo $creditsAchieved >= 5 ? '✓ O\'Level Requirement Met' : '⚠ O\'Level Requirement Not Met'; ?>
+                        </strong>
+                        <span style="color: var(--text-muted); margin-left: 0.5rem;">
+                          <?php if ($creditsAchieved >= 5): ?>
+                            <?php echo $creditsAchieved; ?>/5 credits achieved across <?php echo count($olevel_results); ?> sitting(s)
+                          <?php else: ?>
+                            Missing credits in: <?php echo implode(', ', $missingSubjects); ?>
+                          <?php endif; ?>
+                        </span>
+                      </div>
+                    </div>
+                    
+                  <?php else: ?>
+                    <div style="padding: 1.5rem; text-align: center; color: var(--text-muted);">
+                      <i class="fas fa-file-circle-exclamation fa-2x" style="margin-bottom: 0.5rem;"></i>
+                      <p>No O'Level results recorded</p>
+                    </div>
+                  <?php endif; ?>
+                </div>
+
                 <!-- Details table -->
                 <table class="details-table">
                   <tbody>
@@ -782,6 +1046,7 @@ class ExamSlipView {
                       <li>Arrive at least <strong>30 minutes</strong> before your reporting time.</li>
                       <li>Bring writing materials &mdash; pen, pencil, and eraser.</li>
                       <li>Bring a valid government-issued ID (National ID, Driver&rsquo;s License or Passport).</li>
+                      <li>Bring original O'Level certificates/result slips for verification at the screening center.</li>
                       <li>Electronic devices including phones and calculators are <strong>strictly prohibited</strong>.</li>
                       <li>The QR code will be scanned at the entrance for identity verification.</li>
                     </ol>
@@ -876,6 +1141,35 @@ class ExamSlipView {
                   </div>
                 </div>
               </div>
+
+              <?php if (!empty($olevel_results)): ?>
+              <div class="side-card">
+                <div class="side-card-label">O'Level Summary</div>
+                <div class="olevel-summary">
+                  <?php foreach ($bestGrades as $subject => $grade): ?>
+                    <?php
+                    $subjectLabel = ucfirst($subject);
+                    $isCredit = in_array($grade, $creditGrades);
+                    $gradeColor = in_array($grade, ['A1','B2','B3']) ? '#2e7d32' : (in_array($grade, ['C4','C5','C6']) ? '#f57c00' : '#c62828');
+                    ?>
+                    <div class="olevel-summary-item">
+                      <span class="olevel-subject"><?php echo $this->e($subjectLabel); ?></span>
+                      <span class="olevel-grade" style="background: <?php echo $gradeColor; ?>20; color: <?php echo $gradeColor; ?>;">
+                        <?php echo $this->e($grade); ?>
+                        <?php if ($isCredit): ?>
+                          <i class="fas fa-check-circle" style="margin-left: 0.2rem; font-size: 0.65rem;"></i>
+                        <?php endif; ?>
+                      </span>
+                    </div>
+                  <?php endforeach; ?>
+                  <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); text-align: center;">
+                    <span style="font-size: 0.7rem; font-weight: 600; color: <?php echo $creditsAchieved >= 5 ? '#1a6b45' : '#f57c00'; ?>;">
+                      <?php echo $creditsAchieved; ?>/5 Credits
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <?php endif; ?>
 
             </div><!-- /sidebar -->
           </div><!-- /content-grid -->
@@ -1081,6 +1375,13 @@ class ExamSlipView {
                 link.setAttribute('target', '_blank');
                 link.setAttribute('rel', 'noopener noreferrer');
             }
+        });
+
+        // Log O'Level summary for verification
+        console.log('O\'Level Results Summary:', {
+            creditsAchieved: <?php echo $creditsAchieved; ?>,
+            bestGrades: <?php echo json_encode($bestGrades); ?>,
+            missingSubjects: <?php echo json_encode($missingSubjects); ?>
         });
         </script>
         </body>

@@ -12,6 +12,7 @@
  * - CSRF protection on all state-changing operations
  * - Application ownership validation
  * - Prevention of multiple applications per session
+ * - O'Level check after result combination
  * 
  * @package FCT_CNS
  */
@@ -32,6 +33,16 @@ class PublicApplicationController extends ApplicationBaseController {
      * Steps that require payment
      */
     const PAID_STEPS = [4, 5];
+    
+    /**
+     * Required O'Level subjects
+     */
+    const REQUIRED_OLEVEL_SUBJECTS = ['english', 'mathematics', 'biology', 'chemistry', 'physics'];
+    
+    /**
+     * Minimum credit grade
+     */
+    const MINIMUM_CREDIT_GRADE = 'C6';
     
     /**
      * Constructor
@@ -195,6 +206,69 @@ class PublicApplicationController extends ApplicationBaseController {
     }
     
     /**
+     * Validate O'Level results for minimum credits
+     * 
+     * @param array $olevelResults Array of O'Level results
+     * @return array ['success' => bool, 'message' => string, 'missing' => array]
+     */
+    private function validateOlevelCredits($olevelResults) {
+        if (empty($olevelResults)) {
+            return [
+                'success' => false,
+                'message' => 'No O\'Level results provided',
+                'missing' => self::REQUIRED_OLEVEL_SUBJECTS
+            ];
+        }
+        
+        // Track best grades across sittings
+        $bestGrades = [];
+        $gradeOrder = ['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'];
+        
+        foreach ($olevelResults as $result) {
+            foreach (self::REQUIRED_OLEVEL_SUBJECTS as $subject) {
+                $gradeKey = $subject . '_grade';
+                if (!empty($result[$gradeKey])) {
+                    $grade = $result[$gradeKey];
+                    
+                    // If we don't have a grade for this subject yet, or current grade is better
+                    if (!isset($bestGrades[$subject]) || 
+                        array_search($grade, $gradeOrder) < array_search($bestGrades[$subject], $gradeOrder)) {
+                        $bestGrades[$subject] = $grade;
+                    }
+                }
+            }
+        }
+        
+        // Check which subjects have credit passes (C6 or better)
+        $creditGrades = array_slice($gradeOrder, 0, 6); // A1 through C6
+        $missingSubjects = [];
+        $passedSubjects = [];
+        
+        foreach (self::REQUIRED_OLEVEL_SUBJECTS as $subject) {
+            if (isset($bestGrades[$subject]) && in_array($bestGrades[$subject], $creditGrades)) {
+                $passedSubjects[] = $subject;
+            } else {
+                $missingSubjects[] = $subject;
+            }
+        }
+        
+        if (empty($missingSubjects)) {
+            return [
+                'success' => true,
+                'message' => 'All required subjects have credit passes',
+                'grades' => $bestGrades
+            ];
+        } else {
+            return [
+                'success' => false,
+                'message' => 'Missing credit passes in: ' . implode(', ', $missingSubjects),
+                'missing' => $missingSubjects,
+                'grades' => $bestGrades
+            ];
+        }
+    }
+    
+    /**
      * Validate step access based on application state
      * 
      * @param array $application Application data
@@ -243,12 +317,27 @@ class PublicApplicationController extends ApplicationBaseController {
                 return $allowed;
                 
             case 3:
-                // Can access step 3 if JAMB is verified
-                $allowed = !empty($application['jamb_number']);
-                if (!$allowed) {
+                // Can access step 3 if JAMB is verified AND O'Level credits are sufficient
+                if (empty($application['jamb_number'])) {
                     error_log("SECURITY: Attempted to access step 3 without JAMB verification - Application: " . $application['id']);
+                    return false;
                 }
-                return $allowed;
+                
+                // Check O'Level credits
+                require_once MODELS_PATH . '/application/OlevelResultModel.php';
+                $olevelModel = new OlevelResultModel();
+                $olevelResults = $olevelModel->getByApplicationId($application['id']);
+                
+                $olevelValidation = $this->validateOlevelCredits($olevelResults);
+                
+                if (!$olevelValidation['success']) {
+                    error_log("O'LEVEL CHECK FAILED: Application " . $application['id'] . " - " . $olevelValidation['message']);
+                    $_SESSION['olevel_error'] = $olevelValidation['message'];
+                    $_SESSION['olevel_missing'] = $olevelValidation['missing'];
+                    return false;
+                }
+                
+                return true;
                 
             case 4:
             case 5:
@@ -290,6 +379,17 @@ class PublicApplicationController extends ApplicationBaseController {
             }
         }
         
+        // Check O'Level credits
+        require_once MODELS_PATH . '/application/OlevelResultModel.php';
+        $olevelModel = new OlevelResultModel();
+        $olevelResults = $olevelModel->getByApplicationId($application['id']);
+        
+        $olevelValidation = $this->validateOlevelCredits($olevelResults);
+        
+        if (!$olevelValidation['success']) {
+            return 'OLEVEL_INCOMPLETE';
+        }
+        
         // Check form completion
         if (!empty($application['date_of_birth']) && 
             !empty($application['phone']) && 
@@ -326,6 +426,11 @@ class PublicApplicationController extends ApplicationBaseController {
             case 'PAYMENT_PENDING':
             case 'FORM_COMPLETE':
                 $this->redirect('/apply/step/3');
+                break;
+                
+            case 'OLEVEL_INCOMPLETE':
+                $_SESSION['flash_warning'] = 'Please complete your O\'Level results with at least 5 credits including English, Mathematics, Biology, Chemistry, and Physics.';
+                $this->redirect('/apply/step/2');
                 break;
                 
             case 'JAMB_VERIFIED':
@@ -908,6 +1013,9 @@ class PublicApplicationController extends ApplicationBaseController {
         $docModel = new ApplicationDocumentModel();
         $passport = $docModel->getPassport($application['id']);
         
+        // Check O'Level validation status
+        $olevelValidation = $this->validateOlevelCredits($olevel_results);
+        
         // Pass data to view including file paths
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Application Form - Step 2',
@@ -936,7 +1044,8 @@ class PublicApplicationController extends ApplicationBaseController {
             'existing_birth_certificate' => !empty($application['birth_certificate']) ? [
                 'file_path' => $application['birth_certificate'],
                 'id' => 'birth_certificate'
-            ] : null
+            ] : null,
+            'olevel_validation' => $olevelValidation
         ]);
         
         // Redirect to step 2 instead of rendering form
@@ -944,7 +1053,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Save application form - FIXED with security checks
+     * Save application form - FIXED with security checks and O'Level validation
      */
     public function saveApplication() {
         // Set header to JSON first thing
@@ -1028,12 +1137,13 @@ class PublicApplicationController extends ApplicationBaseController {
             ];
             
             // Handle O'Level subject data
+            $olevelValidation = ['success' => false];
+            $formattedResults = [];
+            
             if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
                 error_log("O'Level data received: " . count($_POST['olevel']) . " entries");
                 
                 // Format the O'Level data for storage
-                $formattedResults = [];
-                
                 foreach ($_POST['olevel'] as $index => $result) {
                     // Skip if required fields are missing
                     if (empty($result['exam_type']) || empty($result['exam_year'])) {
@@ -1057,6 +1167,14 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
                 
                 if (!empty($formattedResults)) {
+                    // Validate O'Level credits
+                    $olevelValidation = $this->validateOlevelCredits($formattedResults);
+                    
+                    if (!$olevelValidation['success']) {
+                        // If validation fails, return error but don't stop saving
+                        error_log("O'Level validation warning: " . $olevelValidation['message']);
+                    }
+                    
                     // Save to olevel_results field in JSON format
                     $updateData['olevel_results'] = json_encode($formattedResults);
                     
@@ -1127,6 +1245,12 @@ class PublicApplicationController extends ApplicationBaseController {
                 'message' => 'Application saved successfully',
                 'application_id' => $application['id']
             ];
+            
+            // Add O'Level validation warning if needed
+            if (!$olevelValidation['success']) {
+                $response['warning'] = $olevelValidation['message'];
+                $response['missing_credits'] = $olevelValidation['missing'];
+            }
             
             if (!empty($uploadErrors)) {
                 $response['upload_errors'] = $uploadErrors;
@@ -1724,6 +1848,11 @@ class PublicApplicationController extends ApplicationBaseController {
             $examSlip = $this->generateExamSlip($application['id']);
         }
         
+        // Get O'Level results for display on exam slip
+        require_once MODELS_PATH . '/application/OlevelResultModel.php';
+        $olevelModel = new OlevelResultModel();
+        $olevel_results = $olevelModel->getByApplicationId($application['id']);
+        
         // Get applicant for name display
         $applicant = $this->applicantModel->find($applicantId);
         $applicant_name = trim(
@@ -1740,6 +1869,7 @@ class PublicApplicationController extends ApplicationBaseController {
             'exam_slip' => $examSlip,
             'applicant' => $applicant,
             'applicant_name' => $applicant_name,
+            'olevel_results' => $olevel_results,
             'has_exam_slip' => true,
             'exam_details' => [
                 'date' => $this->settingsModel->get('cbt_start_date', 'To be announced'),
@@ -1791,6 +1921,11 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
+        // Get O'Level results
+        require_once MODELS_PATH . '/application/OlevelResultModel.php';
+        $olevelModel = new OlevelResultModel();
+        $olevel_results = $olevelModel->getByApplicationId($application['id']);
+        
         // Get applicant
         $applicant = $this->applicantModel->find($applicantId);
         
@@ -1812,6 +1947,7 @@ class PublicApplicationController extends ApplicationBaseController {
             'application' => $application,
             'exam_slip' => $examSlip,
             'applicant' => $applicant,
+            'olevel_results' => $olevel_results,
             'baseUrl' => $baseUrl
         ]);
         
@@ -2684,6 +2820,9 @@ class PublicApplicationController extends ApplicationBaseController {
         $olevelModel = new OlevelResultModel();
         $olevel_results = $olevelModel->getByApplicationId($application['id']);
         
+        // Check O'Level validation status
+        $olevelValidation = $this->validateOlevelCredits($olevel_results);
+        
         // Get passport
         require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
         $docModel = new ApplicationDocumentModel();
@@ -2698,6 +2837,7 @@ class PublicApplicationController extends ApplicationBaseController {
             'applicant' => $applicant,
             'jamb_data' => $_SESSION['jamb_verification'],
             'olevel_results' => $olevel_results,
+            'olevel_validation' => $olevelValidation,
             'passport' => $passport,
             'states' => $this->getStates(),
             'programs' => $this->getPrograms(),
@@ -2898,6 +3038,11 @@ class PublicApplicationController extends ApplicationBaseController {
             }
         }
         
+        // Get O'Level results for display
+        require_once MODELS_PATH . '/application/OlevelResultModel.php';
+        $olevelModel = new OlevelResultModel();
+        $olevel_results = $olevelModel->getByApplicationId($application['id']);
+        
         // Get applicant for display
         $applicant = $this->applicantModel->find($applicantId);
         
@@ -2906,6 +3051,7 @@ class PublicApplicationController extends ApplicationBaseController {
             'application' => $application,
             'applicant' => $applicant,
             'exam_slip' => $examSlip,
+            'olevel_results' => $olevel_results,
             'has_exam_slip' => true
         ]);
         
