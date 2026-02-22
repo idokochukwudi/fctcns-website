@@ -3,43 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-    
-    <!-- ========================================================= -->
-    <!-- 1. Add security meta tags in the head -->
-    <!-- ========================================================= -->
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
-    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
-    <meta name="referrer" content="strict-origin-when-cross-origin">
-    
-    <!-- ========================================================= -->
-    <!-- 2. Add CSRF meta tag for JavaScript -->
-    <!-- ========================================================= -->
-    <meta name="csrf-token" content="<?php echo $csrf_token ?? ''; ?>">
-    
-    <title><?php echo $pageTitle ?? 'Application Portal - FCT College of Nursing Sciences'; ?></title>
-    <meta name="description" content="<?php echo $pageDescription ?? 'Apply for admission into ND/HND Nursing programme'; ?>">
+
+    <?php
+    /*
+     * =========================================================
+     * SECURITY HEADERS — Must be sent as HTTP headers, NOT meta tags.
+     *
+     * These headers are set here via PHP header() calls so they are
+     * sent as proper HTTP response headers. Meta-equivalents for
+     * X-Frame-Options and X-XSS-Protection are ignored by browsers
+     * and have been removed.
+     *
+     * IMPORTANT: This block must execute before ANY output. If your
+     * framework / router sends headers earlier, move these calls to
+     * a bootstrap file (e.g. public/index.php or a middleware class).
+     * =========================================================
+     */
+    if (!headers_sent()) {
+        // Prevent clickjacking — browser-enforced only via HTTP header
+        header('X-Frame-Options: DENY');
+
+        // Prevent MIME-type sniffing
+        header('X-Content-Type-Options: nosniff');
+
+        // Legacy XSS filter (still respected by some older browsers)
+        header('X-XSS-Protection: 1; mode=block');
+
+        // Control referrer information
+        header('Referrer-Policy: strict-origin-when-cross-origin');
+
+        // Content Security Policy — far more effective as an HTTP header.
+        // Adjust the policy below to match your actual asset origins.
+        // $csp_nonce must already be defined by your controller/bootstrap.
+        $cspNonce = $csp_nonce ?? '';
+        header(
+            "Content-Security-Policy: " .
+            "default-src 'self'; " .
+            "script-src 'self' 'nonce-{$cspNonce}' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; " .
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
+            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
+            "img-src 'self' data:; " .
+            "connect-src 'self';"
+        );
+    }
+    ?>
+
+    <!--
+        CSRF meta tag — safe to keep in <head> for JavaScript access.
+        X-Frame-Options / X-XSS-Protection meta tags have been REMOVED;
+        they only work as HTTP headers (see PHP block above).
+    -->
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($csrf_token ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+
+    <title><?php echo htmlspecialchars($pageTitle ?? 'Application Portal - FCT College of Nursing Sciences', ENT_QUOTES, 'UTF-8'); ?></title>
+    <meta name="description" content="<?php echo htmlspecialchars($pageDescription ?? 'Apply for admission into ND/HND Nursing programme', ENT_QUOTES, 'UTF-8'); ?>">
 
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    
-    <!-- ========================================================= -->
-    <!-- 3. Add SRI hashes to external scripts/styles -->
-    <!-- ========================================================= -->
-    <!-- Source Serif 4: highly readable, gentle on the eyes; Outfit for UI labels -->
-    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" 
+
+    <!--
+        Google Fonts — NO integrity attribute.
+
+        Google Fonts responses are dynamic (they vary by User-Agent to
+        serve the right font format). The content changes per request,
+        so any pre-computed SRI hash will never match and the browser
+        will block the stylesheet. This is intentional and documented
+        by Google; omitting SRI here is the correct, secure approach.
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
-          integrity="sha384-0pCryB3hBqYHZO9dKsIIzN8wH+Z4k5P+GZ8TlqM9m8A3TlPI9c7JZ6nG+K/t9fb"
           crossorigin="anonymous">
-    
-    <link rel="stylesheet" 
+
+    <!--
+        Font Awesome — SRI hash is valid here because the CDN file is
+        content-addressed (version-pinned URL, static content).
+    -->
+    <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
           integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-          crossorigin="anonymous" 
+          crossorigin="anonymous"
           referrerpolicy="no-referrer">
 
-    <style nonce="<?php echo $csp_nonce ?? ''; ?>">
+    <style nonce="<?php echo htmlspecialchars($csp_nonce ?? '', ENT_QUOTES, 'UTF-8'); ?>">
         /* ═══════════════════════════════════════════════
            RESET & ROOT - SOPHISTICATED GRAY PALETTE
         ═══════════════════════════════════════════════ */
@@ -57,7 +103,7 @@
             --primary-700:  #454554;
             --primary-800:  #2f2f38;
             --primary-900:  #1a1a1f;
-            
+
             /* ── Gray palette - sophisticated neutrals ── */
             --gray-50:      #fafafa;
             --gray-100:     #f5f5f5;
@@ -139,12 +185,12 @@
             --text-secondary:  var(--gray-700);
             --text-muted:      var(--gray-500);
             --text-inverse:    #ffffff;
-            
+
             --bg-body:         var(--gray-50);
             --bg-surface:      #ffffff;
             --bg-subtle:       var(--gray-100);
             --bg-muted:        var(--gray-200);
-            
+
             --border-light:    var(--gray-200);
             --border:          var(--gray-300);
             --border-dark:     var(--gray-400);
@@ -172,9 +218,9 @@
         /* ═══════════════════════════════════════════════
            BASE
         ═══════════════════════════════════════════════ */
-        html { 
-            font-size: 16px; 
-            -webkit-text-size-adjust: 100%; 
+        html {
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
         }
 
         body {
@@ -263,15 +309,14 @@
             object-fit: contain;
         }
 
-        /* Fallback icon styling */
         .portal-logo .fallback-icon {
             font-size: 28px;
             color: var(--gray-700);
         }
 
-        .portal-header-text { 
-            flex: 1; 
-            min-width: 0; 
+        .portal-header-text {
+            flex: 1;
+            min-width: 0;
         }
 
         .portal-header-text h1 {
@@ -333,13 +378,13 @@
         }
 
         .portal-user-avatar {
-            width: 28px; 
+            width: 28px;
             height: 28px;
             background: rgba(255,255,255,.1);
             border: 1px solid rgba(255,255,255,.15);
             border-radius: var(--radius-full);
-            display: flex; 
-            align-items: center; 
+            display: flex;
+            align-items: center;
             justify-content: center;
             color: rgba(255,255,255,.7);
             font-size: 11px;
@@ -353,9 +398,9 @@
             white-space: nowrap;
         }
 
-        .portal-user-name strong { 
-            color: #fff; 
-            font-weight: 600; 
+        .portal-user-name strong {
+            color: #fff;
+            font-weight: 600;
         }
 
         .portal-logout-btn {
@@ -385,7 +430,7 @@
         .portal-logout-btn i { font-size: 9px; }
 
         /* ═══════════════════════════════════════════════
-           PROGRESS TRACKER - GRAY THEME WITH FIX
+           PROGRESS TRACKER - GRAY THEME
         ═══════════════════════════════════════════════ */
         .progress-track {
             background: var(--gray-900);
@@ -411,13 +456,13 @@
         }
 
         .track-num {
-            width: 28px; 
+            width: 28px;
             height: 28px;
             border-radius: var(--radius-full);
             border: 2px solid rgba(255,255,255,.15);
             background: transparent;
-            display: flex; 
-            align-items: center; 
+            display: flex;
+            align-items: center;
             justify-content: center;
             font-family: var(--font-ui);
             font-size: 10.5px;
@@ -514,20 +559,20 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        .flash-msg.success { 
-            background: var(--green-50);  
-            border-color: var(--green-200); 
-            color: var(--green-800); 
+        .flash-msg.success {
+            background: var(--green-50);
+            border-color: var(--green-200);
+            color: var(--green-800);
         }
-        .flash-msg.error   { 
-            background: var(--red-50);    
-            border-color: var(--red-200);   
-            color: var(--red-800); 
+        .flash-msg.error {
+            background: var(--red-50);
+            border-color: var(--red-200);
+            color: var(--red-800);
         }
-        .flash-msg.info    { 
-            background: var(--blue-50);   
-            border-color: var(--blue-200);  
-            color: var(--blue-800); 
+        .flash-msg.info {
+            background: var(--blue-50);
+            border-color: var(--blue-200);
+            color: var(--blue-800);
         }
 
         .flash-icon { font-size: 15px; margin-top: 1px; flex-shrink: 0; }
@@ -555,12 +600,12 @@
         }
 
         .section-icon {
-            width: 34px; 
+            width: 34px;
             height: 34px;
             background: var(--gray-700);
             border-radius: var(--radius-sm);
-            display: flex; 
-            align-items: center; 
+            display: flex;
+            align-items: center;
             justify-content: center;
             font-size: 13px;
             color: #fff;
@@ -832,7 +877,7 @@
         }
 
         .doc-preview img {
-            width: 128px; 
+            width: 128px;
             height: 128px;
             object-fit: cover;
             border: 1.5px solid var(--border);
@@ -844,15 +889,15 @@
 
         .doc-remove {
             position: absolute;
-            top: -8px; 
+            top: -8px;
             right: -8px;
-            width: 24px; 
+            width: 24px;
             height: 24px;
             background: var(--red-600);
             color: #fff;
             border-radius: var(--radius-full);
-            display: flex; 
-            align-items: center; 
+            display: flex;
+            align-items: center;
             justify-content: center;
             cursor: pointer;
             font-size: 10px;
@@ -872,7 +917,7 @@
         }
 
         /* ═══════════════════════════════════════════════
-           FOOTER - GRAY THEME WITH CLOUDIT ANIMATION (LOGO REMOVED)
+           FOOTER - GRAY THEME WITH CLOUDIT ANIMATION
         ═══════════════════════════════════════════════ */
         .portal-footer {
             background: linear-gradient(145deg, var(--gray-900), #0a0a0f);
@@ -883,7 +928,6 @@
             overflow: hidden;
         }
 
-        /* Animated background effect */
         .portal-footer::before {
             content: '';
             position: absolute;
@@ -918,7 +962,6 @@
             color: rgba(255,255,255,.5);
         }
 
-        /* Powered by Cloudit Technologies - Animated */
         .powered-by-wrapper {
             display: flex;
             align-items: center;
@@ -1035,12 +1078,12 @@
             transition: color .2s;
         }
 
-        .footer-contact-item:hover { 
-            color: rgba(255,255,255,.9); 
+        .footer-contact-item:hover {
+            color: rgba(255,255,255,.9);
         }
-        .footer-contact-item i { 
-            color: var(--gold-400); 
-            font-size: 11px; 
+        .footer-contact-item i {
+            color: var(--gold-400);
+            font-size: 11px;
             transition: transform 0.2s ease;
         }
 
@@ -1055,7 +1098,6 @@
         .text-gold    { color: var(--gold-600) !important; }
         .text-green   { color: var(--green-600) !important; }
 
-        /* Payment button area */
         #paymentButtonArea .btn-amber {
             display: block;
             width: 100%;
@@ -1151,16 +1193,16 @@
             .portal-logo { width: 56px; height: 56px; }
             .track-step { flex: 0 0 100%; }
             .portal-body { padding: 18px 14px; }
-            
+
             .footer-contacts {
                 flex-direction: column;
                 gap: 10px;
             }
-            
+
             .powered-by {
                 padding: 6px 12px;
             }
-            
+
             .cloudit-name {
                 font-size: 12px;
             }
@@ -1179,10 +1221,9 @@
     <header class="portal-header">
         <div class="portal-header-inner">
 
-            <!-- Logo with white background for visibility -->
             <div class="portal-logo">
-                <img src="/assets/images/logo/logo.png" 
-                     alt="FCT College of Nursing Sciences" 
+                <img src="/assets/images/logo/logo.png"
+                     alt="FCT College of Nursing Sciences"
                      class="logo-image"
                      onerror="this.onerror=null; this.src='/assets/images/logo/logo-footer.png'; this.onerror=function(){ this.style.display='none'; this.parentNode.innerHTML+='<i class=\'fas fa-star-of-life fallback-icon\'></i>'; }">
             </div>
@@ -1238,31 +1279,27 @@
 
                 if (!empty($application['application_step'])) {
                     $currentStep = (int)$application['application_step'];
-                    
-                    // FIX: If application_step is 4 AND exam slip exists, show step 5
+
                     if ($currentStep == 4 && isset($has_exam_slip) && $has_exam_slip) {
                         $currentStep = 5;
                     }
                 } else {
-                    // Fallback logic if application_step is not set
                     $currentStep = 1;
                     if (!empty($application['jamb_number'])) $currentStep = 2;
                     if (!empty($application['date_of_birth']) && !empty($application['phone']) && !empty($application['address'])) $currentStep = 3;
-                    
-                    // Check payment status
+
                     $hasPaid = false;
                     if (isset($payment_status) && is_array($payment_status) && ($payment_status['status'] === 'success')) {
                         $hasPaid = true;
                     }
-                    
+
                     if ($hasPaid) {
                         $currentStep = 4;
-                        // FIX: Check if exam slip exists
                         if (isset($has_exam_slip) && $has_exam_slip) {
                             $currentStep = 5;
                         }
                     }
-                    
+
                     if (!empty($application['exam_slip_generated'])) $currentStep = 5;
                 }
             }
@@ -1350,8 +1387,7 @@
     <footer class="portal-footer">
         <div class="footer-main">
             <p>&copy; <?php echo date('Y'); ?> FCT College of Nursing Sciences. All rights reserved.</p>
-            
-            <!-- Powered by Cloudit Technologies with Animation -->
+
             <div class="powered-by-wrapper">
                 <div class="powered-by">
                     <span class="powered-text">Powered by</span>
@@ -1362,7 +1398,7 @@
                     </a>
                 </div>
             </div>
-            
+
             <div class="footer-contacts">
                 <?php
                     $supportPhone = $settings['key_value']['support_phone_1'] ?? '07039837749';
@@ -1383,49 +1419,48 @@
 </div><!-- /portal-wrap -->
 
 
-<!-- ========================================================= -->
-<!-- 4. Add CSP nonce to all script tags -->
-<!-- 5. Add SRI hashes to external scripts -->
-<!-- ========================================================= -->
+<!--
+    Bootstrap JS — SRI hash is valid for version-pinned CDN assets.
+    The nonce attribute pairs with the CSP header sent above.
+-->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
         crossorigin="anonymous"
-        nonce="<?php echo $csp_nonce ?? ''; ?>"></script>
+        nonce="<?php echo htmlspecialchars($csp_nonce ?? '', ENT_QUOTES, 'UTF-8'); ?>"></script>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"
         integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
         crossorigin="anonymous"
-        nonce="<?php echo $csp_nonce ?? ''; ?>"></script>
+        nonce="<?php echo htmlspecialchars($csp_nonce ?? '', ENT_QUOTES, 'UTF-8'); ?>"></script>
 
-<!-- Check if Payment.js exists before trying to load it -->
 <?php if (file_exists(__DIR__ . '/../../assets/js/Payment.js')): ?>
 <script src="<?php echo defined('BASE_URL') ? BASE_URL : ''; ?>/assets/js/Payment.js"
-        nonce="<?php echo $csp_nonce ?? ''; ?>"></script>
+        nonce="<?php echo htmlspecialchars($csp_nonce ?? '', ENT_QUOTES, 'UTF-8'); ?>"></script>
 <?php endif; ?>
 
-<script nonce="<?php echo $csp_nonce ?? ''; ?>">
+<script nonce="<?php echo htmlspecialchars($csp_nonce ?? '', ENT_QUOTES, 'UTF-8'); ?>">
     // ======================================================
-    // Portal Layout JavaScript with Security Enhancements
+    // Portal Layout JavaScript
     // ======================================================
 
-    // Get CSRF token from meta tag
     function getCsrfToken() {
         const meta = document.querySelector('meta[name="csrf-token"]');
         return meta ? meta.getAttribute('content') : '';
     }
 
+    // Auto-dismiss flash messages after 5.5 s
     setTimeout(function () {
         document.querySelectorAll('.flash-msg').forEach(function (el) {
             el.style.transition = 'opacity 0.4s';
             el.style.opacity    = '0';
-            setTimeout(function () { 
-                if (el.parentNode) el.remove(); 
+            setTimeout(function () {
+                if (el.parentNode) el.remove();
             }, 400);
         });
     }, 5500);
 
-    function confirmAction(msg) { 
-        return confirm(msg || 'Are you sure?'); 
+    function confirmAction(msg) {
+        return confirm(msg || 'Are you sure?');
     }
 
     function checkPasswordStrength(pw) {
@@ -1457,25 +1492,26 @@
             const r = new FileReader();
             r.onload = function (e) {
                 if (confirm('Is this your correct passport photograph? Click OK to upload.')) {
-                    const preview = document.getElementById('passport-preview');
+                    const preview   = document.getElementById('passport-preview');
                     const confirmed = document.getElementById('passport-confirmed');
-                    
+
                     if (preview) {
                         preview.src = e.target.result;
                         preview.style.display = 'block';
                     }
-                    
+
                     if (confirmed) {
                         confirmed.value = '1';
                     }
-                    
-                    // Optional tracking
-                    if (getCsrfToken()) {
+
+                    // Optional server-side tracking (fire-and-forget)
+                    const token = getCsrfToken();
+                    if (token) {
                         fetch('/api/track-passport-upload', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': getCsrfToken()
+                                'X-CSRF-TOKEN': token
                             },
                             body: JSON.stringify({
                                 action: 'passport_upload_confirmed',
@@ -1485,68 +1521,61 @@
                     }
                 } else {
                     input.value = '';
-                    const preview = document.getElementById('passport-preview');
+                    const preview   = document.getElementById('passport-preview');
                     const confirmed = document.getElementById('passport-confirmed');
-                    
-                    if (preview) {
-                        preview.style.display = 'none';
-                    }
-                    
-                    if (confirmed) {
-                        confirmed.value = '0';
-                    }
+
+                    if (preview)    preview.style.display = 'none';
+                    if (confirmed)  confirmed.value = '0';
                 }
             };
             r.readAsDataURL(input.files[0]);
         }
     }
 
-    // External link security
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('a[href^="http"]:not([rel*="noopener"])').forEach(link => {
+    // Harden external links that were not already marked
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('a[href^="http"]:not([rel*="noopener"])').forEach(function (link) {
             if (link.hostname !== window.location.hostname) {
                 link.setAttribute('target', '_blank');
                 link.setAttribute('rel', 'noopener noreferrer');
             }
         });
 
-        // Add security for tel and mailto links
-        document.querySelectorAll('a[href^="tel:"], a[href^="mailto:"]').forEach(link => {
-            link.addEventListener('click', function(e) {
-                // Optional tracking
-                if (getCsrfToken()) {
-                    fetch('/api/track-contact', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': getCsrfToken()
-                        },
-                        body: JSON.stringify({
-                            action: 'footer_contact_click',
-                            type: this.href.startsWith('tel:') ? 'phone' : 'email',
-                            timestamp: Date.now()
-                        })
-                    }).catch(() => {});
-                }
+        // Optional: track footer contact clicks
+        const token = getCsrfToken();
+        document.querySelectorAll('a[href^="tel:"], a[href^="mailto:"]').forEach(function (link) {
+            link.addEventListener('click', function () {
+                if (!token) return;
+                fetch('/api/track-contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify({
+                        action: 'footer_contact_click',
+                        type: this.href.startsWith('tel:') ? 'phone' : 'email',
+                        timestamp: Date.now()
+                    })
+                }).catch(() => {});
             });
         });
 
-        // Track logout attempts
-        document.querySelectorAll('.portal-logout-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                if (getCsrfToken()) {
-                    fetch('/api/track-logout', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': getCsrfToken()
-                        },
-                        body: JSON.stringify({
-                            action: 'logout_click',
-                            timestamp: Date.now()
-                        })
-                    }).catch(() => {});
-                }
+        // Optional: track logout clicks
+        document.querySelectorAll('.portal-logout-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                if (!token) return;
+                fetch('/api/track-logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify({
+                        action: 'logout_click',
+                        timestamp: Date.now()
+                    })
+                }).catch(() => {});
             });
         });
     });

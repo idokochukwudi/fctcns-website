@@ -1,55 +1,88 @@
 <?php
 /**
  * JAMB Verification View - Step 1
- * SECURITY FIXED: Proper header placement and Google Fonts handling
- * 
+ *
+ * Security fixes applied:
+ *  1. All security-relevant HTTP headers (X-Frame-Options, X-XSS-Protection,
+ *     Referrer-Policy, CSP) are emitted via PHP header() — NOT via <meta> tags,
+ *     which browsers ignore for those directives.
+ *  2. Google Fonts <link> has NO integrity attribute — Fonts CDN returns
+ *     dynamic, User-Agent-specific responses that can never match a static hash.
+ *  3. Version-pinned CDN assets (Bootstrap, Font Awesome) keep their SRI hashes.
+ *  4. The controller that handles /apply/verify-jamb MUST send
+ *     Content-Type: application/json before outputting JSON (see note below).
+ *
  * @package FCTCNS
  */
 
-// =========================================================
-// FIX: Add require for SecurityHelper and SecurityTrait
-// =========================================================
 require_once APP_PATH . '/helpers/SecurityHelper.php';
 require_once APP_PATH . '/helpers/SecurityTrait.php';
 
-// Use the trait in a view helper class
 class JambVerificationView {
     use SecurityTrait;
-    
+
     public function render($data) {
         extract($data);
-        
-        // Security: Get CSP nonce and CSRF token
-        $csp_nonce = $this->getCspNonce();
+
+        // ── Security: resolve nonce + CSRF token ──────────────────────────────
+        $csp_nonce  = $this->getCspNonce();
         $csrf_token = $this->getCsrfToken();
-        
-        $terms = $terms ?? [];
-        $settings = $settings ?? [];
-        $portal_closed = $portal_closed ?? false;
+
+        // ── Data defaults ─────────────────────────────────────────────────────
+        $terms          = $terms          ?? [];
+        $settings       = $settings       ?? [];
+        $portal_closed  = $portal_closed  ?? false;
         $portal_message = $portal_message ?? '';
-        
-        // Security: Secure JSON for JavaScript
+
+        // Secure JSON for inline JavaScript (HTML-entity-encoded, no </script> injection)
         $secureTermsData = $this->secureJsonEncode($terms);
-        
-        // Get current step from application if available
+
+        // ── Step tracking ─────────────────────────────────────────────────────
         $currentStep = 1;
         if (isset($application) && !empty($application['application_step'])) {
-            $currentStep = (int)$application['application_step'];
-            
-            // If application_step is 4 AND exam slip exists, show step 5
-            if ($currentStep == 4 && isset($has_exam_slip) && $has_exam_slip) {
+            $currentStep = (int) $application['application_step'];
+            if ($currentStep === 4 && isset($has_exam_slip) && $has_exam_slip) {
                 $currentStep = 5;
             }
         }
-        
-        // Define steps
+
         $steps = [
-            1 => ['label' => 'Create Account', 'sub' => 'Register'],
+            1 => ['label' => 'Create Account',    'sub' => 'Register'],
             2 => ['label' => 'JAMB Verification', 'sub' => 'JAMB check'],
-            3 => ['label' => 'Application Form', 'sub' => 'Fill form'],
-            4 => ['label' => 'Payment', 'sub' => 'Remita RRR'],
-            5 => ['label' => 'Exam Slip', 'sub' => 'Download'],
+            3 => ['label' => 'Application Form',  'sub' => 'Fill form'],
+            4 => ['label' => 'Payment',           'sub' => 'Remita RRR'],
+            5 => ['label' => 'Exam Slip',         'sub' => 'Download'],
         ];
+
+        // =========================================================
+        // HTTP SECURITY HEADERS
+        //
+        // These MUST be sent as HTTP response headers, not <meta>
+        // tags. The meta equivalents for X-Frame-Options and
+        // X-XSS-Protection are silently ignored by all browsers.
+        //
+        // If your framework/router has already sent headers by the
+        // time this view runs, move these calls into your bootstrap
+        // file (e.g. public/index.php) or a middleware layer.
+        // =========================================================
+        if (!headers_sent()) {
+            header('X-Frame-Options: DENY');
+            header('X-Content-Type-Options: nosniff');
+            header('X-XSS-Protection: 1; mode=block');
+            header('Referrer-Policy: strict-origin-when-cross-origin');
+
+            // CSP — effective only as an HTTP header, not a <meta> tag.
+            // 'nonce-{value}' authorises the inline <style> and <script> blocks below.
+            header(
+                "Content-Security-Policy: " .
+                "default-src 'self'; " .
+                "script-src 'self' 'nonce-{$csp_nonce}' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
+                "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
+                "img-src 'self' data:; " .
+                "connect-src 'self';"
+            );
+        }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -57,51 +90,54 @@ class JambVerificationView {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <meta name="description" content="JAMB Verification - FCT College of Nursing Sciences">
-    
-    <!-- ===== SECURITY HEADERS ===== -->
-    <!-- IMPORTANT: These must be inside the <head> section -->
-    <?php echo $this->getSecurityMetaTags(); ?>
-    
-    <!-- CSRF Token for JavaScript -->
+
+    <!--
+        CSRF token — safe as a <meta> tag (used by JS to attach to AJAX requests).
+        Security headers such as X-Frame-Options are sent as HTTP headers above;
+        they have been intentionally removed from here.
+    -->
     <meta name="csrf-token" content="<?php echo $this->e($csrf_token); ?>">
-    
+
     <title>JAMB Verification - FCT College of Nursing Sciences</title>
-    
-    <!-- ========================================================= -->
-    <!-- Google Fonts - NO SRI HASH (they change dynamically) -->
-    <!-- ========================================================= -->
+
+    <!-- Preconnect hints for Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" 
+
+    <!--
+        Google Fonts — integrity attribute intentionally OMITTED.
+
+        Google Fonts serves User-Agent-specific responses (the exact
+        set of font formats and subset ranges varies per request), so
+        the byte content changes between requests. Any pre-computed
+        SRI hash will therefore never match, and the browser will
+        block the resource. Omitting SRI here is the correct, secure
+        approach for dynamic CDN resources.
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap"
           rel="stylesheet"
           crossorigin="anonymous">
-    
-    <!-- ========================================================= -->
-    <!-- Font Awesome with conditional SRI -->
-    <!-- ========================================================= -->
-    <?php 
-    $faUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-    $faSri = SecurityHelper::getSriHash($faUrl);
-    ?>
-    <link rel="stylesheet" 
-          href="<?php echo $faUrl; ?>"
-          <?php if ($faSri): ?>integrity="<?php echo $faSri; ?>"<?php endif; ?>
-          crossorigin="anonymous" 
+
+    <!--
+        Font Awesome — SRI hash retained.
+        This URL is version-pinned and content-addressed; the hash
+        will match consistently across requests.
+    -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          crossorigin="anonymous"
           referrerpolicy="no-referrer">
-    
-    <!-- ========================================================= -->
-    <!-- Bootstrap 5 with conditional SRI -->
-    <!-- ========================================================= -->
-    <?php 
-    $bootstrapCssUrl = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
-    $bootstrapCssSri = SecurityHelper::getSriHash($bootstrapCssUrl);
-    ?>
-    <link href="<?php echo $bootstrapCssUrl; ?>" 
+
+    <!--
+        Bootstrap CSS — SRI hash retained (version-pinned, static content).
+    -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
           rel="stylesheet"
-          <?php if ($bootstrapCssSri): ?>integrity="<?php echo $bootstrapCssSri; ?>"<?php endif; ?>
+          integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM"
           crossorigin="anonymous">
-    
-    <style nonce="<?php echo $csp_nonce; ?>">
+
+    <style nonce="<?php echo $this->e($csp_nonce); ?>">
         /* ==========================================================================
            RESET & BASE STYLES
            ========================================================================== */
@@ -168,7 +204,7 @@ class JambVerificationView {
 
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         /* ==========================================================================
@@ -307,11 +343,9 @@ class JambVerificationView {
                 padding: 15px;
                 border-radius: 30px;
             }
-            
-            .step-indicator::before {
-                display: none;
-            }
-            
+
+            .step-indicator::before { display: none; }
+
             .step {
                 flex: 0 0 calc(50% - 6px);
                 padding: 8px 5px;
@@ -320,22 +354,10 @@ class JambVerificationView {
                 backdrop-filter: blur(5px);
                 border: 1px solid rgba(255, 255, 255, 0.15);
             }
-            
-            .step-number {
-                width: 32px;
-                height: 32px;
-                font-size: 14px;
-                margin-bottom: 4px;
-            }
-            
-            .step-label {
-                font-size: 10px;
-                white-space: normal;
-            }
-            
-            .step-sub {
-                font-size: 8px;
-            }
+
+            .step-number { width: 32px; height: 32px; font-size: 14px; margin-bottom: 4px; }
+            .step-label  { font-size: 10px; white-space: normal; }
+            .step-sub    { font-size: 8px; }
         }
 
         /* ==========================================================================
@@ -361,11 +383,7 @@ class JambVerificationView {
             border-bottom: none;
         }
 
-        .card-header i {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: var(--gold);
-        }
+        .card-header i { font-size: 3rem; margin-bottom: 15px; color: var(--gold); }
 
         .card-header h2 {
             font-size: 28px;
@@ -379,18 +397,11 @@ class JambVerificationView {
             font-size: 14px;
             margin: 0;
             color: rgba(255,255,255,0.95) !important;
-            font-weight: 400;
         }
 
-        .card-body {
-            padding: 40px;
-        }
+        .card-body { padding: 40px; }
 
-        @media (max-width: 768px) {
-            .card-body {
-                padding: 25px;
-            }
-        }
+        @media (max-width: 768px) { .card-body { padding: 25px; } }
 
         /* ==========================================================================
            TERMS CARD
@@ -427,12 +438,7 @@ class JambVerificationView {
             background: white;
         }
 
-        .terms-body h6 {
-            color: var(--primary-dark);
-            font-weight: 600;
-            margin-bottom: 15px;
-            font-size: 16px;
-        }
+        .terms-body h6 { color: var(--primary-dark); font-weight: 600; margin-bottom: 15px; font-size: 16px; }
 
         .terms-content {
             font-size: 14px;
@@ -440,15 +446,10 @@ class JambVerificationView {
             line-height: 1.7;
         }
 
-        .terms-content ol, .terms-content ul {
-            padding-left: 20px;
-            margin-bottom: 15px;
-        }
+        .terms-content ol,
+        .terms-content ul { padding-left: 20px; margin-bottom: 15px; }
 
-        .terms-content li {
-            margin-bottom: 8px;
-            color: var(--text-dark);
-        }
+        .terms-content li { margin-bottom: 8px; color: var(--text-dark); }
 
         .terms-footer {
             background: #f8f9fa;
@@ -487,26 +488,13 @@ class JambVerificationView {
             outline: none;
         }
 
-        .form-control-lg {
-            font-size: 18px;
-            letter-spacing: 1px;
-        }
+        .form-control-lg { font-size: 18px; letter-spacing: 1px; }
 
-        .form-control::placeholder {
-            color: #9CA3AF;
-            font-size: 14px;
-            letter-spacing: normal;
-        }
+        .form-control::placeholder { color: #9CA3AF; font-size: 14px; letter-spacing: normal; }
 
-        .form-text {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 5px;
-        }
+        .form-text { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
 
-        .form-check {
-            margin: 20px 0;
-        }
+        .form-check { margin: 20px 0; }
 
         .form-check-input {
             width: 18px;
@@ -515,26 +503,11 @@ class JambVerificationView {
             border: 2px solid var(--border);
         }
 
-        .form-check-input:checked {
-            background-color: var(--primary);
-            border-color: var(--primary);
-        }
+        .form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
 
-        .form-check-label {
-            font-size: 14px;
-            color: var(--text-dark);
-            margin-left: 5px;
-        }
-
-        .form-check-label a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .form-check-label a:hover {
-            text-decoration: underline;
-        }
+        .form-check-label { font-size: 14px; color: var(--text-dark); margin-left: 5px; }
+        .form-check-label a { color: var(--primary); text-decoration: none; font-weight: 500; }
+        .form-check-label a:hover { text-decoration: underline; }
 
         /* ==========================================================================
            INFO ALERT
@@ -547,25 +520,10 @@ class JambVerificationView {
             margin: 25px 0;
         }
 
-        .info-alert i {
-            color: var(--info);
-            font-size: 18px;
-        }
-
-        .info-alert strong {
-            color: var(--text-dark);
-        }
-
-        .info-alert ul {
-            margin: 10px 0 0 20px;
-            color: var(--text-dark);
-            font-size: 14px;
-        }
-
-        .info-alert li {
-            margin-bottom: 5px;
-            color: var(--text-dark);
-        }
+        .info-alert i { color: var(--info); font-size: 18px; }
+        .info-alert strong { color: var(--text-dark); }
+        .info-alert ul { margin: 10px 0 0 20px; color: var(--text-dark); font-size: 14px; }
+        .info-alert li { margin-bottom: 5px; color: var(--text-dark); }
 
         /* ==========================================================================
            BUTTONS
@@ -595,10 +553,7 @@ class JambVerificationView {
             color: white;
         }
 
-        .btn-primary:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
+        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
 
         .btn-outline-primary {
             background: transparent;
@@ -612,16 +567,9 @@ class JambVerificationView {
             transform: translateY(-2px);
         }
 
-        .btn-lg {
-            width: 100%;
-        }
+        .btn-lg { width: 100%; }
 
-        .spinner-border {
-            width: 18px;
-            height: 18px;
-            border-width: 2px;
-            margin-right: 5px;
-        }
+        .spinner-border { width: 18px; height: 18px; border-width: 2px; margin-right: 5px; }
 
         /* ==========================================================================
            ALERTS
@@ -639,32 +587,13 @@ class JambVerificationView {
 
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
-        .alert-success {
-            background: var(--success-light);
-            color: #065f46;
-            border-left: 4px solid var(--success);
-        }
-
-        .alert-danger {
-            background: var(--danger-light);
-            color: #991b1b;
-            border-left: 4px solid var(--danger);
-        }
-
-        .alert-warning {
-            background: var(--warning-light);
-            color: #92400e;
-            border-left: 4px solid var(--warning);
-        }
-
-        .alert-info {
-            background: var(--info-light);
-            color: #1e40af;
-            border-left: 4px solid var(--info);
-        }
+        .alert-success { background: var(--success-light); color: #065f46; border-left: 4px solid var(--success); }
+        .alert-danger  { background: var(--danger-light);  color: #991b1b; border-left: 4px solid var(--danger); }
+        .alert-warning { background: var(--warning-light); color: #92400e; border-left: 4px solid var(--warning); }
+        .alert-info    { background: var(--info-light);    color: #1e40af; border-left: 4px solid var(--info); }
 
         .alert .btn-close {
             margin-left: auto;
@@ -676,25 +605,17 @@ class JambVerificationView {
             color: currentColor;
         }
 
-        .alert .btn-close:hover {
-            opacity: 1;
-        }
+        .alert .btn-close:hover { opacity: 1; }
 
         /* ==========================================================================
            DIVIDER
            ========================================================================== */
-        .divider {
-            text-align: center;
-            margin: 30px 0;
-            position: relative;
-        }
+        .divider { text-align: center; margin: 30px 0; position: relative; }
 
         .divider::before {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
+            top: 50%; left: 0; right: 0;
             height: 1px;
             background: var(--border);
             z-index: 1;
@@ -725,112 +646,55 @@ class JambVerificationView {
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .app-footer p {
-            color: #FFFFFF !important;
-            margin-bottom: 5px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        }
-
-        .app-footer a {
-            color: #FFFFFF !important;
-            text-decoration: none;
-            font-weight: 500;
-            border-bottom: 1px dotted rgba(255, 255, 255, 0.6);
-        }
-
-        .app-footer a:hover {
-            border-bottom-color: #FFFFFF;
-        }
-
-        .app-footer i {
-            margin: 0 5px;
-            color: #FFFFFF !important;
-        }
+        .app-footer p   { color: #FFFFFF !important; margin-bottom: 5px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+        .app-footer a   { color: #FFFFFF !important; text-decoration: none; font-weight: 500; border-bottom: 1px dotted rgba(255,255,255,0.6); }
+        .app-footer a:hover { border-bottom-color: #FFFFFF; }
+        .app-footer i   { margin: 0 5px; color: #FFFFFF !important; }
 
         /* ==========================================================================
            PORTAL CLOSED
            ========================================================================== */
-        .portal-closed {
-            background: var(--white);
-            border-radius: var(--radius-xl);
-            padding: 40px;
-            text-align: center;
-        }
-
-        .portal-closed i {
-            font-size: 4rem;
-            color: var(--warning);
-            margin-bottom: 20px;
-        }
-
-        .portal-closed h2 {
-            color: var(--primary);
-            margin-bottom: 15px;
-        }
-
-        .portal-closed p {
-            color: var(--text-dark);
-            margin-bottom: 10px;
-        }
+        .portal-closed { background: var(--white); border-radius: var(--radius-xl); padding: 40px; text-align: center; }
+        .portal-closed i  { font-size: 4rem; color: var(--warning); margin-bottom: 20px; }
+        .portal-closed h2 { color: var(--primary); margin-bottom: 15px; }
+        .portal-closed p  { color: var(--text-dark); margin-bottom: 10px; }
 
         /* ==========================================================================
-           RESPONSIVE UTILITIES
+           RESPONSIVE
            ========================================================================== */
         @media (max-width: 576px) {
-            body {
-                padding: 10px;
-            }
-            
-            .card-header {
-                padding: 20px;
-            }
-            
-            .card-header i {
-                font-size: 2.5rem;
-            }
-            
-            .card-header h2 {
-                font-size: 22px;
-            }
-            
-            .btn {
-                padding: 12px 20px;
-                font-size: 14px;
-            }
-            
-            .form-control-lg {
-                font-size: 16px;
-                padding: 12px;
-            }
-            
-            .app-footer {
-                padding: 15px;
-                font-size: 12px;
-            }
+            body { padding: 10px; }
+            .card-header { padding: 20px; }
+            .card-header i { font-size: 2.5rem; }
+            .card-header h2 { font-size: 22px; }
+            .btn { padding: 12px 20px; font-size: 14px; }
+            .form-control-lg { font-size: 16px; padding: 12px; }
+            .app-footer { padding: 15px; font-size: 12px; }
         }
     </style>
 </head>
 <body>
     <div class="verification-container">
-        <!-- Header -->
+
+        <!-- ── Page heading ─────────────────────────────────────────────── -->
         <div class="header">
-            <h1><?php echo $this->e('FCT College of Nursing Sciences'); ?></h1>
-            <p><?php echo $this->e('2025/2026 Admissions Application Portal'); ?></p>
+            <h1>FCT College of Nursing Sciences</h1>
+            <p>2025/2026 Admissions Application Portal</p>
         </div>
 
-        <!-- Step Indicator -->
+        <!-- ── Step indicator ───────────────────────────────────────────── -->
         <div class="step-indicator">
-            <?php foreach ($steps as $num => $step): 
+            <?php foreach ($steps as $num => $step):
                 $stepClass = '';
                 if ($num < $currentStep) $stepClass = 'completed';
-                elseif ($num == $currentStep) $stepClass = 'active';
+                elseif ($num === $currentStep) $stepClass = 'active';
             ?>
             <div class="step <?php echo $this->e($stepClass); ?>">
                 <div class="step-number">
                     <?php if ($num < $currentStep): ?>
                         <i class="fas fa-check"></i>
                     <?php else: ?>
-                        <?php echo $this->e($num); ?>
+                        <?php echo (int) $num; ?>
                     <?php endif; ?>
                 </div>
                 <div class="step-label"><?php echo $this->e($step['label']); ?></div>
@@ -839,38 +703,40 @@ class JambVerificationView {
             <?php endforeach; ?>
         </div>
 
-        <!-- Alert Container -->
-        <div id="alertContainer"></div>
+        <!-- ── Alert container (populated by JS) ───────────────────────── -->
+        <div id="alertContainer" role="alert" aria-live="polite"></div>
 
         <?php if ($portal_closed): ?>
-            <!-- Portal Closed Message -->
+            <!-- Portal closed state -->
             <div class="portal-closed">
                 <i class="fas fa-exclamation-triangle"></i>
-                <h2><?php echo $this->e('Application Portal Closed'); ?></h2>
+                <h2>Application Portal Closed</h2>
                 <p><?php echo $this->e($portal_message); ?></p>
-                <p class="text-muted mt-3"><?php echo $this->e('The next admissions cycle will be announced on this portal.'); ?></p>
+                <p class="text-muted mt-3">The next admissions cycle will be announced on this portal.</p>
             </div>
+
         <?php else: ?>
-            <!-- Main Card -->
+            <!-- ── Main card ─────────────────────────────────────────────── -->
             <div class="main-card">
                 <div class="card-header">
                     <i class="fas fa-id-card"></i>
-                    <h2><?php echo $this->e('JAMB Verification'); ?></h2>
-                    <p><?php echo $this->e('Enter your JAMB registration number to begin your application'); ?></p>
+                    <h2>JAMB Verification</h2>
+                    <p>Enter your JAMB registration number to begin your application</p>
                 </div>
-                
+
                 <div class="card-body">
+
                     <?php if (empty($terms)): ?>
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle"></i>
-                            <?php echo $this->e('Terms and conditions are not available at the moment. Please try again later.'); ?>
+                            Terms and conditions are not available at the moment. Please try again later.
                         </div>
                     <?php else: ?>
-                    
+
                     <!-- Terms and Conditions Card -->
                     <div class="terms-card">
                         <div class="terms-header">
-                            <h5><i class="fas fa-file-contract"></i> <?php echo $this->e('Terms and Conditions'); ?></h5>
+                            <h5><i class="fas fa-file-contract"></i> Terms and Conditions</h5>
                         </div>
                         <div class="terms-body">
                             <h6><?php echo $this->e($terms['title'] ?? 'Terms and Conditions'); ?></h6>
@@ -880,101 +746,107 @@ class JambVerificationView {
                         </div>
                         <div class="terms-footer">
                             <i class="fas fa-clock me-1"></i>
-                            <?php echo $this->e('Version: ' . ($terms['version'] ?? '1.0')); ?> | 
-                            <?php echo $this->e('Effective: ' . (isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025')); ?>
+                            Version: <?php echo $this->e($terms['version'] ?? '1.0'); ?> |
+                            Effective: <?php echo $this->e(isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025'); ?>
                         </div>
                     </div>
 
                     <!-- JAMB Verification Form -->
-                    <form id="jambVerificationForm">
-                        <!-- CSRF token using the same token from SecurityTrait -->
+                    <form id="jambVerificationForm" novalidate>
+                        <!--
+                            CSRF token hidden field.
+                            The same token is also read from the <meta> tag by JS
+                            and attached as the X-CSRF-Token request header.
+                        -->
                         <input type="hidden" name="csrf_token" value="<?php echo $this->e($csrf_token); ?>">
-                        
+
                         <div class="mb-4">
                             <label for="jamb_number" class="form-label">
                                 <i class="fas fa-id-card text-primary"></i>
-                                <?php echo $this->e('JAMB Registration Number'); ?>
+                                JAMB Registration Number
                             </label>
-                            <input type="text" 
-                                   class="form-control form-control-lg" 
-                                   id="jamb_number" 
-                                   name="jamb_number" 
-                                   placeholder="<?php echo $this->e('e.g., 202650000089FG'); ?>"
+                            <input type="text"
+                                   class="form-control form-control-lg"
+                                   id="jamb_number"
+                                   name="jamb_number"
+                                   placeholder="e.g., 202650000089FG"
                                    style="text-transform: uppercase;"
                                    autocomplete="off"
                                    maxlength="14"
                                    pattern="[0-9A-Za-z]{10,14}"
-                                   required>
-                            <div class="form-text">
-                                <i class="fas fa-info-circle"></i> 
-                                <?php echo $this->e('Enter the JAMB registration number you used for the 2025 UTME.'); ?>
+                                   required
+                                   aria-describedby="jambHelp">
+                            <div class="form-text" id="jambHelp">
+                                <i class="fas fa-info-circle"></i>
+                                Enter the JAMB registration number you used for the 2025 UTME.
                             </div>
                         </div>
-                        
+
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="accept_terms" name="accept_terms" required>
                             <label class="form-check-label" for="accept_terms">
-                                <?php echo $this->e('I have read and agree to the '); ?>
-                                <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal"><?php echo $this->e('Terms and Conditions'); ?></a>
+                                I have read and agree to the
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a>
                             </label>
                         </div>
-                        
-                        <!-- Requirements Alert -->
+
+                        <!-- Requirements summary -->
                         <div class="info-alert">
                             <i class="fas fa-info-circle"></i>
-                            <strong><?php echo $this->e('By proceeding, you confirm that:'); ?></strong>
+                            <strong>By proceeding, you confirm that:</strong>
                             <ul class="mb-0">
-                                <li><?php echo $this->e('You have a minimum UTME score of ' . ($settings['key_value']['min_utme_score'] ?? '170')); ?></li>
-                                <li><?php echo $this->e('You selected FCT College of Nursing Sciences as your first choice'); ?></li>
-                                <li><?php echo $this->e('You have the required O\'Level credits (5 credits including English, Maths, Biology, Chemistry, Physics)'); ?></li>
-                                <li><?php echo $this->e('You are at least ' . ($settings['key_value']['min_age'] ?? '16') . ' years old'); ?></li>
+                                <li>You have a minimum UTME score of <?php echo $this->e($settings['key_value']['min_utme_score'] ?? '170'); ?></li>
+                                <li>You selected FCT College of Nursing Sciences as your first choice</li>
+                                <li>You have the required O&rsquo;Level credits (5 credits including English, Maths, Biology, Chemistry, Physics)</li>
+                                <li>You are at least <?php echo $this->e($settings['key_value']['min_age'] ?? '16'); ?> years old</li>
                             </ul>
                         </div>
-                        
+
                         <button type="submit" class="btn btn-primary btn-lg" id="verifyBtn">
-                            <span id="btnText"><i class="fas fa-check-circle"></i> <?php echo $this->e('Verify JAMB Number'); ?></span>
-                            <span id="btnSpinner" style="display: none;">
+                            <span id="btnText"><i class="fas fa-check-circle"></i> Verify JAMB Number</span>
+                            <span id="btnSpinner" style="display: none;" aria-hidden="true">
                                 <span class="spinner-border" role="status"></span>
-                                <?php echo $this->e('Verifying...'); ?>
+                                Verifying&hellip;
                             </span>
                         </button>
                     </form>
-                    
-                    <?php endif; ?>
-                    
-                    <div class="divider">
-                        <span><?php echo $this->e('OR'); ?></span>
-                    </div>
-                    
-                    <!-- Login Link -->
+
+                    <?php endif; /* terms not empty */ ?>
+
+                    <div class="divider"><span>OR</span></div>
+
                     <div class="text-center">
-                        <p class="mb-2" style="color: var(--text-muted);"><?php echo $this->e('Already have an account?'); ?></p>
+                        <p class="mb-2" style="color: var(--text-muted);">Already have an account?</p>
                         <a href="/applicant/login" class="btn btn-outline-primary">
-                            <i class="fas fa-sign-in-alt"></i> <?php echo $this->e('Login to Continue Application'); ?>
+                            <i class="fas fa-sign-in-alt"></i> Login to Continue Application
                         </a>
                     </div>
-                </div>
-            </div>
-        <?php endif; ?>
 
-        <!-- Footer -->
+                </div><!-- /card-body -->
+            </div><!-- /main-card -->
+
+        <?php endif; /* portal not closed */ ?>
+
+        <!-- ── Footer ───────────────────────────────────────────────────── -->
         <div class="app-footer">
-            <p>© <?php echo date('Y'); ?> <?php echo $this->e('FCT College of Nursing Sciences. All rights reserved.'); ?></p>
+            <p>&copy; <?php echo date('Y'); ?> FCT College of Nursing Sciences. All rights reserved.</p>
             <p>
-                <i class="fas fa-phone-alt"></i> <?php echo $this->e('Support: 07039837749'); ?> | 
-                <i class="fas fa-envelope"></i> <?php echo $this->e('Email:'); ?> <a href="mailto:info@fctcns.edu.ng">info@fctcns.edu.ng</a>
+                <i class="fas fa-phone-alt"></i> Support: 07039837749 |
+                <i class="fas fa-envelope"></i> Email: <a href="mailto:info@fctcns.edu.ng">info@fctcns.edu.ng</a>
             </p>
         </div>
-    </div>
 
-    <!-- Terms Modal -->
+    </div><!-- /verification-container -->
+
+
+    <!-- ── Terms Modal ──────────────────────────────────────────────────── -->
     <?php if (!empty($terms)): ?>
     <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="termsModalLabel">
-                        <i class="fas fa-file-contract me-2"></i><?php echo $this->e('Terms and Conditions'); ?>
+                        <i class="fas fa-file-contract me-2"></i>Terms and Conditions
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -986,78 +858,98 @@ class JambVerificationView {
                     <hr>
                     <p class="text-muted small mb-0">
                         <i class="fas fa-clock me-1"></i>
-                        <?php echo $this->e('Version: ' . ($terms['version'] ?? '1.0')); ?> | 
-                        <?php echo $this->e('Effective: ' . (isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025')); ?>
+                        Version: <?php echo $this->e($terms['version'] ?? '1.0'); ?> |
+                        Effective: <?php echo $this->e(isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025'); ?>
                     </p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal"><?php echo $this->e('Close'); ?></button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
     <?php endif; ?>
 
-    <!-- ========================================================= -->
-    <!-- Bootstrap JS with conditional SRI -->
-    <!-- ========================================================= -->
-    <?php 
-    $bootstrapJsUrl = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
-    $bootstrapJsSri = SecurityHelper::getSriHash($bootstrapJsUrl);
-    ?>
-    <script src="<?php echo $bootstrapJsUrl; ?>" 
-            <?php if ($bootstrapJsSri): ?>integrity="<?php echo $bootstrapJsSri; ?>"<?php endif; ?>
+
+    <!--
+        Bootstrap JS — SRI hash retained (version-pinned, static CDN content).
+        The nonce attribute pairs with the 'nonce-{value}' directive in the
+        Content-Security-Policy HTTP header sent above.
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
             crossorigin="anonymous"
-            nonce="<?php echo $csp_nonce; ?>"></script>
-    
-    <!-- Custom JavaScript with CSP nonce -->
-    <script nonce="<?php echo $csp_nonce; ?>">
-    // Get CSRF token from meta tag
+            nonce="<?php echo $this->e($csp_nonce); ?>"></script>
+
+    <script nonce="<?php echo $this->e($csp_nonce); ?>">
+    /*
+     * ===================================================================
+     * IMPORTANT — JSON parse error root cause & fix
+     * ===================================================================
+     * The console error "Unexpected token '<', '<!DOCTYPE'... is not
+     * valid JSON" means /apply/verify-jamb returned an HTML page instead
+     * of JSON (typically a PHP error page, a redirect, or a 404).
+     *
+     * Fix in your controller method that handles POST /apply/verify-jamb:
+     *
+     *   // 1. Send the JSON content-type header BEFORE any output
+     *   header('Content-Type: application/json; charset=utf-8');
+     *
+     *   // 2. Always echo valid JSON and exit — never fall through
+     *   echo json_encode(['success' => true, 'data' => $payload]);
+     *   exit;
+     *
+     *   // On error:
+     *   http_response_code(422);
+     *   echo json_encode(['success' => false, 'message' => 'Your error message']);
+     *   exit;
+     *
+     * To diagnose: Open DevTools → Network → find the POST request →
+     * click it → Response tab. Whatever is shown there is what the
+     * browser received instead of JSON.
+     * ===================================================================
+     */
+
+    // Read CSRF token from the <meta> tag placed in <head>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    
-    // Security: Secure terms data
+
+    // Secure terms data passed from PHP (already JSON-encoded server-side)
     const TERMS_DATA = <?php echo $secureTermsData; ?>;
 
-    // Auto-format JAMB number - Convert to uppercase and remove special characters
-    document.getElementById('jamb_number').addEventListener('input', function(e) {
+    // ── Auto-format JAMB field ───────────────────────────────────────────
+    document.getElementById('jamb_number').addEventListener('input', function () {
+        // Allow only alphanumeric uppercase characters
         this.value = this.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
     });
 
-    // JAMB Verification Form Submission
-    document.getElementById('jambVerificationForm').addEventListener('submit', async function(e) {
+    // ── Form submission ──────────────────────────────────────────────────
+    document.getElementById('jambVerificationForm').addEventListener('submit', async function (e) {
         e.preventDefault();
-        
-        const formData = new FormData(this);
-        const jambNumber = document.getElementById('jamb_number').value.trim().toUpperCase();
+
+        const jambNumber  = document.getElementById('jamb_number').value.trim().toUpperCase();
         const acceptTerms = document.getElementById('accept_terms').checked;
-        
-        // Validation
+
+        // Client-side validation
         if (!jambNumber) {
-            showAlert('Please enter your JAMB number', 'danger');
+            showAlert('Please enter your JAMB number.', 'danger');
             return;
         }
-        
+
         if (!/^[0-9A-Z]{10,14}$/.test(jambNumber)) {
-            showAlert('Invalid JAMB number format. It should be 10-14 characters of letters and numbers.', 'danger');
+            showAlert('Invalid JAMB number format. It should be 10–14 alphanumeric characters.', 'danger');
             return;
         }
-        
+
         if (!acceptTerms) {
-            showAlert('You must accept the terms and conditions', 'danger');
+            showAlert('You must accept the terms and conditions to proceed.', 'danger');
             return;
         }
-        
-        // Add CSRF token (already in form, but ensure it's there)
-        if (!formData.has('csrf_token')) {
-            formData.append('csrf_token', csrfToken);
-        }
-        
-        // Show loading state
-        document.getElementById('btnText').style.display = 'none';
-        document.getElementById('btnSpinner').style.display = 'inline-block';
-        document.getElementById('verifyBtn').disabled = true;
-        
+
+        setLoading(true);
+
         try {
+            const formData = new FormData(this);
+
             const response = await fetch('/apply/verify-jamb', {
                 method: 'POST',
                 body: formData,
@@ -1066,107 +958,111 @@ class JambVerificationView {
                     'X-CSRF-Token': csrfToken
                 }
             });
-            
-            // Check if response is OK before parsing JSON
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+
+            // ── Detect non-JSON responses before trying to parse ──────────
+            //
+            // If the server returns HTML here, it means the controller is not
+            // sending Content-Type: application/json. Check the Network tab in
+            // DevTools and fix the controller (see note at the top of this script).
+            //
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                // Log the first 300 chars of the unexpected response for debugging
+                const raw = await response.text();
+                console.error(
+                    '[JAMB verification] Expected JSON but received ' + contentType + '.',
+                    'First 300 chars:', raw.substring(0, 300),
+                    '\nFix: ensure your controller sends header("Content-Type: application/json") before output.'
+                );
+                throw new Error('server_html');
             }
-            
-            // Check content type to ensure it's JSON
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                // Get the text response for debugging
-                const text = await response.text();
-                console.error('Non-JSON response:', text.substring(0, 200));
-                throw new Error('Server returned non-JSON response');
-            }
-            
+
             const data = await response.json();
-            
-            if (data.success) {
-                // Store JAMB data in sessionStorage (already escaped)
-                sessionStorage.setItem('jamb_data', JSON.stringify(data.data));
-                sessionStorage.setItem('jamb_verified', 'true');
-                
-                showAlert('JAMB verified successfully! Redirecting to application form...', 'success');
-                
-                // Redirect to application form
-                setTimeout(() => {
-                    window.location.href = '/apply/form';
-                }, 1500);
-            } else {
+
+            if (!response.ok || !data.success) {
                 showAlert(data.message || 'Verification failed. Please check your JAMB number and try again.', 'danger');
-                resetButton();
+                setLoading(false);
+                return;
             }
+
+            // Store verified data for the next step
+            sessionStorage.setItem('jamb_data',     JSON.stringify(data.data));
+            sessionStorage.setItem('jamb_verified',  'true');
+
+            showAlert('JAMB verified successfully! Redirecting to application form&hellip;', 'success');
+
+            setTimeout(function () {
+                window.location.href = '/apply/form';
+            }, 1500);
+
         } catch (error) {
-            console.error('Error:', error);
-            
-            // User-friendly error message
-            if (error.message.includes('Failed to fetch')) {
-                showAlert('Network error. Please check your internet connection.', 'danger');
-            } else if (error.message.includes('non-JSON')) {
-                showAlert('Server error. Please try again later.', 'danger');
-            } else {
-                showAlert('An error occurred. Please try again.', 'danger');
+            console.error('[JAMB verification] Error:', error);
+
+            let msg = 'An unexpected error occurred. Please try again.';
+            if (error.message === 'Failed to fetch') {
+                msg = 'Network error. Please check your internet connection.';
+            } else if (error.message === 'server_html') {
+                msg = 'Server configuration error. Please contact support if this persists.';
             }
-            resetButton();
+
+            showAlert(msg, 'danger');
+            setLoading(false);
         }
     });
 
-    // Show alert function
+    // ── Helpers ──────────────────────────────────────────────────────────
+
+    function setLoading(loading) {
+        document.getElementById('btnText').style.display    = loading ? 'none'         : 'inline-block';
+        document.getElementById('btnSpinner').style.display = loading ? 'inline-block'  : 'none';
+        document.getElementById('verifyBtn').disabled       = loading;
+    }
+
     function showAlert(message, type) {
         const alertContainer = document.getElementById('alertContainer');
-        const icon = type === 'success' ? 'fa-check-circle' : 
-                     type === 'danger' ? 'fa-exclamation-circle' : 'fa-info-circle';
-        
-        // Security: Escape message to prevent XSS
-        const safeMessage = String(message).replace(/[<>]/g, '');
-        
-        alertContainer.innerHTML = `
-            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                <i class="fas ${icon}"></i>
-                <span>${safeMessage}</span>
-                <button type="button" class="btn-close" onclick="this.parentElement.remove()" aria-label="Close">×</button>
-            </div>
-        `;
-        
-        // Auto dismiss after 5 seconds
-        setTimeout(() => {
-            const alert = alertContainer.querySelector('.alert');
-            if (alert) {
-                alert.style.transition = 'opacity 0.5s ease';
-                alert.style.opacity = '0';
-                setTimeout(() => alert.remove(), 500);
+
+        const iconMap = { success: 'fa-check-circle', danger: 'fa-exclamation-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
+        const icon    = iconMap[type] || 'fa-info-circle';
+
+        // Sanitise the message — only allow plain text plus a handful of safe HTML entities
+        const safeMessage = String(message).replace(/[<>]/g, function (ch) {
+            return ch === '<' ? '&lt;' : '&gt;';
+        // Allow pre-escaped entities like &hellip; from our own code
+        }).replace(/&amp;(#?[a-zA-Z0-9]+;)/g, '&$1');
+
+        alertContainer.innerHTML =
+            '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+                '<i class="fas ' + icon + '"></i>' +
+                '<span>' + safeMessage + '</span>' +
+                '<button type="button" class="btn-close" onclick="this.parentElement.remove()" aria-label="Close">&times;</button>' +
+            '</div>';
+
+        // Auto-dismiss after 5 s
+        setTimeout(function () {
+            const el = alertContainer.querySelector('.alert');
+            if (el) {
+                el.style.transition = 'opacity 0.5s ease';
+                el.style.opacity = '0';
+                setTimeout(function () { if (el.parentNode) el.remove(); }, 500);
             }
         }, 5000);
     }
 
-    // Reset button function
-    function resetButton() {
-        document.getElementById('btnText').style.display = 'inline-block';
-        document.getElementById('btnSpinner').style.display = 'none';
-        document.getElementById('verifyBtn').disabled = false;
-    }
+    // ── Guard against stale session data from a previous navigation ──────
+    document.addEventListener('DOMContentLoaded', function () {
+        const alreadyVerified = sessionStorage.getItem('jamb_verified') === 'true';
+        const hasData         = !!sessionStorage.getItem('jamb_data');
+        const fromVerify      = document.referrer.includes('/apply/verify-jamb');
 
-    // Check if already verified on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        // Clear any stale session data if needed
-        const jambVerified = sessionStorage.getItem('jamb_verified');
-        const jambData = sessionStorage.getItem('jamb_data');
-        
-        // Only redirect if we have valid data and we're not coming from a fresh page load
-        if (jambVerified === 'true' && jambData && document.referrer.includes('/apply/verify-jamb')) {
-            showAlert('You already have verified JAMB data. Redirecting to application form...', 'info');
-            setTimeout(() => {
-                window.location.href = '/apply/form';
-            }, 2000);
+        if (alreadyVerified && hasData && fromVerify) {
+            showAlert('You already have verified JAMB data. Redirecting to application form&hellip;', 'info');
+            setTimeout(function () { window.location.href = '/apply/form'; }, 2000);
         }
     });
 
-    // Remove any leftover session data if user manually navigates back
-    window.addEventListener('pageshow', function(event) {
+    // Clear session data when user navigates back (bfcache restore)
+    window.addEventListener('pageshow', function (event) {
         if (event.persisted) {
-            // Page was loaded from cache (back/forward navigation)
             sessionStorage.removeItem('jamb_verified');
             sessionStorage.removeItem('jamb_data');
         }
@@ -1175,10 +1071,9 @@ class JambVerificationView {
 </body>
 </html>
 <?php
-    }
+    } // end render()
 }
 
-// Instantiate and render the view
+// Instantiate and render
 $view = new JambVerificationView();
 $view->render(get_defined_vars());
-?>
