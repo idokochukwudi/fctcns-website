@@ -3062,10 +3062,14 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Redirect helper - overrides parent for consistency
+     * 
+     * @param string $url URL to redirect to
+     * @param int $statusCode HTTP status code (default 302)
+     * @return void
      */
-    protected function redirect($url) {
+    protected function redirect($url, $statusCode = 302) {
         if (!headers_sent()) {
-            header('Location: ' . $url);
+            header('Location: ' . $url, true, $statusCode);
             exit;
         }
         
