@@ -2,6 +2,7 @@
 /**
  * Step 2: Application Form View
  * FIXED: Correct step tracking - this is Step 3 (Application Form)
+ * FIXED: Google Fonts SRI removed, conditional SRI for other resources
  * 
  * @package FCTCNS
  */
@@ -738,20 +739,33 @@ class ApplicationFormView {
             </style>
 
             <!-- ========================================================= -->
-            <!-- 5. Add SRI hashes to external scripts/styles -->
+            <!-- 5. Add SRI hashes to external scripts/styles - FIXED -->
             <!-- ========================================================= -->
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+            
+            <!-- Bootstrap CSS with SRI -->
+            <?php 
+            $bootstrapCssUrl = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
+            $bootstrapCssSri = SecurityHelper::getSriHash($bootstrapCssUrl);
+            ?>
+            <link href="<?php echo $bootstrapCssUrl; ?>" 
                   rel="stylesheet"
-                  integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" 
+                  <?php if ($bootstrapCssSri): ?>integrity="<?php echo $bootstrapCssSri; ?>"<?php endif; ?>
                   crossorigin="anonymous">
+            
+            <!-- Font Awesome with conditional SRI -->
+            <?php 
+            $faUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+            $faSri = SecurityHelper::getSriHash($faUrl);
+            ?>
             <link rel="stylesheet" 
-                  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-                  integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+                  href="<?php echo $faUrl; ?>"
+                  <?php if ($faSri): ?>integrity="<?php echo $faSri; ?>"<?php endif; ?>
                   crossorigin="anonymous" 
                   referrerpolicy="no-referrer">
+
+            <!-- Google Fonts - NO SRI HASH (they change dynamically) -->
             <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" 
                   rel="stylesheet"
-                  integrity="sha384-0pCryB3hBqYHZO9dKsIIzN8wH+Z4k5P+GZ8TlqM9m8A3TlPI9c7JZ6nG+K/t9fb"
                   crossorigin="anonymous">
         </head>
         <body>
@@ -1149,10 +1163,16 @@ class ApplicationFormView {
         </div><!-- end page-shell -->
 
         <!-- ========================================================= -->
-        <!-- 7. Add CSP nonce to all script tags and SRI hashes to external scripts -->
+        <!-- 7. Add CSP nonce to all script tags and SRI hashes to external scripts - FIXED -->
         <!-- ========================================================= -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-                integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        
+        <!-- Bootstrap JS with conditional SRI -->
+        <?php 
+        $bootstrapJsUrl = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
+        $bootstrapJsSri = SecurityHelper::getSriHash($bootstrapJsUrl);
+        ?>
+        <script src="<?php echo $bootstrapJsUrl; ?>" 
+                <?php if ($bootstrapJsSri): ?>integrity="<?php echo $bootstrapJsSri; ?>"<?php endif; ?>
                 crossorigin="anonymous"
                 nonce="<?php echo $csp_nonce; ?>"></script>
         
@@ -1297,17 +1317,22 @@ class ApplicationFormView {
                 // Create FormData
                 const formData = new FormData(form);
                 
-                // Ensure CSRF token is included (already in form as hidden input)
-                
                 // Send AJAX request
                 fetch('/apply/save-application', {
                     method: 'POST',
                     body: formData,
                     headers: {
-                        'X-CSRF-TOKEN': csrfToken // Also send in header for APIs that prefer it
+                        'X-CSRF-TOKEN': csrfToken
                     }
                 })
-                .then(response => response.json())
+                .then(response => {
+                    // Check content type before parsing JSON
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error('Server returned non-JSON response');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     loadingOverlay.classList.remove('show');
                     
@@ -1318,9 +1343,6 @@ class ApplicationFormView {
                         // Handle redirect if present
                         if (data.redirect) {
                             window.location.href = data.redirect;
-                        } else {
-                            // Just saved, maybe show a temporary message
-                            console.log('Application saved');
                         }
                     } else {
                         // Show error message
@@ -1330,7 +1352,12 @@ class ApplicationFormView {
                 .catch(error => {
                     loadingOverlay.classList.remove('show');
                     console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
+                    
+                    if (error.message.includes('non-JSON')) {
+                        alert('Server error. Please try again later.');
+                    } else {
+                        alert('An error occurred. Please try again.');
+                    }
                 });
             });
             
