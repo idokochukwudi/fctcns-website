@@ -2,7 +2,7 @@
 /**
  * Step 2: Application Form View
  * FIXED: Correct step tracking - this is Step 3 (Application Form)
- * FIXED: Google Fonts SRI removed, conditional SRI for other resources
+ * UPDATED: Purple color scheme matching JAMB verification page
  * 
  * @package FCTCNS
  */
@@ -96,29 +96,30 @@ class ApplicationFormView {
             <!-- ========================================================= -->
             <style nonce="<?php echo $csp_nonce; ?>">
             /* =========================================================
-               BASE
+               BASE - Purple Theme Matching JAMB Page
             ========================================================= */
             *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
             :root {
-                --navy:        #0F1B35;
-                --navy-mid:    #1A2D55;
-                --navy-light:  #243E73;
-                --gold:        #C8963A;
-                --gold-light:  #E2B05F;
-                --gold-pale:   #FDF6E9;
-                --teal:        #1D8A7A;
-                --teal-light:  #E8F7F5;
-                --red:         #C0392B;
-                --red-light:   #FDEEEC;
-                --success:     #16A34A;
-                --white:       #FFFFFF;
-                --off-white:   #F8FAFD;
-                --border:      #E2E8F4;
-                --border-dark: #C8D3E8;
-                --text-dark:   #0F1B35;
-                --text-body:   #374160;
-                --text-muted:  #7A86A0;
+                --sv1-primary:       #6B4E9B;
+                --sv1-primary-dark:  #4A3B6B;
+                --sv1-primary-light: #8A6FB0;
+                --sv1-primary-soft:  #F3EAF8;
+                --sv1-gold:          #C9A44A;
+                --sv1-gold-light:    #E2B05F;
+                --sv1-gold-pale:     #FDF6E9;
+                --sv1-success:       #10b981;
+                --sv1-success-light: #d1fae5;
+                --sv1-danger:        #ef4444;
+                --sv1-danger-light:  #fee2e2;
+                --sv1-warning:       #f59e0b;
+                --sv1-warning-light: #fef3c7;
+                --sv1-info:          #3b82f6;
+                --sv1-info-light:    #dbeafe;
+                --sv1-border:        #E9EDF2;
+                --sv1-text-dark:     #1A1F2E;
+                --sv1-text-muted:    #6B7280;
+                
                 --radius-sm:   6px;
                 --radius-md:   10px;
                 --radius-lg:   16px;
@@ -128,10 +129,10 @@ class ApplicationFormView {
             html, body {
                 width: 100%;
                 overflow-x: hidden;
-                background: var(--off-white);
+                background: var(--sv1-primary-soft);
                 font-family: 'DM Sans', -apple-system, sans-serif;
                 font-size: 14px;
-                color: var(--text-body);
+                color: var(--sv1-text-dark);
                 line-height: 1.6;
             }
 
@@ -149,7 +150,7 @@ class ApplicationFormView {
             @media (max-width: 768px)  { .page-shell { padding: 16px 14px 40px; } }
 
             /* =========================================================
-               STEP INDICATOR - 5 STEPS WITH PROPER TRACKING (STEP 3 ACTIVE)
+               STEP INDICATOR - 5 STEPS WITH PURPLE THEME
             ========================================================= */
             .step-indicator {
                 display: flex;
@@ -159,7 +160,7 @@ class ApplicationFormView {
                 background: white;
                 border-radius: 50px;
                 padding: 15px 20px;
-                border: 1px solid var(--border);
+                border: 1px solid var(--sv1-border);
                 box-shadow: 0 2px 8px rgba(0,0,0,0.03);
             }
 
@@ -170,7 +171,7 @@ class ApplicationFormView {
                 left: 60px;
                 right: 60px;
                 height: 2px;
-                background: var(--border);
+                background: var(--sv1-border);
                 transform: translateY(-50%);
                 z-index: 1;
             }
@@ -187,7 +188,7 @@ class ApplicationFormView {
                 width: 36px;
                 height: 36px;
                 background: white;
-                border: 2px solid var(--border);
+                border: 2px solid var(--sv1-border);
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
@@ -195,27 +196,27 @@ class ApplicationFormView {
                 margin: 0 auto 6px;
                 font-weight: 600;
                 font-size: 14px;
-                color: var(--text-muted);
+                color: var(--sv1-text-muted);
                 transition: all 0.3s;
             }
 
             .step.active .step-number {
-                background: var(--navy);
-                border-color: var(--navy);
+                background: var(--sv1-primary);
+                border-color: var(--sv1-primary);
                 color: white;
-                box-shadow: 0 0 0 4px rgba(15,27,53,0.1);
+                box-shadow: 0 0 0 4px var(--sv1-primary-soft);
             }
 
             .step.completed .step-number {
-                background: var(--teal);
-                border-color: var(--teal);
+                background: var(--sv1-success);
+                border-color: var(--sv1-success);
                 color: white;
             }
 
             .step-label {
                 font-size: 11px;
                 font-weight: 600;
-                color: var(--text-muted);
+                color: var(--sv1-text-muted);
                 text-transform: uppercase;
                 letter-spacing: 0.3px;
                 white-space: nowrap;
@@ -223,23 +224,23 @@ class ApplicationFormView {
 
             .step-sub {
                 font-size: 9px;
-                color: var(--text-muted);
+                color: var(--sv1-text-muted);
                 margin-top: 2px;
                 opacity: 0.8;
             }
 
             .step.active .step-label {
-                color: var(--navy);
+                color: var(--sv1-primary);
                 font-weight: 700;
             }
 
             .step.active .step-sub {
-                color: var(--navy);
+                color: var(--sv1-primary);
                 opacity: 0.9;
             }
 
             .step.completed .step-label {
-                color: var(--teal);
+                color: var(--sv1-success);
             }
 
             @media (max-width: 768px) {
@@ -256,9 +257,9 @@ class ApplicationFormView {
                 .step {
                     flex: 0 0 calc(33.33% - 7px);
                     padding: 8px 5px;
-                    background: var(--off-white);
+                    background: var(--sv1-primary-soft);
                     border-radius: 30px;
-                    border: 1px solid var(--border);
+                    border: 1px solid var(--sv1-border);
                 }
                 
                 .step-number {
@@ -284,18 +285,18 @@ class ApplicationFormView {
             ========================================================= */
             .logout-btn {
                 display: inline-flex; align-items: center; gap: 7px;
-                background: rgba(192,57,43,0.15);
-                border: 1px solid rgba(192,57,43,0.4);
+                background: var(--sv1-danger-light);
+                border: 1px solid var(--sv1-danger);
                 border-radius: 50px;
                 padding: 7px 16px;
                 font-size: 12px; font-weight: 600;
-                color: #f87171;
+                color: var(--sv1-danger);
                 text-decoration: none;
                 transition: all 0.2s;
                 white-space: nowrap;
             }
 
-            .logout-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
+            .logout-btn:hover { background: var(--sv1-danger); color: #fff; border-color: var(--sv1-danger); }
 
             /* =========================================================
                FLASH ALERTS
@@ -304,25 +305,45 @@ class ApplicationFormView {
                 display: flex; align-items: flex-start; gap: 12px;
                 padding: 13px 18px; border-radius: var(--radius-md);
                 margin-bottom: 16px; font-size: 14px;
-                border: 1px solid transparent;
+                border-left-width: 4px;
+                border-left-style: solid;
             }
-            .flash-alert.success { background: var(--teal-light);  border-color: rgba(29,138,122,.25); color: #145f55; }
-            .flash-alert.error   { background: var(--red-light);   border-color: rgba(192,57,43,.25);  color: #8b1a12; }
-            .flash-alert.warning { background: var(--gold-pale);   border-color: rgba(200,150,58,.35); color: #7c5200; }
+            .flash-alert.success { 
+                background: var(--sv1-success-light);  
+                border-left-color: var(--sv1-success); 
+                color: #065f46; 
+            }
+            .flash-alert.error   { 
+                background: var(--sv1-danger-light);   
+                border-left-color: var(--sv1-danger);  
+                color: #991b1b; 
+            }
+            .flash-alert.warning { 
+                background: var(--sv1-warning-light);   
+                border-left-color: var(--sv1-warning); 
+                color: #92400e; 
+            }
             .flash-alert i { margin-top: 1px; flex-shrink: 0; }
+            .flash-alert.success i { color: var(--sv1-success); }
+            .flash-alert.error i { color: var(--sv1-danger); }
+            .flash-alert.warning i { color: var(--sv1-warning); }
 
             /* Temp password box */
             .temp-pw-box {
-                background: var(--gold-pale);
-                border: 1.5px solid rgba(200,150,58,.4);
+                background: var(--sv1-gold-pale);
+                border: 1.5px solid var(--sv1-gold);
                 border-radius: var(--radius-md);
                 padding: 18px 22px;
                 margin-bottom: 18px;
             }
-            .temp-pw-box h6 { font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+            .temp-pw-box h6 { 
+                font-weight: 700; 
+                color: var(--sv1-primary-dark); 
+                margin-bottom: 8px; 
+            }
             .temp-pw-code {
                 background: var(--white);
-                border: 1px solid var(--border-dark);
+                border: 1px solid var(--sv1-border);
                 border-radius: var(--radius-sm);
                 padding: 12px 20px;
                 font-family: 'DM Mono', monospace;
@@ -330,7 +351,7 @@ class ApplicationFormView {
                 font-weight: 700;
                 letter-spacing: 4px;
                 text-align: center;
-                color: var(--navy);
+                color: var(--sv1-primary);
                 margin: 10px 0;
             }
 
@@ -342,7 +363,7 @@ class ApplicationFormView {
                 align-items: center;
                 justify-content: space-between;
                 gap: 16px;
-                background: var(--navy);
+                background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
                 border-radius: var(--radius-md);
                 padding: 18px 24px;
                 margin-bottom: 24px;
@@ -353,23 +374,28 @@ class ApplicationFormView {
 
             .jamb-check {
                 width: 44px; height: 44px; border-radius: 50%;
-                background: var(--teal);
+                background: var(--sv1-success);
                 display: flex; align-items: center; justify-content: center;
                 color: #fff; font-size: 18px;
                 flex-shrink: 0;
             }
 
-            .jamb-info-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 3px; }
-            .jamb-info-sub   { font-size: 13px; color: rgba(255,255,255,0.6); }
-            .jamb-info-sub strong { color: rgba(255,255,255,0.9); }
+            .jamb-info-title { 
+                font-size: 14px; font-weight: 700; 
+                color: #fff; margin-bottom: 3px; 
+            }
+            .jamb-info-sub   { 
+                font-size: 13px; color: rgba(255,255,255,0.8); 
+            }
+            .jamb-info-sub strong { color: #fff; }
 
             .jamb-score-pill {
-                background: rgba(200,150,58,0.15);
-                border: 1px solid rgba(200,150,58,0.35);
+                background: rgba(201,164,74,0.15);
+                border: 1px solid rgba(201,164,74,0.35);
                 border-radius: 50px;
                 padding: 5px 14px;
                 font-size: 12px; font-weight: 700;
-                color: var(--gold-light);
+                color: var(--sv1-gold-light);
                 white-space: nowrap;
             }
 
@@ -377,11 +403,11 @@ class ApplicationFormView {
                FORM CARD
             ========================================================= */
             .form-card {
-                background: var(--white);
-                border: 1px solid var(--border);
+                background: white;
+                border: 1px solid var(--sv1-border);
                 border-radius: var(--radius-xl);
                 overflow: hidden;
-                box-shadow: 0 4px 24px rgba(15,27,53,0.07);
+                box-shadow: 0 4px 24px rgba(107,78,155,0.1);
             }
 
             /* =========================================================
@@ -389,7 +415,7 @@ class ApplicationFormView {
             ========================================================= */
             .f-section {
                 padding: 32px 36px;
-                border-bottom: 1px solid var(--border);
+                border-bottom: 1px solid var(--sv1-border);
             }
 
             .f-section:last-child { border-bottom: none; }
@@ -400,20 +426,30 @@ class ApplicationFormView {
                 display: flex; align-items: center; gap: 12px;
                 margin-bottom: 24px;
                 padding-bottom: 14px;
-                border-bottom: 1px solid var(--border);
+                border-bottom: 1px solid var(--sv1-border);
             }
 
             .f-section-icon {
                 width: 36px; height: 36px;
-                background: var(--navy);
+                background: var(--sv1-primary);
                 border-radius: var(--radius-sm);
                 display: flex; align-items: center; justify-content: center;
-                font-size: 14px; color: var(--gold-light);
+                font-size: 14px; color: var(--sv1-gold);
                 flex-shrink: 0;
             }
 
-            .f-section-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--text-dark); margin: 0; }
-            .f-section-sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+            .f-section-title { 
+                font-family: 'Playfair Display', serif; 
+                font-size: 17px; 
+                font-weight: 700; 
+                color: var(--sv1-text-dark); 
+                margin: 0; 
+            }
+            .f-section-sub   { 
+                font-size: 12px; 
+                color: var(--sv1-text-muted); 
+                margin-top: 2px; 
+            }
 
             /* =========================================================
                FORM FIELDS
@@ -421,42 +457,62 @@ class ApplicationFormView {
             .field-label {
                 display: block;
                 font-size: 12px; font-weight: 600;
-                color: var(--text-dark);
+                color: var(--sv1-primary-dark);
                 margin-bottom: 6px;
                 letter-spacing: 0.1px;
             }
-            .field-label .req { color: var(--red); margin-left: 2px; }
+            .field-label .req { color: var(--sv1-danger); margin-left: 2px; }
 
-            .field-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+            .field-hint { 
+                font-size: 11px; 
+                color: var(--sv1-text-muted); 
+                margin-top: 4px; 
+            }
 
             .form-control,
             .form-select {
                 width: 100%;
-                border: 1.5px solid var(--border-dark);
+                border: 2px solid var(--sv1-border);
                 border-radius: var(--radius-md);
                 padding: 10px 13px;
                 font-size: 14px;
                 font-family: 'DM Sans', sans-serif;
-                color: var(--text-dark);
-                background: var(--white);
+                color: var(--sv1-text-dark);
+                background: white;
                 transition: border-color 0.2s, box-shadow 0.2s;
             }
 
             .form-control:focus,
             .form-select:focus {
-                border-color: var(--navy-mid);
-                box-shadow: 0 0 0 3px rgba(26,45,85,.09);
+                border-color: var(--sv1-primary);
+                box-shadow: 0 0 0 4px var(--sv1-primary-soft);
                 outline: none;
             }
 
             .form-control[readonly] {
-                background: var(--off-white);
-                color: var(--text-muted);
+                background: var(--sv1-primary-soft);
+                color: var(--sv1-text-muted);
                 cursor: not-allowed;
-                border-color: var(--border);
+                border-color: var(--sv1-border);
             }
 
             textarea.form-control { resize: vertical; min-height: 80px; }
+
+            .invalid-feedback {
+                font-size: 11px;
+                color: var(--sv1-danger);
+                margin-top: 4px;
+            }
+
+            .was-validated .form-control:invalid,
+            .was-validated .form-select:invalid {
+                border-color: var(--sv1-danger);
+            }
+
+            .was-validated .form-control:valid,
+            .was-validated .form-select:valid {
+                border-color: var(--sv1-success);
+            }
 
             .f-row {
                 display: grid;
@@ -499,8 +555,8 @@ class ApplicationFormView {
                O'LEVEL RESULT ITEM
             ========================================================= */
             .olevel-item {
-                background: var(--off-white);
-                border: 1px solid var(--border);
+                background: var(--sv1-primary-soft);
+                border: 1px solid var(--sv1-border);
                 border-radius: var(--radius-lg);
                 padding: 24px;
                 margin-bottom: 16px;
@@ -515,13 +571,13 @@ class ApplicationFormView {
 
             .olevel-item-label {
                 font-size: 13px; font-weight: 700;
-                color: var(--navy);
+                color: var(--sv1-primary-dark);
                 display: flex; align-items: center; gap: 8px;
             }
 
             .olevel-item-label .idx-badge {
-                background: var(--navy);
-                color: var(--gold-light);
+                background: var(--sv1-primary);
+                color: var(--sv1-gold);
                 font-size: 11px; font-weight: 700;
                 padding: 2px 8px;
                 border-radius: 50px;
@@ -529,23 +585,27 @@ class ApplicationFormView {
 
             .btn-remove {
                 background: transparent;
-                border: 1px solid rgba(192,57,43,0.3);
+                border: 1px solid var(--sv1-danger);
                 border-radius: var(--radius-sm);
-                color: var(--red);
+                color: var(--sv1-danger);
                 font-size: 12px; font-weight: 600;
                 padding: 5px 12px;
                 cursor: pointer;
                 display: inline-flex; align-items: center; gap: 5px;
                 transition: all 0.2s;
             }
-            .btn-remove:hover { background: var(--red); color: #fff; border-color: var(--red); }
+            .btn-remove:hover { 
+                background: var(--sv1-danger); 
+                color: #fff; 
+                border-color: var(--sv1-danger); 
+            }
 
             .grades-divider {
                 font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
-                color: var(--text-muted);
+                color: var(--sv1-text-muted);
                 margin: 14px 0 12px;
                 padding-bottom: 8px;
-                border-bottom: 1px dashed var(--border);
+                border-bottom: 1px dashed var(--sv1-border);
             }
 
             /* =========================================================
@@ -565,20 +625,20 @@ class ApplicationFormView {
             .passport-preview-box {
                 width: 200px;
                 height: 200px;
-                border: 2px dashed var(--border-dark);
+                border: 2px dashed var(--sv1-border);
                 border-radius: var(--radius-md);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 overflow: hidden;
-                background: var(--off-white);
+                background: var(--sv1-primary-soft);
                 transition: border-color 0.2s;
                 position: relative;
             }
 
             .passport-preview-box.has-image {
                 border-style: solid;
-                border-color: var(--teal);
+                border-color: var(--sv1-success);
                 border-width: 3px;
             }
 
@@ -595,18 +655,27 @@ class ApplicationFormView {
 
             .passport-preview-box .placeholder-icon {
                 font-size: 48px;
-                color: var(--border-dark);
+                color: var(--sv1-primary-light);
             }
 
             .passport-preview-box.has-image .placeholder-icon {
                 display: none;
             }
 
-            .passport-upload-area h6 { font-size: 14px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
-            .passport-upload-area p  { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+            .passport-upload-area h6 { 
+                font-size: 14px; 
+                font-weight: 600; 
+                color: var(--sv1-primary-dark); 
+                margin-bottom: 6px; 
+            }
+            .passport-upload-area p  { 
+                font-size: 12px; 
+                color: var(--sv1-text-muted); 
+                margin-bottom: 14px; 
+            }
 
             /* =========================================================
-               BUTTONS
+               BUTTONS - Purple Theme
             ========================================================= */
             .btn {
                 font-family: 'DM Sans', sans-serif;
@@ -620,34 +689,59 @@ class ApplicationFormView {
             }
 
             .btn-navy {
-                background: var(--navy); color: #fff;
-                box-shadow: 0 4px 12px rgba(15,27,53,0.22);
+                background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
+                color: #fff;
+                box-shadow: 0 4px 12px rgba(107,78,155,0.3);
             }
-            .btn-navy:hover { background: var(--navy-light); color: #fff; transform: translateY(-1px); }
+            .btn-navy:hover { 
+                background: var(--sv1-primary-dark); 
+                color: #fff; 
+                transform: translateY(-1px); 
+                box-shadow: 0 8px 20px rgba(107,78,155,0.4);
+            }
 
             .btn-gold {
-                background: var(--gold); color: var(--navy);
-                box-shadow: 0 4px 12px rgba(200,150,58,0.28);
+                background: var(--sv1-gold); 
+                color: var(--sv1-primary-dark);
+                box-shadow: 0 4px 12px rgba(201,164,74,0.3);
             }
-            .btn-gold:hover { background: var(--gold-light); transform: translateY(-1px); }
+            .btn-gold:hover { 
+                background: var(--sv1-gold-light); 
+                transform: translateY(-1px); 
+            }
 
             .btn-teal {
-                background: var(--teal); color: #fff;
-                box-shadow: 0 4px 12px rgba(29,138,122,0.25);
+                background: linear-gradient(135deg, var(--sv1-primary-light), var(--sv1-primary));
+                color: #fff;
+                box-shadow: 0 4px 12px rgba(107,78,155,0.3);
             }
-            .btn-teal:hover { background: #16756a; color: #fff; transform: translateY(-1px); }
+            .btn-teal:hover { 
+                background: var(--sv1-primary); 
+                color: #fff; 
+                transform: translateY(-1px); 
+            }
 
             .btn-ghost {
-                background: transparent; color: var(--text-body);
-                border: 1.5px solid var(--border-dark);
+                background: transparent; 
+                color: var(--sv1-text-muted);
+                border: 2px solid var(--sv1-border);
             }
-            .btn-ghost:hover { background: var(--off-white); border-color: var(--navy); color: var(--navy); }
+            .btn-ghost:hover { 
+                background: var(--sv1-primary-soft); 
+                border-color: var(--sv1-primary); 
+                color: var(--sv1-primary); 
+            }
 
             .btn-outline-teal {
-                background: transparent; color: var(--teal);
-                border: 1.5px solid var(--teal);
+                background: transparent; 
+                color: var(--sv1-primary);
+                border: 2px solid var(--sv1-primary);
             }
-            .btn-outline-teal:hover { background: var(--teal); color: #fff; }
+            .btn-outline-teal:hover { 
+                background: var(--sv1-primary); 
+                color: #fff; 
+                transform: translateY(-1px);
+            }
 
             .btn-lg { padding: 13px 32px; font-size: 14px; }
             .btn-sm { padding: 7px 16px; font-size: 12px; }
@@ -660,8 +754,8 @@ class ApplicationFormView {
                 align-items: center;
                 justify-content: space-between;
                 padding: 24px 36px;
-                background: var(--off-white);
-                border-top: 1px solid var(--border);
+                background: var(--sv1-primary-soft);
+                border-top: 1px solid var(--sv1-border);
                 flex-wrap: wrap;
                 gap: 12px;
             }
@@ -675,25 +769,45 @@ class ApplicationFormView {
                 text-align: center;
                 padding: 28px 0 0;
                 font-size: 13px;
-                color: var(--text-muted);
+                color: var(--sv1-text-muted);
             }
-            .page-footer a { color: var(--navy-mid); text-decoration: none; font-weight: 500; }
-            .page-footer a:hover { color: var(--gold); }
-            .page-footer i { color: var(--gold); font-size: 11px; margin-right: 4px; }
+            .page-footer a { 
+                color: var(--sv1-primary); 
+                text-decoration: none; 
+                font-weight: 500; 
+            }
+            .page-footer a:hover { 
+                color: var(--sv1-gold); 
+            }
+            .page-footer i { 
+                color: var(--sv1-gold); 
+                font-size: 11px; 
+                margin-right: 4px; 
+            }
 
             /* =========================================================
                ERROR LIST
             ========================================================= */
             .error-list {
-                background: var(--red-light);
-                border: 1px solid rgba(192,57,43,.25);
-                border-left: 3px solid var(--red);
+                background: var(--sv1-danger-light);
+                border: 1px solid var(--sv1-danger);
+                border-left: 4px solid var(--sv1-danger);
                 border-radius: var(--radius-md);
                 padding: 16px 20px;
                 margin-bottom: 20px;
             }
-            .error-list h6 { color: var(--red); font-weight: 700; margin-bottom: 8px; font-size: 13px; }
-            .error-list ul { margin: 0; padding-left: 18px; font-size: 13px; color: #8b1a12; }
+            .error-list h6 { 
+                color: var(--sv1-danger); 
+                font-weight: 700; 
+                margin-bottom: 8px; 
+                font-size: 13px; 
+            }
+            .error-list ul { 
+                margin: 0; 
+                padding-left: 18px; 
+                font-size: 13px; 
+                color: #991b1b; 
+            }
             .error-list ul li + li { margin-top: 4px; }
 
             /* =========================================================
@@ -721,8 +835,8 @@ class ApplicationFormView {
             .spinner {
                 width: 50px;
                 height: 50px;
-                border: 3px solid var(--border);
-                border-top-color: var(--navy);
+                border: 3px solid var(--sv1-border);
+                border-top-color: var(--sv1-primary);
                 border-radius: 50%;
                 animation: spin 1s linear infinite;
             }
@@ -814,8 +928,8 @@ class ApplicationFormView {
 
             <?php if (!empty($temp_password)): ?>
             <div class="temp-pw-box">
-                <h6><i class="fas fa-key" style="color:var(--gold);margin-right:6px;"></i> Your Login Password</h6>
-                <p style="font-size:13px;color:var(--text-muted);margin-bottom:4px;">
+                <h6><i class="fas fa-key" style="color:var(--sv1-gold);margin-right:6px;"></i> Your Login Password</h6>
+                <p style="font-size:13px;color:var(--sv1-text-muted);margin-bottom:4px;">
                     Save this password — you'll need it to log in later. It will also be sent to your email.
                 </p>
                 <div class="temp-pw-code"><?php echo $this->e($temp_password); ?></div>
@@ -1090,7 +1204,7 @@ class ApplicationFormView {
                             <button type="button" class="btn btn-outline-teal btn-sm" id="add-olevel">
                                 <i class="fas fa-plus"></i> Add Another Sitting
                             </button>
-                            <span style="font-size:12px;color:var(--text-muted);margin-left:10px;">Maximum 2 sittings</span>
+                            <span style="font-size:12px;color:var(--sv1-text-muted);margin-left:10px;">Maximum 2 sittings</span>
                         </div>
                     </div>
 

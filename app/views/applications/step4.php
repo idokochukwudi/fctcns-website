@@ -2,6 +2,7 @@
 /**
  * Step 4 - Examination Slip View
  * UPDATED: Added O'Level results section with credit validation
+ * UPDATED: Purple color scheme matching JAMB verification page
  * @var array $application
  * @var array $exam_slip
  * @var array $applicant
@@ -118,22 +119,30 @@ class ExamSlipView {
             /* ── Reset ────────────────────────────────────────────────────── */
             *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-            /* ── Palette: #6E026F purple ──────────────────────────────────── */
+            /* ── Palette: Purple Theme Matching JAMB Page ─────────────────── */
             :root {
-              --pu:          #6E026F;
-              --pu-dark:     #500150;
-              --pu-mid:      #8a0d8b;
-              --pu-light:    #b84fb9;
-              --pu-pale:     #f9edf9;
-              --pu-bg:       #f2dff2;
+              --sv1-primary:       #6B4E9B;
+              --sv1-primary-dark:  #4A3B6B;
+              --sv1-primary-light: #8A6FB0;
+              --sv1-primary-soft:  #F3EAF8;
+              --sv1-gold:          #C9A44A;
+              --sv1-gold-light:    #E2B05F;
+              --sv1-gold-pale:     #FDF6E9;
 
-              --gold:        #c8860a;
-              --gold-pale:   #fdf6e3;
+              --sv1-success:       #10b981;
+              --sv1-success-light: #d1fae5;
+              --sv1-danger:        #ef4444;
+              --sv1-danger-light:  #fee2e2;
+              --sv1-warning:       #f59e0b;
+              --sv1-warning-light: #fef3c7;
+              --sv1-info:          #3b82f6;
+              --sv1-info-light:    #dbeafe;
+              --sv1-border:        #E9EDF2;
+              --sv1-text-dark:     #1A1F2E;
+              --sv1-text-muted:    #6B7280;
 
               --green:       #1a6b45;
               --green-bg:    #edf9f3;
-
-              --danger:      #c0392b;
 
               --blue:        #1d4ed8;
               --blue-bg:     #eff6ff;
@@ -141,15 +150,15 @@ class ExamSlipView {
 
               --text:        #1a0a1a;
               --text-muted:  #72587a;
-              --border:      #e2d0e2;
+              --border:      var(--sv1-border);
               --border-dark: #c9b0c9;
-              --bg:          #f7f0f7;
+              --bg:          var(--sv1-primary-soft);
               --surface:     #ffffff;
 
               --radius:      12px;
               --radius-sm:   8px;
-              --shadow:      0 1px 4px rgba(110,2,111,.07), 0 4px 18px rgba(110,2,111,.09);
-              --shadow-lg:   0 2px 8px rgba(110,2,111,.08), 0 8px 36px rgba(110,2,111,.12);
+              --shadow:      0 1px 4px rgba(107,78,155,.07), 0 4px 18px rgba(107,78,155,.09);
+              --shadow-lg:   0 2px 8px rgba(107,78,155,.08), 0 8px 36px rgba(107,78,155,.12);
               
               /* Grade colors */
               --grade-excellent: #2e7d32;
@@ -162,7 +171,7 @@ class ExamSlipView {
             body {
               font-family: 'Outfit', sans-serif;
               background: var(--bg);
-              color: var(--text);
+              color: var(--sv1-text-dark);
               min-height: 100vh;
               font-size: 15px;
               line-height: 1.6;
@@ -185,7 +194,7 @@ class ExamSlipView {
               gap: 0.75rem;
               background: var(--surface);
               border: 1px solid var(--border);
-              border-left: 4px solid var(--pu);
+              border-left: 4px solid var(--sv1-primary);
               border-radius: var(--radius-sm);
               padding: 0.8rem 1.2rem;
               margin-bottom: 1.35rem;
@@ -196,26 +205,26 @@ class ExamSlipView {
 
             .strip-icon {
               width: 34px; height: 34px;
-              background: var(--pu-pale);
+              background: var(--sv1-primary-soft);
               border: 1px solid var(--border);
               border-radius: var(--radius-sm);
               display: flex; align-items: center; justify-content: center;
-              color: var(--pu); font-size: 0.95rem; flex-shrink: 0;
+              color: var(--sv1-primary); font-size: 0.95rem; flex-shrink: 0;
             }
 
-            .strip-title { font-weight: 700; font-size: 0.92rem; color: var(--pu-dark); }
+            .strip-title { font-weight: 700; font-size: 0.92rem; color: var(--sv1-primary-dark); }
 
             .strip-sub {
-              font-size: 0.76rem; color: var(--text-muted);
+              font-size: 0.76rem; color: var(--sv1-text-muted);
               display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;
             }
-            .strip-sub strong { color: var(--text); font-weight: 600; }
+            .strip-sub strong { color: var(--sv1-text-dark); font-weight: 600; }
 
             .badge-verified {
               display: inline-flex;
               align-items: center;
               gap: 0.4rem;
-              background: linear-gradient(135deg, #1a6b45, #22934f);
+              background: linear-gradient(135deg, var(--sv1-success), #0d9488);
               color: #fff;
               font-size: 0.73rem;
               font-weight: 700;
@@ -224,7 +233,7 @@ class ExamSlipView {
               padding: 0.42rem 1rem;
               border-radius: 50px;
               white-space: nowrap;
-              box-shadow: 0 2px 10px rgba(26,107,69,.3);
+              box-shadow: 0 2px 10px rgba(16,185,129,.3);
             }
 
             /* ── Content grid ────────────────────────────────────────────── */
@@ -250,7 +259,7 @@ class ExamSlipView {
 
             /* Header bar */
             .slip-header {
-              background: linear-gradient(135deg, var(--pu-dark) 0%, var(--pu) 60%, var(--pu-mid) 100%);
+              background: linear-gradient(135deg, var(--sv1-primary-dark) 0%, var(--sv1-primary) 60%, var(--sv1-primary-light) 100%);
               padding: 1.1rem 1.6rem;
               display: flex;
               align-items: center;
@@ -275,13 +284,13 @@ class ExamSlipView {
             }
 
             .slip-header-sub {
-              font-size: 0.74rem; color: rgba(255,255,255,.58); margin-top: 0.18rem;
+              font-size: 0.74rem; color: rgba(255,255,255,.7); margin-top: 0.18rem;
             }
 
             .slip-number-pill {
-              background: rgba(255,255,255,.13);
-              border: 1px solid rgba(255,255,255,.28);
-              color: rgba(255,255,255,.92);
+              background: rgba(201,164,74,0.2);
+              border: 1px solid rgba(201,164,74,0.3);
+              color: var(--sv1-gold-light);
               font-family: 'JetBrains Mono', monospace;
               font-size: 0.76rem;
               padding: 0.38rem 0.85rem;
@@ -323,7 +332,7 @@ class ExamSlipView {
               width: 125px; height: 125px;
               border-radius: var(--radius-sm);
               border: 2px solid var(--border);
-              background: var(--pu-pale);
+              background: var(--sv1-primary-soft);
               overflow: hidden;
               display: flex; align-items: center; justify-content: center;
             }
@@ -332,10 +341,10 @@ class ExamSlipView {
 
             .photo-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-            .no-photo { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; color: var(--pu-light); font-size: 0.7rem; }
+            .no-photo { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; color: var(--sv1-primary-light); font-size: 0.7rem; }
 
             .img-caption {
-              font-size: 0.68rem; color: var(--text-muted); text-align: center;
+              font-size: 0.68rem; color: var(--sv1-text-muted); text-align: center;
               display: flex; align-items: center; justify-content: center; gap: 0.3rem;
               text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500;
             }
@@ -361,7 +370,7 @@ class ExamSlipView {
               content: '';
               position: absolute;
               width: 12px; height: 12px;
-              border-color: var(--pu);
+              border-color: var(--sv1-primary);
               border-style: solid;
             }
             .qr-frame::before { top: 4px; left: 4px; border-width: 2px 0 0 2px; border-radius: 2px 0 0 0; }
@@ -374,13 +383,13 @@ class ExamSlipView {
             }
 
             .qr-error {
-              text-align: center; font-size: 0.68rem; color: var(--danger);
+              text-align: center; font-size: 0.68rem; color: var(--sv1-danger);
               line-height: 1.45; padding: 0.5rem;
             }
 
             /* Verify panel */
             .verify-panel {
-              background: linear-gradient(160deg, var(--pu-pale), #fff 70%);
+              background: linear-gradient(160deg, var(--sv1-primary-soft), #fff 70%);
               border: 1.5px solid var(--border);
               border-radius: var(--radius-sm);
               padding: 1rem 1.1rem;
@@ -389,15 +398,15 @@ class ExamSlipView {
 
             .verify-panel-title {
               font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-              letter-spacing: 0.07em; color: var(--pu);
+              letter-spacing: 0.07em; color: var(--sv1-primary);
               display: flex; align-items: center; gap: 0.4rem;
               padding-bottom: 0.55rem; border-bottom: 1px solid var(--border);
             }
 
             .verify-item { display: flex; align-items: flex-start; gap: 0.5rem; }
             .verify-item i { margin-top: 0.15rem; flex-shrink: 0; width: 14px; text-align: center; }
-            .vi-label { color: var(--text-muted); font-size: 0.68rem; line-height: 1; margin-bottom: 0.1rem; }
-            .vi-val   { color: var(--text); font-weight: 600; font-size: 0.8rem; }
+            .vi-label { color: var(--sv1-text-muted); font-size: 0.68rem; line-height: 1; margin-bottom: 0.1rem; }
+            .vi-val   { color: var(--sv1-text-dark); font-weight: 600; font-size: 0.8rem; }
             .mono     { font-family: 'JetBrains Mono', monospace; font-size: 0.73rem !important; letter-spacing: .02em; }
 
             /* ── O'Level Results Section ───────────────────────────────── */
@@ -409,7 +418,7 @@ class ExamSlipView {
             }
 
             .olevel-header {
-              background: linear-gradient(135deg, var(--pu-dark), var(--pu));
+              background: linear-gradient(135deg, var(--sv1-primary-dark), var(--sv1-primary));
               color: #fff;
               font-size: 0.85rem;
               font-weight: 700;
@@ -420,7 +429,8 @@ class ExamSlipView {
             }
 
             .olevel-status-badge {
-              background: rgba(255,255,255,0.2);
+              background: rgba(201,164,74,0.3);
+              color: var(--sv1-gold-light);
               padding: 0.3rem 0.9rem;
               border-radius: 50px;
               font-size: 0.7rem;
@@ -434,8 +444,8 @@ class ExamSlipView {
             }
 
             .olevel-table th {
-              background: var(--pu-pale);
-              color: var(--pu-dark);
+              background: var(--sv1-primary-soft);
+              color: var(--sv1-primary-dark);
               font-weight: 600;
               font-size: 0.7rem;
               text-transform: uppercase;
@@ -456,8 +466,8 @@ class ExamSlipView {
 
             .sitting-badge {
               display: inline-block;
-              background: var(--pu-pale);
-              color: var(--pu-dark);
+              background: var(--sv1-primary-soft);
+              color: var(--sv1-primary-dark);
               font-size: 0.65rem;
               font-weight: 700;
               padding: 0.2rem 0.6rem;
@@ -470,7 +480,7 @@ class ExamSlipView {
             .grade-poor { color: #c62828; font-weight: 500; }
 
             .credit-check {
-              background: <?php echo $creditsAchieved >= 5 ? '#edf9f3' : '#fff3e0'; ?>;
+              background: <?php echo $creditsAchieved >= 5 ? $green_bg : '#fff3e0'; ?>;
               padding: 0.8rem 1.2rem;
               font-size: 0.8rem;
               border-top: 1px solid var(--border);
@@ -481,7 +491,7 @@ class ExamSlipView {
 
             .credit-check i {
               font-size: 1rem;
-              color: <?php echo $creditsAchieved >= 5 ? '#1a6b45' : '#f57c00'; ?>;
+              color: <?php echo $creditsAchieved >= 5 ? $green : '#f57c00'; ?>;
             }
 
             /* ── Details table ───────────────────────────────────────────── */
@@ -499,8 +509,8 @@ class ExamSlipView {
             .details-table tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
 
             .details-table th {
-              background: var(--pu-pale);
-              color: var(--pu-dark);
+              background: var(--sv1-primary-soft);
+              color: var(--sv1-primary-dark);
               font-weight: 600;
               font-size: 0.72rem;
               text-transform: uppercase;
@@ -513,7 +523,7 @@ class ExamSlipView {
 
             .details-table td {
               padding: 0.78rem 1.1rem;
-              color: var(--text);
+              color: var(--sv1-text-dark);
               font-weight: 500;
               vertical-align: middle;
             }
@@ -525,41 +535,50 @@ class ExamSlipView {
             }
 
             /* Highlighted rows */
-            .row-exam-date th { background: var(--gold-pale); color: #7a540a; }
+            .row-exam-date th { background: var(--sv1-gold-pale); color: #7a540a; }
             .row-exam-date td { background: #fffbf0; font-weight: 700; font-size: 0.93rem; }
 
-            .row-seat th { background: var(--green-bg); color: var(--green); }
+            .row-seat th { background: var(--sv1-success-light); color: var(--sv1-success); }
             .row-seat td { background: #f2fbf6; }
 
-            .seat-num { font-size: 1.4rem; font-weight: 800; color: var(--green); line-height: 1; }
+            .seat-num { 
+              font-size: 1.4rem; 
+              font-weight: 800; 
+              color: var(--sv1-success); 
+              line-height: 1; 
+            }
 
             .badge-program {
               display: inline-flex; align-items: center;
-              background: var(--blue-bg); color: var(--blue);
-              border: 1px solid var(--blue-border);
-              border-radius: 50px; padding: 0.22rem 0.75rem;
-              font-size: 0.76rem; font-weight: 600;
+              background: var(--sv1-info-light); 
+              color: var(--sv1-info);
+              border: 1px solid var(--sv1-info);
+              border-radius: 50px; 
+              padding: 0.22rem 0.75rem;
+              font-size: 0.76rem; 
+              font-weight: 600;
             }
 
             .report-time {
               display: inline-flex; align-items: center; gap: 0.4rem;
-              color: var(--danger); font-weight: 600;
+              color: var(--sv1-danger); 
+              font-weight: 600;
             }
 
             /* ── Instructions ────────────────────────────────────────────── */
             .instructions {
               margin-top: 1.35rem;
-              background: var(--blue-bg);
-              border: 1.5px solid var(--blue-border);
+              background: var(--sv1-info-light);
+              border: 1.5px solid var(--sv1-info);
               border-radius: var(--radius-sm);
               padding: 1.1rem 1.3rem;
               display: flex; gap: 0.9rem;
             }
 
-            .instr-icon { color: var(--blue); font-size: 1.2rem; flex-shrink: 0; margin-top: 0.05rem; }
+            .instr-icon { color: var(--sv1-info); font-size: 1.2rem; flex-shrink: 0; margin-top: 0.05rem; }
 
             .instructions h5 {
-              font-size: 0.78rem; font-weight: 700; color: var(--blue);
+              font-size: 0.78rem; font-weight: 700; color: var(--sv1-info);
               margin-bottom: 0.55rem; text-transform: uppercase; letter-spacing: 0.05em;
             }
 
@@ -575,7 +594,7 @@ class ExamSlipView {
             }
 
             .slip-footer-line span {
-              font-size: 0.7rem; color: var(--text-muted);
+              font-size: 0.7rem; color: var(--sv1-text-muted);
               display: flex; align-items: center; gap: 0.3rem;
             }
 
@@ -592,7 +611,7 @@ class ExamSlipView {
 
             .side-card-label {
               font-size: 0.67rem; font-weight: 700; text-transform: uppercase;
-              letter-spacing: 0.09em; color: var(--pu);
+              letter-spacing: 0.09em; color: var(--sv1-primary);
               margin-bottom: 0.85rem; padding-bottom: 0.65rem;
               border-bottom: 1px solid var(--border);
             }
@@ -627,38 +646,38 @@ class ExamSlipView {
 
             /* PDF */
             .act-btn--pdf {
-              background: linear-gradient(135deg, var(--pu-dark), var(--pu));
+              background: linear-gradient(135deg, var(--sv1-primary-dark), var(--sv1-primary));
               color: #fff;
-              box-shadow: 0 2px 10px rgba(110,2,111,.28);
+              box-shadow: 0 2px 10px rgba(107,78,155,.28);
             }
-            .act-btn--pdf:hover { box-shadow: 0 4px 16px rgba(110,2,111,.4); color: #fff; }
+            .act-btn--pdf:hover { box-shadow: 0 4px 16px rgba(107,78,155,.4); color: #fff; }
             .act-btn--pdf .act-icon { background: rgba(255,255,255,.2); color: #fff; }
 
             /* Print */
             .act-btn--print {
-              background: linear-gradient(135deg, var(--pu-mid), var(--pu-light));
+              background: linear-gradient(135deg, var(--sv1-primary-light), var(--sv1-primary));
               color: #fff;
-              box-shadow: 0 2px 10px rgba(110,2,111,.2);
+              box-shadow: 0 2px 10px rgba(107,78,155,.2);
             }
-            .act-btn--print:hover { box-shadow: 0 4px 16px rgba(110,2,111,.32); color: #fff; }
+            .act-btn--print:hover { box-shadow: 0 4px 16px rgba(107,78,155,.32); color: #fff; }
             .act-btn--print .act-icon { background: rgba(255,255,255,.2); color: #fff; }
 
             /* Share */
             .act-btn--share {
-              background: var(--pu-pale);
-              color: var(--pu-dark);
+              background: var(--sv1-primary-soft);
+              color: var(--sv1-primary-dark);
               border: 1.5px solid var(--border);
             }
-            .act-btn--share:hover { background: var(--pu-bg); }
-            .act-btn--share .act-icon { background: var(--pu); color: #fff; }
+            .act-btn--share:hover { background: var(--sv1-primary-soft); }
+            .act-btn--share .act-icon { background: var(--sv1-primary); color: #fff; }
 
             /* Dashboard */
             .act-btn--dash {
-              background: #f8f5f8; color: var(--text-muted);
+              background: #f8f5f8; color: var(--sv1-text-muted);
               border: 1.5px solid var(--border);
             }
-            .act-btn--dash:hover { background: #f0e8f0; color: var(--text); }
-            .act-btn--dash .act-icon { background: var(--pu-bg); color: var(--pu-light); }
+            .act-btn--dash:hover { background: #f0e8f0; color: var(--sv1-text-dark); }
+            .act-btn--dash .act-icon { background: var(--sv1-primary-soft); color: var(--sv1-primary-light); }
 
             /* ── Copy group ──────────────────────────────────────────────── */
             .copy-group {
@@ -672,14 +691,14 @@ class ExamSlipView {
             .copy-group input {
               flex: 1; border: none; background: transparent;
               padding: 0.52rem 0.7rem;
-              font-size: 0.72rem; color: var(--text-muted);
+              font-size: 0.72rem; color: var(--sv1-text-muted);
               font-family: 'JetBrains Mono', monospace;
               outline: none; min-width: 0;
               overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
             }
 
             .copy-btn {
-              background: var(--pu); color: #fff; border: none;
+              background: var(--sv1-primary); color: #fff; border: none;
               padding: 0.52rem 0.85rem;
               font-size: 0.74rem; font-weight: 600; cursor: pointer;
               font-family: 'Outfit', sans-serif;
@@ -687,8 +706,8 @@ class ExamSlipView {
               white-space: nowrap; flex-shrink: 0;
               transition: background .15s;
             }
-            .copy-btn:hover  { background: var(--pu-dark); }
-            .copy-btn.copied { background: var(--green); }
+            .copy-btn:hover  { background: var(--sv1-primary-dark); }
+            .copy-btn.copied { background: var(--sv1-success); }
 
             /* ── Quick summary ───────────────────────────────────────────── */
             .summary-grid { display: flex; flex-direction: column; gap: 0.6rem; }
@@ -697,7 +716,7 @@ class ExamSlipView {
               display: flex; align-items: center; gap: 0.75rem;
               padding: 0.65rem 0.85rem;
               border-radius: var(--radius-sm);
-              background: var(--pu-pale);
+              background: var(--sv1-primary-soft);
               border: 1px solid var(--border);
             }
 
@@ -707,18 +726,29 @@ class ExamSlipView {
               font-size: 0.82rem; flex-shrink: 0;
             }
 
-            .si-date  .summary-item-icon { background: var(--gold-pale); color: var(--gold); }
-            .si-time  .summary-item-icon { background: var(--blue-bg);   color: var(--blue); }
-            .si-venue .summary-item-icon { background: var(--green-bg);  color: var(--green); }
-            .si-seat  .summary-item-icon { background: var(--pu-bg);     color: var(--pu); }
+            .si-date  .summary-item-icon { background: var(--sv1-gold-pale); color: var(--sv1-gold); }
+            .si-time  .summary-item-icon { background: var(--sv1-info-light);   color: var(--sv1-info); }
+            .si-venue .summary-item-icon { background: var(--sv1-success-light);  color: var(--sv1-success); }
+            .si-seat  .summary-item-icon { background: var(--sv1-primary-soft);     color: var(--sv1-primary); }
 
-            .si-name { font-size: 0.67rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
-            .si-val  { font-weight: 700; font-size: 0.86rem; color: var(--text); line-height: 1.3; }
+            .si-name { 
+              font-size: 0.67rem; 
+              color: var(--sv1-text-muted); 
+              font-weight: 500; 
+              text-transform: uppercase; 
+              letter-spacing: 0.04em; 
+            }
+            .si-val  { 
+              font-weight: 700; 
+              font-size: 0.86rem; 
+              color: var(--sv1-text-dark); 
+              line-height: 1.3; 
+            }
 
             /* ── O'Level Summary ───────────────────────────────────────── */
             .olevel-summary {
               margin-top: 0.5rem;
-              background: var(--pu-pale);
+              background: var(--sv1-primary-soft);
               border: 1px solid var(--border);
               border-radius: var(--radius-sm);
               padding: 0.8rem;
@@ -739,7 +769,7 @@ class ExamSlipView {
             .olevel-subject {
               font-size: 0.8rem;
               font-weight: 500;
-              color: var(--text);
+              color: var(--sv1-text-dark);
             }
 
             .olevel-grade {
@@ -752,12 +782,12 @@ class ExamSlipView {
             /* ── Toast ───────────────────────────────────────────────────── */
             .toast {
               position: fixed; top: 1.25rem; right: 1.25rem;
-              background: var(--green); color: #fff;
+              background: var(--sv1-success); color: #fff;
               padding: 0.72rem 1.25rem;
               border-radius: var(--radius-sm);
               font-size: 0.84rem; font-weight: 500;
               display: flex; align-items: center; gap: 0.5rem;
-              box-shadow: 0 4px 20px rgba(26,107,69,.35);
+              box-shadow: 0 4px 20px rgba(16,185,129,.35);
               z-index: 9999;
               animation: toastIn .2s ease;
               pointer-events: none;
@@ -777,8 +807,18 @@ class ExamSlipView {
               text-align: center;
               box-shadow: var(--shadow);
             }
-            .error-state h3 { font-size: 1.35rem; font-weight: 700; color: var(--pu-dark); margin: 1rem 0 0.75rem; }
-            .error-state p  { color: var(--text-muted); font-size: 0.86rem; max-width: 400px; margin: 0 auto 2rem; }
+            .error-state h3 { 
+              font-size: 1.35rem; 
+              font-weight: 700; 
+              color: var(--sv1-primary-dark); 
+              margin: 1rem 0 0.75rem; 
+            }
+            .error-state p  { 
+              color: var(--sv1-text-muted); 
+              font-size: 0.86rem; 
+              max-width: 400px; 
+              margin: 0 auto 2rem; 
+            }
             .error-actions  { display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap; }
 
             /* ── Print ───────────────────────────────────────────────────── */
@@ -868,21 +908,21 @@ class ExamSlipView {
                   <div class="verify-panel">
                     <div class="verify-panel-title"><i class="fas fa-shield-halved"></i> Verification Status</div>
                     <div class="verify-item">
-                      <i class="fas fa-circle-check" style="color:var(--green);"></i>
+                      <i class="fas fa-circle-check" style="color:var(--sv1-success);"></i>
                       <div>
                         <div class="vi-label">Payment</div>
-                        <div class="vi-val" style="color:var(--green);">Confirmed</div>
+                        <div class="vi-val" style="color:var(--sv1-success);">Confirmed</div>
                       </div>
                     </div>
                     <div class="verify-item">
-                      <i class="fas fa-hashtag" style="color:var(--pu);"></i>
+                      <i class="fas fa-hashtag" style="color:var(--sv1-primary);"></i>
                       <div>
                         <div class="vi-label">Slip Number</div>
                         <div class="vi-val mono"><?php echo $this->e($slipNum); ?></div>
                       </div>
                     </div>
                     <div class="verify-item">
-                      <i class="fas fa-clock" style="color:var(--blue);"></i>
+                      <i class="fas fa-clock" style="color:var(--sv1-info);"></i>
                       <div>
                         <div class="vi-label">Generated</div>
                         <div class="vi-val" style="font-size:.76rem;"><?php echo $this->e(date('d M Y, H:i', strtotime($exam_slip['generated_at'] ?? 'now'))); ?></div>
@@ -936,7 +976,7 @@ class ExamSlipView {
                             <td style="text-align: left; padding-left: 1.2rem;">
                               <?php echo $this->e($label); ?>
                               <?php if (in_array($key, $requiredSubjects)): ?>
-                                <span style="color: var(--text-muted); font-size: 0.65rem; margin-left: 0.3rem;">(Required)</span>
+                                <span style="color: var(--sv1-text-muted); font-size: 0.65rem; margin-left: 0.3rem;">(Required)</span>
                               <?php endif; ?>
                             </td>
                             <td style="text-align: center; width: 100px;">
@@ -948,7 +988,7 @@ class ExamSlipView {
                                   <?php endif; ?>
                                 </span>
                               <?php else: ?>
-                                <span style="color: var(--text-muted);">—</span>
+                                <span style="color: var(--sv1-text-muted);">—</span>
                               <?php endif; ?>
                             </td>
                           </tr>
@@ -964,10 +1004,10 @@ class ExamSlipView {
                     <div class="credit-check">
                       <i class="fas fa-<?php echo $creditsAchieved >= 5 ? 'check-circle' : 'exclamation-triangle'; ?>"></i>
                       <div>
-                        <strong style="color: <?php echo $creditsAchieved >= 5 ? '#1a6b45' : '#f57c00'; ?>;">
+                        <strong style="color: <?php echo $creditsAchieved >= 5 ? $green : '#f57c00'; ?>;">
                           <?php echo $creditsAchieved >= 5 ? '✓ O\'Level Requirement Met' : '⚠ O\'Level Requirement Not Met'; ?>
                         </strong>
-                        <span style="color: var(--text-muted); margin-left: 0.5rem;">
+                        <span style="color: var(--sv1-text-muted); margin-left: 0.5rem;">
                           <?php if ($creditsAchieved >= 5): ?>
                             <?php echo $creditsAchieved; ?>/5 credits achieved across <?php echo count($olevel_results); ?> sitting(s)
                           <?php else: ?>
@@ -978,7 +1018,7 @@ class ExamSlipView {
                     </div>
                     
                   <?php else: ?>
-                    <div style="padding: 1.5rem; text-align: center; color: var(--text-muted);">
+                    <div style="padding: 1.5rem; text-align: center; color: var(--sv1-text-muted);">
                       <i class="fas fa-file-circle-exclamation fa-2x" style="margin-bottom: 0.5rem;"></i>
                       <p>No O'Level results recorded</p>
                     </div>
@@ -990,7 +1030,7 @@ class ExamSlipView {
                   <tbody>
                     <tr>
                       <th>Slip Number</th>
-                      <td><span class="mono" style="color:var(--pu-dark);font-weight:700;"><?php echo $this->e($slipNum); ?></span></td>
+                      <td><span class="mono" style="color:var(--sv1-primary-dark);font-weight:700;"><?php echo $this->e($slipNum); ?></span></td>
                     </tr>
                     <tr>
                       <th>Application No.</th>
@@ -1088,7 +1128,7 @@ class ExamSlipView {
 
               <div class="side-card">
                 <div class="side-card-label">Verification Links</div>
-                <p style="font-size:.76rem;color:var(--text-muted);margin-bottom:.55rem;line-height:1.5;">Public verification page:</p>
+                <p style="font-size:.76rem;color:var(--sv1-text-muted);margin-bottom:.55rem;line-height:1.5;">Public verification page:</p>
                 <div class="copy-group" style="margin-bottom:.9rem;">
                   <input type="text" id="verificationLink"
                          value="<?php echo $this->e($verificationUrl); ?>"
@@ -1097,7 +1137,7 @@ class ExamSlipView {
                     <i class="fas fa-copy"></i> Copy
                   </button>
                 </div>
-                <p style="font-size:.76rem;color:var(--text-muted);margin-bottom:.55rem;line-height:1.5;">QR code image link:</p>
+                <p style="font-size:.76rem;color:var(--sv1-text-muted);margin-bottom:.55rem;line-height:1.5;">QR code image link:</p>
                 <div class="copy-group">
                   <input type="text" id="qrLink"
                          value="<?php echo $this->e($qrUrl); ?>"
@@ -1136,7 +1176,7 @@ class ExamSlipView {
                     <div class="summary-item-icon"><i class="fas fa-chair"></i></div>
                     <div>
                       <div class="si-name">Seat Number</div>
-                      <div class="si-val" style="color:var(--green);"><?php echo $this->e($exam_slip['seat_number'] ?? ''); ?></div>
+                      <div class="si-val" style="color:var(--sv1-success);"><?php echo $this->e($exam_slip['seat_number'] ?? ''); ?></div>
                     </div>
                   </div>
                 </div>
@@ -1176,7 +1216,7 @@ class ExamSlipView {
 
           <?php else: ?>
           <div class="error-state">
-            <i class="fas fa-triangle-exclamation fa-3x" style="color:var(--pu-light);"></i>
+            <i class="fas fa-triangle-exclamation fa-3x" style="color:var(--sv1-primary-light);"></i>
             <h3>Examination Slip Not Available</h3>
             <p>Your slip is still being generated. Please check back shortly or contact support if this persists.</p>
             <div class="error-actions">

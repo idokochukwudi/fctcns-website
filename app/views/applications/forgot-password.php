@@ -1,7 +1,7 @@
 <?php
 /**
  * Forgot Password View
- * Redesigned to match portal navy/gold design system.
+ * Redesigned to match JAMB verification page design system.
  *
  * @package FCTCNS
  */
@@ -47,14 +47,14 @@ class ForgotPasswordView {
             <link rel="preconnect" href="https://fonts.googleapis.com">
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
             
-            <!-- Google Fonts - NO SRI HASH (they change dynamically) -->
+            <!-- Google Fonts - Keep original fonts -->
             <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" 
                   rel="stylesheet"
                   crossorigin="anonymous">
             
             <!-- Font Awesome with CORRECT SRI hash -->
             <?php 
-            $faUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+            $faUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css';
             $faSri = SecurityHelper::getSriHash($faUrl);
             ?>
             <link rel="stylesheet" 
@@ -67,33 +67,50 @@ class ForgotPasswordView {
                 /* ── Reset ─────────────────────────────────────────────── */
                 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-                /* ── Tokens ─────────────────────────────────────────────── */
+                /* ── Tokens (Matching JAMB verification page) ───────────────── */
                 :root {
-                    --navy:        #0F1B35;
-                    --navy-mid:    #1A2D55;
-                    --navy-light:  #243E73;
-                    --gold:        #C8963A;
-                    --gold-light:  #E2B05F;
-                    --gold-pale:   #FDF6E9;
-                    --teal:        #1D8A7A;
-                    --teal-light:  #E8F7F5;
-                    --red:         #C0392B;
-                    --red-light:   #FDEEEC;
-                    --white:       #FFFFFF;
-                    --off-white:   #F8FAFD;
-                    --border:      #E2E8F4;
-                    --border-dark: #C8D3E8;
-                    --text-dark:   #0F1B35;
-                    --text-body:   #374160;
-                    --text-muted:  #7A86A0;
+                    --sv1-primary:       #6B4E9B;
+                    --sv1-primary-dark:  #4A3B6B;
+                    --sv1-primary-light: #8A6FB0;
+                    --sv1-primary-soft:  #F3EAF8;
+                    --sv1-gold:          #C9A44A;
+                    --sv1-gold-light:    #E2B05F;
+                    --sv1-gold-pale:     #FDF6E9;
+                    --sv1-success:       #10b981;
+                    --sv1-success-light: #d1fae5;
+                    --sv1-danger:        #ef4444;
+                    --sv1-danger-light:  #fee2e2;
+                    --sv1-warning:       #f59e0b;
+                    --sv1-warning-light: #fef3c7;
+                    --sv1-info:          #3b82f6;
+                    --sv1-info-light:    #dbeafe;
+                    --sv1-border:        #E9EDF2;
+                    --sv1-text-dark:     #1A1F2E;
+                    --sv1-text-muted:    #6B7280;
+                    
+                    /* Keep original fonts */
+                    --font-sans: 'DM Sans', -apple-system, sans-serif;
+                    --font-serif: 'Playfair Display', Georgia, serif;
+                    
+                    /* Borders */
+                    --sv1-radius-md:     12px;
+                    --sv1-radius-lg:     20px;
+                    --sv1-radius-xl:     30px;
+                    
+                    /* Shadows */
+                    --sv1-shadow-primary: 0 10px 30px rgba(107,78,155,0.3);
+                    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+                    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+                    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+                    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
                 }
 
-                /* ── Body ───────────────────────────────────────────────── */
+                /* ── Body / Page ─────────────────────────────────────────── */
                 html, body { height: 100%; }
 
                 body {
-                    font-family: 'DM Sans', -apple-system, sans-serif;
-                    background: var(--navy);
+                    font-family: var(--font-sans);
+                    background: linear-gradient(135deg, var(--sv1-primary-soft) 0%, #ffffff 100%);
                     min-height: 100vh;
                     display: flex;
                     align-items: center;
@@ -103,7 +120,7 @@ class ForgotPasswordView {
                     overflow-x: hidden;
                 }
 
-                /* Decorative rings */
+                /* Decorative background rings - updated with purple tones */
                 body::before,
                 body::after {
                     content: '';
@@ -113,12 +130,12 @@ class ForgotPasswordView {
                 }
                 body::before {
                     width: 600px; height: 600px;
-                    border: 1px solid rgba(200,150,58,0.08);
+                    border: 1px solid rgba(107,78,155,0.08);
                     top: -200px; right: -150px;
                 }
                 body::after {
                     width: 400px; height: 400px;
-                    border: 1px solid rgba(200,150,58,0.06);
+                    border: 1px solid rgba(107,78,155,0.06);
                     bottom: -150px; left: -100px;
                 }
 
@@ -129,79 +146,95 @@ class ForgotPasswordView {
                     margin: 0 auto;
                     position: relative;
                     z-index: 1;
-                    animation: rise 0.45s cubic-bezier(0.22,0.61,0.36,1) both;
+                    animation: fadeIn 0.5s ease-out;
                 }
 
-                @keyframes rise {
-                    from { opacity: 0; transform: translateY(20px); }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
                     to   { opacity: 1; transform: translateY(0); }
                 }
 
                 /* ── Card ────────────────────────────────────────────────── */
                 .forgot-card {
-                    background: var(--white);
-                    border-radius: 20px;
-                    overflow: hidden;
-                    box-shadow: 0 32px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+                    background: #ffffff;
+                    border-radius: var(--sv1-radius-xl);
+                    overflow: visible;
+                    box-shadow: var(--shadow-xl);
+                    border: 1px solid var(--sv1-border);
                 }
 
-                /* ── Card Header ─────────────────────────────────────────── */
+                /* ── Card Header (Purple gradient like JAMB page) ───────── */
                 .card-head {
-                    background: var(--navy-mid);
-                    padding: 32px 36px 28px;
+                    background: linear-gradient(135deg, var(--sv1-primary) 0%, var(--sv1-primary-dark) 100%);
+                    padding: 28px 36px 28px;
                     text-align: center;
                     position: relative;
-                    overflow: hidden;
+                    overflow: visible;
                 }
 
+                /* Gold top line accent */
                 .card-head::before {
                     content: '';
                     position: absolute;
                     top: 0; left: 0; right: 0;
                     height: 3px;
-                    background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
+                    background: linear-gradient(90deg, var(--sv1-gold), var(--sv1-gold-light), var(--sv1-gold));
                 }
 
+                /* Background texture */
                 .card-head::after {
                     content: '';
                     position: absolute;
                     inset: 0;
                     background-image: repeating-linear-gradient(
                         45deg, transparent, transparent 40px,
-                        rgba(255,255,255,0.012) 40px, rgba(255,255,255,0.012) 41px
+                        rgba(255,255,255,0.02) 40px, rgba(255,255,255,0.02) 41px
                     );
                     pointer-events: none;
                 }
 
-                .card-head-emblem {
+                /* Logo container */
+                .logo-container {
                     position: relative;
-                    z-index: 1;
-                    width: 56px; height: 56px;
-                    background: rgba(200,150,58,0.12);
-                    border: 1.5px solid rgba(200,150,58,0.35);
+                    z-index: 10;
+                    margin-top: 110px; /* Pushed down as requested */
+                    margin-bottom: 16px;
+                    display: flex;
+                    justify-content: center;
+                }
+
+                .college-logo {
+                    width: 90px;
+                    height: 90px;
                     border-radius: 50%;
-                    display: flex; align-items: center; justify-content: center;
-                    margin: 0 auto 14px;
-                    color: var(--gold-light);
-                    font-size: 1.3rem;
+                    background: white;
+                    padding: 8px;
+                    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+                    border: 3px solid var(--sv1-gold);
+                    object-fit: contain;
                 }
 
                 .card-head h1 {
                     position: relative;
                     z-index: 1;
-                    font-family: 'Playfair Display', Georgia, serif;
-                    font-size: 1.25rem;
+                    font-family: var(--font-serif);
+                    font-size: 1.35rem;
                     font-weight: 700;
-                    color: #fff;
-                    line-height: 1.3;
-                    margin-bottom: 6px;
+                    color: #FFFFFF;
+                    line-height: 1.4;
+                    margin-top: 15px;
+                    margin-bottom: 8px;
+                    letter-spacing: -0.01em;
+                    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
                 }
 
                 .card-head p {
                     position: relative;
                     z-index: 1;
                     font-size: 12px;
-                    color: rgba(255,255,255,0.45);
+                    font-weight: 500;
+                    color: rgba(255,255,255,0.9);
+                    letter-spacing: 0.5px;
                     margin: 0;
                     line-height: 1.5;
                 }
@@ -209,37 +242,37 @@ class ForgotPasswordView {
                 .card-head-rule {
                     position: relative;
                     z-index: 1;
-                    width: 36px;
-                    height: 2px;
-                    background: var(--gold);
-                    border-radius: 2px;
-                    margin: 12px auto 0;
+                    width: 50px;
+                    height: 3px;
+                    background: var(--sv1-gold);
+                    border-radius: 3px;
+                    margin: 15px auto 0;
                 }
 
                 /* ── Card Body ───────────────────────────────────────────── */
                 .card-body {
-                    padding: 32px 36px 28px;
+                    padding: 30px 36px 28px;
                 }
 
                 /* ── Info banner ─────────────────────────────────────────── */
                 .info-banner {
                     display: flex;
                     align-items: flex-start;
-                    gap: 10px;
-                    background: var(--off-white);
-                    border: 1px solid var(--border);
-                    border-left: 3px solid var(--gold);
-                    border-radius: 10px;
-                    padding: 12px 14px;
-                    margin-bottom: 22px;
-                    font-size: 13px;
-                    color: var(--text-body);
+                    gap: 12px;
+                    background: var(--sv1-primary-soft);
+                    border: 1px solid var(--sv1-primary-light);
+                    border-left: 4px solid var(--sv1-gold);
+                    border-radius: var(--sv1-radius-md);
+                    padding: 14px 16px;
+                    margin-bottom: 24px;
+                    font-size: 14px;
+                    color: var(--sv1-text-dark);
                     line-height: 1.5;
                 }
 
                 .info-banner i {
-                    color: var(--gold);
-                    font-size: .9rem;
+                    color: var(--sv1-gold);
+                    font-size: 1rem;
                     flex-shrink: 0;
                     margin-top: 1px;
                 }
@@ -248,56 +281,78 @@ class ForgotPasswordView {
                 .alert {
                     display: flex;
                     align-items: flex-start;
-                    gap: 10px;
-                    padding: 12px 14px;
-                    border-radius: 10px;
+                    gap: 12px;
+                    padding: 14px 16px;
+                    border-radius: var(--sv1-radius-md);
                     margin-bottom: 20px;
-                    font-size: 13.5px;
-                    border: 1px solid transparent;
-                    animation: popIn .3s ease;
+                    font-size: 14px;
+                    border-left-width: 4px;
+                    border-left-style: solid;
+                    animation: slideIn 0.3s ease;
                 }
 
-                @keyframes popIn {
+                @keyframes slideIn {
                     from { opacity: 0; transform: translateY(-6px); }
                     to   { opacity: 1; transform: translateY(0); }
                 }
 
-                .alert-danger  { background: var(--red-light);  border-color: rgba(192,57,43,.2);  color: #7f1d1d; }
-                .alert-success { background: var(--teal-light); border-color: rgba(29,138,122,.2); color: #134e42; }
-                .alert-info    { background: #EFF4FF;           border-color: rgba(37,99,235,.15); color: #1e3a8a; }
+                .alert-danger {
+                    background: var(--sv1-danger-light);
+                    border-color: var(--sv1-danger);
+                    color: #991b1b;
+                }
 
-                .alert i { font-size: .95rem; flex-shrink: 0; margin-top: 1px; }
-                .alert-danger  i { color: var(--red); }
-                .alert-success i { color: var(--teal); }
-                .alert-info    i { color: #2563EB; }
+                .alert-success {
+                    background: var(--sv1-success-light);
+                    border-color: var(--sv1-success);
+                    color: #065f46;
+                }
+
+                .alert-info {
+                    background: var(--sv1-info-light);
+                    border-color: var(--sv1-info);
+                    color: #1e40af;
+                }
+
+                .alert i { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+                .alert-danger i { color: var(--sv1-danger); }
+                .alert-success i { color: var(--sv1-success); }
+                .alert-info i { color: var(--sv1-info); }
 
                 .alert-close {
                     margin-left: auto;
                     background: none;
                     border: none;
                     cursor: pointer;
-                    color: inherit;
-                    opacity: .45;
+                    color: currentColor;
+                    opacity: 0.45;
                     font-size: 1rem;
                     line-height: 1;
-                    padding: 0;
+                    padding: 0 4px;
                     flex-shrink: 0;
                 }
-                .alert-close:hover { opacity: .9; }
+                .alert-close:hover { opacity: 1; }
 
                 /* ── Form ────────────────────────────────────────────────── */
-                .form-group { margin-bottom: 18px; }
+                .form-group { margin-bottom: 22px; }
 
                 .form-label {
-                    display: block;
-                    font-size: 12.5px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 13px;
                     font-weight: 600;
-                    color: var(--text-dark);
-                    margin-bottom: 6px;
-                    letter-spacing: .2px;
+                    color: var(--sv1-primary-dark);
+                    margin-bottom: 8px;
+                    letter-spacing: 0.2px;
                 }
 
-                .form-label .req { color: var(--red); margin-left: 2px; }
+                .form-label i {
+                    color: var(--sv1-primary);
+                    font-size: 0.85rem;
+                }
+
+                .form-label .req { color: var(--sv1-danger); margin-left: 2px; }
 
                 .input-wrap {
                     position: relative;
@@ -307,79 +362,96 @@ class ForgotPasswordView {
 
                 .input-wrap .input-icon {
                     position: absolute;
-                    left: 13px;
-                    color: var(--text-muted);
-                    font-size: .85rem;
+                    left: 14px;
+                    color: var(--sv1-text-muted);
+                    font-size: 0.9rem;
                     pointer-events: none;
                 }
 
                 .form-control {
                     width: 100%;
-                    padding: 11px 14px 11px 36px;
-                    border: 1.5px solid var(--border-dark);
-                    border-radius: 10px;
-                    font-size: 13.5px;
-                    font-family: 'DM Sans', sans-serif;
-                    color: var(--text-dark);
-                    background: var(--white);
-                    transition: border-color .2s, box-shadow .2s;
+                    padding: 14px 14px 14px 40px;
+                    border: 2px solid var(--sv1-border);
+                    border-radius: var(--sv1-radius-md);
+                    font-size: 15px;
+                    font-family: var(--font-sans);
+                    color: var(--sv1-text-dark);
+                    background: #ffffff;
+                    transition: all 0.2s ease;
                 }
 
-                .form-control::placeholder { color: var(--text-muted); font-size: 13px; }
+                .form-control::placeholder {
+                    color: var(--sv1-text-muted);
+                    font-size: 14px;
+                    opacity: 0.6;
+                }
 
                 .form-control:focus {
-                    border-color: var(--navy-mid);
-                    box-shadow: 0 0 0 3px rgba(26,45,85,.1);
+                    border-color: var(--sv1-primary);
+                    box-shadow: 0 0 0 4px var(--sv1-primary-soft);
                     outline: none;
                 }
 
                 .form-control.is-invalid {
-                    border-color: var(--red);
+                    border-color: var(--sv1-danger);
                     background: #fff8f8;
                 }
 
                 .invalid-msg {
-                    font-size: 11.5px;
-                    color: var(--red);
-                    margin-top: 4px;
+                    font-size: 12px;
+                    color: var(--sv1-danger);
+                    margin-top: 6px;
                     display: none;
+                    padding-left: 4px;
                 }
 
-                /* ── Submit button ───────────────────────────────────────── */
+                .form-control.is-invalid ~ .invalid-msg { display: block; }
+
+                /* ── Submit button (Matching JAMB page) ──────────────────── */
                 .btn-reset {
                     width: 100%;
-                    padding: 12px;
-                    background: var(--navy);
+                    padding: 15px;
+                    background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
                     color: #fff;
                     border: none;
-                    border-radius: 10px;
-                    font-family: 'DM Sans', sans-serif;
-                    font-size: .95rem;
+                    border-radius: var(--sv1-radius-md);
+                    font-family: var(--font-sans);
+                    font-size: 16px;
                     font-weight: 600;
                     cursor: pointer;
-                    display: flex; align-items: center; justify-content: center; gap: 8px;
-                    transition: all .25s;
-                    box-shadow: 0 4px 14px rgba(15,27,53,.25);
-                    letter-spacing: .2px;
-                    margin-top: 4px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    transition: all 0.2s ease;
+                    box-shadow: var(--sv1-shadow-primary);
+                    margin-top: 10px;
+                    letter-spacing: 0.3px;
                 }
 
                 .btn-reset:hover:not(:disabled) {
-                    background: var(--navy-light);
-                    transform: translateY(-1px);
-                    box-shadow: 0 8px 22px rgba(15,27,53,.3);
+                    transform: translateY(-2px);
+                    box-shadow: 0 15px 35px rgba(107,78,155,0.4);
                 }
 
-                .btn-reset:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+                .btn-reset:active:not(:disabled) {
+                    transform: translateY(0);
+                }
+
+                .btn-reset:disabled {
+                    opacity: 0.65;
+                    cursor: not-allowed;
+                }
 
                 /* ── Spinner ─────────────────────────────────────────────── */
                 .spinner {
                     display: inline-block;
-                    width: 14px; height: 14px;
-                    border: 2px solid rgba(255,255,255,.35);
+                    width: 16px; height: 16px;
+                    border: 2px solid rgba(255,255,255,0.4);
                     border-top-color: #fff;
                     border-radius: 50%;
-                    animation: spin .7s linear infinite;
+                    animation: spin 0.7s linear infinite;
+                    vertical-align: middle;
                 }
 
                 @keyframes spin { to { transform: rotate(360deg); } }
@@ -389,9 +461,9 @@ class ForgotPasswordView {
                     display: flex;
                     align-items: center;
                     gap: 12px;
-                    margin: 22px 0 18px;
-                    color: var(--text-muted);
-                    font-size: 12px;
+                    margin: 28px 0 22px;
+                    color: var(--sv1-text-muted);
+                    font-size: 13px;
                 }
 
                 .divider::before,
@@ -399,44 +471,48 @@ class ForgotPasswordView {
                     content: '';
                     flex: 1;
                     height: 1px;
-                    background: var(--border);
+                    background: linear-gradient(90deg, transparent, var(--sv1-border), transparent);
                 }
 
                 /* ── Secondary actions ───────────────────────────────────── */
                 .actions-block {
                     display: flex;
                     flex-direction: column;
-                    gap: 10px;
+                    gap: 12px;
                 }
 
                 .btn-outline {
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 7px;
+                    gap: 8px;
                     width: 100%;
-                    padding: 11px;
+                    padding: 14px;
                     background: transparent;
-                    color: var(--navy);
-                    border: 1.5px solid var(--border-dark);
-                    border-radius: 10px;
-                    font-family: 'DM Sans', sans-serif;
-                    font-size: .88rem;
+                    color: var(--sv1-primary);
+                    border: 2px solid var(--sv1-primary);
+                    border-radius: var(--sv1-radius-md);
+                    font-family: var(--font-sans);
+                    font-size: 15px;
                     font-weight: 600;
                     text-decoration: none;
                     cursor: pointer;
-                    transition: all .2s;
+                    transition: all 0.2s ease;
                 }
 
                 .btn-outline:hover {
-                    background: var(--off-white);
-                    border-color: var(--navy);
-                    color: var(--navy);
+                    background: var(--sv1-primary);
+                    color: #ffffff;
+                    transform: translateY(-2px);
+                }
+
+                .btn-outline:active {
+                    transform: translateY(0);
                 }
 
                 /* ── Return link ─────────────────────────────────────────── */
                 .page-foot {
-                    margin-top: 16px;
+                    margin-top: 20px;
                     text-align: center;
                 }
 
@@ -444,19 +520,97 @@ class ForgotPasswordView {
                     display: inline-flex;
                     align-items: center;
                     gap: 6px;
-                    font-size: 12.5px;
+                    font-size: 13px;
                     font-weight: 600;
-                    color: var(--gold);
+                    color: var(--sv1-primary);
                     text-decoration: none;
-                    transition: color .2s;
+                    transition: color 0.2s;
                 }
 
-                .page-foot a:hover { color: var(--gold-light); }
+                .page-foot a:hover {
+                    color: var(--sv1-primary-dark);
+                }
+
+                .page-foot a i {
+                    font-size: 0.7rem;
+                }
+
+                /* ── Toast notification ───────────────────────────────────── */
+                .toast-notification {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: var(--sv1-primary);
+                    color: white;
+                    padding: 14px 20px;
+                    border-radius: var(--sv1-radius-md);
+                    font-size: 14px;
+                    font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    box-shadow: var(--shadow-lg);
+                    z-index: 9999;
+                    animation: toastSlideIn 0.3s ease;
+                    border-left: 4px solid var(--sv1-gold);
+                }
+
+                @keyframes toastSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateX(100%);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(0);
+                    }
+                }
 
                 /* ── Responsive ──────────────────────────────────────────── */
                 @media (max-width: 480px) {
-                    .card-body { padding: 24px 22px 22px; }
-                    .card-head { padding: 26px 22px 22px; }
+                    body {
+                        padding: 12px;
+                    }
+                    
+                    .card-head {
+                        padding: 20px 22px 22px;
+                    }
+                    
+                    .logo-container {
+                        margin-top: 65px; /* Slightly smaller on mobile */
+                    }
+                    
+                    .college-logo {
+                        width: 80px;
+                        height: 80px;
+                    }
+                    
+                    .card-head h1 { 
+                        font-size: 1.2rem;
+                        margin-top: 15px;
+                    }
+                    
+                    .card-head p { 
+                        font-size: 10px; 
+                    }
+                    
+                    .card-body { 
+                        padding: 22px 22px 22px; 
+                    }
+                    
+                    .btn-reset {
+                        padding: 13px;
+                        font-size: 15px;
+                    }
+                    
+                    .btn-outline {
+                        padding: 12px;
+                        font-size: 14px;
+                    }
+                    
+                    .form-control {
+                        padding: 13px 13px 13px 38px;
+                    }
                 }
             </style>
         </head>
@@ -466,11 +620,14 @@ class ForgotPasswordView {
 
                 <div class="forgot-card">
 
-                    <!-- Header -->
+                    <!-- Header with Logo -->
                     <div class="card-head">
-                        <div class="card-head-emblem">
-                            <i class="fas fa-key"></i>
+                        
+                        <!-- Logo Container - pushed down with margin-top: 75px -->
+                        <div class="logo-container">
+                            <img src="/assets/images/logo/logo.png" alt="FCT College of Nursing Sciences Logo" class="college-logo">
                         </div>
+                        
                         <h1>Forgot Password</h1>
                         <p>Reset your password to regain access to your account</p>
                         <div class="card-head-rule"></div>
@@ -517,6 +674,7 @@ class ForgotPasswordView {
 
                             <div class="form-group">
                                 <label for="email" class="form-label">
+                                    <i class="fas fa-envelope"></i>
                                     Email Address <span class="req">*</span>
                                 </label>
                                 <div class="input-wrap">
@@ -561,7 +719,7 @@ class ForgotPasswordView {
                 <!-- Return to Home -->
                 <div class="page-foot">
                     <a href="/">
-                        <i class="fas fa-arrow-left" style="font-size:.7rem"></i> Return to Home
+                        <i class="fas fa-arrow-left"></i> Return to Home
                     </a>
                 </div>
 
@@ -572,11 +730,11 @@ class ForgotPasswordView {
             <!-- ========================================================= -->
             <script nonce="<?php echo $csp_nonce; ?>">
                 // ======================================================
-                // Forgot Password JavaScript with Security Enhancements
+                // Forgot Password JavaScript (Unchanged)
                 // ======================================================
                 
                 // Get CSRF token from meta tag
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
                 // Sanitize input to prevent XSS
                 function sanitizeInput(input) {
@@ -586,39 +744,17 @@ class ForgotPasswordView {
 
                 // Show toast notification
                 function showToast(msg, type = 'success') {
-                    // Remove existing toasts
                     document.querySelectorAll('.toast-notification').forEach(t => t.remove());
                     
-                    // Create toast element
                     const toast = document.createElement('div');
                     toast.className = 'toast-notification';
                     toast.setAttribute('role', 'alert');
-                    
-                    // Style toast
-                    toast.style.cssText = `
-                        position: fixed;
-                        top: 20px;
-                        right: 20px;
-                        background: ${type === 'success' ? '#1D8A7A' : '#C0392B'};
-                        color: white;
-                        padding: 12px 20px;
-                        border-radius: 8px;
-                        font-size: 14px;
-                        font-weight: 500;
-                        display: flex;
-                        align-items: center;
-                        gap: 10px;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                        z-index: 9999;
-                        animation: slideIn 0.3s ease;
-                    `;
                     
                     const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
                     toast.innerHTML = `<i class="fas ${icon}"></i> ${sanitizeInput(msg)}`;
                     
                     document.body.appendChild(toast);
                     
-                    // Auto remove after 3 seconds
                     setTimeout(() => {
                         toast.style.transition = 'opacity 0.3s, transform 0.3s';
                         toast.style.opacity = '0';
@@ -627,27 +763,7 @@ class ForgotPasswordView {
                     }, 3000);
                 }
 
-                // Add slide-in animation
-                const style = document.createElement('style');
-                style.textContent = `
-                    @keyframes slideIn {
-                        from {
-                            opacity: 0;
-                            transform: translateX(100%);
-                        }
-                        to {
-                            opacity: 1;
-                            transform: translateX(0);
-                        }
-                    }
-                `;
-                document.head.appendChild(style);
-
                 // Rate limiting for password reset requests
-                let resetAttempts = 0;
-                const maxAttempts = 3;
-                const lockoutTime = 30 * 60 * 1000; // 30 minutes
-                
                 function checkRateLimit() {
                     const attempts = parseInt(sessionStorage.getItem('resetAttempts') || '0');
                     const lockUntil = parseInt(sessionStorage.getItem('resetLockUntil') || '0');
@@ -657,8 +773,8 @@ class ForgotPasswordView {
                         return false;
                     }
                     
-                    if (attempts >= maxAttempts) {
-                        sessionStorage.setItem('resetLockUntil', Date.now() + lockoutTime);
+                    if (attempts >= 3) {
+                        sessionStorage.setItem('resetLockUntil', Date.now() + (30 * 60 * 1000));
                         showToast('Too many reset attempts. Locked for 30 minutes.', 'error');
                         return false;
                     }
@@ -667,8 +783,7 @@ class ForgotPasswordView {
                 }
 
                 // Form submission with validation
-                document.getElementById('forgotForm').addEventListener('submit', function (e) {
-                    // Check rate limit
+                document.getElementById('forgotForm')?.addEventListener('submit', function (e) {
                     if (!checkRateLimit()) {
                         e.preventDefault();
                         return;
@@ -679,25 +794,18 @@ class ForgotPasswordView {
                     const val       = email.value.trim();
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-                    // Sanitize email input
                     email.value = sanitizeInput(val);
-
-                    // Reset validation state
                     email.classList.remove('is-invalid');
                     errorMsg.style.display = 'none';
 
-                    // Validate email
                     if (!val || !emailRegex.test(val)) {
                         email.classList.add('is-invalid');
                         errorMsg.style.display = 'block';
                         e.preventDefault();
-                        
-                        // Scroll to error
                         email.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         return;
                     }
 
-                    // Verify CSRF token exists
                     if (!csrfToken) {
                         console.warn('CSRF token not found');
                         showToast('Security token missing. Please refresh.', 'error');
@@ -705,53 +813,52 @@ class ForgotPasswordView {
                         return;
                     }
 
-                    // Add timestamp to prevent caching
                     const timestamp = document.createElement('input');
                     timestamp.type = 'hidden';
                     timestamp.name = '_t';
                     timestamp.value = Date.now();
                     this.appendChild(timestamp);
 
-                    // Increment attempt counter
                     const attempts = parseInt(sessionStorage.getItem('resetAttempts') || '0');
                     sessionStorage.setItem('resetAttempts', attempts + 1);
 
-                    // Loading state
-                    document.getElementById('resetText').style.display   = 'none';
+                    document.getElementById('resetText').style.display = 'none';
                     document.getElementById('resetSpinner').style.display = 'inline-flex';
-                    document.getElementById('resetBtn').disabled          = true;
+                    document.getElementById('resetBtn').disabled = true;
                 });
 
-                // Auto-dismiss alerts after 5.5 s
+                // Auto-dismiss alerts
                 setTimeout(function () {
                     document.querySelectorAll('.alert').forEach(function (el) {
-                        el.style.transition = 'opacity .4s';
-                        el.style.opacity    = '0';
-                        setTimeout(function () { if (el.parentNode) el.remove(); }, 400);
+                        el.style.transition = 'opacity .4s, transform .4s';
+                        el.style.opacity = '0';
+                        el.style.transform = 'translateY(-10px)';
+                        setTimeout(function () { 
+                            if (el.parentNode) el.remove(); 
+                        }, 400);
                     });
                 }, 5500);
 
-                // Clear email value from session after use
                 <?php unset($_SESSION['email_value']); ?>
 
-                // Clear rate limiting on successful submission detection
                 if (document.querySelector('.alert-success')) {
-                    // If we see a success message, clear the rate limit counter
                     sessionStorage.removeItem('resetAttempts');
                     sessionStorage.removeItem('resetLockUntil');
                 }
 
-                // Handle back button cache
                 window.addEventListener('pageshow', function(event) {
                     if (event.persisted) {
-                        // Reset button state if coming from cache
                         document.getElementById('resetText').style.display = 'inline-flex';
                         document.getElementById('resetSpinner').style.display = 'none';
                         document.getElementById('resetBtn').disabled = false;
+                        
+                        const email = document.getElementById('email');
+                        if (email) {
+                            email.classList.remove('is-invalid');
+                        }
                     }
                 });
 
-                // Focus on email field on page load
                 document.addEventListener('DOMContentLoaded', function() {
                     const emailField = document.getElementById('email');
                     if (emailField && !emailField.value) {

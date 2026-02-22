@@ -2,13 +2,7 @@
 /**
  * Payment View - Step 3
  * Redesigned: Premium institutional design
- * FIXED: Removed HTML escaping from Remita payment URL
- * FIXED: Updated copy button to pass RRR directly
- * FIXED: Added payment button area for after RRR generation
- * FIXED: Moved CSRF inputs from head to body for valid HTML
- * FIXED: Updated both Remita URLs to correct format from support
- * FIXED: Using demo.remita.net for demo environment (not login.remita.net)
- * FIXED: Payment button appears immediately after RRR generation without refresh
+ * UPDATED: Purple color scheme matching JAMB verification page
  * 
  * @package FCTCNS
  * @version 2.6 (Security Enhanced + Instant Payment Button)
@@ -89,12 +83,15 @@ class PaymentView {
             *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
             html { scroll-behavior: smooth; }
 
-            /* ─── Tokens ─── */
+            /* ─── Tokens - Purple Theme Matching JAMB Page ─── */
             :root {
-                --navy:        #0B1D3A;
-                --navy-mid:    #152D56;
-                --navy-soft:   #1E3D6E;
-                --navy-ghost:  #EEF3FA;
+                --sv1-primary:       #6B4E9B;
+                --sv1-primary-dark:  #4A3B6B;
+                --sv1-primary-light: #8A6FB0;
+                --sv1-primary-soft:  #F3EAF8;
+                --sv1-gold:          #C9A44A;
+                --sv1-gold-light:    #E2B05F;
+                --sv1-gold-pale:     #FDF6E9;
 
                 --amber:       #D4860B;
                 --amber-light: #F2A830;
@@ -108,23 +105,23 @@ class PaymentView {
                 --grey-5: #4A5568;
                 --ink:    #1A2438;
 
-                --green:       #0E9462;
-                --green-pale:  #E6F7F1;
-                --red:         #D94F3A;
-                --red-pale:    #FDECEA;
-                --orange:      #E07B2A;
-                --orange-pale: #FEF0E2;
-                --blue:        #2563EB;
-                --blue-pale:   #EFF4FF;
+                --green:       #10b981;
+                --green-pale:  #d1fae5;
+                --red:         #ef4444;
+                --red-pale:    #fee2e2;
+                --orange:      #f59e0b;
+                --orange-pale: #fef3c7;
+                --blue:        #3b82f6;
+                --blue-pale:   #dbeafe;
 
                 --r-sm: 8px;
                 --r-md: 14px;
                 --r-lg: 20px;
                 --r-xl: 28px;
 
-                --sh-sm:  0 1px 4px rgba(11,29,58,.06), 0 2px 12px rgba(11,29,58,.04);
-                --sh-md:  0 4px 16px rgba(11,29,58,.08), 0 1px 4px rgba(11,29,58,.04);
-                --sh-lg:  0 12px 40px rgba(11,29,58,.10), 0 4px 12px rgba(11,29,58,.06);
+                --sh-sm:  0 1px 4px rgba(107,78,155,.06), 0 2px 12px rgba(107,78,155,.04);
+                --sh-md:  0 4px 16px rgba(107,78,155,.08), 0 1px 4px rgba(107,78,155,.04);
+                --sh-lg:  0 12px 40px rgba(107,78,155,.10), 0 4px 12px rgba(107,78,155,.06);
 
                 --font-display: 'DM Serif Display', Georgia, serif;
                 --font-body:    'DM Sans', system-ui, sans-serif;
@@ -137,7 +134,7 @@ class PaymentView {
             /* ─── Base ─── */
             body {
                 font-family: var(--font-body);
-                background: var(--grey-1);
+                background: var(--sv1-primary-soft);
                 color: var(--ink);
                 min-height: 100vh;
                 -webkit-font-smoothing: antialiased;
@@ -168,9 +165,9 @@ class PaymentView {
                 overflow: hidden;
             }
 
-            /* Card Header */
+            /* Card Header - Purple Gradient */
             .card-head {
-                background: var(--navy);
+                background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
                 padding: 2rem 2.5rem;
                 position: relative;
                 overflow: hidden;
@@ -190,7 +187,7 @@ class PaymentView {
                 right: 60px; bottom: -60px;
                 width: 160px; height: 160px;
                 border-radius: 50%;
-                background: rgba(212,134,11,0.08);
+                background: rgba(201,164,74,0.08);
                 pointer-events: none;
             }
             .card-head-content {
@@ -202,11 +199,11 @@ class PaymentView {
             }
             .card-head-icon {
                 width: 52px; height: 52px;
-                background: rgba(212,134,11,0.15);
-                border: 1px solid rgba(212,134,11,0.25);
+                background: rgba(201,164,74,0.15);
+                border: 1px solid rgba(201,164,74,0.25);
                 border-radius: var(--r-md);
                 display: flex; align-items: center; justify-content: center;
-                color: var(--amber-light);
+                color: var(--sv1-gold-light);
                 font-size: 1.3rem;
                 flex-shrink: 0;
             }
@@ -219,7 +216,7 @@ class PaymentView {
                 line-height: 1.1;
             }
             .card-head-sub {
-                color: rgba(255,255,255,0.45);
+                color: rgba(255,255,255,0.7);
                 font-size: 0.82rem;
                 margin-top: 4px;
                 font-weight: 400;
@@ -235,14 +232,14 @@ class PaymentView {
             }
             .app-badge-label {
                 font-size: 0.65rem;
-                color: rgba(255,255,255,0.35);
+                color: rgba(255,255,255,0.45);
                 text-transform: uppercase;
                 letter-spacing: .8px;
             }
             .app-badge-value {
                 font-family: var(--font-mono);
                 font-size: 0.82rem;
-                color: rgba(255,255,255,0.7);
+                color: rgba(255,255,255,0.8);
                 font-weight: 500;
             }
 
@@ -253,8 +250,8 @@ class PaymentView {
 
             /* ─── Fee Panel ─── */
             .fee-panel {
-                background: var(--navy-ghost);
-                border: 1px solid var(--grey-2);
+                background: var(--sv1-primary-soft);
+                border: 1px solid var(--sv1-border);
                 border-radius: var(--r-lg);
                 padding: 2rem;
                 display: flex;
@@ -264,11 +261,11 @@ class PaymentView {
             }
             .fee-icon {
                 width: 56px; height: 56px;
-                background: var(--amber-pale);
-                border: 1px solid rgba(212,134,11,0.2);
+                background: var(--sv1-gold-pale);
+                border: 1px solid rgba(201,164,74,0.2);
                 border-radius: var(--r-md);
                 display: flex; align-items: center; justify-content: center;
-                color: var(--amber);
+                color: var(--sv1-gold);
                 font-size: 1.4rem;
                 flex-shrink: 0;
             }
@@ -284,7 +281,7 @@ class PaymentView {
             .fee-amount {
                 font-family: var(--font-display);
                 font-size: 2.6rem;
-                color: var(--navy);
+                color: var(--sv1-primary-dark);
                 line-height: 1;
                 font-weight: 400;
             }
@@ -294,9 +291,9 @@ class PaymentView {
                 margin-top: 6px;
             }
             .fee-badge {
-                background: var(--amber-pale);
-                border: 1px solid rgba(212,134,11,0.2);
-                color: var(--amber);
+                background: var(--sv1-gold-pale);
+                border: 1px solid rgba(201,164,74,0.2);
+                color: var(--sv1-gold);
                 padding: 6px 14px;
                 border-radius: 100px;
                 font-size: 0.78rem;
@@ -333,12 +330,12 @@ class PaymentView {
             .step-num {
                 width: 22px; height: 22px;
                 border-radius: 50%;
-                background: var(--navy-ghost);
-                border: 1px solid var(--grey-2);
+                background: var(--sv1-primary-soft);
+                border: 1px solid var(--sv1-border);
                 display: flex; align-items: center; justify-content: center;
                 font-size: 0.7rem;
                 font-weight: 700;
-                color: var(--navy-soft);
+                color: var(--sv1-primary);
                 flex-shrink: 0;
                 margin-top: 1px;
             }
@@ -352,19 +349,36 @@ class PaymentView {
                 display: flex;
                 align-items: flex-start;
                 gap: .75rem;
-                border: 1px solid transparent;
+                border-left-width: 4px;
+                border-left-style: solid;
                 animation: fadeSlideIn .3s ease;
             }
             .alert i { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
-            .alert-success { background: var(--green-pale); border-color: rgba(14,148,98,.15); color: #065f46; }
-            .alert-danger   { background: var(--red-pale);   border-color: rgba(217,79,58,.15); color: #7f1d1d; }
-            .alert-warning  { background: var(--orange-pale); border-color: rgba(224,123,42,.15); color: #7c2d12; }
-            .alert-info     { background: var(--blue-pale);   border-color: rgba(37,99,235,.15); color: #1e3a8a; }
+            .alert-success { 
+                background: var(--green-pale); 
+                border-left-color: var(--green); 
+                color: #065f46; 
+            }
+            .alert-danger   { 
+                background: var(--red-pale);   
+                border-left-color: var(--red); 
+                color: #991b1b; 
+            }
+            .alert-warning  { 
+                background: var(--orange-pale); 
+                border-left-color: var(--orange); 
+                color: #92400e; 
+            }
+            .alert-info     { 
+                background: var(--blue-pale);   
+                border-left-color: var(--blue); 
+                color: #1e3a8a; 
+            }
 
             /* ─── Pending Payment ─── */
             .pending-box {
-                border: 1px solid rgba(224,123,42,.3);
-                background: var(--orange-pale);
+                border: 1px solid rgba(201,164,74,0.3);
+                background: var(--sv1-gold-pale);
                 border-radius: var(--r-lg);
                 padding: 1.5rem;
                 margin-bottom: 2rem;
@@ -377,19 +391,26 @@ class PaymentView {
             }
             .pending-icon {
                 width: 36px; height: 36px;
-                background: rgba(224,123,42,.15);
+                background: rgba(201,164,74,0.15);
                 border-radius: 8px;
                 display: flex; align-items: center; justify-content: center;
-                color: var(--orange);
+                color: var(--sv1-gold);
                 font-size: 1rem;
             }
-            .pending-title { font-weight: 600; color: #7c2d12; font-size: 0.95rem; }
-            .pending-sub   { font-size: 0.8rem; color: rgba(124,45,18,.7); }
+            .pending-title { 
+                font-weight: 600; 
+                color: var(--sv1-primary-dark); 
+                font-size: 0.95rem; 
+            }
+            .pending-sub   { 
+                font-size: 0.8rem; 
+                color: var(--sv1-text-muted); 
+            }
 
             /* ─── RRR Box ─── */
             .rrr-box {
-                background: var(--navy-ghost);
-                border: 1px dashed var(--grey-3);
+                background: var(--sv1-primary-soft);
+                border: 1px dashed var(--sv1-primary-light);
                 border-radius: var(--r-md);
                 padding: 1rem 1.25rem;
                 display: flex;
@@ -402,12 +423,12 @@ class PaymentView {
                 font-family: var(--font-mono);
                 font-size: 1.35rem;
                 font-weight: 500;
-                color: var(--navy);
+                color: var(--sv1-primary-dark);
                 letter-spacing: 3px;
                 word-break: break-all;
             }
             .rrr-copy-btn {
-                background: var(--navy);
+                background: var(--sv1-primary);
                 color: white;
                 border: none;
                 border-radius: var(--r-sm);
@@ -420,13 +441,13 @@ class PaymentView {
                 transition: background .2s;
                 flex-shrink: 0;
             }
-            .rrr-copy-btn:hover { background: var(--navy-mid); }
+            .rrr-copy-btn:hover { background: var(--sv1-primary-dark); }
 
-            /* ─── Buttons ─── */
+            /* ─── Buttons - Purple Theme ─── */
             .btn-primary {
                 width: 100%;
                 padding: 1rem 1.5rem;
-                background: var(--navy);
+                background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
                 color: white;
                 border: none;
                 border-radius: var(--r-md);
@@ -438,11 +459,12 @@ class PaymentView {
                 transition: all .25s;
                 text-decoration: none;
                 letter-spacing: .2px;
+                box-shadow: 0 4px 12px rgba(107,78,155,0.3);
             }
             .btn-primary:hover:not(:disabled) {
-                background: var(--navy-mid);
+                background: var(--sv1-primary-dark);
                 transform: translateY(-1px);
-                box-shadow: 0 6px 20px rgba(11,29,58,.2);
+                box-shadow: 0 8px 20px rgba(107,78,155,0.4);
             }
             .btn-primary:active { transform: translateY(0); }
             .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
@@ -462,15 +484,15 @@ class PaymentView {
                 transition: all .25s;
             }
             .btn-success:hover:not(:disabled) {
-                background: #0a7a52;
+                background: #0d9488;
                 transform: translateY(-1px);
-                box-shadow: 0 6px 20px rgba(14,148,98,.25);
+                box-shadow: 0 8px 20px rgba(16,185,129,0.3);
             }
             .btn-success:disabled { opacity: .55; cursor: not-allowed; }
 
             .btn-amber {
                 padding: .7rem 1.25rem;
-                background: var(--amber);
+                background: var(--sv1-gold);
                 color: white;
                 border: none;
                 border-radius: var(--r-sm);
@@ -483,15 +505,15 @@ class PaymentView {
                 text-decoration: none;
             }
             .btn-amber:hover {
-                background: #b87209;
+                background: var(--sv1-gold-light);
                 transform: translateY(-1px);
             }
 
             .btn-ghost {
                 padding: .7rem 1.25rem;
                 background: transparent;
-                color: var(--navy);
-                border: 1.5px solid var(--grey-2);
+                color: var(--sv1-primary);
+                border: 2px solid var(--sv1-border);
                 border-radius: var(--r-sm);
                 font-family: var(--font-body);
                 font-size: 0.88rem;
@@ -502,8 +524,9 @@ class PaymentView {
                 text-decoration: none;
             }
             .btn-ghost:hover {
-                border-color: var(--navy);
-                background: var(--navy-ghost);
+                border-color: var(--sv1-primary);
+                background: var(--sv1-primary-soft);
+                color: var(--sv1-primary-dark);
             }
 
             .action-stack {
@@ -521,8 +544,8 @@ class PaymentView {
 
             /* ─── Status Area ─── */
             .status-area {
-                background: var(--grey-1);
-                border: 1px solid var(--grey-2);
+                background: var(--sv1-primary-soft);
+                border: 1px solid var(--sv1-border);
                 border-radius: var(--r-md);
                 padding: 1.5rem;
                 text-align: center;
@@ -530,8 +553,8 @@ class PaymentView {
             }
             .spinner {
                 width: 36px; height: 36px;
-                border: 3px solid var(--grey-2);
-                border-top-color: var(--navy);
+                border: 3px solid var(--sv1-border);
+                border-top-color: var(--sv1-primary);
                 border-radius: 50%;
                 animation: spin .8s linear infinite;
                 margin: 0 auto 1rem;
@@ -543,7 +566,7 @@ class PaymentView {
             }
             .status-message {
                 font-size: 0.9rem;
-                color: var(--grey-5);
+                color: var(--sv1-text-dark);
                 font-weight: 500;
             }
 
@@ -555,7 +578,7 @@ class PaymentView {
             
             #paymentButtonArea .alert-warning {
                 background: var(--orange-pale);
-                border: 1px solid var(--orange);
+                border-left: 4px solid var(--orange);
                 border-radius: var(--r-md);
                 padding: 1.5rem;
             }
@@ -564,7 +587,7 @@ class PaymentView {
                 display: block;
                 width: 100%;
                 padding: 1rem 1.5rem;
-                background: var(--amber);
+                background: var(--sv1-gold);
                 color: white;
                 border: none;
                 border-radius: var(--r-md);
@@ -575,15 +598,15 @@ class PaymentView {
             }
             
             #paymentButtonArea .btn-amber:hover {
-                background: #b87209;
+                background: var(--sv1-gold-light);
                 transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(212,134,11,0.3);
+                box-shadow: 0 4px 12px rgba(201,164,74,0.3);
             }
 
             /* ─── Divider ─── */
             .divider {
                 height: 1px;
-                background: var(--grey-2);
+                background: var(--sv1-border);
                 margin: 2rem 0;
             }
 
@@ -604,8 +627,8 @@ class PaymentView {
                 gap: .75rem;
             }
             .support-item {
-                background: var(--grey-1);
-                border: 1px solid var(--grey-2);
+                background: var(--sv1-primary-soft);
+                border: 1px solid var(--sv1-border);
                 border-radius: var(--r-md);
                 padding: 1rem;
                 display: flex;
@@ -614,7 +637,7 @@ class PaymentView {
                 transition: border-color .2s, box-shadow .2s;
             }
             .support-item:hover {
-                border-color: var(--grey-3);
+                border-color: var(--sv1-primary-light);
                 box-shadow: var(--sh-sm);
             }
             .support-dot {
@@ -625,8 +648,8 @@ class PaymentView {
                 color: white;
                 flex-shrink: 0;
             }
-            .support-dot.phone    { background: var(--navy-soft); }
-            .support-dot.whatsapp { background: #1BA950; }
+            .support-dot.phone    { background: var(--sv1-primary); }
+            .support-dot.whatsapp { background: #25D366; }
             .support-dot.email    { background: var(--red); }
             .support-text {}
             .support-label {
@@ -640,7 +663,7 @@ class PaymentView {
             .support-value {
                 font-size: 0.85rem;
                 font-weight: 500;
-                color: var(--ink);
+                color: var(--sv1-text-dark);
                 line-height: 1.3;
                 word-break: break-word;
             }
@@ -648,16 +671,19 @@ class PaymentView {
             /* ─── Card Footer ─── */
             .card-foot {
                 padding: 1.25rem 2.5rem;
-                background: var(--grey-1);
-                border-top: 1px solid var(--grey-2);
+                background: var(--sv1-primary-soft);
+                border-top: 1px solid var(--sv1-border);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: .6rem;
                 font-size: 0.78rem;
-                color: var(--grey-4);
+                color: var(--sv1-text-muted);
             }
-            .card-foot i { font-size: 0.85rem; color: var(--green); }
+            .card-foot i { 
+                font-size: 0.85rem; 
+                color: var(--sv1-gold); 
+            }
 
             /* ─── Responsive ─── */
             @media (max-width: 768px) {
@@ -760,7 +786,7 @@ class PaymentView {
                                 </ol>
                             </div>
 
-                            <!-- Pending Payment Block - FIXED: Using demo URL -->
+                            <!-- Pending Payment Block -->
                             <?php if (isset($pending_payment) && $pending_payment): ?>
                             <div class="pending-box">
                                 <div class="pending-box-header">
@@ -777,7 +803,6 @@ class PaymentView {
                                     </button>
                                 </div>
                                 <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-                                    <!-- FIXED: Using demo.remita.net for demo environment -->
                                     <a href="https://demo.remita.net/remita/onepage/payment/init.reg?rrr=<?php echo urlencode($pending_payment['rrr']); ?>&channel=CARD,USSD,ENAIRA,TRANSFER"
                                        target="_blank" class="btn-amber">
                                         <i class="fas fa-external-link-alt"></i> Complete Payment (Demo)
@@ -798,7 +823,7 @@ class PaymentView {
                                         <i class="fas fa-copy"></i> Copy
                                     </button>
                                 </div>
-                                <p style="font-size:.8rem;color:var(--grey-4);display:flex;align-items:center;gap:5px">
+                                <p style="font-size:.8rem;color:var(--sv1-text-muted);display:flex;align-items:center;gap:5px">
                                     <i class="fas fa-info-circle"></i>
                                     Save this RRR in case you need to verify your payment later.
                                 </p>

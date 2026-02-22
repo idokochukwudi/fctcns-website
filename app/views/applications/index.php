@@ -3,6 +3,7 @@
  * Home / Landing Page View
  * Fully Responsive Design with Professional Aesthetics
  * FIXED: Applied consistent security pattern with SecurityTrait
+ * UPDATED: Purple color scheme matching JAMB verification page
  * 
  * @package FCTCNS
  * @version 2.0 (Security Enhanced)
@@ -93,20 +94,26 @@ class HomeView {
 
             /* ── Design System with Responsive Variables ─────────────────────── */
             :root {
-                /* Primary Colors - Minimal Purple Accent */
-                --purple-50:   #faf5ff;
-                --purple-100:  #f3e8ff;
-                --purple-200:  #e9d5ff;
-                --purple-300:  #d8b4fe;
-                --purple-400:  #c084fc;
-                --purple-500:  #a855f7;
-                --purple-600:  #9333ea;
-                --purple-700:  #7e22ce;
-                --purple-800:  #6b21a5;
-                --purple-900:  #581c87;
-                --purple-950:  #3b0764;
+                /* Purple Palette - Matching JAMB verification page */
+                --sv1-primary:       #6B4E9B;
+                --sv1-primary-dark:  #4A3B6B;
+                --sv1-primary-light: #8A6FB0;
+                --sv1-primary-soft:  #F3EAF8;
+                --sv1-gold:          #C9A44A;
+                --sv1-gold-light:    #E2B05F;
+                --sv1-success:       #10b981;
+                --sv1-success-light: #d1fae5;
+                --sv1-danger:        #ef4444;
+                --sv1-danger-light:  #fee2e2;
+                --sv1-warning:       #f59e0b;
+                --sv1-warning-light: #fef3c7;
+                --sv1-info:          #3b82f6;
+                --sv1-info-light:    #dbeafe;
+                --sv1-border:        #E9EDF2;
+                --sv1-text-dark:     #1A1F2E;
+                --sv1-text-muted:    #6B7280;
                 
-                /* Neutral Palette - Professional Grays */
+                /* Neutral Palette - Professional Grays (keep for backgrounds) */
                 --gray-50:  #fafafa;
                 --gray-100: #f5f5f5;
                 --gray-200: #e5e5e5;
@@ -117,21 +124,6 @@ class HomeView {
                 --gray-700: #404040;
                 --gray-800: #262626;
                 --gray-900: #171717;
-                
-                /* Success/Emerald */
-                --success-50:  #f0fdf4;
-                --success-500: #22c55e;
-                --success-600: #059669;
-                
-                /* Error/Red */
-                --error-50:    #fef2f2;
-                --error-500:   #ef4444;
-                --error-600:   #dc2626;
-                
-                /* Warning/Amber */
-                --warning-50:  #fffbeb;
-                --warning-500: #f59e0b;
-                --warning-600: #d97706;
                 
                 /* Typography */
                 --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -145,16 +137,13 @@ class HomeView {
                 --space-xl: clamp(2rem, 4vw, 2.5rem);
                 --space-2xl: clamp(2.5rem, 5vw, 3rem);
                 
-                /* Border Radius */
-                --radius-sm: clamp(4px, 0.5vw, 6px);
-                --radius-md: clamp(6px, 0.75vw, 8px);
-                --radius-lg: clamp(8px, 1vw, 12px);
-                --radius-xl: clamp(12px, 1.5vw, 16px);
-                --radius-2xl: clamp(16px, 2vw, 20px);
-                --radius-full: 9999px;
+                /* Border Radius - Matching JAMB page */
+                --sv1-radius-md:     12px;
+                --sv1-radius-lg:     20px;
+                --sv1-radius-xl:     30px;
                 
                 /* Shadows */
-                --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+                --sv1-shadow-primary: 0 10px 30px rgba(107,78,155,0.3);
                 --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
                 --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
                 --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -175,8 +164,8 @@ class HomeView {
 
             /* ── Hero Section ──────────────────────────────────────────────────── */
             .hp-hero {
-                background: linear-gradient(135deg, var(--gray-900) 0%, var(--gray-800) 100%);
-                border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+                background: linear-gradient(135deg, var(--sv1-primary-dark) 0%, var(--sv1-primary) 100%);
+                border-radius: var(--sv1-radius-xl) var(--sv1-radius-xl) 0 0;
                 padding: var(--space-2xl) var(--space-lg);
                 margin: -36px -40px var(--space-lg);
                 text-align: center;
@@ -189,7 +178,7 @@ class HomeView {
                 .hp-hero {
                     margin: -24px -20px var(--space-md);
                     padding: var(--space-xl) var(--space-md);
-                    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+                    border-radius: var(--sv1-radius-lg) var(--sv1-radius-lg) 0 0;
                 }
             }
 
@@ -207,7 +196,7 @@ class HomeView {
                 right: -20%;
                 width: min(600px, 80vw);
                 height: min(600px, 80vw);
-                background: radial-gradient(circle, rgba(124, 117, 224, 0.1) 0%, transparent 70%);
+                background: radial-gradient(circle, rgba(201,164,74,0.1) 0%, transparent 70%);
                 border-radius: 50%;
                 z-index: -1;
             }
@@ -219,7 +208,7 @@ class HomeView {
                 left: -10%;
                 width: min(400px, 60vw);
                 height: min(400px, 60vw);
-                background: radial-gradient(circle, rgba(124, 117, 224, 0.08) 0%, transparent 70%);
+                background: radial-gradient(circle, rgba(201,164,74,0.08) 0%, transparent 70%);
                 border-radius: 50%;
                 z-index: -1;
             }
@@ -229,7 +218,7 @@ class HomeView {
                 align-items: center;
                 gap: 6px;
                 padding: clamp(4px, 1vw, 6px) clamp(12px, 2vw, 16px);
-                border-radius: var(--radius-full);
+                border-radius: 9999px;
                 font-family: var(--font-sans);
                 font-size: clamp(11px, 2vw, 13px);
                 font-weight: 600;
@@ -237,8 +226,8 @@ class HomeView {
                 text-transform: uppercase;
                 margin-bottom: var(--space-md);
                 backdrop-filter: blur(4px);
-                background: <?php echo $isOpen ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'; ?>;
-                border: 1px solid <?php echo $isOpen ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'; ?>;
+                background: <?php echo $isOpen ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'; ?>;
+                border: 1px solid <?php echo $isOpen ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'; ?>;
                 color: <?php echo $isOpen ? '#10B981' : '#EF4444'; ?>;
             }
 
@@ -266,12 +255,13 @@ class HomeView {
                 margin-left: auto;
                 margin-right: auto;
                 padding: 0 var(--space-sm);
+                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
             }
 
             .hp-hero-rule {
                 width: clamp(60px, 10vw, 80px);
                 height: 3px;
-                background: linear-gradient(90deg, transparent, var(--purple-400), var(--purple-600), var(--purple-400), transparent);
+                background: linear-gradient(90deg, transparent, var(--sv1-gold), var(--sv1-gold-light), var(--sv1-gold), transparent);
                 border-radius: 3px;
                 margin: var(--space-md) auto;
             }
@@ -279,7 +269,7 @@ class HomeView {
             .hp-hero-sub {
                 font-family: var(--font-sans);
                 font-size: clamp(0.9rem, 2.5vw, 1.1rem);
-                color: var(--gray-400);
+                color: rgba(255,255,255,0.9);
                 margin: 0 auto;
                 max-width: 600px;
                 padding: 0 var(--space-md);
@@ -291,8 +281,8 @@ class HomeView {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
                 gap: 1px;
-                background: var(--gray-200);
-                border-radius: var(--radius-lg);
+                background: var(--sv1-border);
+                border-radius: var(--sv1-radius-lg);
                 overflow: hidden;
                 margin-bottom: var(--space-lg);
                 box-shadow: var(--shadow-sm);
@@ -302,7 +292,7 @@ class HomeView {
                 .hp-stats {
                     grid-template-columns: 1fr;
                     gap: 1px;
-                    border-radius: var(--radius-md);
+                    border-radius: var(--sv1-radius-md);
                 }
             }
 
@@ -329,14 +319,14 @@ class HomeView {
                 font-family: var(--font-serif);
                 font-size: clamp(1.5rem, 4vw, 2.2rem);
                 font-weight: 600;
-                color: var(--gray-900);
+                color: var(--sv1-text-dark);
                 line-height: 1;
                 margin-bottom: var(--space-xs);
             }
 
             .hp-stat-val em {
                 font-style: normal;
-                color: var(--purple-600);
+                color: var(--sv1-primary);
             }
 
             .hp-stat-lbl {
@@ -345,7 +335,7 @@ class HomeView {
                 font-weight: 500;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
-                color: var(--gray-500);
+                color: var(--sv1-text-muted);
             }
 
             /* ── Info Grid ─────────────────────────────────────────────────────── */
@@ -365,8 +355,8 @@ class HomeView {
 
             .hp-card {
                 background: white;
-                border: 1px solid var(--gray-200);
-                border-radius: var(--radius-lg);
+                border: 1px solid var(--sv1-border);
+                border-radius: var(--sv1-radius-lg);
                 overflow: hidden;
                 box-shadow: var(--shadow-sm);
                 transition: all 0.2s ease;
@@ -374,8 +364,8 @@ class HomeView {
             }
 
             .hp-card:hover {
-                border-color: var(--purple-300);
-                box-shadow: var(--shadow-lg);
+                border-color: var(--sv1-primary-light);
+                box-shadow: var(--sv1-shadow-primary);
             }
 
             .hp-card-head {
@@ -383,8 +373,8 @@ class HomeView {
                 align-items: center;
                 gap: var(--space-sm);
                 padding: var(--space-md) var(--space-lg);
-                background: linear-gradient(135deg, var(--gray-50), white);
-                border-bottom: 1px solid var(--gray-200);
+                background: linear-gradient(135deg, var(--sv1-primary-soft), white);
+                border-bottom: 1px solid var(--sv1-border);
             }
 
             @media (max-width: 480px) {
@@ -396,12 +386,12 @@ class HomeView {
             .hp-card-icon {
                 width: clamp(36px, 5vw, 40px);
                 height: clamp(36px, 5vw, 40px);
-                background: var(--purple-100);
-                border-radius: var(--radius-md);
+                background: var(--sv1-primary-soft);
+                border-radius: var(--sv1-radius-md);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                color: var(--purple-600);
+                color: var(--sv1-primary);
                 font-size: clamp(0.9rem, 2vw, 1rem);
                 flex-shrink: 0;
             }
@@ -410,7 +400,7 @@ class HomeView {
                 font-family: var(--font-serif);
                 font-size: clamp(1rem, 2.5vw, 1.1rem);
                 font-weight: 600;
-                color: var(--gray-800);
+                color: var(--sv1-text-dark);
                 margin: 0;
             }
 
@@ -429,7 +419,7 @@ class HomeView {
                 align-items: baseline;
                 gap: var(--space-xs);
                 padding: var(--space-sm) 0;
-                border-bottom: 1px solid var(--gray-100);
+                border-bottom: 1px solid var(--sv1-border);
                 font-family: var(--font-sans);
                 font-size: clamp(0.85rem, 2vw, 0.95rem);
             }
@@ -450,7 +440,7 @@ class HomeView {
 
             .hp-row-lbl {
                 font-weight: 500;
-                color: var(--gray-600);
+                color: var(--sv1-text-muted);
                 white-space: nowrap;
                 flex-shrink: 0;
                 min-width: clamp(90px, 15vw, 100px);
@@ -462,12 +452,12 @@ class HomeView {
                     min-width: auto;
                     white-space: normal;
                     font-weight: 600;
-                    color: var(--gray-700);
+                    color: var(--sv1-primary-dark);
                 }
             }
 
             .hp-row-val {
-                color: var(--gray-800);
+                color: var(--sv1-text-dark);
                 line-height: 1.5;
                 font-weight: 400;
                 word-break: break-word;
@@ -479,7 +469,7 @@ class HomeView {
                 align-items: center;
                 gap: 4px;
                 padding: clamp(2px, 1vw, 4px) clamp(8px, 2vw, 12px);
-                border-radius: var(--radius-full);
+                border-radius: 9999px;
                 font-size: clamp(0.8rem, 2vw, 0.85rem);
                 font-weight: 600;
                 font-family: var(--font-sans);
@@ -487,15 +477,15 @@ class HomeView {
             }
 
             .status-pill.open {
-                background: var(--success-50);
-                color: var(--success-600);
-                border-color: var(--success-200);
+                background: var(--sv1-success-light);
+                color: var(--sv1-success);
+                border-color: var(--sv1-success);
             }
 
             .status-pill.closed {
-                background: var(--error-50);
-                color: var(--error-600);
-                border-color: var(--error-200);
+                background: var(--sv1-danger-light);
+                color: var(--sv1-danger);
+                border-color: var(--sv1-danger);
             }
 
             /* Eligibility list */
@@ -514,7 +504,7 @@ class HomeView {
                 gap: var(--space-xs);
                 font-family: var(--font-sans);
                 font-size: clamp(0.85rem, 2vw, 0.9rem);
-                color: var(--gray-600);
+                color: var(--sv1-text-muted);
                 line-height: 1.5;
             }
 
@@ -528,9 +518,9 @@ class HomeView {
                 content: '✓';
                 width: clamp(18px, 3vw, 20px);
                 height: clamp(18px, 3vw, 20px);
-                background: var(--purple-100);
-                color: var(--purple-600);
-                border-radius: var(--radius-full);
+                background: var(--sv1-primary-soft);
+                color: var(--sv1-primary);
+                border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -543,8 +533,8 @@ class HomeView {
             /* ── Process Section ───────────────────────────────────────────────── */
             .hp-process {
                 background: white;
-                border: 1px solid var(--gray-200);
-                border-radius: var(--radius-lg);
+                border: 1px solid var(--sv1-border);
+                border-radius: var(--sv1-radius-lg);
                 overflow: hidden;
                 margin-bottom: var(--space-lg);
                 box-shadow: var(--shadow-sm);
@@ -555,8 +545,8 @@ class HomeView {
                 align-items: center;
                 gap: var(--space-sm);
                 padding: var(--space-md) var(--space-lg);
-                background: linear-gradient(135deg, var(--gray-50), white);
-                border-bottom: 1px solid var(--gray-200);
+                background: linear-gradient(135deg, var(--sv1-primary-soft), white);
+                border-bottom: 1px solid var(--sv1-border);
             }
 
             @media (max-width: 480px) {
@@ -568,8 +558,8 @@ class HomeView {
             .hp-process-icon {
                 width: clamp(32px, 4vw, 36px);
                 height: clamp(32px, 4vw, 36px);
-                background: var(--purple-600);
-                border-radius: var(--radius-md);
+                background: var(--sv1-primary);
+                border-radius: var(--sv1-radius-md);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -582,7 +572,7 @@ class HomeView {
                 font-family: var(--font-serif);
                 font-size: clamp(1rem, 2.5vw, 1.1rem);
                 font-weight: 600;
-                color: var(--gray-800);
+                color: var(--sv1-text-dark);
                 margin: 0;
             }
 
@@ -628,9 +618,9 @@ class HomeView {
                 height: 2px;
                 background: linear-gradient(90deg, 
                     transparent,
-                    var(--gray-300) 10%,
-                    var(--purple-300) 50%,
-                    var(--gray-300) 90%,
+                    var(--sv1-border) 10%,
+                    var(--sv1-primary-light) 50%,
+                    var(--sv1-border) 90%,
                     transparent
                 );
                 z-index: 0;
@@ -678,7 +668,7 @@ class HomeView {
             .hp-step-num {
                 width: clamp(48px, 6vw, 56px);
                 height: clamp(48px, 6vw, 56px);
-                border-radius: var(--radius-full);
+                border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -701,38 +691,38 @@ class HomeView {
             }
 
             .hp-step-num.s1 {
-                background: linear-gradient(135deg, var(--purple-600), var(--purple-700));
+                background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
                 color: white;
-                box-shadow: 0 4px 12px rgba(124, 117, 224, 0.3);
+                box-shadow: var(--sv1-shadow-primary);
             }
 
             .hp-step-num.s2,
             .hp-step-num.s3,
             .hp-step-num.s4,
             .hp-step-num.s5 {
-                background: var(--gray-100);
-                color: var(--gray-600);
-                border: 2px solid var(--gray-200);
+                background: var(--sv1-primary-soft);
+                color: var(--sv1-primary);
+                border: 2px solid var(--sv1-primary-light);
             }
 
             .hp-step-title {
                 font-family: var(--font-sans);
                 font-size: clamp(0.85rem, 2vw, 0.9rem);
                 font-weight: 600;
-                color: var(--gray-800);
+                color: var(--sv1-text-dark);
                 margin-bottom: 2px;
             }
 
             .hp-step-sub {
                 font-family: var(--font-sans);
                 font-size: clamp(0.7rem, 1.8vw, 0.75rem);
-                color: var(--gray-500);
+                color: var(--sv1-text-muted);
                 line-height: 1.4;
             }
 
             /* ── CTA Section ───────────────────────────────────────────────────── */
             .hp-cta {
-                border-top: 1px solid var(--gray-200);
+                border-top: 1px solid var(--sv1-border);
                 padding-top: var(--space-lg);
                 display: flex;
                 flex-direction: column;
@@ -749,16 +739,16 @@ class HomeView {
                 width: fit-content;
                 min-width: clamp(240px, 50vw, 300px);
                 padding: clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 4vw, 3rem);
-                background: linear-gradient(135deg, var(--purple-600), var(--purple-700));
+                background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
                 color: white;
                 border: none;
-                border-radius: var(--radius-full);
+                border-radius: 9999px;
                 font-family: var(--font-sans);
                 font-size: clamp(0.9rem, 2.5vw, 1rem);
                 font-weight: 600;
                 text-decoration: none;
                 transition: all 0.3s ease;
-                box-shadow: 0 4px 16px rgba(124, 117, 224, 0.3);
+                box-shadow: var(--sv1-shadow-primary);
                 letter-spacing: 0.3px;
                 cursor: pointer;
             }
@@ -773,16 +763,17 @@ class HomeView {
 
             .hp-cta-btn:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 8px 24px rgba(124, 117, 224, 0.4);
-                background: linear-gradient(135deg, var(--purple-700), var(--purple-800));
+                box-shadow: 0 15px 35px rgba(107,78,155,0.4);
+                background: linear-gradient(135deg, var(--sv1-primary-dark), var(--sv1-primary));
             }
 
             .hp-cta-btn.disabled {
-                background: var(--gray-300);
+                background: var(--sv1-border);
                 box-shadow: none;
                 cursor: not-allowed;
                 opacity: 0.6;
                 pointer-events: none;
+                color: var(--sv1-text-muted);
             }
 
             .hp-cta-links {
@@ -803,7 +794,7 @@ class HomeView {
             .hp-cta-link {
                 font-family: var(--font-sans);
                 font-size: clamp(0.85rem, 2vw, 0.9rem);
-                color: var(--gray-500);
+                color: var(--sv1-text-muted);
             }
 
             @media (max-width: 480px) {
@@ -813,17 +804,17 @@ class HomeView {
             }
 
             .hp-cta-link a {
-                color: var(--purple-600);
+                color: var(--sv1-primary);
                 font-weight: 600;
                 text-decoration: none;
-                border-bottom: 1px solid var(--purple-200);
+                border-bottom: 1px solid var(--sv1-primary-light);
                 padding-bottom: 1px;
                 transition: all 0.2s ease;
             }
 
             .hp-cta-link a:hover {
-                color: var(--purple-700);
-                border-color: var(--purple-600);
+                color: var(--sv1-primary-dark);
+                border-color: var(--sv1-primary-dark);
             }
 
             /* ── Notice Banner ─────────────────────────────────────────────────── */
@@ -831,15 +822,15 @@ class HomeView {
                 display: flex;
                 align-items: flex-start;
                 gap: var(--space-sm);
-                background: var(--warning-50);
-                border: 1px solid var(--warning-200);
-                border-left: 4px solid var(--warning-500);
-                border-radius: var(--radius-lg);
+                background: var(--sv1-warning-light);
+                border: 1px solid var(--sv1-warning);
+                border-left: 4px solid var(--sv1-warning);
+                border-radius: var(--sv1-radius-lg);
                 padding: var(--space-md) var(--space-lg);
                 margin-bottom: var(--space-lg);
                 font-family: var(--font-sans);
                 font-size: clamp(0.85rem, 2vw, 0.95rem);
-                color: var(--warning-700);
+                color: var(--sv1-warning);
                 line-height: 1.6;
                 box-shadow: var(--shadow-sm);
             }
@@ -852,17 +843,22 @@ class HomeView {
             }
 
             .hp-notice-icon {
-                color: var(--warning-500);
+                color: var(--sv1-warning);
                 font-size: clamp(1rem, 2.5vw, 1.1rem);
                 flex-shrink: 0;
                 margin-top: 1px;
             }
 
+            .hp-notice strong {
+                color: var(--sv1-warning);
+                font-weight: 600;
+            }
+
             /* ── Support Section ───────────────────────────────────────────────── */
             .hp-support {
                 background: white;
-                border: 1px solid var(--gray-200);
-                border-radius: var(--radius-lg);
+                border: 1px solid var(--sv1-border);
+                border-radius: var(--sv1-radius-lg);
                 overflow: hidden;
                 box-shadow: var(--shadow-sm);
             }
@@ -872,8 +868,8 @@ class HomeView {
                 align-items: center;
                 gap: var(--space-sm);
                 padding: var(--space-md) var(--space-lg);
-                background: linear-gradient(135deg, var(--gray-50), white);
-                border-bottom: 1px solid var(--gray-200);
+                background: linear-gradient(135deg, var(--sv1-primary-soft), white);
+                border-bottom: 1px solid var(--sv1-border);
             }
 
             @media (max-width: 480px) {
@@ -885,8 +881,8 @@ class HomeView {
             .hp-support-icon {
                 width: clamp(32px, 4vw, 36px);
                 height: clamp(32px, 4vw, 36px);
-                background: var(--purple-600);
-                border-radius: var(--radius-md);
+                background: var(--sv1-primary);
+                border-radius: var(--sv1-radius-md);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -899,7 +895,7 @@ class HomeView {
                 font-family: var(--font-serif);
                 font-size: clamp(1rem, 2.5vw, 1.1rem);
                 font-weight: 600;
-                color: var(--gray-800);
+                color: var(--sv1-text-dark);
                 margin: 0;
             }
 
@@ -907,7 +903,7 @@ class HomeView {
                 display: grid;
                 grid-template-columns: repeat(4, 1fr);
                 gap: 1px;
-                background: var(--gray-200);
+                background: var(--sv1-border);
             }
 
             @media (max-width: 768px) {
@@ -943,7 +939,7 @@ class HomeView {
             }
 
             .hp-support-item:hover {
-                background: var(--gray-50);
+                background: var(--sv1-primary-soft);
                 transform: translateY(-2px);
             }
 
@@ -956,7 +952,7 @@ class HomeView {
             .hp-support-dot {
                 width: clamp(40px, 5vw, 48px);
                 height: clamp(40px, 5vw, 48px);
-                border-radius: var(--radius-md);
+                border-radius: var(--sv1-radius-md);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -985,7 +981,7 @@ class HomeView {
             }
 
             .hp-support-dot.phone {
-                background: linear-gradient(135deg, var(--purple-600), var(--purple-700));
+                background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
             }
 
             .hp-support-dot.whatsapp {
@@ -993,11 +989,11 @@ class HomeView {
             }
 
             .hp-support-dot.email {
-                background: linear-gradient(135deg, var(--error-500), var(--error-600));
+                background: linear-gradient(135deg, var(--sv1-danger), #b91c1c);
             }
 
             .hp-support-dot.hours {
-                background: linear-gradient(135deg, #3B82F6, #2563EB);
+                background: linear-gradient(135deg, var(--sv1-info), #1d4ed8);
             }
 
             .hp-support-lbl {
@@ -1006,7 +1002,7 @@ class HomeView {
                 font-weight: 600;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
-                color: var(--gray-500);
+                color: var(--sv1-text-muted);
             }
 
             @media (max-width: 480px) {
@@ -1019,7 +1015,7 @@ class HomeView {
                 font-family: var(--font-sans);
                 font-size: clamp(0.85rem, 2vw, 0.9rem);
                 font-weight: 500;
-                color: var(--gray-700);
+                color: var(--sv1-text-dark);
                 line-height: 1.5;
                 word-break: break-word;
             }
@@ -1037,7 +1033,7 @@ class HomeView {
             }
 
             .hp-support-val a:hover {
-                color: var(--purple-600);
+                color: var(--sv1-primary);
             }
             </style>
         </head>

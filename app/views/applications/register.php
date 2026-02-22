@@ -2,6 +2,7 @@
 /**
  * Registration View - Step 1
  * REDESIGNED: International standards, fully responsive, accessible with purple accents
+ * Color scheme matching JAMB verification page
  * @package FCTCNS
  */
 
@@ -76,7 +77,7 @@ class RegistrationView {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
             <meta name="description" content="Create your account for FCT College of Nursing Sciences admissions">
-            <meta name="theme-color" content="#6d28d9">
+            <meta name="theme-color" content="#6B4E9B">
             
             <!-- ========================================================= -->
             <!-- 2. Add security meta tags in the head -->
@@ -111,50 +112,26 @@ class RegistrationView {
 
             <style nonce="<?php echo $csp_nonce; ?>">
                 /* ============================================
-                   DESIGN SYSTEM — International Standards
+                   DESIGN SYSTEM — JAMB Verification Color Scheme
                    ============================================ */
                 :root {
-                    /* Purple palette - modern, professional, accessible */
-                    --purple-50:   #faf5ff;
-                    --purple-100:  #f3e8ff;
-                    --purple-200:  #e9d5ff;
-                    --purple-300:  #d8b4fe;
-                    --purple-400:  #c084fc;
-                    --purple-500:  #a855f7;
-                    --purple-600:  #9333ea;
-                    --purple-700:  #7e22ce;
-                    --purple-800:  #6b21a5;
-                    --purple-900:  #581c87;
-                    --purple-950:  #3b0764;
-                    
-                    /* Neutral palette */
-                    --neutral-50:  #fafafa;
-                    --neutral-100: #f5f5f5;
-                    --neutral-200: #e5e5e5;
-                    --neutral-300: #d4d4d4;
-                    --neutral-400: #a3a3a3;
-                    --neutral-500: #737373;
-                    --neutral-600: #525252;
-                    --neutral-700: #404040;
-                    --neutral-800: #262626;
-                    --neutral-900: #171717;
-                    
-                    /* Semantic colors */
-                    --success-50:  #f0fdf4;
-                    --success-500: #22c55e;
-                    --success-700: #15803d;
-                    
-                    --error-50:    #fef2f2;
-                    --error-500:   #ef4444;
-                    --error-700:   #b91c1c;
-                    
-                    --warning-50:  #fffbeb;
-                    --warning-500: #f59e0b;
-                    --warning-700: #b45309;
-                    
-                    --info-50:     #eff6ff;
-                    --info-500:    #3b82f6;
-                    --info-700:    #1d4ed8;
+                    /* Primary purple palette - matching JAMB page */
+                    --sv1-primary:       #6B4E9B;
+                    --sv1-primary-dark:  #4A3B6B;
+                    --sv1-primary-light: #8A6FB0;
+                    --sv1-primary-soft:  #F3EAF8;
+                    --sv1-gold:          #C9A44A;
+                    --sv1-success:       #10b981;
+                    --sv1-success-light: #d1fae5;
+                    --sv1-danger:        #ef4444;
+                    --sv1-danger-light:  #fee2e2;
+                    --sv1-warning:       #f59e0b;
+                    --sv1-warning-light: #fef3c7;
+                    --sv1-info:          #3b82f6;
+                    --sv1-info-light:    #dbeafe;
+                    --sv1-border:        #E9EDF2;
+                    --sv1-text-dark:     #1A1F2E;
+                    --sv1-text-muted:    #6B7280;
                     
                     /* Typography */
                     --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -173,15 +150,12 @@ class RegistrationView {
                     --space-16: calc(var(--space-unit) * 16); /* 64px */
                     
                     /* Borders */
-                    --radius-sm: 0.375rem;   /* 6px */
-                    --radius-md: 0.5rem;      /* 8px */
-                    --radius-lg: 0.75rem;     /* 12px */
-                    --radius-xl: 1rem;        /* 16px */
-                    --radius-2xl: 1.5rem;     /* 24px */
-                    --radius-full: 9999px;
+                    --sv1-radius-md:     12px;
+                    --sv1-radius-lg:     20px;
+                    --sv1-radius-xl:     30px;
                     
                     /* Shadows */
-                    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+                    --sv1-shadow-primary: 0 10px 30px rgba(107,78,155,0.3);
                     --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
                     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
                     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -213,13 +187,13 @@ class RegistrationView {
 
                 body {
                     font-family: var(--font-sans);
-                    background: linear-gradient(135deg, var(--purple-50) 0%, var(--neutral-50) 100%);
+                    background: linear-gradient(135deg, var(--sv1-primary-soft) 0%, #ffffff 100%);
                     min-height: 100vh;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     padding: var(--space-4);
-                    color: var(--neutral-900);
+                    color: var(--sv1-text-dark);
                     line-height: 1.5;
                 }
 
@@ -265,26 +239,26 @@ class RegistrationView {
                     right: -50%;
                     width: 100%;
                     height: 2px;
-                    background: var(--neutral-200);
+                    background: var(--sv1-border);
                     z-index: 0;
                 }
 
                 .step-item.active:not(:last-child)::after,
                 .step-item.completed:not(:last-child)::after {
-                    background: var(--purple-600);
+                    background: var(--sv1-primary);
                 }
 
                 .step-number {
                     width: 2.5rem;
                     height: 2.5rem;
-                    background: var(--neutral-100);
-                    border: 2px solid var(--neutral-200);
+                    background: white;
+                    border: 2px solid var(--sv1-border);
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-weight: 600;
-                    color: var(--neutral-600);
+                    color: var(--sv1-text-muted);
                     margin-bottom: var(--space-2);
                     position: relative;
                     z-index: 1;
@@ -292,34 +266,34 @@ class RegistrationView {
                 }
 
                 .step-item.active .step-number {
-                    background: var(--purple-600);
-                    border-color: var(--purple-600);
+                    background: var(--sv1-primary);
+                    border-color: var(--sv1-primary);
                     color: white;
-                    box-shadow: 0 0 0 4px var(--purple-100);
+                    box-shadow: 0 0 0 4px var(--sv1-primary-soft);
                 }
 
                 .step-item.completed .step-number {
-                    background: var(--success-500);
-                    border-color: var(--success-500);
+                    background: var(--sv1-success);
+                    border-color: var(--sv1-success);
                     color: white;
                 }
 
                 .step-label {
                     font-size: 0.75rem;
                     font-weight: 500;
-                    color: var(--neutral-600);
+                    color: var(--sv1-text-muted);
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
                     display: none;
                 }
 
                 .step-item.active .step-label {
-                    color: var(--purple-700);
+                    color: var(--sv1-primary-dark);
                     font-weight: 600;
                 }
 
                 .step-item.completed .step-label {
-                    color: var(--success-700);
+                    color: var(--sv1-success);
                 }
 
                 @media (min-width: 640px) {
@@ -329,19 +303,19 @@ class RegistrationView {
                 }
 
                 /* ============================================
-                   MAIN CARD
+                   MAIN CARD - Matching JAMB page
                    ============================================ */
                 .registration-card {
-                    background: white;
-                    border-radius: var(--radius-2xl);
+                    background: #fff;
+                    border-radius: var(--sv1-radius-xl);
                     box-shadow: var(--shadow-xl);
                     overflow: hidden;
-                    border: 1px solid var(--neutral-100);
+                    border: 1px solid var(--sv1-border);
                 }
 
-                /* Card Header */
+                /* Card Header - Gradient like JAMB page */
                 .card-header {
-                    background: linear-gradient(135deg, var(--purple-900), var(--purple-700));
+                    background: linear-gradient(135deg, var(--sv1-primary) 0%, var(--sv1-primary-dark) 100%);
                     padding: var(--space-8) var(--space-6);
                     text-align: center;
                     color: white;
@@ -372,18 +346,20 @@ class RegistrationView {
                     font-size: 1.5rem;
                     border: 2px solid rgba(255,255,255,0.3);
                     backdrop-filter: blur(4px);
+                    color: var(--sv1-gold);
                 }
 
                 .card-header h1 {
                     font-size: 1.5rem;
-                    font-weight: 600;
+                    font-weight: 700;
                     margin-bottom: var(--space-2);
                     letter-spacing: -0.02em;
+                    color: white;
                 }
 
                 .card-header p {
                     font-size: 0.875rem;
-                    opacity: 0.8;
+                    opacity: 0.9;
                     max-width: 300px;
                     margin: 0 auto;
                 }
@@ -415,18 +391,18 @@ class RegistrationView {
                 /* Card Footer */
                 .card-footer {
                     padding: var(--space-4) var(--space-6);
-                    background: var(--neutral-50);
-                    border-top: 1px solid var(--neutral-200);
+                    background: var(--sv1-primary-soft);
+                    border-top: 1px solid var(--sv1-border);
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     gap: var(--space-2);
-                    color: var(--neutral-600);
+                    color: var(--sv1-text-muted);
                     font-size: 0.875rem;
                 }
 
                 .card-footer i {
-                    color: var(--purple-400);
+                    color: var(--sv1-primary-light);
                 }
 
                 /* ============================================
@@ -434,13 +410,14 @@ class RegistrationView {
                    ============================================ */
                 .alert {
                     padding: var(--space-4);
-                    border-radius: var(--radius-lg);
+                    border-radius: var(--sv1-radius-md);
                     margin-bottom: var(--space-6);
                     display: flex;
                     align-items: flex-start;
                     gap: var(--space-3);
                     animation: slideIn 0.3s ease;
-                    border: 1px solid transparent;
+                    border-left-width: 4px;
+                    border-left-style: solid;
                 }
 
                 @keyframes slideIn {
@@ -449,15 +426,27 @@ class RegistrationView {
                 }
 
                 .alert-danger {
-                    background: var(--error-50);
-                    border-color: var(--error-500);
-                    color: var(--error-700);
+                    background: var(--sv1-danger-light);
+                    border-color: var(--sv1-danger);
+                    color: #991b1b;
                 }
 
                 .alert-success {
-                    background: var(--success-50);
-                    border-color: var(--success-500);
-                    color: var(--success-700);
+                    background: var(--sv1-success-light);
+                    border-color: var(--sv1-success);
+                    color: #065f46;
+                }
+
+                .alert-info {
+                    background: var(--sv1-info-light);
+                    border-color: var(--sv1-info);
+                    color: #1e40af;
+                }
+
+                .alert-warning {
+                    background: var(--sv1-warning-light);
+                    border-color: var(--sv1-warning);
+                    color: #92400e;
                 }
 
                 .alert-icon {
@@ -498,18 +487,18 @@ class RegistrationView {
                     align-items: center;
                     gap: var(--space-2);
                     font-size: 0.875rem;
-                    font-weight: 500;
-                    color: var(--neutral-700);
+                    font-weight: 600;
+                    color: var(--sv1-primary-dark);
                     margin-bottom: var(--space-2);
                 }
 
                 .form-label i {
-                    color: var(--purple-500);
+                    color: var(--sv1-primary);
                     font-size: 1rem;
                 }
 
                 .required {
-                    color: var(--error-500);
+                    color: var(--sv1-danger);
                     margin-left: var(--space-1);
                 }
 
@@ -517,30 +506,30 @@ class RegistrationView {
                     width: 100%;
                     padding: var(--space-3) var(--space-4);
                     font-size: 1rem;
-                    border: 2px solid var(--neutral-200);
-                    border-radius: var(--radius-lg);
+                    border: 2px solid var(--sv1-border);
+                    border-radius: var(--sv1-radius-md);
                     transition: all 0.2s ease;
                     background: white;
-                    color: var(--neutral-900);
+                    color: var(--sv1-text-dark);
                 }
 
                 .form-control:focus {
                     outline: none;
-                    border-color: var(--purple-500);
-                    box-shadow: 0 0 0 4px var(--purple-100);
+                    border-color: var(--sv1-primary);
+                    box-shadow: 0 0 0 4px var(--sv1-primary-soft);
                 }
 
                 .form-control.invalid {
-                    border-color: var(--error-500);
+                    border-color: var(--sv1-danger);
                 }
 
                 .form-control.valid {
-                    border-color: var(--success-500);
+                    border-color: var(--sv1-success);
                 }
 
                 .form-hint {
                     font-size: 0.75rem;
-                    color: var(--neutral-500);
+                    color: var(--sv1-text-muted);
                     margin-top: var(--space-1);
                     display: flex;
                     align-items: center;
@@ -549,7 +538,7 @@ class RegistrationView {
 
                 .form-hint i {
                     font-size: 0.875rem;
-                    color: var(--neutral-400);
+                    color: var(--sv1-primary-light);
                 }
 
                 /* ============================================
@@ -561,8 +550,8 @@ class RegistrationView {
 
                 .strength-bar {
                     height: 4px;
-                    background: var(--neutral-200);
-                    border-radius: var(--radius-sm);
+                    background: var(--sv1-border);
+                    border-radius: var(--sv1-radius-md);
                     overflow: hidden;
                     margin-bottom: var(--space-2);
                 }
@@ -570,23 +559,23 @@ class RegistrationView {
                 .strength-bar-fill {
                     height: 100%;
                     width: 0;
-                    border-radius: var(--radius-sm);
+                    border-radius: var(--sv1-radius-md);
                     transition: all 0.3s ease;
                 }
 
                 .strength-bar-fill.weak {
                     width: 33%;
-                    background: var(--error-500);
+                    background: var(--sv1-danger);
                 }
 
                 .strength-bar-fill.medium {
                     width: 66%;
-                    background: var(--warning-500);
+                    background: var(--sv1-warning);
                 }
 
                 .strength-bar-fill.strong {
                     width: 100%;
-                    background: var(--success-500);
+                    background: var(--sv1-success);
                 }
 
                 .strength-requirements {
@@ -598,7 +587,7 @@ class RegistrationView {
 
                 .requirement {
                     font-size: 0.75rem;
-                    color: var(--neutral-600);
+                    color: var(--sv1-text-muted);
                     display: flex;
                     align-items: center;
                     gap: var(--space-1);
@@ -606,15 +595,15 @@ class RegistrationView {
 
                 .requirement i {
                     font-size: 0.625rem;
-                    color: var(--neutral-400);
+                    color: var(--sv1-primary-light);
                 }
 
                 .requirement.met {
-                    color: var(--success-700);
+                    color: var(--sv1-success);
                 }
 
                 .requirement.met i {
-                    color: var(--success-500);
+                    color: var(--sv1-success);
                 }
 
                 .password-match-hint {
@@ -622,11 +611,12 @@ class RegistrationView {
                     align-items: center;
                     gap: var(--space-2);
                     font-size: 0.75rem;
-                    color: var(--error-700);
+                    color: var(--sv1-danger);
                     margin-top: var(--space-1);
                     padding: var(--space-2) var(--space-3);
-                    background: var(--error-50);
-                    border-radius: var(--radius-md);
+                    background: var(--sv1-danger-light);
+                    border-radius: var(--sv1-radius-md);
+                    border-left: 4px solid var(--sv1-danger);
                 }
 
                 .password-match-hint i {
@@ -639,9 +629,9 @@ class RegistrationView {
                 .terms-container {
                     margin: var(--space-8) 0 var(--space-4) 0;
                     padding: var(--space-4) 0;
-                    border-top: 1px solid var(--neutral-200);
-                    border-bottom: 1px solid var(--neutral-200);
-                    background: var(--neutral-50);
+                    border-top: 1px solid var(--sv1-border);
+                    border-bottom: 1px solid var(--sv1-border);
+                    background: var(--sv1-primary-soft);
                     transition: all 0.3s ease;
                 }
 
@@ -656,24 +646,24 @@ class RegistrationView {
                     width: 1.25rem;
                     height: 1.25rem;
                     margin-top: 0.125rem;
-                    accent-color: var(--purple-600);
+                    accent-color: var(--sv1-primary);
                     cursor: pointer;
                     flex-shrink: 0;
                 }
 
                 .checkbox-wrapper label {
                     font-size: 0.95rem;
-                    color: var(--neutral-700);
+                    color: var(--sv1-text-dark);
                     line-height: 1.5;
                     cursor: pointer;
                     flex: 1;
                 }
 
                 .terms-link {
-                    color: var(--purple-700);
+                    color: var(--sv1-primary);
                     text-decoration: none;
                     font-weight: 600;
-                    border-bottom: 1px dotted var(--purple-400);
+                    border-bottom: 1px dotted var(--sv1-primary-light);
                     transition: all 0.2s ease;
                     cursor: pointer;
                     display: inline-flex;
@@ -682,8 +672,8 @@ class RegistrationView {
                 }
 
                 .terms-link:hover {
-                    color: var(--purple-900);
-                    border-bottom-color: var(--purple-700);
+                    color: var(--sv1-primary-dark);
+                    border-bottom-color: var(--sv1-primary-dark);
                 }
 
                 .terms-link i {
@@ -696,10 +686,11 @@ class RegistrationView {
                 .terms-content-section {
                     margin: var(--space-8) 0;
                     padding: var(--space-6);
-                    background: var(--neutral-50);
-                    border: 1px solid var(--neutral-200);
-                    border-radius: var(--radius-xl);
+                    background: white;
+                    border: 1px solid var(--sv1-border);
+                    border-radius: var(--sv1-radius-xl);
                     scroll-margin-top: var(--space-8);
+                    box-shadow: var(--shadow-lg);
                 }
 
                 .terms-content-header {
@@ -708,32 +699,32 @@ class RegistrationView {
                     gap: var(--space-3);
                     margin-bottom: var(--space-6);
                     padding-bottom: var(--space-4);
-                    border-bottom: 2px solid var(--purple-200);
+                    border-bottom: 2px solid var(--sv1-primary-light);
                 }
 
                 .terms-content-header i {
                     font-size: 1.5rem;
-                    color: var(--purple-600);
-                    background: var(--purple-100);
+                    color: var(--sv1-primary);
+                    background: var(--sv1-primary-soft);
                     padding: var(--space-2);
-                    border-radius: var(--radius-lg);
+                    border-radius: var(--sv1-radius-md);
                 }
 
                 .terms-content-header h2 {
                     font-size: 1.25rem;
                     font-weight: 600;
-                    color: var(--purple-900);
+                    color: var(--sv1-primary-dark);
                     margin: 0;
                 }
 
                 .terms-content-header p {
-                    color: var(--neutral-600);
+                    color: var(--sv1-text-muted);
                     font-size: 0.875rem;
                     margin: var(--space-1) 0 0 0;
                 }
 
                 .terms-text {
-                    color: var(--neutral-700);
+                    color: var(--sv1-text-dark);
                     line-height: 1.7;
                     font-size: 0.95rem;
                     max-height: 400px;
@@ -756,7 +747,7 @@ class RegistrationView {
                 }
 
                 .terms-text strong {
-                    color: var(--purple-800);
+                    color: var(--sv1-primary-dark);
                 }
 
                 /* Terms scrollbar styling */
@@ -765,37 +756,37 @@ class RegistrationView {
                 }
 
                 .terms-text::-webkit-scrollbar-track {
-                    background: var(--neutral-100);
-                    border-radius: var(--radius-sm);
+                    background: var(--sv1-primary-soft);
+                    border-radius: var(--sv1-radius-md);
                 }
 
                 .terms-text::-webkit-scrollbar-thumb {
-                    background: var(--purple-300);
-                    border-radius: var(--radius-sm);
+                    background: var(--sv1-primary-light);
+                    border-radius: var(--sv1-radius-md);
                 }
 
                 .terms-text::-webkit-scrollbar-thumb:hover {
-                    background: var(--purple-400);
+                    background: var(--sv1-primary);
                 }
 
                 .terms-footer-info {
                     margin-top: var(--space-6);
                     padding-top: var(--space-4);
-                    border-top: 1px solid var(--neutral-200);
+                    border-top: 1px solid var(--sv1-border);
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
                     flex-wrap: wrap;
                     gap: var(--space-2);
                     font-size: 0.8rem;
-                    color: var(--neutral-500);
+                    color: var(--sv1-text-muted);
                 }
 
                 .terms-version {
-                    background: var(--purple-100);
+                    background: var(--sv1-primary-soft);
                     padding: var(--space-1) var(--space-3);
-                    border-radius: var(--radius-full);
-                    color: var(--purple-700);
+                    border-radius: 9999px;
+                    color: var(--sv1-primary);
                     font-weight: 500;
                 }
 
@@ -803,19 +794,23 @@ class RegistrationView {
                     display: inline-flex;
                     align-items: center;
                     gap: var(--space-1);
-                    color: var(--purple-600);
+                    color: var(--sv1-primary);
                     text-decoration: none;
                     font-weight: 500;
                     transition: all 0.2s ease;
+                    cursor: pointer;
+                    background: none;
+                    border: none;
+                    font-size: 0.8rem;
                 }
 
                 .back-to-top:hover {
-                    color: var(--purple-800);
+                    color: var(--sv1-primary-dark);
                     transform: translateY(-2px);
                 }
 
                 /* ============================================
-                   BUTTONS - MATCHING DESIGN
+                   BUTTONS - Matching JAMB page
                    ============================================ */
                 .btn {
                     display: inline-flex;
@@ -825,25 +820,25 @@ class RegistrationView {
                     padding: var(--space-3) var(--space-6);
                     font-size: 0.95rem;
                     font-weight: 600;
-                    border-radius: var(--radius-lg);
+                    border-radius: var(--sv1-radius-md);
                     border: 2px solid transparent;
                     cursor: pointer;
                     transition: all 0.2s ease;
                     text-decoration: none;
                     letter-spacing: 0.3px;
+                    font-family: inherit;
                 }
 
                 .btn-primary {
-                    background: var(--purple-600);
+                    background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
                     color: white;
                     width: 100%;
-                    box-shadow: var(--shadow-md);
+                    box-shadow: var(--sv1-shadow-primary);
                 }
 
                 .btn-primary:hover:not(:disabled) {
-                    background: var(--purple-700);
                     transform: translateY(-2px);
-                    box-shadow: var(--shadow-lg);
+                    box-shadow: 0 15px 35px rgba(107,78,155,.4);
                 }
 
                 .btn-primary:active:not(:disabled) {
@@ -851,33 +846,31 @@ class RegistrationView {
                 }
 
                 .btn-primary:disabled {
-                    opacity: 0.6;
+                    opacity: 0.65;
                     cursor: not-allowed;
                 }
 
                 .btn-outline {
                     background: white;
-                    border: 2px solid var(--neutral-200);
-                    color: var(--neutral-700);
+                    border: 2px solid var(--sv1-primary);
+                    color: var(--sv1-primary);
                     min-width: 100px;
                 }
 
                 .btn-outline:hover {
-                    border-color: var(--purple-500);
-                    color: var(--purple-700);
-                    background: var(--purple-50);
+                    background: var(--sv1-primary);
+                    color: white;
+                    transform: translateY(-2px);
                 }
 
                 .btn-success {
-                    background: var(--success-600);
+                    background: var(--sv1-success);
                     color: white;
-                    border: 2px solid var(--success-600);
                     min-width: 100px;
                 }
 
                 .btn-success:hover {
-                    background: var(--success-700);
-                    border-color: var(--success-700);
+                    background: #0d9488;
                     transform: translateY(-2px);
                     box-shadow: var(--shadow-md);
                 }
@@ -891,15 +884,16 @@ class RegistrationView {
                     font-size: 1rem;
                 }
 
-                /* Spinner */
+                /* Spinner - Matching JAMB page */
                 .spinner {
                     display: inline-block;
                     width: 1.25rem;
                     height: 1.25rem;
-                    border: 2px solid rgba(255,255,255,0.3);
+                    border: 2px solid rgba(255,255,255,0.4);
                     border-radius: 50%;
                     border-top-color: white;
-                    animation: spin 0.6s linear infinite;
+                    animation: spin 0.7s linear infinite;
+                    vertical-align: middle;
                 }
 
                 @keyframes spin {
@@ -914,7 +908,7 @@ class RegistrationView {
                     align-items: center;
                     gap: var(--space-4);
                     margin: var(--space-6) 0;
-                    color: var(--neutral-400);
+                    color: var(--sv1-text-muted);
                     font-size: 0.875rem;
                 }
 
@@ -923,7 +917,7 @@ class RegistrationView {
                     content: '';
                     flex: 1;
                     height: 1px;
-                    background: linear-gradient(90deg, transparent, var(--neutral-200), transparent);
+                    background: linear-gradient(90deg, transparent, var(--sv1-border), transparent);
                 }
 
                 /* ============================================
@@ -936,7 +930,7 @@ class RegistrationView {
 
                 .login-section p {
                     font-size: 0.875rem;
-                    color: var(--neutral-600);
+                    color: var(--sv1-text-muted);
                     margin-bottom: var(--space-3);
                 }
 
@@ -945,34 +939,34 @@ class RegistrationView {
                    ============================================ */
                 .portal-closed {
                     background: white;
-                    border-radius: var(--radius-2xl);
+                    border-radius: var(--sv1-radius-xl);
                     padding: var(--space-10) var(--space-6);
                     text-align: center;
                     box-shadow: var(--shadow-xl);
-                    border: 1px solid var(--neutral-200);
+                    border: 1px solid var(--sv1-border);
                 }
 
                 .closed-icon {
                     width: 5rem;
                     height: 5rem;
-                    background: var(--warning-50);
+                    background: var(--sv1-warning-light);
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     margin: 0 auto var(--space-6);
-                    color: var(--warning-600);
+                    color: var(--sv1-warning);
                     font-size: 2rem;
                 }
 
                 .portal-closed h2 {
                     font-size: 1.5rem;
-                    color: var(--neutral-900);
+                    color: var(--sv1-text-dark);
                     margin-bottom: var(--space-4);
                 }
 
                 .portal-closed p {
-                    color: var(--neutral-600);
+                    color: var(--sv1-text-muted);
                     max-width: 400px;
                     margin: 0 auto;
                     line-height: 1.6;
@@ -982,19 +976,19 @@ class RegistrationView {
                    UTILITIES
                    ============================================ */
                 .text-purple {
-                    color: var(--purple-600);
+                    color: var(--sv1-primary);
                 }
 
                 .text-success {
-                    color: var(--success-500);
+                    color: var(--sv1-success);
                 }
 
                 .text-error {
-                    color: var(--error-500);
+                    color: var(--sv1-danger);
                 }
 
                 .text-muted {
-                    color: var(--neutral-500);
+                    color: var(--sv1-text-muted);
                 }
 
                 .sr-only {
@@ -1015,6 +1009,13 @@ class RegistrationView {
 
                 .mb-4 {
                     margin-bottom: var(--space-4);
+                }
+
+                /* Shake animation */
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
                 }
 
                 /* ============================================
@@ -1304,7 +1305,7 @@ class RegistrationView {
                     
                     <?php if (!empty($terms)): ?>
                         <div class="terms-text">
-                            <h6 style="color: var(--purple-800); margin-bottom: var(--space-4);">
+                            <h6 style="color: var(--sv1-primary-dark); margin-bottom: var(--space-4);">
                                 <?php echo $this->e($terms['title'] ?? 'Terms and Conditions of Application'); ?>
                             </h6>
                             
@@ -1320,9 +1321,9 @@ class RegistrationView {
                                 <i class="fas fa-calendar-alt me-1"></i>
                                 Effective: <?php echo isset($terms['effective_date']) ? $this->e(date('F j, Y', strtotime($terms['effective_date']))) : 'September 15, 2025'; ?>
                             </span>
-                            <a href="#" class="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">
+                            <button class="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">
                                 <i class="fas fa-arrow-up"></i> Back to Top
-                            </a>
+                            </button>
                         </div>
                     <?php else: ?>
                         <div class="terms-text">
@@ -1357,9 +1358,9 @@ class RegistrationView {
                                 <i class="fas fa-calendar-alt me-1"></i>
                                 Effective: September 15, 2025
                             </span>
-                            <a href="#" class="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">
+                            <button class="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">
                                 <i class="fas fa-arrow-up"></i> Back to Top
-                            </a>
+                            </button>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -1644,17 +1645,6 @@ class RegistrationView {
                 });
             }
 
-            // Add shake animation
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes shake {
-                    0%, 100% { transform: translateX(0); }
-                    25% { transform: translateX(-5px); }
-                    75% { transform: translateX(5px); }
-                }
-            `;
-            document.head.appendChild(style);
-
             // Initialize
             if (password && password.value) checkPasswordStrength();
 
@@ -1680,8 +1670,8 @@ class RegistrationView {
             });
 
             // Back to top with security
-            document.querySelectorAll('.back-to-top').forEach(link => {
-                link.addEventListener('click', function(e) {
+            document.querySelectorAll('.back-to-top').forEach(button => {
+                button.addEventListener('click', function(e) {
                     e.preventDefault();
                     window.scrollTo({
                         top: 0,
