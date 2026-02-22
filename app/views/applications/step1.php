@@ -1,66 +1,84 @@
 <?php
 /**
  * JAMB Verification View - Step 1
- * FIXED: 5-step progress tracker with proper visibility and font contrast
+ * SECURITY FIXED: Using SecurityTrait for XSS protection, CSRF tokens, CSP nonce
  * 
  * @package FCTCNS
  */
 
-extract($data ?? []);
+// Load SecurityTrait
+require_once APP_PATH . '/helpers/SecurityTrait.php';
 
-if (!function_exists('e')) {
-    function e($text) {
-        return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
-    }
-}
-
-$csrf_token = $csrf_token ?? '';
-$terms = $terms ?? [];
-$settings = $settings ?? [];
-$portal_closed = $portal_closed ?? false;
-$portal_message = $portal_message ?? '';
-
-// Get current step from application if available
-$currentStep = 1;
-if (isset($application) && !empty($application['application_step'])) {
-    $currentStep = (int)$application['application_step'];
+// Use the trait in a view helper class
+class JambVerificationView {
+    use SecurityTrait;
     
-    // If application_step is 4 AND exam slip exists, show step 5
-    if ($currentStep == 4 && isset($has_exam_slip) && $has_exam_slip) {
-        $currentStep = 5;
-    }
-}
-
-// Define steps
-$steps = [
-    1 => ['label' => 'Create Account', 'sub' => 'Register'],
-    2 => ['label' => 'JAMB Verification', 'sub' => 'JAMB check'],
-    3 => ['label' => 'Application Form', 'sub' => 'Fill form'],
-    4 => ['label' => 'Payment', 'sub' => 'Remita RRR'],
-    5 => ['label' => 'Exam Slip', 'sub' => 'Download'],
-];
+    public function render($data) {
+        extract($data);
+        
+        // Security: Get CSP nonce and CSRF token
+        $csp_nonce = $this->getCspNonce();
+        $csrf_token = $this->getCsrfToken();
+        
+        $terms = $terms ?? [];
+        $settings = $settings ?? [];
+        $portal_closed = $portal_closed ?? false;
+        $portal_message = $portal_message ?? '';
+        
+        // Security: Secure JSON for JavaScript
+        $secureTermsData = $this->secureJsonEncode($terms);
+        
+        // Get current step from application if available
+        $currentStep = 1;
+        if (isset($application) && !empty($application['application_step'])) {
+            $currentStep = (int)$application['application_step'];
+            
+            // If application_step is 4 AND exam slip exists, show step 5
+            if ($currentStep == 4 && isset($has_exam_slip) && $has_exam_slip) {
+                $currentStep = 5;
+            }
+        }
+        
+        // Define steps
+        $steps = [
+            1 => ['label' => 'Create Account', 'sub' => 'Register'],
+            2 => ['label' => 'JAMB Verification', 'sub' => 'JAMB check'],
+            3 => ['label' => 'Application Form', 'sub' => 'Fill form'],
+            4 => ['label' => 'Payment', 'sub' => 'Remita RRR'],
+            5 => ['label' => 'Exam Slip', 'sub' => 'Download'],
+        ];
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <meta name="description" content="JAMB Verification - FCT College of Nursing Sciences">
+    
+    <!-- ===== SECURITY HEADERS ===== -->
+    <?php echo $this->getSecurityMetaTags(); ?>
+    
     <title>JAMB Verification - FCT College of Nursing Sciences</title>
     
-    <!-- Premium Fonts with better contrast -->
+    <!-- Premium Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Font Awesome with SRI -->
+    <link rel="stylesheet" 
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          crossorigin="anonymous" 
+          referrerpolicy="no-referrer">
     
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap 5 with SRI -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+          rel="stylesheet"
+          integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" 
+          crossorigin="anonymous">
     
-    <style>
+    <style nonce="<?php echo $csp_nonce; ?>">
         /* ==========================================================================
            RESET & BASE STYLES
            ========================================================================== */
@@ -131,7 +149,7 @@ $steps = [
         }
 
         /* ==========================================================================
-           HEADER - MAXIMUM VISIBILITY
+           HEADER
            ========================================================================== */
         .header {
             text-align: center;
@@ -162,7 +180,7 @@ $steps = [
         }
 
         /* ==========================================================================
-           STEP INDICATOR - 5 STEPS WITH MAXIMUM VISIBILITY
+           STEP INDICATOR
            ========================================================================== */
         .step-indicator {
             display: flex;
@@ -352,7 +370,7 @@ $steps = [
         }
 
         /* ==========================================================================
-           TERMS CARD - FIXED FONT CONTRAST
+           TERMS CARD
            ========================================================================== */
         .terms-card {
             background: var(--primary-soft);
@@ -418,7 +436,7 @@ $steps = [
         }
 
         /* ==========================================================================
-           FORM ELEMENTS - IMPROVED CONTRAST
+           FORM ELEMENTS
            ========================================================================== */
         .form-label {
             font-weight: 600;
@@ -496,7 +514,7 @@ $steps = [
         }
 
         /* ==========================================================================
-           INFO ALERT - FIXED FONT CONTRAST
+           INFO ALERT
            ========================================================================== */
         .info-alert {
             background: var(--info-light);
@@ -527,7 +545,7 @@ $steps = [
         }
 
         /* ==========================================================================
-           BUTTONS - IMPROVED CONTRAST
+           BUTTONS
            ========================================================================== */
         .btn {
             padding: 14px 30px;
@@ -669,7 +687,7 @@ $steps = [
         }
 
         /* ==========================================================================
-           FOOTER - MAXIMUM VISIBILITY
+           FOOTER
            ========================================================================== */
         .app-footer {
             text-align: center;
@@ -771,29 +789,29 @@ $steps = [
 </head>
 <body>
     <div class="verification-container">
-        <!-- Header - Maximum Visibility -->
+        <!-- Header -->
         <div class="header">
-            <h1>FCT College of Nursing Sciences</h1>
-            <p>2025/2026 Admissions Application Portal</p>
+            <h1><?php echo $this->e('FCT College of Nursing Sciences'); ?></h1>
+            <p><?php echo $this->e('2025/2026 Admissions Application Portal'); ?></p>
         </div>
 
-        <!-- Step Indicator - 5 Steps with Maximum Visibility -->
+        <!-- Step Indicator -->
         <div class="step-indicator">
             <?php foreach ($steps as $num => $step): 
                 $stepClass = '';
                 if ($num < $currentStep) $stepClass = 'completed';
                 elseif ($num == $currentStep) $stepClass = 'active';
             ?>
-            <div class="step <?php echo $stepClass; ?>">
+            <div class="step <?php echo $this->e($stepClass); ?>">
                 <div class="step-number">
                     <?php if ($num < $currentStep): ?>
                         <i class="fas fa-check"></i>
                     <?php else: ?>
-                        <?php echo $num; ?>
+                        <?php echo $this->e($num); ?>
                     <?php endif; ?>
                 </div>
-                <div class="step-label"><?php echo $step['label']; ?></div>
-                <div class="step-sub"><?php echo $step['sub']; ?></div>
+                <div class="step-label"><?php echo $this->e($step['label']); ?></div>
+                <div class="step-sub"><?php echo $this->e($step['sub']); ?></div>
             </div>
             <?php endforeach; ?>
         </div>
@@ -805,92 +823,95 @@ $steps = [
             <!-- Portal Closed Message -->
             <div class="portal-closed">
                 <i class="fas fa-exclamation-triangle"></i>
-                <h2>Application Portal Closed</h2>
-                <p><?php echo e($portal_message); ?></p>
-                <p class="text-muted mt-3">The next admissions cycle will be announced on this portal.</p>
+                <h2><?php echo $this->e('Application Portal Closed'); ?></h2>
+                <p><?php echo $this->e($portal_message); ?></p>
+                <p class="text-muted mt-3"><?php echo $this->e('The next admissions cycle will be announced on this portal.'); ?></p>
             </div>
         <?php else: ?>
             <!-- Main Card -->
             <div class="main-card">
                 <div class="card-header">
                     <i class="fas fa-id-card"></i>
-                    <h2>JAMB Verification</h2>
-                    <p>Enter your JAMB registration number to begin your application</p>
+                    <h2><?php echo $this->e('JAMB Verification'); ?></h2>
+                    <p><?php echo $this->e('Enter your JAMB registration number to begin your application'); ?></p>
                 </div>
                 
                 <div class="card-body">
                     <?php if (empty($terms)): ?>
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle"></i>
-                            Terms and conditions are not available at the moment. Please try again later.
+                            <?php echo $this->e('Terms and conditions are not available at the moment. Please try again later.'); ?>
                         </div>
                     <?php else: ?>
                     
                     <!-- Terms and Conditions Card -->
                     <div class="terms-card">
                         <div class="terms-header">
-                            <h5><i class="fas fa-file-contract"></i> Terms and Conditions</h5>
+                            <h5><i class="fas fa-file-contract"></i> <?php echo $this->e('Terms and Conditions'); ?></h5>
                         </div>
                         <div class="terms-body">
-                            <h6><?php echo e($terms['title'] ?? 'Terms and Conditions'); ?></h6>
+                            <h6><?php echo $this->e($terms['title'] ?? 'Terms and Conditions'); ?></h6>
                             <div class="terms-content">
-                                <?php echo nl2br(e($terms['content'] ?? '')); ?>
+                                <?php echo nl2br($this->e($terms['content'] ?? '')); ?>
                             </div>
                         </div>
                         <div class="terms-footer">
                             <i class="fas fa-clock me-1"></i>
-                            Version: <?php echo e($terms['version'] ?? '1.0'); ?> | 
-                            Effective: <?php echo isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025'; ?>
+                            <?php echo $this->e('Version: ' . ($terms['version'] ?? '1.0')); ?> | 
+                            <?php echo $this->e('Effective: ' . (isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025')); ?>
                         </div>
                     </div>
 
                     <!-- JAMB Verification Form -->
                     <form id="jambVerificationForm">
-                        <input type="hidden" name="csrf_token" value="<?php echo e($csrf_token); ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo $this->e($csrf_token); ?>">
                         
                         <div class="mb-4">
                             <label for="jamb_number" class="form-label">
                                 <i class="fas fa-id-card text-primary"></i>
-                                JAMB Registration Number
+                                <?php echo $this->e('JAMB Registration Number'); ?>
                             </label>
                             <input type="text" 
                                    class="form-control form-control-lg" 
                                    id="jamb_number" 
                                    name="jamb_number" 
-                                   placeholder="e.g., 202650000089FG"
+                                   placeholder="<?php echo $this->e('e.g., 202650000089FG'); ?>"
                                    style="text-transform: uppercase;"
                                    autocomplete="off"
+                                   maxlength="14"
+                                   pattern="[0-9A-Za-z]{10,14}"
                                    required>
                             <div class="form-text">
-                                <i class="fas fa-info-circle"></i> Enter the JAMB registration number you used for the 2025 UTME.
+                                <i class="fas fa-info-circle"></i> 
+                                <?php echo $this->e('Enter the JAMB registration number you used for the 2025 UTME.'); ?>
                             </div>
                         </div>
                         
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="accept_terms" name="accept_terms" required>
                             <label class="form-check-label" for="accept_terms">
-                                I have read and agree to the 
-                                <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a>
+                                <?php echo $this->e('I have read and agree to the '); ?>
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal"><?php echo $this->e('Terms and Conditions'); ?></a>
                             </label>
                         </div>
                         
-                        <!-- Requirements Alert - Fixed Font Contrast -->
+                        <!-- Requirements Alert -->
                         <div class="info-alert">
                             <i class="fas fa-info-circle"></i>
-                            <strong>By proceeding, you confirm that:</strong>
+                            <strong><?php echo $this->e('By proceeding, you confirm that:'); ?></strong>
                             <ul class="mb-0">
-                                <li>You have a minimum UTME score of <?php echo e($settings['key_value']['min_utme_score'] ?? '170'); ?></li>
-                                <li>You selected FCT College of Nursing Sciences as your first choice</li>
-                                <li>You have the required O'Level credits (5 credits including English, Maths, Biology, Chemistry, Physics)</li>
-                                <li>You are at least <?php echo e($settings['key_value']['min_age'] ?? '16'); ?> years old</li>
+                                <li><?php echo $this->e('You have a minimum UTME score of ' . ($settings['key_value']['min_utme_score'] ?? '170')); ?></li>
+                                <li><?php echo $this->e('You selected FCT College of Nursing Sciences as your first choice'); ?></li>
+                                <li><?php echo $this->e('You have the required O\'Level credits (5 credits including English, Maths, Biology, Chemistry, Physics)'); ?></li>
+                                <li><?php echo $this->e('You are at least ' . ($settings['key_value']['min_age'] ?? '16') . ' years old'); ?></li>
                             </ul>
                         </div>
                         
                         <button type="submit" class="btn btn-primary btn-lg" id="verifyBtn">
-                            <span id="btnText"><i class="fas fa-check-circle"></i> Verify JAMB Number</span>
+                            <span id="btnText"><i class="fas fa-check-circle"></i> <?php echo $this->e('Verify JAMB Number'); ?></span>
                             <span id="btnSpinner" style="display: none;">
                                 <span class="spinner-border" role="status"></span>
-                                Verifying...
+                                <?php echo $this->e('Verifying...'); ?>
                             </span>
                         </button>
                     </form>
@@ -898,14 +919,14 @@ $steps = [
                     <?php endif; ?>
                     
                     <div class="divider">
-                        <span>OR</span>
+                        <span><?php echo $this->e('OR'); ?></span>
                     </div>
                     
                     <!-- Login Link -->
                     <div class="text-center">
-                        <p class="mb-2" style="color: var(--text-muted);">Already have an account?</p>
+                        <p class="mb-2" style="color: var(--text-muted);"><?php echo $this->e('Already have an account?'); ?></p>
                         <a href="/applicant/login" class="btn btn-outline-primary">
-                            <i class="fas fa-sign-in-alt"></i> Login to Continue Application
+                            <i class="fas fa-sign-in-alt"></i> <?php echo $this->e('Login to Continue Application'); ?>
                         </a>
                     </div>
                 </div>
@@ -914,10 +935,10 @@ $steps = [
 
         <!-- Footer -->
         <div class="app-footer">
-            <p>© <?php echo date('Y'); ?> FCT College of Nursing Sciences. All rights reserved.</p>
+            <p>© <?php echo date('Y'); ?> <?php echo $this->e('FCT College of Nursing Sciences. All rights reserved.'); ?></p>
             <p>
-                <i class="fas fa-phone-alt"></i> Support: 07039837749 | 
-                <i class="fas fa-envelope"></i> Email: <a href="mailto:info@fctcns.edu.ng">info@fctcns.edu.ng</a>
+                <i class="fas fa-phone-alt"></i> <?php echo $this->e('Support: 07039837749'); ?> | 
+                <i class="fas fa-envelope"></i> <?php echo $this->e('Email:'); ?> <a href="mailto:info@fctcns.edu.ng">info@fctcns.edu.ng</a>
             </p>
         </div>
     </div>
@@ -929,35 +950,44 @@ $steps = [
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="termsModalLabel">
-                        <i class="fas fa-file-contract me-2"></i>Terms and Conditions
+                        <i class="fas fa-file-contract me-2"></i><?php echo $this->e('Terms and Conditions'); ?>
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <h6><?php echo e($terms['title'] ?? 'Terms and Conditions'); ?></h6>
+                    <h6><?php echo $this->e($terms['title'] ?? 'Terms and Conditions'); ?></h6>
                     <div class="terms-content">
-                        <?php echo nl2br(e($terms['content'] ?? '')); ?>
+                        <?php echo nl2br($this->e($terms['content'] ?? '')); ?>
                     </div>
                     <hr>
                     <p class="text-muted small mb-0">
                         <i class="fas fa-clock me-1"></i>
-                        Version: <?php echo e($terms['version'] ?? '1.0'); ?> | 
-                        Effective: <?php echo isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025'; ?>
+                        <?php echo $this->e('Version: ' . ($terms['version'] ?? '1.0')); ?> | 
+                        <?php echo $this->e('Effective: ' . (isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025')); ?>
                     </p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal"><?php echo $this->e('Close'); ?></button>
                 </div>
             </div>
         </div>
     </div>
     <?php endif; ?>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap JS with SRI -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" 
+            integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" 
+            crossorigin="anonymous"
+            nonce="<?php echo $csp_nonce; ?>"></script>
     
-    <!-- Custom JavaScript -->
-    <script>
+    <!-- Custom JavaScript with CSP nonce -->
+    <script nonce="<?php echo $csp_nonce; ?>">
+    // Security: CSRF token for AJAX requests
+    const CSRF_TOKEN = '<?php echo $csrf_token; ?>';
+    
+    // Security: Secure terms data
+    const TERMS_DATA = <?php echo $secureTermsData; ?>;
+
     // Auto-format JAMB number - Convert to uppercase and remove special characters
     document.getElementById('jamb_number').addEventListener('input', function(e) {
         this.value = this.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
@@ -987,6 +1017,9 @@ $steps = [
             return;
         }
         
+        // Add CSRF token
+        formData.append('csrf_token', CSRF_TOKEN);
+        
         // Show loading state
         document.getElementById('btnText').style.display = 'none';
         document.getElementById('btnSpinner').style.display = 'inline-block';
@@ -997,15 +1030,15 @@ $steps = [
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': CSRF_TOKEN
                 }
             });
             
             const data = await response.json();
-            console.log('Response:', data);
             
             if (data.success) {
-                // Store JAMB data in sessionStorage
+                // Store JAMB data in sessionStorage (already escaped)
                 sessionStorage.setItem('jamb_data', JSON.stringify(data.data));
                 sessionStorage.setItem('jamb_verified', 'true');
                 
@@ -1032,10 +1065,13 @@ $steps = [
         const icon = type === 'success' ? 'fa-check-circle' : 
                      type === 'danger' ? 'fa-exclamation-circle' : 'fa-info-circle';
         
+        // Security: Escape message to prevent XSS
+        const safeMessage = String(message).replace(/[<>]/g, '');
+        
         alertContainer.innerHTML = `
             <div class="alert alert-${type} alert-dismissible fade show" role="alert">
                 <i class="fas ${icon}"></i>
-                <span>${message}</span>
+                <span>${safeMessage}</span>
                 <button type="button" class="btn-close" onclick="this.parentElement.remove()" aria-label="Close">×</button>
             </div>
         `;
@@ -1084,3 +1120,11 @@ $steps = [
     </script>
 </body>
 </html>
+<?php
+    }
+}
+
+// Instantiate and render the view
+$view = new JambVerificationView();
+$view->render(get_defined_vars());
+?>

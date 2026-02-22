@@ -3,13 +3,15 @@
  * Public Application Controller
  * 
  * Handles public-facing application processes
- * ENHANCED: Added application creation during JAMB verification, specific login error messages, password reset functionality
- * FIXED: Redirect from application form to step 2, proper JAMB data restoration, saveApplication field mapping and update method
- * FIXED: O'Level results handling in saveApplication method - prevents duplication on re-login
- * FIXED: Exam slip generation and step 4 display - enhanced security
- * FIXED: Generate proper RRR using Remita API (no fake DEMO RRRs)
- * FIXED: Landing page redirects to registration, email verification redirects to step 1
- * FIXED: Progress tracker now shows step 5 (Exam Slip) correctly after payment
+ * COMPREHENSIVE SECURITY FIXES:
+ * - Step access validation prevents URL manipulation
+ * - JAMB verification lock after first verification
+ * - Payment completion locks all previous steps
+ * - Session fingerprint to prevent hijacking
+ * - Session timeout (30 minutes)
+ * - CSRF protection on all state-changing operations
+ * - Application ownership validation
+ * - Prevention of multiple applications per session
  * 
  * @package FCT_CNS
  */
@@ -20,6 +22,16 @@ class PublicApplicationController extends ApplicationBaseController {
     
     private $jambModel;
     private $termsModel;
+    
+    /**
+     * Session timeout in seconds (30 minutes)
+     */
+    const SESSION_TIMEOUT = 1800;
+    
+    /**
+     * Steps that require payment
+     */
+    const PAID_STEPS = [4, 5];
     
     /**
      * Constructor
@@ -39,6 +51,274 @@ class PublicApplicationController extends ApplicationBaseController {
         
         // Set layout
         $this->layout = 'application';
+        
+        // Initialize security for all requests
+        $this->initSecurity();
+    }
+    
+    /**
+     * Initialize security measures for all requests
+     */
+    private function initSecurity() {
+        // Start session if not started
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Set session fingerprint if not exists
+        if (!isset($_SESSION['security_fingerprint'])) {
+            $_SESSION['security_fingerprint'] = $this->generateSessionFingerprint();
+            $_SESSION['created_at'] = time();
+            $_SESSION['last_activity'] = time();
+        }
+        
+        // Validate session for authenticated users
+        if (isset($_SESSION['applicant_id'])) {
+            // Check session fingerprint
+            if (!$this->validateSessionFingerprint()) {
+                error_log("SECURITY: Session fingerprint mismatch - User: " . $_SESSION['applicant_id']);
+                $this->logout();
+                $this->redirect('/applicant/login?error=session_invalid');
+                return;
+            }
+            
+            // Check session timeout
+            if (!$this->checkSessionTimeout()) {
+                error_log("SECURITY: Session timeout - User: " . $_SESSION['applicant_id']);
+                $this->logout();
+                $this->redirect('/applicant/login?error=session_expired');
+                return;
+            }
+            
+            // Update last activity
+            $_SESSION['last_activity'] = time();
+        }
+    }
+    
+    /**
+     * Generate unique session fingerprint to prevent hijacking
+     */
+    private function generateSessionFingerprint() {
+        return hash('sha256', 
+            ($_SERVER['HTTP_USER_AGENT'] ?? '') . 
+            ($_SERVER['REMOTE_ADDR'] ?? '') . 
+            session_id()
+        );
+    }
+    
+    /**
+     * Validate session fingerprint
+     */
+    private function validateSessionFingerprint() {
+        if (!isset($_SESSION['security_fingerprint'])) {
+            return false;
+        }
+        
+        $current = $this->generateSessionFingerprint();
+        return hash_equals($_SESSION['security_fingerprint'], $current);
+    }
+    
+    /**
+     * Check session timeout
+     */
+    private function checkSessionTimeout() {
+        if (!isset($_SESSION['last_activity'])) {
+            return true;
+        }
+        
+        if (time() - $_SESSION['last_activity'] > self::SESSION_TIMEOUT) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Validate step access based on application state
+     * 
+     * @param array $application Application data
+     * @param int $requestedStep The step being accessed
+     * @param string $method Called from which method (for logging)
+     * @return bool True if access is allowed
+     */
+    private function validateStepAccess($application, $requestedStep, $method = 'unknown') {
+        // If no application, only step 1 is allowed
+        if (!$application) {
+            $allowed = ($requestedStep == 1);
+            if (!$allowed) {
+                error_log("SECURITY: Step access denied - No application, requested step: $requestedStep, method: $method");
+            }
+            return $allowed;
+        }
+        
+        // SECURITY: Check if payment has been made
+        $hasPaid = false;
+        if (!empty($application['id'])) {
+            $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+        }
+        
+        // If payment made, ONLY allow steps 4 and 5
+        if ($hasPaid) {
+            $allowed = in_array($requestedStep, self::PAID_STEPS);
+            if (!$allowed) {
+                error_log("SECURITY: Attempted to access pre-payment step after payment - User: " . 
+                         ($_SESSION['applicant_id'] ?? 'unknown') . ", Step: $requestedStep, Application: " . $application['id']);
+            }
+            return $allowed;
+        }
+        
+        // For unpaid applications, validate based on completion
+        switch ($requestedStep) {
+            case 1:
+                // Step 1 always accessible if not paid, but show warning if JAMB already verified
+                return true;
+                
+            case 2:
+                // Can access step 2 if JAMB is verified
+                $allowed = !empty($application['jamb_number']);
+                if (!$allowed) {
+                    error_log("SECURITY: Attempted to access step 2 without JAMB verification - Application: " . $application['id']);
+                }
+                return $allowed;
+                
+            case 3:
+                // Can access step 3 if JAMB is verified
+                $allowed = !empty($application['jamb_number']);
+                if (!$allowed) {
+                    error_log("SECURITY: Attempted to access step 3 without JAMB verification - Application: " . $application['id']);
+                }
+                return $allowed;
+                
+            case 4:
+            case 5:
+                // Paid steps - never allowed without payment
+                error_log("SECURITY: Attempted to access paid step without payment - Application: " . $application['id'] . ", Step: $requestedStep");
+                return false;
+                
+            default:
+                error_log("SECURITY: Invalid step requested: $requestedStep");
+                return false;
+        }
+    }
+    
+    /**
+     * Get application state as readable string
+     */
+    private function getApplicationState($application) {
+        if (!$application) {
+            return 'NO_APPLICATION';
+        }
+        
+        // Check payment first (highest priority)
+        if (!empty($application['id'])) {
+            $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+            if ($hasPaid) {
+                // Check if exam slip generated
+                if ($this->hasExamSlip($application['id'])) {
+                    return 'EXAM_SLIP_GENERATED';
+                }
+                return 'PAYMENT_COMPLETE';
+            }
+            
+            // Check for pending payment
+            $payments = $this->paymentModel->getByApplicationId($application['id']);
+            foreach ($payments as $payment) {
+                if ($payment['status'] === 'pending') {
+                    return 'PAYMENT_PENDING';
+                }
+            }
+        }
+        
+        // Check form completion
+        if (!empty($application['date_of_birth']) && 
+            !empty($application['phone']) && 
+            !empty($application['address']) &&
+            !empty($application['program_choice_1'])) {
+            return 'FORM_COMPLETE';
+        }
+        
+        // Check JAMB verification
+        if (!empty($application['jamb_number'])) {
+            return 'JAMB_VERIFIED';
+        }
+        
+        return 'JAMB_PENDING';
+    }
+    
+    /**
+     * Redirect to appropriate step based on application state
+     * 
+     * @param array $application Application data
+     */
+    private function redirectToProperStep($application) {
+        $state = $this->getApplicationState($application);
+        
+        switch ($state) {
+            case 'EXAM_SLIP_GENERATED':
+                $this->redirect('/apply/step/4'); // Step 4 shows exam slip
+                break;
+                
+            case 'PAYMENT_COMPLETE':
+                $this->redirect('/apply/step/4');
+                break;
+                
+            case 'PAYMENT_PENDING':
+            case 'FORM_COMPLETE':
+                $this->redirect('/apply/step/3');
+                break;
+                
+            case 'JAMB_VERIFIED':
+                $this->redirect('/apply/step/2');
+                break;
+                
+            case 'JAMB_PENDING':
+            default:
+                $this->redirect('/apply/step/1');
+                break;
+        }
+    }
+    
+    /**
+     * Check if exam slip exists for application
+     * 
+     * @param int $applicationId
+     * @return bool
+     */
+    private function hasExamSlip($applicationId) {
+        try {
+            require_once MODELS_PATH . '/application/ExamSlipModel.php';
+            $examSlipModel = new ExamSlipModel();
+            $examSlip = $examSlipModel->getByApplicationId($applicationId);
+            return !empty($examSlip);
+        } catch (Exception $e) {
+            error_log("Error checking exam slip: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Check if applicant is logged in with security validation
+     */
+    protected function isApplicantLoggedIn() {
+        if (!isset($_SESSION['applicant_id']) || empty($_SESSION['applicant_id'])) {
+            return false;
+        }
+        
+        // Validate session fingerprint
+        if (!$this->validateSessionFingerprint()) {
+            error_log("SECURITY: Session fingerprint validation failed for user: " . $_SESSION['applicant_id']);
+            $this->logout();
+            return false;
+        }
+        
+        // Check session timeout
+        if (!$this->checkSessionTimeout()) {
+            error_log("SECURITY: Session timeout for user: " . $_SESSION['applicant_id']);
+            $this->logout();
+            return false;
+        }
+        
+        return true;
     }
     
     // ============================================
@@ -49,28 +329,14 @@ class PublicApplicationController extends ApplicationBaseController {
      * Show application landing page - FIXED: Redirects logged-in users appropriately
      */
     public function landing() {
+        // Initialize security
+        $this->initSecurity();
+        
         // Check if user is already logged in
         if ($this->isApplicantLoggedIn()) {
             // If logged in, check application progress
             $application = $this->getApplication();
-            
-            if ($application) {
-                // Redirect to appropriate step based on application progress
-                if (empty($application['jamb_number'])) {
-                    $this->redirect('/apply/step/1');
-                } elseif (empty($application['date_of_birth']) || 
-                          empty($application['phone']) || 
-                          empty($application['address'])) {
-                    $this->redirect('/apply/step/2');
-                } elseif ($this->paymentModel->hasSuccessfulPayment($application['id'])) {
-                    $this->redirect('/apply/step/4');
-                } else {
-                    $this->redirect('/apply/step/3');
-                }
-            } else {
-                // Logged in but no application - start JAMB verification
-                $this->redirect('/apply/step/1');
-            }
+            $this->redirectToProperStep($application);
             return;
         }
         
@@ -94,6 +360,9 @@ class PublicApplicationController extends ApplicationBaseController {
      * Show registration form (Step 1 - New Flow)
      */
     public function showRegistration() {
+        // Initialize security
+        $this->initSecurity();
+        
         // Check if portal is open
         if (!$this->settingsModel->isPortalOpen()) {
             $this->data['portal_closed'] = true;
@@ -105,12 +374,7 @@ class PublicApplicationController extends ApplicationBaseController {
         // If already logged in, redirect to appropriate step
         if ($this->isApplicantLoggedIn()) {
             $application = $this->getApplication();
-            
-            if ($application) {
-                $this->redirect('/apply/step/' . $application['application_step']);
-            } else {
-                $this->redirect('/apply/step/1');
-            }
+            $this->redirectToProperStep($application);
             return;
         }
         
@@ -132,21 +396,19 @@ class PublicApplicationController extends ApplicationBaseController {
      * Redirects to email sent page, not verification with token
      */
     public function processRegistration() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /apply/register');
-            exit;
+            $this->redirect('/apply/register');
+            return;
         }
         
         // Validate CSRF
         if (!$this->validateCsrfToken()) {
             $_SESSION['flash_error'] = 'Security token expired. Please try again.';
-            header('Location: /apply/register');
-            exit;
+            $this->redirect('/apply/register');
+            return;
         }
         
         // Get form data
@@ -193,8 +455,8 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!empty($errors)) {
             $_SESSION['flash_error'] = implode('<br>', $errors);
-            header('Location: /apply/register');
-            exit;
+            $this->redirect('/apply/register');
+            return;
         }
         
         try {
@@ -223,15 +485,13 @@ class PublicApplicationController extends ApplicationBaseController {
             // Store email in session for display
             $_SESSION['registration_email'] = $email;
             
-            // IMPORTANT: Redirect to email sent page, NOT to verify-email with token
-            header('Location: /apply/verify-email');  // This shows "check your email" page
-            exit;
+            // Redirect to email sent page
+            $this->redirect('/apply/verify-email');
             
         } catch (Exception $e) {
             error_log("Registration error: " . $e->getMessage());
             $_SESSION['flash_error'] = 'An error occurred. Please try again.';
-            header('Location: /apply/register');
-            exit;
+            $this->redirect('/apply/register');
         }
     }
 
@@ -240,10 +500,8 @@ class PublicApplicationController extends ApplicationBaseController {
      * Now properly shows verification success page before JAMB verification
      */
     public function verifyEmail() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Get token from URL
         $token = $_GET['token'] ?? '';
@@ -256,7 +514,6 @@ class PublicApplicationController extends ApplicationBaseController {
         error_log("Token: " . $token);
         error_log("Email from URL: " . ($_GET['email'] ?? 'not set'));
         error_log("Email from session: " . ($_SESSION['registration_email'] ?? 'not set'));
-        error_log("Final email: " . $email);
         
         // If no token, show the "check your email" page
         if (empty($token)) {
@@ -273,7 +530,7 @@ class PublicApplicationController extends ApplicationBaseController {
         $applicant = $this->applicantModel->findByVerificationToken($token);
         
         if (!$applicant) {
-            // Token not found or expired - try to find by email as fallback
+            // Token not found or expired
             error_log("No applicant found with token: " . $token);
             
             if (!empty($email)) {
@@ -288,12 +545,11 @@ class PublicApplicationController extends ApplicationBaseController {
                     $_SESSION['applicant_id'] = $applicantByEmail['id'];
                     $_SESSION['applicant_email'] = $applicantByEmail['email'];
                     $_SESSION['applicant_name'] = ($applicantByEmail['first_name'] ?? '') . ' ' . ($applicantByEmail['last_name'] ?? '');
-                    $_SESSION['applicant_login_time'] = time();
                     
                     // Clear registration email from session
                     unset($_SESSION['registration_email']);
                     
-                    // SHOW VERIFICATION SUCCESS PAGE - FIXED: Don't create application here
+                    // SHOW VERIFICATION SUCCESS PAGE
                     $this->data['pageTitle'] = 'Email Verified Successfully';
                     $this->data['verified'] = true;
                     $this->data['applicant_name'] = $_SESSION['applicant_name'];
@@ -322,12 +578,11 @@ class PublicApplicationController extends ApplicationBaseController {
             $_SESSION['applicant_id'] = $applicant['id'];
             $_SESSION['applicant_email'] = $applicant['email'];
             $_SESSION['applicant_name'] = ($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? '');
-            $_SESSION['applicant_login_time'] = time();
             
             // Clear registration email from session
             unset($_SESSION['registration_email']);
             
-            // SHOW VERIFICATION SUCCESS PAGE - FIXED: Don't create application here
+            // SHOW VERIFICATION SUCCESS PAGE
             $this->data['pageTitle'] = 'Email Verified Successfully';
             $this->data['verified'] = true;
             $this->data['applicant_name'] = $_SESSION['applicant_name'];
@@ -355,14 +610,9 @@ class PublicApplicationController extends ApplicationBaseController {
             $_SESSION['applicant_id'] = $applicant['id'];
             $_SESSION['applicant_email'] = $applicant['email'];
             $_SESSION['applicant_name'] = ($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? '');
-            $_SESSION['applicant_login_time'] = time();
             
             // Clear registration email from session
             unset($_SESSION['registration_email']);
-            
-            // IMPORTANT FIX: DO NOT create application here!
-            // Application is created during JAMB verification (step 1)
-            // Just show the success page
             
             // SHOW VERIFICATION SUCCESS PAGE
             $this->data['pageTitle'] = 'Email Verified Successfully';
@@ -385,13 +635,10 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Resend verification email (Step 1 - New Flow) - FIXED
-     * Now properly handles email parameter and redirects with email in URL
      */
     public function resendVerification() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Get email from query string or session
         $email = $_GET['email'] ?? $_SESSION['registration_email'] ?? '';
@@ -400,8 +647,8 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (empty($email)) {
             $_SESSION['flash_error'] = 'Email address not found. Please register again.';
-            header('Location: /apply/register');
-            exit;
+            $this->redirect('/apply/register');
+            return;
         }
         
         // Find applicant by email
@@ -411,8 +658,8 @@ class PublicApplicationController extends ApplicationBaseController {
             if ($applicant['email_verified'] == 1) {
                 // Already verified
                 $_SESSION['flash_success'] = 'Your email is already verified. Please login.';
-                header('Location: /applicant/login');
-                exit;
+                $this->redirect('/applicant/login');
+                return;
             }
             
             // Generate new token
@@ -433,13 +680,12 @@ class PublicApplicationController extends ApplicationBaseController {
             $_SESSION['flash_success'] = 'Verification email has been resent. Please check your inbox.';
             
             // Redirect back to verification page WITH email parameter
-            header('Location: /apply/verify-email?email=' . urlencode($email));
-            exit;
+            $this->redirect('/apply/verify-email?email=' . urlencode($email));
+            
         } else {
             // Applicant not found with this email
             $_SESSION['flash_error'] = 'Email address not found in our records. Please register again.';
-            header('Location: /apply/register');
-            exit;
+            $this->redirect('/apply/register');
         }
     }
 
@@ -518,19 +764,16 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show application form (Step 2 - New Flow)
-     * FIXED: Redirect to step 2 instead of rendering form
      */
     public function showApplicationForm() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Check if logged in
-        if (!isset($_SESSION['applicant_id'])) {
+        if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         $applicantId = $_SESSION['applicant_id'];
@@ -538,14 +781,14 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!$applicant) {
             $_SESSION['flash_error'] = 'Applicant not found';
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         if (!$applicant['email_verified']) {
             $_SESSION['flash_error'] = 'Please verify your email first';
-            header('Location: /apply/verify-email');
-            exit;
+            $this->redirect('/apply/verify-email');
+            return;
         }
         
         // Get application
@@ -553,15 +796,20 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!$application) {
             $_SESSION['flash_error'] = 'Application not found. Please start over.';
-            header('Location: /apply/step/1');
-            exit;
+            $this->redirect('/apply/step/1');
+            return;
         }
         
-        // CRITICAL: Check if JAMB is verified in database, even if not in session
-        if (empty($application['jamb_number'])) {
-            $_SESSION['flash_error'] = 'Please verify your JAMB number first';
-            header('Location: /apply/step/1');
-            exit;
+        // SECURITY: Validate step access
+        if (!$this->validateStepAccess($application, 2, 'showApplicationForm')) {
+            $this->redirectToProperStep($application);
+            return;
+        }
+        
+        // SECURITY: If JAMB already verified, show message but allow access
+        if (!empty($application['jamb_number'])) {
+            $this->data['jamb_verified'] = true;
+            $this->data['jamb_number'] = $application['jamb_number'];
         }
         
         // Restore JAMB data to session if missing but application has it
@@ -574,7 +822,8 @@ class PublicApplicationController extends ApplicationBaseController {
                 'gender' => $application['gender'],
                 'state_of_origin' => $application['state_of_origin'],
                 'lga' => $application['lga'],
-                'score' => $application['utme_score']
+                'score' => $application['utme_score'],
+                'verified_at' => time()
             ];
             error_log("Restored JAMB data to session from database in showApplicationForm for applicant: " . $applicantId);
         }
@@ -629,23 +878,19 @@ class PublicApplicationController extends ApplicationBaseController {
             ] : null
         ]);
         
-        // FIXED: Redirect to step 2 instead of rendering form
-        header('Location: /apply/step/2');
-        exit;
+        // Redirect to step 2 instead of rendering form
+        $this->redirect('/apply/step/2');
     }
 
     /**
-     * Save application form - FIXED with proper O'Level data handling
-     * Now properly saves O'Level subjects data to olevel_results field and prevents duplication
+     * Save application form - FIXED with security checks
      */
     public function saveApplication() {
         // Set header to JSON first thing
         header('Content-Type: application/json');
         
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Check if user is logged in
         if (!isset($_SESSION['applicant_id'])) {
@@ -662,15 +907,26 @@ class PublicApplicationController extends ApplicationBaseController {
         try {
             $applicantId = $_SESSION['applicant_id'];
             
-            // Get JAMB data from hidden fields
-            $jambNumber = $_POST['jamb_number'] ?? '';
-            $firstName = $_POST['first_name'] ?? '';
-            $lastName = $_POST['last_name'] ?? '';
-            $otherNames = $_POST['other_names'] ?? '';
-            $gender = $_POST['gender'] ?? '';
-            $stateOfOrigin = $_POST['state_of_origin'] ?? '';
-            $lga = $_POST['lga'] ?? '';
-            $utmeScore = $_POST['utme_score'] ?? '';
+            // Get existing application
+            $application = $this->applicationModel->getByApplicantId($applicantId);
+            
+            if (!$application) {
+                echo json_encode(['success' => false, 'message' => 'Application not found']);
+                return;
+            }
+            
+            // SECURITY: Check if payment has been made
+            $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+            if ($hasPaid) {
+                echo json_encode(['success' => false, 'message' => 'Cannot modify application after payment']);
+                return;
+            }
+            
+            // SECURITY: Validate step access
+            if (!$this->validateStepAccess($application, 2, 'saveApplication')) {
+                echo json_encode(['success' => false, 'message' => 'Invalid operation for current application state']);
+                return;
+            }
             
             // Get editable fields
             $dateOfBirth = $_POST['date_of_birth'] ?? '';
@@ -680,10 +936,6 @@ class PublicApplicationController extends ApplicationBaseController {
             $programChoice = $_POST['program_choice'] ?? $_POST['program_choice_1'] ?? '';
             $email = $_POST['email'] ?? '';
             
-            // DEBUG: Log all POST data
-            error_log("=== SAVE APPLICATION DEBUG ===");
-            error_log("POST keys: " . implode(', ', array_keys($_POST)));
-            
             // Validate required fields
             $missingFields = [];
             if (empty($dateOfBirth)) $missingFields[] = 'date_of_birth';
@@ -692,7 +944,6 @@ class PublicApplicationController extends ApplicationBaseController {
             if (empty($programChoice)) $missingFields[] = 'program_choice';
             
             if (!empty($missingFields)) {
-                error_log("Missing fields: " . implode(', ', $missingFields));
                 echo json_encode([
                     'success' => false, 
                     'message' => 'Please fill all required fields: ' . implode(', ', $missingFields)
@@ -700,15 +951,10 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // Get existing application
-            $application = $this->applicationModel->getByApplicantId($applicantId);
+            // Begin transaction
+            $this->applicationModel->beginTransaction();
             
-            if (!$application) {
-                echo json_encode(['success' => false, 'message' => 'Application not found']);
-                return;
-            }
-            
-            // Prepare update data - FIXED: Set application_step to 3
+            // Prepare update data
             $updateData = [
                 'date_of_birth' => $dateOfBirth,
                 'phone' => $phone,
@@ -716,11 +962,11 @@ class PublicApplicationController extends ApplicationBaseController {
                 'address' => $address,
                 'nationality' => $nationality,
                 'program_choice_1' => $programChoice,
-                'application_step' => 3, // FIXED: Changed from 2 to 3
+                'application_step' => 3,
                 'updated_at' => date('Y-m-d H:i:s')
             ];
             
-            // FIXED: Handle O'Level subject data from the form - PREVENTS DUPLICATION
+            // Handle O'Level subject data
             if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
                 error_log("O'Level data received: " . count($_POST['olevel']) . " entries");
                 
@@ -750,32 +996,29 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
                 
                 if (!empty($formattedResults)) {
-                    // Save to olevel_results field in JSON format (overwrites existing)
+                    // Save to olevel_results field in JSON format
                     $updateData['olevel_results'] = json_encode($formattedResults);
-                    error_log("Formatted O'Level data being saved: " . count($formattedResults) . " entries");
                     
-                    // Also save to the dedicated olevel_results table - BUT FIRST DELETE EXISTING TO PREVENT DUPLICATION
+                    // Also save to the dedicated olevel_results table
                     try {
                         require_once MODELS_PATH . '/application/OlevelResultModel.php';
                         $olevelModel = new OlevelResultModel();
                         
-                        // IMPORTANT: Delete existing records first to prevent duplication
+                        // Delete existing records first to prevent duplication
                         $olevelModel->deleteByApplicationId($application['id']);
                         error_log("Deleted existing O'Level records for application ID: " . $application['id']);
                         
-                        // Save each sitting to the database (fresh insert)
+                        // Save each sitting to the database
                         foreach ($formattedResults as $result) {
                             $result['application_id'] = $application['id'];
                             $olevelModel->insert($result);
                         }
-                        error_log("Saved " . count($formattedResults) . " new O'Level results to olevel_results table");
+                        error_log("Saved " . count($formattedResults) . " new O'Level results");
                     } catch (Exception $e) {
                         error_log("Error saving to olevel_results table: " . $e->getMessage());
                         // Don't fail the whole request, just log the error
                     }
                 }
-            } else {
-                error_log("No O'Level data found in POST");
             }
             
             // Handle file uploads
@@ -796,13 +1039,10 @@ class PublicApplicationController extends ApplicationBaseController {
             $updated = $this->applicationModel->updateApplication($application['id'], $updateData);
             
             if (!$updated) {
-                error_log("Failed to update application ID: " . $application['id']);
-                echo json_encode(['success' => false, 'message' => 'Failed to update application']);
-                return;
+                throw new Exception("Failed to update application");
             }
             
             error_log("Updated existing application ID: " . $application['id']);
-            error_log("Application step set to: 3");
             
             // Update applicant phone and email if needed
             if (!empty($phone) || !empty($email)) {
@@ -817,6 +1057,8 @@ class PublicApplicationController extends ApplicationBaseController {
                     error_log("Failed to update applicant: " . $e->getMessage());
                 }
             }
+            
+            $this->applicationModel->commit();
             
             // Prepare success response
             $response = [
@@ -837,6 +1079,7 @@ class PublicApplicationController extends ApplicationBaseController {
             echo json_encode($response);
             
         } catch (Exception $e) {
+            $this->applicationModel->rollback();
             error_log("Save application error: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());
             echo json_encode([
@@ -847,16 +1090,14 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Remove document - FIXED with correct update method handling
+     * Remove document - FIXED with security checks
      */
     public function removeDocument() {
         // Set header to JSON first thing
         header('Content-Type: application/json');
         
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Check if user is logged in
         if (!isset($_SESSION['applicant_id'])) {
@@ -888,6 +1129,13 @@ class PublicApplicationController extends ApplicationBaseController {
             
             if (!$application) {
                 echo json_encode(['success' => false, 'message' => 'Application not found']);
+                return;
+            }
+            
+            // SECURITY: Check if payment has been made
+            $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+            if ($hasPaid) {
+                echo json_encode(['success' => false, 'message' => 'Cannot modify application after payment']);
                 return;
             }
             
@@ -999,19 +1247,16 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show payment page (Step 3 - New Flow)
-     * FIXED: Generate fresh CSRF token and store in session, restore JAMB data if needed
      */
     public function showPayment() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Check if logged in
-        if (!isset($_SESSION['applicant_id'])) {
+        if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         $applicantId = $_SESSION['applicant_id'];
@@ -1019,12 +1264,33 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!$application) {
             $_SESSION['flash_error'] = 'Application not found';
-            header('Location: /apply/form');
-            exit;
+            $this->redirect('/apply/form');
+            return;
         }
         
-        // RESTORE JAMB DATA TO SESSION IF MISSING BUT APPLICATION HAS IT
-        if (!isset($_SESSION['jamb_verification']) && $application['jamb_number']) {
+        // SECURITY: Validate step access
+        if (!$this->validateStepAccess($application, 3, 'showPayment')) {
+            $this->redirectToProperStep($application);
+            return;
+        }
+        
+        // Check if already paid
+        $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+        
+        if ($hasPaid) {
+            $this->redirect('/apply/step/4');
+            return;
+        }
+        
+        // Check if application is complete enough for payment
+        if (empty($application['date_of_birth']) || empty($application['phone']) || empty($application['address'])) {
+            $_SESSION['flash_error'] = 'Please complete your application form first';
+            $this->redirect('/apply/step/2');
+            return;
+        }
+        
+        // Restore JAMB data if needed
+        if (!isset($_SESSION['jamb_verification']) && !empty($application['jamb_number'])) {
             $_SESSION['jamb_verification'] = [
                 'jamb_number' => $application['jamb_number'],
                 'first_name' => $application['first_name'],
@@ -1038,14 +1304,6 @@ class PublicApplicationController extends ApplicationBaseController {
             error_log("Restored JAMB data to session from application ID: " . $application['id']);
         }
         
-        // Check if already paid
-        $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
-        
-        if ($hasPaid) {
-            header('Location: /apply/step/4');
-            exit;
-        }
-        
         // Generate a fresh CSRF token and store it in session
         $csrfToken = bin2hex(random_bytes(32));
         
@@ -1056,7 +1314,7 @@ class PublicApplicationController extends ApplicationBaseController {
         
         // Store the token with timestamp
         $_SESSION['csrf_tokens'][$csrfToken] = time();
-        $_SESSION['current_csrf_token'] = $csrfToken; // Store current token for reference
+        $_SESSION['current_csrf_token'] = $csrfToken;
         
         $fee = $this->settingsModel->getApplicationFee();
         $currency = $this->settingsModel->getCurrency();
@@ -1067,24 +1325,21 @@ class PublicApplicationController extends ApplicationBaseController {
             'fee' => $fee,
             'currency' => $currency,
             'formatted_fee' => $this->settingsModel->getFormattedFee(),
-            'csrf_token' => $csrfToken // Use the fresh token
+            'csrf_token' => $csrfToken
         ]);
         
         $this->render('applications/payment');
     }
 
     /**
-     * Initiate payment - Generate RRR using Remita API (NO FAKE RRRs)
-     * FIXED: Added server-side payment URL generation for security
+     * Initiate payment - Generate RRR using Remita API
      */
     public function initiatePayment() {
         // Set header for JSON response
         header('Content-Type: application/json');
         
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         error_log("=== INITIATE PAYMENT CALLED ===");
         
@@ -1099,38 +1354,8 @@ class PublicApplicationController extends ApplicationBaseController {
         $csrfToken = $input['csrf_token'] ?? $_POST['csrf_token'] ?? '';
         
         // Validate CSRF token
-        if (empty($csrfToken)) {
-            error_log("CSRF validation failed: Token is empty");
-            echo json_encode(['success' => false, 'message' => 'Security token missing']);
-            return;
-        }
-        
-        // Check token in session - Check both possible locations
-        $validToken = false;
-        
-        // Check in csrf_tokens array
-        if (isset($_SESSION['csrf_tokens']) && isset($_SESSION['csrf_tokens'][$csrfToken])) {
-            // Check token expiration (1 hour)
-            if (time() - $_SESSION['csrf_tokens'][$csrfToken] <= 3600) {
-                $validToken = true;
-                // Remove used token
-                unset($_SESSION['csrf_tokens'][$csrfToken]);
-            } else {
-                unset($_SESSION['csrf_tokens'][$csrfToken]);
-                error_log("CSRF validation failed: Token expired");
-                echo json_encode(['success' => false, 'message' => 'Security token expired']);
-                return;
-            }
-        }
-        // Check in simple csrf_token (from ApplicationBaseController)
-        elseif (isset($_SESSION['csrf_token']) && $_SESSION['csrf_token'] === $csrfToken) {
-            $validToken = true;
-            // Generate new token for next request
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        }
-        
-        if (!$validToken) {
-            error_log("CSRF validation failed: Token not found in session");
+        if (!$this->validateCsrfToken($csrfToken)) {
+            error_log("CSRF validation failed for initiatePayment");
             echo json_encode(['success' => false, 'message' => 'Invalid security token']);
             return;
         }
@@ -1143,6 +1368,12 @@ class PublicApplicationController extends ApplicationBaseController {
             
             if (!$application) {
                 echo json_encode(['success' => false, 'message' => 'Application not found']);
+                return;
+            }
+            
+            // SECURITY: Validate step access
+            if (!$this->validateStepAccess($application, 3, 'initiatePayment')) {
+                echo json_encode(['success' => false, 'message' => 'Invalid operation for current application state']);
                 return;
             }
             
@@ -1213,14 +1444,14 @@ class PublicApplicationController extends ApplicationBaseController {
                     'payment_id' => $paymentId,
                     'rrr' => $rrr,
                     'amount' => $fee,
-                    'payment_url' => $paymentUrl // Store URL in session too
+                    'payment_url' => $paymentUrl
                 ];
                 
                 echo json_encode([
                     'success' => true,
                     'message' => 'RRR generated successfully',
                     'rrr' => $rrr,
-                    'payment_url' => $paymentUrl, // Send URL to frontend
+                    'payment_url' => $paymentUrl,
                     'reference' => $reference,
                     'order_id' => $orderId,
                     'amount' => $fee
@@ -1250,7 +1481,6 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Generate secure Remita payment URL (server-side)
-     * FIXED: Issue 2 - Payment link security
      */
     private function generatePaymentUrl($rrr) {
         // Clean RRR - remove any non-numeric characters
@@ -1272,9 +1502,8 @@ class PublicApplicationController extends ApplicationBaseController {
     public function verifyPayment() {
         header('Content-Type: application/json');
         
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         error_log("=== VERIFY PAYMENT CALLED ===");
         
@@ -1293,6 +1522,12 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
+        // Validate CSRF
+        if (!$this->validateCsrfToken($csrfToken)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid security token']);
+            return;
+        }
+        
         try {
             // Get payment by RRR
             $payment = $this->paymentModel->getByRRR($rrr);
@@ -1304,6 +1539,8 @@ class PublicApplicationController extends ApplicationBaseController {
             
             // Verify ownership
             if ($payment['applicant_id'] != $_SESSION['applicant_id']) {
+                error_log("SECURITY: Unauthorized payment verification attempt - User: " . $_SESSION['applicant_id'] . 
+                         ", Payment Owner: " . $payment['applicant_id']);
                 echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
                 return;
             }
@@ -1316,41 +1553,49 @@ class PublicApplicationController extends ApplicationBaseController {
             error_log("Remita verification result: " . print_r($verificationResult, true));
             
             if ($verificationResult['status'] === 'success') {
-                // Payment is confirmed by Remita
-                $updateResult = $this->paymentModel->markAsSuccess($payment['id'], [
-                    'transaction_id' => $verificationResult['payment_data']['transactionId'] ?? 'TXN' . time(),
-                    'payment_method' => 'remita',
-                    'payer_email' => $verificationResult['payment_data']['payerEmail'] ?? null,
-                    'payer_name' => $verificationResult['payment_data']['payerName'] ?? null,
-                    'payment_details' => json_encode($verificationResult['payment_data'])
-                ]);
+                // Begin transaction
+                $this->paymentModel->beginTransaction();
                 
-                if ($updateResult) {
-                    // Update application step to 4 (Payment Complete)
-                    $this->applicationModel->updateApplication($payment['application_id'], [
-                        'application_step' => 4
+                try {
+                    // Payment is confirmed by Remita
+                    $updateResult = $this->paymentModel->markAsSuccess($payment['id'], [
+                        'transaction_id' => $verificationResult['payment_data']['transactionId'] ?? 'TXN' . time(),
+                        'payment_method' => 'remita',
+                        'payer_email' => $verificationResult['payment_data']['payerEmail'] ?? null,
+                        'payer_name' => $verificationResult['payment_data']['payerName'] ?? null,
+                        'payment_details' => json_encode($verificationResult['payment_data'])
                     ]);
                     
-                    // Generate exam slip
-                    $examSlip = $this->generateExamSlip($payment['application_id']);
-                    
-                    if (!$examSlip) {
-                        error_log("Failed to generate exam slip for application: " . $payment['application_id']);
+                    if ($updateResult) {
+                        // Update application step to 4 (Payment Complete)
+                        $this->applicationModel->updateApplication($payment['application_id'], [
+                            'application_step' => 4
+                        ]);
+                        
+                        // Generate exam slip
+                        $examSlip = $this->generateExamSlip($payment['application_id']);
+                        
+                        if (!$examSlip) {
+                            error_log("Failed to generate exam slip for application: " . $payment['application_id']);
+                        } else {
+                            error_log("Exam slip generated successfully for application: " . $payment['application_id']);
+                        }
+                        
+                        $this->paymentModel->commit();
+                        
+                        echo json_encode([
+                            'success' => true,
+                            'message' => 'Payment verified successfully',
+                            'redirect' => '/apply/step/4'
+                        ]);
                     } else {
-                        error_log("Exam slip generated successfully for application: " . $payment['application_id']);
+                        throw new Exception("Failed to update payment status");
                     }
-                    
-                    echo json_encode([
-                        'success' => true,
-                        'message' => 'Payment verified successfully',
-                        'redirect' => '/apply/step/4'
-                    ]);
-                } else {
-                    echo json_encode([
-                        'success' => false,
-                        'message' => 'Failed to update payment status'
-                    ]);
+                } catch (Exception $e) {
+                    $this->paymentModel->rollback();
+                    throw $e;
                 }
+                
             } elseif ($verificationResult['status'] === 'pending') {
                 echo json_encode([
                     'success' => false,
@@ -1381,16 +1626,14 @@ class PublicApplicationController extends ApplicationBaseController {
      * Show exam slip page (Step 4 - New Flow)
      */
     public function showExamSlip() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Check if logged in
-        if (!isset($_SESSION['applicant_id'])) {
+        if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         $applicantId = $_SESSION['applicant_id'];
@@ -1398,16 +1641,24 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!$application) {
             $_SESSION['flash_error'] = 'Application not found';
-            header('Location: /apply/form');
-            exit;
+            $this->redirect('/apply/form');
+            return;
+        }
+        
+        // SECURITY: Validate step access
+        if (!$this->validateStepAccess($application, 4, 'showExamSlip')) {
+            $this->redirectToProperStep($application);
+            return;
         }
         
         // Check if payment is successful
         $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
         
         if (!$hasPaid) {
-            header('Location: /apply/step/3');
-            exit;
+            error_log("SECURITY: Attempted to access exam slip without payment - Application: " . $application['id']);
+            $_SESSION['flash_error'] = 'Payment required. Please complete your payment first.';
+            $this->redirect('/apply/step/3');
+            return;
         }
         
         // Get exam slip
@@ -1417,7 +1668,7 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!$examSlip) {
             // Generate exam slip if not exists
-            error_log("Exam slip not found for application: " . $application['id'] . ". Attempting to generate...");
+            error_log("Exam slip not found for application: " . $application['id'] . ". Generating...");
             $examSlip = $this->generateExamSlip($application['id']);
         }
         
@@ -1437,7 +1688,7 @@ class PublicApplicationController extends ApplicationBaseController {
             'exam_slip' => $examSlip,
             'applicant' => $applicant,
             'applicant_name' => $applicant_name,
-            'has_exam_slip' => true, // FIX: Add this line for progress tracker
+            'has_exam_slip' => true,
             'exam_details' => [
                 'date' => $this->settingsModel->get('cbt_start_date', 'To be announced'),
                 'venue' => 'FCT College of Nursing Sciences, Gwagwalada (within UATH)',
@@ -1452,31 +1703,29 @@ class PublicApplicationController extends ApplicationBaseController {
      * Print exam slip - uses print-optimized view
      */
     public function printExamSlip() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Check if logged in
-        if (!isset($_SESSION['applicant_id'])) {
-            header('Location: /applicant/login');
-            exit;
+        if (!$this->isApplicantLoggedIn()) {
+            $this->redirect('/applicant/login');
+            return;
         }
         
         $applicantId = $_SESSION['applicant_id'];
         $application = $this->applicationModel->getByApplicantId($applicantId);
         
         if (!$application) {
-            header('Location: /apply/step/1');
-            exit;
+            $this->redirect('/apply/step/1');
+            return;
         }
         
         // Check if payment is successful
         $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
         
         if (!$hasPaid) {
-            header('Location: /apply/step/3');
-            exit;
+            $this->redirect('/apply/step/3');
+            return;
         }
         
         // Get exam slip
@@ -1486,14 +1735,14 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!$examSlip) {
             $_SESSION['flash_error'] = 'Exam slip not found';
-            header('Location: /apply/step/4');
-            exit;
+            $this->redirect('/apply/step/4');
+            return;
         }
         
         // Get applicant
         $applicant = $this->applicantModel->find($applicantId);
         
-        // FIX: Set baseUrl properly
+        // Set baseUrl properly
         $baseUrl = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
         
         // Disable layout
@@ -1506,12 +1755,12 @@ class PublicApplicationController extends ApplicationBaseController {
             die("Print view not found");
         }
         
-        // Extract data for the view - MAKE SURE baseUrl IS PASSED
+        // Extract data for the view
         extract([
             'application' => $application,
             'exam_slip' => $examSlip,
             'applicant' => $applicant,
-            'baseUrl' => $baseUrl  // CRITICAL: Pass baseUrl to view
+            'baseUrl' => $baseUrl
         ]);
         
         // Include the view directly
@@ -1523,16 +1772,14 @@ class PublicApplicationController extends ApplicationBaseController {
      * Download exam slip
      */
     public function downloadExamSlip() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Check if logged in
-        if (!isset($_SESSION['applicant_id'])) {
+        if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         $applicantId = $_SESSION['applicant_id'];
@@ -1540,8 +1787,8 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!$application) {
             $_SESSION['flash_error'] = 'Application not found';
-            header('Location: /apply/form');
-            exit;
+            $this->redirect('/apply/form');
+            return;
         }
         
         // Get exam slip
@@ -1551,8 +1798,8 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!$examSlip) {
             $_SESSION['flash_error'] = 'Exam slip not found';
-            header('Location: /apply/step/4');
-            exit;
+            $this->redirect('/apply/step/4');
+            return;
         }
         
         // Record download
@@ -1679,7 +1926,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Generate exam slip (helper method) - FIXED: Returns the generated slip
+     * Generate exam slip (helper method)
      */
     private function generateExamSlip($applicationId) {
         require_once MODELS_PATH . '/application/ExamSlipModel.php';
@@ -1723,33 +1970,8 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     // ============================================
-    // HELPER METHODS - FIX: Add hasExamSlip method
+    // HELPER METHODS
     // ============================================
-    
-    /**
-     * Check if exam slip exists for application
-     * 
-     * @param int $applicationId
-     * @return bool
-     */
-    private function hasExamSlip($applicationId) {
-        try {
-            require_once MODELS_PATH . '/application/ExamSlipModel.php';
-            $examSlipModel = new ExamSlipModel();
-            $examSlip = $examSlipModel->getByApplicationId($applicationId);
-            return !empty($examSlip);
-        } catch (Exception $e) {
-            error_log("Error checking exam slip: " . $e->getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Check if applicant is logged in
-     */
-    protected function isApplicantLoggedIn() {
-        return isset($_SESSION['applicant_id']) && !empty($_SESSION['applicant_id']);
-    }
     
     /**
      * Get current application
@@ -1814,10 +2036,8 @@ class PublicApplicationController extends ApplicationBaseController {
      * Show applicant login page
      */
     public function login() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Clear any existing login errors from previous attempts
         unset($_SESSION['login_error']);
@@ -1825,8 +2045,9 @@ class PublicApplicationController extends ApplicationBaseController {
         
         // If already logged in, redirect
         if (isset($_SESSION['applicant_id'])) {
-            header('Location: /apply/step/1');
-            exit;
+            $application = $this->getApplication();
+            $this->redirectToProperStep($application);
+            return;
         }
         
         $this->data = array_merge($this->data, [
@@ -1839,13 +2060,10 @@ class PublicApplicationController extends ApplicationBaseController {
     
     /**
      * Process applicant login - ENHANCED with specific error messages
-     * FIXED: Updated redirect URLs to use step2 instead of form
      */
     public function processLogin() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Clear any existing form errors
         unset($_SESSION['login_error']);
@@ -1853,15 +2071,15 @@ class PublicApplicationController extends ApplicationBaseController {
         unset($_SESSION['login_value']);
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         // Validate CSRF
         if (!$this->validateCsrfToken()) {
             $_SESSION['flash_error'] = 'Security token expired. Please refresh the page and try again.';
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         $login = trim($_POST['login'] ?? '');
@@ -1874,15 +2092,15 @@ class PublicApplicationController extends ApplicationBaseController {
         if (empty($login)) {
             $_SESSION['login_error'] = 'Please enter your email, phone, or JAMB number.';
             $_SESSION['flash_error'] = 'Please enter your login details.';
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         if (empty($password)) {
             $_SESSION['password_error'] = 'Please enter your password.';
             $_SESSION['flash_error'] = 'Please enter your password.';
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         // Determine the type of login (email, phone, or JAMB)
@@ -1911,7 +2129,7 @@ class PublicApplicationController extends ApplicationBaseController {
             }
         }
         
-        // If no applicant found - show specific error based on login type
+        // If no applicant found
         if (!$applicant) {
             error_log("Login failed: No applicant found with login: " . $login);
             
@@ -1932,8 +2150,8 @@ class PublicApplicationController extends ApplicationBaseController {
             
             $_SESSION['login_error'] = $errorMessage;
             $_SESSION['flash_error'] = $errorMessage;
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         // Check if email is verified
@@ -1941,8 +2159,8 @@ class PublicApplicationController extends ApplicationBaseController {
             error_log("Login failed: Email not verified for applicant ID: " . $applicant['id']);
             $_SESSION['flash_error'] = 'Please verify your email before logging in. Check your inbox for the verification link.';
             $_SESSION['verification_email'] = $applicant['email'];
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         // Verify password
@@ -1966,16 +2184,16 @@ class PublicApplicationController extends ApplicationBaseController {
             
             $_SESSION['password_error'] = $errorMessage;
             $_SESSION['flash_error'] = $errorMessage;
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         // Check if account is active
         if (isset($applicant['status']) && $applicant['status'] !== 'active') {
-            error_log("Login failed: Account inactive for applicant ID: " . $applicant['id'] . ", Status: " . ($applicant['status'] ?? 'unknown'));
+            error_log("Login failed: Account inactive for applicant ID: " . $applicant['id']);
             $_SESSION['flash_error'] = 'Your account is inactive. Please contact support at info@fctcns.edu.ng';
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         // Clear login value from session on successful login
@@ -1987,7 +2205,10 @@ class PublicApplicationController extends ApplicationBaseController {
         $_SESSION['applicant_id'] = $applicant['id'];
         $_SESSION['applicant_email'] = $applicant['email'];
         $_SESSION['applicant_name'] = trim(($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? ''));
-        $_SESSION['applicant_login_time'] = time();
+        
+        // Set security fingerprint
+        $_SESSION['security_fingerprint'] = $this->generateSessionFingerprint();
+        $_SESSION['last_activity'] = time();
         
         // Log successful login
         error_log("Login successful for applicant ID: " . $applicant['id'] . ", Email: " . $applicant['email']);
@@ -1995,50 +2216,8 @@ class PublicApplicationController extends ApplicationBaseController {
         // Get the application for this applicant
         $application = $this->applicationModel->getByApplicantId($applicant['id']);
         
-        // Determine redirect URL based on application status
-        $redirectUrl = '/apply/step/1'; // Default to JAMB verification
-        
-        if ($application) {
-            // Restore JAMB data to session if not present
-            if (!isset($_SESSION['jamb_verification']) && !empty($application['jamb_number'])) {
-                $_SESSION['jamb_verification'] = [
-                    'jamb_number' => $application['jamb_number'],
-                    'first_name' => $application['first_name'],
-                    'last_name' => $application['last_name'],
-                    'other_names' => $application['other_names'],
-                    'gender' => $application['gender'],
-                    'state_of_origin' => $application['state_of_origin'],
-                    'lga' => $application['lga'],
-                    'score' => $application['utme_score']
-                ];
-            }
-            
-            // Determine step based on application progress
-            if (empty($application['jamb_number'])) {
-                $redirectUrl = '/apply/step/1';
-            } elseif (empty($application['date_of_birth']) || 
-                      empty($application['phone']) || 
-                      empty($application['address']) || 
-                      empty($application['program_choice_1'])) {
-                $redirectUrl = '/apply/step/2';
-            } elseif ($application['application_step'] >= 4) {
-                // Check if payment is complete
-                $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
-                if ($hasPaid) {
-                    $redirectUrl = '/apply/step/4';
-                } else {
-                    $redirectUrl = '/apply/step/3';
-                }
-            } else {
-                $redirectUrl = '/apply/step/3';
-            }
-        }
-        
-        // Set success flash message
-        $_SESSION['flash_success'] = 'Login successful! Welcome back, ' . $_SESSION['applicant_name'] . '.';
-        
-        header('Location: ' . $redirectUrl);
-        exit;
+        // Redirect to appropriate step
+        $this->redirectToProperStep($application);
     }
     
     /**
@@ -2049,10 +2228,7 @@ class PublicApplicationController extends ApplicationBaseController {
             session_start();
         }
         
-        // Clear JAMB verification if exists
-        unset($_SESSION['jamb_verification']);
-        
-        // Clear session
+        // Clear all session data
         $_SESSION = array();
         
         // Destroy session cookie
@@ -2068,18 +2244,15 @@ class PublicApplicationController extends ApplicationBaseController {
         session_destroy();
         
         $_SESSION['flash_success'] = 'You have been logged out successfully.';
-        header('Location: /applicant/login');
-        exit;
+        $this->redirect('/applicant/login');
     }
     
     /**
      * Show forgot password page
      */
     public function forgotPassword() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Forgot Password - Application Portal',
@@ -2093,24 +2266,22 @@ class PublicApplicationController extends ApplicationBaseController {
      * Process forgot password - Send reset link to email
      */
     public function processForgotPassword() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Clear any existing email value
         unset($_SESSION['email_value']);
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /applicant/forgot-password');
-            exit;
+            $this->redirect('/applicant/forgot-password');
+            return;
         }
         
         // Validate CSRF
         if (!$this->validateCsrfToken()) {
             $_SESSION['flash_error'] = 'Security token expired. Please try again.';
-            header('Location: /applicant/forgot-password');
-            exit;
+            $this->redirect('/applicant/forgot-password');
+            return;
         }
         
         $email = trim($_POST['email'] ?? '');
@@ -2121,14 +2292,14 @@ class PublicApplicationController extends ApplicationBaseController {
         // Validate email
         if (empty($email)) {
             $_SESSION['flash_error'] = 'Please enter your email address.';
-            header('Location: /applicant/forgot-password');
-            exit;
+            $this->redirect('/applicant/forgot-password');
+            return;
         }
         
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $_SESSION['flash_error'] = 'Please enter a valid email address.';
-            header('Location: /applicant/forgot-password');
-            exit;
+            $this->redirect('/applicant/forgot-password');
+            return;
         }
         
         // Find applicant by email
@@ -2139,8 +2310,8 @@ class PublicApplicationController extends ApplicationBaseController {
             error_log("Password reset requested for non-existent email: " . $email);
             $_SESSION['flash_success'] = 'If your email is registered, you will receive a password reset link shortly.';
             unset($_SESSION['email_value']);
-            header('Location: /applicant/forgot-password');
-            exit;
+            $this->redirect('/applicant/forgot-password');
+            return;
         }
         
         try {
@@ -2148,7 +2319,7 @@ class PublicApplicationController extends ApplicationBaseController {
             $resetToken = bin2hex(random_bytes(32));
             $resetExpiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
             
-            // Save reset token to database (you'll need to add this column to applicants table)
+            // Save reset token to database
             $this->applicantModel->update(
                 [
                     'reset_token' => $resetToken,
@@ -2169,8 +2340,7 @@ class PublicApplicationController extends ApplicationBaseController {
             $_SESSION['flash_error'] = 'An error occurred. Please try again later.';
         }
         
-        header('Location: /applicant/forgot-password');
-        exit;
+        $this->redirect('/applicant/forgot-password');
     }
     
     /**
@@ -2236,26 +2406,24 @@ class PublicApplicationController extends ApplicationBaseController {
      * Show reset password page
      */
     public function resetPassword() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         $token = $_GET['token'] ?? '';
         
         if (empty($token)) {
             $_SESSION['flash_error'] = 'Invalid password reset link.';
-            header('Location: /applicant/forgot-password');
-            exit;
+            $this->redirect('/applicant/forgot-password');
+            return;
         }
         
-        // Verify token (you'll need to implement this in your model)
+        // Verify token
         $applicant = $this->applicantModel->findByResetToken($token);
         
         if (!$applicant) {
             $_SESSION['flash_error'] = 'Invalid or expired reset link. Please request a new one.';
-            header('Location: /applicant/forgot-password');
-            exit;
+            $this->redirect('/applicant/forgot-password');
+            return;
         }
         
         $this->data = array_merge($this->data, [
@@ -2272,21 +2440,19 @@ class PublicApplicationController extends ApplicationBaseController {
      * Process reset password
      */
     public function processResetPassword() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /applicant/forgot-password');
-            exit;
+            $this->redirect('/applicant/forgot-password');
+            return;
         }
         
         // Validate CSRF
         if (!$this->validateCsrfToken()) {
             $_SESSION['flash_error'] = 'Security token expired. Please try again.';
-            header('Location: /applicant/forgot-password');
-            exit;
+            $this->redirect('/applicant/forgot-password');
+            return;
         }
         
         $token = $_POST['token'] ?? '';
@@ -2295,27 +2461,27 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (empty($token)) {
             $_SESSION['flash_error'] = 'Invalid reset token.';
-            header('Location: /applicant/forgot-password');
-            exit;
+            $this->redirect('/applicant/forgot-password');
+            return;
         }
         
         // Validate password
         if (empty($password)) {
             $_SESSION['flash_error'] = 'Please enter a new password.';
-            header('Location: /applicant/reset-password?token=' . urlencode($token));
-            exit;
+            $this->redirect('/applicant/reset-password?token=' . urlencode($token));
+            return;
         }
         
         if (strlen($password) < 8) {
             $_SESSION['flash_error'] = 'Password must be at least 8 characters long.';
-            header('Location: /applicant/reset-password?token=' . urlencode($token));
-            exit;
+            $this->redirect('/applicant/reset-password?token=' . urlencode($token));
+            return;
         }
         
         if ($password !== $confirm) {
             $_SESSION['flash_error'] = 'Passwords do not match.';
-            header('Location: /applicant/reset-password?token=' . urlencode($token));
-            exit;
+            $this->redirect('/applicant/reset-password?token=' . urlencode($token));
+            return;
         }
         
         // Verify token
@@ -2323,8 +2489,8 @@ class PublicApplicationController extends ApplicationBaseController {
         
         if (!$applicant) {
             $_SESSION['flash_error'] = 'Invalid or expired reset link. Please request a new one.';
-            header('Location: /applicant/forgot-password');
-            exit;
+            $this->redirect('/applicant/forgot-password');
+            return;
         }
         
         try {
@@ -2340,15 +2506,13 @@ class PublicApplicationController extends ApplicationBaseController {
             );
             
             $_SESSION['flash_success'] = 'Password reset successfully. You can now login with your new password.';
-            header('Location: /applicant/login');
+            $this->redirect('/applicant/login');
             
         } catch (Exception $e) {
             error_log("Password reset error: " . $e->getMessage());
             $_SESSION['flash_error'] = 'An error occurred. Please try again.';
-            header('Location: /applicant/reset-password?token=' . urlencode($token));
+            $this->redirect('/applicant/reset-password?token=' . urlencode($token));
         }
-        
-        exit;
     }
 
     // ============================================
@@ -2356,29 +2520,37 @@ class PublicApplicationController extends ApplicationBaseController {
     // ============================================
 
     /**
-     * Show step 1: JAMB verification - UPDATED to check existing application
+     * Show step 1: JAMB verification - SECURITY FIXED
      */
     public function step1() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Check if logged in
-        if (!isset($_SESSION['applicant_id'])) {
+        if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         $applicantId = $_SESSION['applicant_id'];
         
-        // Check if application exists and has JAMB already
+        // Get application
         $application = $this->applicationModel->getByApplicantId($applicantId);
         
+        // SECURITY: Validate step access
+        if (!$this->validateStepAccess($application, 1, 'step1')) {
+            $this->redirectToProperStep($application);
+            return;
+        }
+        
+        // Check if JAMB already verified
         if ($application && !empty($application['jamb_number'])) {
-            // JAMB already verified, restore to session and show form
-            $_SESSION['jamb_verification'] = [
+            $this->data['jamb_already_verified'] = true;
+            $this->data['jamb_number'] = $application['jamb_number'];
+            $this->data['jamb_name'] = ($application['first_name'] ?? '') . ' ' . ($application['last_name'] ?? '');
+            $this->data['jamb_verified'] = true;
+            $this->data['jamb_data'] = [
                 'jamb_number' => $application['jamb_number'],
                 'first_name' => $application['first_name'],
                 'last_name' => $application['last_name'],
@@ -2388,20 +2560,6 @@ class PublicApplicationController extends ApplicationBaseController {
                 'lga' => $application['lga'],
                 'score' => $application['utme_score']
             ];
-            
-            error_log("Restored JAMB data to session from application in step1 for applicant: " . $applicantId);
-            
-            // Pass to view that JAMB is already verified
-            $this->data['jamb_verified'] = true;
-            $this->data['jamb_data'] = $_SESSION['jamb_verification'];
-            $this->data['application_step'] = $application['application_step'];
-            
-            // If application step is 2, redirect to form
-            if ($application['application_step'] == 2) {
-                error_log("Application step 2 detected, redirecting to step2");
-                header('Location: /apply/step/2');
-                exit;
-            }
         }
         
         $terms = $this->termsModel->getForAcceptance();
@@ -2418,31 +2576,34 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Show step 2: Application form (Legacy Flow) - FIXED
-     * This method now properly restores JAMB data from database and renders the form
+     * Show step 2: Application form (Legacy Flow) - SECURITY FIXED
      */
     public function step2() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Check login
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
-            header('Location: /applicant/login');
+            $this->redirect('/applicant/login');
             return;
         }
         
         $applicantId = $_SESSION['applicant_id'];
         
-        // Check if JAMB has been verified in session
+        // Get application
+        $application = $this->applicationModel->getByApplicantId($applicantId);
+        
+        // SECURITY: Validate step access
+        if (!$this->validateStepAccess($application, 2, 'step2')) {
+            $this->redirectToProperStep($application);
+            return;
+        }
+        
+        // Check if JAMB has been verified
         if (!isset($_SESSION['jamb_verification']) || !$_SESSION['jamb_verification']) {
             // Try to restore from database
-            $application = $this->applicationModel->getByApplicantId($applicantId);
-            
             if ($application && !empty($application['jamb_number'])) {
-                // Restore JAMB data to session
                 $_SESSION['jamb_verification'] = [
                     'jamb_number' => $application['jamb_number'],
                     'first_name' => $application['first_name'],
@@ -2453,30 +2614,25 @@ class PublicApplicationController extends ApplicationBaseController {
                     'lga' => $application['lga'],
                     'score' => $application['utme_score']
                 ];
-                
-                error_log("Restored JAMB data to session from database in step2 for applicant: " . $applicantId);
             } else {
                 $_SESSION['flash_error'] = 'Please verify your JAMB number first';
-                header('Location: /apply/step/1');
+                $this->redirect('/apply/step/1');
                 return;
             }
         }
         
-        // Get application data
-        $application = $this->applicationModel->getByApplicantId($applicantId);
-        
         if (!$application) {
             $_SESSION['flash_error'] = 'Application not found. Please start over.';
-            header('Location: /apply/step/1');
+            $this->redirect('/apply/step/1');
             return;
         }
         
-        // Get O'Level results from database if they exist
+        // Get O'Level results
         require_once MODELS_PATH . '/application/OlevelResultModel.php';
         $olevelModel = new OlevelResultModel();
         $olevel_results = $olevelModel->getByApplicationId($application['id']);
         
-        // Get passport if exists
+        // Get passport
         require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
         $docModel = new ApplicationDocumentModel();
         $passport = $docModel->getPassport($application['id']);
@@ -2484,23 +2640,11 @@ class PublicApplicationController extends ApplicationBaseController {
         // Get applicant details
         $applicant = $this->applicantModel->find($applicantId);
         
-        // Parse O'Level results from JSON if exists
-        $olevelFiles = [];
-        if (!empty($application['olevel_results'])) {
-            $olevelFiles = json_decode($application['olevel_results'], true);
-            if (!is_array($olevelFiles)) {
-                $olevelFiles = [];
-            }
-        }
-        
-        // Prepare JAMB data for view
-        $jamb_data = $_SESSION['jamb_verification'];
-        
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Step 2: Application Form',
             'application' => $application,
             'applicant' => $applicant,
-            'jamb_data' => $jamb_data,
+            'jamb_data' => $_SESSION['jamb_verification'],
             'olevel_results' => $olevel_results,
             'passport' => $passport,
             'states' => $this->getStates(),
@@ -2508,56 +2652,55 @@ class PublicApplicationController extends ApplicationBaseController {
             'csrf_token' => $this->csrfToken()
         ]);
         
-        // Render the step2 view
         $this->render('applications/step2');
     }
     
     /**
-     * Show step 3: Payment (Legacy Flow) - FIXED - RENDERS CORRECT VIEW
+     * Show step 3: Payment (Legacy Flow) - SECURITY FIXED
      */
     public function step3() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         error_log("=== STEP 3 LOADED ===");
-        error_log("Session ID: " . session_id());
-        error_log("Applicant ID: " . ($_SESSION['applicant_id'] ?? 'not set'));
         
         // Check login
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         $applicantId = $_SESSION['applicant_id'];
         
-        // Get application - FRESH from database
+        // Get application
         $application = $this->applicationModel->getByApplicantId($applicantId);
         
         if (!$application) {
             $_SESSION['flash_error'] = 'Application not found';
-            header('Location: /apply/step/1');
-            exit;
+            $this->redirect('/apply/step/1');
+            return;
         }
         
-        error_log("Application found: ID=" . $application['id'] . ", Step=" . $application['application_step']);
-        
-        // Check if application is complete enough for payment
-        if (empty($application['date_of_birth']) || empty($application['phone']) || empty($application['address'])) {
-            $_SESSION['flash_error'] = 'Please complete your application form first';
-            header('Location: /apply/step/2');
-            exit;
+        // SECURITY: Validate step access
+        if (!$this->validateStepAccess($application, 3, 'step3')) {
+            $this->redirectToProperStep($application);
+            return;
         }
         
         // Check if already paid
         $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
         if ($hasPaid) {
             error_log("Already paid, redirecting to step 4");
-            header('Location: /apply/step/4');
-            exit;
+            $this->redirect('/apply/step/4');
+            return;
+        }
+        
+        // Check if application is complete enough for payment
+        if (empty($application['date_of_birth']) || empty($application['phone']) || empty($application['address'])) {
+            $_SESSION['flash_error'] = 'Please complete your application form first';
+            $this->redirect('/apply/step/2');
+            return;
         }
         
         // Restore JAMB data if needed
@@ -2608,10 +2751,9 @@ class PublicApplicationController extends ApplicationBaseController {
             $applicant_name = $applicant['email'] ?? 'Applicant';
         }
         
-        // FIX: Check if exam slip exists
+        // Check if exam slip exists
         $hasExamSlip = $this->hasExamSlip($application['id']);
         
-        // Prepare data for view
         $this->data = array_merge($this->data, [
             'pageTitle' => 'Payment - Step 3',
             'application' => $application,
@@ -2623,10 +2765,9 @@ class PublicApplicationController extends ApplicationBaseController {
             'csrf_token' => $csrfToken,
             'pending_payment' => $pending_payment,
             'baseUrl' => defined('BASE_URL') ? BASE_URL : '/',
-            'has_exam_slip' => $hasExamSlip // FIX: Add this line
+            'has_exam_slip' => $hasExamSlip
         ]);
         
-        // IMPORTANT: Render step3.php, NOT payment.php
         error_log("Rendering applications/step3 for applicant: " . $applicantId);
         $this->render('applications/step3');
     }
@@ -2635,42 +2776,46 @@ class PublicApplicationController extends ApplicationBaseController {
      * Show step 4: Exam Slip (Legacy Flow) - ENHANCED SECURITY
      */
     public function step4() {
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         error_log("=== STEP 4 LOADED ===");
         
-        // Layer 1: Check login
+        // Check login
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
-            header('Location: /applicant/login');
-            exit;
+            $this->redirect('/applicant/login');
+            return;
         }
         
         $applicantId = $_SESSION['applicant_id'];
         
-        // Layer 2: Get and validate application
+        // Get and validate application
         $application = $this->applicationModel->getByApplicantId($applicantId);
         
         if (!$application) {
             $_SESSION['flash_error'] = 'Application not found';
-            header('Location: /apply/step/1');
-            exit;
+            $this->redirect('/apply/step/1');
+            return;
         }
         
-        // Layer 3: VERIFY PAYMENT STATUS IN DATABASE (not session)
+        // SECURITY: Validate step access
+        if (!$this->validateStepAccess($application, 4, 'step4')) {
+            $this->redirectToProperStep($application);
+            return;
+        }
+        
+        // VERIFY PAYMENT STATUS IN DATABASE
         $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
         
         if (!$hasPaid) {
             error_log("SECURITY: Unauthorized attempt to access step 4 - No payment found for application: " . $application['id']);
             $_SESSION['flash_error'] = 'Payment required. Please complete your payment first.';
-            header('Location: /apply/step/3');
-            exit;
+            $this->redirect('/apply/step/3');
+            return;
         }
         
-        // Layer 4: Double-check payment ownership and status
+        // Double-check payment ownership
         $payments = $this->paymentModel->getByApplicationId($application['id']);
         $validPayment = false;
         
@@ -2684,16 +2829,16 @@ class PublicApplicationController extends ApplicationBaseController {
         if (!$validPayment) {
             error_log("SECURITY: Invalid payment ownership for application: " . $application['id']);
             $_SESSION['flash_error'] = 'Invalid payment record. Please contact support.';
-            header('Location: /apply/step/3');
-            exit;
+            $this->redirect('/apply/step/3');
+            return;
         }
         
-        // Layer 5: Get exam slip - only proceed if all checks pass
+        // Get exam slip
         require_once MODELS_PATH . '/application/ExamSlipModel.php';
         $examSlipModel = new ExamSlipModel();
         $examSlip = $examSlipModel->getByApplicationId($application['id']);
         
-        // Generate exam slip if it doesn't exist (first time only)
+        // Generate exam slip if it doesn't exist
         if (!$examSlip) {
             error_log("Generating exam slip for verified payment - Application: " . $application['id']);
             $examSlip = $this->generateExamSlip($application['id']);
@@ -2701,8 +2846,8 @@ class PublicApplicationController extends ApplicationBaseController {
             if (!$examSlip) {
                 error_log("CRITICAL: Failed to generate exam slip despite valid payment");
                 $_SESSION['flash_error'] = 'Error generating exam slip. Please contact support.';
-                header('Location: /apply/step/3');
-                exit;
+                $this->redirect('/apply/step/3');
+                return;
             }
         }
         
@@ -2714,7 +2859,7 @@ class PublicApplicationController extends ApplicationBaseController {
             'application' => $application,
             'applicant' => $applicant,
             'exam_slip' => $examSlip,
-            'has_exam_slip' => true // FIX: Add this line
+            'has_exam_slip' => true
         ]);
         
         error_log("Granting access to step 4 for verified applicant: " . $applicantId);
@@ -2722,20 +2867,18 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     // ============================================
-    // JAMB VERIFICATION METHODS - FIXED
+    // JAMB VERIFICATION METHODS - SECURITY FIXED
     // ============================================
 
     /**
-     * Verify JAMB number (AJAX endpoint) - FIXED to create application record
+     * Verify JAMB number (AJAX endpoint) - SECURITY FIXED
      */
     public function verifyJamb() {
         // Set header for JSON response
         header('Content-Type: application/json');
         
-        // Start session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        // Initialize security
+        $this->initSecurity();
         
         // Check if user is logged in
         if (!isset($_SESSION['applicant_id'])) {
@@ -2752,6 +2895,32 @@ class PublicApplicationController extends ApplicationBaseController {
         if (!$this->validateCsrfToken()) {
             echo json_encode(['success' => false, 'message' => 'Security token expired']);
             return;
+        }
+        
+        $applicantId = $_SESSION['applicant_id'];
+        
+        // Get application
+        $application = $this->applicationModel->getByApplicantId($applicantId);
+        
+        // SECURITY: Check if JAMB already verified
+        if ($application && !empty($application['jamb_number'])) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'JAMB number has already been verified. You cannot change it.'
+            ]);
+            return;
+        }
+        
+        // SECURITY: Check if payment has been made
+        if ($application && !empty($application['id'])) {
+            $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+            if ($hasPaid) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Cannot modify application after payment.'
+                ]);
+                return;
+            }
         }
         
         $jambNumber = trim($_POST['jamb_number'] ?? '');
@@ -2775,7 +2944,7 @@ class PublicApplicationController extends ApplicationBaseController {
         
         // Check if already used
         if ($jambCandidate['is_used']) {
-            echo json_encode(['success' => false, 'message' => 'This JAMB number has already been used']);
+            echo json_encode(['success' => false, 'message' => 'This JAMB number has already been used for another application']);
             return;
         }
         
@@ -2789,15 +2958,12 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // Get applicant ID from session
-        $applicantId = $_SESSION['applicant_id'];
+        // Begin transaction
+        $this->applicationModel->beginTransaction();
         
-        // Check if application already exists for this applicant
-        $existingApplication = $this->applicationModel->getByApplicantId($applicantId);
-        
-        if (!$existingApplication) {
-            // Create new application record
-            try {
+        try {
+            if (!$application) {
+                // Create new application
                 $applicationData = [
                     'applicant_id' => $applicantId,
                     'jamb_number' => $jambCandidate['jamb_number'],
@@ -2823,14 +2989,8 @@ class PublicApplicationController extends ApplicationBaseController {
                 
                 error_log("Created new application ID: " . $applicationId . " for applicant: " . $applicantId);
                 
-            } catch (Exception $e) {
-                error_log("Error creating application: " . $e->getMessage());
-                echo json_encode(['success' => false, 'message' => 'Failed to create application record. Please try again.']);
-                return;
-            }
-        } else {
-            // Update existing application with JAMB data
-            try {
+            } else {
+                // Update existing application
                 $updateData = [
                     'jamb_number' => $jambCandidate['jamb_number'],
                     'jamb_candidate_id' => $jambCandidate['id'],
@@ -2845,53 +3005,71 @@ class PublicApplicationController extends ApplicationBaseController {
                     'updated_at' => date('Y-m-d H:i:s')
                 ];
                 
-                // Use updateApplication method for consistency
-                $updated = $this->applicationModel->updateApplication($existingApplication['id'], $updateData);
+                $updated = $this->applicationModel->updateApplication($application['id'], $updateData);
                 
                 if (!$updated) {
                     throw new Exception("Failed to update application record");
                 }
                 
-                error_log("Updated existing application ID: " . $existingApplication['id'] . " with JAMB data");
-                
-            } catch (Exception $e) {
-                error_log("Error updating application: " . $e->getMessage());
-                echo json_encode(['success' => false, 'message' => 'Failed to update application record. Please try again.']);
-                return;
+                error_log("Updated existing application ID: " . $application['id'] . " with JAMB data");
             }
-        }
-        
-        // Store in session
-        $_SESSION['jamb_verification'] = [
-            'id' => $jambCandidate['id'],
-            'jamb_number' => $jambCandidate['jamb_number'],
-            'first_name' => $jambCandidate['first_name'],
-            'last_name' => $jambCandidate['last_name'],
-            'other_names' => $jambCandidate['other_names'],
-            'gender' => $jambCandidate['gender'],
-            'state_of_origin' => $jambCandidate['state_of_origin'],
-            'lga' => $jambCandidate['lga'],
-            'score' => $jambCandidate['aggregate_score']
-        ];
-        
-        // Mark JAMB candidate as used
-        $this->jambModel->markAsUsed($jambCandidate['id'], $applicantId);
-        
-        // Return complete data
-        echo json_encode([
-            'success' => true,
-            'data' => [
+            
+            // Mark JAMB candidate as used (permanent lock)
+            $marked = $this->jambModel->markAsUsed($jambCandidate['id'], $applicantId);
+            
+            if (!$marked) {
+                throw new Exception("Failed to mark JAMB as used");
+            }
+            
+            // Store in session
+            $_SESSION['jamb_verification'] = [
+                'id' => $jambCandidate['id'],
                 'jamb_number' => $jambCandidate['jamb_number'],
-                'name' => $jambCandidate['first_name'] . ' ' . $jambCandidate['last_name'],
                 'first_name' => $jambCandidate['first_name'],
                 'last_name' => $jambCandidate['last_name'],
                 'other_names' => $jambCandidate['other_names'],
                 'gender' => $jambCandidate['gender'],
                 'state_of_origin' => $jambCandidate['state_of_origin'],
                 'lga' => $jambCandidate['lga'],
-                'score' => $jambCandidate['aggregate_score']
-            ]
-        ]);
+                'score' => $jambCandidate['aggregate_score'],
+                'verified_at' => time()
+            ];
+            
+            $this->applicationModel->commit();
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'JAMB verified successfully',
+                'data' => [
+                    'jamb_number' => $jambCandidate['jamb_number'],
+                    'name' => $jambCandidate['first_name'] . ' ' . $jambCandidate['last_name'],
+                    'first_name' => $jambCandidate['first_name'],
+                    'last_name' => $jambCandidate['last_name'],
+                    'other_names' => $jambCandidate['other_names'],
+                    'gender' => $jambCandidate['gender'],
+                    'state_of_origin' => $jambCandidate['state_of_origin'],
+                    'lga' => $jambCandidate['lga'],
+                    'score' => $jambCandidate['aggregate_score']
+                ]
+            ]);
+            
+        } catch (Exception $e) {
+            $this->applicationModel->rollback();
+            error_log("JAMB verification error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'An error occurred. Please try again.']);
+        }
+    }
+
+    /**
+     * Redirect helper - overrides parent for consistency
+     */
+    protected function redirect($url) {
+        if (!headers_sent()) {
+            header('Location: ' . $url);
+            exit;
+        }
+        
+        echo '<script>window.location.href="' . $url . '";</script>';
         exit;
     }
 }
