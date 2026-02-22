@@ -6,20 +6,6 @@
  * The layout calls extract($this->data) before capturing this file, so all
  * controller-injected variables ($csp_nonce, $csrf_token, $terms, etc.) are
  * in scope here.
- *
- * WHAT WAS REMOVED vs. the old standalone version:
- *  - <!DOCTYPE html>, <html>, <head>, <body> tags (layout provides these)
- *  - Duplicate <link> tags for fonts/Bootstrap/FontAwesome (layout provides these)
- *  - Duplicate PHP header() CSP block (layout sends headers before any output)
- *  - Duplicate <style nonce="..."> block (styles moved to layout or kept minimal here)
- *  - The JambVerificationView class wrapper and render() method
- *  - $this->e() calls replaced with plain htmlspecialchars() (no $this in partial scope)
- *
- * WHAT WAS FIXED:
- *  - onclick="this.parentElement.remove()" on .btn-close removed → addEventListener
- *  - All <script> tags use nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>"
- *    so the layout's CSP 'nonce-{value}' directive authorises them
- *  - $csp_nonce and $csrf_token read directly from scope (injected by layout's extract)
  */
 
 // ── Safety: abort if rendered outside the layout (no $csp_nonce in scope) ──
@@ -36,12 +22,6 @@ $terms          = $terms          ?? [];
 $settings       = $settings       ?? [];
 $portal_closed  = $portal_closed  ?? false;
 $portal_message = $portal_message ?? '';
-
-// Encode terms safely for inline JS (prevents </script> injection)
-$secureTermsData = json_encode(
-    $terms,
-    JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
-);
 
 // Already-verified state (controller sets these when JAMB was previously verified)
 $jambAlreadyVerified = $jamb_already_verified ?? false;
@@ -103,44 +83,6 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
         .sv1 .sv1-card-body  { padding: 22px 18px; }
         .sv1 .sv1-card-head  { padding: 22px; }
         .sv1 .sv1-card-head h2 { font-size: 20px; }
-    }
-
-    /* ── Terms card ────────────────────────────────────────────────────── */
-    .sv1 .sv1-terms {
-        background: var(--sv1-primary-soft);
-        border: 1px solid var(--sv1-primary-light);
-        border-radius: var(--sv1-radius-lg);
-        overflow: hidden;
-        margin-bottom: 28px;
-    }
-
-    .sv1 .sv1-terms-head {
-        background: linear-gradient(135deg, var(--sv1-gold) 0%, #B48C3A 100%);
-        color: #fff;
-        padding: 13px 18px;
-        font-weight: 600;
-        font-size: 15px;
-        display: flex;
-        align-items: center;
-        gap: 9px;
-    }
-
-    .sv1 .sv1-terms-body {
-        padding: 18px;
-        max-height: 280px;
-        overflow-y: auto;
-        background: #fff;
-        font-size: 13.5px;
-        line-height: 1.7;
-        color: var(--sv1-text-dark);
-    }
-
-    .sv1 .sv1-terms-foot {
-        padding: 10px 18px;
-        background: #f8f9fa;
-        border-top: 1px solid var(--sv1-border);
-        font-size: 11.5px;
-        color: var(--sv1-text-muted);
     }
 
     /* ── Form ───────────────────────────────────────────────────────────── */
@@ -412,46 +354,8 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
                         </a>
                     </div>
 
-                <?php elseif (empty($terms)): ?>
-                    <div class="sv1-info" style="border-color: var(--sv1-warning); background: var(--sv1-warning-light); color: #92400e;">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Terms and conditions are not available at the moment. Please try again later.
-                    </div>
-
                 <?php else: ?>
-                    <?php /* ── Terms card ──────────────────────────────────── */ ?>
-                    <div class="sv1-terms">
-                        <div class="sv1-terms-head">
-                            <i class="fas fa-file-contract"></i>
-                            Terms and Conditions
-                        </div>
-                        <div class="sv1-terms-body">
-                            <strong><?php echo e1($terms['title'] ?? 'Terms and Conditions'); ?></strong>
-                            <div style="margin-top:12px;">
-                                <?php echo nl2br(e1($terms['content'] ?? '')); ?>
-                            </div>
-                        </div>
-                        <div class="sv1-terms-foot">
-                            <i class="fas fa-clock"></i>
-                            Version: <?php echo e1($terms['version'] ?? '1.0'); ?> &nbsp;|&nbsp;
-                            Effective: <?php echo e1(isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025'); ?>
-                        </div>
-                    </div>
-
                     <?php /* ── JAMB Form ───────────────────────────────────── */ ?>
-                    <?php
-                    /*
-                     * The <form> has NO action/method attributes intentionally.
-                     * The submit event is fully handled by the fetch() call in the
-                     * <script nonce="..."> block below. If JS is blocked (CSP nonce
-                     * mismatch), the form will do nothing — it will NOT fall back to
-                     * a native GET submission that exposes credentials in the URL.
-                     *
-                     * To prevent accidental native submission if JS is not yet loaded,
-                     * the submit button is initially disabled and enabled by JS on
-                     * DOMContentLoaded.
-                     */
-                    ?>
                     <form id="sv1Form" novalidate>
                         <input type="hidden" name="csrf_token" value="<?php echo e1($csrf_token); ?>">
 
@@ -476,36 +380,17 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
                             </div>
                         </div>
 
-                        <div class="sv1-check">
-                            <input type="checkbox" id="sv1AcceptTerms" name="accept_terms" required>
-                            <label for="sv1AcceptTerms">
-                                I have read and agree to the
-                                <a href="#" data-bs-toggle="modal" data-bs-target="#sv1TermsModal">
-                                    Terms and Conditions
-                                </a>
-                            </label>
-                        </div>
-
                         <div class="sv1-info">
                             <i class="fas fa-info-circle"></i>
-                            <strong>By proceeding, you confirm that:</strong>
+                            <strong>Requirements:</strong>
                             <ul>
-                                <li>You have a minimum UTME score of <?php echo e1($settings['key_value']['min_utme_score'] ?? '170'); ?></li>
-                                <li>You selected FCT College of Nursing Sciences as your first choice</li>
-                                <li>You have 5 O&rsquo;Level credits including English, Maths, Biology, Chemistry, and Physics</li>
-                                <li>You are at least <?php echo e1($settings['key_value']['min_age'] ?? '16'); ?> years old</li>
+                                <li>Minimum UTME score of <?php echo e1($settings['key_value']['min_utme_score'] ?? '170'); ?></li>
+                                <li>FCT College of Nursing Sciences selected as first choice</li>
+                                <li>5 O&rsquo;Level credits (English, Maths, Biology, Chemistry, Physics)</li>
+                                <li>Minimum age of <?php echo e1($settings['key_value']['min_age'] ?? '16'); ?> years</li>
                             </ul>
                         </div>
 
-                        <?php
-                        /*
-                         * The submit button starts DISABLED.
-                         * The <script nonce="..."> block enables it on DOMContentLoaded.
-                         * If the script is blocked (nonce mismatch), the button stays
-                         * disabled and the user sees a "JavaScript required" message
-                         * instead of a broken native form submission.
-                         */
-                        ?>
                         <button type="submit"
                                 class="sv1-btn-primary"
                                 id="sv1SubmitBtn"
@@ -542,51 +427,11 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
 
     <?php endif; /* portal not closed */ ?>
 
-    <?php /* ── Terms Modal ─────────────────────────────────────────────── */ ?>
-    <?php if (!empty($terms)): ?>
-    <div class="modal fade" id="sv1TermsModal" tabindex="-1"
-         aria-labelledby="sv1TermsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-id" id="sv1TermsModalLabel">
-                        <i class="fas fa-file-contract me-2"></i>Terms and Conditions
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white"
-                            data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <h6><?php echo e1($terms['title'] ?? 'Terms and Conditions'); ?></h6>
-                    <div style="font-size:14px; line-height:1.7; color:#1A1F2E;">
-                        <?php echo nl2br(e1($terms['content'] ?? '')); ?>
-                    </div>
-                    <hr>
-                    <p class="text-muted small mb-0">
-                        <i class="fas fa-clock me-1"></i>
-                        Version: <?php echo e1($terms['version'] ?? '1.0'); ?> |
-                        Effective: <?php echo e1(isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025'); ?>
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
-
 </div><?php /* /sv1 */ ?>
 
 
 <?php /* ─────────────────────────────────────────────────────────────────────
    JAVASCRIPT
-   ─────────────────────────────────────────────────────────────────────────
-   ALL inline event-handler ATTRIBUTES have been removed.
-   The CSP directive script-src-attr: 'none' (set by layout.php) blocks them
-   unconditionally. Every handler is wired here with addEventListener instead.
-
-   This <script> tag uses nonce="<?php echo $csp_nonce; ?>" so the layout's
-   Content-Security-Policy header ('nonce-{value}') authorises it.
    ───────────────────────────────────────────────────────────────────────── */ ?>
 <script nonce="<?php echo e1($csp_nonce); ?>">
 (function () {
@@ -595,7 +440,6 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
     // ── DOM refs ──────────────────────────────────────────────────────────
     var form        = document.getElementById('sv1Form');
     var jambInput   = document.getElementById('sv1JambNumber');
-    var termsCheck  = document.getElementById('sv1AcceptTerms');
     var submitBtn   = document.getElementById('sv1SubmitBtn');
     var btnText     = document.getElementById('sv1BtnText');
     var btnSpinner  = document.getElementById('sv1BtnSpinner');
@@ -609,30 +453,12 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
     var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute('content') || '';
 
     // ── Enable submit button now that JS is running ───────────────────────
-    //
-    // The button starts disabled (in HTML) so that if CSP blocks this script
-    // the form is inert — no accidental native GET submission with credentials
-    // in the URL query string.
-    //
     if (submitBtn) submitBtn.disabled = false;
     if (noJsMsg)   noJsMsg.style.display = 'none';
 
-    // ── Alert dismiss — addEventListener, NOT onclick attribute ──────────
-    //
-    // The CSP directive script-src-attr: 'none' in layout.php blocks ALL
-    // inline event handler attributes (onclick="...", onerror="...", etc.)
-    // The browser reported this exact violation:
-    //
-    //   "blocked an event handler (script-src-attr)"
-    //   sha256-P1MsgUmL6SZQlkOYJuanyuTQQHqA2uVOzleT4JX+Z4U=
-    //
-    // That hash was the old onclick="this.parentElement.remove()" string.
-    // It is now wired here safely.
-    //
+    // ── Alert dismiss — addEventListener ──────────────────────────────────
     if (alertClose) {
-        alertClose.addEventListener('click', function () {
-            hideAlert();
-        });
+        alertClose.addEventListener('click', hideAlert);
     }
 
     // ── JAMB input: uppercase + strip non-alphanumeric ───────────────────
@@ -647,10 +473,9 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
     // ── Form submit ───────────────────────────────────────────────────────
     if (form) {
         form.addEventListener('submit', function (e) {
-            e.preventDefault();  // ALWAYS prevent native submission
+            e.preventDefault();
 
-            var jamb      = jambInput  ? jambInput.value.trim().toUpperCase() : '';
-            var accepted  = termsCheck ? termsCheck.checked : false;
+            var jamb = jambInput ? jambInput.value.trim().toUpperCase() : '';
 
             // Client-side validation
             if (!jamb) {
@@ -663,16 +488,9 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
                 return;
             }
 
-            if (!accepted) {
-                showAlert('You must accept the Terms and Conditions to proceed.', 'danger');
-                return;
-            }
-
             setLoading(true);
 
             var fd = new FormData(form);
-            // FormData from the form already contains csrf_token (hidden field)
-            // and jamb_number + accept_terms. Belt-and-braces: also send as header.
 
             fetch('/apply/verify-jamb', {
                 method: 'POST',
@@ -683,38 +501,16 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
                 }
             })
             .then(function (response) {
-                // ── Detect non-JSON responses ──────────────────────────────
-                //
-                // If the response is HTML it means one of:
-                //   A) Route POST /apply/verify-jamb is not registered in your
-                //      routes file → add:
-                //        ['POST', '/apply/verify-jamb', 'PublicApplicationController@verifyJamb']
-                //   B) Session expired → controller redirected to login (HTML page)
-                //   C) PHP fatal error before header() ran → check error_log
-                //
+                // Check content type first
                 var ct = response.headers.get('content-type') || '';
-
+                
                 if (!ct.includes('application/json')) {
-                    return response.text().then(function (html) {
-                        console.error(
-                            '[JAMB] Server returned non-JSON.\n' +
-                            'HTTP status: ' + response.status + '\n' +
-                            'Content-Type: ' + ct + '\n' +
-                            'First 600 chars:\n' + html.substring(0, 600) + '\n\n' +
-                            'MOST LIKELY FIX:\n' +
-                            'Add this to your routes file:\n' +
-                            "  ['POST', '/apply/verify-jamb', 'PublicApplicationController@verifyJamb']\n" +
-                            'Then check that verifyJamb() starts with:\n' +
-                            "  header('Content-Type: application/json');"
-                        );
-
-                        var errKey = response.status === 404 ? 'route_not_found' :
-                                     (response.status === 302 || response.status === 301) ? 'redirected' :
-                                     'server_html';
-                        throw new Error(errKey);
+                    return response.text().then(function (text) {
+                        console.error('Server returned non-JSON response:', text.substring(0, 200));
+                        throw new Error('Server error. Please try again or contact support.');
                     });
                 }
-
+                
                 return response.json();
             })
             .then(function (data) {
@@ -725,20 +521,20 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
                 }
 
                 showAlert('JAMB verified successfully! Redirecting\u2026', 'success');
+                
+                // Store in session storage to prevent re-verification
+                try {
+                    sessionStorage.setItem('jamb_verified', 'true');
+                    sessionStorage.setItem('jamb_data', JSON.stringify(data.data || {}));
+                } catch (e) {}
+                
                 setTimeout(function () {
                     window.location.href = '/apply/step/2';
                 }, 1400);
             })
             .catch(function (err) {
-                console.error('[JAMB] Error:', err.message);
-
-                var msgs = {
-                    'route_not_found': 'Verification endpoint not found. Please contact support.',
-                    'redirected':      'Your session may have expired. Please refresh the page and try again.',
-                    'server_html':     'The server returned an unexpected response. Check the browser console for details.'
-                };
-
-                showAlert(msgs[err.message] || 'A network error occurred. Please check your connection and try again.', 'danger');
+                console.error('[JAMB] Error:', err);
+                showAlert(err.message || 'A network error occurred. Please check your connection and try again.', 'danger');
                 setLoading(false);
             });
         });
@@ -765,18 +561,15 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
             warning: 'fa-exclamation-triangle'
         };
 
-        // Remove previous type classes
         alertEl.className = '';
         alertEl.classList.add('sv1-' + type);
 
         if (alertIcon) alertIcon.className = 'fas ' + (iconMap[type] || 'fa-info-circle');
-
-        // Sanitise message (text only — no HTML injection)
         if (alertMsg) alertMsg.textContent = message;
 
         alertEl.style.display = 'flex';
+        alertEl.style.opacity = '1';
 
-        // Auto-dismiss after 6 s
         clearTimeout(alertTimer);
         alertTimer = setTimeout(hideAlert, 6000);
     }
@@ -784,32 +577,12 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
     function hideAlert() {
         if (!alertEl) return;
         alertEl.style.transition = 'opacity .4s';
-        alertEl.style.opacity    = '0';
+        alertEl.style.opacity = '0';
         setTimeout(function () {
-            alertEl.style.display  = 'none';
-            alertEl.style.opacity  = '1';
+            alertEl.style.display = 'none';
             alertEl.style.transition = '';
         }, 400);
     }
-
-    // ── Guard: redirect if already verified in this browser session ───────
-    try {
-        if (sessionStorage.getItem('jamb_verified') === 'true' &&
-            sessionStorage.getItem('jamb_data')) {
-            showAlert('You have already verified your JAMB number. Redirecting\u2026', 'info');
-            setTimeout(function () { window.location.href = '/apply/step/2'; }, 2000);
-        }
-    } catch (e) { /* sessionStorage blocked */ }
-
-    // Clear session storage on bfcache restore (back-button navigation)
-    window.addEventListener('pageshow', function (ev) {
-        if (ev.persisted) {
-            try {
-                sessionStorage.removeItem('jamb_verified');
-                sessionStorage.removeItem('jamb_data');
-            } catch (e) {}
-        }
-    });
 
 }());
 </script>
