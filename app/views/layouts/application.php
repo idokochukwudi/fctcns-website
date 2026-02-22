@@ -55,7 +55,7 @@
           crossorigin="anonymous" 
           referrerpolicy="no-referrer">
 
-    <style nonce="<?php echo $csp_nonce ?? ''; ?>">
+    <style nonce="<?php echo isset($csp_nonce) ? htmlspecialchars($csp_nonce) : ''; ?>">
         /* ═══════════════════════════════════════════════
            RESET & ROOT - SOPHISTICATED GRAY PALETTE
         ═══════════════════════════════════════════════ */
@@ -1205,7 +1205,7 @@
                 <img src="/assets/images/logo/logo.png" 
                      alt="FCT College of Nursing Sciences" 
                      class="logo-image"
-                     onerror="this.onerror=null; this.src='/assets/images/logo/logo-footer.png'; this.onerror=function(){ this.style.display='none'; this.parentNode.innerHTML='<i class=\'fas fa-star-of-life fallback-icon\'></i>'; }">
+                     id="mainLogo">
             </div>
 
             <div class="portal-header-text">
@@ -1240,8 +1240,7 @@
                     <span class="portal-user-name">
                         <strong><?php echo htmlspecialchars($applicantDisplayName, ENT_QUOTES, 'UTF-8'); ?></strong>
                     </span>
-                    <a href="/applicant/logout" class="portal-logout-btn"
-                       onclick="return confirm('Are you sure you want to logout? Your progress is saved.');">
+                    <a href="/applicant/logout" class="portal-logout-btn" id="logoutBtn">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </a>
                 </div>
@@ -1428,10 +1427,11 @@ if (class_exists('SecurityHelper')) {
         nonce="<?php echo isset($csp_nonce) ? htmlspecialchars($csp_nonce) : ''; ?>"></script>
 
 <!-- ========================================================= -->
-<!-- Custom JavaScript -->
+<!-- Custom JavaScript (check if file exists) -->
 <!-- ========================================================= -->
 <script src="<?php echo defined('BASE_URL') ? BASE_URL : ''; ?>/assets/js/Payment.js"
-        nonce="<?php echo isset($csp_nonce) ? htmlspecialchars($csp_nonce) : ''; ?>"></script>
+        nonce="<?php echo isset($csp_nonce) ? htmlspecialchars($csp_nonce) : ''; ?>"
+        onerror="console.log('Payment.js not loaded - continuing without it');"></script>
 
 <!-- ========================================================= -->
 <!-- Portal Layout JavaScript with Security Enhancements -->
@@ -1441,101 +1441,70 @@ if (class_exists('SecurityHelper')) {
     // Portal Layout JavaScript with Security Enhancements
     // ======================================================
 
-    // Get CSRF token from meta tag
-    function getCsrfToken() {
-        const meta = document.querySelector('meta[name="csrf-token"]');
-        return meta ? meta.getAttribute('content') : '';
-    }
-
-    setTimeout(function () {
-        document.querySelectorAll('.flash-msg').forEach(function (el) {
-            el.style.transition = 'opacity 0.4s';
-            el.style.opacity    = '0';
-            setTimeout(function () { 
-                if (el.parentNode) el.remove(); 
-            }, 400);
-        });
-    }, 5500);
-
-    function confirmAction(msg) { 
-        return confirm(msg || 'Are you sure?'); 
-    }
-
-    function checkPasswordStrength(pw) {
-        let s = 0;
-        if (pw.length >= 8)     s++;
-        if (/[a-z]/.test(pw))   s++;
-        if (/[A-Z]/.test(pw))   s++;
-        if (/[0-9]/.test(pw))   s++;
-        if (/[$@#&!]/.test(pw)) s++;
-        return s;
-    }
-
-    function previewImage(input, previewId) {
-        if (input.files && input.files[0]) {
-            const r = new FileReader();
-            r.onload = function (e) {
-                const el = document.getElementById(previewId);
-                if (el) {
-                    el.src = e.target.result;
-                    el.style.display = 'block';
-                }
-            };
-            r.readAsDataURL(input.files[0]);
-        }
-    }
-
-    function confirmPassportUpload(input) {
-        if (input.files && input.files[0]) {
-            const r = new FileReader();
-            r.onload = function (e) {
-                if (confirm('Is this your correct passport photograph? Click OK to upload.')) {
-                    const preview = document.getElementById('passport-preview');
-                    const confirmed = document.getElementById('passport-confirmed');
-                    
-                    if (preview) {
-                        preview.src = e.target.result;
-                        preview.style.display = 'block';
-                    }
-                    
-                    if (confirmed) {
-                        confirmed.value = '1';
-                    }
-                    
-                    // Optional tracking
-                    if (getCsrfToken()) {
-                        fetch('/api/track-passport-upload', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': getCsrfToken()
-                            },
-                            body: JSON.stringify({
-                                action: 'passport_upload_confirmed',
-                                timestamp: Date.now()
-                            })
-                        }).catch(() => {});
-                    }
-                } else {
-                    input.value = '';
-                    const preview = document.getElementById('passport-preview');
-                    const confirmed = document.getElementById('passport-confirmed');
-                    
-                    if (preview) {
-                        preview.style.display = 'none';
-                    }
-                    
-                    if (confirmed) {
-                        confirmed.value = '0';
-                    }
-                }
-            };
-            r.readAsDataURL(input.files[0]);
-        }
-    }
-
-    // External link security
     document.addEventListener('DOMContentLoaded', function() {
+        // Get CSRF token from meta tag
+        function getCsrfToken() {
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            return meta ? meta.getAttribute('content') : '';
+        }
+
+        // Handle logo error - move to JavaScript to avoid inline event handlers
+        const logo = document.getElementById('mainLogo');
+        if (logo) {
+            logo.addEventListener('error', function() {
+                this.onerror = null; // Prevent infinite loop
+                this.src = '/assets/images/logo/logo-footer.png';
+                this.addEventListener('error', function() {
+                    // If fallback also fails, replace with icon
+                    this.style.display = 'none';
+                    const parent = this.parentNode;
+                    if (parent && !parent.querySelector('.fallback-icon')) {
+                        const icon = document.createElement('i');
+                        icon.className = 'fas fa-star-of-life fallback-icon';
+                        parent.appendChild(icon);
+                    }
+                });
+            });
+        }
+
+        // Auto-hide flash messages
+        setTimeout(function () {
+            document.querySelectorAll('.flash-msg').forEach(function (el) {
+                el.style.transition = 'opacity 0.4s';
+                el.style.opacity = '0';
+                setTimeout(function () { 
+                    if (el.parentNode) el.remove(); 
+                }, 400);
+            });
+        }, 5500);
+
+        // Logout confirmation
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                if (!confirm('Are you sure you want to logout? Your progress is saved.')) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Optional tracking
+                if (getCsrfToken()) {
+                    fetch('/api/track-logout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken()
+                        },
+                        body: JSON.stringify({
+                            action: 'logout_click',
+                            timestamp: Date.now()
+                        })
+                    }).catch(() => {});
+                }
+            });
+        }
+
+        // External link security
         document.querySelectorAll('a[href^="http"]:not([rel*="noopener"])').forEach(link => {
             if (link.hostname !== window.location.hostname) {
                 link.setAttribute('target', '_blank');
@@ -1563,26 +1532,88 @@ if (class_exists('SecurityHelper')) {
                 }
             });
         });
-
-        // Track logout attempts
-        document.querySelectorAll('.portal-logout-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                if (getCsrfToken()) {
-                    fetch('/api/track-logout', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': getCsrfToken()
-                        },
-                        body: JSON.stringify({
-                            action: 'logout_click',
-                            timestamp: Date.now()
-                        })
-                    }).catch(() => {});
-                }
-            });
-        });
     });
+
+    // Global utility functions (attached to window object)
+    window.confirmAction = function(msg) { 
+        return confirm(msg || 'Are you sure?'); 
+    };
+
+    window.checkPasswordStrength = function(pw) {
+        let s = 0;
+        if (pw.length >= 8)     s++;
+        if (/[a-z]/.test(pw))   s++;
+        if (/[A-Z]/.test(pw))   s++;
+        if (/[0-9]/.test(pw))   s++;
+        if (/[$@#&!]/.test(pw)) s++;
+        return s;
+    };
+
+    window.previewImage = function(input, previewId) {
+        if (input.files && input.files[0]) {
+            const r = new FileReader();
+            r.onload = function (e) {
+                const el = document.getElementById(previewId);
+                if (el) {
+                    el.src = e.target.result;
+                    el.style.display = 'block';
+                }
+            };
+            r.readAsDataURL(input.files[0]);
+        }
+    };
+
+    window.confirmPassportUpload = function(input) {
+        if (input.files && input.files[0]) {
+            const r = new FileReader();
+            r.onload = function (e) {
+                if (confirm('Is this your correct passport photograph? Click OK to upload.')) {
+                    const preview = document.getElementById('passport-preview');
+                    const confirmed = document.getElementById('passport-confirmed');
+                    
+                    if (preview) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    }
+                    
+                    if (confirmed) {
+                        confirmed.value = '1';
+                    }
+                    
+                    // Optional tracking
+                    const meta = document.querySelector('meta[name="csrf-token"]');
+                    const token = meta ? meta.getAttribute('content') : '';
+                    
+                    if (token) {
+                        fetch('/api/track-passport-upload', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': token
+                            },
+                            body: JSON.stringify({
+                                action: 'passport_upload_confirmed',
+                                timestamp: Date.now()
+                            })
+                        }).catch(() => {});
+                    }
+                } else {
+                    input.value = '';
+                    const preview = document.getElementById('passport-preview');
+                    const confirmed = document.getElementById('passport-confirmed');
+                    
+                    if (preview) {
+                        preview.style.display = 'none';
+                    }
+                    
+                    if (confirmed) {
+                        confirmed.value = '0';
+                    }
+                }
+            };
+            r.readAsDataURL(input.files[0]);
+        }
+    };
 </script>
 
 <!-- ========================================================= -->
