@@ -14,8 +14,6 @@
     } else {
         // Fallback security meta tags
         echo '<meta http-equiv="X-Content-Type-Options" content="nosniff">';
-        echo '<meta http-equiv="X-Frame-Options" content="DENY">';
-        echo '<meta http-equiv="X-XSS-Protection" content="1; mode=block">';
         echo '<meta name="referrer" content="strict-origin-when-cross-origin">';
     }
     ?>
@@ -1205,7 +1203,8 @@
                 <img src="/assets/images/logo/logo.png" 
                      alt="FCT College of Nursing Sciences" 
                      class="logo-image"
-                     id="mainLogo">
+                     id="mainLogo"
+                     onerror="handleLogoError(this)">
             </div>
 
             <div class="portal-header-text">
@@ -1441,30 +1440,27 @@ if (class_exists('SecurityHelper')) {
     // Portal Layout JavaScript with Security Enhancements
     // ======================================================
 
+    // Global function for logo error handling (to avoid inline event handlers)
+    window.handleLogoError = function(img) {
+        img.onerror = null; // Prevent infinite loop
+        img.src = '/assets/images/logo/logo-footer.png';
+        img.onerror = function() {
+            // If fallback also fails, replace with icon
+            img.style.display = 'none';
+            const parent = img.parentNode;
+            if (parent && !parent.querySelector('.fallback-icon')) {
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-star-of-life fallback-icon';
+                parent.appendChild(icon);
+            }
+        };
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
         // Get CSRF token from meta tag
         function getCsrfToken() {
             const meta = document.querySelector('meta[name="csrf-token"]');
             return meta ? meta.getAttribute('content') : '';
-        }
-
-        // Handle logo error - move to JavaScript to avoid inline event handlers
-        const logo = document.getElementById('mainLogo');
-        if (logo) {
-            logo.addEventListener('error', function() {
-                this.onerror = null; // Prevent infinite loop
-                this.src = '/assets/images/logo/logo-footer.png';
-                this.addEventListener('error', function() {
-                    // If fallback also fails, replace with icon
-                    this.style.display = 'none';
-                    const parent = this.parentNode;
-                    if (parent && !parent.querySelector('.fallback-icon')) {
-                        const icon = document.createElement('i');
-                        icon.className = 'fas fa-star-of-life fallback-icon';
-                        parent.appendChild(icon);
-                    }
-                });
-            });
         }
 
         // Auto-hide flash messages
