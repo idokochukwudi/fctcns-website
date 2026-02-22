@@ -1,83 +1,111 @@
-<!DOCTYPE html>
+<?php
+/*
+ * =========================================================
+ * SECURITY HEADERS
+ *
+ * This block is at the very top of the file — before the
+ * DOCTYPE — so PHP output buffering has not yet flushed
+ * anything and headers can still be sent.
+ *
+ * HOW THE NONCE IS RESOLVED (in priority order):
+ *  1. $csp_nonce   — injected by the controller via extract()
+ *  2. $_SESSION['csp_nonce'] — set by ApplicationBaseController
+ *     on every request (confirmed in your log output)
+ *  3. Generates a fresh one as a last resort
+ *
+ * WHY NOT headers_sent() GUARD?
+ *  The framework buffers output (ob_start), so headers_sent()
+ *  will return false at this point even though the DOCTYPE
+ *  appears later in the file. The guard is kept for safety
+ *  but should never trigger in normal operation.
+ * =========================================================
+ */
+
+// Resolve nonce — must happen before any output
+if (!isset($csp_nonce) || $csp_nonce === '') {
+    $csp_nonce = $_SESSION['csp_nonce']
+              ?? bin2hex(random_bytes(16));
+}
+
+// Resolve CSRF token the same way
+if (!isset($csrf_token) || $csrf_token === '') {
+    $csrf_token = $_SESSION['csrf_token'] ?? '';
+}
+
+if (!headers_sent()) {
+    header('X-Frame-Options: DENY');
+    header('X-Content-Type-Options: nosniff');
+    header('X-XSS-Protection: 1; mode=block');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+
+    /*
+     * Content-Security-Policy notes:
+     *
+     * script-src:
+     *   'nonce-{value}' — authorises every <script nonce="..."> tag
+     *   whose nonce attribute matches. All inline <script> blocks in
+     *   this layout and in views rendered into $content must carry
+     *   the same nonce value.
+     *
+     * script-src-attr: 'none'
+     *   Blocks ALL inline event handler attributes (onclick, onerror,
+     *   onload, …). The logo onerror attribute has been replaced with
+     *   a safe addEventListener approach below — see the JS section.
+     *
+     * style-src: 'unsafe-inline'
+     *   Required for the <style nonce="..."> block. Some browsers do
+     *   not yet support style nonces universally, so unsafe-inline is
+     *   the practical fallback for styles.
+     *
+     * connect-src: 'self'
+     *   Covers the fetch() calls to /api/* and /apply/verify-jamb.
+     */
+    header(
+        "Content-Security-Policy: " .
+        "default-src 'self'; " .
+        "script-src 'self' 'nonce-{$csp_nonce}' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; " .
+        "script-src-attr 'none'; " .
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
+        "img-src 'self' data:; " .
+        "connect-src 'self';"
+    );
+}
+?><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 
-    <?php
-    /*
-     * =========================================================
-     * SECURITY HEADERS — Must be sent as HTTP headers, NOT meta tags.
-     *
-     * These headers are set here via PHP header() calls so they are
-     * sent as proper HTTP response headers. Meta-equivalents for
-     * X-Frame-Options and X-XSS-Protection are ignored by browsers
-     * and have been removed.
-     *
-     * IMPORTANT: This block must execute before ANY output. If your
-     * framework / router sends headers earlier, move these calls to
-     * a bootstrap file (e.g. public/index.php or a middleware class).
-     * =========================================================
-     */
-    if (!headers_sent()) {
-        // Prevent clickjacking — browser-enforced only via HTTP header
-        header('X-Frame-Options: DENY');
-
-        // Prevent MIME-type sniffing
-        header('X-Content-Type-Options: nosniff');
-
-        // Legacy XSS filter (still respected by some older browsers)
-        header('X-XSS-Protection: 1; mode=block');
-
-        // Control referrer information
-        header('Referrer-Policy: strict-origin-when-cross-origin');
-
-        // Content Security Policy — far more effective as an HTTP header.
-        // Adjust the policy below to match your actual asset origins.
-        // $csp_nonce must already be defined by your controller/bootstrap.
-        $cspNonce = $csp_nonce ?? '';
-        header(
-            "Content-Security-Policy: " .
-            "default-src 'self'; " .
-            "script-src 'self' 'nonce-{$cspNonce}' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; " .
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
-            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
-            "img-src 'self' data:; " .
-            "connect-src 'self';"
-        );
-    }
-    ?>
-
     <!--
-        CSRF meta tag — safe to keep in <head> for JavaScript access.
-        X-Frame-Options / X-XSS-Protection meta tags have been REMOVED;
-        they only work as HTTP headers (see PHP block above).
+        CSRF token — safe as a <meta> for JS access.
+        Security headers (X-Frame-Options, X-XSS-Protection, CSP, etc.)
+        are sent as HTTP headers at the top of this file; they have been
+        intentionally removed from <meta> tags where browsers ignore them.
     -->
-    <meta name="csrf-token" content="<?php echo htmlspecialchars($csrf_token ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
 
     <title><?php echo htmlspecialchars($pageTitle ?? 'Application Portal - FCT College of Nursing Sciences', ENT_QUOTES, 'UTF-8'); ?></title>
     <meta name="description" content="<?php echo htmlspecialchars($pageDescription ?? 'Apply for admission into ND/HND Nursing programme', ENT_QUOTES, 'UTF-8'); ?>">
 
-    <!-- Preconnect for performance -->
+    <!-- Preconnect hints -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <!--
         Google Fonts — NO integrity attribute.
-
-        Google Fonts responses are dynamic (they vary by User-Agent to
-        serve the right font format). The content changes per request,
-        so any pre-computed SRI hash will never match and the browser
-        will block the stylesheet. This is intentional and documented
-        by Google; omitting SRI here is the correct, secure approach.
+        Google Fonts responses are dynamic (User-Agent-specific font
+        formats and subsetting). The byte content changes per request,
+        so a pre-computed SRI hash will never match and the browser
+        would block the stylesheet. Omitting integrity is correct here.
     -->
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
           crossorigin="anonymous">
 
     <!--
-        Font Awesome — SRI hash is valid here because the CDN file is
-        content-addressed (version-pinned URL, static content).
+        Font Awesome — SRI hash retained.
+        Version-pinned CDN URL → static, cacheable bytes → hash matches.
     -->
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -85,7 +113,7 @@
           crossorigin="anonymous"
           referrerpolicy="no-referrer">
 
-    <style nonce="<?php echo htmlspecialchars($csp_nonce ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+    <style nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
         /* ═══════════════════════════════════════════════
            RESET & ROOT - SOPHISTICATED GRAY PALETTE
         ═══════════════════════════════════════════════ */
@@ -104,7 +132,7 @@
             --primary-800:  #2f2f38;
             --primary-900:  #1a1a1f;
 
-            /* ── Gray palette - sophisticated neutrals ── */
+            /* ── Gray palette ── */
             --gray-50:      #fafafa;
             --gray-100:     #f5f5f5;
             --gray-200:     #e9e9e9;
@@ -116,7 +144,7 @@
             --gray-800:     #262626;
             --gray-900:     #171717;
 
-            /* ── Accent (soft blue-gray for highlights) ── */
+            /* ── Accent (soft blue-gray) ── */
             --accent-50:    #f0f4fa;
             --accent-100:   #d9e2f0;
             --accent-200:   #b7c8e0;
@@ -162,7 +190,7 @@
             --blue-800:     #1e40af;
             --blue-900:     #1e3a8a;
 
-            /* ── Gold accent (kept for subtle highlights) ── */
+            /* ── Gold accent ── */
             --gold-50:      #fefce8;
             --gold-100:     #fef9c3;
             --gold-200:     #fef08a;
@@ -174,32 +202,32 @@
             --gold-800:     #854d0e;
             --gold-900:     #713f12;
 
-            /* ── Cloudit Technologies brand colors ── */
-            --cloudit-primary: #7C75E0;
+            /* ── Cloudit Technologies brand ── */
+            --cloudit-primary:   #7C75E0;
             --cloudit-secondary: #5D54C6;
-            --cloudit-glow: rgba(124, 117, 224, 0.5);
-            --cloudit-light: #9B96FA;
+            --cloudit-glow:      rgba(124, 117, 224, 0.5);
+            --cloudit-light:     #9B96FA;
 
-            /* ── Neutrals for text and backgrounds ── */
-            --text-primary:    var(--gray-900);
-            --text-secondary:  var(--gray-700);
-            --text-muted:      var(--gray-500);
-            --text-inverse:    #ffffff;
+            /* ── Semantic tokens ── */
+            --text-primary:   var(--gray-900);
+            --text-secondary: var(--gray-700);
+            --text-muted:     var(--gray-500);
+            --text-inverse:   #ffffff;
 
-            --bg-body:         var(--gray-50);
-            --bg-surface:      #ffffff;
-            --bg-subtle:       var(--gray-100);
-            --bg-muted:        var(--gray-200);
+            --bg-body:    var(--gray-50);
+            --bg-surface: #ffffff;
+            --bg-subtle:  var(--gray-100);
+            --bg-muted:   var(--gray-200);
 
-            --border-light:    var(--gray-200);
-            --border:          var(--gray-300);
-            --border-dark:     var(--gray-400);
+            --border-light: var(--gray-200);
+            --border:       var(--gray-300);
+            --border-dark:  var(--gray-400);
 
-            /* ── Shadows (soft) ── */
-            --shadow-sm:   0 1px 2px 0 rgba(0, 0, 0, 0.03);
-            --shadow-md:   0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
-            --shadow-lg:   0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
-            --shadow-xl:   0 20px 25px -5px rgba(0, 0, 0, 0.03), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            /* ── Shadows ── */
+            --shadow-sm: 0 1px 2px 0 rgba(0,0,0,.03);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,.03), 0 2px 4px -1px rgba(0,0,0,.02);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.03), 0 4px 6px -4px rgba(0,0,0,.02);
+            --shadow-xl: 0 20px 25px -5px rgba(0,0,0,.03), 0 10px 10px -5px rgba(0,0,0,.02);
 
             /* ── Radius ── */
             --radius-sm:   4px;
@@ -218,10 +246,7 @@
         /* ═══════════════════════════════════════════════
            BASE
         ═══════════════════════════════════════════════ */
-        html {
-            font-size: 16px;
-            -webkit-text-size-adjust: 100%;
-        }
+        html { font-size: 16px; -webkit-text-size-adjust: 100%; }
 
         body {
             font-family: var(--font-ui);
@@ -250,7 +275,7 @@
         }
 
         /* ═══════════════════════════════════════════════
-           HEADER - GRAY THEME
+           HEADER
         ═══════════════════════════════════════════════ */
         .portal-header {
             background: linear-gradient(160deg, var(--gray-900) 0%, var(--gray-800) 45%, var(--gray-700) 100%);
@@ -259,7 +284,6 @@
             position: relative;
         }
 
-        /* Top accent stripe - subtle gold */
         .portal-header::before {
             content: '';
             display: block;
@@ -267,7 +291,6 @@
             background: linear-gradient(90deg, var(--gold-400) 0%, var(--gold-300) 40%, var(--gold-400) 100%);
         }
 
-        /* Subtle texture */
         .portal-header::after {
             content: '';
             position: absolute;
@@ -288,7 +311,6 @@
             z-index: 1;
         }
 
-        /* Logo container with white background for visibility */
         .portal-logo {
             flex-shrink: 0;
             width: 70px;
@@ -299,7 +321,7 @@
             align-items: center;
             justify-content: center;
             padding: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,.1);
             overflow: hidden;
         }
 
@@ -309,15 +331,14 @@
             object-fit: contain;
         }
 
+        /* Fallback icon shown by JS if logo fails to load */
         .portal-logo .fallback-icon {
             font-size: 28px;
             color: var(--gray-700);
+            display: none; /* hidden until JS reveals it */
         }
 
-        .portal-header-text {
-            flex: 1;
-            min-width: 0;
-        }
+        .portal-header-text { flex: 1; min-width: 0; }
 
         .portal-header-text h1 {
             font-family: var(--font-serif);
@@ -341,7 +362,6 @@
             margin: 0;
         }
 
-        /* Right cluster */
         .portal-header-right {
             display: flex;
             flex-direction: column;
@@ -366,26 +386,16 @@
             gap: 4px;
         }
 
-        .portal-header-badge i {
-            color: var(--gold-400);
-            font-size: 9px;
-        }
+        .portal-header-badge i { color: var(--gold-400); font-size: 9px; }
 
-        .portal-user-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .portal-user-row { display: flex; align-items: center; gap: 10px; }
 
         .portal-user-avatar {
-            width: 28px;
-            height: 28px;
+            width: 28px; height: 28px;
             background: rgba(255,255,255,.1);
             border: 1px solid rgba(255,255,255,.15);
             border-radius: var(--radius-full);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             color: rgba(255,255,255,.7);
             font-size: 11px;
             flex-shrink: 0;
@@ -398,10 +408,7 @@
             white-space: nowrap;
         }
 
-        .portal-user-name strong {
-            color: #fff;
-            font-weight: 600;
-        }
+        .portal-user-name strong { color: #fff; font-weight: 600; }
 
         .portal-logout-btn {
             display: inline-flex;
@@ -430,7 +437,7 @@
         .portal-logout-btn i { font-size: 9px; }
 
         /* ═══════════════════════════════════════════════
-           PROGRESS TRACKER - GRAY THEME
+           PROGRESS TRACKER
         ═══════════════════════════════════════════════ */
         .progress-track {
             background: var(--gray-900);
@@ -440,30 +447,16 @@
             border-top: 1px solid rgba(255,255,255,.06);
         }
 
-        .track-step {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            position: relative;
-        }
+        .track-step { flex: 1; display: flex; align-items: center; position: relative; }
 
-        .track-step-inner {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex: 1;
-            min-width: 0;
-        }
+        .track-step-inner { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 
         .track-num {
-            width: 28px;
-            height: 28px;
+            width: 28px; height: 28px;
             border-radius: var(--radius-full);
             border: 2px solid rgba(255,255,255,.15);
             background: transparent;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             font-family: var(--font-ui);
             font-size: 10.5px;
             font-weight: 700;
@@ -472,18 +465,8 @@
             flex-shrink: 0;
         }
 
-        .track-step.completed .track-num {
-            background: var(--green-600);
-            border-color: var(--green-500);
-            color: #fff;
-        }
-
-        .track-step.active .track-num {
-            background: var(--gold-600);
-            border-color: var(--gold-500);
-            color: #fff;
-            box-shadow: 0 0 0 4px rgba(202,138,4,.2);
-        }
+        .track-step.completed .track-num { background: var(--green-600); border-color: var(--green-500); color: #fff; }
+        .track-step.active    .track-num { background: var(--gold-600);  border-color: var(--gold-500);  color: #fff; box-shadow: 0 0 0 4px rgba(202,138,4,.2); }
 
         .track-info { display: flex; flex-direction: column; min-width: 0; }
 
@@ -516,13 +499,7 @@
         .track-step.active    .track-sublabel { color: rgba(255,255,255,.45); }
         .track-step.completed .track-sublabel { color: rgba(255,255,255,.35); }
 
-        .track-connector {
-            flex: 0 0 10px;
-            height: 1px;
-            background: rgba(255,255,255,.08);
-            margin: 0 4px;
-        }
-
+        .track-connector { flex: 0 0 10px; height: 1px; background: rgba(255,255,255,.08); margin: 0 4px; }
         .track-connector.done { background: var(--green-600); opacity: .5; }
 
         /* ═══════════════════════════════════════════════
@@ -536,7 +513,7 @@
         }
 
         /* ═══════════════════════════════════════════════
-           FLASH MESSAGES - MUTED COLORS
+           FLASH MESSAGES
         ═══════════════════════════════════════════════ */
         .flash-messages { margin-bottom: 24px; }
 
@@ -559,21 +536,9 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        .flash-msg.success {
-            background: var(--green-50);
-            border-color: var(--green-200);
-            color: var(--green-800);
-        }
-        .flash-msg.error {
-            background: var(--red-50);
-            border-color: var(--red-200);
-            color: var(--red-800);
-        }
-        .flash-msg.info {
-            background: var(--blue-50);
-            border-color: var(--blue-200);
-            color: var(--blue-800);
-        }
+        .flash-msg.success { background: var(--green-50); border-color: var(--green-200); color: var(--green-800); }
+        .flash-msg.error   { background: var(--red-50);   border-color: var(--red-200);   color: var(--red-800); }
+        .flash-msg.info    { background: var(--blue-50);  border-color: var(--blue-200);  color: var(--blue-800); }
 
         .flash-icon { font-size: 15px; margin-top: 1px; flex-shrink: 0; }
         .flash-msg.success .flash-icon { color: var(--green-600); }
@@ -581,51 +546,27 @@
         .flash-msg.info    .flash-icon { color: var(--blue-600); }
 
         /* ═══════════════════════════════════════════════
-           FORM SECTIONS - GRAY THEME
+           FORM SECTIONS
         ═══════════════════════════════════════════════ */
-        .form-section {
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            margin-bottom: 26px;
-            overflow: hidden;
-        }
+        .form-section { border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 26px; overflow: hidden; }
 
         .form-section-head {
-            display: flex;
-            align-items: center;
-            gap: 11px;
+            display: flex; align-items: center; gap: 11px;
             padding: 16px 22px;
             background: var(--gray-100);
             border-bottom: 1px solid var(--border);
         }
 
         .section-icon {
-            width: 34px;
-            height: 34px;
+            width: 34px; height: 34px;
             background: var(--gray-700);
             border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            color: #fff;
-            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; color: #fff; flex-shrink: 0;
         }
 
-        .form-section-head h3 {
-            font-family: var(--font-serif);
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--gray-800);
-            margin: 0;
-        }
-
-        .form-section-head span {
-            font-family: var(--font-ui);
-            font-size: 11.5px;
-            color: var(--text-muted);
-            margin-left: auto;
-        }
+        .form-section-head h3 { font-family: var(--font-serif); font-size: 16px; font-weight: 600; color: var(--gray-800); margin: 0; }
+        .form-section-head span { font-family: var(--font-ui); font-size: 11.5px; color: var(--text-muted); margin-left: auto; }
 
         .form-section-body { padding: 26px 22px; }
 
@@ -659,25 +600,15 @@
         }
 
         .form-control:focus,
-        .form-select:focus {
-            border-color: var(--accent-500);
-            box-shadow: 0 0 0 3px var(--accent-100);
-            outline: none;
-        }
+        .form-select:focus { border-color: var(--accent-500); box-shadow: 0 0 0 3px var(--accent-100); outline: none; }
 
         .form-control.is-invalid { border-color: var(--red-500); }
         .form-control.is-valid   { border-color: var(--green-500); }
 
-        .form-hint {
-            font-family: var(--font-ui);
-            font-size: 11.5px;
-            color: var(--text-muted);
-            margin-top: 4px;
-            line-height: 1.5;
-        }
+        .form-hint { font-family: var(--font-ui); font-size: 11.5px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
 
         /* ═══════════════════════════════════════════════
-           BUTTONS - GRAY THEME
+           BUTTONS
         ═══════════════════════════════════════════════ */
         .btn {
             font-family: var(--font-ui);
@@ -696,60 +627,25 @@
             line-height: 1.4;
         }
 
-        .btn-primary {
-            background: var(--gray-800);
-            color: #fff;
-            box-shadow: var(--shadow-sm);
-        }
-        .btn-primary:hover {
-            background: var(--gray-900);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
-        }
+        .btn-primary { background: var(--gray-800); color: #fff; box-shadow: var(--shadow-sm); }
+        .btn-primary:hover { background: var(--gray-900); transform: translateY(-1px); box-shadow: var(--shadow-md); }
 
-        .btn-gold {
-            background: var(--gold-600);
-            color: #fff;
-            box-shadow: var(--shadow-sm);
-        }
-        .btn-gold:hover {
-            background: var(--gold-700);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
-        }
+        .btn-gold { background: var(--gold-600); color: #fff; box-shadow: var(--shadow-sm); }
+        .btn-gold:hover { background: var(--gold-700); transform: translateY(-1px); box-shadow: var(--shadow-md); }
 
-        .btn-success {
-            background: var(--green-600);
-            color: #fff;
-            box-shadow: var(--shadow-sm);
-        }
-        .btn-success:hover {
-            background: var(--green-700);
-            transform: translateY(-1px);
-        }
+        .btn-success { background: var(--green-600); color: #fff; box-shadow: var(--shadow-sm); }
+        .btn-success:hover { background: var(--green-700); transform: translateY(-1px); }
 
-        .btn-outline {
-            background: transparent;
-            color: var(--gray-700);
-            border: 1.5px solid var(--border);
-        }
-        .btn-outline:hover {
-            background: var(--gray-100);
-            border-color: var(--gray-500);
-            color: var(--gray-900);
-        }
+        .btn-outline { background: transparent; color: var(--gray-700); border: 1.5px solid var(--border); }
+        .btn-outline:hover { background: var(--gray-100); border-color: var(--gray-500); color: var(--gray-900); }
 
         .btn-lg { padding: 13px 32px; font-size: 14.5px; }
         .btn-sm { padding: 7px 16px; font-size: 12.5px; }
 
         /* ═══════════════════════════════════════════════
-           PAYMENT CARD - GRAY THEME
+           PAYMENT CARD
         ═══════════════════════════════════════════════ */
-        .payment-card {
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-        }
+        .payment-card { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
 
         .payment-card-head {
             background: linear-gradient(135deg, var(--gray-900), var(--gray-800));
@@ -766,29 +662,10 @@
             background: linear-gradient(90deg, transparent, var(--gold-400), transparent);
         }
 
-        .payment-label {
-            font-family: var(--font-ui);
-            font-size: 10.5px;
-            font-weight: 600;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: rgba(255,255,255,.5);
-            margin-bottom: 10px;
-        }
+        .payment-label { font-family: var(--font-ui); font-size: 10.5px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,.5); margin-bottom: 10px; }
 
-        .payment-amount {
-            font-family: var(--font-serif);
-            font-size: 52px;
-            font-weight: 700;
-            color: var(--gold-300);
-            line-height: 1;
-        }
-
-        .payment-amount sup {
-            font-size: 22px;
-            vertical-align: super;
-            opacity: 0.7;
-        }
+        .payment-amount { font-family: var(--font-serif); font-size: 52px; font-weight: 700; color: var(--gold-300); line-height: 1; }
+        .payment-amount sup { font-size: 22px; vertical-align: super; opacity: 0.7; }
 
         .payment-card-body { padding: 26px 32px; }
 
@@ -807,98 +684,37 @@
         }
 
         /* ═══════════════════════════════════════════════
-           EXAM SLIP - GRAY THEME
+           EXAM SLIP
         ═══════════════════════════════════════════════ */
-        .exam-slip {
-            border: 1.5px solid var(--gray-400);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-        }
+        .exam-slip { border: 1.5px solid var(--gray-400); border-radius: var(--radius-lg); overflow: hidden; }
 
-        .exam-slip-head {
-            background: linear-gradient(135deg, var(--gray-800), var(--gray-700));
-            padding: 24px 30px;
-            text-align: center;
-        }
-
-        .exam-slip-head h2 {
-            font-family: var(--font-serif);
-            color: #fff;
-            font-size: 20px;
-            margin-bottom: 4px;
-        }
-
-        .exam-slip-head p {
-            font-family: var(--font-ui);
-            font-size: 12px;
-            color: rgba(255,255,255,.55);
-            margin: 0;
-        }
+        .exam-slip-head { background: linear-gradient(135deg, var(--gray-800), var(--gray-700)); padding: 24px 30px; text-align: center; }
+        .exam-slip-head h2 { font-family: var(--font-serif); color: #fff; font-size: 20px; margin-bottom: 4px; }
+        .exam-slip-head p { font-family: var(--font-ui); font-size: 12px; color: rgba(255,255,255,.55); margin: 0; }
 
         .exam-slip-body { padding: 26px 30px; }
 
-        .slip-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+        .slip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-        .slip-item {
-            background: var(--gray-100);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 13px 15px;
-        }
-
-        .slip-item .lbl {
-            font-family: var(--font-ui);
-            font-size: 9.5px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--gray-600);
-            margin-bottom: 4px;
-        }
-
-        .slip-item .val {
-            font-family: var(--font-ui);
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-        }
+        .slip-item { background: var(--gray-100); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 13px 15px; }
+        .slip-item .lbl { font-family: var(--font-ui); font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-600); margin-bottom: 4px; }
+        .slip-item .val { font-family: var(--font-ui); font-size: 14px; font-weight: 500; color: var(--text-primary); }
 
         /* ═══════════════════════════════════════════════
            DOCUMENT PREVIEW
         ═══════════════════════════════════════════════ */
-        .doc-preview {
-            position: relative;
-            display: inline-block;
-            margin: 7px;
-        }
+        .doc-preview { position: relative; display: inline-block; margin: 7px; }
 
-        .doc-preview img {
-            width: 128px;
-            height: 128px;
-            object-fit: cover;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-md);
-            display: block;
-        }
-
+        .doc-preview img { width: 128px; height: 128px; object-fit: cover; border: 1.5px solid var(--border); border-radius: var(--radius-md); display: block; }
         .doc-preview:hover img { border-color: var(--accent-500); }
 
         .doc-remove {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            width: 24px;
-            height: 24px;
+            position: absolute; top: -8px; right: -8px;
+            width: 24px; height: 24px;
             background: var(--red-600);
             color: #fff;
             border-radius: var(--radius-full);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             cursor: pointer;
             font-size: 10px;
             border: 2px solid #fff;
@@ -910,14 +726,10 @@
         /* ═══════════════════════════════════════════════
            DIVIDER
         ═══════════════════════════════════════════════ */
-        .section-divider {
-            border: none;
-            border-top: 1px solid var(--border);
-            margin: 28px 0;
-        }
+        .section-divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
 
         /* ═══════════════════════════════════════════════
-           FOOTER - GRAY THEME WITH CLOUDIT ANIMATION
+           FOOTER
         ═══════════════════════════════════════════════ */
         .portal-footer {
             background: linear-gradient(145deg, var(--gray-900), #0a0a0f);
@@ -931,96 +743,50 @@
         .portal-footer::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -20%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(124, 117, 224, 0.03) 0%, transparent 70%);
+            top: -50%; left: -20%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(124,117,224,.03) 0%, transparent 70%);
             animation: rotate 20s linear infinite;
             pointer-events: none;
         }
 
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        .footer-main {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 20px;
-            position: relative;
-            z-index: 2;
-        }
+        .footer-main { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; position: relative; z-index: 2; }
 
-        .portal-footer p {
-            margin: 0;
-            font-family: var(--font-ui);
-            font-size: 12px;
-            color: rgba(255,255,255,.5);
-        }
+        .portal-footer p { margin: 0; font-family: var(--font-ui); font-size: 12px; color: rgba(255,255,255,.5); }
 
-        .powered-by-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .powered-by-wrapper { display: flex; align-items: center; justify-content: center; }
 
         .powered-by {
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            display: flex; align-items: center; gap: 6px;
             padding: 6px 16px;
-            background: rgba(124, 117, 224, 0.1);
+            background: rgba(124,117,224,.1);
             border-radius: var(--radius-full);
-            border: 1px solid rgba(124, 117, 224, 0.2);
+            border: 1px solid rgba(124,117,224,.2);
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            position: relative; overflow: hidden;
         }
 
         .powered-by::before {
             content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            position: absolute; top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,.1) 0%, transparent 70%);
             animation: pulseGlow 3s ease infinite;
             pointer-events: none;
         }
 
         @keyframes pulseGlow {
             0%, 100% { opacity: 0.3; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.1); }
+            50%       { opacity: 0.6; transform: scale(1.1); }
         }
 
-        .powered-by:hover {
-            background: rgba(124, 117, 224, 0.15);
-            border-color: rgba(124, 117, 224, 0.4);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(124, 117, 224, 0.3);
-        }
+        .powered-by:hover { background: rgba(124,117,224,.15); border-color: rgba(124,117,224,.4); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(124,117,224,.3); }
 
-        .powered-text {
-            font-family: var(--font-ui);
-            font-size: 11px;
-            font-weight: 400;
-            color: rgba(255,255,255,.5);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
+        .powered-text { font-family: var(--font-ui); font-size: 11px; font-weight: 400; color: rgba(255,255,255,.5); letter-spacing: 0.5px; text-transform: uppercase; }
 
-        .cloudit-link {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            text-decoration: none;
-            position: relative;
-        }
+        .cloudit-link { display: flex; align-items: center; gap: 6px; text-decoration: none; position: relative; }
 
         .cloudit-name {
             font-family: var(--font-ui);
@@ -1033,157 +799,61 @@
             letter-spacing: 0.3px;
         }
 
-        .cloud-icon {
-            color: var(--cloudit-primary);
-            font-size: 14px;
-            filter: drop-shadow(0 0 5px var(--cloudit-glow));
-            animation: floatCloud 3s ease-in-out infinite;
-        }
+        .cloud-icon { color: var(--cloudit-primary); font-size: 14px; filter: drop-shadow(0 0 5px var(--cloudit-glow)); animation: floatCloud 3s ease-in-out infinite; }
 
-        .lightning-icon {
-            color: var(--gold-400);
-            font-size: 10px;
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            opacity: 0;
-            animation: lightningFlash 2s ease infinite;
-        }
+        .lightning-icon { color: var(--gold-400); font-size: 10px; position: absolute; top: -8px; right: -8px; opacity: 0; animation: lightningFlash 2s ease infinite; }
 
-        @keyframes floatCloud {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
-        }
+        @keyframes floatCloud { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 
         @keyframes lightningFlash {
             0%, 90%, 100% { opacity: 0; transform: scale(0.5); }
-            92%, 98% { opacity: 1; transform: scale(1.2); }
-            94%, 96% { opacity: 0.8; transform: scale(1); }
+            92%, 98%      { opacity: 1; transform: scale(1.2); }
+            94%, 96%      { opacity: 0.8; transform: scale(1); }
         }
 
-        .footer-contacts {
-            display: flex;
-            gap: 22px;
-            flex-wrap: wrap;
-        }
+        .footer-contacts { display: flex; gap: 22px; flex-wrap: wrap; }
 
-        .footer-contact-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-family: var(--font-ui);
-            font-size: 12px;
-            color: rgba(255,255,255,.55);
-            text-decoration: none;
-            transition: color .2s;
-        }
-
-        .footer-contact-item:hover {
-            color: rgba(255,255,255,.9);
-        }
-        .footer-contact-item i {
-            color: var(--gold-400);
-            font-size: 11px;
-            transition: transform 0.2s ease;
-        }
-
-        .footer-contact-item:hover i {
-            transform: scale(1.2);
-        }
+        .footer-contact-item { display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 12px; color: rgba(255,255,255,.55); text-decoration: none; transition: color .2s; }
+        .footer-contact-item:hover { color: rgba(255,255,255,.9); }
+        .footer-contact-item i { color: var(--gold-400); font-size: 11px; transition: transform 0.2s ease; }
+        .footer-contact-item:hover i { transform: scale(1.2); }
 
         /* ═══════════════════════════════════════════════
            UTILITIES
         ═══════════════════════════════════════════════ */
         .text-primary { color: var(--gray-800) !important; }
-        .text-gold    { color: var(--gold-600) !important; }
+        .text-gold    { color: var(--gold-600)  !important; }
         .text-green   { color: var(--green-600) !important; }
 
         #paymentButtonArea .btn-amber {
-            display: block;
-            width: 100%;
+            display: block; width: 100%;
             padding: 0.95rem 1.5rem;
-            background: var(--gold-600);
-            color: #fff;
-            border: none;
-            border-radius: var(--radius-md);
-            font-family: var(--font-ui);
-            font-weight: 600;
-            font-size: 14px;
-            text-align: center;
-            text-decoration: none;
-            transition: all .22s;
-            cursor: pointer;
+            background: var(--gold-600); color: #fff;
+            border: none; border-radius: var(--radius-md);
+            font-family: var(--font-ui); font-weight: 600; font-size: 14px;
+            text-align: center; text-decoration: none;
+            transition: all .22s; cursor: pointer;
         }
 
-        #paymentButtonArea .btn-amber:hover {
-            background: var(--gold-700);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
-        }
+        #paymentButtonArea .btn-amber:hover { background: var(--gold-700); transform: translateY(-1px); box-shadow: var(--shadow-md); }
 
         /* ═══════════════════════════════════════════════
            RESPONSIVE
         ═══════════════════════════════════════════════ */
         @media (max-width: 768px) {
             body { padding: 12px 10px 32px; }
-
-            .portal-header-inner {
-                flex-wrap: wrap;
-                padding: 18px 20px;
-                gap: 12px;
-            }
-
-            .portal-header-text h1 {
-                font-size: 16px;
-                white-space: normal;
-            }
-
-            .portal-header-right {
-                width: 100%;
-                flex-direction: row;
-                align-items: center;
-                justify-content: space-between;
-            }
-
-            .progress-track {
-                padding: 13px 16px;
-                flex-wrap: wrap;
-                gap: 6px;
-            }
-
+            .portal-header-inner { flex-wrap: wrap; padding: 18px 20px; gap: 12px; }
+            .portal-header-text h1 { font-size: 16px; white-space: normal; }
+            .portal-header-right { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; }
+            .progress-track { padding: 13px 16px; flex-wrap: wrap; gap: 6px; }
             .track-connector { display: none; }
-
-            .track-step {
-                flex: 0 0 calc(50% - 3px);
-                background: rgba(255,255,255,.04);
-                border: 1px solid rgba(255,255,255,.07);
-                border-radius: var(--radius-md);
-                padding: 9px 11px;
-            }
-
+            .track-step { flex: 0 0 calc(50% - 3px); background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); border-radius: var(--radius-md); padding: 9px 11px; }
             .track-step:last-child { flex: 0 0 100%; }
-
             .portal-body { padding: 22px 18px; }
-
-            .footer-main {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-                gap: 15px;
-            }
-
-            .footer-contacts {
-                justify-content: center;
-            }
-
-            .powered-by-wrapper {
-                width: 100%;
-            }
-
-            .portal-footer {
-                padding: 20px 22px;
-            }
-
+            .footer-main { flex-direction: column; align-items: center; text-align: center; gap: 15px; }
+            .footer-contacts { justify-content: center; }
+            .powered-by-wrapper { width: 100%; }
+            .portal-footer { padding: 20px 22px; }
             .slip-grid { grid-template-columns: 1fr; }
             .payment-amount { font-size: 40px; }
         }
@@ -1193,19 +863,9 @@
             .portal-logo { width: 56px; height: 56px; }
             .track-step { flex: 0 0 100%; }
             .portal-body { padding: 18px 14px; }
-
-            .footer-contacts {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .powered-by {
-                padding: 6px 12px;
-            }
-
-            .cloudit-name {
-                font-size: 12px;
-            }
+            .footer-contacts { flex-direction: column; gap: 10px; }
+            .powered-by { padding: 6px 12px; }
+            .cloudit-name { font-size: 12px; }
         }
 
         @media (max-width: 360px) {
@@ -1221,11 +881,19 @@
     <header class="portal-header">
         <div class="portal-header-inner">
 
-            <div class="portal-logo">
+            <!--
+                Logo image.
+                The onerror attribute has been REMOVED — inline event handler
+                attributes are blocked by the CSP (script-src-attr: 'none').
+                Logo fallback is handled safely by a JS addEventListener below.
+            -->
+            <div class="portal-logo" id="logoContainer">
                 <img src="/assets/images/logo/logo.png"
                      alt="FCT College of Nursing Sciences"
                      class="logo-image"
-                     onerror="this.onerror=null; this.src='/assets/images/logo/logo-footer.png'; this.onerror=function(){ this.style.display='none'; this.parentNode.innerHTML+='<i class=\'fas fa-star-of-life fallback-icon\'></i>'; }">
+                     id="portalLogoImg">
+                <!-- Hidden fallback icon; revealed by JS on image error -->
+                <i class="fas fa-star-of-life fallback-icon" id="logoFallbackIcon"></i>
             </div>
 
             <div class="portal-header-text">
@@ -1254,14 +922,11 @@
 
                 <?php if ($applicantDisplayName): ?>
                 <div class="portal-user-row">
-                    <div class="portal-user-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
+                    <div class="portal-user-avatar"><i class="fas fa-user"></i></div>
                     <span class="portal-user-name">
                         <strong><?php echo htmlspecialchars($applicantDisplayName, ENT_QUOTES, 'UTF-8'); ?></strong>
                     </span>
-                    <a href="/applicant/logout" class="portal-logout-btn"
-                       onclick="return confirm('Are you sure you want to logout? Your progress is saved.');">
+                    <a href="/applicant/logout" class="portal-logout-btn" id="logoutBtn">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </a>
                 </div>
@@ -1278,9 +943,8 @@
                 $showSteps = true;
 
                 if (!empty($application['application_step'])) {
-                    $currentStep = (int)$application['application_step'];
-
-                    if ($currentStep == 4 && isset($has_exam_slip) && $has_exam_slip) {
+                    $currentStep = (int) $application['application_step'];
+                    if ($currentStep === 4 && isset($has_exam_slip) && $has_exam_slip) {
                         $currentStep = 5;
                     }
                 } else {
@@ -1288,16 +952,11 @@
                     if (!empty($application['jamb_number'])) $currentStep = 2;
                     if (!empty($application['date_of_birth']) && !empty($application['phone']) && !empty($application['address'])) $currentStep = 3;
 
-                    $hasPaid = false;
-                    if (isset($payment_status) && is_array($payment_status) && ($payment_status['status'] === 'success')) {
-                        $hasPaid = true;
-                    }
+                    $hasPaid = isset($payment_status) && is_array($payment_status) && ($payment_status['status'] === 'success');
 
                     if ($hasPaid) {
                         $currentStep = 4;
-                        if (isset($has_exam_slip) && $has_exam_slip) {
-                            $currentStep = 5;
-                        }
+                        if (isset($has_exam_slip) && $has_exam_slip) $currentStep = 5;
                     }
 
                     if (!empty($application['exam_slip_generated'])) $currentStep = 5;
@@ -1404,11 +1063,11 @@
                     $supportPhone = $settings['key_value']['support_phone_1'] ?? '07039837749';
                     $supportEmail = $settings['key_value']['support_email']   ?? 'info@fctcns.edu.ng';
                 ?>
-                <a class="footer-contact-item" href="tel:<?php echo htmlspecialchars($supportPhone, ENT_QUOTES, 'UTF-8'); ?>" rel="noopener noreferrer">
+                <a class="footer-contact-item" href="tel:<?php echo htmlspecialchars($supportPhone, ENT_QUOTES, 'UTF-8'); ?>">
                     <i class="fas fa-phone-alt"></i>
                     <?php echo htmlspecialchars($supportPhone, ENT_QUOTES, 'UTF-8'); ?>
                 </a>
-                <a class="footer-contact-item" href="mailto:<?php echo htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8'); ?>" rel="noopener noreferrer">
+                <a class="footer-contact-item" href="mailto:<?php echo htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8'); ?>">
                     <i class="fas fa-envelope"></i>
                     <?php echo htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8'); ?>
                 </a>
@@ -1420,51 +1079,104 @@
 
 
 <!--
-    Bootstrap JS — SRI hash is valid for version-pinned CDN assets.
-    The nonce attribute pairs with the CSP header sent above.
+    Bootstrap JS — SRI hash retained (version-pinned static CDN asset).
+    nonce attribute matches the 'nonce-{value}' in the CSP header above.
 -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
         crossorigin="anonymous"
-        nonce="<?php echo htmlspecialchars($csp_nonce ?? '', ENT_QUOTES, 'UTF-8'); ?>"></script>
+        nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"
         integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
         crossorigin="anonymous"
-        nonce="<?php echo htmlspecialchars($csp_nonce ?? '', ENT_QUOTES, 'UTF-8'); ?>"></script>
+        nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 
 <?php if (file_exists(__DIR__ . '/../../assets/js/Payment.js')): ?>
 <script src="<?php echo defined('BASE_URL') ? BASE_URL : ''; ?>/assets/js/Payment.js"
-        nonce="<?php echo htmlspecialchars($csp_nonce ?? '', ENT_QUOTES, 'UTF-8'); ?>"></script>
+        nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <?php endif; ?>
 
-<script nonce="<?php echo htmlspecialchars($csp_nonce ?? '', ENT_QUOTES, 'UTF-8'); ?>">
-    // ======================================================
-    // Portal Layout JavaScript
-    // ======================================================
+<script nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
+    // =========================================================
+    // Portal Layout — JavaScript
+    //
+    // ALL inline event-handler attributes (onclick, onerror, …)
+    // have been removed from the HTML. The CSP directive
+    // script-src-attr: 'none' blocks them unconditionally.
+    // Every handler is wired here with addEventListener instead.
+    // =========================================================
 
+    // ── CSRF helper ───────────────────────────────────────────
     function getCsrfToken() {
-        const meta = document.querySelector('meta[name="csrf-token"]');
+        var meta = document.querySelector('meta[name="csrf-token"]');
         return meta ? meta.getAttribute('content') : '';
     }
 
-    // Auto-dismiss flash messages after 5.5 s
+    // ── Logo fallback ─────────────────────────────────────────
+    //
+    // Replaces the removed onerror="..." attribute.
+    // Tries the footer logo path first; on a second failure hides
+    // the <img> and shows the icon placeholder instead.
+    //
+    (function () {
+        var img      = document.getElementById('portalLogoImg');
+        var fallback = document.getElementById('logoFallbackIcon');
+        if (!img) return;
+
+        var triedFallback = false;
+
+        img.addEventListener('error', function () {
+            if (!triedFallback) {
+                triedFallback = true;
+                img.src = '/assets/images/logo/logo-footer.png';
+            } else {
+                // Both sources failed — show icon
+                img.style.display = 'none';
+                if (fallback) fallback.style.display = 'block';
+            }
+        });
+    }());
+
+    // ── Logout confirmation ────────────────────────────────────
+    //
+    // Replaces the removed onclick="return confirm(...)" attribute.
+    //
+    (function () {
+        var logoutBtn = document.getElementById('logoutBtn');
+        if (!logoutBtn) return;
+
+        logoutBtn.addEventListener('click', function (e) {
+            if (!confirm('Are you sure you want to logout? Your progress is saved.')) {
+                e.preventDefault();
+            } else {
+                // Optional: fire-and-forget tracking
+                var token = getCsrfToken();
+                if (token) {
+                    fetch('/api/track-logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },
+                        body: JSON.stringify({ action: 'logout_click', timestamp: Date.now() })
+                    }).catch(function () {});
+                }
+            }
+        });
+    }());
+
+    // ── Auto-dismiss flash messages ───────────────────────────
     setTimeout(function () {
         document.querySelectorAll('.flash-msg').forEach(function (el) {
             el.style.transition = 'opacity 0.4s';
             el.style.opacity    = '0';
-            setTimeout(function () {
-                if (el.parentNode) el.remove();
-            }, 400);
+            setTimeout(function () { if (el.parentNode) el.remove(); }, 400);
         });
     }, 5500);
 
-    function confirmAction(msg) {
-        return confirm(msg || 'Are you sure?');
-    }
+    // ── Utility functions (used by views rendered into $content) ─
+    function confirmAction(msg) { return confirm(msg || 'Are you sure?'); }
 
     function checkPasswordStrength(pw) {
-        let s = 0;
+        var s = 0;
         if (pw.length >= 8)     s++;
         if (/[a-z]/.test(pw))   s++;
         if (/[A-Z]/.test(pw))   s++;
@@ -1475,107 +1187,69 @@
 
     function previewImage(input, previewId) {
         if (input.files && input.files[0]) {
-            const r = new FileReader();
+            var r = new FileReader();
             r.onload = function (e) {
-                const el = document.getElementById(previewId);
-                if (el) {
-                    el.src = e.target.result;
-                    el.style.display = 'block';
-                }
+                var el = document.getElementById(previewId);
+                if (el) { el.src = e.target.result; el.style.display = 'block'; }
             };
             r.readAsDataURL(input.files[0]);
         }
     }
 
     function confirmPassportUpload(input) {
-        if (input.files && input.files[0]) {
-            const r = new FileReader();
-            r.onload = function (e) {
-                if (confirm('Is this your correct passport photograph? Click OK to upload.')) {
-                    const preview   = document.getElementById('passport-preview');
-                    const confirmed = document.getElementById('passport-confirmed');
+        if (!(input.files && input.files[0])) return;
+        var r = new FileReader();
+        r.onload = function (e) {
+            if (confirm('Is this your correct passport photograph? Click OK to upload.')) {
+                var preview   = document.getElementById('passport-preview');
+                var confirmed = document.getElementById('passport-confirmed');
+                if (preview)   { preview.src = e.target.result; preview.style.display = 'block'; }
+                if (confirmed)   confirmed.value = '1';
 
-                    if (preview) {
-                        preview.src = e.target.result;
-                        preview.style.display = 'block';
-                    }
-
-                    if (confirmed) {
-                        confirmed.value = '1';
-                    }
-
-                    // Optional server-side tracking (fire-and-forget)
-                    const token = getCsrfToken();
-                    if (token) {
-                        fetch('/api/track-passport-upload', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': token
-                            },
-                            body: JSON.stringify({
-                                action: 'passport_upload_confirmed',
-                                timestamp: Date.now()
-                            })
-                        }).catch(() => {});
-                    }
-                } else {
-                    input.value = '';
-                    const preview   = document.getElementById('passport-preview');
-                    const confirmed = document.getElementById('passport-confirmed');
-
-                    if (preview)    preview.style.display = 'none';
-                    if (confirmed)  confirmed.value = '0';
+                var token = getCsrfToken();
+                if (token) {
+                    fetch('/api/track-passport-upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },
+                        body: JSON.stringify({ action: 'passport_upload_confirmed', timestamp: Date.now() })
+                    }).catch(function () {});
                 }
-            };
-            r.readAsDataURL(input.files[0]);
-        }
+            } else {
+                input.value = '';
+                var preview   = document.getElementById('passport-preview');
+                var confirmed = document.getElementById('passport-confirmed');
+                if (preview)   preview.style.display = 'none';
+                if (confirmed) confirmed.value = '0';
+            }
+        };
+        r.readAsDataURL(input.files[0]);
     }
 
-    // Harden external links that were not already marked
+    // ── Harden external links ─────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('a[href^="http"]:not([rel*="noopener"])').forEach(function (link) {
-            if (link.hostname !== window.location.hostname) {
-                link.setAttribute('target', '_blank');
-                link.setAttribute('rel', 'noopener noreferrer');
-            }
+        document.querySelectorAll('a[href^="http"]').forEach(function (link) {
+            try {
+                if (new URL(link.href).hostname !== window.location.hostname) {
+                    link.setAttribute('target', '_blank');
+                    link.setAttribute('rel',    'noopener noreferrer');
+                }
+            } catch (e) {}
         });
 
         // Optional: track footer contact clicks
-        const token = getCsrfToken();
+        var token = getCsrfToken();
         document.querySelectorAll('a[href^="tel:"], a[href^="mailto:"]').forEach(function (link) {
             link.addEventListener('click', function () {
                 if (!token) return;
                 fetch('/api/track-contact', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': token
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },
                     body: JSON.stringify({
                         action: 'footer_contact_click',
                         type: this.href.startsWith('tel:') ? 'phone' : 'email',
                         timestamp: Date.now()
                     })
-                }).catch(() => {});
-            });
-        });
-
-        // Optional: track logout clicks
-        document.querySelectorAll('.portal-logout-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                if (!token) return;
-                fetch('/api/track-logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': token
-                    },
-                    body: JSON.stringify({
-                        action: 'logout_click',
-                        timestamp: Date.now()
-                    })
-                }).catch(() => {});
+                }).catch(function () {});
             });
         });
     });
