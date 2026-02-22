@@ -1,865 +1,570 @@
 <?php
 /**
- * JAMB Verification View - Step 1
+ * Step 1 — JAMB Verification (partial view)
  *
- * Security fixes applied:
- *  1. All security-relevant HTTP headers (X-Frame-Options, X-XSS-Protection,
- *     Referrer-Policy, CSP) are emitted via PHP header() — NOT via <meta> tags,
- *     which browsers ignore for those directives.
- *  2. Google Fonts <link> has NO integrity attribute — Fonts CDN returns
- *     dynamic, User-Agent-specific responses that can never match a static hash.
- *  3. Version-pinned CDN assets (Bootstrap, Font Awesome) keep their SRI hashes.
- *  4. The controller that handles /apply/verify-jamb MUST send
- *     Content-Type: application/json before outputting JSON (see note below).
+ * This file is rendered INSIDE layout.php via $this->render('applications/step1').
+ * The layout calls extract($this->data) before capturing this file, so all
+ * controller-injected variables ($csp_nonce, $csrf_token, $terms, etc.) are
+ * in scope here.
  *
- * @package FCTCNS
+ * WHAT WAS REMOVED vs. the old standalone version:
+ *  - <!DOCTYPE html>, <html>, <head>, <body> tags (layout provides these)
+ *  - Duplicate <link> tags for fonts/Bootstrap/FontAwesome (layout provides these)
+ *  - Duplicate PHP header() CSP block (layout sends headers before any output)
+ *  - Duplicate <style nonce="..."> block (styles moved to layout or kept minimal here)
+ *  - The JambVerificationView class wrapper and render() method
+ *  - $this->e() calls replaced with plain htmlspecialchars() (no $this in partial scope)
+ *
+ * WHAT WAS FIXED:
+ *  - onclick="this.parentElement.remove()" on .btn-close removed → addEventListener
+ *  - All <script> tags use nonce="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>"
+ *    so the layout's CSP 'nonce-{value}' directive authorises them
+ *  - $csp_nonce and $csrf_token read directly from scope (injected by layout's extract)
  */
 
-require_once APP_PATH . '/helpers/SecurityHelper.php';
-require_once APP_PATH . '/helpers/SecurityTrait.php';
+// ── Safety: abort if rendered outside the layout (no $csp_nonce in scope) ──
+if (!isset($csp_nonce)) {
+    // Fallback: read from session (ApplicationBaseController always sets this)
+    $csp_nonce = $_SESSION['csp_nonce'] ?? '';
+}
+if (!isset($csrf_token)) {
+    $csrf_token = $_SESSION['csrf_token'] ?? '';
+}
 
-class JambVerificationView {
-    use SecurityTrait;
+// ── Data defaults ──────────────────────────────────────────────────────────
+$terms          = $terms          ?? [];
+$settings       = $settings       ?? [];
+$portal_closed  = $portal_closed  ?? false;
+$portal_message = $portal_message ?? '';
 
-    public function render($data) {
-        extract($data);
+// Encode terms safely for inline JS (prevents </script> injection)
+$secureTermsData = json_encode(
+    $terms,
+    JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+);
 
-        // ── Security: resolve nonce + CSRF token ──────────────────────────────
-        $csp_nonce  = $this->getCspNonce();
-        $csrf_token = $this->getCsrfToken();
+// Already-verified state (controller sets these when JAMB was previously verified)
+$jambAlreadyVerified = $jamb_already_verified ?? false;
+$jambNumber          = $jamb_number          ?? '';
+$jambName            = $jamb_name            ?? '';
 
-        // ── Data defaults ─────────────────────────────────────────────────────
-        $terms          = $terms          ?? [];
-        $settings       = $settings       ?? [];
-        $portal_closed  = $portal_closed  ?? false;
-        $portal_message = $portal_message ?? '';
-
-        // Secure JSON for inline JavaScript (HTML-entity-encoded, no </script> injection)
-        $secureTermsData = $this->secureJsonEncode($terms);
-
-        // ── Step tracking ─────────────────────────────────────────────────────
-        $currentStep = 1;
-        if (isset($application) && !empty($application['application_step'])) {
-            $currentStep = (int) $application['application_step'];
-            if ($currentStep === 4 && isset($has_exam_slip) && $has_exam_slip) {
-                $currentStep = 5;
-            }
-        }
-
-        $steps = [
-            1 => ['label' => 'Create Account',    'sub' => 'Register'],
-            2 => ['label' => 'JAMB Verification', 'sub' => 'JAMB check'],
-            3 => ['label' => 'Application Form',  'sub' => 'Fill form'],
-            4 => ['label' => 'Payment',           'sub' => 'Remita RRR'],
-            5 => ['label' => 'Exam Slip',         'sub' => 'Download'],
-        ];
-
-        // =========================================================
-        // HTTP SECURITY HEADERS
-        //
-        // These MUST be sent as HTTP response headers, not <meta>
-        // tags. The meta equivalents for X-Frame-Options and
-        // X-XSS-Protection are silently ignored by all browsers.
-        //
-        // If your framework/router has already sent headers by the
-        // time this view runs, move these calls into your bootstrap
-        // file (e.g. public/index.php) or a middleware layer.
-        // =========================================================
-        if (!headers_sent()) {
-            header('X-Frame-Options: DENY');
-            header('X-Content-Type-Options: nosniff');
-            header('X-XSS-Protection: 1; mode=block');
-            header('Referrer-Policy: strict-origin-when-cross-origin');
-
-            // CSP — effective only as an HTTP header, not a <meta> tag.
-            // 'nonce-{value}' authorises the inline <style> and <script> blocks below.
-            header(
-                "Content-Security-Policy: " .
-                "default-src 'self'; " .
-                "script-src 'self' 'nonce-{$csp_nonce}' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
-                "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
-                "img-src 'self' data:; " .
-                "connect-src 'self';"
-            );
-        }
+// Escape helper (inline — no $this in partial scope)
+function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-    <meta name="description" content="JAMB Verification - FCT College of Nursing Sciences">
-
-    <!--
-        CSRF token — safe as a <meta> tag (used by JS to attach to AJAX requests).
-        Security headers such as X-Frame-Options are sent as HTTP headers above;
-        they have been intentionally removed from here.
-    -->
-    <meta name="csrf-token" content="<?php echo $this->e($csrf_token); ?>">
-
-    <title>JAMB Verification - FCT College of Nursing Sciences</title>
-
-    <!-- Preconnect hints for Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <!--
-        Google Fonts — integrity attribute intentionally OMITTED.
-
-        Google Fonts serves User-Agent-specific responses (the exact
-        set of font formats and subset ranges varies per request), so
-        the byte content changes between requests. Any pre-computed
-        SRI hash will therefore never match, and the browser will
-        block the resource. Omitting SRI here is the correct, secure
-        approach for dynamic CDN resources.
-    -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-          crossorigin="anonymous">
-
-    <!--
-        Font Awesome — SRI hash retained.
-        This URL is version-pinned and content-addressed; the hash
-        will match consistently across requests.
-    -->
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-          crossorigin="anonymous"
-          referrerpolicy="no-referrer">
-
-    <!--
-        Bootstrap CSS — SRI hash retained (version-pinned, static content).
-    -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-          rel="stylesheet"
-          integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM"
-          crossorigin="anonymous">
-
-    <style nonce="<?php echo $this->e($csp_nonce); ?>">
-        /* ==========================================================================
-           RESET & BASE STYLES
-           ========================================================================== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            margin: 0;
-        }
-
-        /* ==========================================================================
-           DESIGN TOKENS
-           ========================================================================== */
-        :root {
-            --primary: #6B4E9B;
-            --primary-dark: #4A3B6B;
-            --primary-light: #8A6FB0;
-            --primary-soft: #F3EAF8;
-            --gold: #C9A44A;
-            --gold-light: #D8B86C;
-            --success: #10b981;
-            --success-light: #d1fae5;
-            --danger: #ef4444;
-            --danger-light: #fee2e2;
-            --warning: #f59e0b;
-            --warning-light: #fef3c7;
-            --info: #3b82f6;
-            --info-light: #dbeafe;
-            --surface: #F7F9FC;
-            --border: #E9EDF2;
-            --white: #FFFFFF;
-            --text-dark: #1A1F2E;
-            --text-light: #FFFFFF;
-            --text-muted: #6B7280;
-            --shadow-sm: 0 4px 6px rgba(0,0,0,0.05);
-            --shadow-md: 0 10px 25px rgba(0,0,0,0.1);
-            --shadow-lg: 0 20px 40px rgba(0,0,0,0.15);
-            --shadow-primary: 0 10px 30px rgba(107,78,155,0.3);
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 20px;
-            --radius-xl: 30px;
-        }
-
-        /* ==========================================================================
-           CONTAINER & LAYOUT
-           ========================================================================== */
-        .verification-container {
-            max-width: 900px;
-            width: 100%;
-            margin: 0 auto;
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ==========================================================================
-           HEADER
-           ========================================================================== */
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: clamp(28px, 5vw, 42px);
-            font-weight: 700;
-            color: #FFFFFF !important;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5), 0 0 10px rgba(0,0,0,0.3);
-            letter-spacing: -0.5px;
-        }
-
-        .header p {
-            font-size: clamp(14px, 2vw, 16px);
-            color: #FFFFFF !important;
-            font-weight: 500;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
-            opacity: 1;
-            background: rgba(0,0,0,0.2);
-            display: inline-block;
-            padding: 8px 20px;
-            border-radius: 50px;
-            backdrop-filter: blur(5px);
-        }
-
-        /* ==========================================================================
-           STEP INDICATOR
-           ========================================================================== */
-        .step-indicator {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 40px;
-            position: relative;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 50px;
-            padding: 20px 25px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .step-indicator::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 70px;
-            right: 70px;
-            height: 2px;
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-50%);
-            z-index: 1;
-        }
-
-        .step {
-            position: relative;
-            z-index: 2;
-            text-align: center;
-            flex: 1;
-            padding: 5px 0;
-        }
-
-        .step-number {
-            width: 40px;
-            height: 40px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 8px;
-            font-weight: 700;
-            font-size: 18px;
-            color: #FFFFFF !important;
-            transition: all 0.3s;
-            backdrop-filter: blur(5px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        .step.active .step-number {
-            background: var(--primary);
-            border-color: #FFD700;
-            box-shadow: 0 0 20px rgba(107, 78, 155, 0.6);
-            color: #FFFFFF !important;
-            transform: scale(1.1);
-        }
-
-        .step.completed .step-number {
-            background: var(--success);
-            border-color: #FFFFFF;
-            color: #FFFFFF !important;
-        }
-
-        .step-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: #FFFFFF !important;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.6);
-            white-space: nowrap;
-        }
-
-        .step-sub {
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.8) !important;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-            margin-top: 2px;
-        }
-
-        .step.active .step-label {
-            color: #FFD700 !important;
-            font-weight: 700;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
-        }
-
-        .step.active .step-sub {
-            color: rgba(255, 215, 0, 0.9) !important;
-        }
-
-        @media (max-width: 768px) {
-            .step-indicator {
-                flex-wrap: wrap;
-                gap: 12px;
-                background: rgba(0, 0, 0, 0.6);
-                backdrop-filter: blur(10px);
-                padding: 15px;
-                border-radius: 30px;
-            }
-
-            .step-indicator::before { display: none; }
-
-            .step {
-                flex: 0 0 calc(50% - 6px);
-                padding: 8px 5px;
-                background: rgba(255, 255, 255, 0.1);
-                border-radius: 20px;
-                backdrop-filter: blur(5px);
-                border: 1px solid rgba(255, 255, 255, 0.15);
-            }
-
-            .step-number { width: 32px; height: 32px; font-size: 14px; margin-bottom: 4px; }
-            .step-label  { font-size: 10px; white-space: normal; }
-            .step-sub    { font-size: 8px; }
-        }
-
-        /* ==========================================================================
-           MAIN CARD
-           ========================================================================== */
-        .main-card {
-            background: var(--white);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-lg);
-            overflow: hidden;
-            transition: all 0.3s;
-        }
-
-        .main-card:hover {
-            box-shadow: var(--shadow-lg), var(--shadow-primary);
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            border-bottom: none;
-        }
-
-        .card-header i { font-size: 3rem; margin-bottom: 15px; color: var(--gold); }
-
-        .card-header h2 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: #FFFFFF !important;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-        }
-
-        .card-header p {
-            font-size: 14px;
-            margin: 0;
-            color: rgba(255,255,255,0.95) !important;
-        }
-
-        .card-body { padding: 40px; }
-
-        @media (max-width: 768px) { .card-body { padding: 25px; } }
-
-        /* ==========================================================================
-           TERMS CARD
-           ========================================================================== */
-        .terms-card {
-            background: var(--primary-soft);
-            border-radius: var(--radius-lg);
-            margin-bottom: 30px;
-            border: 1px solid var(--primary-light);
-            overflow: hidden;
-        }
-
-        .terms-header {
-            background: linear-gradient(135deg, var(--gold) 0%, #B48C3A 100%);
-            color: white;
-            padding: 15px 20px;
-        }
-
-        .terms-header h5 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #FFFFFF !important;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-        }
-
-        .terms-body {
-            padding: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-            background: white;
-        }
-
-        .terms-body h6 { color: var(--primary-dark); font-weight: 600; margin-bottom: 15px; font-size: 16px; }
-
-        .terms-content {
-            font-size: 14px;
-            color: var(--text-dark);
-            line-height: 1.7;
-        }
-
-        .terms-content ol,
-        .terms-content ul { padding-left: 20px; margin-bottom: 15px; }
-
-        .terms-content li { margin-bottom: 8px; color: var(--text-dark); }
-
-        .terms-footer {
-            background: #f8f9fa;
-            padding: 12px 20px;
-            border-top: 1px solid var(--border);
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        /* ==========================================================================
-           FORM ELEMENTS
-           ========================================================================== */
-        .form-label {
-            font-weight: 600;
-            color: var(--primary-dark);
-            margin-bottom: 8px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .form-control {
-            border: 2px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 14px 16px;
-            font-size: 15px;
-            transition: all 0.3s;
-            font-family: 'Inter', sans-serif;
-            color: var(--text-dark);
-        }
-
-        .form-control:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(107,78,155,0.15);
-            outline: none;
-        }
-
-        .form-control-lg { font-size: 18px; letter-spacing: 1px; }
-
-        .form-control::placeholder { color: #9CA3AF; font-size: 14px; letter-spacing: normal; }
-
-        .form-text { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
-
-        .form-check { margin: 20px 0; }
-
-        .form-check-input {
-            width: 18px;
-            height: 18px;
-            margin-top: 2px;
-            border: 2px solid var(--border);
-        }
-
-        .form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
-
-        .form-check-label { font-size: 14px; color: var(--text-dark); margin-left: 5px; }
-        .form-check-label a { color: var(--primary); text-decoration: none; font-weight: 500; }
-        .form-check-label a:hover { text-decoration: underline; }
-
-        /* ==========================================================================
-           INFO ALERT
-           ========================================================================== */
-        .info-alert {
-            background: var(--info-light);
-            border-left: 4px solid var(--info);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            margin: 25px 0;
-        }
-
-        .info-alert i { color: var(--info); font-size: 18px; }
-        .info-alert strong { color: var(--text-dark); }
-        .info-alert ul { margin: 10px 0 0 20px; color: var(--text-dark); font-size: 14px; }
-        .info-alert li { margin-bottom: 5px; color: var(--text-dark); }
-
-        /* ==========================================================================
-           BUTTONS
-           ========================================================================== */
-        .btn {
-            padding: 14px 30px;
-            border-radius: var(--radius-md);
-            font-weight: 600;
-            font-size: 16px;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            border: none;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            box-shadow: var(--shadow-primary);
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 35px rgba(107,78,155,0.4);
-            color: white;
-        }
-
-        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
-
-        .btn-outline-primary {
-            background: transparent;
-            border: 2px solid var(--primary);
-            color: var(--primary);
-        }
-
-        .btn-outline-primary:hover {
-            background: var(--primary);
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .btn-lg { width: 100%; }
-
-        .spinner-border { width: 18px; height: 18px; border-width: 2px; margin-right: 5px; }
-
-        /* ==========================================================================
-           ALERTS
-           ========================================================================== */
-        .alert {
-            border-radius: var(--radius-md);
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: none;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .alert-success { background: var(--success-light); color: #065f46; border-left: 4px solid var(--success); }
-        .alert-danger  { background: var(--danger-light);  color: #991b1b; border-left: 4px solid var(--danger); }
-        .alert-warning { background: var(--warning-light); color: #92400e; border-left: 4px solid var(--warning); }
-        .alert-info    { background: var(--info-light);    color: #1e40af; border-left: 4px solid var(--info); }
-
-        .alert .btn-close {
-            margin-left: auto;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            opacity: 0.5;
-            color: currentColor;
-        }
-
-        .alert .btn-close:hover { opacity: 1; }
-
-        /* ==========================================================================
-           DIVIDER
-           ========================================================================== */
-        .divider { text-align: center; margin: 30px 0; position: relative; }
-
-        .divider::before {
-            content: '';
-            position: absolute;
-            top: 50%; left: 0; right: 0;
-            height: 1px;
-            background: var(--border);
-            z-index: 1;
-        }
-
-        .divider span {
-            background: var(--white);
-            padding: 0 15px;
-            color: var(--text-muted);
-            font-size: 14px;
-            position: relative;
-            z-index: 2;
-        }
-
-        /* ==========================================================================
-           FOOTER
-           ========================================================================== */
-        .app-footer {
-            text-align: center;
-            margin-top: 30px;
-            color: #FFFFFF !important;
-            font-size: 13px;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: var(--radius-lg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .app-footer p   { color: #FFFFFF !important; margin-bottom: 5px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
-        .app-footer a   { color: #FFFFFF !important; text-decoration: none; font-weight: 500; border-bottom: 1px dotted rgba(255,255,255,0.6); }
-        .app-footer a:hover { border-bottom-color: #FFFFFF; }
-        .app-footer i   { margin: 0 5px; color: #FFFFFF !important; }
-
-        /* ==========================================================================
-           PORTAL CLOSED
-           ========================================================================== */
-        .portal-closed { background: var(--white); border-radius: var(--radius-xl); padding: 40px; text-align: center; }
-        .portal-closed i  { font-size: 4rem; color: var(--warning); margin-bottom: 20px; }
-        .portal-closed h2 { color: var(--primary); margin-bottom: 15px; }
-        .portal-closed p  { color: var(--text-dark); margin-bottom: 10px; }
-
-        /* ==========================================================================
-           RESPONSIVE
-           ========================================================================== */
-        @media (max-width: 576px) {
-            body { padding: 10px; }
-            .card-header { padding: 20px; }
-            .card-header i { font-size: 2.5rem; }
-            .card-header h2 { font-size: 22px; }
-            .btn { padding: 12px 20px; font-size: 14px; }
-            .form-control-lg { font-size: 16px; padding: 12px; }
-            .app-footer { padding: 15px; font-size: 12px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="verification-container">
-
-        <!-- ── Page heading ─────────────────────────────────────────────── -->
-        <div class="header">
-            <h1>FCT College of Nursing Sciences</h1>
-            <p>2025/2026 Admissions Application Portal</p>
+
+<?php /* ── Scoped styles for this view only ─────────────────────────────── */ ?>
+<style nonce="<?php echo e1($csp_nonce); ?>">
+    /* ── Design tokens (scoped — override layout tokens only where needed) ─ */
+    .sv1 {
+        --sv1-primary:       #6B4E9B;
+        --sv1-primary-dark:  #4A3B6B;
+        --sv1-primary-light: #8A6FB0;
+        --sv1-primary-soft:  #F3EAF8;
+        --sv1-gold:          #C9A44A;
+        --sv1-success:       #10b981;
+        --sv1-success-light: #d1fae5;
+        --sv1-danger:        #ef4444;
+        --sv1-danger-light:  #fee2e2;
+        --sv1-warning:       #f59e0b;
+        --sv1-warning-light: #fef3c7;
+        --sv1-info:          #3b82f6;
+        --sv1-info-light:    #dbeafe;
+        --sv1-border:        #E9EDF2;
+        --sv1-text-dark:     #1A1F2E;
+        --sv1-text-muted:    #6B7280;
+        --sv1-radius-md:     12px;
+        --sv1-radius-lg:     20px;
+        --sv1-radius-xl:     30px;
+        --sv1-shadow-primary: 0 10px 30px rgba(107,78,155,0.3);
+    }
+
+    /* ── Card ──────────────────────────────────────────────────────────── */
+    .sv1 .sv1-card {
+        background: #fff;
+        border-radius: var(--sv1-radius-xl);
+        box-shadow: 0 20px 40px rgba(0,0,0,.12);
+        overflow: hidden;
+    }
+
+    .sv1 .sv1-card-head {
+        background: linear-gradient(135deg, var(--sv1-primary) 0%, var(--sv1-primary-dark) 100%);
+        color: #fff;
+        padding: 30px;
+        text-align: center;
+    }
+
+    .sv1 .sv1-card-head i   { font-size: 3rem; color: var(--sv1-gold); margin-bottom: 15px; display: block; }
+    .sv1 .sv1-card-head h2  { font-size: 26px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+    .sv1 .sv1-card-head p   { font-size: 14px; color: rgba(255,255,255,.9); margin: 0; }
+
+    .sv1 .sv1-card-body { padding: 36px 40px; }
+
+    @media (max-width: 576px) {
+        .sv1 .sv1-card-body  { padding: 22px 18px; }
+        .sv1 .sv1-card-head  { padding: 22px; }
+        .sv1 .sv1-card-head h2 { font-size: 20px; }
+    }
+
+    /* ── Terms card ────────────────────────────────────────────────────── */
+    .sv1 .sv1-terms {
+        background: var(--sv1-primary-soft);
+        border: 1px solid var(--sv1-primary-light);
+        border-radius: var(--sv1-radius-lg);
+        overflow: hidden;
+        margin-bottom: 28px;
+    }
+
+    .sv1 .sv1-terms-head {
+        background: linear-gradient(135deg, var(--sv1-gold) 0%, #B48C3A 100%);
+        color: #fff;
+        padding: 13px 18px;
+        font-weight: 600;
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .sv1 .sv1-terms-body {
+        padding: 18px;
+        max-height: 280px;
+        overflow-y: auto;
+        background: #fff;
+        font-size: 13.5px;
+        line-height: 1.7;
+        color: var(--sv1-text-dark);
+    }
+
+    .sv1 .sv1-terms-foot {
+        padding: 10px 18px;
+        background: #f8f9fa;
+        border-top: 1px solid var(--sv1-border);
+        font-size: 11.5px;
+        color: var(--sv1-text-muted);
+    }
+
+    /* ── Form ───────────────────────────────────────────────────────────── */
+    .sv1 .sv1-label {
+        font-weight: 600;
+        color: var(--sv1-primary-dark);
+        font-size: 13.5px;
+        margin-bottom: 7px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .sv1 .sv1-input {
+        border: 2px solid var(--sv1-border);
+        border-radius: var(--sv1-radius-md);
+        padding: 13px 15px;
+        font-size: 17px;
+        letter-spacing: 1px;
+        width: 100%;
+        transition: border-color .25s, box-shadow .25s;
+        color: var(--sv1-text-dark);
+        font-family: inherit;
+    }
+
+    .sv1 .sv1-input:focus {
+        border-color: var(--sv1-primary);
+        box-shadow: 0 0 0 3px rgba(107,78,155,.15);
+        outline: none;
+    }
+
+    .sv1 .sv1-hint { font-size: 12px; color: var(--sv1-text-muted); margin-top: 5px; }
+
+    /* ── Checkbox ───────────────────────────────────────────────────────── */
+    .sv1 .sv1-check { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0; }
+
+    .sv1 .sv1-check input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        margin-top: 2px;
+        accent-color: var(--sv1-primary);
+        cursor: pointer;
+    }
+
+    .sv1 .sv1-check label {
+        font-size: 14px;
+        color: var(--sv1-text-dark);
+        cursor: pointer;
+        line-height: 1.5;
+    }
+
+    .sv1 .sv1-check label a { color: var(--sv1-primary); font-weight: 500; text-decoration: none; }
+    .sv1 .sv1-check label a:hover { text-decoration: underline; }
+
+    /* ── Info box ───────────────────────────────────────────────────────── */
+    .sv1 .sv1-info {
+        background: var(--sv1-info-light);
+        border-left: 4px solid var(--sv1-info);
+        border-radius: var(--sv1-radius-md);
+        padding: 16px 18px;
+        margin: 22px 0;
+        font-size: 13.5px;
+        color: var(--sv1-text-dark);
+    }
+
+    .sv1 .sv1-info i { color: var(--sv1-info); }
+    .sv1 .sv1-info ul { margin: 8px 0 0 18px; }
+    .sv1 .sv1-info li { margin-bottom: 4px; }
+
+    /* ── Already-verified banner ────────────────────────────────────────── */
+    .sv1 .sv1-verified-banner {
+        background: var(--sv1-success-light);
+        border: 1px solid var(--sv1-success);
+        border-radius: var(--sv1-radius-md);
+        padding: 18px 22px;
+        margin-bottom: 22px;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .sv1 .sv1-verified-banner i { color: var(--sv1-success); font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+    .sv1 .sv1-verified-banner h5 { font-size: 15px; font-weight: 700; color: #065f46; margin: 0 0 4px; }
+    .sv1 .sv1-verified-banner p  { font-size: 13.5px; color: #064e3b; margin: 0; }
+
+    /* ── Buttons ────────────────────────────────────────────────────────── */
+    .sv1 .sv1-btn-primary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        width: 100%;
+        padding: 14px 28px;
+        background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
+        color: #fff;
+        border: none;
+        border-radius: var(--sv1-radius-md);
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: var(--sv1-shadow-primary);
+        transition: transform .2s, box-shadow .2s;
+        font-family: inherit;
+    }
+
+    .sv1 .sv1-btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 35px rgba(107,78,155,.4);
+    }
+
+    .sv1 .sv1-btn-primary:disabled { opacity: .65; cursor: not-allowed; }
+
+    .sv1 .sv1-btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 24px;
+        background: transparent;
+        border: 2px solid var(--sv1-primary);
+        color: var(--sv1-primary);
+        border-radius: var(--sv1-radius-md);
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background .2s, color .2s, transform .2s;
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    .sv1 .sv1-btn-outline:hover {
+        background: var(--sv1-primary);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+
+    /* ── Alert ──────────────────────────────────────────────────────────── */
+    .sv1 #sv1Alert {
+        border-radius: var(--sv1-radius-md);
+        padding: 13px 16px;
+        margin-bottom: 20px;
+        display: none;          /* shown by JS */
+        align-items: center;
+        gap: 10px;
+        font-size: 13.5px;
+        border-left-width: 4px;
+        border-left-style: solid;
+        animation: sv1SlideIn .25s ease;
+    }
+
+    @keyframes sv1SlideIn {
+        from { opacity: 0; transform: translateY(-8px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .sv1 #sv1Alert.sv1-success { background: var(--sv1-success-light); border-color: var(--sv1-success);  color: #065f46; }
+    .sv1 #sv1Alert.sv1-danger  { background: var(--sv1-danger-light);  border-color: var(--sv1-danger);   color: #991b1b; }
+    .sv1 #sv1Alert.sv1-info    { background: var(--sv1-info-light);    border-color: var(--sv1-info);     color: #1e40af; }
+    .sv1 #sv1Alert.sv1-warning { background: var(--sv1-warning-light); border-color: var(--sv1-warning);  color: #92400e; }
+
+    /* The dismiss button — NO onclick attribute (see JS below) */
+    .sv1 #sv1AlertClose {
+        margin-left: auto;
+        background: none;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        opacity: .55;
+        color: currentColor;
+        line-height: 1;
+        padding: 0 4px;
+    }
+
+    .sv1 #sv1AlertClose:hover { opacity: 1; }
+
+    /* ── Divider ────────────────────────────────────────────────────────── */
+    .sv1 .sv1-divider { text-align: center; margin: 28px 0; position: relative; }
+
+    .sv1 .sv1-divider::before {
+        content: '';
+        position: absolute;
+        top: 50%; left: 0; right: 0;
+        height: 1px;
+        background: var(--sv1-border);
+    }
+
+    .sv1 .sv1-divider span {
+        position: relative;
+        background: #fff;
+        padding: 0 14px;
+        color: var(--sv1-text-muted);
+        font-size: 13px;
+    }
+
+    /* ── Spinner ────────────────────────────────────────────────────────── */
+    .sv1-spinner {
+        display: inline-block;
+        width: 16px; height: 16px;
+        border: 2px solid rgba(255,255,255,.4);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: sv1Spin .7s linear infinite;
+        vertical-align: middle;
+    }
+
+    @keyframes sv1Spin { to { transform: rotate(360deg); } }
+
+    /* ── Portal closed ──────────────────────────────────────────────────── */
+    .sv1 .sv1-closed {
+        background: #fff;
+        border-radius: var(--sv1-radius-xl);
+        padding: 40px;
+        text-align: center;
+    }
+
+    .sv1 .sv1-closed i  { font-size: 4rem; color: var(--sv1-warning); margin-bottom: 20px; display: block; }
+    .sv1 .sv1-closed h2 { color: var(--sv1-primary); margin-bottom: 12px; font-size: 24px; }
+    .sv1 .sv1-closed p  { color: var(--sv1-text-dark); margin-bottom: 8px; }
+</style>
+
+
+<?php /* ── HTML ─────────────────────────────────────────────────────────── */ ?>
+<div class="sv1">
+
+    <?php /* ── Alert (populated by JS) ──────────────────────────────────── */ ?>
+    <div id="sv1Alert" role="alert" aria-live="polite">
+        <i id="sv1AlertIcon" class="fas fa-info-circle"></i>
+        <span id="sv1AlertMsg"></span>
+        <button id="sv1AlertClose" type="button" aria-label="Close">&times;</button>
+    </div>
+
+    <?php if ($portal_closed): ?>
+        <div class="sv1-closed">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h2>Application Portal Closed</h2>
+            <p><?php echo e1($portal_message); ?></p>
+            <p class="text-muted">The next admissions cycle will be announced on this portal.</p>
         </div>
 
-        <!-- ── Step indicator ───────────────────────────────────────────── -->
-        <div class="step-indicator">
-            <?php foreach ($steps as $num => $step):
-                $stepClass = '';
-                if ($num < $currentStep) $stepClass = 'completed';
-                elseif ($num === $currentStep) $stepClass = 'active';
-            ?>
-            <div class="step <?php echo $this->e($stepClass); ?>">
-                <div class="step-number">
-                    <?php if ($num < $currentStep): ?>
-                        <i class="fas fa-check"></i>
-                    <?php else: ?>
-                        <?php echo (int) $num; ?>
-                    <?php endif; ?>
-                </div>
-                <div class="step-label"><?php echo $this->e($step['label']); ?></div>
-                <div class="step-sub"><?php echo $this->e($step['sub']); ?></div>
-            </div>
-            <?php endforeach; ?>
-        </div>
+    <?php else: ?>
+        <?php /* ── Main card ─────────────────────────────────────────────── */ ?>
+        <div class="sv1-card">
 
-        <!-- ── Alert container (populated by JS) ───────────────────────── -->
-        <div id="alertContainer" role="alert" aria-live="polite"></div>
-
-        <?php if ($portal_closed): ?>
-            <!-- Portal closed state -->
-            <div class="portal-closed">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h2>Application Portal Closed</h2>
-                <p><?php echo $this->e($portal_message); ?></p>
-                <p class="text-muted mt-3">The next admissions cycle will be announced on this portal.</p>
+            <div class="sv1-card-head">
+                <i class="fas fa-id-card"></i>
+                <h2>JAMB Verification</h2>
+                <p>Enter your JAMB registration number to begin your application</p>
             </div>
 
-        <?php else: ?>
-            <!-- ── Main card ─────────────────────────────────────────────── -->
-            <div class="main-card">
-                <div class="card-header">
-                    <i class="fas fa-id-card"></i>
-                    <h2>JAMB Verification</h2>
-                    <p>Enter your JAMB registration number to begin your application</p>
-                </div>
+            <div class="sv1-card-body">
 
-                <div class="card-body">
-
-                    <?php if (empty($terms)): ?>
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            Terms and conditions are not available at the moment. Please try again later.
-                        </div>
-                    <?php else: ?>
-
-                    <!-- Terms and Conditions Card -->
-                    <div class="terms-card">
-                        <div class="terms-header">
-                            <h5><i class="fas fa-file-contract"></i> Terms and Conditions</h5>
-                        </div>
-                        <div class="terms-body">
-                            <h6><?php echo $this->e($terms['title'] ?? 'Terms and Conditions'); ?></h6>
-                            <div class="terms-content">
-                                <?php echo nl2br($this->e($terms['content'] ?? '')); ?>
-                            </div>
-                        </div>
-                        <div class="terms-footer">
-                            <i class="fas fa-clock me-1"></i>
-                            Version: <?php echo $this->e($terms['version'] ?? '1.0'); ?> |
-                            Effective: <?php echo $this->e(isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025'); ?>
+                <?php if ($jambAlreadyVerified): ?>
+                    <?php /* ── Already-verified state ──────────────────────── */ ?>
+                    <div class="sv1-verified-banner">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <h5>JAMB Already Verified</h5>
+                            <p>
+                                Your JAMB number <strong><?php echo e1($jambNumber); ?></strong>
+                                has been verified for <strong><?php echo e1($jambName); ?></strong>.
+                                You cannot change it.
+                            </p>
                         </div>
                     </div>
 
-                    <!-- JAMB Verification Form -->
-                    <form id="jambVerificationForm" novalidate>
-                        <!--
-                            CSRF token hidden field.
-                            The same token is also read from the <meta> tag by JS
-                            and attached as the X-CSRF-Token request header.
-                        -->
-                        <input type="hidden" name="csrf_token" value="<?php echo $this->e($csrf_token); ?>">
+                    <div class="text-center mt-3">
+                        <a href="/apply/step/2" class="sv1-btn-outline">
+                            <i class="fas fa-arrow-right"></i> Continue to Application Form
+                        </a>
+                    </div>
+
+                <?php elseif (empty($terms)): ?>
+                    <div class="sv1-info" style="border-color: var(--sv1-warning); background: var(--sv1-warning-light); color: #92400e;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Terms and conditions are not available at the moment. Please try again later.
+                    </div>
+
+                <?php else: ?>
+                    <?php /* ── Terms card ──────────────────────────────────── */ ?>
+                    <div class="sv1-terms">
+                        <div class="sv1-terms-head">
+                            <i class="fas fa-file-contract"></i>
+                            Terms and Conditions
+                        </div>
+                        <div class="sv1-terms-body">
+                            <strong><?php echo e1($terms['title'] ?? 'Terms and Conditions'); ?></strong>
+                            <div style="margin-top:12px;">
+                                <?php echo nl2br(e1($terms['content'] ?? '')); ?>
+                            </div>
+                        </div>
+                        <div class="sv1-terms-foot">
+                            <i class="fas fa-clock"></i>
+                            Version: <?php echo e1($terms['version'] ?? '1.0'); ?> &nbsp;|&nbsp;
+                            Effective: <?php echo e1(isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025'); ?>
+                        </div>
+                    </div>
+
+                    <?php /* ── JAMB Form ───────────────────────────────────── */ ?>
+                    <?php
+                    /*
+                     * The <form> has NO action/method attributes intentionally.
+                     * The submit event is fully handled by the fetch() call in the
+                     * <script nonce="..."> block below. If JS is blocked (CSP nonce
+                     * mismatch), the form will do nothing — it will NOT fall back to
+                     * a native GET submission that exposes credentials in the URL.
+                     *
+                     * To prevent accidental native submission if JS is not yet loaded,
+                     * the submit button is initially disabled and enabled by JS on
+                     * DOMContentLoaded.
+                     */
+                    ?>
+                    <form id="sv1Form" novalidate>
+                        <input type="hidden" name="csrf_token" value="<?php echo e1($csrf_token); ?>">
 
                         <div class="mb-4">
-                            <label for="jamb_number" class="form-label">
+                            <label class="sv1-label" for="sv1JambNumber">
                                 <i class="fas fa-id-card text-primary"></i>
                                 JAMB Registration Number
                             </label>
                             <input type="text"
-                                   class="form-control form-control-lg"
-                                   id="jamb_number"
+                                   class="sv1-input"
+                                   id="sv1JambNumber"
                                    name="jamb_number"
-                                   placeholder="e.g., 202650000089FG"
-                                   style="text-transform: uppercase;"
+                                   placeholder="e.g. 202650000089FG"
                                    autocomplete="off"
                                    maxlength="14"
-                                   pattern="[0-9A-Za-z]{10,14}"
-                                   required
-                                   aria-describedby="jambHelp">
-                            <div class="form-text" id="jambHelp">
+                                   inputmode="text"
+                                   style="text-transform:uppercase;"
+                                   required>
+                            <div class="sv1-hint">
                                 <i class="fas fa-info-circle"></i>
                                 Enter the JAMB registration number you used for the 2025 UTME.
                             </div>
                         </div>
 
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="accept_terms" name="accept_terms" required>
-                            <label class="form-check-label" for="accept_terms">
+                        <div class="sv1-check">
+                            <input type="checkbox" id="sv1AcceptTerms" name="accept_terms" required>
+                            <label for="sv1AcceptTerms">
                                 I have read and agree to the
-                                <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a>
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#sv1TermsModal">
+                                    Terms and Conditions
+                                </a>
                             </label>
                         </div>
 
-                        <!-- Requirements summary -->
-                        <div class="info-alert">
+                        <div class="sv1-info">
                             <i class="fas fa-info-circle"></i>
                             <strong>By proceeding, you confirm that:</strong>
-                            <ul class="mb-0">
-                                <li>You have a minimum UTME score of <?php echo $this->e($settings['key_value']['min_utme_score'] ?? '170'); ?></li>
+                            <ul>
+                                <li>You have a minimum UTME score of <?php echo e1($settings['key_value']['min_utme_score'] ?? '170'); ?></li>
                                 <li>You selected FCT College of Nursing Sciences as your first choice</li>
-                                <li>You have the required O&rsquo;Level credits (5 credits including English, Maths, Biology, Chemistry, Physics)</li>
-                                <li>You are at least <?php echo $this->e($settings['key_value']['min_age'] ?? '16'); ?> years old</li>
+                                <li>You have 5 O&rsquo;Level credits including English, Maths, Biology, Chemistry, and Physics</li>
+                                <li>You are at least <?php echo e1($settings['key_value']['min_age'] ?? '16'); ?> years old</li>
                             </ul>
                         </div>
 
-                        <button type="submit" class="btn btn-primary btn-lg" id="verifyBtn">
-                            <span id="btnText"><i class="fas fa-check-circle"></i> Verify JAMB Number</span>
-                            <span id="btnSpinner" style="display: none;" aria-hidden="true">
-                                <span class="spinner-border" role="status"></span>
+                        <?php
+                        /*
+                         * The submit button starts DISABLED.
+                         * The <script nonce="..."> block enables it on DOMContentLoaded.
+                         * If the script is blocked (nonce mismatch), the button stays
+                         * disabled and the user sees a "JavaScript required" message
+                         * instead of a broken native form submission.
+                         */
+                        ?>
+                        <button type="submit"
+                                class="sv1-btn-primary"
+                                id="sv1SubmitBtn"
+                                disabled>
+                            <span id="sv1BtnText">
+                                <i class="fas fa-check-circle"></i> Verify JAMB Number
+                            </span>
+                            <span id="sv1BtnSpinner" style="display:none;" aria-hidden="true">
+                                <span class="sv1-spinner"></span>
                                 Verifying&hellip;
                             </span>
                         </button>
+
+                        <p id="sv1NoJsMsg" class="sv1-hint text-center mt-3" style="color:#991b1b; display:none;">
+                            JavaScript is required for JAMB verification. Please enable it in your browser settings.
+                        </p>
+
                     </form>
+                <?php endif; ?>
 
-                    <?php endif; /* terms not empty */ ?>
+                <div class="sv1-divider"><span>OR</span></div>
 
-                    <div class="divider"><span>OR</span></div>
+                <div class="text-center">
+                    <p class="mb-3" style="color:var(--sv1-text-muted); font-size:14px;">
+                        Already have an account?
+                    </p>
+                    <a href="/applicant/login" class="sv1-btn-outline">
+                        <i class="fas fa-sign-in-alt"></i> Login to Continue
+                    </a>
+                </div>
 
-                    <div class="text-center">
-                        <p class="mb-2" style="color: var(--text-muted);">Already have an account?</p>
-                        <a href="/applicant/login" class="btn btn-outline-primary">
-                            <i class="fas fa-sign-in-alt"></i> Login to Continue Application
-                        </a>
-                    </div>
+            </div><?php /* /sv1-card-body */ ?>
+        </div><?php /* /sv1-card */ ?>
 
-                </div><!-- /card-body -->
-            </div><!-- /main-card -->
+    <?php endif; /* portal not closed */ ?>
 
-        <?php endif; /* portal not closed */ ?>
-
-        <!-- ── Footer ───────────────────────────────────────────────────── -->
-        <div class="app-footer">
-            <p>&copy; <?php echo date('Y'); ?> FCT College of Nursing Sciences. All rights reserved.</p>
-            <p>
-                <i class="fas fa-phone-alt"></i> Support: 07039837749 |
-                <i class="fas fa-envelope"></i> Email: <a href="mailto:info@fctcns.edu.ng">info@fctcns.edu.ng</a>
-            </p>
-        </div>
-
-    </div><!-- /verification-container -->
-
-
-    <!-- ── Terms Modal ──────────────────────────────────────────────────── -->
+    <?php /* ── Terms Modal ─────────────────────────────────────────────── */ ?>
     <?php if (!empty($terms)): ?>
-    <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal fade" id="sv1TermsModal" tabindex="-1"
+         aria-labelledby="sv1TermsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="termsModalLabel">
+                    <h5 class="modal-id" id="sv1TermsModalLabel">
                         <i class="fas fa-file-contract me-2"></i>Terms and Conditions
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white"
+                            data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <h6><?php echo $this->e($terms['title'] ?? 'Terms and Conditions'); ?></h6>
-                    <div class="terms-content">
-                        <?php echo nl2br($this->e($terms['content'] ?? '')); ?>
+                    <h6><?php echo e1($terms['title'] ?? 'Terms and Conditions'); ?></h6>
+                    <div style="font-size:14px; line-height:1.7; color:#1A1F2E;">
+                        <?php echo nl2br(e1($terms['content'] ?? '')); ?>
                     </div>
                     <hr>
                     <p class="text-muted small mb-0">
                         <i class="fas fa-clock me-1"></i>
-                        Version: <?php echo $this->e($terms['version'] ?? '1.0'); ?> |
-                        Effective: <?php echo $this->e(isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025'); ?>
+                        Version: <?php echo e1($terms['version'] ?? '1.0'); ?> |
+                        Effective: <?php echo e1(isset($terms['effective_date']) ? date('jS F Y', strtotime($terms['effective_date'])) : '15th September 2025'); ?>
                     </p>
                 </div>
                 <div class="modal-footer">
@@ -870,243 +575,241 @@ class JambVerificationView {
     </div>
     <?php endif; ?>
 
+</div><?php /* /sv1 */ ?>
 
-    <!--
-        Bootstrap JS — SRI hash retained (version-pinned, static CDN content).
-        The nonce attribute pairs with the 'nonce-{value}' directive in the
-        Content-Security-Policy HTTP header sent above.
-    -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-            integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
-            crossorigin="anonymous"
-            nonce="<?php echo $this->e($csp_nonce); ?>"></script>
 
-    <script nonce="<?php echo $this->e($csp_nonce); ?>">
-    /*
-     * ===================================================================
-     * IMPORTANT — JSON parse error root cause & fix
-     * ===================================================================
-     * The console error "Unexpected token '<', '<!DOCTYPE'... is not
-     * valid JSON" means /apply/verify-jamb returned an HTML page instead
-     * of JSON (typically a PHP error page, a redirect, or a 404).
-     *
-     * Fix in your controller method that handles POST /apply/verify-jamb:
-     *
-     *   // 1. Send the JSON content-type header BEFORE any output
-     *   header('Content-Type: application/json; charset=utf-8');
-     *
-     *   // 2. Always echo valid JSON and exit — never fall through
-     *   echo json_encode(['success' => true, 'data' => $payload]);
-     *   exit;
-     *
-     *   // On error:
-     *   http_response_code(422);
-     *   echo json_encode(['success' => false, 'message' => 'Your error message']);
-     *   exit;
-     *
-     * To diagnose: Open DevTools → Network → find the POST request →
-     * click it → Response tab. Whatever is shown there is what the
-     * browser received instead of JSON.
-     * ===================================================================
-     */
+<?php /* ─────────────────────────────────────────────────────────────────────
+   JAVASCRIPT
+   ─────────────────────────────────────────────────────────────────────────
+   ALL inline event-handler ATTRIBUTES have been removed.
+   The CSP directive script-src-attr: 'none' (set by layout.php) blocks them
+   unconditionally. Every handler is wired here with addEventListener instead.
 
-    // Read CSRF token from the <meta> tag placed in <head>
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+   This <script> tag uses nonce="<?php echo $csp_nonce; ?>" so the layout's
+   Content-Security-Policy header ('nonce-{value}') authorises it.
+   ───────────────────────────────────────────────────────────────────────── */ ?>
+<script nonce="<?php echo e1($csp_nonce); ?>">
+(function () {
+    'use strict';
 
-    // Secure terms data passed from PHP (already JSON-encoded server-side)
-    const TERMS_DATA = <?php echo $secureTermsData; ?>;
+    // ── DOM refs ──────────────────────────────────────────────────────────
+    var form        = document.getElementById('sv1Form');
+    var jambInput   = document.getElementById('sv1JambNumber');
+    var termsCheck  = document.getElementById('sv1AcceptTerms');
+    var submitBtn   = document.getElementById('sv1SubmitBtn');
+    var btnText     = document.getElementById('sv1BtnText');
+    var btnSpinner  = document.getElementById('sv1BtnSpinner');
+    var noJsMsg     = document.getElementById('sv1NoJsMsg');
+    var alertEl     = document.getElementById('sv1Alert');
+    var alertIcon   = document.getElementById('sv1AlertIcon');
+    var alertMsg    = document.getElementById('sv1AlertMsg');
+    var alertClose  = document.getElementById('sv1AlertClose');
 
-    // ── Auto-format JAMB field ───────────────────────────────────────────
-    document.getElementById('jamb_number').addEventListener('input', function () {
-        // Allow only alphanumeric uppercase characters
-        this.value = this.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
-    });
+    // CSRF token — read from the layout's <meta name="csrf-token"> tag
+    var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute('content') || '';
 
-    // ── Form submission ──────────────────────────────────────────────────
-    document.getElementById('jambVerificationForm').addEventListener('submit', async function (e) {
-        e.preventDefault();
+    // ── Enable submit button now that JS is running ───────────────────────
+    //
+    // The button starts disabled (in HTML) so that if CSP blocks this script
+    // the form is inert — no accidental native GET submission with credentials
+    // in the URL query string.
+    //
+    if (submitBtn) submitBtn.disabled = false;
+    if (noJsMsg)   noJsMsg.style.display = 'none';
 
-        const jambNumber  = document.getElementById('jamb_number').value.trim().toUpperCase();
-        const acceptTerms = document.getElementById('accept_terms').checked;
+    // ── Alert dismiss — addEventListener, NOT onclick attribute ──────────
+    //
+    // The CSP directive script-src-attr: 'none' in layout.php blocks ALL
+    // inline event handler attributes (onclick="...", onerror="...", etc.)
+    // The browser reported this exact violation:
+    //
+    //   "blocked an event handler (script-src-attr)"
+    //   sha256-P1MsgUmL6SZQlkOYJuanyuTQQHqA2uVOzleT4JX+Z4U=
+    //
+    // That hash was the old onclick="this.parentElement.remove()" string.
+    // It is now wired here safely.
+    //
+    if (alertClose) {
+        alertClose.addEventListener('click', function () {
+            hideAlert();
+        });
+    }
 
-        // Client-side validation
-        if (!jambNumber) {
-            showAlert('Please enter your JAMB number.', 'danger');
-            return;
-        }
+    // ── JAMB input: uppercase + strip non-alphanumeric ───────────────────
+    if (jambInput) {
+        jambInput.addEventListener('input', function () {
+            var pos = this.selectionStart;
+            this.value = this.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
+            try { this.setSelectionRange(pos, pos); } catch (e) {}
+        });
+    }
 
-        if (!/^[0-9A-Z]{10,14}$/.test(jambNumber)) {
-            showAlert('Invalid JAMB number format. It should be 10–14 alphanumeric characters.', 'danger');
-            return;
-        }
+    // ── Form submit ───────────────────────────────────────────────────────
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();  // ALWAYS prevent native submission
 
-        if (!acceptTerms) {
-            showAlert('You must accept the terms and conditions to proceed.', 'danger');
-            return;
-        }
+            var jamb      = jambInput  ? jambInput.value.trim().toUpperCase() : '';
+            var accepted  = termsCheck ? termsCheck.checked : false;
 
-        setLoading(true);
-
-        try {
-            const formData = new FormData(this);
-
-            // ── POST to the verifyJamb() controller endpoint ──────────────
-            //
-            // The route MUST be registered in your router as:
-            //   POST /apply/verify-jamb  →  PublicApplicationController@verifyJamb
-            //
-            // The controller method already sends header('Content-Type: application/json')
-            // at its very first line, so the response will always be JSON.
-            //
-            let response;
-            try {
-                response = await fetch('/apply/verify-jamb', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-Token': csrfToken
-                    }
-                });
-            } catch (networkErr) {
-                // fetch() itself threw — network failure, CORS, or CSP block
-                console.error('[JAMB] fetch() threw:', networkErr);
-                throw new Error('fetch_failed');
-            }
-
-            // ── Detect non-JSON response (HTML error page, redirect, 404) ──
-            //
-            // If you see this error:
-            //   "Expected JSON but received text/html"
-            //
-            // Open DevTools → Network → find the POST to /apply/verify-jamb
-            // → Response tab. That HTML is the actual error.
-            //
-            // Most likely causes:
-            //   1. Route not registered → check your routes file for:
-            //        ['POST', '/apply/verify-jamb', 'PublicApplicationController@verifyJamb']
-            //   2. Session expired → controller redirects to login page (HTML)
-            //   3. PHP error before header() call → check error_log
-            //
-            const contentType = response.headers.get('content-type') || '';
-            if (!contentType.includes('application/json')) {
-                const raw = await response.text();
-                console.error(
-                    '[JAMB] Expected JSON, got:', contentType,
-                    '\nHTTP status:', response.status,
-                    '\nFirst 500 chars of response:', raw.substring(0, 500),
-                    '\n\nFIX: Ensure the route POST /apply/verify-jamb is registered',
-                    'and that verifyJamb() sends header("Content-Type: application/json")',
-                    'as its very first statement.'
-                );
-                // Give the developer the HTTP status to help diagnose
-                if (response.status === 404) {
-                    throw new Error('route_not_found');
-                } else if (response.status === 302 || response.status === 301) {
-                    throw new Error('redirected'); // session expired → login
-                } else {
-                    throw new Error('server_html');
-                }
-            }
-
-            const data = await response.json();
-
-            if (!response.ok || !data.success) {
-                showAlert(data.message || 'Verification failed. Please check your JAMB number and try again.', 'danger');
-                setLoading(false);
+            // Client-side validation
+            if (!jamb) {
+                showAlert('Please enter your JAMB registration number.', 'danger');
                 return;
             }
 
-            // Store verified data for the next step
-            sessionStorage.setItem('jamb_data',    JSON.stringify(data.data));
-            sessionStorage.setItem('jamb_verified', 'true');
+            if (!/^[0-9A-Z]{10,14}$/.test(jamb)) {
+                showAlert('Invalid JAMB number format. It should be 10–14 alphanumeric characters (e.g. 202650000089FG).', 'danger');
+                return;
+            }
 
-            showAlert('JAMB verified successfully! Redirecting\u2026', 'success');
+            if (!accepted) {
+                showAlert('You must accept the Terms and Conditions to proceed.', 'danger');
+                return;
+            }
 
-            setTimeout(function () {
-                window.location.href = '/apply/step/2';
-            }, 1500);
+            setLoading(true);
 
-        } catch (error) {
-            console.error('[JAMB verification] Error:', error.message);
+            var fd = new FormData(form);
+            // FormData from the form already contains csrf_token (hidden field)
+            // and jamb_number + accept_terms. Belt-and-braces: also send as header.
 
-            var msgMap = {
-                'fetch_failed':    'Network error. Please check your internet connection and try again.',
-                'route_not_found': 'Endpoint not found (404). Please contact support \u2014 the verification route is not registered.',
-                'redirected':      'Your session may have expired. Please refresh the page and log in again.',
-                'server_html':     'Server returned an unexpected response. Check the browser console for details.'
-            };
+            fetch('/apply/verify-jamb', {
+                method: 'POST',
+                body: fd,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': csrfToken
+                }
+            })
+            .then(function (response) {
+                // ── Detect non-JSON responses ──────────────────────────────
+                //
+                // If the response is HTML it means one of:
+                //   A) Route POST /apply/verify-jamb is not registered in your
+                //      routes file → add:
+                //        ['POST', '/apply/verify-jamb', 'PublicApplicationController@verifyJamb']
+                //   B) Session expired → controller redirected to login (HTML page)
+                //   C) PHP fatal error before header() ran → check error_log
+                //
+                var ct = response.headers.get('content-type') || '';
 
-            var msg = msgMap[error.message] || 'An unexpected error occurred. Please try again.';
-            showAlert(msg, 'danger');
-            setLoading(false);
-        }
-    });
+                if (!ct.includes('application/json')) {
+                    return response.text().then(function (html) {
+                        console.error(
+                            '[JAMB] Server returned non-JSON.\n' +
+                            'HTTP status: ' + response.status + '\n' +
+                            'Content-Type: ' + ct + '\n' +
+                            'First 600 chars:\n' + html.substring(0, 600) + '\n\n' +
+                            'MOST LIKELY FIX:\n' +
+                            'Add this to your routes file:\n' +
+                            "  ['POST', '/apply/verify-jamb', 'PublicApplicationController@verifyJamb']\n" +
+                            'Then check that verifyJamb() starts with:\n' +
+                            "  header('Content-Type: application/json');"
+                        );
 
-    // ── Helpers ──────────────────────────────────────────────────────────
+                        var errKey = response.status === 404 ? 'route_not_found' :
+                                     (response.status === 302 || response.status === 301) ? 'redirected' :
+                                     'server_html';
+                        throw new Error(errKey);
+                    });
+                }
 
-    function setLoading(loading) {
-        document.getElementById('btnText').style.display    = loading ? 'none'         : 'inline-block';
-        document.getElementById('btnSpinner').style.display = loading ? 'inline-block'  : 'none';
-        document.getElementById('verifyBtn').disabled       = loading;
+                return response.json();
+            })
+            .then(function (data) {
+                if (!data.success) {
+                    showAlert(data.message || 'Verification failed. Please check your JAMB number and try again.', 'danger');
+                    setLoading(false);
+                    return;
+                }
+
+                showAlert('JAMB verified successfully! Redirecting\u2026', 'success');
+                setTimeout(function () {
+                    window.location.href = '/apply/step/2';
+                }, 1400);
+            })
+            .catch(function (err) {
+                console.error('[JAMB] Error:', err.message);
+
+                var msgs = {
+                    'route_not_found': 'Verification endpoint not found. Please contact support.',
+                    'redirected':      'Your session may have expired. Please refresh the page and try again.',
+                    'server_html':     'The server returned an unexpected response. Check the browser console for details.'
+                };
+
+                showAlert(msgs[err.message] || 'A network error occurred. Please check your connection and try again.', 'danger');
+                setLoading(false);
+            });
+        });
     }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    function setLoading(on) {
+        if (!submitBtn) return;
+        submitBtn.disabled = on;
+        if (btnText)    btnText.style.display    = on ? 'none'         : 'inline-flex';
+        if (btnSpinner) btnSpinner.style.display = on ? 'inline-block'  : 'none';
+    }
+
+    var alertTimer = null;
 
     function showAlert(message, type) {
-        const alertContainer = document.getElementById('alertContainer');
+        if (!alertEl) return;
 
-        const iconMap = { success: 'fa-check-circle', danger: 'fa-exclamation-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
-        const icon    = iconMap[type] || 'fa-info-circle';
+        var iconMap = {
+            success: 'fa-check-circle',
+            danger:  'fa-exclamation-circle',
+            info:    'fa-info-circle',
+            warning: 'fa-exclamation-triangle'
+        };
 
-        // Sanitise the message — only allow plain text plus a handful of safe HTML entities
-        const safeMessage = String(message).replace(/[<>]/g, function (ch) {
-            return ch === '<' ? '&lt;' : '&gt;';
-        // Allow pre-escaped entities like &hellip; from our own code
-        }).replace(/&amp;(#?[a-zA-Z0-9]+;)/g, '&$1');
+        // Remove previous type classes
+        alertEl.className = '';
+        alertEl.classList.add('sv1-' + type);
 
-        alertContainer.innerHTML =
-            '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
-                '<i class="fas ' + icon + '"></i>' +
-                '<span>' + safeMessage + '</span>' +
-                '<button type="button" class="btn-close" onclick="this.parentElement.remove()" aria-label="Close">&times;</button>' +
-            '</div>';
+        if (alertIcon) alertIcon.className = 'fas ' + (iconMap[type] || 'fa-info-circle');
 
-        // Auto-dismiss after 5 s
-        setTimeout(function () {
-            const el = alertContainer.querySelector('.alert');
-            if (el) {
-                el.style.transition = 'opacity 0.5s ease';
-                el.style.opacity = '0';
-                setTimeout(function () { if (el.parentNode) el.remove(); }, 500);
-            }
-        }, 5000);
+        // Sanitise message (text only — no HTML injection)
+        if (alertMsg) alertMsg.textContent = message;
+
+        alertEl.style.display = 'flex';
+
+        // Auto-dismiss after 6 s
+        clearTimeout(alertTimer);
+        alertTimer = setTimeout(hideAlert, 6000);
     }
 
-    // ── Guard against stale session data from a previous navigation ──────
-    document.addEventListener('DOMContentLoaded', function () {
-        const alreadyVerified = sessionStorage.getItem('jamb_verified') === 'true';
-        const hasData         = !!sessionStorage.getItem('jamb_data');
-        const fromVerify      = document.referrer.includes('/apply/verify-jamb');
+    function hideAlert() {
+        if (!alertEl) return;
+        alertEl.style.transition = 'opacity .4s';
+        alertEl.style.opacity    = '0';
+        setTimeout(function () {
+            alertEl.style.display  = 'none';
+            alertEl.style.opacity  = '1';
+            alertEl.style.transition = '';
+        }, 400);
+    }
 
-        if (alreadyVerified && hasData && fromVerify) {
-            showAlert('You already have verified JAMB data. Redirecting to application form&hellip;', 'info');
+    // ── Guard: redirect if already verified in this browser session ───────
+    try {
+        if (sessionStorage.getItem('jamb_verified') === 'true' &&
+            sessionStorage.getItem('jamb_data')) {
+            showAlert('You have already verified your JAMB number. Redirecting\u2026', 'info');
             setTimeout(function () { window.location.href = '/apply/step/2'; }, 2000);
         }
-    });
+    } catch (e) { /* sessionStorage blocked */ }
 
-    // Clear session data when user navigates back (bfcache restore)
-    window.addEventListener('pageshow', function (event) {
-        if (event.persisted) {
-            sessionStorage.removeItem('jamb_verified');
-            sessionStorage.removeItem('jamb_data');
+    // Clear session storage on bfcache restore (back-button navigation)
+    window.addEventListener('pageshow', function (ev) {
+        if (ev.persisted) {
+            try {
+                sessionStorage.removeItem('jamb_verified');
+                sessionStorage.removeItem('jamb_data');
+            } catch (e) {}
         }
     });
-    </script>
-</body>
-</html>
-<?php
-    } // end render()
-}
 
-// Instantiate and render
-$view = new JambVerificationView();
-$view->render(get_defined_vars());
+}());
+</script>
