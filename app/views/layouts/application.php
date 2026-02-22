@@ -68,7 +68,10 @@ if (!headers_sent()) {
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
         "img-src 'self' data:; " .
-        "connect-src 'self';"
+        // connect-src must include CDN origins because browsers fetch
+        // .map sourcemap files directly from the CDN during devtools sessions.
+        // code.jquery.com is included for the same reason.
+        "connect-src 'self' https://cdn.jsdelivr.net https://code.jquery.com;"
     );
 }
 ?><!DOCTYPE html>
@@ -84,6 +87,26 @@ if (!headers_sent()) {
         intentionally removed from <meta> tags where browsers ignore them.
     -->
     <meta name="csrf-token" content="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+
+    <!--
+        CSP nonce — also exposed as a <meta> so that view files rendered
+        into $content can use it on their own <script nonce="..."> tags.
+
+        IN EVERY VIEW FILE (step1.php, step2.php, step3.php …)
+        ALL inline <script> blocks MUST include the nonce attribute:
+
+            <script nonce="<?php echo htmlspecialchars($csp_nonce ?? '\0', ENT_QUOTES, 'UTF-8'); ?>">
+                // your script here
+            </script>
+
+        $csp_nonce is injected into view scope by the render system via
+        extract($this->data), so it is always available in view files.
+
+        WITHOUT the nonce on every <script> tag, the CSP blocks the script
+        silently — the form falls back to native GET submission and the
+        JAMB verification AJAX call never fires.
+    -->
+    <meta name="csp-nonce" content="<?php echo htmlspecialchars($csp_nonce, ENT_QUOTES, 'UTF-8'); ?>">
 
     <title><?php echo htmlspecialchars($pageTitle ?? 'Application Portal - FCT College of Nursing Sciences', ENT_QUOTES, 'UTF-8'); ?></title>
     <meta name="description" content="<?php echo htmlspecialchars($pageDescription ?? 'Apply for admission into ND/HND Nursing programme', ENT_QUOTES, 'UTF-8'); ?>">

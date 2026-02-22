@@ -950,31 +950,63 @@ class JambVerificationView {
         try {
             const formData = new FormData(this);
 
-            const response = await fetch('/apply/verify-jamb', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-Token': csrfToken
-                }
-            });
-
-            // ── Detect non-JSON responses before trying to parse ──────────
+            // ── POST to the verifyJamb() controller endpoint ──────────────
             //
-            // If the server returns HTML here, it means the controller is not
-            // sending Content-Type: application/json. Check the Network tab in
-            // DevTools and fix the controller (see note at the top of this script).
+            // The route MUST be registered in your router as:
+            //   POST /apply/verify-jamb  →  PublicApplicationController@verifyJamb
+            //
+            // The controller method already sends header('Content-Type: application/json')
+            // at its very first line, so the response will always be JSON.
+            //
+            let response;
+            try {
+                response = await fetch('/apply/verify-jamb', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-Token': csrfToken
+                    }
+                });
+            } catch (networkErr) {
+                // fetch() itself threw — network failure, CORS, or CSP block
+                console.error('[JAMB] fetch() threw:', networkErr);
+                throw new Error('fetch_failed');
+            }
+
+            // ── Detect non-JSON response (HTML error page, redirect, 404) ──
+            //
+            // If you see this error:
+            //   "Expected JSON but received text/html"
+            //
+            // Open DevTools → Network → find the POST to /apply/verify-jamb
+            // → Response tab. That HTML is the actual error.
+            //
+            // Most likely causes:
+            //   1. Route not registered → check your routes file for:
+            //        ['POST', '/apply/verify-jamb', 'PublicApplicationController@verifyJamb']
+            //   2. Session expired → controller redirects to login page (HTML)
+            //   3. PHP error before header() call → check error_log
             //
             const contentType = response.headers.get('content-type') || '';
             if (!contentType.includes('application/json')) {
-                // Log the first 300 chars of the unexpected response for debugging
                 const raw = await response.text();
                 console.error(
-                    '[JAMB verification] Expected JSON but received ' + contentType + '.',
-                    'First 300 chars:', raw.substring(0, 300),
-                    '\nFix: ensure your controller sends header("Content-Type: application/json") before output.'
+                    '[JAMB] Expected JSON, got:', contentType,
+                    '\nHTTP status:', response.status,
+                    '\nFirst 500 chars of response:', raw.substring(0, 500),
+                    '\n\nFIX: Ensure the route POST /apply/verify-jamb is registered',
+                    'and that verifyJamb() sends header("Content-Type: application/json")',
+                    'as its very first statement.'
                 );
-                throw new Error('server_html');
+                // Give the developer the HTTP status to help diagnose
+                if (response.status === 404) {
+                    throw new Error('route_not_found');
+                } else if (response.status === 302 || response.status === 301) {
+                    throw new Error('redirected'); // session expired → login
+                } else {
+                    throw new Error('server_html');
+                }
             }
 
             const data = await response.json();
@@ -986,25 +1018,26 @@ class JambVerificationView {
             }
 
             // Store verified data for the next step
-            sessionStorage.setItem('jamb_data',     JSON.stringify(data.data));
-            sessionStorage.setItem('jamb_verified',  'true');
+            sessionStorage.setItem('jamb_data',    JSON.stringify(data.data));
+            sessionStorage.setItem('jamb_verified', 'true');
 
-            showAlert('JAMB verified successfully! Redirecting to application form&hellip;', 'success');
+            showAlert('JAMB verified successfully! Redirecting\u2026', 'success');
 
             setTimeout(function () {
-                window.location.href = '/apply/form';
+                window.location.href = '/apply/step/2';
             }, 1500);
 
         } catch (error) {
-            console.error('[JAMB verification] Error:', error);
+            console.error('[JAMB verification] Error:', error.message);
 
-            let msg = 'An unexpected error occurred. Please try again.';
-            if (error.message === 'Failed to fetch') {
-                msg = 'Network error. Please check your internet connection.';
-            } else if (error.message === 'server_html') {
-                msg = 'Server configuration error. Please contact support if this persists.';
-            }
+            var msgMap = {
+                'fetch_failed':    'Network error. Please check your internet connection and try again.',
+                'route_not_found': 'Endpoint not found (404). Please contact support \u2014 the verification route is not registered.',
+                'redirected':      'Your session may have expired. Please refresh the page and log in again.',
+                'server_html':     'Server returned an unexpected response. Check the browser console for details.'
+            };
 
+            var msg = msgMap[error.message] || 'An unexpected error occurred. Please try again.';
             showAlert(msg, 'danger');
             setLoading(false);
         }
@@ -1056,7 +1089,7 @@ class JambVerificationView {
 
         if (alreadyVerified && hasData && fromVerify) {
             showAlert('You already have verified JAMB data. Redirecting to application form&hellip;', 'info');
-            setTimeout(function () { window.location.href = '/apply/form'; }, 2000);
+            setTimeout(function () { window.location.href = '/apply/step/2'; }, 2000);
         }
     });
 
