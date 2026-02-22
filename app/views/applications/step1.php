@@ -66,22 +66,38 @@ class JambVerificationView {
     
     <title>JAMB Verification - FCT College of Nursing Sciences</title>
     
-    <!-- Premium Fonts -->
+    <!-- ========================================================= -->
+    <!-- FIX 1: Google Fonts - NO SRI HASH (they change dynamically) -->
+    <!-- ========================================================= -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" 
+          rel="stylesheet"
+          crossorigin="anonymous">
     
-    <!-- Font Awesome with SRI -->
+    <!-- ========================================================= -->
+    <!-- Font Awesome with CORRECT SRI hash (conditional) -->
+    <!-- ========================================================= -->
+    <?php 
+    $faUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+    $faSri = SecurityHelper::getSriHash($faUrl);
+    ?>
     <link rel="stylesheet" 
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          href="<?php echo $faUrl; ?>"
+          <?php if ($faSri): ?>integrity="<?php echo $faSri; ?>"<?php endif; ?>
           crossorigin="anonymous" 
           referrerpolicy="no-referrer">
     
-    <!-- Bootstrap 5 with SRI -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+    <!-- ========================================================= -->
+    <!-- Bootstrap 5 with SRI (conditional) -->
+    <!-- ========================================================= -->
+    <?php 
+    $bootstrapCssUrl = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
+    $bootstrapCssSri = SecurityHelper::getSriHash($bootstrapCssUrl);
+    ?>
+    <link href="<?php echo $bootstrapCssUrl; ?>" 
           rel="stylesheet"
-          integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" 
+          <?php if ($bootstrapCssSri): ?>integrity="<?php echo $bootstrapCssSri; ?>"<?php endif; ?>
           crossorigin="anonymous">
     
     <style nonce="<?php echo $csp_nonce; ?>">
@@ -870,7 +886,7 @@ class JambVerificationView {
 
                     <!-- JAMB Verification Form -->
                     <form id="jambVerificationForm">
-                        <!-- FIXED: CSRF token using the same token from SecurityTrait -->
+                        <!-- CSRF token using the same token from SecurityTrait -->
                         <input type="hidden" name="csrf_token" value="<?php echo $this->e($csrf_token); ?>">
                         
                         <div class="mb-4">
@@ -981,15 +997,21 @@ class JambVerificationView {
     </div>
     <?php endif; ?>
 
-    <!-- Bootstrap JS with SRI -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" 
-            integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" 
+    <!-- ========================================================= -->
+    <!-- FIX 2: Bootstrap JS with conditional SRI -->
+    <!-- ========================================================= -->
+    <?php 
+    $bootstrapJsUrl = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
+    $bootstrapJsSri = SecurityHelper::getSriHash($bootstrapJsUrl);
+    ?>
+    <script src="<?php echo $bootstrapJsUrl; ?>" 
+            <?php if ($bootstrapJsSri): ?>integrity="<?php echo $bootstrapJsSri; ?>"<?php endif; ?>
             crossorigin="anonymous"
             nonce="<?php echo $csp_nonce; ?>"></script>
     
     <!-- Custom JavaScript with CSP nonce -->
     <script nonce="<?php echo $csp_nonce; ?>">
-    // FIXED: Get CSRF token from meta tag instead of PHP variable
+    // Get CSRF token from meta tag
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     
     // Security: Secure terms data
@@ -1063,7 +1085,13 @@ class JambVerificationView {
             }
         } catch (error) {
             console.error('Error:', error);
-            showAlert('Network error. Please check your connection and try again.', 'danger');
+            
+            // Check if it's a JSON parse error
+            if (error instanceof SyntaxError) {
+                showAlert('Server returned an invalid response. Please try again.', 'danger');
+            } else {
+                showAlert('Network error. Please check your connection and try again.', 'danger');
+            }
             resetButton();
         }
     });
