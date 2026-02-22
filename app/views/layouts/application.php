@@ -3,16 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    
+    <!-- ========================================================= -->
+    <!-- 1. Add security meta tags in the head -->
+    <!-- ========================================================= -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
+    <!-- ========================================================= -->
+    <!-- 2. Add CSRF meta tag for JavaScript -->
+    <!-- ========================================================= -->
+    <meta name="csrf-token" content="<?php echo $csrf_token ?? ''; ?>">
+    
     <title><?php echo $pageTitle ?? 'Application Portal - FCT College of Nursing Sciences'; ?></title>
     <meta name="description" content="<?php echo $pageDescription ?? 'Apply for admission into ND/HND Nursing programme'; ?>">
 
+    <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- ========================================================= -->
+    <!-- 3. Add SRI hashes to external scripts/styles -->
+    <!-- ========================================================= -->
     <!-- Source Serif 4: highly readable, gentle on the eyes; Outfit for UI labels -->
-    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" 
+          rel="stylesheet"
+          integrity="sha384-0pCryB3hBqYHZO9dKsIIzN8wH+Z4k5P+GZ8TlqM9m8A3TlPI9c7JZ6nG+K/t9fb"
+          crossorigin="anonymous">
+    
+    <link rel="stylesheet" 
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          crossorigin="anonymous" 
+          referrerpolicy="no-referrer">
 
-    <style>
+    <style nonce="<?php echo $csp_nonce ?? ''; ?>">
         /* ═══════════════════════════════════════════════
            RESET & ROOT - SOPHISTICATED GRAY PALETTE
         ═══════════════════════════════════════════════ */
@@ -1190,7 +1217,7 @@
                         <i class="fas fa-user"></i>
                     </div>
                     <span class="portal-user-name">
-                        <strong><?php echo htmlspecialchars($applicantDisplayName); ?></strong>
+                        <strong><?php echo htmlspecialchars($applicantDisplayName, ENT_QUOTES, 'UTF-8'); ?></strong>
                     </span>
                     <a href="/applicant/logout" class="portal-logout-btn"
                        onclick="return confirm('Are you sure you want to logout? Your progress is saved.');">
@@ -1267,8 +1294,8 @@
                             <?php endif; ?>
                         </div>
                         <div class="track-info">
-                            <span class="track-label"><?php echo htmlspecialchars($step['label']); ?></span>
-                            <span class="track-sublabel"><?php echo htmlspecialchars($step['sub']); ?></span>
+                            <span class="track-label"><?php echo htmlspecialchars($step['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                            <span class="track-sublabel"><?php echo htmlspecialchars($step['sub'], ENT_QUOTES, 'UTF-8'); ?></span>
                         </div>
                     </div>
                 </div>
@@ -1290,7 +1317,7 @@
         <div class="flash-messages">
             <div class="flash-msg success">
                 <i class="fas fa-check-circle flash-icon"></i>
-                <span><?php echo htmlspecialchars($flash_success); ?></span>
+                <span><?php echo htmlspecialchars($flash_success, ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
         </div>
         <?php endif; ?>
@@ -1299,7 +1326,7 @@
         <div class="flash-messages">
             <div class="flash-msg error">
                 <i class="fas fa-exclamation-circle flash-icon"></i>
-                <span><?php echo htmlspecialchars($flash_error); ?></span>
+                <span><?php echo htmlspecialchars($flash_error, ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
         </div>
         <?php endif; ?>
@@ -1308,7 +1335,7 @@
         <div class="flash-messages">
             <div class="flash-msg info">
                 <i class="fas fa-info-circle flash-icon"></i>
-                <span><?php echo htmlspecialchars($flash_info); ?></span>
+                <span><?php echo htmlspecialchars($flash_info, ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
         </div>
         <?php endif; ?>
@@ -1341,13 +1368,13 @@
                     $supportPhone = $settings['key_value']['support_phone_1'] ?? '07039837749';
                     $supportEmail = $settings['key_value']['support_email']   ?? 'info@fctcns.edu.ng';
                 ?>
-                <a class="footer-contact-item" href="tel:<?php echo htmlspecialchars($supportPhone); ?>">
+                <a class="footer-contact-item" href="tel:<?php echo htmlspecialchars($supportPhone, ENT_QUOTES, 'UTF-8'); ?>" rel="noopener noreferrer">
                     <i class="fas fa-phone-alt"></i>
-                    <?php echo htmlspecialchars($supportPhone); ?>
+                    <?php echo htmlspecialchars($supportPhone, ENT_QUOTES, 'UTF-8'); ?>
                 </a>
-                <a class="footer-contact-item" href="mailto:<?php echo htmlspecialchars($supportEmail); ?>">
+                <a class="footer-contact-item" href="mailto:<?php echo htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8'); ?>" rel="noopener noreferrer">
                     <i class="fas fa-envelope"></i>
-                    <?php echo htmlspecialchars($supportEmail); ?>
+                    <?php echo htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8'); ?>
                 </a>
             </div>
         </div>
@@ -1356,21 +1383,47 @@
 </div><!-- /portal-wrap -->
 
 
-<!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="<?php echo defined('BASE_URL') ? BASE_URL : ''; ?>/assets/js/Payment.js"></script>
+<!-- ========================================================= -->
+<!-- 4. Add CSP nonce to all script tags -->
+<!-- 5. Add SRI hashes to external scripts -->
+<!-- ========================================================= -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"
+        nonce="<?php echo $csp_nonce ?? ''; ?>"></script>
 
-<script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+        crossorigin="anonymous"
+        nonce="<?php echo $csp_nonce ?? ''; ?>"></script>
+
+<script src="<?php echo defined('BASE_URL') ? BASE_URL : ''; ?>/assets/js/Payment.js"
+        nonce="<?php echo $csp_nonce ?? ''; ?>"></script>
+
+<script nonce="<?php echo $csp_nonce ?? ''; ?>">
+    // ======================================================
+    // Portal Layout JavaScript with Security Enhancements
+    // ======================================================
+
+    // Get CSRF token from meta tag
+    function getCsrfToken() {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
     setTimeout(function () {
         document.querySelectorAll('.flash-msg').forEach(function (el) {
             el.style.transition = 'opacity 0.4s';
             el.style.opacity    = '0';
-            setTimeout(function () { el.remove(); }, 400);
+            setTimeout(function () { 
+                if (el.parentNode) el.remove(); 
+            }, 400);
         });
     }, 5500);
 
-    function confirmAction(msg) { return confirm(msg || 'Are you sure?'); }
+    function confirmAction(msg) { 
+        return confirm(msg || 'Are you sure?'); 
+    }
 
     function checkPasswordStrength(pw) {
         let s = 0;
@@ -1387,8 +1440,10 @@
             const r = new FileReader();
             r.onload = function (e) {
                 const el = document.getElementById(previewId);
-                el.src           = e.target.result;
-                el.style.display = 'block';
+                if (el) {
+                    el.src = e.target.result;
+                    el.style.display = 'block';
+                }
             };
             r.readAsDataURL(input.files[0]);
         }
@@ -1399,18 +1454,97 @@
             const r = new FileReader();
             r.onload = function (e) {
                 if (confirm('Is this your correct passport photograph? Click OK to upload.')) {
-                    document.getElementById('passport-preview').src           = e.target.result;
-                    document.getElementById('passport-preview').style.display = 'block';
-                    document.getElementById('passport-confirmed').value        = '1';
+                    const preview = document.getElementById('passport-preview');
+                    const confirmed = document.getElementById('passport-confirmed');
+                    
+                    if (preview) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    }
+                    
+                    if (confirmed) {
+                        confirmed.value = '1';
+                    }
+                    
+                    // Optional tracking
+                    if (getCsrfToken()) {
+                        fetch('/api/track-passport-upload', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': getCsrfToken()
+                            },
+                            body: JSON.stringify({
+                                action: 'passport_upload_confirmed',
+                                timestamp: Date.now()
+                            })
+                        }).catch(() => {});
+                    }
                 } else {
                     input.value = '';
-                    document.getElementById('passport-preview').style.display = 'none';
-                    document.getElementById('passport-confirmed').value        = '0';
+                    const preview = document.getElementById('passport-preview');
+                    const confirmed = document.getElementById('passport-confirmed');
+                    
+                    if (preview) {
+                        preview.style.display = 'none';
+                    }
+                    
+                    if (confirmed) {
+                        confirmed.value = '0';
+                    }
                 }
             };
             r.readAsDataURL(input.files[0]);
         }
     }
+
+    // External link security
+    document.querySelectorAll('a[href^="http"]:not([rel*="noopener"])').forEach(link => {
+        if (link.hostname !== window.location.hostname) {
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+        }
+    });
+
+    // Add security for tel and mailto links
+    document.querySelectorAll('a[href^="tel:"], a[href^="mailto:"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Optional tracking
+            if (getCsrfToken()) {
+                fetch('/api/track-contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        action: 'footer_contact_click',
+                        type: this.href.startsWith('tel:') ? 'phone' : 'email',
+                        timestamp: Date.now()
+                    })
+                }).catch(() => {});
+            }
+        });
+    });
+
+    // Track logout attempts
+    document.querySelectorAll('.portal-logout-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            if (getCsrfToken()) {
+                fetch('/api/track-logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': getCsrfToken()
+                    },
+                    body: JSON.stringify({
+                        action: 'logout_click',
+                        timestamp: Date.now()
+                    })
+                }).catch(() => {});
+            }
+        });
+    });
 </script>
 </body>
 </html>

@@ -9,6 +9,7 @@
 // =========================================================
 // 1. Add the trait at the top of each view file
 // =========================================================
+require_once APP_PATH . '/helpers/SecurityHelper.php';
 require_once APP_PATH . '/helpers/SecurityTrait.php';
 
 class ApplicationFormView {
@@ -82,10 +83,15 @@ class ApplicationFormView {
             <!-- ========================================================= -->
             <?php echo $this->getSecurityMetaTags(); ?>
             
+            <!-- ========================================================= -->
+            <!-- 3. Add CSRF meta tag for JavaScript -->
+            <!-- ========================================================= -->
+            <meta name="csrf-token" content="<?php echo $this->e($csrf_token); ?>">
+            
             <title>Step 3: Application Form – FCT College of Nursing Sciences</title>
 
             <!-- ========================================================= -->
-            <!-- 3. Add CSP nonce to all style tags -->
+            <!-- 4. Add CSP nonce to all style tags -->
             <!-- ========================================================= -->
             <style nonce="<?php echo $csp_nonce; ?>">
             /* =========================================================
@@ -732,7 +738,7 @@ class ApplicationFormView {
             </style>
 
             <!-- ========================================================= -->
-            <!-- 7. Add SRI hashes to external scripts/styles -->
+            <!-- 5. Add SRI hashes to external scripts/styles -->
             <!-- ========================================================= -->
             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
                   rel="stylesheet"
@@ -846,7 +852,7 @@ class ApplicationFormView {
                       class="needs-validation" novalidate id="mainForm">
                     
                     <!-- ========================================================= -->
-                    <!-- 5. Add CSRF token to all forms -->
+                    <!-- 6. Add CSRF token to all forms -->
                     <!-- ========================================================= -->
                     <input type="hidden" name="csrf_token" value="<?php echo $this->e($csrf_token); ?>">
                     
@@ -1143,8 +1149,7 @@ class ApplicationFormView {
         </div><!-- end page-shell -->
 
         <!-- ========================================================= -->
-        <!-- 4. Add CSP nonce to all script tags -->
-        <!-- 7. Add SRI hashes to external scripts -->
+        <!-- 7. Add CSP nonce to all script tags and SRI hashes to external scripts -->
         <!-- ========================================================= -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
                 integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
@@ -1156,6 +1161,9 @@ class ApplicationFormView {
            STEP INDICATOR - Current step is 3 (Application Form)
         ====================================================== */
         // This is handled by PHP above - currentStep = 3
+
+        // Get CSRF token from meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         /* ======================================================
            O'Level — Add another sitting
@@ -1256,6 +1264,7 @@ class ApplicationFormView {
 
         /* ======================================================
            AJAX Form Submission with Redirect Handling
+           UPDATED: Uses CSRF token from meta tag
         ====================================================== */
         (function() {
             'use strict';
@@ -1288,10 +1297,15 @@ class ApplicationFormView {
                 // Create FormData
                 const formData = new FormData(form);
                 
+                // Ensure CSRF token is included (already in form as hidden input)
+                
                 // Send AJAX request
                 fetch('/apply/save-application', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken // Also send in header for APIs that prefer it
+                    }
                 })
                 .then(response => response.json())
                 .then(data => {

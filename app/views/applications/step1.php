@@ -6,7 +6,10 @@
  * @package FCTCNS
  */
 
-// Load SecurityTrait
+// =========================================================
+// FIX: Add require for SecurityHelper and SecurityTrait
+// =========================================================
+require_once APP_PATH . '/helpers/SecurityHelper.php';
 require_once APP_PATH . '/helpers/SecurityTrait.php';
 
 // Use the trait in a view helper class
@@ -57,6 +60,9 @@ class JambVerificationView {
     
     <!-- ===== SECURITY HEADERS ===== -->
     <?php echo $this->getSecurityMetaTags(); ?>
+    
+    <!-- CSRF Token for JavaScript -->
+    <meta name="csrf-token" content="<?php echo $this->e($csrf_token); ?>">
     
     <title>JAMB Verification - FCT College of Nursing Sciences</title>
     
@@ -864,6 +870,7 @@ class JambVerificationView {
 
                     <!-- JAMB Verification Form -->
                     <form id="jambVerificationForm">
+                        <!-- FIXED: CSRF token using the same token from SecurityTrait -->
                         <input type="hidden" name="csrf_token" value="<?php echo $this->e($csrf_token); ?>">
                         
                         <div class="mb-4">
@@ -982,8 +989,8 @@ class JambVerificationView {
     
     <!-- Custom JavaScript with CSP nonce -->
     <script nonce="<?php echo $csp_nonce; ?>">
-    // Security: CSRF token for AJAX requests
-    const CSRF_TOKEN = '<?php echo $csrf_token; ?>';
+    // FIXED: Get CSRF token from meta tag instead of PHP variable
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     
     // Security: Secure terms data
     const TERMS_DATA = <?php echo $secureTermsData; ?>;
@@ -1017,8 +1024,10 @@ class JambVerificationView {
             return;
         }
         
-        // Add CSRF token
-        formData.append('csrf_token', CSRF_TOKEN);
+        // Add CSRF token (already in form, but ensure it's there)
+        if (!formData.has('csrf_token')) {
+            formData.append('csrf_token', csrfToken);
+        }
         
         // Show loading state
         document.getElementById('btnText').style.display = 'none';
@@ -1031,7 +1040,7 @@ class JambVerificationView {
                 body: formData,
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-Token': CSRF_TOKEN
+                    'X-CSRF-Token': csrfToken
                 }
             });
             

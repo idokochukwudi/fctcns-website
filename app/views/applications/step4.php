@@ -7,8 +7,9 @@
  */
 
 // =========================================================
-// 1. Add the trait at the top of each view file
+// FIX: Add require for SecurityHelper and SecurityTrait
 // =========================================================
+require_once APP_PATH . '/helpers/SecurityHelper.php';
 require_once APP_PATH . '/helpers/SecurityTrait.php';
 
 class ExamSlipView {
@@ -49,14 +50,20 @@ class ExamSlipView {
             <!-- 3. Add CSP nonce to all style tags -->
             <!-- 7. Add SRI hashes to external scripts/styles -->
             <!-- ========================================================= -->
+            
+            <!-- Google Fonts - NO SRI HASH (they change dynamically) -->
             <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" 
                   rel="stylesheet"
-                  integrity="sha384-0pCryB3hBqYHZO9dKsIIzN8wH+Z4k5P+GZ8TlqM9m8A3TlPI9c7JZ6nG+K/t9fb"
                   crossorigin="anonymous">
             
+            <!-- Font Awesome with CORRECT SRI hash -->
+            <?php 
+            $faUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+            $faSri = SecurityHelper::getSriHash($faUrl);
+            ?>
             <link rel="stylesheet" 
-                  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-                  integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+                  href="<?php echo $faUrl; ?>"
+                  <?php if ($faSri): ?>integrity="<?php echo $faSri; ?>"<?php endif; ?>
                   crossorigin="anonymous" 
                   referrerpolicy="no-referrer">
 
@@ -795,7 +802,7 @@ class ExamSlipView {
               <div class="side-card">
                 <div class="side-card-label">Actions</div>
                 <div class="action-list">
-                  <a href="/apply/download-exam-slip" class="act-btn act-btn--pdf" id="downloadBtn">
+                  <a href="/apply/download-exam-slip?csrf=<?php echo urlencode($csrf_token); ?>&t=<?php echo time(); ?>" class="act-btn act-btn--pdf" id="downloadBtn">
                     <span class="act-icon"><i class="fas fa-download"></i></span>
                     Download as PDF
                   </a>
@@ -902,10 +909,7 @@ class ExamSlipView {
         // ======================================================
         
         // Get CSRF token from meta tag
-        function getCsrfToken() {
-            const meta = document.querySelector('meta[name="csrf-token"]');
-            return meta ? meta.getAttribute('content') : '';
-        }
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         // Copy field with secure clipboard handling
         function copyField(inputId, btn) {
@@ -961,14 +965,17 @@ class ExamSlipView {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken()
+                    'X-CSRF-TOKEN': csrfToken
                 },
-                body: JSON.stringify({ action: 'print_exam_slip' })
+                body: JSON.stringify({ 
+                    action: 'print_exam_slip',
+                    csrf_token: csrfToken 
+                })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const pw = window.open('/apply/print-exam-slip', '_blank');
+                    const pw = window.open('/apply/print-exam-slip?csrf=' + encodeURIComponent(csrfToken), '_blank');
                     if (pw) {
                         pw.onload = () => setTimeout(() => { pw.focus(); pw.print(); }, 800);
                     } else {
@@ -982,7 +989,7 @@ class ExamSlipView {
             .catch(error => {
                 console.error('Print verification error:', error);
                 // Fallback to direct print
-                const pw = window.open('/apply/print-exam-slip', '_blank');
+                const pw = window.open('/apply/print-exam-slip?csrf=' + encodeURIComponent(csrfToken), '_blank');
                 if (pw) {
                     pw.onload = () => setTimeout(() => { pw.focus(); pw.print(); }, 800);
                 }
@@ -992,8 +999,11 @@ class ExamSlipView {
         // Share slip with security
         function shareSlip() {
             if (navigator.share) {
-                // Add timestamp to URL to prevent caching
-                const shareUrl = window.location.href + (window.location.href.includes('?') ? '&' : '?') + 't=' + Date.now();
+                // Add CSRF token and timestamp to URL to prevent caching
+                const shareUrl = window.location.href + 
+                    (window.location.href.includes('?') ? '&' : '?') + 
+                    'csrf=' + encodeURIComponent(csrfToken) + 
+                    '&t=' + Date.now();
                 
                 navigator.share({
                     title: 'Examination Slip — FCT College of Nursing Sciences',
@@ -1025,16 +1035,16 @@ class ExamSlipView {
         }
 
         // Download button handler
-        document.getElementById('downloadBtn')?.addEventListener('click', e => {
+        document.getElementById('downloadBtn')?.addEventListener('click', function(e) {
             e.preventDefault();
             
-            // Add CSRF token to download request
-            const downloadUrl = '/apply/download-exam-slip?csrf=' + encodeURIComponent(getCsrfToken()) + '&t=' + Date.now();
+            // Add CSRF token to download URL
+            const downloadUrl = this.href;
             
             fetch(downloadUrl, {
                 method: 'GET',
                 headers: {
-                    'X-CSRF-TOKEN': getCsrfToken()
+                    'X-CSRF-TOKEN': csrfToken
                 }
             })
             .then(response => {

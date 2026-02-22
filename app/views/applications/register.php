@@ -6,9 +6,51 @@
  */
 
 // =========================================================
+// FIX: Add require for SecurityHelper
+// =========================================================
+// Try multiple paths to ensure SecurityHelper is found
+$possiblePaths = [
+    defined('APP_PATH') ? APP_PATH . '/helpers/SecurityHelper.php' : null,
+    dirname(__DIR__, 2) . '/helpers/SecurityHelper.php',
+    __DIR__ . '/../../helpers/SecurityHelper.php',
+    $_SERVER['DOCUMENT_ROOT'] . '/fctcns-website/app/helpers/SecurityHelper.php'
+];
+
+$loaded = false;
+foreach ($possiblePaths as $path) {
+    if ($path && file_exists($path)) {
+        require_once $path;
+        $loaded = true;
+        break;
+    }
+}
+
+if (!$loaded) {
+    die('Error: SecurityHelper.php not found. Please check the file path.');
+}
+
+// =========================================================
 // 1. Add the trait at the top of each view file
 // =========================================================
-require_once APP_PATH . '/helpers/SecurityTrait.php';
+$traitPaths = [
+    defined('APP_PATH') ? APP_PATH . '/helpers/SecurityTrait.php' : null,
+    dirname(__DIR__, 2) . '/helpers/SecurityTrait.php',
+    __DIR__ . '/../../helpers/SecurityTrait.php',
+    $_SERVER['DOCUMENT_ROOT'] . '/fctcns-website/app/helpers/SecurityTrait.php'
+];
+
+$traitLoaded = false;
+foreach ($traitPaths as $path) {
+    if ($path && file_exists($path)) {
+        require_once $path;
+        $traitLoaded = true;
+        break;
+    }
+}
+
+if (!$traitLoaded) {
+    die('Error: SecurityTrait.php not found. Please check the file path.');
+}
 
 class RegistrationView {
     use SecurityTrait;
@@ -23,6 +65,10 @@ class RegistrationView {
         $terms         = $terms         ?? [];
         $portal_closed = $portal_closed ?? false;
         $portal_message= $portal_message?? '';
+        
+        // Get Font Awesome SRI hash
+        $faUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css';
+        $faSri = SecurityHelper::getSriHash($faUrl);
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -39,7 +85,7 @@ class RegistrationView {
             
             <title>Create Account — FCT College of Nursing Sciences</title>
 
-            <!-- CSRF Token for JavaScript -->
+            <!-- CSRF Token for JavaScript - Using the same token -->
             <meta name="csrf-token" content="<?php echo $this->e($csrf_token); ?>">
 
             <!-- Preconnect for performance -->
@@ -50,14 +96,16 @@ class RegistrationView {
             <!-- 3. Add CSP nonce to all style tags -->
             <!-- 7. Add SRI hashes to external scripts/styles -->
             <!-- ========================================================= -->
+            
+            <!-- Google Fonts - NO SRI HASH (they change dynamically) -->
             <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" 
                   rel="stylesheet"
-                  integrity="sha384-0pCryB3hBqYHZO9dKsIIzN8wH+Z4k5P+GZ8TlqM9m8A3TlPI9c7JZ6nG+K/t9fb"
                   crossorigin="anonymous">
             
+            <!-- Font Awesome with CORRECT SRI hash -->
             <link rel="stylesheet" 
-                  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
-                  integrity="sha512-ENjdO4Dr2+biM4pKkX98RNF/QRMg9gKaVjY5jRkRxs1+ckgCk9J30rWjw2H5qWv3WbLp1WvD5I8nsLZBnlllg=="
+                  href="<?php echo $faUrl; ?>"
+                  <?php if ($faSri): ?>integrity="<?php echo $faSri; ?>"<?php endif; ?>
                   crossorigin="anonymous" 
                   referrerpolicy="no-referrer">
 
@@ -1100,7 +1148,7 @@ class RegistrationView {
                         <form method="POST" action="/apply/register" id="registrationForm" novalidate>
                             
                             <!-- ========================================================= -->
-                            <!-- 5. Add CSRF token to all forms -->
+                            <!-- 5. Add CSRF token to all forms - FIXED: Using the same token -->
                             <!-- ========================================================= -->
                             <input type="hidden" name="csrf_token" value="<?php echo $this->e($csrf_token); ?>">
 
@@ -1331,11 +1379,8 @@ class RegistrationView {
         (function() {
             'use strict';
 
-            // Get CSRF token from meta tag
-            function getCsrfToken() {
-                const meta = document.querySelector('meta[name="csrf-token"]');
-                return meta ? meta.getAttribute('content') : '';
-            }
+            // Get CSRF token from meta tag - FIXED: Using the same token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             // DOM Elements
             const form = document.getElementById('registrationForm');

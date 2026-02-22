@@ -134,6 +134,67 @@ class PublicApplicationController extends ApplicationBaseController {
     }
     
     /**
+     * Validate CSRF token - UPDATED to work with SecurityHelper
+     * 
+     * @param string|null $token Optional token to validate
+     * @return bool
+     */
+    protected function validateCsrfToken($token = null) {
+        // If token not provided, get from request
+        if ($token === null) {
+            $token = $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '';
+        }
+        
+        // Use SecurityHelper if available
+        if (class_exists('SecurityHelper')) {
+            return SecurityHelper::validateCsrfToken($token);
+        }
+        
+        // Fallback to Session class
+        if (class_exists('Session')) {
+            return Session::validateCSRFTokenMulti($token);
+        }
+        
+        // Final fallback - simple session check
+        if (isset($_SESSION['csrf_tokens'][$token])) {
+            $tokenTime = $_SESSION['csrf_tokens'][$token];
+            if (time() - $tokenTime < 3600) {
+                return true;
+            }
+            unset($_SESSION['csrf_tokens'][$token]);
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Generate CSRF token - UPDATED to work with SecurityHelper
+     * 
+     * @return string
+     */
+    protected function csrfToken() {
+        // Use SecurityHelper if available
+        if (class_exists('SecurityHelper')) {
+            return SecurityHelper::getCsrfToken();
+        }
+        
+        // Fallback to Session class
+        if (class_exists('Session')) {
+            return Session::generateCSRFTokenMulti();
+        }
+        
+        // Final fallback
+        if (!isset($_SESSION['csrf_tokens'])) {
+            $_SESSION['csrf_tokens'] = [];
+        }
+        
+        $token = bin2hex(random_bytes(32));
+        $_SESSION['csrf_tokens'][$token] = time();
+        
+        return $token;
+    }
+    
+    /**
      * Validate step access based on application state
      * 
      * @param array $application Application data
@@ -392,7 +453,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Process registration (Step 1 - New Flow) - FIXED
+     * Process registration (Step 1 - New Flow) - FIXED with CSRF validation
      * Redirects to email sent page, not verification with token
      */
     public function processRegistration() {
@@ -899,7 +960,7 @@ class PublicApplicationController extends ApplicationBaseController {
         }
         
         // Validate CSRF
-        if (!isset($_POST['csrf_token']) || !$this->validateCsrfToken()) {
+        if (!isset($_POST['csrf_token']) || !$this->validateCsrfToken($_POST['csrf_token'])) {
             echo json_encode(['success' => false, 'message' => 'Invalid security token']);
             return;
         }
@@ -1304,17 +1365,8 @@ class PublicApplicationController extends ApplicationBaseController {
             error_log("Restored JAMB data to session from application ID: " . $application['id']);
         }
         
-        // Generate a fresh CSRF token and store it in session
-        $csrfToken = bin2hex(random_bytes(32));
-        
-        // Initialize csrf_tokens array if it doesn't exist
-        if (!isset($_SESSION['csrf_tokens'])) {
-            $_SESSION['csrf_tokens'] = [];
-        }
-        
-        // Store the token with timestamp
-        $_SESSION['csrf_tokens'][$csrfToken] = time();
-        $_SESSION['current_csrf_token'] = $csrfToken;
+        // Generate a fresh CSRF token
+        $csrfToken = $this->csrfToken();
         
         $fee = $this->settingsModel->getApplicationFee();
         $currency = $this->settingsModel->getCurrency();
@@ -2718,12 +2770,7 @@ class PublicApplicationController extends ApplicationBaseController {
         }
         
         // Generate CSRF token
-        $csrfToken = bin2hex(random_bytes(32));
-        if (!isset($_SESSION['csrf_tokens'])) {
-            $_SESSION['csrf_tokens'] = [];
-        }
-        $_SESSION['csrf_tokens'][$csrfToken] = time();
-        $_SESSION['current_csrf_token'] = $csrfToken;
+        $csrfToken = $this->csrfToken();
         
         // Get fee settings
         $fee = $this->settingsModel->getApplicationFee();

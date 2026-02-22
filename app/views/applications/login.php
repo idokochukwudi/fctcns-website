@@ -7,8 +7,9 @@
  */
 
 // =========================================================
-// 1. Add the trait at the top of each view file
+// FIX: Add require for SecurityHelper and SecurityTrait
 // =========================================================
+require_once APP_PATH . '/helpers/SecurityHelper.php';
 require_once APP_PATH . '/helpers/SecurityTrait.php';
 
 class LoginView {
@@ -46,14 +47,19 @@ class LoginView {
             <link rel="preconnect" href="https://fonts.googleapis.com">
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
             
+            <!-- Google Fonts - NO SRI HASH (they change dynamically) -->
             <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" 
                   rel="stylesheet"
-                  integrity="sha384-0pCryB3hBqYHZO9dKsIIzN8wH+Z4k5P+GZ8TlqM9m8A3TlPI9c7JZ6nG+K/t9fb"
                   crossorigin="anonymous">
             
+            <!-- Font Awesome with CORRECT SRI hash -->
+            <?php 
+            $faUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+            $faSri = SecurityHelper::getSriHash($faUrl);
+            ?>
             <link rel="stylesheet" 
-                  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-                  integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+                  href="<?php echo $faUrl; ?>"
+                  <?php if ($faSri): ?>integrity="<?php echo $faSri; ?>"<?php endif; ?>
                   crossorigin="anonymous" 
                   referrerpolicy="no-referrer">
 
@@ -655,10 +661,7 @@ class LoginView {
                 // ======================================================
                 
                 // Get CSRF token from meta tag
-                function getCsrfToken() {
-                    const meta = document.querySelector('meta[name="csrf-token"]');
-                    return meta ? meta.getAttribute('content') : '';
-                }
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
                 // Toggle password visibility
                 function togglePassword() {
@@ -678,17 +681,105 @@ class LoginView {
 
                 // Sanitize input to prevent XSS
                 function sanitizeInput(input) {
-                    return input.replace(/[<>]/g, '');
+                    if (!input) return input;
+                    return input.replace(/[<>]/g, '').trim();
+                }
+
+                // Show toast notification
+                function showToast(msg, type = 'success') {
+                    // Remove existing toasts
+                    document.querySelectorAll('.toast-notification').forEach(t => t.remove());
+                    
+                    // Create toast element
+                    const toast = document.createElement('div');
+                    toast.className = 'toast-notification';
+                    toast.setAttribute('role', 'alert');
+                    
+                    // Style toast
+                    toast.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: ${type === 'success' ? '#1D8A7A' : '#C0392B'};
+                        color: white;
+                        padding: 12px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        font-weight: 500;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        z-index: 9999;
+                        animation: slideIn 0.3s ease;
+                    `;
+                    
+                    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+                    toast.innerHTML = `<i class="fas ${icon}"></i> ${sanitizeInput(msg)}`;
+                    
+                    document.body.appendChild(toast);
+                    
+                    // Auto remove after 3 seconds
+                    setTimeout(() => {
+                        toast.style.transition = 'opacity 0.3s, transform 0.3s';
+                        toast.style.opacity = '0';
+                        toast.style.transform = 'translateX(100%)';
+                        setTimeout(() => toast.remove(), 300);
+                    }, 3000);
+                }
+
+                // Add slide-in animation
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes slideIn {
+                        from {
+                            opacity: 0;
+                            transform: translateX(100%);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateX(0);
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+
+                // Rate limiting
+                let loginAttempts = 0;
+                const maxAttempts = 5;
+                const lockoutTime = 15 * 60 * 1000; // 15 minutes
+                
+                function checkRateLimit() {
+                    const attempts = parseInt(sessionStorage.getItem('loginAttempts') || '0');
+                    const lockUntil = parseInt(sessionStorage.getItem('lockUntil') || '0');
+                    
+                    if (Date.now() < lockUntil) {
+                        showToast('Too many attempts. Please try again later.', 'error');
+                        return false;
+                    }
+                    
+                    if (attempts >= maxAttempts) {
+                        sessionStorage.setItem('lockUntil', Date.now() + lockoutTime);
+                        showToast('Too many failed attempts. Locked for 15 minutes.', 'error');
+                        return false;
+                    }
+                    
+                    return true;
                 }
 
                 // Login form submission with enhanced validation
                 document.getElementById('loginForm').addEventListener('submit', function (e) {
+                    if (!checkRateLimit()) {
+                        e.preventDefault();
+                        return;
+                    }
+
                     const loginInput = document.getElementById('login');
                     const passInput  = document.getElementById('password');
                     
                     // Sanitize login input
                     if (loginInput) {
-                        loginInput.value = sanitizeInput(loginInput.value.trim());
+                        loginInput.value = sanitizeInput(loginInput.value);
                     }
                     
                     const loginVal = loginInput ? loginInput.value : '';
@@ -735,20 +826,24 @@ class LoginView {
                         timestamp.value = Date.now();
                         this.appendChild(timestamp);
 
+                        // Increment attempt counter
+                        const attempts = parseInt(sessionStorage.getItem('loginAttempts') || '0');
+                        sessionStorage.setItem('loginAttempts', attempts + 1);
+
                         // Loading state
                         document.getElementById('loginText').style.display   = 'none';
                         document.getElementById('loginSpinner').style.display = 'inline-flex';
                         document.getElementById('loginBtn').disabled          = true;
                         
-                        // Add security headers check
-                        const csrfToken = getCsrfToken();
+                        // Verify CSRF token exists
                         if (!csrfToken) {
                             console.warn('CSRF token not found');
+                            showToast('Security token missing. Please refresh.', 'error');
+                            e.preventDefault();
+                            return;
                         }
                     } else {
                         e.preventDefault();
-                        
-                        // Show error toast
                         showToast('Please fill in all required fields', 'error');
                     }
                 });
@@ -766,65 +861,6 @@ class LoginView {
                     });
                 }
 
-                // Toast notification system
-                function showToast(msg, type = 'success') {
-                    // Remove existing toasts
-                    document.querySelectorAll('.toast-notification').forEach(t => t.remove());
-                    
-                    // Create toast element
-                    const toast = document.createElement('div');
-                    toast.className = 'toast-notification';
-                    toast.setAttribute('role', 'alert');
-                    
-                    // Style toast
-                    toast.style.cssText = `
-                        position: fixed;
-                        top: 20px;
-                        right: 20px;
-                        background: ${type === 'success' ? 'var(--teal)' : 'var(--red)'};
-                        color: white;
-                        padding: 12px 20px;
-                        border-radius: 8px;
-                        font-size: 14px;
-                        font-weight: 500;
-                        display: flex;
-                        align-items: center;
-                        gap: 10px;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                        z-index: 9999;
-                        animation: slideIn 0.3s ease;
-                    `;
-                    
-                    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
-                    toast.innerHTML = `<i class="fas ${icon}"></i> ${msg}`;
-                    
-                    document.body.appendChild(toast);
-                    
-                    // Auto remove after 3 seconds
-                    setTimeout(() => {
-                        toast.style.transition = 'opacity 0.3s, transform 0.3s';
-                        toast.style.opacity = '0';
-                        toast.style.transform = 'translateX(100%)';
-                        setTimeout(() => toast.remove(), 300);
-                    }, 3000);
-                }
-
-                // Add slide-in animation
-                const style = document.createElement('style');
-                style.textContent = `
-                    @keyframes slideIn {
-                        from {
-                            opacity: 0;
-                            transform: translateX(100%);
-                        }
-                        to {
-                            opacity: 1;
-                            transform: translateX(0);
-                        }
-                    }
-                `;
-                document.head.appendChild(style);
-
                 // Prevent multiple rapid form submissions
                 let isSubmitting = false;
                 document.getElementById('loginForm').addEventListener('submit', function(e) {
@@ -839,37 +875,6 @@ class LoginView {
                     setTimeout(() => {
                         isSubmitting = false;
                     }, 5000);
-                });
-
-                // Add rate limiting detection
-                let loginAttempts = 0;
-                const maxAttempts = 5;
-                const lockoutTime = 15 * 60 * 1000; // 15 minutes
-                
-                function checkRateLimit() {
-                    const attempts = parseInt(sessionStorage.getItem('loginAttempts') || '0');
-                    const lockUntil = parseInt(sessionStorage.getItem('lockUntil') || '0');
-                    
-                    if (Date.now() < lockUntil) {
-                        showToast('Too many attempts. Please try again later.', 'error');
-                        return false;
-                    }
-                    
-                    if (attempts >= maxAttempts) {
-                        sessionStorage.setItem('lockUntil', Date.now() + lockoutTime);
-                        showToast('Too many failed attempts. Locked for 15 minutes.', 'error');
-                        return false;
-                    }
-                    
-                    return true;
-                }
-
-                // Increment attempt counter
-                document.getElementById('loginForm').addEventListener('submit', function(e) {
-                    if (!checkRateLimit()) {
-                        e.preventDefault();
-                        return;
-                    }
                 });
 
                 // Clean up session markers
@@ -890,14 +895,6 @@ class LoginView {
                         loginField.focus();
                     }
                     
-                    // Add password strength indicator (optional)
-                    const passwordField = document.getElementById('password');
-                    if (passwordField) {
-                        passwordField.addEventListener('input', function() {
-                            // You can add password strength checking here if needed
-                        });
-                    }
-                    
                     // Prevent right-click on sensitive fields
                     ['login', 'password'].forEach(id => {
                         const field = document.getElementById(id);
@@ -905,6 +902,13 @@ class LoginView {
                             field.addEventListener('contextmenu', e => e.preventDefault());
                         }
                     });
+
+                    // Clear any stale session data
+                    const lockUntil = parseInt(sessionStorage.getItem('lockUntil') || '0');
+                    if (lockUntil && Date.now() > lockUntil) {
+                        sessionStorage.removeItem('lockUntil');
+                        sessionStorage.removeItem('loginAttempts');
+                    }
                 });
 
                 // Handle back button cache

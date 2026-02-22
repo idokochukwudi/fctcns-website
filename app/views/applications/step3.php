@@ -8,14 +8,16 @@
  * FIXED: Moved CSRF inputs from head to body for valid HTML
  * FIXED: Updated both Remita URLs to correct format from support
  * FIXED: Using demo.remita.net for demo environment (not login.remita.net)
+ * FIXED: Payment button appears immediately after RRR generation without refresh
  * 
  * @package FCTCNS
- * @version 2.5 (Security Enhanced)
+ * @version 2.6 (Security Enhanced + Instant Payment Button)
  */
 
 // =========================================================
-// 1. Add the trait at the top of each view file
+// 1. Add required helpers at the top of each view file
 // =========================================================
+require_once APP_PATH . '/helpers/SecurityHelper.php';
 require_once APP_PATH . '/helpers/SecurityTrait.php';
 
 class PaymentView {
@@ -56,6 +58,11 @@ class PaymentView {
             <!-- ========================================================= -->
             <?php echo $this->getSecurityMetaTags(); ?>
             
+            <!-- ========================================================= -->
+            <!-- 3. Add CSRF meta tag for JavaScript -->
+            <!-- ========================================================= -->
+            <meta name="csrf-token" content="<?php echo $this->e($csrf_token); ?>">
+            
             <title>Payment — FCT College of Nursing Sciences</title>
 
             <!-- Fonts -->
@@ -63,8 +70,8 @@ class PaymentView {
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
             
             <!-- ========================================================= -->
-            <!-- 3. Add CSP nonce to all style tags -->
-            <!-- 7. Add SRI hashes to external scripts/styles -->
+            <!-- 4. Add CSP nonce to all style tags -->
+            <!-- 5. Add SRI hashes to external scripts/styles -->
             <!-- ========================================================= -->
             <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" 
                   rel="stylesheet"
@@ -543,6 +550,7 @@ class PaymentView {
             /* ─── Payment Button Area ─── */
             #paymentButtonArea {
                 margin-bottom: 1.5rem;
+                transition: all 0.3s ease;
             }
             
             #paymentButtonArea .alert-warning {
@@ -706,10 +714,9 @@ class PaymentView {
                         <div class="card-body">
 
                             <!-- ========================================================= -->
-                            <!-- 5. Add CSRF token to all forms -->
+                            <!-- 6. Add CSRF token to all forms -->
                             <!-- ========================================================= -->
                             <input type="hidden" name="csrf_token" id="csrf_token" value="<?php echo $this->e($csrf_token); ?>">
-                            <meta name="csrf-token" content="<?php echo $this->e($csrf_token); ?>">
 
                             <!-- Fee Panel -->
                             <div class="fee-panel">
@@ -736,7 +743,7 @@ class PaymentView {
                                     </li>
                                     <li>
                                         <span class="step-num">2</span>
-                                        Click the <strong>Complete Payment</strong> button that appears.
+                                        Click the <strong>Complete Payment</strong> button that appears immediately.
                                     </li>
                                     <li>
                                         <span class="step-num">3</span>
@@ -771,7 +778,7 @@ class PaymentView {
                                 </div>
                                 <div style="display:flex;gap:.75rem;flex-wrap:wrap">
                                     <!-- FIXED: Using demo.remita.net for demo environment -->
-                                    <a href="https://demo.remita.net/remita/onepage/payment/init.reg?rrr=<?php echo $this->e($pending_payment['rrr']); ?>&channel=CARD,USSD,ENAIRA,TRANSFER"
+                                    <a href="https://demo.remita.net/remita/onepage/payment/init.reg?rrr=<?php echo urlencode($pending_payment['rrr']); ?>&channel=CARD,USSD,ENAIRA,TRANSFER"
                                        target="_blank" class="btn-amber">
                                         <i class="fas fa-external-link-alt"></i> Complete Payment (Demo)
                                     </a>
@@ -787,7 +794,7 @@ class PaymentView {
                                 <div class="instructions-title" style="margin-bottom:.75rem">Your Payment Reference (RRR)</div>
                                 <div class="rrr-box">
                                     <div class="rrr-value" id="generatedRRR"></div>
-                                    <button class="rrr-copy-btn" id="copyRRRBtn" onclick="copyRRR()">
+                                    <button class="rrr-copy-btn" id="copyRRRBtn" onclick="copyRRRFromDisplay()">
                                         <i class="fas fa-copy"></i> Copy
                                     </button>
                                 </div>
@@ -797,7 +804,7 @@ class PaymentView {
                                 </p>
                             </div>
 
-                            <!-- Payment Button Area -->
+                            <!-- Payment Button Area - Appears Immediately After RRR Generation -->
                             <div id="paymentButtonArea" style="display:none; margin-bottom:1.5rem">
                                 <div class="alert alert-warning">
                                     <h5><i class="fas fa-external-link-alt"></i> Proceed to Payment</h5>
@@ -883,8 +890,8 @@ class PaymentView {
         </div><!-- /page-shell -->
 
         <!-- ========================================================= -->
-        <!-- 4. Add CSP nonce to all script tags -->
-        <!-- 7. Add SRI hashes to external scripts -->
+        <!-- 7. Add CSP nonce to all script tags -->
+        <!-- 8. Add SRI hashes to external scripts -->
         <!-- ========================================================= -->
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"
                 integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
@@ -902,6 +909,7 @@ class PaymentView {
         <script nonce="<?php echo $csp_nonce; ?>">
         // ======================================================
         // Payment Page JavaScript with Security Enhancements
+        // FIXED: Payment button appears immediately after RRR generation
         // ======================================================
         
         // Get CSRF token from meta tag
@@ -909,9 +917,12 @@ class PaymentView {
             return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         }
 
+        // Store current RRR globally for easy access
+        let currentRRR = '';
+
         // Copy RRR to clipboard with fallback
         function copyRRR(rrr = null) {
-            const rrrValue = rrr || document.getElementById('generatedRRR')?.textContent;
+            const rrrValue = rrr || currentRRR || document.getElementById('generatedRRR')?.textContent;
             
             if (!rrrValue) {
                 showAlert('No RRR found to copy', 'warning');
@@ -928,6 +939,11 @@ class PaymentView {
             } else {
                 fallbackCopy(rrrValue);
             }
+        }
+
+        // Copy from display (wrapper for consistency)
+        function copyRRRFromDisplay() {
+            copyRRR();
         }
 
         function fallbackCopy(text) {
@@ -961,6 +977,31 @@ class PaymentView {
             }, 5000);
         }
 
+        // Function to show payment button immediately after RRR generation
+        function showPaymentButton(rrr) {
+            // Store RRR globally
+            currentRRR = rrr;
+            
+            // Display RRR
+            document.getElementById('generatedRRR').textContent = rrr;
+            document.getElementById('rrrDisplayArea').style.display = 'block';
+            
+            // Show payment button area immediately
+            const paymentArea = document.getElementById('paymentButtonArea');
+            paymentArea.style.display = 'block';
+            
+            // Update Remita link
+            const remitaLink = document.getElementById('remitaPaymentLink');
+            remitaLink.href = 'https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + encodeURIComponent(rrr) + '&channel=CARD,USSD,ENAIRA,TRANSFER';
+            
+            // Show verify button and status button
+            document.getElementById('verifyPaymentBtn').style.display = 'block';
+            document.getElementById('checkStatusBtn').style.display = 'block';
+            
+            // Smooth scroll to payment button
+            paymentArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
         // Generate RRR with CSRF protection
         document.getElementById('generateRRRBtn')?.addEventListener('click', function() {
             const btn = this;
@@ -992,21 +1033,8 @@ class PaymentView {
                     spinner.style.display = 'none';
                     messageDiv.textContent = 'RRR generated successfully!';
                     
-                    // Display RRR
-                    document.getElementById('generatedRRR').textContent = data.rrr;
-                    document.getElementById('rrrDisplayArea').style.display = 'block';
-                    
-                    // Show payment button area
-                    const paymentArea = document.getElementById('paymentButtonArea');
-                    paymentArea.style.display = 'block';
-                    
-                    // Update Remita link
-                    const remitaLink = document.getElementById('remitaPaymentLink');
-                    remitaLink.href = 'https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + data.rrr + '&channel=CARD,USSD,ENAIRA,TRANSFER';
-                    
-                    // Show verify button
-                    document.getElementById('verifyPaymentBtn').style.display = 'block';
-                    document.getElementById('checkStatusBtn').style.display = 'block';
+                    // Show payment button immediately (no refresh needed)
+                    showPaymentButton(data.rrr);
                     
                     showAlert('RRR generated: ' + data.rrr, 'success');
                 } else {
@@ -1025,7 +1053,9 @@ class PaymentView {
 
         // Verify payment with CSRF protection
         function verifyPayment(rrr) {
-            if (!rrr) {
+            const rrrToVerify = rrr || currentRRR;
+            
+            if (!rrrToVerify) {
                 showAlert('No RRR provided for verification', 'warning');
                 return;
             }
@@ -1044,7 +1074,7 @@ class PaymentView {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': getCsrfToken()
                 },
-                body: JSON.stringify({ rrr: rrr })
+                body: JSON.stringify({ rrr: rrrToVerify })
             })
             .then(response => response.json())
             .then(data => {
@@ -1072,7 +1102,8 @@ class PaymentView {
 
         // Check payment status with CSRF protection
         document.getElementById('checkStatusBtn')?.addEventListener('click', function() {
-            const rrr = document.getElementById('generatedRRR')?.textContent;
+            const rrr = currentRRR || document.getElementById('generatedRRR')?.textContent;
+            
             if (!rrr) {
                 showAlert('No RRR found to check', 'warning');
                 return;
@@ -1086,7 +1117,7 @@ class PaymentView {
             spinner.style.display = 'block';
             messageDiv.textContent = 'Checking payment status...';
             
-            fetch('/payment/status/' + rrr, {
+            fetch('/payment/status/' + encodeURIComponent(rrr), {
                 method: 'GET',
                 headers: {
                     'X-CSRF-TOKEN': getCsrfToken()
@@ -1096,7 +1127,7 @@ class PaymentView {
             .then(data => {
                 spinner.style.display = 'none';
                 
-                if (data.status === 'paid') {
+                if (data.status === 'paid' || data.success) {
                     messageDiv.textContent = 'Payment is confirmed!';
                     showAlert('Payment confirmed!', 'success');
                     
@@ -1118,13 +1149,34 @@ class PaymentView {
 
         // Verify Payment button click handler
         document.getElementById('verifyPaymentBtn')?.addEventListener('click', function() {
-            const rrr = document.getElementById('generatedRRR')?.textContent;
+            const rrr = currentRRR || document.getElementById('generatedRRR')?.textContent;
             if (rrr) {
                 verifyPayment(rrr);
             } else {
                 showAlert('No RRR found to verify', 'warning');
             }
         });
+
+        // If there's a pending payment from PHP, show the payment button
+        <?php if (isset($pending_payment) && $pending_payment): ?>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Store pending RRR
+            currentRRR = '<?php echo $this->e($pending_payment['rrr']); ?>';
+            
+            // Show payment button area for pending payment
+            document.getElementById('rrrDisplayArea').style.display = 'block';
+            document.getElementById('generatedRRR').textContent = currentRRR;
+            document.getElementById('paymentButtonArea').style.display = 'block';
+            
+            // Update Remita link
+            const remitaLink = document.getElementById('remitaPaymentLink');
+            remitaLink.href = 'https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + encodeURIComponent(currentRRR) + '&channel=CARD,USSD,ENAIRA,TRANSFER';
+            
+            // Show verify button
+            document.getElementById('verifyPaymentBtn').style.display = 'block';
+            document.getElementById('checkStatusBtn').style.display = 'block';
+        });
+        <?php endif; ?>
         </script>
         </body>
         </html>
@@ -1133,7 +1185,7 @@ class PaymentView {
 }
 
 // =========================================================
-// 8. Add the view instantiation at the bottom
+// 9. Add the view instantiation at the bottom
 // =========================================================
 $view = new PaymentView();
 $view->render(get_defined_vars());
