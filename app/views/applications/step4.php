@@ -1,22 +1,20 @@
 <?php
 /**
- * Step 4 - Examination Slip View
- * UPDATED: Added O'Level results section with credit validation
- * UPDATED: Purple color scheme matching JAMB verification page
- * FIXED: Removed inline onclick handlers, added proper event listeners with IDs
- * @var array $application
- * @var array $exam_slip
- * @var array $applicant
- * @var array $olevel_results
+ * Step 4 View - Exam Slip
+ * Redesigned: Premium institutional design with security enhancements
+ * FIXED: Button responsiveness, download functionality, and CSP compliance
+ * FIXED: Dashboard commented out
+ * 
+ * @package FCTCNS
  */
 
 // =========================================================
-// FIX: Add require for SecurityHelper and SecurityTrait
+// 1. Add required helpers at the top of each view file
 // =========================================================
 require_once APP_PATH . '/helpers/SecurityHelper.php';
 require_once APP_PATH . '/helpers/SecurityTrait.php';
 
-class ExamSlipView {
+class Step4View {
     use SecurityTrait;
     
     public function render($data) {
@@ -25,1402 +23,1016 @@ class ExamSlipView {
         // Get security tokens
         $csp_nonce = $this->getCspNonce();
         $csrf_token = $this->getCsrfToken();
-        
-        $pageTitle = $pageTitle ?? 'Examination Slip - FCT College of Nursing Sciences';
-        $baseUrl   = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
-        
-        // Helper function for grade formatting
-        $gradeColors = [
-            'A1' => '#2e7d32',
-            'B2' => '#2e7d32',
-            'B3' => '#2e7d32',
-            'C4' => '#f57c00',
-            'C5' => '#f57c00',
-            'C6' => '#f57c00',
-            'D7' => '#c62828',
-            'E8' => '#c62828',
-            'F9' => '#b71c1c'
+
+        if (!function_exists('e')) {
+            function e($text) {
+                return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
+            }
+        }
+
+        $baseUrl = $baseUrl ?? '/';
+        $application = $application ?? [];
+        $exam_slip = $exam_slip ?? [];
+        $applicant = $applicant ?? [];
+        $applicant_name = $applicant_name ?? 'Applicant';
+        $olevel_results = $olevel_results ?? [];
+        $has_exam_slip = $has_exam_slip ?? false;
+        $exam_details = $exam_details ?? [
+            'date' => 'To be announced',
+            'venue' => 'FCT College of Nursing Sciences, Gwagwalada (within UATH)',
+            'reporting_time' => '8:00 AM'
         ];
-        
-        $creditGrades = ['A1','B2','B3','C4','C5','C6'];
-        $requiredSubjects = ['english', 'mathematics', 'biology', 'chemistry', 'physics'];
-        
-        // Calculate best grades across sittings
-        $bestGrades = [];
-        $gradeOrder = ['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
-        
-        if (!empty($olevel_results)) {
-            foreach ($olevel_results as $sitting) {
-                foreach ($requiredSubjects as $subject) {
-                    $gradeKey = $subject . '_grade';
-                    if (!empty($sitting[$gradeKey])) {
-                        $grade = $sitting[$gradeKey];
-                        if (!isset($bestGrades[$subject]) || 
-                            array_search($grade, $gradeOrder) < array_search($bestGrades[$subject], $gradeOrder)) {
-                            $bestGrades[$subject] = $grade;
-                        }
-                    }
-                }
-            }
-        }
-        
-        $creditsAchieved = 0;
-        $missingSubjects = [];
-        foreach ($requiredSubjects as $subject) {
-            if (isset($bestGrades[$subject]) && in_array($bestGrades[$subject], $creditGrades)) {
-                $creditsAchieved++;
-            } else {
-                $missingSubjects[] = ucfirst($subject);
-            }
-        }
-        
-        // Color variables for CSS
-        $green = '#1a6b45';
-        $green_bg = '#edf9f3';
         ?>
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+            <meta name="description" content="Examination Slip - FCT College of Nursing Sciences">
             
             <!-- ========================================================= -->
             <!-- 2. Add security meta tags in the head -->
             <!-- ========================================================= -->
             <?php echo $this->getSecurityMetaTags(); ?>
             
-            <title><?php echo $this->e($pageTitle); ?></title>
-            
-            <!-- Security Headers -->
-            <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-            <meta http-equiv="Pragma" content="no-cache">
-            <meta http-equiv="Expires" content="0">
-            
-            <!-- CSRF Token for JavaScript -->
+            <!-- ========================================================= -->
+            <!-- 3. Add CSRF meta tag for JavaScript -->
+            <!-- ========================================================= -->
             <meta name="csrf-token" content="<?php echo $this->e($csrf_token); ?>">
             
-            <!-- ========================================================= -->
-            <!-- 3. Add CSP nonce to all style tags -->
-            <!-- 7. Add SRI hashes to external scripts/styles -->
-            <!-- ========================================================= -->
+            <title>Examination Slip — FCT College of Nursing Sciences</title>
+
+            <!-- Fonts -->
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
             
-            <!-- Google Fonts - NO SRI HASH (they change dynamically) -->
-            <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" 
-                  rel="stylesheet"
-                  crossorigin="anonymous">
+            <!-- ========================================================= -->
+            <!-- 4. Add CSP nonce to all style tags -->
+            <!-- 5. Add SRI hashes to external scripts/styles -->
+            <!-- ========================================================= -->
+            <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" 
+                  rel="stylesheet">
             
-            <!-- Font Awesome with CORRECT SRI hash -->
-            <?php 
-            $faUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-            $faSri = SecurityHelper::getSriHash($faUrl);
-            ?>
             <link rel="stylesheet" 
-                  href="<?php echo $faUrl; ?>"
-                  <?php if ($faSri): ?>integrity="<?php echo $faSri; ?>"<?php endif; ?>
+                  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+                  integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
                   crossorigin="anonymous" 
                   referrerpolicy="no-referrer">
 
             <style nonce="<?php echo $csp_nonce; ?>">
-            /* ── Reset ────────────────────────────────────────────────────── */
-            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-            /* ── Palette: Purple Theme Matching JAMB Page ─────────────────── */
-            :root {
-              --sv1-primary:       #6B4E9B;
-              --sv1-primary-dark:  #4A3B6B;
-              --sv1-primary-light: #8A6FB0;
-              --sv1-primary-soft:  #F3EAF8;
-              --sv1-gold:          #C9A44A;
-              --sv1-gold-light:    #E2B05F;
-              --sv1-gold-pale:     #FDF6E9;
-
-              --sv1-success:       #10b981;
-              --sv1-success-light: #d1fae5;
-              --sv1-danger:        #ef4444;
-              --sv1-danger-light:  #fee2e2;
-              --sv1-warning:       #f59e0b;
-              --sv1-warning-light: #fef3c7;
-              --sv1-info:          #3b82f6;
-              --sv1-info-light:    #dbeafe;
-              --sv1-border:        #E9EDF2;
-              --sv1-text-dark:     #1A1F2E;
-              --sv1-text-muted:    #6B7280;
-
-              --green:       #1a6b45;
-              --green-bg:    #edf9f3;
-
-              --blue:        #1d4ed8;
-              --blue-bg:     #eff6ff;
-              --blue-border: #bfdbfe;
-
-              --text:        #1a0a1a;
-              --text-muted:  #72587a;
-              --border:      var(--sv1-border);
-              --border-dark: #c9b0c9;
-              --bg:          var(--sv1-primary-soft);
-              --surface:     #ffffff;
-
-              --radius:      12px;
-              --radius-sm:   8px;
-              --shadow:      0 1px 4px rgba(107,78,155,.07), 0 4px 18px rgba(107,78,155,.09);
-              --shadow-lg:   0 2px 8px rgba(107,78,155,.08), 0 8px 36px rgba(107,78,155,.12);
-              
-              /* Grade colors */
-              --grade-excellent: #2e7d32;
-              --grade-good: #f57c00;
-              --grade-poor: #c62828;
-            }
-
-            html { scroll-behavior: smooth; }
-
-            body {
-              font-family: 'Outfit', sans-serif;
-              background: var(--bg);
-              color: var(--sv1-text-dark);
-              min-height: 100vh;
-              font-size: 15px;
-              line-height: 1.6;
-            }
-
-            /* ── Shell: fills the layout container, no max-width clipping ── */
-            .slip-shell {
-              width: 100%;
-              padding: 1.25rem 1.5rem 2.5rem;
-            }
-
-            @media (max-width: 600px) { .slip-shell { padding: 0.75rem 0.75rem 2rem; } }
-
-            /* ── Status strip ────────────────────────────────────────────── */
-            .status-strip {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              flex-wrap: wrap;
-              gap: 0.75rem;
-              background: var(--surface);
-              border: 1px solid var(--border);
-              border-left: 4px solid var(--sv1-primary);
-              border-radius: var(--radius-sm);
-              padding: 0.8rem 1.2rem;
-              margin-bottom: 1.35rem;
-              box-shadow: var(--shadow);
-            }
-
-            .strip-left { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
-
-            .strip-icon {
-              width: 34px; height: 34px;
-              background: var(--sv1-primary-soft);
-              border: 1px solid var(--border);
-              border-radius: var(--radius-sm);
-              display: flex; align-items: center; justify-content: center;
-              color: var(--sv1-primary); font-size: 0.95rem; flex-shrink: 0;
-            }
-
-            .strip-title { font-weight: 700; font-size: 0.92rem; color: var(--sv1-primary-dark); }
-
-            .strip-sub {
-              font-size: 0.76rem; color: var(--sv1-text-muted);
-              display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;
-            }
-            .strip-sub strong { color: var(--sv1-text-dark); font-weight: 600; }
-
-            .badge-verified {
-              display: inline-flex;
-              align-items: center;
-              gap: 0.4rem;
-              background: linear-gradient(135deg, var(--sv1-success), #0d9488);
-              color: #fff;
-              font-size: 0.73rem;
-              font-weight: 700;
-              letter-spacing: 0.06em;
-              text-transform: uppercase;
-              padding: 0.42rem 1rem;
-              border-radius: 50px;
-              white-space: nowrap;
-              box-shadow: 0 2px 10px rgba(16,185,129,.3);
-            }
-
-            /* ── Content grid ────────────────────────────────────────────── */
-            .content-grid {
-              display: grid;
-              grid-template-columns: 1fr 290px;
-              gap: 1.35rem;
-              align-items: start;
-            }
-
-            @media (max-width: 1100px) { .content-grid { grid-template-columns: 1fr 270px; } }
-            @media (max-width: 860px)  { .content-grid { grid-template-columns: 1fr; } }
-
-            /* ── Slip card ───────────────────────────────────────────────── */
-            .slip-card {
-              background: var(--surface);
-              border-radius: var(--radius);
-              box-shadow: var(--shadow-lg);
-              border: 1px solid var(--border);
-              overflow: hidden;
-              width: 100%;
-            }
-
-            /* Header bar */
-            .slip-header {
-              background: linear-gradient(135deg, var(--sv1-primary-dark) 0%, var(--sv1-primary) 60%, var(--sv1-primary-light) 100%);
-              padding: 1.1rem 1.6rem;
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              gap: 0.75rem;
-              flex-wrap: wrap;
-              position: relative;
-              overflow: hidden;
-            }
-
-            .slip-header::after {
-              content: '';
-              position: absolute; right: -50px; top: -50px;
-              width: 170px; height: 170px;
-              border-radius: 50%;
-              border: 35px solid rgba(255,255,255,.06);
-              pointer-events: none;
-            }
-
-            .slip-header-title {
-              font-size: 1.05rem; font-weight: 700; color: #fff; line-height: 1.2;
-            }
-
-            .slip-header-sub {
-              font-size: 0.74rem; color: rgba(255,255,255,.7); margin-top: 0.18rem;
-            }
-
-            .slip-number-pill {
-              background: rgba(201,164,74,0.2);
-              border: 1px solid rgba(201,164,74,0.3);
-              color: var(--sv1-gold-light);
-              font-family: 'JetBrains Mono', monospace;
-              font-size: 0.76rem;
-              padding: 0.38rem 0.85rem;
-              border-radius: 50px;
-              white-space: nowrap;
-              flex-shrink: 0;
-            }
-
-            /* Body */
-            .slip-body {
-              padding: 1.5rem 1.6rem;
-            }
-
-            @media (max-width: 480px) { .slip-body { padding: 1.1rem 0.9rem; } }
-
-            /* ── Top trio ────────────────────────────────────────────────── */
-            .top-trio {
-              display: grid;
-              grid-template-columns: 125px 125px 1fr;
-              gap: 1.1rem;
-              margin-bottom: 1.4rem;
-              align-items: stretch;
-            }
-
-            @media (max-width: 700px) {
-              .top-trio { grid-template-columns: 1fr 1fr; }
-              .top-trio .verify-panel { grid-column: 1 / -1; }
-            }
-
-            @media (max-width: 380px) {
-              .top-trio { grid-template-columns: 1fr; }
-              .top-trio .verify-panel { grid-column: auto; }
-            }
-
-            /* Photo */
-            .photo-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
-
-            .photo-frame {
-              width: 125px; height: 125px;
-              border-radius: var(--radius-sm);
-              border: 2px solid var(--border);
-              background: var(--sv1-primary-soft);
-              overflow: hidden;
-              display: flex; align-items: center; justify-content: center;
-            }
-
-            @media (max-width: 700px) { .photo-frame { width: 100%; height: auto; aspect-ratio: 1; } }
-
-            .photo-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-            .no-photo { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; color: var(--sv1-primary-light); font-size: 0.7rem; }
-
-            .img-caption {
-              font-size: 0.68rem; color: var(--sv1-text-muted); text-align: center;
-              display: flex; align-items: center; justify-content: center; gap: 0.3rem;
-              text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500;
-            }
-
-            /* QR */
-            .qr-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
-
-            .qr-frame {
-              width: 125px; height: 125px;
-              border-radius: var(--radius-sm);
-              border: 2px solid var(--border);
-              background: #fff;
-              display: flex; align-items: center; justify-content: center;
-              padding: 6px;
-              position: relative;
-            }
-
-            @media (max-width: 700px) { .qr-frame { width: 100%; height: auto; aspect-ratio: 1; } }
-
-            /* QR corner marks */
-            .qr-frame::before,
-            .qr-frame::after {
-              content: '';
-              position: absolute;
-              width: 12px; height: 12px;
-              border-color: var(--sv1-primary);
-              border-style: solid;
-            }
-            .qr-frame::before { top: 4px; left: 4px; border-width: 2px 0 0 2px; border-radius: 2px 0 0 0; }
-            .qr-frame::after  { bottom: 4px; right: 4px; border-width: 0 2px 2px 0; border-radius: 0 0 2px 0; }
-
-            .qr-frame img {
-              width: 100%; height: 100%; object-fit: contain;
-              image-rendering: crisp-edges;
-              image-rendering: -webkit-optimize-contrast;
-            }
-
-            .qr-error {
-              text-align: center; font-size: 0.68rem; color: var(--sv1-danger);
-              line-height: 1.45; padding: 0.5rem;
-            }
-
-            /* Verify panel */
-            .verify-panel {
-              background: linear-gradient(160deg, var(--sv1-primary-soft), #fff 70%);
-              border: 1.5px solid var(--border);
-              border-radius: var(--radius-sm);
-              padding: 1rem 1.1rem;
-              display: flex; flex-direction: column; gap: 0.65rem;
-            }
-
-            .verify-panel-title {
-              font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-              letter-spacing: 0.07em; color: var(--sv1-primary);
-              display: flex; align-items: center; gap: 0.4rem;
-              padding-bottom: 0.55rem; border-bottom: 1px solid var(--border);
-            }
-
-            .verify-item { display: flex; align-items: flex-start; gap: 0.5rem; }
-            .verify-item i { margin-top: 0.15rem; flex-shrink: 0; width: 14px; text-align: center; }
-            .vi-label { color: var(--sv1-text-muted); font-size: 0.68rem; line-height: 1; margin-bottom: 0.1rem; }
-            .vi-val   { color: var(--sv1-text-dark); font-weight: 600; font-size: 0.8rem; }
-            .mono     { font-family: 'JetBrains Mono', monospace; font-size: 0.73rem !important; letter-spacing: .02em; }
-
-            /* ── O'Level Results Section ───────────────────────────────── */
-            .olevel-section {
-              margin: 1.5rem 0;
-              border: 1px solid var(--border);
-              border-radius: var(--radius-sm);
-              overflow: hidden;
-            }
-
-            .olevel-header {
-              background: linear-gradient(135deg, var(--sv1-primary-dark), var(--sv1-primary));
-              color: #fff;
-              font-size: 0.85rem;
-              font-weight: 700;
-              padding: 0.85rem 1.2rem;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            }
-
-            .olevel-status-badge {
-              background: rgba(201,164,74,0.3);
-              color: var(--sv1-gold-light);
-              padding: 0.3rem 0.9rem;
-              border-radius: 50px;
-              font-size: 0.7rem;
-              font-weight: 600;
-              letter-spacing: 0.05em;
-            }
-
-            .olevel-table {
-              width: 100%;
-              border-collapse: collapse;
-            }
-
-            .olevel-table th {
-              background: var(--sv1-primary-soft);
-              color: var(--sv1-primary-dark);
-              font-weight: 600;
-              font-size: 0.7rem;
-              text-transform: uppercase;
-              letter-spacing: 0.05em;
-              padding: 0.6rem 0.8rem;
-              border-bottom: 1px solid var(--border);
-            }
-
-            .olevel-table td {
-              padding: 0.6rem 0.8rem;
-              border-bottom: 1px solid var(--border);
-              font-size: 0.8rem;
-            }
-
-            .olevel-table tr:last-child td {
-              border-bottom: none;
-            }
-
-            .sitting-badge {
-              display: inline-block;
-              background: var(--sv1-primary-soft);
-              color: var(--sv1-primary-dark);
-              font-size: 0.65rem;
-              font-weight: 700;
-              padding: 0.2rem 0.6rem;
-              border-radius: 12px;
-              margin-left: 0.5rem;
-            }
-
-            .grade-excellent { color: #2e7d32; font-weight: 700; }
-            .grade-good { color: #f57c00; font-weight: 600; }
-            .grade-poor { color: #c62828; font-weight: 500; }
-
-            .credit-check {
-              background: <?php echo $creditsAchieved >= 5 ? $green_bg : '#fff3e0'; ?>;
-              padding: 0.8rem 1.2rem;
-              font-size: 0.8rem;
-              border-top: 1px solid var(--border);
-              display: flex;
-              align-items: center;
-              gap: 0.7rem;
-            }
-
-            .credit-check i {
-              font-size: 1rem;
-              color: <?php echo $creditsAchieved >= 5 ? $green : '#f57c00'; ?>;
-            }
-
-            /* ── Details table ───────────────────────────────────────────── */
-            .details-table {
-              width: 100%;
-              border-collapse: collapse;
-              font-size: 0.875rem;
-              border: 1.5px solid var(--border);
-              border-radius: var(--radius-sm);
-              overflow: hidden;
-              margin-top: 0.5rem;
-            }
-
-            .details-table tr:not(:last-child) th,
-            .details-table tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
-
-            .details-table th {
-              background: var(--sv1-primary-soft);
-              color: var(--sv1-primary-dark);
-              font-weight: 600;
-              font-size: 0.72rem;
-              text-transform: uppercase;
-              letter-spacing: 0.05em;
-              padding: 0.78rem 1.1rem;
-              width: 30%;
-              white-space: nowrap;
-              vertical-align: middle;
-            }
-
-            .details-table td {
-              padding: 0.78rem 1.1rem;
-              color: var(--sv1-text-dark);
-              font-weight: 500;
-              vertical-align: middle;
-            }
-
-            @media (max-width: 520px) {
-              .details-table th,
-              .details-table td { padding: 0.6rem 0.7rem; font-size: 0.8rem; }
-              .details-table th { width: 36%; white-space: normal; }
-            }
-
-            /* Highlighted rows */
-            .row-exam-date th { background: var(--sv1-gold-pale); color: #7a540a; }
-            .row-exam-date td { background: #fffbf0; font-weight: 700; font-size: 0.93rem; }
-
-            .row-seat th { background: var(--sv1-success-light); color: var(--sv1-success); }
-            .row-seat td { background: #f2fbf6; }
-
-            .seat-num { 
-              font-size: 1.4rem; 
-              font-weight: 800; 
-              color: var(--sv1-success); 
-              line-height: 1; 
-            }
-
-            .badge-program {
-              display: inline-flex; align-items: center;
-              background: var(--sv1-info-light); 
-              color: var(--sv1-info);
-              border: 1px solid var(--sv1-info);
-              border-radius: 50px; 
-              padding: 0.22rem 0.75rem;
-              font-size: 0.76rem; 
-              font-weight: 600;
-            }
-
-            .report-time {
-              display: inline-flex; align-items: center; gap: 0.4rem;
-              color: var(--sv1-danger); 
-              font-weight: 600;
-            }
-
-            /* ── Instructions ────────────────────────────────────────────── */
-            .instructions {
-              margin-top: 1.35rem;
-              background: var(--sv1-info-light);
-              border: 1.5px solid var(--sv1-info);
-              border-radius: var(--radius-sm);
-              padding: 1.1rem 1.3rem;
-              display: flex; gap: 0.9rem;
-            }
-
-            .instr-icon { color: var(--sv1-info); font-size: 1.2rem; flex-shrink: 0; margin-top: 0.05rem; }
-
-            .instructions h5 {
-              font-size: 0.78rem; font-weight: 700; color: var(--sv1-info);
-              margin-bottom: 0.55rem; text-transform: uppercase; letter-spacing: 0.05em;
-            }
-
-            .instructions ol { padding-left: 1.05rem; display: flex; flex-direction: column; gap: 0.28rem; }
-            .instructions li { font-size: 0.8rem; color: #1e3a8a; line-height: 1.5; }
-
-            /* Footer line */
-            .slip-footer-line {
-              margin-top: 1.1rem; padding-top: 0.9rem;
-              border-top: 1px dashed var(--border-dark);
-              display: flex; align-items: center;
-              justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
-            }
-
-            .slip-footer-line span {
-              font-size: 0.7rem; color: var(--sv1-text-muted);
-              display: flex; align-items: center; gap: 0.3rem;
-            }
-
-            /* ── Sidebar ─────────────────────────────────────────────────── */
-            .sidebar { display: flex; flex-direction: column; gap: 1.1rem; }
-
-            .side-card {
-              background: var(--surface);
-              border-radius: var(--radius);
-              border: 1px solid var(--border);
-              box-shadow: var(--shadow);
-              padding: 1.2rem;
-            }
-
-            .side-card-label {
-              font-size: 0.67rem; font-weight: 700; text-transform: uppercase;
-              letter-spacing: 0.09em; color: var(--sv1-primary);
-              margin-bottom: 0.85rem; padding-bottom: 0.65rem;
-              border-bottom: 1px solid var(--border);
-            }
-
-            /* Action buttons */
-            .action-list { display: flex; flex-direction: column; gap: 0.45rem; }
-
-            .act-btn {
-              display: flex; align-items: center; gap: 0.7rem;
-              width: 100%; padding: 0.7rem 0.9rem;
-              border-radius: var(--radius-sm);
-              font-size: 0.84rem; font-weight: 600;
-              border: none; cursor: pointer; text-decoration: none;
-              transition: transform .15s, box-shadow .15s, opacity .15s;
-              font-family: 'Outfit', sans-serif;
-            }
-
-            .act-btn::after {
-              content: '\f054';
-              font-family: 'Font Awesome 6 Free'; font-weight: 900;
-              font-size: 0.62rem; margin-left: auto; opacity: 0.38;
-            }
-
-            .act-btn:hover { transform: translateY(-1px); }
-
-            .act-icon {
-              width: 28px; height: 28px;
-              border-radius: 6px;
-              display: flex; align-items: center; justify-content: center;
-              font-size: 0.82rem; flex-shrink: 0;
-            }
-
-            /* PDF */
-            .act-btn--pdf {
-              background: linear-gradient(135deg, var(--sv1-primary-dark), var(--sv1-primary));
-              color: #fff;
-              box-shadow: 0 2px 10px rgba(107,78,155,.28);
-            }
-            .act-btn--pdf:hover { box-shadow: 0 4px 16px rgba(107,78,155,.4); color: #fff; }
-            .act-btn--pdf .act-icon { background: rgba(255,255,255,.2); color: #fff; }
-
-            /* Print */
-            .act-btn--print {
-              background: linear-gradient(135deg, var(--sv1-primary-light), var(--sv1-primary));
-              color: #fff;
-              box-shadow: 0 2px 10px rgba(107,78,155,.2);
-            }
-            .act-btn--print:hover { box-shadow: 0 4px 16px rgba(107,78,155,.32); color: #fff; }
-            .act-btn--print .act-icon { background: rgba(255,255,255,.2); color: #fff; }
-
-            /* Share */
-            .act-btn--share {
-              background: var(--sv1-primary-soft);
-              color: var(--sv1-primary-dark);
-              border: 1.5px solid var(--border);
-            }
-            .act-btn--share:hover { background: var(--sv1-primary-soft); }
-            .act-btn--share .act-icon { background: var(--sv1-primary); color: #fff; }
-
-            /* Dashboard */
-            .act-btn--dash {
-              background: #f8f5f8; color: var(--sv1-text-muted);
-              border: 1.5px solid var(--border);
-            }
-            .act-btn--dash:hover { background: #f0e8f0; color: var(--sv1-text-dark); }
-            .act-btn--dash .act-icon { background: var(--sv1-primary-soft); color: var(--sv1-primary-light); }
-
-            /* ── Copy group ──────────────────────────────────────────────── */
-            .copy-group {
-              display: flex;
-              border: 1.5px solid var(--border);
-              border-radius: var(--radius-sm);
-              overflow: hidden;
-              background: #fafafa;
-            }
-
-            .copy-group input {
-              flex: 1; border: none; background: transparent;
-              padding: 0.52rem 0.7rem;
-              font-size: 0.72rem; color: var(--sv1-text-muted);
-              font-family: 'JetBrains Mono', monospace;
-              outline: none; min-width: 0;
-              overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-            }
-
-            .copy-btn {
-              background: var(--sv1-primary); color: #fff; border: none;
-              padding: 0.52rem 0.85rem;
-              font-size: 0.74rem; font-weight: 600; cursor: pointer;
-              font-family: 'Outfit', sans-serif;
-              display: flex; align-items: center; gap: 0.3rem;
-              white-space: nowrap; flex-shrink: 0;
-              transition: background .15s;
-            }
-            .copy-btn:hover  { background: var(--sv1-primary-dark); }
-            .copy-btn.copied { background: var(--sv1-success); }
-
-            /* ── Quick summary ───────────────────────────────────────────── */
-            .summary-grid { display: flex; flex-direction: column; gap: 0.6rem; }
-
-            .summary-item {
-              display: flex; align-items: center; gap: 0.75rem;
-              padding: 0.65rem 0.85rem;
-              border-radius: var(--radius-sm);
-              background: var(--sv1-primary-soft);
-              border: 1px solid var(--border);
-            }
-
-            .summary-item-icon {
-              width: 30px; height: 30px; border-radius: 7px;
-              display: flex; align-items: center; justify-content: center;
-              font-size: 0.82rem; flex-shrink: 0;
-            }
-
-            .si-date  .summary-item-icon { background: var(--sv1-gold-pale); color: var(--sv1-gold); }
-            .si-time  .summary-item-icon { background: var(--sv1-info-light);   color: var(--sv1-info); }
-            .si-venue .summary-item-icon { background: var(--sv1-success-light);  color: var(--sv1-success); }
-            .si-seat  .summary-item-icon { background: var(--sv1-primary-soft);     color: var(--sv1-primary); }
-
-            .si-name { 
-              font-size: 0.67rem; 
-              color: var(--sv1-text-muted); 
-              font-weight: 500; 
-              text-transform: uppercase; 
-              letter-spacing: 0.04em; 
-            }
-            .si-val  { 
-              font-weight: 700; 
-              font-size: 0.86rem; 
-              color: var(--sv1-text-dark); 
-              line-height: 1.3; 
-            }
-
-            /* ── O'Level Summary ───────────────────────────────────────── */
-            .olevel-summary {
-              margin-top: 0.5rem;
-              background: var(--sv1-primary-soft);
-              border: 1px solid var(--border);
-              border-radius: var(--radius-sm);
-              padding: 0.8rem;
-            }
-
-            .olevel-summary-item {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              padding: 0.4rem 0;
-              border-bottom: 1px dashed var(--border);
-            }
-
-            .olevel-summary-item:last-child {
-              border-bottom: none;
-            }
-
-            .olevel-subject {
-              font-size: 0.8rem;
-              font-weight: 500;
-              color: var(--sv1-text-dark);
-            }
-
-            .olevel-grade {
-              font-weight: 700;
-              padding: 0.15rem 0.6rem;
-              border-radius: 12px;
-              font-size: 0.75rem;
-            }
-
-            /* ── Toast ───────────────────────────────────────────────────── */
-            .toast {
-              position: fixed; top: 1.25rem; right: 1.25rem;
-              background: var(--sv1-success); color: #fff;
-              padding: 0.72rem 1.25rem;
-              border-radius: var(--radius-sm);
-              font-size: 0.84rem; font-weight: 500;
-              display: flex; align-items: center; gap: 0.5rem;
-              box-shadow: 0 4px 20px rgba(16,185,129,.35);
-              z-index: 9999;
-              animation: toastIn .2s ease;
-              pointer-events: none;
-            }
-
-            @keyframes toastIn {
-              from { opacity: 0; transform: translateY(-8px); }
-              to   { opacity: 1; transform: translateY(0); }
-            }
-
-            /* ── Error state ─────────────────────────────────────────────── */
-            .error-state {
-              background: var(--surface);
-              border-radius: var(--radius);
-              border: 1px solid var(--border);
-              padding: 4rem 2rem;
-              text-align: center;
-              box-shadow: var(--shadow);
-            }
-            .error-state h3 { 
-              font-size: 1.35rem; 
-              font-weight: 700; 
-              color: var(--sv1-primary-dark); 
-              margin: 1rem 0 0.75rem; 
-            }
-            .error-state p  { 
-              color: var(--sv1-text-muted); 
-              font-size: 0.86rem; 
-              max-width: 400px; 
-              margin: 0 auto 2rem; 
-            }
-            .error-actions  { display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap; }
-
-            /* ── Print ───────────────────────────────────────────────────── */
-            @media print {
-              body { background: #fff; }
-              .slip-shell { padding: 0; }
-              .status-strip, .sidebar, .toast { display: none !important; }
-              .content-grid { display: block; }
-              .slip-card { box-shadow: none; border: 1px solid #ccc; }
-            }
+                /* ─── CSS Variables - Purple Theme ─────────────────── */
+                :root {
+                    --primary:       #6B4E9B;
+                    --primary-dark:  #4A3B6B;
+                    --primary-light: #8A6FB0;
+                    --primary-soft:  #F3EAF8;
+                    --gold:          #C9A44A;
+                    --gold-light:    #E2B05F;
+                    --gold-pale:     #FDF6E9;
+                    --white:         #FFFFFF;
+                    --grey-1:        #F4F6FB;
+                    --grey-2:        #E8ECF5;
+                    --grey-3:        #C5CEDF;
+                    --grey-4:        #8695AE;
+                    --grey-5:        #4A5568;
+                    --ink:           #1A2438;
+                    --green:         #10b981;
+                    --green-pale:    #d1fae5;
+                    --red:           #ef4444;
+                    --red-pale:      #fee2e2;
+                    --orange:        #f59e0b;
+                    --orange-pale:   #fef3c7;
+                    --blue:          #3b82f6;
+                    --blue-pale:     #dbeafe;
+                    
+                    --border:        #E0E7F0;
+                    --shadow-sm:     0 2px 8px rgba(107,78,155,0.05);
+                    --shadow-md:     0 4px 16px rgba(107,78,155,0.08);
+                    --shadow-lg:     0 12px 40px rgba(107,78,155,0.12);
+                    
+                    --radius-sm:     6px;
+                    --radius-md:     12px;
+                    --radius-lg:     20px;
+                    --radius-xl:     28px;
+                    
+                    --font-display:  'DM Serif Display', Georgia, serif;
+                    --font-body:     'DM Sans', system-ui, sans-serif;
+                    --font-mono:     'DM Mono', monospace;
+                }
+
+                /* ─── Reset ──────────────────────────────────────── */
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+
+                body {
+                    font-family: var(--font-body);
+                    background: var(--primary-soft);
+                    color: var(--ink);
+                    min-height: 100vh;
+                    line-height: 1.5;
+                }
+
+                /* ─── Navigation ─────────────────────────────────── */
+                .nav-bar {
+                    background: var(--white);
+                    border-bottom: 1px solid var(--border);
+                    padding: 0.75rem 2rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    box-shadow: var(--shadow-sm);
+                    position: sticky;
+                    top: 0;
+                    z-index: 100;
+                }
+
+                .nav-brand {
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                }
+
+                .nav-logo {
+                    width: 40px;
+                    height: 40px;
+                    background: var(--primary);
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 1.2rem;
+                }
+
+                .nav-title {
+                    font-weight: 600;
+                    color: var(--primary-dark);
+                }
+
+                .nav-links {
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                }
+
+                .nav-link {
+                    color: var(--grey-5);
+                    text-decoration: none;
+                    font-size: 0.9rem;
+                    padding: 0.5rem 1rem;
+                    border-radius: var(--radius-sm);
+                    transition: all 0.2s;
+                }
+
+                .nav-link:hover {
+                    background: var(--primary-soft);
+                    color: var(--primary);
+                }
+
+                .nav-link i {
+                    margin-right: 0.5rem;
+                    font-size: 0.85rem;
+                }
+
+                .user-badge {
+                    background: var(--primary-soft);
+                    padding: 0.5rem 1rem;
+                    border-radius: var(--radius-sm);
+                    font-size: 0.85rem;
+                    color: var(--primary-dark);
+                    font-weight: 500;
+                }
+
+                .user-badge i {
+                    margin-right: 0.5rem;
+                    color: var(--primary);
+                }
+
+                /* ─── Main Container ─────────────────────────────── */
+                .main-container {
+                    max-width: 1200px;
+                    margin: 2rem auto;
+                    padding: 0 2rem;
+                }
+
+                /* ─── Success Banner ─────────────────────────────── */
+                .success-banner {
+                    background: linear-gradient(135deg, var(--green), #0d9488);
+                    border-radius: var(--radius-lg);
+                    padding: 2rem;
+                    color: white;
+                    margin-bottom: 2rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 1.5rem;
+                    box-shadow: var(--shadow-lg);
+                }
+
+                .success-icon {
+                    width: 64px;
+                    height: 64px;
+                    background: rgba(255,255,255,0.2);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 2rem;
+                }
+
+                .success-content {
+                    flex: 1;
+                }
+
+                .success-title {
+                    font-size: 1.8rem;
+                    font-weight: 700;
+                    margin-bottom: 0.5rem;
+                    font-family: var(--font-display);
+                }
+
+                .success-message {
+                    opacity: 0.9;
+                    font-size: 1rem;
+                }
+
+                /* ─── Card ───────────────────────────────────────── */
+                .card {
+                    background: var(--white);
+                    border-radius: var(--radius-xl);
+                    box-shadow: var(--shadow-lg);
+                    overflow: hidden;
+                    margin-bottom: 2rem;
+                }
+
+                .card-header {
+                    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+                    padding: 2rem 2.5rem;
+                    color: white;
+                }
+
+                .card-header h1 {
+                    font-family: var(--font-display);
+                    font-size: 2rem;
+                    font-weight: 400;
+                    margin-bottom: 0.5rem;
+                }
+
+                .card-header p {
+                    opacity: 0.8;
+                    font-size: 0.95rem;
+                }
+
+                .card-body {
+                    padding: 2.5rem;
+                }
+
+                /* ─── Exam Slip Preview ──────────────────────────── */
+                .slip-preview {
+                    background: var(--primary-soft);
+                    border: 2px dashed var(--primary-light);
+                    border-radius: var(--radius-lg);
+                    padding: 2rem;
+                    margin-bottom: 2rem;
+                    text-align: center;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+
+                .slip-preview:hover {
+                    background: var(--gold-pale);
+                    border-color: var(--gold);
+                    transform: translateY(-2px);
+                    box-shadow: var(--shadow-md);
+                }
+
+                .preview-icon {
+                    font-size: 3rem;
+                    color: var(--primary);
+                    margin-bottom: 1rem;
+                }
+
+                .preview-title {
+                    font-size: 1.2rem;
+                    font-weight: 600;
+                    color: var(--primary-dark);
+                    margin-bottom: 0.5rem;
+                }
+
+                .preview-subtitle {
+                    color: var(--grey-4);
+                    font-size: 0.9rem;
+                }
+
+                /* ─── Info Grid ──────────────────────────────────── */
+                .info-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 1.5rem;
+                    margin-bottom: 2rem;
+                }
+
+                .info-item {
+                    background: var(--primary-soft);
+                    border-radius: var(--radius-md);
+                    padding: 1.5rem;
+                }
+
+                .info-label {
+                    font-size: 0.75rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    color: var(--grey-4);
+                    margin-bottom: 0.5rem;
+                }
+
+                .info-value {
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    color: var(--primary-dark);
+                }
+
+                .info-value i {
+                    color: var(--gold);
+                    margin-right: 0.5rem;
+                }
+
+                /* ─── O'Level Summary ────────────────────────────── */
+                .olevel-summary {
+                    background: var(--primary-soft);
+                    border-radius: var(--radius-lg);
+                    padding: 1.5rem;
+                    margin-bottom: 2rem;
+                }
+
+                .summary-title {
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: var(--primary-dark);
+                    margin-bottom: 1rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+
+                .subject-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 1rem;
+                }
+
+                .subject-item {
+                    background: var(--white);
+                    border-radius: var(--radius-sm);
+                    padding: 0.75rem;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+                .subject-name {
+                    font-size: 0.85rem;
+                    color: var(--grey-5);
+                }
+
+                .subject-grade {
+                    font-weight: 600;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 4px;
+                    font-size: 0.8rem;
+                }
+
+                .grade-A1, .grade-B2, .grade-B3 {
+                    background: #2e7d32;
+                    color: white;
+                }
+
+                .grade-C4, .grade-C5, .grade-C6 {
+                    background: #f57c00;
+                    color: white;
+                }
+
+                .grade-D7, .grade-E8, .grade-F9 {
+                    background: #c62828;
+                    color: white;
+                }
+
+                .credit-badge {
+                    background: var(--green);
+                    color: white;
+                    font-size: 0.7rem;
+                    padding: 0.2rem 0.5rem;
+                    border-radius: 12px;
+                    margin-left: 0.5rem;
+                }
+
+                /* ─── Action Buttons ─────────────────────────────── */
+                .action-buttons {
+                    display: flex;
+                    gap: 1rem;
+                    flex-wrap: wrap;
+                }
+
+                .btn {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.75rem;
+                    padding: 1rem 2rem;
+                    border: none;
+                    border-radius: var(--radius-md);
+                    font-size: 1rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    text-decoration: none;
+                    flex: 1;
+                    min-width: 200px;
+                }
+
+                .btn i {
+                    font-size: 1.1rem;
+                }
+
+                .btn-primary {
+                    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+                    color: white;
+                    box-shadow: 0 4px 12px rgba(107,78,155,0.3);
+                }
+
+                .btn-primary:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 20px rgba(107,78,155,0.4);
+                }
+
+                .btn-success {
+                    background: var(--green);
+                    color: white;
+                    box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+                }
+
+                .btn-success:hover {
+                    background: #0d9488;
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 20px rgba(16,185,129,0.4);
+                }
+
+                .btn-outline {
+                    background: transparent;
+                    color: var(--primary);
+                    border: 2px solid var(--primary-light);
+                }
+
+                .btn-outline:hover {
+                    background: var(--primary-soft);
+                    border-color: var(--primary);
+                }
+
+                /* ─── Support Section ────────────────────────────── */
+                .support-section {
+                    margin-top: 2rem;
+                    padding-top: 2rem;
+                    border-top: 1px solid var(--border);
+                }
+
+                .support-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 1rem;
+                }
+
+                .support-card {
+                    background: var(--primary-soft);
+                    border-radius: var(--radius-md);
+                    padding: 1.5rem;
+                    text-align: center;
+                }
+
+                .support-icon {
+                    width: 48px;
+                    height: 48px;
+                    background: var(--white);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 1rem;
+                    color: var(--primary);
+                    font-size: 1.2rem;
+                }
+
+                .support-card h4 {
+                    color: var(--primary-dark);
+                    margin-bottom: 0.5rem;
+                    font-size: 1rem;
+                }
+
+                .support-card p {
+                    color: var(--grey-5);
+                    font-size: 0.9rem;
+                }
+
+                /* ─── Toast Notifications ────────────────────────── */
+                .toast-notification {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 1rem 1.5rem;
+                    border-radius: var(--radius-md);
+                    color: white;
+                    font-size: 0.95rem;
+                    font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    box-shadow: var(--shadow-lg);
+                    z-index: 10000;
+                    animation: slideInRight 0.3s ease;
+                }
+
+                .toast-success { background: var(--green); }
+                .toast-error { background: var(--red); }
+                .toast-info { background: var(--blue); }
+
+                @keyframes slideInRight {
+                    from {
+                        opacity: 0;
+                        transform: translateX(100%);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(0);
+                    }
+                }
+
+                /* ─── Responsive ─────────────────────────────────── */
+                @media (max-width: 768px) {
+                    .nav-bar {
+                        padding: 0.75rem 1rem;
+                        flex-direction: column;
+                        gap: 1rem;
+                    }
+                    
+                    .nav-links {
+                        width: 100%;
+                        justify-content: center;
+                    }
+                    
+                    .main-container {
+                        padding: 0 1rem;
+                    }
+                    
+                    .card-header {
+                        padding: 1.5rem;
+                    }
+                    
+                    .card-header h1 {
+                        font-size: 1.5rem;
+                    }
+                    
+                    .card-body {
+                        padding: 1.5rem;
+                    }
+                    
+                    .info-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    
+                    .action-buttons {
+                        flex-direction: column;
+                    }
+                    
+                    .btn {
+                        width: 100%;
+                    }
+                    
+                    .support-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    
+                    .subject-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+
+                @media (max-width: 480px) {
+                    .success-banner {
+                        flex-direction: column;
+                        text-align: center;
+                    }
+                    
+                    .nav-links {
+                        flex-wrap: wrap;
+                    }
+                }
             </style>
         </head>
         <body>
 
-        <div class="slip-shell">
-
-          <!-- Status strip — no page title here, layout provides it -->
-          <div class="status-strip">
-            <div class="strip-left">
-              <div class="strip-icon"><i class="fas fa-file-check"></i></div>
-              <div>
-                <div class="strip-title">Application Complete</div>
-                <div class="strip-sub">
-                  <i class="fas fa-hashtag" style="font-size:.65rem;"></i>
-                  App No: <strong><?php echo $this->e($application['application_number'] ?? 'N/A'); ?></strong>
-                  &nbsp;&bull;&nbsp; 2025/2026 Admission Screening
-                </div>
-              </div>
+        <!-- ─── Navigation ─────────────────────────────────────────── -->
+        <nav class="nav-bar">
+            <div class="nav-brand">
+                <div class="nav-logo">CNS</div>
+                <span class="nav-title">FCT College of Nursing Sciences</span>
             </div>
-            <div class="badge-verified"><i class="fas fa-circle-check"></i> Paid &amp; Verified</div>
-          </div>
+            <div class="nav-links">
+                <!-- Dashboard commented out for now 
+                <a href="/dashboard" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                -->
+                <a href="/apply/step/1" class="nav-link">
+                    <i class="fas fa-file-alt"></i> Application
+                </a>
+                <a href="/applicant/logout" class="nav-link">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+                <span class="user-badge">
+                    <i class="fas fa-user-circle"></i> <?php echo $this->e($applicant_name); ?>
+                </span>
+            </div>
+        </nav>
 
-          <?php if (!empty($exam_slip)): ?>
-          <?php
-            $slipNum         = $exam_slip['slip_number'] ?? '';
-            $qrUrl           = $baseUrl . '/application-verify/generate-qr/' . urlencode($slipNum) . '?t=' . time();
-            $verificationUrl = $baseUrl . '/application-verify/slip/' . urlencode($slipNum);
-          ?>
+        <!-- ─── Main Container ─────────────────────────────────────── -->
+        <div class="main-container">
 
-          <div class="content-grid">
+            <!-- Alert Container for Toast Notifications -->
+            <div id="alertContainer"></div>
 
-            <!-- ── Exam Slip ───────────────────────────────────────────── -->
-            <div class="slip-card" id="examSlipCard">
-
-              <div class="slip-header">
-                <div>
-                  <div class="slip-header-title">Examination Admission Slip</div>
-                  <div class="slip-header-sub">2025/2026 Academic Session &mdash; Pre-qualification Screening</div>
+            <!-- Success Banner -->
+            <div class="success-banner">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
                 </div>
-                <?php if ($slipNum): ?>
-                <div class="slip-number-pill"><?php echo $this->e($slipNum); ?></div>
-                <?php endif; ?>
-              </div>
+                <div class="success-content">
+                    <div class="success-title">Payment Successful!</div>
+                    <div class="success-message">Your application fee has been confirmed. Your examination slip is now available below.</div>
+                </div>
+            </div>
 
-              <div class="slip-body">
+            <!-- Main Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h1>Examination Slip</h1>
+                    <p>Download and print your examination slip for the screening exercise</p>
+                </div>
+                <div class="card-body">
 
-                <!-- Photo / QR / Verification row -->
-                <div class="top-trio">
-
-                  <div class="photo-wrap">
-                    <div class="photo-frame">
-                      <?php if (!empty($application['passport_photo'])): ?>
-                        <img src="<?php echo $this->e($application['passport_photo']); ?>" alt="Passport Photo">
-                      <?php else: ?>
-                        <div class="no-photo">
-                          <i class="fas fa-user-circle fa-3x"></i>
-                          <span>No Photo</span>
+                    <!-- Exam Slip Preview -->
+                    <div class="slip-preview" id="slipPreview">
+                        <div class="preview-icon">
+                            <i class="fas fa-file-pdf"></i>
                         </div>
-                      <?php endif; ?>
+                        <div class="preview-title">View/Print Examination Slip</div>
+                        <div class="preview-subtitle">
+                            Slip Number: <?php echo $this->e($exam_slip['slip_number'] ?? 'Not Available'); ?>
+                        </div>
                     </div>
-                    <div class="img-caption"><i class="fas fa-camera"></i> Passport Photo</div>
-                  </div>
 
-                  <div class="qr-wrap">
-                    <div class="qr-frame" id="qrFrame">
-                      <?php if ($slipNum): ?>
-                        <img src="<?php echo $this->e($qrUrl); ?>"
-                             alt="Verification QR Code"
-                             onerror="this.parentNode.innerHTML='<div class=\'qr-error\'><i class=\'fas fa-triangle-exclamation fa-lg\' style=\'display:block;margin-bottom:5px;\'></i>QR unavailable.<br>Use link below.</div>';">
-                      <?php else: ?>
-                        <div class="qr-error">Slip number missing</div>
-                      <?php endif; ?>
+                    <!-- Key Information Grid -->
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Slip Number</div>
+                            <div class="info-value">
+                                <i class="fas fa-hashtag"></i>
+                                <?php echo $this->e($exam_slip['slip_number'] ?? 'Not Available'); ?>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Application Number</div>
+                            <div class="info-value">
+                                <i class="fas fa-file-alt"></i>
+                                <?php echo $this->e($application['application_number'] ?? 'Not Available'); ?>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Examination Date</div>
+                            <div class="info-value">
+                                <i class="fas fa-calendar-alt"></i>
+                                <?php echo $this->e(date('l, jS F Y', strtotime($exam_slip['exam_date'] ?? $exam_details['date']))); ?>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Examination Time</div>
+                            <div class="info-value">
+                                <i class="fas fa-clock"></i>
+                                <?php echo $this->e($exam_slip['exam_time'] ?? '10:00 AM'); ?>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Reporting Time</div>
+                            <div class="info-value">
+                                <i class="fas fa-hourglass-start"></i>
+                                <?php echo $this->e($exam_slip['reporting_time'] ?? $exam_details['reporting_time']); ?>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Venue</div>
+                            <div class="info-value">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <?php echo $this->e($exam_slip['exam_venue'] ?? $exam_details['venue']); ?>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Seat Number</div>
+                            <div class="info-value">
+                                <i class="fas fa-chair"></i>
+                                <?php echo $this->e($exam_slip['seat_number'] ?? 'To be assigned'); ?>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Downloads</div>
+                            <div class="info-value">
+                                <i class="fas fa-download"></i>
+                                <?php echo (int)($exam_slip['download_count'] ?? 0); ?> times
+                            </div>
+                        </div>
                     </div>
-                    <div class="img-caption"><i class="fas fa-qrcode"></i> Scan to Verify</div>
-                  </div>
 
-                  <div class="verify-panel">
-                    <div class="verify-panel-title"><i class="fas fa-shield-halved"></i> Verification Status</div>
-                    <div class="verify-item">
-                      <i class="fas fa-circle-check" style="color:var(--sv1-success);"></i>
-                      <div>
-                        <div class="vi-label">Payment</div>
-                        <div class="vi-val" style="color:var(--sv1-success);">Confirmed</div>
-                      </div>
-                    </div>
-                    <div class="verify-item">
-                      <i class="fas fa-hashtag" style="color:var(--sv1-primary);"></i>
-                      <div>
-                        <div class="vi-label">Slip Number</div>
-                        <div class="vi-val mono"><?php echo $this->e($slipNum); ?></div>
-                      </div>
-                    </div>
-                    <div class="verify-item">
-                      <i class="fas fa-clock" style="color:var(--sv1-info);"></i>
-                      <div>
-                        <div class="vi-label">Generated</div>
-                        <div class="vi-val" style="font-size:.76rem;"><?php echo $this->e(date('d M Y, H:i', strtotime($exam_slip['generated_at'] ?? 'now'))); ?></div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div><!-- /top-trio -->
-
-                <!-- O'Level Results Section -->
-                <div class="olevel-section">
-                  <div class="olevel-header">
-                    <span><i class="fas fa-certificate" style="margin-right: 0.5rem;"></i> O'Level Examination Results</span>
-                    <span class="olevel-status-badge">
-                      <?php echo $creditsAchieved; ?>/5 Credits
-                    </span>
-                  </div>
-                  
-                  <?php if (!empty($olevel_results)): ?>
-                    <?php foreach ($olevel_results as $sittingIndex => $sitting): ?>
-                      <table class="olevel-table">
-                        <thead>
-                          <tr>
-                            <th colspan="2">
-                              Sitting <?php echo $sittingIndex + 1; ?> 
-                              <span class="sitting-badge">
-                                <?php echo $this->e($sitting['exam_type'] ?? 'WAEC'); ?> 
-                                (<?php echo $this->e($sitting['exam_year'] ?? ''); ?>)
-                              </span>
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <?php
-                          $subjects = [
-                            'english' => 'English Language',
-                            'mathematics' => 'Mathematics',
-                            'biology' => 'Biology',
-                            'chemistry' => 'Chemistry',
-                            'physics' => 'Physics'
-                          ];
-                          
-                          foreach ($subjects as $key => $label):
-                            $grade = $sitting[$key . '_grade'] ?? '';
-                            $gradeClass = '';
-                            if (in_array($grade, ['A1','B2','B3'])) $gradeClass = 'grade-excellent';
-                            elseif (in_array($grade, ['C4','C5','C6'])) $gradeClass = 'grade-good';
-                            elseif (!empty($grade)) $gradeClass = 'grade-poor';
-                          ?>
-                          <tr>
-                            <td style="text-align: left; padding-left: 1.2rem;">
-                              <?php echo $this->e($label); ?>
-                              <?php if (in_array($key, $requiredSubjects)): ?>
-                                <span style="color: var(--sv1-text-muted); font-size: 0.65rem; margin-left: 0.3rem;">(Required)</span>
-                              <?php endif; ?>
-                            </td>
-                            <td style="text-align: center; width: 100px;">
-                              <?php if (!empty($grade)): ?>
-                                <span class="<?php echo $gradeClass; ?>">
-                                  <?php echo $this->e($grade); ?>
-                                  <?php if (in_array($grade, $creditGrades)): ?>
-                                    <i class="fas fa-check-circle" style="color: #2e7d32; margin-left: 0.3rem; font-size: 0.7rem;"></i>
-                                  <?php endif; ?>
+                    <!-- O'Level Results Summary (if available) -->
+                    <?php if (!empty($olevel_results)): ?>
+                    <div class="olevel-summary">
+                        <div class="summary-title">
+                            <i class="fas fa-graduation-cap"></i>
+                            O'Level Results Summary
+                        </div>
+                        <div class="subject-grid">
+                            <?php
+                            $requiredSubjects = ['english', 'mathematics', 'biology', 'chemistry', 'physics'];
+                            $creditGrades = ['A1', 'B2', 'B3', 'C4', 'C5', 'C6'];
+                            
+                            // Get best grades across sittings
+                            $bestGrades = [];
+                            $gradeOrder = ['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
+                            
+                            foreach ($olevel_results as $sitting) {
+                                foreach ($requiredSubjects as $subject) {
+                                    $gradeKey = $subject . '_grade';
+                                    if (!empty($sitting[$gradeKey])) {
+                                        $grade = $sitting[$gradeKey];
+                                        if (!isset($bestGrades[$subject]) || 
+                                            array_search($grade, $gradeOrder) < array_search($bestGrades[$subject], $gradeOrder)) {
+                                            $bestGrades[$subject] = $grade;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            $subjectLabels = [
+                                'english' => 'English',
+                                'mathematics' => 'Mathematics',
+                                'biology' => 'Biology',
+                                'chemistry' => 'Chemistry',
+                                'physics' => 'Physics'
+                            ];
+                            
+                            foreach ($bestGrades as $subject => $grade):
+                                $isCredit = in_array($grade, $creditGrades);
+                                $gradeClass = str_replace(['1','2','3','4','5','6','7','8','9'], '', $grade);
+                            ?>
+                            <div class="subject-item">
+                                <span class="subject-name"><?php echo $subjectLabels[$subject]; ?></span>
+                                <span class="subject-grade grade-<?php echo $gradeClass; ?>">
+                                    <?php echo $grade; ?>
+                                    <?php if ($isCredit): ?>
+                                        <span class="credit-badge">✓</span>
+                                    <?php endif; ?>
                                 </span>
-                              <?php else: ?>
-                                <span style="color: var(--sv1-text-muted);">—</span>
-                              <?php endif; ?>
-                            </td>
-                          </tr>
-                          <?php endforeach; ?>
-                        </tbody>
-                      </table>
-                      <?php if ($sittingIndex < count($olevel_results) - 1): ?>
-                        <div style="border-top: 1px dashed var(--border); margin: 0.5rem 0;"></div>
-                      <?php endif; ?>
-                    <?php endforeach; ?>
-                    
-                    <!-- Credit Check Summary -->
-                    <div class="credit-check">
-                      <i class="fas fa-<?php echo $creditsAchieved >= 5 ? 'check-circle' : 'exclamation-triangle'; ?>"></i>
-                      <div>
-                        <strong style="color: <?php echo $creditsAchieved >= 5 ? $green : '#f57c00'; ?>;">
-                          <?php echo $creditsAchieved >= 5 ? '✓ O\'Level Requirement Met' : '⚠ O\'Level Requirement Not Met'; ?>
-                        </strong>
-                        <span style="color: var(--sv1-text-muted); margin-left: 0.5rem;">
-                          <?php if ($creditsAchieved >= 5): ?>
-                            <?php echo $creditsAchieved; ?>/5 credits achieved across <?php echo count($olevel_results); ?> sitting(s)
-                          <?php else: ?>
-                            Missing credits in: <?php echo implode(', ', $missingSubjects); ?>
-                          <?php endif; ?>
-                        </span>
-                      </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
-                    
-                  <?php else: ?>
-                    <div style="padding: 1.5rem; text-align: center; color: var(--sv1-text-muted);">
-                      <i class="fas fa-file-circle-exclamation fa-2x" style="margin-bottom: 0.5rem;"></i>
-                      <p>No O'Level results recorded</p>
+                    <?php endif; ?>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="viewPrintBtn">
+                            <i class="fas fa-print"></i>
+                            View / Print Slip
+                        </button>
+                        <button class="btn btn-success" id="downloadBtn">
+                            <i class="fas fa-download"></i>
+                            Download PDF
+                        </button>
+                        <a href="/apply/step/1" class="btn btn-outline">
+                            <i class="fas fa-home"></i>
+                            Back to Home
+                        </a>
                     </div>
-                  <?php endif; ?>
-                </div>
 
-                <!-- Details table -->
-                <table class="details-table">
-                  <tbody>
-                    <tr>
-                      <th>Slip Number</th>
-                      <td><span class="mono" style="color:var(--sv1-primary-dark);font-weight:700;"><?php echo $this->e($slipNum); ?></span></td>
-                    </tr>
-                    <tr>
-                      <th>Application No.</th>
-                      <td><?php echo $this->e($application['application_number'] ?? ''); ?></td>
-                    </tr>
-                    <tr>
-                      <th>JAMB Reg. No.</th>
-                      <td><span class="mono"><?php echo $this->e($application['jamb_number'] ?? ''); ?></span></td>
-                    </tr>
-                    <tr>
-                      <th>Full Name</th>
-                      <td><strong><?php echo $this->e(($application['first_name'] ?? '') . ' ' . ($application['last_name'] ?? '')); ?></strong></td>
-                    </tr>
-                    <tr>
-                      <th>Programme</th>
-                      <td><span class="badge-program"><?php echo $this->e($application['program_choice_1'] ?? ''); ?></span></td>
-                    </tr>
-                    <tr class="row-exam-date">
-                      <th>Exam Date</th>
-                      <td><?php echo $this->e(date('l, jS F Y', strtotime($exam_slip['exam_date'] ?? 'now'))); ?></td>
-                    </tr>
-                    <tr>
-                      <th>Exam Time</th>
-                      <td><?php echo $this->e(date('h:i A', strtotime($exam_slip['exam_time'] ?? 'now'))); ?></td>
-                    </tr>
-                    <tr>
-                      <th>Reporting Time</th>
-                      <td>
-                        <span class="report-time">
-                          <i class="fas fa-triangle-exclamation"></i>
-                          <?php echo $this->e(date('h:i A', strtotime($exam_slip['reporting_time'] ?? 'now'))); ?> &mdash; 30 mins early
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>Venue</th>
-                      <td><?php echo $this->e($exam_slip['exam_venue'] ?? ''); ?></td>
-                    </tr>
-                    <tr class="row-seat">
-                      <th>Seat Number</th>
-                      <td><span class="seat-num"><?php echo $this->e($exam_slip['seat_number'] ?? ''); ?></span></td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <!-- Instructions -->
-                <div class="instructions">
-                  <div class="instr-icon"><i class="fas fa-circle-info"></i></div>
-                  <div>
-                    <h5>Important Instructions</h5>
-                    <ol>
-                      <li>Print and bring this slip to the examination venue.</li>
-                      <li>Arrive at least <strong>30 minutes</strong> before your reporting time.</li>
-                      <li>Bring writing materials &mdash; pen, pencil, and eraser.</li>
-                      <li>Bring a valid government-issued ID (National ID, Driver&rsquo;s License or Passport).</li>
-                      <li>Bring original O'Level certificates/result slips for verification at the screening center.</li>
-                      <li>Electronic devices including phones and calculators are <strong>strictly prohibited</strong>.</li>
-                      <li>The QR code will be scanned at the entrance for identity verification.</li>
-                    </ol>
-                  </div>
-                </div>
-
-                <div class="slip-footer-line">
-                  <span><i class="fas fa-print"></i> Computer-generated &mdash; no signature required</span>
-                  <span><i class="fas fa-lock"></i> QR contains encrypted applicant data</span>
-                </div>
-
-              </div><!-- /slip-body -->
-            </div><!-- /slip-card -->
-
-            <!-- ── Sidebar ────────────────────────────────────────────── -->
-            <div class="sidebar">
-
-              <div class="side-card">
-                <div class="side-card-label">Actions</div>
-                <div class="action-list">
-                  <a href="/apply/download-exam-slip?csrf=<?php echo urlencode($csrf_token); ?>&t=<?php echo time(); ?>" class="act-btn act-btn--pdf" id="downloadBtn">
-                    <span class="act-icon"><i class="fas fa-download"></i></span>
-                    Download as PDF
-                  </a>
-                  <!-- FIX: Removed inline onclick, added id="printBtn" -->
-                  <button class="act-btn act-btn--print" id="printBtn">
-                    <span class="act-icon"><i class="fas fa-print"></i></span>
-                    Print Slip
-                  </button>
-                  <!-- FIX: Removed inline onclick, added id="shareBtn" -->
-                  <button class="act-btn act-btn--share" id="shareBtn">
-                    <span class="act-icon"><i class="fas fa-share-nodes"></i></span>
-                    Share Slip
-                  </button>
-                  <a href="/applicant/dashboard" class="act-btn act-btn--dash">
-                    <span class="act-icon"><i class="fas fa-gauge-high"></i></span>
-                    Dashboard
-                  </a>
-                </div>
-              </div>
-
-              <div class="side-card">
-                <div class="side-card-label">Verification Links</div>
-                <p style="font-size:.76rem;color:var(--sv1-text-muted);margin-bottom:.55rem;line-height:1.5;">Public verification page:</p>
-                <div class="copy-group" style="margin-bottom:.9rem;">
-                  <input type="text" id="verificationLink"
-                         value="<?php echo $this->e($verificationUrl); ?>"
-                         readonly aria-label="Verification URL">
-                  <!-- FIX: Removed inline onclick, added id="copyVerificationBtn" -->
-                  <button class="copy-btn" id="copyVerificationBtn">
-                    <i class="fas fa-copy"></i> Copy
-                  </button>
-                </div>
-                <p style="font-size:.76rem;color:var(--sv1-text-muted);margin-bottom:.55rem;line-height:1.5;">QR code image link:</p>
-                <div class="copy-group">
-                  <input type="text" id="qrLink"
-                         value="<?php echo $this->e($qrUrl); ?>"
-                         readonly aria-label="QR Code URL">
-                  <!-- FIX: Removed inline onclick, added id="copyQrBtn" -->
-                  <button class="copy-btn" id="copyQrBtn">
-                    <i class="fas fa-copy"></i> Copy
-                  </button>
-                </div>
-              </div>
-
-              <div class="side-card">
-                <div class="side-card-label">Quick Summary</div>
-                <div class="summary-grid">
-                  <div class="summary-item si-date">
-                    <div class="summary-item-icon"><i class="fas fa-calendar-day"></i></div>
-                    <div>
-                      <div class="si-name">Exam Date</div>
-                      <div class="si-val"><?php echo $this->e(date('d M Y', strtotime($exam_slip['exam_date'] ?? 'now'))); ?></div>
+                    <!-- Important Notes -->
+                    <div style="margin-top: 2rem; padding: 1rem; background: var(--orange-pale); border-radius: var(--radius-md); border-left: 4px solid var(--orange);">
+                        <p style="display: flex; align-items: center; gap: 0.5rem; color: #92400e;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Important:</strong> Please print your examination slip and bring it to the screening center. Digital copies may not be accepted.
+                        </p>
                     </div>
-                  </div>
-                  <div class="summary-item si-time">
-                    <div class="summary-item-icon"><i class="fas fa-clock"></i></div>
-                    <div>
-                      <div class="si-name">Exam Time</div>
-                      <div class="si-val"><?php echo $this->e(date('h:i A', strtotime($exam_slip['exam_time'] ?? 'now'))); ?></div>
-                    </div>
-                  </div>
-                  <div class="summary-item si-venue">
-                    <div class="summary-item-icon"><i class="fas fa-location-dot"></i></div>
-                    <div>
-                      <div class="si-name">Venue</div>
-                      <div class="si-val"><?php echo $this->e($exam_slip['exam_venue'] ?? ''); ?></div>
-                    </div>
-                  </div>
-                  <div class="summary-item si-seat">
-                    <div class="summary-item-icon"><i class="fas fa-chair"></i></div>
-                    <div>
-                      <div class="si-name">Seat Number</div>
-                      <div class="si-val" style="color:var(--sv1-success);"><?php echo $this->e($exam_slip['seat_number'] ?? ''); ?></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              <?php if (!empty($olevel_results)): ?>
-              <div class="side-card">
-                <div class="side-card-label">O'Level Summary</div>
-                <div class="olevel-summary">
-                  <?php foreach ($bestGrades as $subject => $grade): ?>
-                    <?php
-                    $subjectLabel = ucfirst($subject);
-                    $isCredit = in_array($grade, $creditGrades);
-                    $gradeColor = in_array($grade, ['A1','B2','B3']) ? '#2e7d32' : (in_array($grade, ['C4','C5','C6']) ? '#f57c00' : '#c62828');
-                    ?>
-                    <div class="olevel-summary-item">
-                      <span class="olevel-subject"><?php echo $this->e($subjectLabel); ?></span>
-                      <span class="olevel-grade" style="background: <?php echo $gradeColor; ?>20; color: <?php echo $gradeColor; ?>;">
-                        <?php echo $this->e($grade); ?>
-                        <?php if ($isCredit): ?>
-                          <i class="fas fa-check-circle" style="margin-left: 0.2rem; font-size: 0.65rem;"></i>
-                        <?php endif; ?>
-                      </span>
+                    <!-- Support Section -->
+                    <div class="support-section">
+                        <h3 style="text-align: center; margin-bottom: 2rem; color: var(--primary-dark);">Need Assistance?</h3>
+                        <div class="support-grid">
+                            <div class="support-card">
+                                <div class="support-icon">
+                                    <i class="fas fa-phone"></i>
+                                </div>
+                                <h4>Phone Support</h4>
+                                <p>07039837749</p>
+                                <p style="font-size: 0.8rem; color: var(--grey-4);">Mon-Fri, 9am-5pm</p>
+                            </div>
+                            <div class="support-card">
+                                <div class="support-icon">
+                                    <i class="fab fa-whatsapp"></i>
+                                </div>
+                                <h4>WhatsApp</h4>
+                                <p>08082775076</p>
+                                <p style="font-size: 0.8rem; color: var(--grey-4);">Quick response</p>
+                            </div>
+                            <div class="support-card">
+                                <div class="support-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <h4>Email</h4>
+                                <p>admissions@fctcns.edu.ng</p>
+                                <p style="font-size: 0.8rem; color: var(--grey-4);">24hr response</p>
+                            </div>
+                        </div>
                     </div>
-                  <?php endforeach; ?>
-                  <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); text-align: center;">
-                    <span style="font-size: 0.7rem; font-weight: 600; color: <?php echo $creditsAchieved >= 5 ? '#1a6b45' : '#f57c00'; ?>;">
-                      <?php echo $creditsAchieved; ?>/5 Credits
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <?php endif; ?>
 
-            </div><!-- /sidebar -->
-          </div><!-- /content-grid -->
+                </div><!-- /card-body -->
+            </div><!-- /card -->
 
-          <?php else: ?>
-          <div class="error-state">
-            <i class="fas fa-triangle-exclamation fa-3x" style="color:var(--sv1-primary-light);"></i>
-            <h3>Examination Slip Not Available</h3>
-            <p>Your slip is still being generated. Please check back shortly or contact support if this persists.</p>
-            <div class="error-actions">
-              <a href="/apply/step/3" class="act-btn act-btn--dash" style="width:auto;padding:.72rem 1.4rem;text-decoration:none;">
-                <span class="act-icon"><i class="fas fa-arrow-left"></i></span>
-                Back to Payment
-              </a>
-              <!-- FIX: Removed inline onclick, added id="refreshBtn" -->
-              <button class="act-btn act-btn--print" id="refreshBtn" style="width:auto;padding:.72rem 1.4rem;">
-                <span class="act-icon"><i class="fas fa-rotate-right"></i></span>
-                Refresh
-              </button>
-            </div>
-          </div>
-          <?php endif; ?>
-
-        </div><!-- /slip-shell -->
+        </div><!-- /main-container -->
 
         <!-- ========================================================= -->
-        <!-- 4. Add CSP nonce to all script tags -->
+        <!-- 7. Add CSP nonce to all script tags -->
         <!-- ========================================================= -->
         <script nonce="<?php echo $csp_nonce; ?>">
         (function() {
             'use strict';
 
-            var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute('content') || '';
+            // ── Configuration ─────────────────────────────────────────
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const baseUrl = '<?php echo $baseUrl; ?>';
+            const slipNumber = '<?php echo $this->e($exam_slip['slip_number'] ?? ''); ?>';
 
-            // ── Toast ────────────────────────────────────────────────────
-            function showToast(msg, type) {
-                type = type || 'success';
-                document.querySelectorAll('.toast').forEach(function(t) { t.remove(); });
-                var toast = document.createElement('div');
-                toast.className = 'toast';
-                var icon = type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation';
-                toast.innerHTML = '<i class="fas ' + icon + '"></i> ' + msg;
-                document.body.appendChild(toast);
-                setTimeout(function() {
-                    toast.style.transition = 'opacity .3s';
+            // ── DOM Elements ─────────────────────────────────────────
+            const alertContainer = document.getElementById('alertContainer');
+            const viewPrintBtn = document.getElementById('viewPrintBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const slipPreview = document.getElementById('slipPreview');
+
+            // ── Toast Notification ───────────────────────────────────
+            function showToast(message, type = 'info') {
+                // Remove existing toasts
+                document.querySelectorAll('.toast-notification').forEach(t => t.remove());
+
+                const toast = document.createElement('div');
+                toast.className = `toast-notification toast-${type}`;
+                
+                const icon = type === 'success' ? 'fa-check-circle' : 
+                            type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+                
+                const safeMsg = String(message).replace(/[<>]/g, '');
+                toast.innerHTML = `<i class="fas ${icon}"></i> ${safeMsg}`;
+                
+                alertContainer.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.transition = 'opacity 0.3s, transform 0.3s';
                     toast.style.opacity = '0';
-                    setTimeout(function() { toast.remove(); }, 320);
-                }, 2600);
+                    toast.style.transform = 'translateX(100%)';
+                    setTimeout(() => toast.remove(), 300);
+                }, 5000);
             }
 
-            // ── Copy to clipboard ────────────────────────────────────────
-            function copyText(text, btn) {
-                var origHTML = btn ? btn.innerHTML : '';
-
-                function onCopied() {
-                    showToast('Copied to clipboard!');
-                    if (btn) {
-                        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                        btn.classList.add('copied');
-                        setTimeout(function() {
-                            btn.innerHTML = origHTML;
-                            btn.classList.remove('copied');
-                        }, 2200);
-                    }
-                }
-
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(text).then(onCopied).catch(function() {
-                        fallbackCopy(text, onCopied);
-                    });
-                } else {
-                    fallbackCopy(text, onCopied);
+            // ── Track Event ──────────────────────────────────────────
+            function trackEvent(eventType) {
+                if (csrfToken) {
+                    fetch('/api/track-event', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            event: eventType,
+                            slipNumber: slipNumber,
+                            timestamp: new Date().toISOString()
+                        })
+                    }).catch(err => console.error('Tracking failed:', err));
                 }
             }
 
-            function fallbackCopy(text, callback) {
-                var ta = document.createElement('textarea');
-                ta.value = text;
-                ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
-                document.body.appendChild(ta);
-                ta.select();
-                try {
-                    if (document.execCommand('copy')) {
-                        callback();
-                    } else {
-                        showToast('Copy failed. Please copy manually.', 'error');
-                    }
-                } catch(e) {
-                    showToast('Copy failed. Please copy manually.', 'error');
+            // ── Open Print View ──────────────────────────────────────
+            function openPrintView() {
+                if (!slipNumber) {
+                    showToast('Exam slip not available', 'error');
+                    return;
                 }
-                document.body.removeChild(ta);
+
+                trackEvent('exam_slip_view');
+                
+                // Open print view in new window
+                const printWindow = window.open(
+                    baseUrl + '/apply/print-exam-slip?csrf=' + encodeURIComponent(csrfToken) + '&t=' + Date.now(),
+                    'PrintExamSlip',
+                    'width=900,height=700,scrollbars=yes,resizable=yes'
+                );
+
+                if (!printWindow) {
+                    showToast('Please allow pop-ups to view the exam slip', 'error');
+                }
             }
 
-            // ── Copy verification link button ────────────────────────────
-            var copyVerificationBtn = document.getElementById('copyVerificationBtn');
-            if (copyVerificationBtn) {
-                copyVerificationBtn.addEventListener('click', function() {
-                    var input = document.getElementById('verificationLink');
-                    if (input) copyText(input.value, this);
+            // ── Trigger Download ─────────────────────────────────────
+            function triggerDownload(btn) {
+                if (!slipNumber) {
+                    showToast('Exam slip not available for download', 'error');
+                    return;
+                }
+
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+                btn.disabled = true;
+
+                trackEvent('exam_slip_download');
+                showToast('Preparing PDF for download...', 'info');
+
+                // Create hidden iframe for download
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = baseUrl + '/apply/download-exam-slip?csrf=' + encodeURIComponent(csrfToken) + '&t=' + Date.now();
+
+                iframe.onload = function() {
+                    setTimeout(() => {
+                        btn.innerHTML = orig;
+                        btn.disabled = false;
+                        showToast('Download started', 'success');
+                        document.body.removeChild(iframe);
+                    }, 1500);
+                };
+
+                iframe.onerror = function() {
+                    btn.innerHTML = orig;
+                    btn.disabled = false;
+                    showToast('Download failed. Please try again.', 'error');
+                    document.body.removeChild(iframe);
+                };
+
+                document.body.appendChild(iframe);
+            }
+
+            // ── Event Listeners ──────────────────────────────────────
+            if (viewPrintBtn) {
+                viewPrintBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    openPrintView();
                 });
             }
 
-            // ── Copy QR link button ──────────────────────────────────────
-            var copyQrBtn = document.getElementById('copyQrBtn');
-            if (copyQrBtn) {
-                copyQrBtn.addEventListener('click', function() {
-                    var input = document.getElementById('qrLink');
-                    if (input) copyText(input.value, this);
-                });
-            }
-
-            // ── Print button ─────────────────────────────────────────────
-            var printBtn = document.getElementById('printBtn');
-            if (printBtn) {
-                printBtn.addEventListener('click', function() {
-                    var url = '/apply/print-exam-slip?csrf=' + encodeURIComponent(csrfToken);
-                    var pw = window.open(url, '_blank');
-                    if (pw) {
-                        pw.onload = function() {
-                            setTimeout(function() { pw.focus(); pw.print(); }, 800);
-                        };
-                    } else {
-                        // Popup blocked — fallback to print current page
-                        showToast('Pop-up blocked — printing current page…');
-                        setTimeout(function() { window.print(); }, 800);
-                    }
-                });
-            }
-
-            // ── Download button ──────────────────────────────────────────
-            var downloadBtn = document.getElementById('downloadBtn');
             if (downloadBtn) {
                 downloadBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    var url = this.getAttribute('href');
-                    showToast('Preparing download…');
-                    window.location.href = url;
+                    triggerDownload(this);
                 });
             }
 
-            // ── Share button ─────────────────────────────────────────────
-            var shareBtn = document.getElementById('shareBtn');
-            if (shareBtn) {
-                shareBtn.addEventListener('click', function() {
-                    var verificationInput = document.getElementById('verificationLink');
-                    var shareUrl = verificationInput ? verificationInput.value : window.location.href;
-
-                    if (navigator.share) {
-                        navigator.share({
-                            title: 'Examination Slip — FCT College of Nursing Sciences',
-                            text: 'My examination slip for the 2025/2026 admission screening.',
-                            url: shareUrl
-                        }).catch(function(err) {
-                            // User cancelled or share failed — fallback to copy
-                            if (verificationInput) {
-                                copyText(shareUrl, copyVerificationBtn);
-                            }
-                        });
-                    } else {
-                        // Share API not available — copy link instead
-                        if (verificationInput) {
-                            copyText(shareUrl, copyVerificationBtn);
-                            showToast('Link copied to clipboard!');
-                        }
-                    }
+            if (slipPreview) {
+                slipPreview.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    openPrintView();
                 });
             }
 
-            // ── Refresh button (error state) ─────────────────────────────
-            var refreshBtn = document.getElementById('refreshBtn');
-            if (refreshBtn) {
-                refreshBtn.addEventListener('click', function() {
-                    location.reload();
-                });
-            }
-
-            // ── Print shortcut Ctrl/Cmd+P ────────────────────────────────
+            // ── Keyboard Shortcuts ───────────────────────────────────
             document.addEventListener('keydown', function(e) {
+                // Ctrl+P or Cmd+P for print
                 if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
                     e.preventDefault();
-                    if (printBtn) printBtn.click();
+                    if (viewPrintBtn) {
+                        openPrintView();
+                    }
                 }
             });
 
-            // ── Prevent right-click on QR and slip number ────────────────
-            document.querySelectorAll('.qr-frame, .slip-number-pill').forEach(function(el) {
-                el.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+            // ── Log page view ────────────────────────────────────────
+            console.log('Step 4 page loaded:', {
+                slipNumber: slipNumber,
+                timestamp: new Date().toISOString()
             });
 
-            // ── External links: noopener ─────────────────────────────────
-            document.querySelectorAll('a[href^="http"]').forEach(function(link) {
-                try {
-                    var url = new URL(link.href);
-                    if (url.hostname !== window.location.hostname) {
-                        link.setAttribute('target', '_blank');
-                        link.setAttribute('rel', 'noopener noreferrer');
-                    }
-                } catch(e) {}
-            });
+            // Check if slip was recently generated
+            <?php if (isset($_GET['new']) && $_GET['new'] == 1): ?>
+            showToast('Your examination slip has been generated successfully!', 'success');
+            <?php endif; ?>
 
-        }());
+        })();
         </script>
+
         </body>
         </html>
         <?php
@@ -1428,8 +1040,8 @@ class ExamSlipView {
 }
 
 // =========================================================
-// 8. Add the view instantiation at the bottom
+// 9. Add the view instantiation at the bottom
 // =========================================================
-$view = new ExamSlipView();
+$view = new Step4View();
 $view->render(get_defined_vars());
 ?>

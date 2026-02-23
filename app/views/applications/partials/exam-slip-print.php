@@ -3,6 +3,7 @@
  * Exam Slip Print View
  * UPDATED: Added O'Level results section and improved layout
  * SIMPLIFIED: Using only server-generated QR - User clicks Print button before print preview
+ * FIXED: Download functionality, button responsiveness, and security
  *
  * @package FCTCNS
  */
@@ -70,6 +71,9 @@ class ExamSlipPrintView {
             <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
             <meta http-equiv="Pragma" content="no-cache">
             <meta http-equiv="Expires" content="0">
+
+            <!-- Font Awesome for icons -->
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
             <!-- ========================================================= -->
             <!-- 3. Add CSP nonce to all style tags -->
@@ -161,6 +165,7 @@ class ExamSlipPrintView {
 
                 .tbtn-print { background: var(--pu); color: #fff; }
                 .tbtn-close { background: rgba(255,255,255,.16); color: #fff; }
+                .tbtn-download { background: #28a745; color: #fff; }
 
                 /* ── Slip wrapper ────────────────────────────────────────── */
                 .slip-wrapper {
@@ -756,15 +761,18 @@ class ExamSlipPrintView {
         <!-- ── Toolbar (screen only) ───────────────────────────────────── -->
         <div class="toolbar">
             <div class="toolbar-title">
-                <strong>&#128196; Examination Slip Preview</strong>
+                <strong><i class="fas fa-file-pdf"></i> Examination Slip Preview</strong>
                 <span>Slip No: <?php echo $this->e($slipNumber); ?></span>
             </div>
             <div class="toolbar-actions">
-                <button class="tbtn tbtn-print" onclick="triggerPrint(this)">
-                    &#128424;&nbsp; Print / Save PDF
+                <button class="tbtn tbtn-print" id="printBtn">
+                    <i class="fas fa-print"></i> Print / Save PDF
                 </button>
-                <button class="tbtn tbtn-close" onclick="closeWindow()">
-                    &#10005;&nbsp; Close
+                <button class="tbtn tbtn-download" id="downloadBtn">
+                    <i class="fas fa-download"></i> Download PDF
+                </button>
+                <button class="tbtn tbtn-close" id="closeBtn">
+                    <i class="fas fa-times"></i> Close
                 </button>
             </div>
         </div>
@@ -1096,85 +1104,48 @@ class ExamSlipPrintView {
         <script nonce="<?php echo $csp_nonce; ?>">
             // ======================================================
             // Exam Slip Print JavaScript with Security Enhancements
+            // FIXED: Download functionality and button responsiveness
             // ======================================================
             
-            // Get CSRF token from meta tag
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            (function() {
+                'use strict';
 
-            // Show toast notification
-            function showToast(msg, type = 'info') {
-                // Remove existing toasts
-                document.querySelectorAll('.toast-notification').forEach(t => t.remove());
-                
-                // Create toast element
-                const toast = document.createElement('div');
-                toast.className = `toast-notification toast-${type}`;
-                toast.setAttribute('role', 'alert');
-                
-                const icon = type === 'success' ? 'fa-check-circle' : 
-                            type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
-                
-                // Sanitize message to prevent XSS
-                const safeMsg = String(msg).replace(/[<>]/g, '');
-                
-                toast.innerHTML = `<i class="fas ${icon}"></i> ${safeMsg}`;
-                
-                document.body.appendChild(toast);
-                
-                // Auto remove after 3 seconds
-                setTimeout(() => {
-                    toast.style.transition = 'opacity 0.3s, transform 0.3s';
-                    toast.style.opacity = '0';
-                    toast.style.transform = 'translateX(100%)';
-                    setTimeout(() => toast.remove(), 300);
-                }, 3000);
-            }
+                // Get CSRF token from meta tag
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const slipNumber = '<?php echo $this->e($slipNumber); ?>';
+                const baseUrl = '<?php echo $baseUrl; ?>';
 
-            // Track print attempt
-            function trackPrint() {
-                if (csrfToken) {
-                    fetch('/api/track-event', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken
-                        },
-                        body: JSON.stringify({
-                            event: 'exam_slip_print',
-                            slipNumber: '<?php echo $this->e($slipNumber); ?>',
-                            timestamp: new Date().toISOString()
-                        })
-                    }).catch(err => console.error('Tracking failed:', err));
+                // Show toast notification
+                function showToast(msg, type = 'info') {
+                    // Remove existing toasts
+                    document.querySelectorAll('.toast-notification').forEach(t => t.remove());
+                    
+                    // Create toast element
+                    const toast = document.createElement('div');
+                    toast.className = `toast-notification toast-${type}`;
+                    toast.setAttribute('role', 'alert');
+                    
+                    const icon = type === 'success' ? 'fa-check-circle' : 
+                                type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+                    
+                    // Sanitize message to prevent XSS
+                    const safeMsg = String(msg).replace(/[<>]/g, '');
+                    
+                    toast.innerHTML = `<i class="fas ${icon}"></i> ${safeMsg}`;
+                    
+                    document.body.appendChild(toast);
+                    
+                    // Auto remove after 3 seconds
+                    setTimeout(() => {
+                        toast.style.transition = 'opacity 0.3s, transform 0.3s';
+                        toast.style.opacity = '0';
+                        toast.style.transform = 'translateX(100%)';
+                        setTimeout(() => toast.remove(), 300);
+                    }, 3000);
                 }
-            }
 
-            // Trigger print with security
-            function triggerPrint(btn) {
-                var orig = btn.innerHTML;
-                btn.innerHTML = '&#128424; Preparing&hellip;';
-                btn.disabled  = true;
-                
-                // Track print attempt
-                trackPrint();
-                
-                // Show preparing message
-                showToast('Preparing your document for printing...', 'info');
-                
-                setTimeout(function () {
-                    btn.innerHTML = orig;
-                    btn.disabled  = false;
-                    
-                    // Trigger print
-                    window.print();
-                    
-                    showToast('Print dialog opened', 'success');
-                }, 500);
-            }
-
-            // Close window securely
-            function closeWindow() {
-                if (confirm('Are you sure you want to close this window?')) {
-                    // Track close attempt
+                // Track print/download attempt
+                function trackEvent(eventType) {
                     if (csrfToken) {
                         fetch('/api/track-event', {
                             method: 'POST',
@@ -1183,87 +1154,188 @@ class ExamSlipPrintView {
                                 'X-CSRF-TOKEN': csrfToken
                             },
                             body: JSON.stringify({
-                                event: 'exam_slip_close',
-                                slipNumber: '<?php echo $this->e($slipNumber); ?>',
+                                event: eventType,
+                                slipNumber: slipNumber,
                                 timestamp: new Date().toISOString()
                             })
                         }).catch(err => console.error('Tracking failed:', err));
                     }
+                }
+
+                // Trigger print
+                function triggerPrint(btn) {
+                    const orig = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+                    btn.disabled = true;
                     
-                    window.close();
+                    // Track print attempt
+                    trackEvent('exam_slip_print');
+                    
+                    // Show preparing message
+                    showToast('Preparing your document for printing...', 'info');
+                    
+                    setTimeout(function () {
+                        btn.innerHTML = orig;
+                        btn.disabled = false;
+                        
+                        // Trigger print
+                        window.print();
+                        
+                        showToast('Print dialog opened', 'success');
+                    }, 500);
                 }
-            }
 
-            // Auto-print when opened as a popup from step4.php
-            window.addEventListener('load', function () {
-                if (window.opener) {
-                    showToast('Auto-printing in 1 second...', 'info');
-                    setTimeout(function () { 
-                        trackPrint();
-                        window.print(); 
-                    }, 1000);
+                // Trigger download
+                function triggerDownload(btn) {
+                    const orig = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+                    btn.disabled = true;
+                    
+                    // Track download attempt
+                    trackEvent('exam_slip_download');
+                    
+                    showToast('Preparing PDF for download...', 'info');
+                    
+                    // Create a hidden iframe for download to avoid navigation
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = '<?php echo $baseUrl; ?>/apply/download-exam-slip?csrf=' + encodeURIComponent(csrfToken) + '&t=' + Date.now();
+                    
+                    iframe.onload = function() {
+                        setTimeout(function() {
+                            btn.innerHTML = orig;
+                            btn.disabled = false;
+                            showToast('Download started', 'success');
+                            document.body.removeChild(iframe);
+                        }, 1000);
+                    };
+                    
+                    iframe.onerror = function() {
+                        btn.innerHTML = orig;
+                        btn.disabled = false;
+                        showToast('Download failed. Please try again.', 'error');
+                        document.body.removeChild(iframe);
+                    };
+                    
+                    document.body.appendChild(iframe);
                 }
 
-                // Log page view
-                console.log('Exam slip print view loaded:', {
-                    slipNumber: '<?php echo $this->e($slipNumber); ?>',
-                    timestamp: new Date().toISOString()
-                });
-            });
-
-            // Handle back button cache
-            window.addEventListener('pageshow', function(event) {
-                if (event.persisted) {
-                    console.log('Page loaded from cache');
-                }
-            });
-
-            // Prevent right-click on sensitive elements
-            document.querySelectorAll('.qr-box, .slip-number-bar, .verification-url').forEach(el => {
-                el.addEventListener('contextmenu', e => e.preventDefault());
-            });
-
-            // Add keyboard shortcuts
-            document.addEventListener('keydown', function(e) {
-                // Ctrl+P or Cmd+P for print
-                if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                    e.preventDefault();
-                    const printBtn = document.querySelector('.tbtn-print');
-                    if (printBtn) {
-                        triggerPrint(printBtn);
-                    }
-                }
-                
-                // Escape key to close
-                if (e.key === 'Escape') {
-                    if (confirm('Close this window?')) {
+                // Close window securely
+                function closeWindow() {
+                    if (confirm('Are you sure you want to close this window?')) {
+                        // Track close attempt
+                        trackEvent('exam_slip_close');
+                        
+                        // Try to close window
                         window.close();
+                        
+                        // Fallback if window.close() fails (not allowed by browser)
+                        setTimeout(() => {
+                            showToast('Please close this tab manually', 'info');
+                        }, 500);
                     }
                 }
-            });
 
-            // Add performance marking
-            performance.mark('print-view-loaded');
-            
-            // Log performance
-            window.addEventListener('load', function() {
-                performance.mark('print-view-fully-loaded');
-                performance.measure('print-view-load', 'print-view-loaded', 'print-view-fully-loaded');
-                const measures = performance.getEntriesByType('measure');
-                console.log('Page load time:', measures[0]?.duration.toFixed(0) + 'ms');
-            });
+                // Initialize event listeners after DOM is loaded
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Print button
+                    const printBtn = document.getElementById('printBtn');
+                    if (printBtn) {
+                        printBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            triggerPrint(this);
+                        });
+                    }
 
-            // Check if window was opened with CSRF token
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlCsrf = urlParams.get('csrf');
-            
-            if (urlCsrf && urlCsrf !== csrfToken) {
-                console.warn('CSRF token mismatch in URL');
-                showToast('Security token mismatch. Please refresh.', 'error');
-            }
+                    // Download button
+                    const downloadBtn = document.getElementById('downloadBtn');
+                    if (downloadBtn) {
+                        downloadBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            triggerDownload(this);
+                        });
+                    }
 
-            // Log successful load
-            console.log('Exam slip print view initialized successfully');
+                    // Close button
+                    const closeBtn = document.getElementById('closeBtn');
+                    if (closeBtn) {
+                        closeBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            closeWindow();
+                        });
+                    }
+
+                    // Auto-print when opened as a popup from step4.php
+                    if (window.opener) {
+                        showToast('Auto-printing in 1 second...', 'info');
+                        setTimeout(function() { 
+                            trackEvent('exam_slip_auto_print');
+                            window.print(); 
+                        }, 1000);
+                    }
+
+                    // Log page view
+                    console.log('Exam slip print view loaded:', {
+                        slipNumber: slipNumber,
+                        timestamp: new Date().toISOString()
+                    });
+
+                    // Check if window was opened with CSRF token
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const urlCsrf = urlParams.get('csrf');
+                    
+                    if (urlCsrf && urlCsrf !== csrfToken) {
+                        console.warn('CSRF token mismatch in URL');
+                        showToast('Security token mismatch. Please refresh.', 'error');
+                    }
+                });
+
+                // Handle back button cache
+                window.addEventListener('pageshow', function(event) {
+                    if (event.persisted) {
+                        console.log('Page loaded from cache');
+                    }
+                });
+
+                // Prevent right-click on sensitive elements
+                document.querySelectorAll('.qr-box, .slip-number-bar, .verification-url').forEach(el => {
+                    el.addEventListener('contextmenu', e => e.preventDefault());
+                });
+
+                // Add keyboard shortcuts
+                document.addEventListener('keydown', function(e) {
+                    // Ctrl+P or Cmd+P for print
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                        e.preventDefault();
+                        const printBtn = document.getElementById('printBtn');
+                        if (printBtn) {
+                            triggerPrint(printBtn);
+                        }
+                    }
+                    
+                    // Escape key to close
+                    if (e.key === 'Escape') {
+                        if (confirm('Close this window?')) {
+                            window.close();
+                        }
+                    }
+                });
+
+                // Add performance marking
+                performance.mark('print-view-loaded');
+                
+                // Log performance
+                window.addEventListener('load', function() {
+                    performance.mark('print-view-fully-loaded');
+                    performance.measure('print-view-load', 'print-view-loaded', 'print-view-fully-loaded');
+                    const measures = performance.getEntriesByType('measure');
+                    console.log('Page load time:', measures[0]?.duration.toFixed(0) + 'ms');
+                });
+
+                // Log successful load
+                console.log('Exam slip print view initialized successfully');
+                
+            })();
         </script>
 
         </body>
