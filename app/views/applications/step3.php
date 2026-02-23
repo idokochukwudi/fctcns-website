@@ -4,9 +4,10 @@
  * Redesigned: Premium institutional design
  * UPDATED: Purple color scheme matching JAMB verification page
  * FIXED: Removed inline event handlers, fixed CSP violations, proper SRI hashes
+ * FIXED: Restored demo card details, fixed non-JSON response error
  * 
  * @package FCTCNS
- * @version 2.7 (Security Enhanced + CSP Compliant)
+ * @version 2.8 (Security Enhanced + CSP Compliant + Fixed AJAX errors)
  */
 
 // =========================================================
@@ -758,7 +759,7 @@ class PaymentView {
                                 </div>
                             </div>
 
-                            <!-- Instructions -->
+                            <!-- Instructions - RESTORED DEMO CARD DETAILS -->
                             <div class="instructions-block">
                                 <div class="instructions-title">How to complete payment</div>
                                 <ol class="steps-list">
@@ -784,8 +785,6 @@ class PaymentView {
                                     </li>
                                 </ol>
                             </div>
-
-                            <!-- Pending Payment Block - handled by JS below (HTML removed) -->
 
                             <!-- Generated RRR Display -->
                             <div id="rrrDisplayArea" style="display:none;margin-bottom:1.5rem">
@@ -995,9 +994,6 @@ class PaymentView {
                 if (paymentBtnArea) {
                     paymentBtnArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
-
-                // Auto-open payment in new tab
-                window.open(url, '_blank');
             }
 
             // ── Verify payment ───────────────────────────────────────────
@@ -1025,12 +1021,24 @@ class PaymentView {
                     })
                 })
                 .then(function(response) {
-                    var ct = response.headers.get('content-type') || '';
-                    if (!ct.includes('application/json')) {
-                        return response.text().then(function(t) {
-                            throw new Error('Server returned non-JSON response');
+                    // Check content type
+                    var contentType = response.headers.get('content-type') || '';
+                    
+                    // First check if response is OK
+                    if (!response.ok) {
+                        return response.text().then(function(text) {
+                            throw new Error('Server error: ' + response.status);
                         });
                     }
+                    
+                    // Then check if it's JSON
+                    if (!contentType.includes('application/json')) {
+                        return response.text().then(function(text) {
+                            console.error('Non-JSON response:', text.substring(0, 200));
+                            throw new Error('Server returned non-JSON response. Please check error logs.');
+                        });
+                    }
+                    
                     return response.json();
                 })
                 .then(function(data) {
@@ -1052,7 +1060,7 @@ class PaymentView {
                     if (paymentSpinner) paymentSpinner.style.display = 'none';
                     if (paymentStatus) paymentStatus.style.display = 'none';
                     if (verifyBtn) verifyBtn.disabled = false;
-                    showAlert('Network error. Please try again.', 'danger');
+                    showAlert('Error: ' + err.message, 'danger');
                     console.error('Verify error:', err);
                 });
             }
@@ -1086,12 +1094,21 @@ class PaymentView {
                         body: JSON.stringify({ csrf_token: getCsrfToken() })
                     })
                     .then(function(response) {
-                        var ct = response.headers.get('content-type') || '';
-                        if (!ct.includes('application/json')) {
-                            return response.text().then(function(t) {
-                                throw new Error('Server error. Please try again.');
+                        var contentType = response.headers.get('content-type') || '';
+                        
+                        if (!response.ok) {
+                            return response.text().then(function(text) {
+                                throw new Error('Server error: ' + response.status);
                             });
                         }
+                        
+                        if (!contentType.includes('application/json')) {
+                            return response.text().then(function(text) {
+                                console.error('Non-JSON response:', text.substring(0, 200));
+                                throw new Error('Server returned non-JSON response');
+                            });
+                        }
+                        
                         return response.json();
                     })
                     .then(function(data) {
@@ -1099,8 +1116,14 @@ class PaymentView {
                         if (paymentStatus) paymentStatus.style.display = 'none';
 
                         if (data.success) {
-                            showAlert('RRR generated successfully! Opening payment page...', 'success');
+                            showAlert('RRR generated successfully!', 'success');
                             showPaymentUI(data.rrr, data.payment_url);
+                            
+                            // Auto-open payment in new tab after a short delay
+                            setTimeout(function() {
+                                var url = data.payment_url || ('https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + encodeURIComponent(data.rrr) + '&channel=CARD,USSD,ENAIRA,TRANSFER');
+                                window.open(url, '_blank');
+                            }, 500);
                         } else {
                             btn.disabled = false;
                             btn.innerHTML = '<i class="fas fa-bolt"></i> Generate RRR';
@@ -1111,7 +1134,7 @@ class PaymentView {
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fas fa-bolt"></i> Generate RRR';
                         if (paymentStatus) paymentStatus.style.display = 'none';
-                        showAlert('Network error. Please try again.', 'danger');
+                        showAlert('Error: ' + err.message, 'danger');
                         console.error('Generate error:', err);
                     });
                 });
@@ -1135,8 +1158,7 @@ class PaymentView {
             document.addEventListener('DOMContentLoaded', function() {
                 if (pendingRRR) {
                     showPaymentUI(pendingRRR, pendingPayUrl);
-                    // Don't auto-open tab on page load for pending - user must click
-                    // We override: just show UI without auto-opening tab on load
+                    // Don't auto-open tab on page load for pending - user must click the button
                 }
             });
 
