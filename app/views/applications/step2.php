@@ -6,6 +6,10 @@
  * FIXED 3a: Added O'Level credit status banner
  * FIXED 3b: Added subject-level grade feedback panel
  * FIXED 3c: Replaced JavaScript with credit check functionality
+ * FIXED: Button styling - clean colors with smooth hover effects
+ * FIXED: Passport preview - removed inline onerror handlers
+ * FIXED: O'Level remove buttons - proper event handling without inline JS
+ * FIXED: O'Level counter - now counts actual DOM elements instead of using variable
  * 
  * @package FCTCNS
  */
@@ -117,27 +121,50 @@ class ApplicationFormView {
                 --sv1-gold-pale:     #FDF6E9;
                 --sv1-success:       #10b981;
                 --sv1-success-light: #d1fae5;
+                --sv1-success-dark:  #0d9488;
                 --sv1-danger:        #ef4444;
                 --sv1-danger-light:  #fee2e2;
+                --sv1-danger-dark:   #dc2626;
                 --sv1-warning:       #f59e0b;
                 --sv1-warning-light: #fef3c7;
+                --sv1-warning-dark:  #d97706;
                 --sv1-info:          #3b82f6;
                 --sv1-info-light:    #dbeafe;
+                --sv1-info-dark:     #2563eb;
                 --sv1-border:        #E9EDF2;
                 --sv1-text-dark:     #1A1F2E;
                 --sv1-text-muted:    #6B7280;
+                --sv1-white:         #FFFFFF;
+                --sv1-gray-50:       #F9FAFB;
+                --sv1-gray-100:      #F3F4F6;
+                --sv1-gray-200:      #E5E7EB;
+                --sv1-gray-300:      #D1D5DB;
+                --sv1-gray-400:      #9CA3AF;
+                --sv1-gray-500:      #6B7280;
+                --sv1-gray-600:      #4B5563;
+                --sv1-gray-700:      #374151;
+                --sv1-gray-800:      #1F2937;
+                --sv1-gray-900:      #111827;
                 
                 --radius-sm:   6px;
                 --radius-md:   10px;
                 --radius-lg:   16px;
                 --radius-xl:   24px;
+                
+                --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+                --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                
+                --transition-base: all 0.2s ease-in-out;
+                --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
 
             html, body {
                 width: 100%;
                 overflow-x: hidden;
                 background: var(--sv1-primary-soft);
-                font-family: 'DM Sans', -apple-system, sans-serif;
+                font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 font-size: 14px;
                 color: var(--sv1-text-dark);
                 line-height: 1.6;
@@ -164,11 +191,11 @@ class ApplicationFormView {
                 justify-content: space-between;
                 margin-bottom: 30px;
                 position: relative;
-                background: white;
+                background: var(--sv1-white);
                 border-radius: 50px;
                 padding: 15px 20px;
                 border: 1px solid var(--sv1-border);
-                box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+                box-shadow: var(--shadow-md);
             }
 
             .step-indicator::before {
@@ -194,7 +221,7 @@ class ApplicationFormView {
             .step-number {
                 width: 36px;
                 height: 36px;
-                background: white;
+                background: var(--sv1-white);
                 border: 2px solid var(--sv1-border);
                 border-radius: 50%;
                 display: flex;
@@ -204,20 +231,21 @@ class ApplicationFormView {
                 font-weight: 600;
                 font-size: 14px;
                 color: var(--sv1-text-muted);
-                transition: all 0.3s;
+                transition: var(--transition-base);
             }
 
             .step.active .step-number {
                 background: var(--sv1-primary);
                 border-color: var(--sv1-primary);
-                color: white;
+                color: var(--sv1-white);
                 box-shadow: 0 0 0 4px var(--sv1-primary-soft);
+                transform: scale(1.05);
             }
 
             .step.completed .step-number {
                 background: var(--sv1-success);
                 border-color: var(--sv1-success);
-                color: white;
+                color: var(--sv1-white);
             }
 
             .step-label {
@@ -288,33 +316,60 @@ class ApplicationFormView {
             }
 
             /* =========================================================
-               LOGOUT BUTTON
+               LOGOUT BUTTON - Clean styling
             ========================================================= */
             .logout-btn {
-                display: inline-flex; align-items: center; gap: 7px;
-                background: var(--sv1-danger-light);
-                border: 1px solid var(--sv1-danger);
+                display: inline-flex; 
+                align-items: center; 
+                gap: 7px;
+                background: var(--sv1-white);
+                border: 1.5px solid rgba(255,255,255,0.3);
                 border-radius: 50px;
                 padding: 7px 16px;
-                font-size: 12px; font-weight: 600;
-                color: var(--sv1-danger);
+                font-size: 12px; 
+                font-weight: 600;
+                color: var(--sv1-white);
                 text-decoration: none;
-                transition: all 0.2s;
+                transition: var(--transition-base);
                 white-space: nowrap;
+                backdrop-filter: blur(5px);
             }
 
-            .logout-btn:hover { background: var(--sv1-danger); color: #fff; border-color: var(--sv1-danger); }
+            .logout-btn:hover { 
+                background: var(--sv1-white); 
+                color: var(--sv1-primary-dark);
+                border-color: var(--sv1-white);
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-lg);
+            }
 
             /* =========================================================
                FLASH ALERTS
             ========================================================= */
             .flash-alert {
-                display: flex; align-items: flex-start; gap: 12px;
-                padding: 13px 18px; border-radius: var(--radius-md);
-                margin-bottom: 16px; font-size: 14px;
+                display: flex; 
+                align-items: flex-start; 
+                gap: 12px;
+                padding: 13px 18px; 
+                border-radius: var(--radius-md);
+                margin-bottom: 16px; 
+                font-size: 14px;
                 border-left-width: 4px;
                 border-left-style: solid;
+                animation: slideIn 0.3s ease;
             }
+
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
             .flash-alert.success { 
                 background: var(--sv1-success-light);  
                 border-left-color: var(--sv1-success); 
@@ -349,7 +404,7 @@ class ApplicationFormView {
                 margin-bottom: 8px; 
             }
             .temp-pw-code {
-                background: var(--white);
+                background: var(--sv1-white);
                 border: 1px solid var(--sv1-border);
                 border-radius: var(--radius-sm);
                 padding: 12px 20px;
@@ -375,6 +430,7 @@ class ApplicationFormView {
                 padding: 18px 24px;
                 margin-bottom: 24px;
                 flex-wrap: wrap;
+                box-shadow: var(--shadow-lg);
             }
 
             .jamb-banner-left { display: flex; align-items: center; gap: 14px; }
@@ -385,6 +441,7 @@ class ApplicationFormView {
                 display: flex; align-items: center; justify-content: center;
                 color: #fff; font-size: 18px;
                 flex-shrink: 0;
+                box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
             }
 
             .jamb-info-title { 
@@ -410,11 +467,11 @@ class ApplicationFormView {
                FORM CARD
             ========================================================= */
             .form-card {
-                background: white;
+                background: var(--sv1-white);
                 border: 1px solid var(--sv1-border);
                 border-radius: var(--radius-xl);
                 overflow: hidden;
-                box-shadow: 0 4px 24px rgba(107,78,155,0.1);
+                box-shadow: var(--shadow-xl);
             }
 
             /* =========================================================
@@ -443,6 +500,7 @@ class ApplicationFormView {
                 display: flex; align-items: center; justify-content: center;
                 font-size: 14px; color: var(--sv1-gold);
                 flex-shrink: 0;
+                box-shadow: var(--shadow-sm);
             }
 
             .f-section-title { 
@@ -485,8 +543,13 @@ class ApplicationFormView {
                 font-size: 14px;
                 font-family: 'DM Sans', sans-serif;
                 color: var(--sv1-text-dark);
-                background: white;
-                transition: border-color 0.2s, box-shadow 0.2s;
+                background: var(--sv1-white);
+                transition: var(--transition-base);
+            }
+
+            .form-control:hover,
+            .form-select:hover {
+                border-color: var(--sv1-primary-light);
             }
 
             .form-control:focus,
@@ -568,6 +631,12 @@ class ApplicationFormView {
                 padding: 24px;
                 margin-bottom: 16px;
                 position: relative;
+                transition: var(--transition-base);
+            }
+
+            .olevel-item:hover {
+                border-color: var(--sv1-primary-light);
+                box-shadow: var(--shadow-md);
             }
 
             .olevel-item-head {
@@ -592,19 +661,24 @@ class ApplicationFormView {
 
             .btn-remove {
                 background: transparent;
-                border: 1px solid var(--sv1-danger);
+                border: 1.5px solid var(--sv1-danger);
                 border-radius: var(--radius-sm);
                 color: var(--sv1-danger);
                 font-size: 12px; font-weight: 600;
                 padding: 5px 12px;
                 cursor: pointer;
                 display: inline-flex; align-items: center; gap: 5px;
-                transition: all 0.2s;
+                transition: var(--transition-base);
             }
             .btn-remove:hover { 
                 background: var(--sv1-danger); 
-                color: #fff; 
-                border-color: var(--sv1-danger); 
+                color: var(--sv1-white); 
+                border-color: var(--sv1-danger);
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-md);
+            }
+            .btn-remove:active {
+                transform: translateY(0);
             }
 
             .grades-divider {
@@ -616,7 +690,7 @@ class ApplicationFormView {
             }
 
             /* =========================================================
-               PASSPORT SECTION - FIXED preview without prompt
+               PASSPORT SECTION - FIXED preview without inline handlers
             ========================================================= */
             .passport-wrap {
                 display: grid;
@@ -639,7 +713,7 @@ class ApplicationFormView {
                 justify-content: center;
                 overflow: hidden;
                 background: var(--sv1-primary-soft);
-                transition: border-color 0.2s;
+                transition: var(--transition-base);
                 position: relative;
             }
 
@@ -682,52 +756,143 @@ class ApplicationFormView {
             }
 
             /* =========================================================
-               BUTTONS - Purple Theme
+               BUTTONS - Clean styling with smooth hover effects
             ========================================================= */
             .btn {
                 font-family: 'DM Sans', sans-serif;
                 font-size: 13px; font-weight: 600;
                 border-radius: var(--radius-md);
-                border: none; cursor: pointer;
-                display: inline-flex; align-items: center; gap: 7px;
-                transition: all 0.2s;
+                border: none; 
+                cursor: pointer;
+                display: inline-flex; 
+                align-items: center; 
+                justify-content: center;
+                gap: 7px;
+                transition: var(--transition-smooth);
                 text-decoration: none;
                 padding: 10px 22px;
+                position: relative;
+                overflow: hidden;
             }
 
-            .btn-navy {
+            .btn::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 0;
+                height: 0;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.2);
+                transform: translate(-50%, -50%);
+                transition: width 0.3s, height 0.3s;
+            }
+
+            .btn:hover::after {
+                width: 300px;
+                height: 300px;
+            }
+
+            .btn:active {
+                transform: scale(0.98);
+            }
+
+            /* Primary Button - Purple Gradient */
+            .btn-primary {
                 background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
-                color: #fff;
+                color: var(--sv1-white);
                 box-shadow: 0 4px 12px rgba(107,78,155,0.3);
             }
-            .btn-navy:hover { 
-                background: var(--sv1-primary-dark); 
-                color: #fff; 
-                transform: translateY(-1px); 
+            .btn-primary:hover { 
+                background: linear-gradient(135deg, var(--sv1-primary-dark), var(--sv1-primary));
+                color: var(--sv1-white); 
+                transform: translateY(-2px); 
                 box-shadow: 0 8px 20px rgba(107,78,155,0.4);
             }
+            .btn-primary:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
 
+            /* Success Button - Green */
+            .btn-success {
+                background: linear-gradient(135deg, var(--sv1-success), var(--sv1-success-dark));
+                color: var(--sv1-white);
+                box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+            }
+            .btn-success:hover { 
+                background: linear-gradient(135deg, var(--sv1-success-dark), var(--sv1-success));
+                color: var(--sv1-white); 
+                transform: translateY(-2px); 
+                box-shadow: 0 8px 20px rgba(16,185,129,0.4);
+            }
+            .btn-success:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
+
+            /* Navy Button - Dark Purple */
+            .btn-navy {
+                background: linear-gradient(135deg, var(--sv1-primary-dark), var(--sv1-primary));
+                color: var(--sv1-white);
+                box-shadow: 0 4px 12px rgba(74,59,107,0.3);
+            }
+            .btn-navy:hover { 
+                background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
+                color: var(--sv1-white); 
+                transform: translateY(-2px); 
+                box-shadow: 0 8px 20px rgba(74,59,107,0.4);
+            }
+            .btn-navy:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
+
+            /* Gold Button */
             .btn-gold {
-                background: var(--sv1-gold); 
+                background: linear-gradient(135deg, var(--sv1-gold), var(--sv1-gold-light));
                 color: var(--sv1-primary-dark);
                 box-shadow: 0 4px 12px rgba(201,164,74,0.3);
             }
             .btn-gold:hover { 
-                background: var(--sv1-gold-light); 
-                transform: translateY(-1px); 
+                background: linear-gradient(135deg, var(--sv1-gold-light), var(--sv1-gold));
+                color: var(--sv1-primary-dark);
+                transform: translateY(-2px); 
+                box-shadow: 0 8px 20px rgba(201,164,74,0.4);
+            }
+            .btn-gold:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
             }
 
+            /* Teal Button */
             .btn-teal {
                 background: linear-gradient(135deg, var(--sv1-primary-light), var(--sv1-primary));
-                color: #fff;
-                box-shadow: 0 4px 12px rgba(107,78,155,0.3);
+                color: var(--sv1-white);
+                box-shadow: 0 4px 12px rgba(138,111,176,0.3);
             }
             .btn-teal:hover { 
-                background: var(--sv1-primary); 
-                color: #fff; 
-                transform: translateY(-1px); 
+                background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-light));
+                color: var(--sv1-white); 
+                transform: translateY(-2px); 
+                box-shadow: 0 8px 20px rgba(138,111,176,0.4);
+            }
+            .btn-teal:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
             }
 
+            /* Ghost Button */
             .btn-ghost {
                 background: transparent; 
                 color: var(--sv1-text-muted);
@@ -736,9 +901,15 @@ class ApplicationFormView {
             .btn-ghost:hover { 
                 background: var(--sv1-primary-soft); 
                 border-color: var(--sv1-primary); 
-                color: var(--sv1-primary); 
+                color: var(--sv1-primary);
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-md);
+            }
+            .btn-ghost:active {
+                transform: translateY(0);
             }
 
+            /* Outline Teal Button */
             .btn-outline-teal {
                 background: transparent; 
                 color: var(--sv1-primary);
@@ -746,8 +917,12 @@ class ApplicationFormView {
             }
             .btn-outline-teal:hover { 
                 background: var(--sv1-primary); 
-                color: #fff; 
-                transform: translateY(-1px);
+                color: var(--sv1-white); 
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(107,78,155,0.3);
+            }
+            .btn-outline-teal:active {
+                transform: translateY(0);
             }
 
             .btn-lg { padding: 13px 32px; font-size: 14px; }
@@ -782,6 +957,7 @@ class ApplicationFormView {
                 color: var(--sv1-primary); 
                 text-decoration: none; 
                 font-weight: 500; 
+                transition: var(--transition-base);
             }
             .page-footer a:hover { 
                 color: var(--sv1-gold); 
@@ -833,7 +1009,8 @@ class ApplicationFormView {
                 z-index: 9999;
                 visibility: hidden;
                 opacity: 0;
-                transition: all 0.3s;
+                transition: var(--transition-smooth);
+                backdrop-filter: blur(3px);
             }
             .loading-overlay.show {
                 visibility: visible;
@@ -1212,7 +1389,8 @@ class ApplicationFormView {
                                         O'Level Result — Sitting <?php echo $this->e($idx + 1); ?>
                                     </div>
                                     <?php if ($idx > 0): ?>
-                                    <button type="button" class="btn-remove" onclick="this.closest('.olevel-item').remove()">
+                                    <!-- FIX 2: Remove onclick inline handler, use ID-based event listener -->
+                                    <button type="button" class="btn-remove" id="removeOlevel<?php echo $this->e($idx); ?>">
                                         <i class="fas fa-trash-alt"></i> Remove
                                     </button>
                                     <?php endif; ?>
@@ -1313,9 +1491,9 @@ class ApplicationFormView {
                                 <h6>Select Passport Photo</h6>
                                 <p>Ensure the photo clearly shows your face on a plain white background.</p>
                                 <input type="hidden" name="passport_confirmed" id="passport-confirmed" value="<?php echo !empty($application['passport_photo']) ? '1' : '0'; ?>">
+                                <!-- FIX 1: Remove onchange inline handler -->
                                 <input type="file" class="form-control" id="passport" name="passport"
                                        accept="image/jpeg,image/png"
-                                       onchange="previewPassport(this)"
                                        style="margin-bottom:8px;">
                                 <div class="field-hint">Allowed formats: JPG, PNG &nbsp;|&nbsp; Maximum size: 500 KB</div>
                             </div>
@@ -1329,10 +1507,10 @@ class ApplicationFormView {
                             <i class="fas fa-arrow-left"></i> Back
                         </a>
                         <div class="action-bar-right">
-                            <button type="submit" class="btn btn-navy" id="saveBtn">
+                            <button type="submit" class="btn btn-primary" id="saveBtn">
                                 <i class="fas fa-save"></i> Save Progress
                             </button>
-                            <button type="submit" class="btn btn-teal btn-lg" id="nextBtn">
+                            <button type="submit" class="btn btn-success btn-lg" id="nextBtn">
                                 Save &amp; Continue <i class="fas fa-arrow-right"></i>
                             </button>
                         </div>
@@ -1370,7 +1548,7 @@ class ApplicationFormView {
                 crossorigin="anonymous"
                 nonce="<?php echo $csp_nonce; ?>"></script>
         
-        <!-- FIX 3c: Replaced entire JavaScript block with credit check functionality -->
+        <!-- FIX 3c: Replaced entire JavaScript block with enhanced version -->
         <script nonce="<?php echo $csp_nonce; ?>">
         (function () {
             'use strict';
@@ -1378,22 +1556,28 @@ class ApplicationFormView {
             // ── CSRF token ────────────────────────────────────────────────
             var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute('content') || '';
 
-            // ── Credit grades ─────────────────────────────────────────────
-            var CREDIT_GRADES  = ['A1','B2','B3','C4','C5','C6'];
-            var GRADE_ORDER    = ['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
-            var REQUIRED_KEYS  = ['english','mathematics','biology','chemistry','physics'];
+            // ── Credit grade constants ────────────────────────────────────
+            var CREDIT_GRADES   = ['A1','B2','B3','C4','C5','C6'];
+            var GRADE_ORDER     = ['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
+            var REQUIRED_KEYS   = ['english','mathematics','biology','chemistry','physics'];
             var REQUIRED_LABELS = {
-                english: 'English Language',
+                english:     'English Language',
                 mathematics: 'Mathematics',
-                biology: 'Biology',
-                chemistry: 'Chemistry',
-                physics: 'Physics'
+                biology:     'Biology',
+                chemistry:   'Chemistry',
+                physics:     'Physics'
             };
 
-            // ── PHP initial credit summary ────────────────────────────────
+            var MAX_SITTINGS = 2;
+
             var initialMeetsRequirement = <?php echo ($credit_summary && $credit_summary['meets_requirement']) ? 'true' : 'false'; ?>;
 
-            // ── Compute best grades from all olevel-item blocks ───────────
+            // ── Count actual sitting blocks in the DOM ────────────────────
+            function countSittings() {
+                return document.querySelectorAll('#olevel-results-container .olevel-item').length;
+            }
+
+            // ── Compute best grades across all sitting blocks ─────────────
             function computeCreditCheck() {
                 var items = document.querySelectorAll('.olevel-item');
                 var bestGrades = {};
@@ -1445,38 +1629,37 @@ class ApplicationFormView {
                 var inner = document.getElementById('creditCheckInner');
                 if (!panel || !inner) return;
 
-                // Only show panel once at least one grade has been selected
                 var hasAnyGrade = Object.keys(result.bestGrades).length > 0;
                 panel.style.display = hasAnyGrade ? 'block' : 'none';
                 if (!hasAnyGrade) return;
 
                 var rows = REQUIRED_KEYS.map(function (key) {
-                    var label = REQUIRED_LABELS[key];
-                    var grade = result.bestGrades[key];
-                    if (!grade) {
-                        return '<span style="color:#ef4444;margin-right:12px;"><i class="fas fa-times-circle"></i> ' + label + ': —</span>';
-                    }
-                    var isCredit = CREDIT_GRADES.indexOf(grade) !== -1;
-                    var color = isCredit ? '#10b981' : '#ef4444';
-                    var icon  = isCredit ? 'fa-check-circle' : 'fa-times-circle';
-                    return '<span style="color:' + color + ';margin-right:12px;"><i class="fas ' + icon + '"></i> ' + label + ': <strong>' + grade + '</strong></span>';
+                    var label   = REQUIRED_LABELS[key];
+                    var grade   = result.bestGrades[key];
+                    var isCredit = grade && CREDIT_GRADES.indexOf(grade) !== -1;
+                    var color   = isCredit ? '#10b981' : '#ef4444';
+                    var icon    = isCredit ? 'fa-check-circle' : 'fa-times-circle';
+                    var gradeStr = grade ? ': <strong>' + grade + '</strong>' : ': —';
+                    return '<span style="color:' + color + ';margin-right:12px;">'
+                         + '<i class="fas ' + icon + '"></i> ' + label + gradeStr + '</span>';
                 }).join('');
 
-                var statusColor = result.meetsRequirement ? '#065f46' : '#92400e';
-                var statusBg    = result.meetsRequirement ? '#ecfdf5' : '#fff3e0';
-                var statusBorder = result.meetsRequirement ? '#10b981' : '#f57c00';
-                var statusIcon  = result.meetsRequirement ? 'fa-circle-check' : 'fa-triangle-exclamation';
-                var statusMsg   = result.meetsRequirement
+                var met          = result.meetsRequirement;
+                var statusColor  = met ? '#065f46'  : '#92400e';
+                var statusBg     = met ? '#ecfdf5'  : '#fff3e0';
+                var statusBorder = met ? '#10b981'  : '#f57c00';
+                var statusIcon   = met ? 'fa-circle-check' : 'fa-triangle-exclamation';
+                var statusMsg    = met
                     ? 'All 5 credits met! You may proceed to payment.'
                     : result.creditsAchieved + '/5 credits. ';
 
-                if (!result.meetsRequirement) {
+                if (!met) {
                     if (result.missingSubjects.length > 0) statusMsg += 'No grade: ' + result.missingSubjects.join(', ') + '. ';
                     if (result.failedSubjects.length  > 0) statusMsg += 'Below credit: ' + result.failedSubjects.join(', ') + '.';
                 }
 
                 inner.style.background = statusBg;
-                inner.style.border = '1px solid ' + statusBorder;
+                inner.style.border     = '1px solid ' + statusBorder;
                 inner.innerHTML =
                     '<div style="display:flex;flex-wrap:wrap;gap:4px 0;margin-bottom:8px;">' + rows + '</div>' +
                     '<div style="color:' + statusColor + ';font-weight:600;">' +
@@ -1484,22 +1667,22 @@ class ApplicationFormView {
                     '</div>';
             }
 
-            // ── Update warning banner and next button state ───────────────
+            // ── Update next button and warning banner ─────────────────────
             function updateUIState(result) {
                 var banner  = document.getElementById('olevelWarningBanner');
                 var nextBtn = document.getElementById('nextBtn');
 
                 if (nextBtn) {
                     if (result.meetsRequirement) {
-                        nextBtn.disabled = false;
+                        nextBtn.disabled      = false;
                         nextBtn.style.opacity = '';
                         nextBtn.style.cursor  = '';
-                        nextBtn.title = '';
+                        nextBtn.title         = '';
                     } else {
-                        nextBtn.disabled = true;
+                        nextBtn.disabled      = true;
                         nextBtn.style.opacity = '0.45';
                         nextBtn.style.cursor  = 'not-allowed';
-                        nextBtn.title = 'You must meet the O\'Level credit requirement before proceeding.';
+                        nextBtn.title         = 'You must meet the O\'Level credit requirement before proceeding.';
                     }
                 }
 
@@ -1508,177 +1691,196 @@ class ApplicationFormView {
                 }
             }
 
-            // ── Run credit check whenever any grade dropdown changes ───────
+            // ── Run credit check and refresh all UI ───────────────────────
             function onGradeChange() {
                 var result = computeCreditCheck();
                 renderCreditPanel(result);
                 updateUIState(result);
             }
 
+            // ── Attach grade change listeners to all current dropdowns ────
             function attachGradeListeners() {
                 document.querySelectorAll('.olevel-item select[name*="_grade"]').forEach(function (sel) {
-                    sel.removeEventListener('change', onGradeChange);
-                    sel.addEventListener('change', onGradeChange);
+                    // Clone to remove old listeners cleanly
+                    var fresh = sel.cloneNode(true);
+                    sel.parentNode.replaceChild(fresh, sel);
+                    fresh.addEventListener('change', onGradeChange);
                 });
             }
 
-            // ── Initial state on page load ────────────────────────────────
-            attachGradeListeners();
-            var initialResult = computeCreditCheck();
-            renderCreditPanel(initialResult);
-
-            // If no grades selected yet but PHP says not met, disable next
-            if (!initialMeetsRequirement || !initialResult.meetsRequirement) {
-                updateUIState({ meetsRequirement: false });
+            // ── Wire remove button for a sitting block ────────────────────
+            function wireRemoveButton(btn) {
+                btn.addEventListener('click', function () {
+                    this.closest('.olevel-item').remove();
+                    // Re-index visible badge numbers
+                    reindexSittings();
+                    attachGradeListeners();
+                    onGradeChange();
+                });
             }
 
-            // ── O'Level — Add another sitting ─────────────────────────────
-            var olevelIndex = <?php echo max(count($olevel_results ?: [[]]), 1); ?>;
+            // ── Re-index sitting badge numbers after removal ──────────────
+            function reindexSittings() {
+                document.querySelectorAll('#olevel-results-container .olevel-item').forEach(function (item, i) {
+                    var badge = item.querySelector('.idx-badge');
+                    if (badge) badge.textContent = String(i + 1);
+                    var label = item.querySelector('.olevel-item-label');
+                    if (label) {
+                        // Update the text node after the badge span
+                        var nodes = label.childNodes;
+                        nodes.forEach(function (node) {
+                            if (node.nodeType === 3) { // text node
+                                node.textContent = " O'Level Result — Sitting " + (i + 1);
+                            }
+                        });
+                    }
+                });
+            }
 
+            // ── Add another sitting ───────────────────────────────────────
             document.getElementById('add-olevel').addEventListener('click', function () {
-                if (olevelIndex >= 2) {
-                    alert('Maximum of 2 sittings allowed.');
+                // Count actual DOM items — not a counter variable
+                var current = countSittings();
+
+                if (current >= MAX_SITTINGS) {
+                    alert('Maximum of ' + MAX_SITTINGS + ' sittings allowed.');
                     return;
                 }
 
+                var newIndex  = current; // 0-based index for name attributes
+                var sittingNo = current + 1;
+
                 var grades    = ['English','Mathematics','Biology','Chemistry','Physics'];
                 var gradeKeys = ['english','mathematics','biology','chemistry','physics'];
-                var gradeOptions = ['A1','B2','B3','C4','C5','C6','D7','E8','F9']
-                    .map(function(g) { return '<option value="' + g + '">' + g + '</option>'; }).join('');
+                var gradeOpts = ['A1','B2','B3','C4','C5','C6','D7','E8','F9']
+                    .map(function (g) { return '<option value="' + g + '">' + g + '</option>'; }).join('');
 
                 var gradeFields = gradeKeys.map(function (key, i) {
                     return '<div>' +
                         '<label class="field-label">' + grades[i] + '</label>' +
-                        '<select class="form-select" name="olevel[' + olevelIndex + '][' + key + '_grade]" required>' +
-                            '<option value="">Grade</option>' + gradeOptions +
+                        '<select class="form-select" name="olevel[' + newIndex + '][' + key + '_grade]" required>' +
+                            '<option value="">Grade</option>' + gradeOpts +
                         '</select>' +
                     '</div>';
                 }).join('');
 
-                var html = '<div class="olevel-item">' +
-                    '<div class="olevel-item-head">' +
-                        '<div class="olevel-item-label">' +
-                            '<span class="idx-badge">' + (olevelIndex + 1) + '</span>' +
-                            ' O\'Level Result — Sitting ' + (olevelIndex + 1) +
+                var uid = 'removeOlevel_' + Date.now();
+
+                var html =
+                    '<div class="olevel-item">' +
+                        '<div class="olevel-item-head">' +
+                            '<div class="olevel-item-label">' +
+                                '<span class="idx-badge">' + sittingNo + '</span>' +
+                                " O'Level Result — Sitting " + sittingNo +
+                            '</div>' +
+                            '<button type="button" class="btn-remove" id="' + uid + '">' +
+                                '<i class="fas fa-trash-alt"></i> Remove' +
+                            '</button>' +
                         '</div>' +
-                        '<button type="button" class="btn-remove" id="removeOlevel' + olevelIndex + '">' +
-                            '<i class="fas fa-trash-alt"></i> Remove' +
-                        '</button>' +
-                    '</div>' +
-                    '<div class="f-row cols-4">' +
-                        '<div><label class="field-label">Exam Type</label>' +
-                            '<select class="form-select" name="olevel[' + olevelIndex + '][exam_type]" required>' +
-                                '<option value="WAEC">WAEC</option>' +
-                                '<option value="NECO">NECO</option>' +
-                                '<option value="NABTEB">NABTEB</option>' +
-                            '</select></div>' +
-                        '<div><label class="field-label">Exam Year</label>' +
-                            '<input type="text" class="form-control" name="olevel[' + olevelIndex + '][exam_year]" placeholder="e.g. 2023" required></div>' +
-                        '<div><label class="field-label">Exam / Centre Number</label>' +
-                            '<input type="text" class="form-control" name="olevel[' + olevelIndex + '][exam_number]" placeholder="Optional"></div>' +
-                        '<div><label class="field-label">Sitting</label>' +
-                            '<select class="form-select" name="olevel[' + olevelIndex + '][sitting]">' +
-                                '<option value="1st">1st Sitting</option>' +
-                                '<option value="2nd" selected>2nd Sitting</option>' +
-                            '</select></div>' +
-                    '</div>' +
-                    '<div class="grades-divider">Subject Grades</div>' +
-                    '<div class="f-row cols-5">' + gradeFields + '</div>' +
-                '</div>';
+                        '<div class="f-row cols-4">' +
+                            '<div><label class="field-label">Exam Type</label>' +
+                                '<select class="form-select" name="olevel[' + newIndex + '][exam_type]" required>' +
+                                    '<option value="WAEC">WAEC</option>' +
+                                    '<option value="NECO">NECO</option>' +
+                                    '<option value="NABTEB">NABTEB</option>' +
+                                '</select></div>' +
+                            '<div><label class="field-label">Exam Year</label>' +
+                                '<input type="text" class="form-control" name="olevel[' + newIndex + '][exam_year]" placeholder="e.g. 2023" required></div>' +
+                            '<div><label class="field-label">Exam / Centre Number</label>' +
+                                '<input type="text" class="form-control" name="olevel[' + newIndex + '][exam_number]" placeholder="Optional"></div>' +
+                            '<div><label class="field-label">Sitting</label>' +
+                                '<select class="form-select" name="olevel[' + newIndex + '][sitting]">' +
+                                    '<option value="1st">1st Sitting</option>' +
+                                    '<option value="2nd" selected>2nd Sitting</option>' +
+                                '</select></div>' +
+                        '</div>' +
+                        '<div class="grades-divider">Subject Grades</div>' +
+                        '<div class="f-row cols-5">' + gradeFields + '</div>' +
+                    '</div>';
 
                 var container = document.getElementById('olevel-results-container');
                 container.insertAdjacentHTML('beforeend', html);
 
-                // Wire up remove button
-                var removeBtn = document.getElementById('removeOlevel' + olevelIndex);
-                if (removeBtn) {
-                    removeBtn.addEventListener('click', function () {
-                        this.closest('.olevel-item').remove();
-                        onGradeChange();
-                        attachGradeListeners();
-                    });
-                }
+                // Wire remove button immediately after insertion
+                var removeBtn = document.getElementById(uid);
+                if (removeBtn) wireRemoveButton(removeBtn);
 
-                olevelIndex++;
+                // Re-attach grade listeners to include the new dropdowns
                 attachGradeListeners();
                 onGradeChange();
             });
 
-            // ── Wire up existing remove buttons ───────────────────────────
-            document.querySelectorAll('.btn-remove').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    this.closest('.olevel-item').remove();
-                    onGradeChange();
-                    attachGradeListeners();
+            // ── Passport photo preview ────────────────────────────────────
+            var passportInput = document.getElementById('passport');
+            if (passportInput) {
+                passportInput.addEventListener('change', function () {
+                    if (!this.files || !this.files[0]) return;
+
+                    var file = this.files[0];
+
+                    if (file.size > 500 * 1024) {
+                        alert('File is too large. Maximum size is 500 KB.');
+                        this.value = '';
+                        return;
+                    }
+
+                    var reader  = new FileReader();
+                    var self    = this;
+
+                    reader.onload = function (e) {
+                        var img         = document.getElementById('passport-preview');
+                        var box         = document.getElementById('passportBox');
+                        var placeholder = document.getElementById('passportPlaceholder');
+
+                        if (img) {
+                            img.src           = e.target.result;
+                            img.style.display = 'block';
+                        }
+                        if (placeholder) {
+                            placeholder.style.display = 'none';
+                        }
+                        if (box) {
+                            box.classList.add('has-image');
+                        }
+
+                        var confirmed = document.getElementById('passport-confirmed');
+                        if (confirmed) confirmed.value = '1';
+                    };
+
+                    reader.readAsDataURL(file);
                 });
+            }
+
+            // ── Wire existing PHP-rendered remove buttons ─────────────────
+            document.querySelectorAll('.olevel-item .btn-remove').forEach(function (btn) {
+                wireRemoveButton(btn);
             });
 
-            // ── Passport upload preview ───────────────────────────────────
-            window.previewPassport = function (input) {
-                if (!input.files || !input.files[0]) return;
-                var file = input.files[0];
-                if (file.size > 500 * 1024) {
-                    alert('File is too large. Maximum size is 500 KB.');
-                    input.value = '';
-                    return;
-                }
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                    var img = document.getElementById('passport-preview');
-                    var box = document.getElementById('passportBox');
-                    var ph  = document.getElementById('passportPlaceholder');
-                    img.src = e.target.result;
-                    img.style.display = 'block';
-                    if (ph) ph.style.display = 'none';
-                    box.classList.add('has-image');
-                    document.getElementById('passport-confirmed').value = '1';
-                };
-                reader.readAsDataURL(file);
-            };
-
-            // ── AJAX Form Submission ──────────────────────────────────────
-            var form          = document.getElementById('mainForm');
+            // ── AJAX form submission ──────────────────────────────────────
+            var form           = document.getElementById('mainForm');
             var loadingOverlay = document.getElementById('loadingOverlay');
-            var saveBtn       = document.getElementById('saveBtn');
-            var nextBtn       = document.getElementById('nextBtn');
-
-            // Set initial disabled state
-            var initCheck = computeCreditCheck();
-            if (!initialMeetsRequirement && !initCheck.meetsRequirement) {
-                if (nextBtn) {
-                    nextBtn.disabled = true;
-                    nextBtn.style.opacity = '0.45';
-                    nextBtn.style.cursor  = 'not-allowed';
-                    nextBtn.title = 'You must meet the O\'Level credit requirement before proceeding.';
-                }
-            }
+            var saveBtn        = document.getElementById('saveBtn');
+            var nextBtn        = document.getElementById('nextBtn');
 
             saveBtn.addEventListener('click', function () {
                 document.getElementById('form_action').value = 'save';
             });
 
             nextBtn.addEventListener('click', function (e) {
-                // Double-check client side before allowing submission
                 var check = computeCreditCheck();
                 if (!check.meetsRequirement) {
                     e.preventDefault();
                     e.stopPropagation();
 
-                    var missing = [];
-                    if (check.missingSubjects.length > 0) missing.push('No grade entered for: ' + check.missingSubjects.join(', '));
-                    if (check.failedSubjects.length  > 0) missing.push('Below credit in: ' + check.failedSubjects.join(', '));
+                    var lines = ['⚠ O\'Level Requirement Not Met\n\nYou have ' + check.creditsAchieved + '/5 required credit passes.\n'];
+                    if (check.missingSubjects.length > 0) lines.push('No grade entered for: ' + check.missingSubjects.join(', '));
+                    if (check.failedSubjects.length  > 0) lines.push('Below credit in: ' + check.failedSubjects.join(', '));
+                    lines.push('\nCredit passes (A1–C6) required in:\n• English Language\n• Mathematics\n• Biology\n• Chemistry\n• Physics');
+                    lines.push('\nPlease correct your grades or add a second sitting.');
 
-                    alert(
-                        '⚠ O\'Level Requirement Not Met\n\n' +
-                        'You have ' + check.creditsAchieved + '/5 required credit passes.\n\n' +
-                        missing.join('\n') + '\n\n' +
-                        'You need credit passes (A1–C6) in:\n' +
-                        '• English Language\n• Mathematics\n• Biology\n• Chemistry\n• Physics\n\n' +
-                        'Please correct your O\'Level grades or add a second sitting before proceeding.'
-                    );
+                    alert(lines.join('\n'));
                     return;
                 }
-
                 document.getElementById('form_action').value = 'next';
             });
 
@@ -1689,60 +1891,43 @@ class ApplicationFormView {
                     form.classList.add('was-validated');
                     return;
                 }
-
                 form.classList.add('was-validated');
 
                 var action = document.getElementById('form_action').value;
 
-                // Final O'Level gate on 'next'
                 if (action === 'next') {
                     var check = computeCreditCheck();
                     if (!check.meetsRequirement) {
-                        alert(
-                            '⚠ O\'Level Requirement Not Met\n\n' +
-                            'You have ' + check.creditsAchieved + '/5 required credit passes.\n\n' +
-                            'Please correct your grades before proceeding to payment.'
-                        );
+                        alert('⚠ O\'Level requirement not met. You have ' + check.creditsAchieved + '/5 credits. Please fix your grades before proceeding.');
                         return;
                     }
                 }
 
                 loadingOverlay.classList.add('show');
 
-                var formData = new FormData(form);
-
                 fetch('/apply/save-application', {
                     method: 'POST',
-                    body: formData,
+                    body: new FormData(form),
                     headers: { 'X-CSRF-TOKEN': csrfToken }
                 })
                 .then(function (response) {
-                    var ct = response.headers.get('content-type');
-                    if (!ct || ct.indexOf('application/json') === -1) {
-                        throw new Error('Server returned non-JSON response');
-                    }
+                    var ct = response.headers.get('content-type') || '';
+                    if (ct.indexOf('application/json') === -1) throw new Error('non-JSON response');
                     return response.json();
                 })
                 .then(function (data) {
                     loadingOverlay.classList.remove('show');
 
                     if (data.success) {
-                        // Check if server blocked payment due to O'Level
                         if (data.olevel_blocked) {
-                            var blockMsg = '⚠ Cannot proceed to payment.\n\n' +
-                                'O\'Level requirement not met: ' + data.olevel_message + '\n\n' +
-                                'Credits achieved: ' + data.credits_achieved + '/5\n\n';
-                            if (data.missing_subjects && data.missing_subjects.length > 0) {
-                                blockMsg += 'Missing grades: ' + data.missing_subjects.join(', ') + '\n';
-                            }
-                            if (data.failed_subjects && data.failed_subjects.length > 0) {
-                                blockMsg += 'Below credit: ' + data.failed_subjects.join(', ') + '\n';
-                            }
-                            blockMsg += '\nPlease fix your O\'Level results and try again.';
-                            alert(blockMsg);
+                            var msg = '⚠ Cannot proceed to payment.\n\n'
+                                    + 'O\'Level requirement not met: ' + data.olevel_message + '\n'
+                                    + 'Credits achieved: ' + data.credits_achieved + '/5\n';
+                            if (data.missing_subjects && data.missing_subjects.length) msg += 'Missing grades: ' + data.missing_subjects.join(', ') + '\n';
+                            if (data.failed_subjects  && data.failed_subjects.length)  msg += 'Below credit: '  + data.failed_subjects.join(', ')  + '\n';
+                            alert(msg);
                             return;
                         }
-
                         if (data.redirect) {
                             window.location.href = data.redirect;
                         } else {
@@ -1754,10 +1939,33 @@ class ApplicationFormView {
                 })
                 .catch(function (error) {
                     loadingOverlay.classList.remove('show');
-                    console.error('Form submission error:', error);
+                    console.error('Form error:', error);
                     alert('A server error occurred. Please try again.');
                 });
             });
+
+            // ── Bootstrap native validation ───────────────────────────────
+            document.querySelectorAll('.needs-validation').forEach(function (f) {
+                f.addEventListener('submit', function (e) {
+                    if (!f.checkValidity()) { e.preventDefault(); e.stopPropagation(); }
+                    f.classList.add('was-validated');
+                });
+            });
+
+            // ── Initial state ─────────────────────────────────────────────
+            // Wire grade listeners first
+            attachGradeListeners();
+
+            // Run initial check
+            var initResult = computeCreditCheck();
+            renderCreditPanel(initResult);
+
+            // Disable next button if requirement not met on load
+            if (!initialMeetsRequirement || !initResult.meetsRequirement) {
+                updateUIState({ meetsRequirement: false });
+            } else {
+                updateUIState(initResult);
+            }
 
         }());
         </script>
