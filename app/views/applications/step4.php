@@ -3,6 +3,7 @@
  * Step 4 - Examination Slip View
  * UPDATED: Added O'Level results section with credit validation
  * UPDATED: Purple color scheme matching JAMB verification page
+ * FIXED: Removed inline onclick handlers, added proper event listeners with IDs
  * @var array $application
  * @var array $exam_slip
  * @var array $applicant
@@ -72,6 +73,10 @@ class ExamSlipView {
                 $missingSubjects[] = ucfirst($subject);
             }
         }
+        
+        // Color variables for CSS
+        $green = '#1a6b45';
+        $green_bg = '#edf9f3';
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -1111,11 +1116,13 @@ class ExamSlipView {
                     <span class="act-icon"><i class="fas fa-download"></i></span>
                     Download as PDF
                   </a>
-                  <button class="act-btn act-btn--print" onclick="printExamSlip()">
+                  <!-- FIX: Removed inline onclick, added id="printBtn" -->
+                  <button class="act-btn act-btn--print" id="printBtn">
                     <span class="act-icon"><i class="fas fa-print"></i></span>
                     Print Slip
                   </button>
-                  <button class="act-btn act-btn--share" onclick="shareSlip()">
+                  <!-- FIX: Removed inline onclick, added id="shareBtn" -->
+                  <button class="act-btn act-btn--share" id="shareBtn">
                     <span class="act-icon"><i class="fas fa-share-nodes"></i></span>
                     Share Slip
                   </button>
@@ -1133,7 +1140,8 @@ class ExamSlipView {
                   <input type="text" id="verificationLink"
                          value="<?php echo $this->e($verificationUrl); ?>"
                          readonly aria-label="Verification URL">
-                  <button class="copy-btn" onclick="copyField('verificationLink', this)">
+                  <!-- FIX: Removed inline onclick, added id="copyVerificationBtn" -->
+                  <button class="copy-btn" id="copyVerificationBtn">
                     <i class="fas fa-copy"></i> Copy
                   </button>
                 </div>
@@ -1142,7 +1150,8 @@ class ExamSlipView {
                   <input type="text" id="qrLink"
                          value="<?php echo $this->e($qrUrl); ?>"
                          readonly aria-label="QR Code URL">
-                  <button class="copy-btn" onclick="copyField('qrLink', this)">
+                  <!-- FIX: Removed inline onclick, added id="copyQrBtn" -->
+                  <button class="copy-btn" id="copyQrBtn">
                     <i class="fas fa-copy"></i> Copy
                   </button>
                 </div>
@@ -1224,7 +1233,8 @@ class ExamSlipView {
                 <span class="act-icon"><i class="fas fa-arrow-left"></i></span>
                 Back to Payment
               </a>
-              <button class="act-btn act-btn--print" onclick="location.reload()" style="width:auto;padding:.72rem 1.4rem;">
+              <!-- FIX: Removed inline onclick, added id="refreshBtn" -->
+              <button class="act-btn act-btn--print" id="refreshBtn" style="width:auto;padding:.72rem 1.4rem;">
                 <span class="act-icon"><i class="fas fa-rotate-right"></i></span>
                 Refresh
               </button>
@@ -1238,191 +1248,178 @@ class ExamSlipView {
         <!-- 4. Add CSP nonce to all script tags -->
         <!-- ========================================================= -->
         <script nonce="<?php echo $csp_nonce; ?>">
-        // ======================================================
-        // Examination Slip JavaScript with Security Enhancements
-        // ======================================================
-        
-        // Get CSRF token from meta tag
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        (function() {
+            'use strict';
 
-        // Copy field with secure clipboard handling
-        function copyField(inputId, btn) {
-            const input = document.getElementById(inputId);
-            if (!input) return;
-            
-            const val = input.value;
-            
-            const onCopied = () => {
-                const orig = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                btn.classList.add('copied');
-                showToast('Copied to clipboard!');
-                
-                setTimeout(() => { 
-                    btn.innerHTML = orig; 
-                    btn.classList.remove('copied'); 
-                }, 2200);
-            };
-            
-            try {
+            var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute('content') || '';
+
+            // ── Toast ────────────────────────────────────────────────────
+            function showToast(msg, type) {
+                type = type || 'success';
+                document.querySelectorAll('.toast').forEach(function(t) { t.remove(); });
+                var toast = document.createElement('div');
+                toast.className = 'toast';
+                var icon = type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation';
+                toast.innerHTML = '<i class="fas ' + icon + '"></i> ' + msg;
+                document.body.appendChild(toast);
+                setTimeout(function() {
+                    toast.style.transition = 'opacity .3s';
+                    toast.style.opacity = '0';
+                    setTimeout(function() { toast.remove(); }, 320);
+                }, 2600);
+            }
+
+            // ── Copy to clipboard ────────────────────────────────────────
+            function copyText(text, btn) {
+                var origHTML = btn ? btn.innerHTML : '';
+
+                function onCopied() {
+                    showToast('Copied to clipboard!');
+                    if (btn) {
+                        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                        btn.classList.add('copied');
+                        setTimeout(function() {
+                            btn.innerHTML = origHTML;
+                            btn.classList.remove('copied');
+                        }, 2200);
+                    }
+                }
+
                 if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(val).then(onCopied).catch(() => {
-                        fallbackCopy(input, val, onCopied);
+                    navigator.clipboard.writeText(text).then(onCopied).catch(function() {
+                        fallbackCopy(text, onCopied);
                     });
                 } else {
-                    fallbackCopy(input, val, onCopied);
+                    fallbackCopy(text, onCopied);
                 }
-            } catch(e) {
-                fallbackCopy(input, val, onCopied);
             }
-        }
 
-        function fallbackCopy(input, text, callback) {
-            input.select();
-            input.setSelectionRange(0, 99999);
-            
-            try {
-                if (document.execCommand('copy')) {
-                    callback();
-                } else {
+            function fallbackCopy(text, callback) {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    if (document.execCommand('copy')) {
+                        callback();
+                    } else {
+                        showToast('Copy failed. Please copy manually.', 'error');
+                    }
+                } catch(e) {
                     showToast('Copy failed. Please copy manually.', 'error');
                 }
-            } catch(e) {
-                showToast('Copy failed. Please copy manually.', 'error');
+                document.body.removeChild(ta);
             }
-        }
 
-        // Print exam slip with security
-        function printExamSlip() {
-            // Verify with CSRF token for audit trail
-            fetch('/api/verify-print-access', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify({ 
-                    action: 'print_exam_slip',
-                    csrf_token: csrfToken 
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const pw = window.open('/apply/print-exam-slip?csrf=' + encodeURIComponent(csrfToken), '_blank');
+            // ── Copy verification link button ────────────────────────────
+            var copyVerificationBtn = document.getElementById('copyVerificationBtn');
+            if (copyVerificationBtn) {
+                copyVerificationBtn.addEventListener('click', function() {
+                    var input = document.getElementById('verificationLink');
+                    if (input) copyText(input.value, this);
+                });
+            }
+
+            // ── Copy QR link button ──────────────────────────────────────
+            var copyQrBtn = document.getElementById('copyQrBtn');
+            if (copyQrBtn) {
+                copyQrBtn.addEventListener('click', function() {
+                    var input = document.getElementById('qrLink');
+                    if (input) copyText(input.value, this);
+                });
+            }
+
+            // ── Print button ─────────────────────────────────────────────
+            var printBtn = document.getElementById('printBtn');
+            if (printBtn) {
+                printBtn.addEventListener('click', function() {
+                    var url = '/apply/print-exam-slip?csrf=' + encodeURIComponent(csrfToken);
+                    var pw = window.open(url, '_blank');
                     if (pw) {
-                        pw.onload = () => setTimeout(() => { pw.focus(); pw.print(); }, 800);
+                        pw.onload = function() {
+                            setTimeout(function() { pw.focus(); pw.print(); }, 800);
+                        };
                     } else {
+                        // Popup blocked — fallback to print current page
                         showToast('Pop-up blocked — printing current page…');
-                        setTimeout(() => window.print(), 1200);
+                        setTimeout(function() { window.print(); }, 800);
                     }
-                } else {
-                    showToast('Unable to verify print permissions', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Print verification error:', error);
-                // Fallback to direct print
-                const pw = window.open('/apply/print-exam-slip?csrf=' + encodeURIComponent(csrfToken), '_blank');
-                if (pw) {
-                    pw.onload = () => setTimeout(() => { pw.focus(); pw.print(); }, 800);
+                });
+            }
+
+            // ── Download button ──────────────────────────────────────────
+            var downloadBtn = document.getElementById('downloadBtn');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var url = this.getAttribute('href');
+                    showToast('Preparing download…');
+                    window.location.href = url;
+                });
+            }
+
+            // ── Share button ─────────────────────────────────────────────
+            var shareBtn = document.getElementById('shareBtn');
+            if (shareBtn) {
+                shareBtn.addEventListener('click', function() {
+                    var verificationInput = document.getElementById('verificationLink');
+                    var shareUrl = verificationInput ? verificationInput.value : window.location.href;
+
+                    if (navigator.share) {
+                        navigator.share({
+                            title: 'Examination Slip — FCT College of Nursing Sciences',
+                            text: 'My examination slip for the 2025/2026 admission screening.',
+                            url: shareUrl
+                        }).catch(function(err) {
+                            // User cancelled or share failed — fallback to copy
+                            if (verificationInput) {
+                                copyText(shareUrl, copyVerificationBtn);
+                            }
+                        });
+                    } else {
+                        // Share API not available — copy link instead
+                        if (verificationInput) {
+                            copyText(shareUrl, copyVerificationBtn);
+                            showToast('Link copied to clipboard!');
+                        }
+                    }
+                });
+            }
+
+            // ── Refresh button (error state) ─────────────────────────────
+            var refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function() {
+                    location.reload();
+                });
+            }
+
+            // ── Print shortcut Ctrl/Cmd+P ────────────────────────────────
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                    e.preventDefault();
+                    if (printBtn) printBtn.click();
                 }
             });
-        }
 
-        // Share slip with security
-        function shareSlip() {
-            if (navigator.share) {
-                // Add CSRF token and timestamp to URL to prevent caching
-                const shareUrl = window.location.href + 
-                    (window.location.href.includes('?') ? '&' : '?') + 
-                    'csrf=' + encodeURIComponent(csrfToken) + 
-                    '&t=' + Date.now();
-                
-                navigator.share({
-                    title: 'Examination Slip — FCT College of Nursing Sciences',
-                    text: 'My examination slip for the 2025/2026 admission screening.',
-                    url: shareUrl
-                }).catch(console.error);
-            } else {
-                copyField('verificationLink', document.querySelector('#verificationLink ~ .copy-btn, .copy-group .copy-btn'));
-            }
-        }
-
-        // Toast notification
-        function showToast(msg, type = 'success') {
-            document.querySelectorAll('.toast').forEach(t => t.remove());
-            
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            
-            const icon = type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation';
-            toast.innerHTML = `<i class="fas ${icon}"></i> ${msg}`;
-            
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.transition = 'opacity .3s';
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 320);
-            }, 2600);
-        }
-
-        // Download button handler
-        document.getElementById('downloadBtn')?.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Add CSRF token to download URL
-            const downloadUrl = this.href;
-            
-            fetch(downloadUrl, {
-                method: 'GET',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                }
-            })
-            .then(response => {
-                if (response.ok) {
-                    window.location.href = downloadUrl;
-                } else {
-                    showToast('Download failed. Please try again.', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Download error:', error);
-                showToast('Download failed. Please try again.', 'error');
+            // ── Prevent right-click on QR and slip number ────────────────
+            document.querySelectorAll('.qr-frame, .slip-number-pill').forEach(function(el) {
+                el.addEventListener('contextmenu', function(e) { e.preventDefault(); });
             });
-        });
 
-        // Print shortcut (Ctrl/Cmd + P)
-        document.addEventListener('keydown', e => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'p') { 
-                e.preventDefault(); 
-                printExamSlip(); 
-            }
-        });
+            // ── External links: noopener ─────────────────────────────────
+            document.querySelectorAll('a[href^="http"]').forEach(function(link) {
+                try {
+                    var url = new URL(link.href);
+                    if (url.hostname !== window.location.hostname) {
+                        link.setAttribute('target', '_blank');
+                        link.setAttribute('rel', 'noopener noreferrer');
+                    }
+                } catch(e) {}
+            });
 
-        // Prevent right-click on sensitive elements
-        document.querySelectorAll('.qr-frame, .slip-number-pill').forEach(el => {
-            el.addEventListener('contextmenu', e => e.preventDefault());
-        });
-
-        // Add timestamp to all external links for cache busting
-        document.querySelectorAll('a[href^="http"]').forEach(link => {
-            const url = new URL(link.href);
-            if (url.hostname !== window.location.hostname) {
-                // External link - add warning
-                link.setAttribute('target', '_blank');
-                link.setAttribute('rel', 'noopener noreferrer');
-            }
-        });
-
-        // Log O'Level summary for verification
-        console.log('O\'Level Results Summary:', {
-            creditsAchieved: <?php echo $creditsAchieved; ?>,
-            bestGrades: <?php echo json_encode($bestGrades); ?>,
-            missingSubjects: <?php echo json_encode($missingSubjects); ?>
-        });
+        }());
         </script>
         </body>
         </html>
