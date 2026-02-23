@@ -23,7 +23,9 @@ class Router {
      * Constructor - Register routes on initialization
      */
     public function __construct() {
+        error_log("=== ROUTER INITIALIZED ===");
         $this->registerRoutes();
+        error_log("=== ROUTER FINISHED: " . count($this->routes) . " routes registered ===");
     }
 
     /**
@@ -34,13 +36,16 @@ class Router {
     }
 
     /**
-     * Register all application routes - NO DUPLICATES
+     * Register all application routes - WITH DEBUG AND FIXES
      */
     private function registerRoutes() {
+        error_log("=== REGISTERING ROUTES ===");
+        
         // ============================================
         // DEBUG ROUTES - ADD THESE FIRST
         // ============================================
         $this->get('/router-test', function() {
+            header('Content-Type: text/html');
             echo "<h1>Router Test</h1>";
             echo "<p>If you see this, the router is working!</p>";
             
@@ -66,6 +71,43 @@ class Router {
             echo "BASE_URL: " . (defined('BASE_URL') ? BASE_URL : 'NOT DEFINED') . "\n";
             echo "</pre>";
             
+            exit;
+        });
+        
+        // Test route for JSON responses
+        $this->get('/test-json', function() {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true, 
+                'message' => 'GET JSON test working',
+                'time' => date('Y-m-d H:i:s')
+            ]);
+            exit;
+        });
+        
+        // Test route for POST JSON
+        $this->post('/test-json-post', function() {
+            header('Content-Type: application/json');
+            $input = json_decode(file_get_contents('php://input'), true);
+            echo json_encode([
+                'success' => true, 
+                'message' => 'POST JSON test working',
+                'post_data' => $_POST,
+                'json_input' => $input
+            ]);
+            exit;
+        });
+        
+        // Test route for form posts
+        $this->post('/test-route', function() {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'message' => 'Test route is working',
+                'method' => 'POST',
+                'post_data' => $_POST,
+                'time' => date('Y-m-d H:i:s')
+            ]);
             exit;
         });
         
@@ -103,6 +145,7 @@ class Router {
             error_log("POST data: " . print_r($_POST, true));
             error_log("FILES data: " . print_r($_FILES, true));
             
+            header('Content-Type: application/json');
             echo json_encode([
                 'status' => 'success',
                 'post_data' => $_POST,
@@ -273,7 +316,10 @@ class Router {
 
         // Step 2: Application Form (requires login)
         $this->get('/apply/form', 'PublicApplicationController@showApplicationForm');
-        $this->post('/apply/verify-jamb', 'PublicApplicationController@verifyJamb');
+        
+        // CRITICAL ROUTE: JAMB Verification - Register with explicit pattern
+        $this->addRoute('POST', '/apply/verify-jamb', 'PublicApplicationController@verifyJamb');
+        
         $this->post('/apply/save-application', 'PublicApplicationController@saveApplication');
         $this->post('/apply/remove-document', 'PublicApplicationController@removeDocument');
 
@@ -337,7 +383,6 @@ class Router {
         $this->get('/application-verify/api/{slipNumber}', 'ApplicationVerificationController@apiVerify');
         
         // FIXED: Both QR routes - one is the primary, one is for backward compatibility
-        // The addRoute method will automatically skip duplicates, so both will be registered
         $this->get('/application-verify/generate-qr/{slipNumber}', 'ApplicationVerificationController@generateQR');
         $this->get('/application-verify/qr/{slipNumber}', 'ApplicationVerificationController@generateQR');
         
@@ -638,8 +683,33 @@ class Router {
         // ============================================
         $this->get('/404', 'PageController@notFound');
         
+        // ============================================
+        // POST-REGISTRATION VERIFICATION
+        // ============================================
         if (defined('APP_DEBUG') && APP_DEBUG) {
             error_log("Router: All routes registered - Total: " . count($this->routes));
+            
+            // Verify critical routes
+            $verifyJambFound = false;
+            foreach ($this->routes as $route) {
+                if ($route['path'] === '/apply/verify-jamb' && $route['method'] === 'POST') {
+                    $verifyJambFound = true;
+                    error_log("✓ POST /apply/verify-jamb is registered with pattern: " . $route['pattern']);
+                    break;
+                }
+            }
+            
+            if (!$verifyJambFound) {
+                error_log("✗ CRITICAL: POST /apply/verify-jamb NOT FOUND in routes!");
+                // Force-add it
+                error_log("Force-adding POST /apply/verify-jamb now");
+                $this->routes[] = [
+                    'method' => 'POST',
+                    'path' => '/apply/verify-jamb',
+                    'pattern' => '#^/apply/verify-jamb/?$#',
+                    'handler' => 'PublicApplicationController@verifyJamb'
+                ];
+            }
         }
     }
 
@@ -707,40 +777,27 @@ class Router {
             return '#^/$#';
         }
         
-        if (defined('APP_DEBUG') && APP_DEBUG) {
-            error_log("Router: Converting path to regex: '$path'");
-        }
-        
-        $isRegexPattern = false;
-        if (strpos($path, '(') !== false && strpos($path, ')') !== false) {
-            $isRegexPattern = true;
-        }
-        if (strpos($path, '.*') !== false) {
-            $isRegexPattern = true;
-        }
-        
-        if ($isRegexPattern) {
-            $pattern = $path;
-            
-            if (strpos($pattern, '#^') !== 0) {
-                if (strpos($pattern, '^') === 0) {
-                    $pattern = '#' . $pattern;
+        // If it's already a regex pattern, use it as is
+        if (strpos($path, '(') !== false || strpos($path, '.*') !== false || strpos($path, '[') !== false) {
+            // Ensure it's wrapped properly
+            if (strpos($path, '#^') !== 0) {
+                if (strpos($path, '^') === 0) {
+                    $path = '#' . $path;
                 } else {
-                    $pattern = '#^' . $pattern;
+                    $path = '#^' . $path;
                 }
             }
-            
-            if (substr($pattern, -2) !== '$#') {
-                if (substr($pattern, -1) === '$') {
-                    $pattern .= '#';
+            if (substr($path, -2) !== '$#') {
+                if (substr($path, -1) === '$') {
+                    $path .= '#';
                 } else {
-                    $pattern .= '$#';
+                    $path .= '$#';
                 }
             }
-            
-            return $pattern;
+            return $path;
         }
         
+        // Convert named parameters to regex
         $pattern = preg_quote($path, '#');
         $pattern = preg_replace('#\\\\\{([^}]+)\\\\}#', '([^/]+)', $pattern);
         $pattern = '#^' . $pattern . '/?$#';
@@ -749,7 +806,7 @@ class Router {
     }
 
     /**
-     * Match current request to a route - FIXED VERSION
+     * Match current request to a route - FIXED VERSION WITH DEBUG
      */
     public function match() {
         $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -777,6 +834,43 @@ class Router {
             $requestUri = rtrim($requestUri, '/');
         }
         
+        // DEBUG for JAMB verification route
+        if ($requestUri === '/apply/verify-jamb' && $requestMethod === 'POST') {
+            error_log("=== DEBUG: JAMB VERIFICATION ROUTE REQUESTED ===");
+            error_log("Request Method: $requestMethod");
+            error_log("Request URI: $requestUri");
+            
+            // Search specifically for this route
+            foreach ($this->routes as $index => $route) {
+                if ($route['path'] === '/apply/verify-jamb' && $route['method'] === 'POST') {
+                    error_log("✓ Found POST /apply/verify-jamb at index $index");
+                    error_log("  Pattern: " . $route['pattern']);
+                    
+                    // Test if pattern matches
+                    if (preg_match($route['pattern'], $requestUri, $matches)) {
+                        error_log("  ✓ Pattern MATCHES!");
+                        error_log("  Matches: " . print_r($matches, true));
+                        
+                        // Return this route
+                        array_shift($matches);
+                        $this->params = $matches;
+                        
+                        return [
+                            'handler' => $route['handler'],
+                            'params' => $matches,
+                            'route' => $route
+                        ];
+                    } else {
+                        error_log("  ✗ Pattern DOES NOT MATCH");
+                        error_log("  Pattern: " . $route['pattern']);
+                        error_log("  URI: " . $requestUri);
+                    }
+                }
+            }
+            
+            error_log("✗ No matching route found for POST /apply/verify-jamb");
+        }
+        
         error_log("==========================================");
         error_log("ROUTER MATCHING:");
         error_log("  Request Method: $requestMethod");
@@ -802,7 +896,7 @@ class Router {
             }
             
             if (preg_match($route['pattern'], $requestUri, $matches)) {
-                error_log("  ✓ MATCHED: {$route['path']}");
+                error_log("  ✓ MATCHED: {$route['path']} -> {$route['handler']}");
                 
                 array_shift($matches);
                 $this->params = $matches;
