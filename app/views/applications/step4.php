@@ -2,7 +2,7 @@
 /**
  * Step 4 View - Exam Slip
  * Redesigned: Premium institutional design with security enhancements
- * FIXED: Redundant headers removed, download functionality fixed
+ * FIXED: Removed redundant navbar, kept only progress steps
  * 
  * @package FCTCNS
  */
@@ -134,107 +134,23 @@ class Step4View {
                     line-height: 1.5;
                 }
 
-                /* ─── Navigation Bar - SINGLE CLEAN NAVIGATION ───── */
-                .navbar {
+                /* ─── Progress Steps - Now the Main Header ─────────── */
+                .progress-header {
                     background: var(--white);
+                    padding: 1rem 2rem;
                     border-bottom: 2px solid var(--primary-light);
-                    padding: 0 2rem;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
                     box-shadow: var(--shadow-md);
                     position: sticky;
                     top: 0;
                     z-index: 100;
-                    height: 60px;
                 }
 
-                .navbar-brand {
-                    display: flex;
-                    align-items: center;
-                    gap: 1rem;
-                }
-
-                .navbar-logo {
-                    width: 36px;
-                    height: 36px;
-                    background: var(--primary);
-                    border-radius: 8px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-weight: bold;
-                    font-size: 1rem;
-                }
-
-                .navbar-title {
-                    font-weight: 600;
-                    color: var(--primary-dark);
-                    font-size: 1rem;
-                }
-
-                .navbar-subtitle {
-                    font-size: 0.8rem;
-                    color: var(--grey-4);
-                    margin-left: 0.5rem;
-                    padding-left: 0.5rem;
-                    border-left: 2px solid var(--primary-soft);
-                }
-
-                .navbar-menu {
-                    display: flex;
-                    align-items: center;
-                    gap: 1.5rem;
-                }
-
-                .navbar-item {
-                    color: var(--grey-5);
-                    text-decoration: none;
-                    font-size: 0.85rem;
-                    padding: 0.5rem 0.75rem;
-                    border-radius: var(--radius-sm);
-                    transition: all 0.2s;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                }
-
-                .navbar-item:hover {
-                    background: var(--primary-soft);
-                    color: var(--primary);
-                }
-
-                .navbar-item i {
-                    font-size: 0.85rem;
-                    color: var(--primary);
-                }
-
-                .navbar-user {
-                    background: var(--primary-soft);
-                    padding: 0.4rem 1rem;
-                    border-radius: 100px;
-                    font-size: 0.85rem;
-                    color: var(--primary-dark);
-                    font-weight: 500;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    margin-left: 0.5rem;
-                }
-
-                .navbar-user i {
-                    color: var(--primary);
-                }
-
-                /* ─── Progress Steps ─────────────────────────────── */
                 .progress-steps {
-                    background: var(--white);
-                    padding: 1rem 2rem;
-                    border-bottom: 1px solid var(--border);
                     display: flex;
                     justify-content: center;
                     gap: 2rem;
+                    max-width: 800px;
+                    margin: 0 auto;
                 }
 
                 .step {
@@ -243,14 +159,35 @@ class Step4View {
                     gap: 0.5rem;
                     color: var(--grey-4);
                     font-size: 0.85rem;
+                    position: relative;
+                    flex: 1;
+                }
+
+                .step:not(:last-child)::after {
+                    content: '';
+                    position: absolute;
+                    right: -1rem;
+                    top: 50%;
+                    width: 1rem;
+                    height: 2px;
+                    background: var(--grey-3);
+                    transform: translateY(-50%);
                 }
 
                 .step.completed {
                     color: var(--green);
                 }
 
+                .step.completed::after {
+                    background: var(--green);
+                }
+
                 .step.active {
                     color: var(--primary);
+                }
+
+                .step.active::after {
+                    background: var(--primary);
                 }
 
                 .step-number {
@@ -277,6 +214,49 @@ class Step4View {
 
                 .step-label {
                     font-weight: 500;
+                }
+
+                /* ─── User Info Bar ───────────────────────────────── */
+                .user-bar {
+                    background: var(--primary-soft);
+                    padding: 0.5rem 2rem;
+                    display: flex;
+                    justify-content: flex-end;
+                    align-items: center;
+                    gap: 1.5rem;
+                    border-bottom: 1px solid var(--border);
+                    font-size: 0.85rem;
+                }
+
+                .user-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    color: var(--primary-dark);
+                }
+
+                .user-info i {
+                    color: var(--primary);
+                }
+
+                .logout-link {
+                    color: var(--grey-5);
+                    text-decoration: none;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.3rem;
+                    padding: 0.25rem 0.75rem;
+                    border-radius: var(--radius-sm);
+                    transition: all 0.2s;
+                }
+
+                .logout-link:hover {
+                    background: var(--white);
+                    color: var(--red);
+                }
+
+                .logout-link i {
+                    font-size: 0.8rem;
                 }
 
                 /* ─── Main Container ─────────────────────────────── */
@@ -570,7 +550,7 @@ class Step4View {
                 /* ─── Toast Notifications ────────────────────────── */
                 .toast-notification {
                     position: fixed;
-                    top: 80px;
+                    top: 20px;
                     right: 20px;
                     padding: 0.85rem 1.2rem;
                     border-radius: var(--radius-md);
@@ -602,29 +582,29 @@ class Step4View {
 
                 /* ─── Responsive ─────────────────────────────────── */
                 @media (max-width: 768px) {
-                    .navbar {
-                        padding: 0 1rem;
-                        flex-direction: column;
-                        height: auto;
-                        padding: 0.5rem 1rem;
-                    }
-                    
-                    .navbar-brand {
-                        width: 100%;
-                        justify-content: space-between;
-                    }
-                    
-                    .navbar-menu {
-                        width: 100%;
-                        justify-content: center;
-                        flex-wrap: wrap;
-                        gap: 0.5rem;
+                    .progress-header {
+                        padding: 0.75rem 1rem;
                     }
                     
                     .progress-steps {
-                        padding: 0.75rem 1rem;
-                        flex-wrap: wrap;
-                        gap: 0.75rem;
+                        gap: 0.5rem;
+                    }
+                    
+                    .step:not(:last-child)::after {
+                        display: none;
+                    }
+                    
+                    .step-label {
+                        display: none;
+                    }
+                    
+                    .step {
+                        justify-content: center;
+                    }
+                    
+                    .user-bar {
+                        padding: 0.5rem 1rem;
+                        justify-content: space-between;
                     }
                     
                     .main-container {
@@ -667,43 +647,36 @@ class Step4View {
         </head>
         <body>
 
-        <!-- ─── SINGLE NAVIGATION BAR ─────────────────────────────── -->
-        <nav class="navbar">
-            <div class="navbar-brand">
-                <div class="navbar-logo">CNS</div>
-                <span class="navbar-title">FCT College of Nursing Sciences</span>
-                <span class="navbar-subtitle">2025/26</span>
+        <!-- ─── User Bar (Compact) ─────────────────────────────────── -->
+        <div class="user-bar">
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i>
+                <span><?php echo $this->e($applicant_name); ?></span>
             </div>
-            <div class="navbar-menu">
-                <a href="/apply/step/1" class="navbar-item">
-                    <i class="fas fa-file-alt"></i> Application
-                </a>
-                <a href="/applicant/logout" class="navbar-item">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-                <span class="navbar-user">
-                    <i class="fas fa-user-circle"></i> <?php echo $this->e($applicant_name); ?>
-                </span>
-            </div>
-        </nav>
+            <a href="/applicant/logout" class="logout-link">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
 
-        <!-- ─── PROGRESS STEPS ────────────────────────────────────── -->
-        <div class="progress-steps">
-            <div class="step completed">
-                <span class="step-number">1</span>
-                <span class="step-label">JAMB</span>
-            </div>
-            <div class="step completed">
-                <span class="step-number">2</span>
-                <span class="step-label">Form</span>
-            </div>
-            <div class="step completed">
-                <span class="step-number">3</span>
-                <span class="step-label">Payment</span>
-            </div>
-            <div class="step active">
-                <span class="step-number">4</span>
-                <span class="step-label">Exam Slip</span>
+        <!-- ─── Progress Steps - Main Header ───────────────────────── -->
+        <div class="progress-header">
+            <div class="progress-steps">
+                <div class="step completed">
+                    <span class="step-number">1</span>
+                    <span class="step-label">JAMB</span>
+                </div>
+                <div class="step completed">
+                    <span class="step-number">2</span>
+                    <span class="step-label">Form</span>
+                </div>
+                <div class="step completed">
+                    <span class="step-number">3</span>
+                    <span class="step-label">Payment</span>
+                </div>
+                <div class="step active">
+                    <span class="step-number">4</span>
+                    <span class="step-label">Exam Slip</span>
+                </div>
             </div>
         </div>
 
@@ -895,7 +868,7 @@ class Step4View {
                 }, 4000);
             }
 
-            // ─── FIXED: Download Function - Actually Works Now ────────
+            // ─── Fixed Download Function ─────────────────────────────
             function triggerDownload(btn) {
                 if (!slipNumber) {
                     showToast('Exam slip not available', 'error');
@@ -906,13 +879,12 @@ class Step4View {
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
                 btn.disabled = true;
 
-                // Show preparing message
                 showToast('Preparing your PDF...', 'info');
 
                 // Create download URL with timestamp to prevent caching
                 const downloadUrl = baseUrl + '/apply/download-exam-slip?csrf=' + encodeURIComponent(csrfToken) + '&t=' + Date.now();
                 
-                // Set iframe source to trigger download
+                // Use iframe for download
                 if (downloadFrame) {
                     // Set up one-time load event
                     const onLoad = function() {
@@ -927,19 +899,11 @@ class Step4View {
                     downloadFrame.addEventListener('load', onLoad);
                     downloadFrame.src = downloadUrl;
                 } else {
-                    // Fallback: create temporary anchor
-                    const a = document.createElement('a');
-                    a.href = downloadUrl;
-                    a.download = 'exam-slip-' + slipNumber + '.html';
-                    a.style.display = 'none';
-                    document.body.appendChild(a);
-                    a.click();
-                    
+                    // Fallback
+                    window.location.href = downloadUrl;
                     setTimeout(() => {
-                        document.body.removeChild(a);
                         btn.innerHTML = originalText;
                         btn.disabled = false;
-                        showToast('Download started', 'success');
                     }, 1000);
                 }
             }
@@ -951,7 +915,6 @@ class Step4View {
                     return;
                 }
 
-                // Open print view in new window
                 const printWindow = window.open(
                     baseUrl + '/apply/print-exam-slip?csrf=' + encodeURIComponent(csrfToken) + '&t=' + Date.now(),
                     'PrintExamSlip',
@@ -987,7 +950,6 @@ class Step4View {
 
             // ── Keyboard Shortcuts ───────────────────────────────────
             document.addEventListener('keydown', function(e) {
-                // Ctrl+P or Cmd+P for print
                 if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
                     e.preventDefault();
                     if (viewPrintBtn) {
