@@ -2,7 +2,7 @@
 /**
  * Step 4 View - Exam Slip
  * Redesigned: Premium institutional design with security enhancements
- * FIXED: Removed redundant headers, fixed download functionality, cleaned up layout
+ * FIXED: Redundant headers removed, download functionality fixed
  * 
  * @package FCTCNS
  */
@@ -138,7 +138,7 @@ class Step4View {
                 .navbar {
                     background: var(--white);
                     border-bottom: 2px solid var(--primary-light);
-                    padding: 0.75rem 2rem;
+                    padding: 0 2rem;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
@@ -146,6 +146,7 @@ class Step4View {
                     position: sticky;
                     top: 0;
                     z-index: 100;
+                    height: 60px;
                 }
 
                 .navbar-brand {
@@ -155,8 +156,8 @@ class Step4View {
                 }
 
                 .navbar-logo {
-                    width: 40px;
-                    height: 40px;
+                    width: 36px;
+                    height: 36px;
                     background: var(--primary);
                     border-radius: 8px;
                     display: flex;
@@ -164,13 +165,13 @@ class Step4View {
                     justify-content: center;
                     color: white;
                     font-weight: bold;
-                    font-size: 1.2rem;
+                    font-size: 1rem;
                 }
 
                 .navbar-title {
                     font-weight: 600;
                     color: var(--primary-dark);
-                    font-size: 1.1rem;
+                    font-size: 1rem;
                 }
 
                 .navbar-subtitle {
@@ -190,8 +191,8 @@ class Step4View {
                 .navbar-item {
                     color: var(--grey-5);
                     text-decoration: none;
-                    font-size: 0.9rem;
-                    padding: 0.5rem 1rem;
+                    font-size: 0.85rem;
+                    padding: 0.5rem 0.75rem;
                     border-radius: var(--radius-sm);
                     transition: all 0.2s;
                     display: flex;
@@ -205,20 +206,21 @@ class Step4View {
                 }
 
                 .navbar-item i {
-                    font-size: 0.9rem;
+                    font-size: 0.85rem;
                     color: var(--primary);
                 }
 
                 .navbar-user {
                     background: var(--primary-soft);
-                    padding: 0.5rem 1.2rem;
+                    padding: 0.4rem 1rem;
                     border-radius: 100px;
-                    font-size: 0.9rem;
+                    font-size: 0.85rem;
                     color: var(--primary-dark);
                     font-weight: 500;
                     display: flex;
                     align-items: center;
                     gap: 0.5rem;
+                    margin-left: 0.5rem;
                 }
 
                 .navbar-user i {
@@ -228,7 +230,7 @@ class Step4View {
                 /* ─── Progress Steps ─────────────────────────────── */
                 .progress-steps {
                     background: var(--white);
-                    padding: 1.5rem 2rem;
+                    padding: 1rem 2rem;
                     border-bottom: 1px solid var(--border);
                     display: flex;
                     justify-content: center;
@@ -238,8 +240,9 @@ class Step4View {
                 .step {
                     display: flex;
                     align-items: center;
-                    gap: 0.75rem;
+                    gap: 0.5rem;
                     color: var(--grey-4);
+                    font-size: 0.85rem;
                 }
 
                 .step.completed {
@@ -251,15 +254,15 @@ class Step4View {
                 }
 
                 .step-number {
-                    width: 32px;
-                    height: 32px;
+                    width: 28px;
+                    height: 28px;
                     border-radius: 50%;
                     background: var(--grey-2);
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-weight: 600;
-                    font-size: 0.9rem;
+                    font-size: 0.8rem;
                 }
 
                 .step.completed .step-number {
@@ -287,24 +290,24 @@ class Step4View {
                 .success-banner {
                     background: linear-gradient(135deg, var(--green), #0d9488);
                     border-radius: var(--radius-lg);
-                    padding: 1.5rem 2rem;
+                    padding: 1.2rem 1.5rem;
                     color: white;
                     margin-bottom: 2rem;
                     display: flex;
                     align-items: center;
-                    gap: 1.5rem;
+                    gap: 1rem;
                     box-shadow: var(--shadow-lg);
                 }
 
                 .success-icon {
-                    width: 48px;
-                    height: 48px;
+                    width: 40px;
+                    height: 40px;
                     background: rgba(255,255,255,0.2);
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 1.5rem;
+                    font-size: 1.2rem;
                 }
 
                 .success-content {
@@ -312,14 +315,14 @@ class Step4View {
                 }
 
                 .success-title {
-                    font-size: 1.3rem;
+                    font-size: 1.2rem;
                     font-weight: 600;
-                    margin-bottom: 0.25rem;
+                    margin-bottom: 0.2rem;
                 }
 
                 .success-message {
                     opacity: 0.9;
-                    font-size: 0.9rem;
+                    font-size: 0.85rem;
                 }
 
                 /* ─── Card ───────────────────────────────────────── */
@@ -339,14 +342,14 @@ class Step4View {
 
                 .card-header h1 {
                     font-family: var(--font-display);
-                    font-size: 1.8rem;
+                    font-size: 1.6rem;
                     font-weight: 400;
-                    margin-bottom: 0.25rem;
+                    margin-bottom: 0.2rem;
                 }
 
                 .card-header p {
                     opacity: 0.8;
-                    font-size: 0.9rem;
+                    font-size: 0.85rem;
                 }
 
                 .card-body {
@@ -358,7 +361,7 @@ class Step4View {
                     background: var(--primary-soft);
                     border: 2px dashed var(--primary-light);
                     border-radius: var(--radius-lg);
-                    padding: 2rem;
+                    padding: 1.5rem;
                     margin-bottom: 2rem;
                     text-align: center;
                     cursor: pointer;
@@ -373,21 +376,21 @@ class Step4View {
                 }
 
                 .preview-icon {
-                    font-size: 3rem;
+                    font-size: 2.5rem;
                     color: var(--primary);
-                    margin-bottom: 1rem;
+                    margin-bottom: 0.5rem;
                 }
 
                 .preview-title {
-                    font-size: 1.2rem;
+                    font-size: 1.1rem;
                     font-weight: 600;
                     color: var(--primary-dark);
-                    margin-bottom: 0.5rem;
+                    margin-bottom: 0.25rem;
                 }
 
                 .preview-subtitle {
                     color: var(--grey-4);
-                    font-size: 0.9rem;
+                    font-size: 0.85rem;
                 }
 
                 /* ─── Info Grid ──────────────────────────────────── */
@@ -401,19 +404,19 @@ class Step4View {
                 .info-item {
                     background: var(--primary-soft);
                     border-radius: var(--radius-md);
-                    padding: 1.2rem;
+                    padding: 1rem;
                 }
 
                 .info-label {
-                    font-size: 0.7rem;
+                    font-size: 0.65rem;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
                     color: var(--grey-4);
-                    margin-bottom: 0.5rem;
+                    margin-bottom: 0.25rem;
                 }
 
                 .info-value {
-                    font-size: 1rem;
+                    font-size: 0.95rem;
                     font-weight: 600;
                     color: var(--primary-dark);
                     display: flex;
@@ -423,7 +426,8 @@ class Step4View {
 
                 .info-value i {
                     color: var(--gold);
-                    width: 20px;
+                    width: 18px;
+                    font-size: 0.9rem;
                 }
 
                 /* ─── Action Buttons ─────────────────────────────── */
@@ -438,21 +442,21 @@ class Step4View {
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 0.75rem;
-                    padding: 1rem 2rem;
+                    gap: 0.5rem;
+                    padding: 0.85rem 1.5rem;
                     border: none;
                     border-radius: var(--radius-md);
-                    font-size: 1rem;
+                    font-size: 0.95rem;
                     font-weight: 600;
                     cursor: pointer;
                     transition: all 0.2s ease;
                     text-decoration: none;
                     flex: 1;
-                    min-width: 200px;
+                    min-width: 180px;
                 }
 
                 .btn i {
-                    font-size: 1.1rem;
+                    font-size: 1rem;
                 }
 
                 .btn-primary {
@@ -497,32 +501,33 @@ class Step4View {
                 /* ─── Important Note ─────────────────────────────── */
                 .note-box {
                     margin-top: 2rem;
-                    padding: 1rem 1.5rem;
+                    padding: 0.85rem 1.2rem;
                     background: var(--orange-pale);
                     border-radius: var(--radius-md);
                     border-left: 4px solid var(--orange);
                     display: flex;
                     align-items: center;
-                    gap: 1rem;
+                    gap: 0.75rem;
                     color: #92400e;
+                    font-size: 0.9rem;
                 }
 
                 .note-box i {
-                    font-size: 1.2rem;
+                    font-size: 1.1rem;
                 }
 
                 /* ─── Support Section ────────────────────────────── */
                 .support-section {
                     margin-top: 2rem;
-                    padding-top: 2rem;
+                    padding-top: 1.5rem;
                     border-top: 1px solid var(--border);
                 }
 
                 .support-title {
                     text-align: center;
-                    margin-bottom: 1.5rem;
+                    margin-bottom: 1.2rem;
                     color: var(--primary-dark);
-                    font-size: 1.1rem;
+                    font-size: 1rem;
                 }
 
                 .support-grid {
@@ -534,32 +539,32 @@ class Step4View {
                 .support-card {
                     background: var(--primary-soft);
                     border-radius: var(--radius-md);
-                    padding: 1.2rem;
+                    padding: 1rem;
                     text-align: center;
                 }
 
                 .support-icon {
-                    width: 40px;
-                    height: 40px;
+                    width: 36px;
+                    height: 36px;
                     background: var(--white);
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    margin: 0 auto 0.75rem;
+                    margin: 0 auto 0.5rem;
                     color: var(--primary);
-                    font-size: 1rem;
+                    font-size: 0.9rem;
                 }
 
                 .support-card h4 {
                     color: var(--primary-dark);
                     margin-bottom: 0.25rem;
-                    font-size: 0.95rem;
+                    font-size: 0.9rem;
                 }
 
                 .support-card p {
                     color: var(--grey-5);
-                    font-size: 0.85rem;
+                    font-size: 0.8rem;
                 }
 
                 /* ─── Toast Notifications ────────────────────────── */
@@ -567,14 +572,14 @@ class Step4View {
                     position: fixed;
                     top: 80px;
                     right: 20px;
-                    padding: 1rem 1.5rem;
+                    padding: 0.85rem 1.2rem;
                     border-radius: var(--radius-md);
                     color: white;
-                    font-size: 0.95rem;
+                    font-size: 0.9rem;
                     font-weight: 500;
                     display: flex;
                     align-items: center;
-                    gap: 0.75rem;
+                    gap: 0.5rem;
                     box-shadow: var(--shadow-lg);
                     z-index: 10000;
                     animation: slideInRight 0.3s ease;
@@ -598,9 +603,10 @@ class Step4View {
                 /* ─── Responsive ─────────────────────────────────── */
                 @media (max-width: 768px) {
                     .navbar {
-                        padding: 0.75rem 1rem;
+                        padding: 0 1rem;
                         flex-direction: column;
-                        gap: 1rem;
+                        height: auto;
+                        padding: 0.5rem 1rem;
                     }
                     
                     .navbar-brand {
@@ -616,13 +622,14 @@ class Step4View {
                     }
                     
                     .progress-steps {
-                        padding: 1rem;
+                        padding: 0.75rem 1rem;
                         flex-wrap: wrap;
-                        gap: 1rem;
+                        gap: 0.75rem;
                     }
                     
                     .main-container {
                         padding: 0 1rem;
+                        margin: 1rem auto;
                     }
                     
                     .card-header {
@@ -630,7 +637,7 @@ class Step4View {
                     }
                     
                     .card-header h1 {
-                        font-size: 1.4rem;
+                        font-size: 1.3rem;
                     }
                     
                     .card-body {
@@ -639,6 +646,7 @@ class Step4View {
                     
                     .info-grid {
                         grid-template-columns: 1fr;
+                        gap: 0.75rem;
                     }
                     
                     .action-buttons {
@@ -647,10 +655,12 @@ class Step4View {
                     
                     .btn {
                         width: 100%;
+                        min-width: auto;
                     }
                     
                     .support-grid {
                         grid-template-columns: 1fr;
+                        gap: 0.75rem;
                     }
                 }
             </style>
@@ -662,7 +672,7 @@ class Step4View {
             <div class="navbar-brand">
                 <div class="navbar-logo">CNS</div>
                 <span class="navbar-title">FCT College of Nursing Sciences</span>
-                <span class="navbar-subtitle">Admissions Portal 2025/26</span>
+                <span class="navbar-subtitle">2025/26</span>
             </div>
             <div class="navbar-menu">
                 <a href="/apply/step/1" class="navbar-item">
@@ -681,11 +691,11 @@ class Step4View {
         <div class="progress-steps">
             <div class="step completed">
                 <span class="step-number">1</span>
-                <span class="step-label">JAMB Verification</span>
+                <span class="step-label">JAMB</span>
             </div>
             <div class="step completed">
                 <span class="step-number">2</span>
-                <span class="step-label">Application Form</span>
+                <span class="step-label">Form</span>
             </div>
             <div class="step completed">
                 <span class="step-number">3</span>
@@ -710,7 +720,7 @@ class Step4View {
                 </div>
                 <div class="success-content">
                     <div class="success-title">Payment Successful!</div>
-                    <div class="success-message">Your examination slip is ready. Please download and print it for the screening exercise.</div>
+                    <div class="success-message">Your examination slip is ready. Download and print it for the screening exercise.</div>
                 </div>
             </div>
 
@@ -718,7 +728,7 @@ class Step4View {
             <div class="card">
                 <div class="card-header">
                     <h1>Examination Slip</h1>
-                    <p>Download and print your examination slip for the screening exercise</p>
+                    <p>Download and print your examination slip</p>
                 </div>
                 <div class="card-body">
 
@@ -729,7 +739,7 @@ class Step4View {
                         </div>
                         <div class="preview-title">View/Print Examination Slip</div>
                         <div class="preview-subtitle">
-                            Slip Number: <?php echo $this->e($exam_slip['slip_number'] ?? 'Not Available'); ?>
+                            Slip: <?php echo $this->e($exam_slip['slip_number'] ?? 'Not Available'); ?>
                         </div>
                     </div>
 
@@ -739,25 +749,25 @@ class Step4View {
                             <div class="info-label">Slip Number</div>
                             <div class="info-value">
                                 <i class="fas fa-hashtag"></i>
-                                <?php echo $this->e($exam_slip['slip_number'] ?? 'Not Available'); ?>
+                                <?php echo $this->e($exam_slip['slip_number'] ?? 'N/A'); ?>
                             </div>
                         </div>
                         <div class="info-item">
-                            <div class="info-label">Application Number</div>
+                            <div class="info-label">Application No.</div>
                             <div class="info-value">
                                 <i class="fas fa-file-alt"></i>
-                                <?php echo $this->e($application['application_number'] ?? 'Not Available'); ?>
+                                <?php echo $this->e($application['application_number'] ?? 'N/A'); ?>
                             </div>
                         </div>
                         <div class="info-item">
-                            <div class="info-label">Examination Date</div>
+                            <div class="info-label">Exam Date</div>
                             <div class="info-value">
                                 <i class="fas fa-calendar-alt"></i>
-                                <?php echo $this->e(date('l, jS F Y', strtotime($exam_slip['exam_date'] ?? $exam_details['date']))); ?>
+                                <?php echo $this->e(date('d M Y', strtotime($exam_slip['exam_date'] ?? $exam_details['date']))); ?>
                             </div>
                         </div>
                         <div class="info-item">
-                            <div class="info-label">Examination Time</div>
+                            <div class="info-label">Exam Time</div>
                             <div class="info-value">
                                 <i class="fas fa-clock"></i>
                                 <?php echo $this->e($exam_slip['exam_time'] ?? '10:00 AM'); ?>
@@ -781,14 +791,14 @@ class Step4View {
                             <div class="info-label">Seat Number</div>
                             <div class="info-value">
                                 <i class="fas fa-chair"></i>
-                                <?php echo $this->e($exam_slip['seat_number'] ?? 'To be assigned'); ?>
+                                <?php echo $this->e($exam_slip['seat_number'] ?? 'TBA'); ?>
                             </div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">Downloads</div>
                             <div class="info-value">
                                 <i class="fas fa-download"></i>
-                                <?php echo (int)($exam_slip['download_count'] ?? 0); ?> times
+                                <?php echo (int)($exam_slip['download_count'] ?? 0); ?>
                             </div>
                         </div>
                     </div>
@@ -796,47 +806,38 @@ class Step4View {
                     <!-- Action Buttons -->
                     <div class="action-buttons">
                         <button class="btn btn-primary" id="viewPrintBtn">
-                            <i class="fas fa-print"></i>
-                            View / Print Slip
+                            <i class="fas fa-print"></i> View / Print
                         </button>
                         <button class="btn btn-success" id="downloadBtn">
-                            <i class="fas fa-download"></i>
-                            Download PDF
+                            <i class="fas fa-download"></i> Download PDF
                         </button>
                         <a href="/apply/step/1" class="btn btn-outline">
-                            <i class="fas fa-home"></i>
-                            Back to Home
+                            <i class="fas fa-home"></i> Home
                         </a>
                     </div>
 
                     <!-- Important Note -->
                     <div class="note-box">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <span><strong>Important:</strong> Please print your examination slip and bring it to the screening center. Digital copies on phones may not be accepted.</span>
+                        <span><strong>Important:</strong> Print this slip and bring it to the screening center. Digital copies may not be accepted.</span>
                     </div>
 
                     <!-- Support Section -->
                     <div class="support-section">
-                        <div class="support-title">Need Assistance?</div>
+                        <div class="support-title">Need Help?</div>
                         <div class="support-grid">
                             <div class="support-card">
-                                <div class="support-icon">
-                                    <i class="fas fa-phone"></i>
-                                </div>
-                                <h4>Phone Support</h4>
+                                <div class="support-icon"><i class="fas fa-phone"></i></div>
+                                <h4>Phone</h4>
                                 <p>07039837749</p>
                             </div>
                             <div class="support-card">
-                                <div class="support-icon">
-                                    <i class="fab fa-whatsapp"></i>
-                                </div>
+                                <div class="support-icon"><i class="fab fa-whatsapp"></i></div>
                                 <h4>WhatsApp</h4>
                                 <p>08082775076</p>
                             </div>
                             <div class="support-card">
-                                <div class="support-icon">
-                                    <i class="fas fa-envelope"></i>
-                                </div>
+                                <div class="support-icon"><i class="fas fa-envelope"></i></div>
                                 <h4>Email</h4>
                                 <p>admissions@fctcns.edu.ng</p>
                             </div>
@@ -847,6 +848,9 @@ class Step4View {
             </div><!-- /card -->
 
         </div><!-- /main-container -->
+
+        <!-- Hidden iframe for download -->
+        <iframe id="downloadFrame" style="display:none;"></iframe>
 
         <!-- ========================================================= -->
         <!-- 7. Add CSP nonce to all script tags -->
@@ -866,10 +870,10 @@ class Step4View {
             const viewPrintBtn = document.getElementById('viewPrintBtn');
             const downloadBtn = document.getElementById('downloadBtn');
             const slipPreview = document.getElementById('slipPreview');
+            const downloadFrame = document.getElementById('downloadFrame');
 
             // ── Toast Notification ───────────────────────────────────
             function showToast(message, type = 'info') {
-                // Remove existing toasts
                 document.querySelectorAll('.toast-notification').forEach(t => t.remove());
 
                 const toast = document.createElement('div');
@@ -888,58 +892,42 @@ class Step4View {
                     toast.style.opacity = '0';
                     toast.style.transform = 'translateX(100%)';
                     setTimeout(() => toast.remove(), 300);
-                }, 5000);
+                }, 4000);
             }
 
-            // ── Track Event ──────────────────────────────────────────
-            function trackEvent(eventType) {
-                if (csrfToken) {
-                    fetch('/api/track-event', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken
-                        },
-                        body: JSON.stringify({
-                            event: eventType,
-                            slipNumber: slipNumber,
-                            applicationId: applicationId,
-                            timestamp: new Date().toISOString()
-                        })
-                    }).catch(err => console.error('Tracking failed:', err));
-                }
-            }
-
-            // ─── FIXED: Download Function ─────────────────────────────
+            // ─── FIXED: Download Function - Actually Works Now ────────
             function triggerDownload(btn) {
                 if (!slipNumber) {
-                    showToast('Exam slip not available for download', 'error');
+                    showToast('Exam slip not available', 'error');
                     return;
                 }
 
                 const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing PDF...';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
                 btn.disabled = true;
 
-                trackEvent('exam_slip_download');
-                showToast('Preparing your PDF for download...', 'info');
+                // Show preparing message
+                showToast('Preparing your PDF...', 'info');
 
-                // Create a hidden anchor element for download
+                // Create download URL with timestamp to prevent caching
                 const downloadUrl = baseUrl + '/apply/download-exam-slip?csrf=' + encodeURIComponent(csrfToken) + '&t=' + Date.now();
                 
-                // Use fetch to check if the download is available first
-                fetch(downloadUrl, {
-                    method: 'HEAD',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Download not available');
-                    }
+                // Set iframe source to trigger download
+                if (downloadFrame) {
+                    // Set up one-time load event
+                    const onLoad = function() {
+                        setTimeout(() => {
+                            btn.innerHTML = originalText;
+                            btn.disabled = false;
+                            showToast('Download started', 'success');
+                        }, 1000);
+                        downloadFrame.removeEventListener('load', onLoad);
+                    };
                     
-                    // If HEAD request succeeds, proceed with download
+                    downloadFrame.addEventListener('load', onLoad);
+                    downloadFrame.src = downloadUrl;
+                } else {
+                    // Fallback: create temporary anchor
                     const a = document.createElement('a');
                     a.href = downloadUrl;
                     a.download = 'exam-slip-' + slipNumber + '.html';
@@ -951,37 +939,27 @@ class Step4View {
                         document.body.removeChild(a);
                         btn.innerHTML = originalText;
                         btn.disabled = false;
-                        showToast('Download started successfully', 'success');
+                        showToast('Download started', 'success');
                     }, 1000);
-                })
-                .catch(error => {
-                    console.error('Download error:', error);
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    showToast('Download failed. Please try again or use Print instead.', 'error');
-                });
+                }
             }
 
-            // ─── FIXED: Open Print View ───────────────────────────────
+            // ─── Open Print View ─────────────────────────────────────
             function openPrintView() {
                 if (!slipNumber) {
                     showToast('Exam slip not available', 'error');
                     return;
                 }
 
-                trackEvent('exam_slip_view');
-                
-                // Open print view in new window with proper dimensions
+                // Open print view in new window
                 const printWindow = window.open(
                     baseUrl + '/apply/print-exam-slip?csrf=' + encodeURIComponent(csrfToken) + '&t=' + Date.now(),
                     'PrintExamSlip',
-                    'width=900,height=700,scrollbars=yes,resizable=yes,menubar=yes,toolbar=yes,location=yes,status=yes'
+                    'width=900,height=700,scrollbars=yes,resizable=yes'
                 );
 
                 if (!printWindow) {
                     showToast('Please allow pop-ups to view the exam slip', 'error');
-                } else {
-                    showToast('Opening print view...', 'info');
                 }
             }
 
@@ -1018,23 +996,12 @@ class Step4View {
                 }
             });
 
-            // ── Log page view ────────────────────────────────────────
-            console.log('Step 4 page loaded:', {
-                slipNumber: slipNumber,
-                applicationId: applicationId,
-                timestamp: new Date().toISOString()
-            });
-
-            // Check if slip was recently generated
+            // ── Check if slip was recently generated ─────────────────
             <?php if (isset($_GET['new']) && $_GET['new'] == 1): ?>
-            showToast('Your examination slip has been generated successfully!', 'success');
+            showToast('Your examination slip has been generated!', 'success');
             <?php endif; ?>
 
-            // Prevent accidental navigation
-            window.addEventListener('beforeunload', function(e) {
-                // No confirmation dialog, just log
-                console.log('User leaving step 4 page');
-            });
+            console.log('Step 4 ready - Slip:', slipNumber);
 
         })();
         </script>
