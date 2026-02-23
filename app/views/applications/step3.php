@@ -7,9 +7,12 @@
  * FIXED: Demo card details displayed correctly
  * FIXED: CSP compliance with proper nonce handling
  * FIXED: AJAX error handling for non-JSON responses
+ * FIXED: Corrected API endpoints to match router routes
+ * FIXED: Using /apply/initiate-payment and /apply/verify-payment endpoints
+ * FIXED: Enhanced verification with auto-retry and better error messages
  * 
  * @package FCTCNS
- * @version 3.0 (Production Ready)
+ * @version 3.1 (Production Ready)
  */
 
 // =========================================================
@@ -40,6 +43,7 @@ class PaymentView {
         $currency = $currency ?? '₦';
         $pending_payment = $pending_payment ?? null;
         $environment = $environment ?? 'demo';
+        $payment_status = $payment_status ?? null;
         
         $applicant_name = trim(($application['first_name'] ?? '') . ' ' . ($application['last_name'] ?? ''));
         if (empty($applicant_name)) {
@@ -47,6 +51,9 @@ class PaymentView {
         }
         
         $application_number = $application['application_number'] ?? 'APP-' . str_pad(($application['id'] ?? 0), 5, '0', STR_PAD_LEFT);
+        
+        // Check if payment already success
+        $payment_success = ($payment_status === 'success');
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -1108,13 +1115,17 @@ class PaymentView {
                 // ===== Configuration =====
                 const CONFIG = {
                     pendingRRR: <?php echo isset($pending_payment['rrr']) ? json_encode($pending_payment['rrr']) : 'null'; ?>,
-                    pendingPayUrl: <?php echo isset($pending_payment['payment_url']) ? json_encode($pending_payment['payment_url']) : 'null'; ?>,
                     environment: '<?php echo e($environment); ?>',
+                    // CORRECT ENDPOINTS - matches router routes
+                    initiateEndpoint: '/apply/initiate-payment',
+                    verifyEndpoint: '/apply/verify-payment',
+                    statusEndpoint: '/payment/check-status',
                     demoPaymentUrl: 'https://demo.remita.net/remita/onepage/payment/init.reg'
                 };
 
                 // ===== State =====
                 let currentRRR = '';
+                let verificationInProgress = false;
 
                 // ===== DOM Elements =====
                 const elements = {
@@ -1235,7 +1246,7 @@ class PaymentView {
 
                 // ===== API Calls =====
                 async function generateRRR() {
-                    if (!elements.generateBtn) return;
+                    if (!elements.generateBtn || verificationInProgress) return;
                     
                     const btn = elements.generateBtn;
                     btn.disabled = true;
@@ -1244,7 +1255,7 @@ class PaymentView {
                     showStatus(true, 'Generating RRR, please wait...');
                     
                     try {
-                        const response = await fetch('/apply/initiate-payment', {
+                        const response = await fetch(CONFIG.initiateEndpoint, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1258,6 +1269,7 @@ class PaymentView {
                         
                         if (!response.ok) {
                             const text = await response.text();
+                            console.error('Server error response:', text.substring(0, 200));
                             throw new Error(`Server error (${response.status})`);
                         }
                         
@@ -1275,11 +1287,11 @@ class PaymentView {
                             showAlert('RRR generated successfully!', 'success');
                             showPaymentUI(data.rrr, data.payment_url);
                             
-                            // Auto-open payment in new tab
+                            // Auto-open payment in new tab after a brief delay
                             setTimeout(() => {
-                                const url = data.payment_url || `${CONFIG.demoPaymentUrl}?rrr=${encodeURIComponent(data.rrr)}&channel=CARD,USSD,ENAIRA,TRANSFER`;
+                                const url = data.payment_url || `${CONFIG.demoPaymentUrl}?rrr=${encodeURIComponent(data.rrr)}`;
                                 window.open(url, '_blank');
-                            }, 500);
+                            }, 800);
                         } else {
                             btn.disabled = false;
                             btn.innerHTML = '<i class="fas fa-bolt"></i> Generate RRR';
@@ -1294,20 +1306,28 @@ class PaymentView {
                     }
                 }
 
-                async function verifyPayment(rrr) {
+                async function verifyPayment(rrr, retryCount = 0) {
                     if (!rrr) {
                         showAlert('No RRR found to verify', 'warning');
                         return;
                     }
                     
-                    showStatus(true, 'Verifying payment, please wait...');
+                    if (verificationInProgress) {
+                        showAlert('Verification already in progress', 'info');
+                        return;
+                    }
+                    
+                    verificationInProgress = true;
+                    
+                    showStatus(true, 'Verifying payment with Remita...');
                     
                     if (elements.verifyBtn) {
                         elements.verifyBtn.disabled = true;
+                        elements.verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
                     }
                     
                     try {
-                        const response = await fetch('/apply/verify-payment', {
+                        const response = await fetch(CONFIG.verifyEndpoint, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1337,16 +1357,26 @@ class PaymentView {
                         
                         if (elements.verifyBtn) {
                             elements.verifyBtn.disabled = false;
+                            elements.verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> I\'ve Paid — Verify Payment';
                         }
                         
                         if (data.success) {
-                            showAlert('Payment verified! Redirecting...', 'success');
+                            showAlert('✅ Payment verified successfully! Redirecting...', 'success');
                             setTimeout(() => {
                                 window.location.href = data.redirect || '/apply/step/4';
                             }, 1500);
                         } else {
                             if (data.pending) {
-                                showAlert('Payment is still pending. Please complete payment on Remita.', 'warning');
+                                showAlert('⏳ Payment is still pending. Please complete payment on Remita.', 'warning');
+                                
+                                // Offer to retry after 5 seconds
+                                if (retryCount < 2) {
+                                    setTimeout(() => {
+                                        if (confirm('Payment still pending. Would you like to check again?')) {
+                                            verifyPayment(rrr, retryCount + 1);
+                                        }
+                                    }, 5000);
+                                }
                             } else {
                                 showAlert(data.message || 'Payment not confirmed', 'danger');
                             }
@@ -1356,8 +1386,11 @@ class PaymentView {
                         showStatus(false);
                         if (elements.verifyBtn) {
                             elements.verifyBtn.disabled = false;
+                            elements.verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> I\'ve Paid — Verify Payment';
                         }
                         showAlert(error.message, 'danger');
+                    } finally {
+                        verificationInProgress = false;
                     }
                 }
 
@@ -1391,10 +1424,21 @@ class PaymentView {
                 document.addEventListener('DOMContentLoaded', () => {
                     // Check for pending payment from session
                     if (CONFIG.pendingRRR) {
-                        showPaymentUI(CONFIG.pendingRRR, CONFIG.pendingPayUrl);
+                        showPaymentUI(CONFIG.pendingRRR);
                         
                         // Show info alert
                         showAlert('You have a pending payment. Complete it to continue.', 'info');
+                        
+                        // Check URL for RRR parameter (from redirect)
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const rrrParam = urlParams.get('rrr');
+                        
+                        if (rrrParam && rrrParam === CONFIG.pendingRRR) {
+                            // Auto-verify after returning from Remita
+                            setTimeout(() => {
+                                verifyPayment(rrrParam);
+                            }, 1000);
+                        }
                     }
                 });
 

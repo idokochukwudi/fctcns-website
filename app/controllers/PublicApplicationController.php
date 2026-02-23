@@ -17,6 +17,8 @@
  * FIXED 2a: Block saveApplication() from redirecting to payment if O'Level fails
  * FIXED 2b: Block step3() / showPayment() if O'Level requirement not met
  * FIXED 2c: Pass O'Level credit summary to step2 view
+ * FIXED 3: Payment RRR formatting with dashes for display
+ * FIXED 4: Proper payment verification with exam slip generation
  * 
  * @package FCT_CNS
  */
@@ -1550,6 +1552,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Initiate payment - Generate RRR using Remita API
+     * FIXED: Proper RRR formatting with dashes for display
      */
     public function initiatePayment() {
         // Set header for JSON response
@@ -1632,12 +1635,18 @@ class PublicApplicationController extends ApplicationBaseController {
                 
                 error_log("✅ REAL RRR generated from Remita API: " . $rrr);
                 
+                // Format RRR with dashes for display (e.g., 2407-9951-5454)
+                $formattedRrr = $rrr;
+                if (strlen($rrr) == 12) {
+                    $formattedRrr = substr($rrr, 0, 4) . '-' . substr($rrr, 4, 4) . '-' . substr($rrr, 8, 4);
+                }
+                
                 // Create payment record in database
                 $paymentData = [
                     'application_id' => $application['id'],
                     'applicant_id' => $applicantId,
                     'reference' => $reference,
-                    'rrr' => $rrr,
+                    'rrr' => $formattedRrr, // Store formatted version for display
                     'order_id' => $orderId,
                     'amount' => $fee,
                     'payment_type' => 'application_fee',
@@ -1653,25 +1662,27 @@ class PublicApplicationController extends ApplicationBaseController {
                     return;
                 }
                 
-                // Generate secure payment URL server-side
-                $paymentUrl = $this->generatePaymentUrl($rrr);
+                // Generate secure payment URL server-side using the raw RRR (without dashes)
+                $paymentUrl = $this->generatePaymentUrl($rrr); // Pass raw RRR to URL generator
                 
-                // Store in session
+                // Store in session with formatted RRR for display
                 $_SESSION['pending_payment'] = [
                     'payment_id' => $paymentId,
-                    'rrr' => $rrr,
+                    'rrr' => $formattedRrr, // Store formatted version
                     'amount' => $fee,
-                    'payment_url' => $paymentUrl
+                    'payment_url' => $paymentUrl,
+                    'created_at' => time()
                 ];
                 
                 echo json_encode([
                     'success' => true,
                     'message' => 'RRR generated successfully',
-                    'rrr' => $rrr,
+                    'rrr' => $formattedRrr, // Send formatted RRR to view
                     'payment_url' => $paymentUrl,
                     'reference' => $reference,
                     'order_id' => $orderId,
-                    'amount' => $fee
+                    'amount' => $fee,
+                    'payment_id' => $paymentId
                 ]);
                 
             } else {
@@ -1698,9 +1709,10 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Generate secure Remita payment URL (server-side)
+     * Uses raw RRR without dashes for the URL
      */
     private function generatePaymentUrl($rrr) {
-        // Clean RRR - remove any non-numeric characters
+        // Clean RRR - remove any non-numeric characters (dashes, spaces, etc.)
         $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
         
         // Build URL with proper encoding
@@ -1780,7 +1792,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 try {
                     // Payment is confirmed by Remita
                     $updateResult = $this->paymentModel->markAsSuccess($payment['id'], [
-                        'transaction_id' => $verificationResult['payment_data']['transactionId'] ?? 'TXN' . time(),
+                        'transaction_id' => $verificationResult['payment_data']['transactionId'] ?? $verificationResult['payment_data']['transactionRef'] ?? 'TXN' . time(),
                         'payment_method' => 'remita',
                         'payer_email' => $verificationResult['payment_data']['payerEmail'] ?? null,
                         'payer_name' => $verificationResult['payment_data']['payerName'] ?? null,
@@ -3359,6 +3371,54 @@ class PublicApplicationController extends ApplicationBaseController {
                 'success' => false, 
                 'message' => 'An error occurred. Please try again or contact support.'
             ]);
+        }
+    }
+
+    /**
+     * Check payment status (AJAX endpoint)
+     */
+    public function checkPaymentStatus() {
+        header('Content-Type: application/json');
+        
+        // Initialize security
+        $this->initSecurity();
+        
+        if (!isset($_SESSION['applicant_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Please login first']);
+            return;
+        }
+        
+        $rrr = $_GET['rrr'] ?? '';
+        
+        if (empty($rrr)) {
+            echo json_encode(['success' => false, 'message' => 'RRR required']);
+            return;
+        }
+        
+        try {
+            $payment = $this->paymentModel->getByRRR($rrr);
+            
+            if (!$payment) {
+                echo json_encode(['success' => false, 'message' => 'Payment not found']);
+                return;
+            }
+            
+            // Verify ownership
+            if ($payment['applicant_id'] != $_SESSION['applicant_id']) {
+                echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+                return;
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'status' => $payment['status'],
+                'payment_date' => $payment['payment_date'] ?? null,
+                'message' => $payment['status'] === 'success' ? 'Payment completed' : 'Payment pending'
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Check payment status error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Server error occurred']);
         }
     }
 
