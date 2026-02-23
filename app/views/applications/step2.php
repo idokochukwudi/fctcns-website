@@ -3,6 +3,9 @@
  * Step 2: Application Form View
  * FIXED: Correct step tracking - this is Step 3 (Application Form)
  * UPDATED: Purple color scheme matching JAMB verification page
+ * FIXED 3a: Added O'Level credit status banner
+ * FIXED 3b: Added subject-level grade feedback panel
+ * FIXED 3c: Replaced JavaScript with credit check functionality
  * 
  * @package FCTCNS
  */
@@ -44,6 +47,10 @@ class ApplicationFormView {
         $temp_password = $temp_password ?? '';
         $errors = $errors ?? [];
         $currentStep = 3; // This is step 3 (Application Form)
+        
+        // FIX 3a: Get credit summary from controller data
+        $credit_summary = $credit_summary ?? null;
+        $olevel_session_error = $olevel_session_error ?? null;
 
         // Get application step if available
         if (isset($application) && !empty($application['application_step'])) {
@@ -974,6 +981,68 @@ class ApplicationFormView {
             </div>
             <?php endif; ?>
 
+            <!-- ===== FIX 3a: O'LEVEL CREDIT STATUS BANNER ===== -->
+            <?php if (!empty($olevel_session_error)): ?>
+            <div class="flash-alert error" id="olevelSessionError">
+                <i class="fas fa-ban"></i>
+                <div>
+                    <strong>Cannot Proceed to Payment</strong><br>
+                    <?php echo $this->e($olevel_session_error); ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($credit_summary && !$credit_summary['meets_requirement'] && $credit_summary['total_sittings'] > 0): ?>
+            <div style="
+                background: #fff3e0;
+                border: 2px solid #f57c00;
+                border-left: 6px solid #f57c00;
+                border-radius: 10px;
+                padding: 1.2rem 1.5rem;
+                margin-bottom: 1.2rem;
+                display: flex;
+                align-items: flex-start;
+                gap: 1rem;
+            " id="olevelWarningBanner">
+                <i class="fas fa-triangle-exclamation" style="color:#f57c00;font-size:1.5rem;flex-shrink:0;margin-top:0.1rem;"></i>
+                <div style="flex:1;">
+                    <div style="font-weight:700;font-size:0.95rem;color:#b45309;margin-bottom:0.4rem;">
+                        O'Level Requirement Not Met — <?php echo (int)$credit_summary['credits_achieved']; ?>/5 Credits
+                    </div>
+                    <div style="font-size:0.85rem;color:#92400e;line-height:1.6;">
+                        <?php echo $this->e($credit_summary['message']); ?>
+                        <br>
+                        You need <strong>credit passes (A1–C6) in all five subjects</strong>: English Language, Mathematics, Biology, Chemistry, and Physics.
+                        <?php if ($credit_summary['total_sittings'] < 2): ?>
+                        <br>You may add a second sitting below if you sat the exam twice.
+                        <?php endif; ?>
+                    </div>
+                    <div style="margin-top:0.6rem;padding:0.5rem 0.75rem;background:#fff8f0;border-radius:6px;font-size:0.8rem;color:#b45309;">
+                        <i class="fas fa-lock" style="margin-right:0.4rem;"></i>
+                        <strong>The "Save &amp; Continue" button is disabled</strong> until you meet the minimum credit requirement.
+                    </div>
+                </div>
+            </div>
+            <?php elseif ($credit_summary && $credit_summary['meets_requirement'] && $credit_summary['total_sittings'] > 0): ?>
+            <div style="
+                background: #ecfdf5;
+                border: 2px solid #10b981;
+                border-left: 6px solid #10b981;
+                border-radius: 10px;
+                padding: 1rem 1.4rem;
+                margin-bottom: 1.2rem;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            ">
+                <i class="fas fa-circle-check" style="color:#10b981;font-size:1.4rem;flex-shrink:0;"></i>
+                <div style="font-size:0.88rem;color:#065f46;">
+                    <strong>O'Level Requirement Met</strong> — <?php echo (int)$credit_summary['credits_achieved']; ?>/5 credits achieved.
+                    You may proceed to payment.
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- ===== MAIN FORM CARD ===== -->
             <div class="form-card">
                 <form method="POST" action="/apply/save-application" enctype="multipart/form-data"
@@ -1200,6 +1269,17 @@ class ApplicationFormView {
                             <?php endforeach; ?>
                         </div>
 
+                        <!-- FIX 3b: Live credit check panel -->
+                        <div id="creditCheckPanel" style="margin-top:16px;display:none;">
+                            <div id="creditCheckInner" style="
+                                background: var(--sv1-primary-soft);
+                                border: 1px solid var(--sv1-border);
+                                border-radius: 8px;
+                                padding: 14px 18px;
+                                font-size: 0.82rem;
+                            "></div>
+                        </div>
+
                         <div class="mt-4">
                             <button type="button" class="btn btn-outline-teal btn-sm" id="add-olevel">
                                 <i class="fas fa-plus"></i> Add Another Sitting
@@ -1290,217 +1370,396 @@ class ApplicationFormView {
                 crossorigin="anonymous"
                 nonce="<?php echo $csp_nonce; ?>"></script>
         
+        <!-- FIX 3c: Replaced entire JavaScript block with credit check functionality -->
         <script nonce="<?php echo $csp_nonce; ?>">
-        /* ======================================================
-           STEP INDICATOR - Current step is 3 (Application Form)
-        ====================================================== */
-        // This is handled by PHP above - currentStep = 3
-
-        // Get CSRF token from meta tag
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-        /* ======================================================
-           O'Level — Add another sitting
-        ====================================================== */
-        let olevelIndex = <?php echo max(count($olevel_results ?: [[]]), 1); ?>;
-
-        document.getElementById('add-olevel').addEventListener('click', function () {
-            if (olevelIndex >= 2) {
-                alert('Maximum of 2 sittings allowed.');
-                return;
-            }
-
-            const grades = ['English','Mathematics','Biology','Chemistry','Physics'];
-            const gradeKeys = ['english','mathematics','biology','chemistry','physics'];
-            const gradeOptions = ['A1','B2','B3','C4','C5','C6','D7','E8','F9']
-                .map(g => `<option value="${g}">${g}</option>`).join('');
-
-            const gradeFields = gradeKeys.map((key, i) => `
-                <div>
-                    <label class="field-label">${grades[i]}</label>
-                    <select class="form-select" name="olevel[${olevelIndex}][${key}_grade]" required>
-                        <option value="">Grade</option>${gradeOptions}
-                    </select>
-                </div>`).join('');
-
-            const html = `
-            <div class="olevel-item">
-                <div class="olevel-item-head">
-                    <div class="olevel-item-label">
-                        <span class="idx-badge">${olevelIndex + 1}</span>
-                        O'Level Result — Sitting ${olevelIndex + 1}
-                    </div>
-                    <button type="button" class="btn-remove" onclick="this.closest('.olevel-item').remove()">
-                        <i class="fas fa-trash-alt"></i> Remove
-                    </button>
-                </div>
-                <div class="f-row cols-4">
-                    <div>
-                        <label class="field-label">Exam Type</label>
-                        <select class="form-select" name="olevel[${olevelIndex}][exam_type]" required>
-                            <option value="WAEC">WAEC</option>
-                            <option value="NECO">NECO</option>
-                            <option value="NABTEB">NABTEB</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="field-label">Exam Year</label>
-                        <input type="text" class="form-control" name="olevel[${olevelIndex}][exam_year]" placeholder="e.g. 2023" required>
-                    </div>
-                    <div>
-                        <label class="field-label">Exam / Centre Number</label>
-                        <input type="text" class="form-control" name="olevel[${olevelIndex}][exam_number]" placeholder="Optional">
-                    </div>
-                    <div>
-                        <label class="field-label">Sitting</label>
-                        <select class="form-select" name="olevel[${olevelIndex}][sitting]">
-                            <option value="1st">1st Sitting</option>
-                            <option value="2nd" selected>2nd Sitting</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="grades-divider">Subject Grades</div>
-                <div class="f-row cols-5">${gradeFields}</div>
-            </div>`;
-
-            document.getElementById('olevel-results-container').insertAdjacentHTML('beforeend', html);
-            olevelIndex++;
-        });
-
-        /* ======================================================
-           Passport upload - FIXED: No prompt, immediate preview
-        ====================================================== */
-        function previewPassport(input) {
-            if (!input.files || !input.files[0]) return;
-
-            const file = input.files[0];
-            if (file.size > 500 * 1024) {
-                alert('File is too large. Maximum size is 500 KB.');
-                input.value = '';
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const img = document.getElementById('passport-preview');
-                const box = document.getElementById('passportBox');
-                const placeholder = document.getElementById('passportPlaceholder');
-                
-                // Show image, hide placeholder
-                img.src = e.target.result;
-                img.style.display = 'block';
-                placeholder.style.display = 'none';
-                box.classList.add('has-image');
-                document.getElementById('passport-confirmed').value = '1';
-            };
-            reader.readAsDataURL(file);
-        }
-
-        /* ======================================================
-           AJAX Form Submission with Redirect Handling
-           UPDATED: Uses CSRF token from meta tag
-        ====================================================== */
-        (function() {
+        (function () {
             'use strict';
-            
-            const form = document.getElementById('mainForm');
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            const saveBtn = document.getElementById('saveBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            
-            // Remove default form submission
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Validate form
-                if (!form.checkValidity()) {
+
+            // ── CSRF token ────────────────────────────────────────────────
+            var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute('content') || '';
+
+            // ── Credit grades ─────────────────────────────────────────────
+            var CREDIT_GRADES  = ['A1','B2','B3','C4','C5','C6'];
+            var GRADE_ORDER    = ['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
+            var REQUIRED_KEYS  = ['english','mathematics','biology','chemistry','physics'];
+            var REQUIRED_LABELS = {
+                english: 'English Language',
+                mathematics: 'Mathematics',
+                biology: 'Biology',
+                chemistry: 'Chemistry',
+                physics: 'Physics'
+            };
+
+            // ── PHP initial credit summary ────────────────────────────────
+            var initialMeetsRequirement = <?php echo ($credit_summary && $credit_summary['meets_requirement']) ? 'true' : 'false'; ?>;
+
+            // ── Compute best grades from all olevel-item blocks ───────────
+            function computeCreditCheck() {
+                var items = document.querySelectorAll('.olevel-item');
+                var bestGrades = {};
+
+                items.forEach(function (item) {
+                    REQUIRED_KEYS.forEach(function (key) {
+                        var sel = item.querySelector('select[name*="[' + key + '_grade]"]');
+                        if (!sel || !sel.value) return;
+                        var grade = sel.value;
+                        if (!bestGrades[key]) {
+                            bestGrades[key] = grade;
+                        } else {
+                            var curRank = GRADE_ORDER.indexOf(bestGrades[key]);
+                            var newRank = GRADE_ORDER.indexOf(grade);
+                            if (newRank !== -1 && (curRank === -1 || newRank < curRank)) {
+                                bestGrades[key] = grade;
+                            }
+                        }
+                    });
+                });
+
+                var creditsAchieved = 0;
+                var missingSubjects = [];
+                var failedSubjects  = [];
+
+                REQUIRED_KEYS.forEach(function (key) {
+                    var label = REQUIRED_LABELS[key];
+                    if (!bestGrades[key]) {
+                        missingSubjects.push(label);
+                    } else if (CREDIT_GRADES.indexOf(bestGrades[key]) !== -1) {
+                        creditsAchieved++;
+                    } else {
+                        failedSubjects.push(label + ' (' + bestGrades[key] + ')');
+                    }
+                });
+
+                return {
+                    meetsRequirement: creditsAchieved >= 5,
+                    creditsAchieved:  creditsAchieved,
+                    missingSubjects:  missingSubjects,
+                    failedSubjects:   failedSubjects,
+                    bestGrades:       bestGrades
+                };
+            }
+
+            // ── Render live credit check panel ────────────────────────────
+            function renderCreditPanel(result) {
+                var panel = document.getElementById('creditCheckPanel');
+                var inner = document.getElementById('creditCheckInner');
+                if (!panel || !inner) return;
+
+                // Only show panel once at least one grade has been selected
+                var hasAnyGrade = Object.keys(result.bestGrades).length > 0;
+                panel.style.display = hasAnyGrade ? 'block' : 'none';
+                if (!hasAnyGrade) return;
+
+                var rows = REQUIRED_KEYS.map(function (key) {
+                    var label = REQUIRED_LABELS[key];
+                    var grade = result.bestGrades[key];
+                    if (!grade) {
+                        return '<span style="color:#ef4444;margin-right:12px;"><i class="fas fa-times-circle"></i> ' + label + ': —</span>';
+                    }
+                    var isCredit = CREDIT_GRADES.indexOf(grade) !== -1;
+                    var color = isCredit ? '#10b981' : '#ef4444';
+                    var icon  = isCredit ? 'fa-check-circle' : 'fa-times-circle';
+                    return '<span style="color:' + color + ';margin-right:12px;"><i class="fas ' + icon + '"></i> ' + label + ': <strong>' + grade + '</strong></span>';
+                }).join('');
+
+                var statusColor = result.meetsRequirement ? '#065f46' : '#92400e';
+                var statusBg    = result.meetsRequirement ? '#ecfdf5' : '#fff3e0';
+                var statusBorder = result.meetsRequirement ? '#10b981' : '#f57c00';
+                var statusIcon  = result.meetsRequirement ? 'fa-circle-check' : 'fa-triangle-exclamation';
+                var statusMsg   = result.meetsRequirement
+                    ? 'All 5 credits met! You may proceed to payment.'
+                    : result.creditsAchieved + '/5 credits. ';
+
+                if (!result.meetsRequirement) {
+                    if (result.missingSubjects.length > 0) statusMsg += 'No grade: ' + result.missingSubjects.join(', ') + '. ';
+                    if (result.failedSubjects.length  > 0) statusMsg += 'Below credit: ' + result.failedSubjects.join(', ') + '.';
+                }
+
+                inner.style.background = statusBg;
+                inner.style.border = '1px solid ' + statusBorder;
+                inner.innerHTML =
+                    '<div style="display:flex;flex-wrap:wrap;gap:4px 0;margin-bottom:8px;">' + rows + '</div>' +
+                    '<div style="color:' + statusColor + ';font-weight:600;">' +
+                        '<i class="fas ' + statusIcon + '" style="margin-right:6px;"></i>' + statusMsg +
+                    '</div>';
+            }
+
+            // ── Update warning banner and next button state ───────────────
+            function updateUIState(result) {
+                var banner  = document.getElementById('olevelWarningBanner');
+                var nextBtn = document.getElementById('nextBtn');
+
+                if (nextBtn) {
+                    if (result.meetsRequirement) {
+                        nextBtn.disabled = false;
+                        nextBtn.style.opacity = '';
+                        nextBtn.style.cursor  = '';
+                        nextBtn.title = '';
+                    } else {
+                        nextBtn.disabled = true;
+                        nextBtn.style.opacity = '0.45';
+                        nextBtn.style.cursor  = 'not-allowed';
+                        nextBtn.title = 'You must meet the O\'Level credit requirement before proceeding.';
+                    }
+                }
+
+                if (banner) {
+                    banner.style.display = result.meetsRequirement ? 'none' : 'flex';
+                }
+            }
+
+            // ── Run credit check whenever any grade dropdown changes ───────
+            function onGradeChange() {
+                var result = computeCreditCheck();
+                renderCreditPanel(result);
+                updateUIState(result);
+            }
+
+            function attachGradeListeners() {
+                document.querySelectorAll('.olevel-item select[name*="_grade"]').forEach(function (sel) {
+                    sel.removeEventListener('change', onGradeChange);
+                    sel.addEventListener('change', onGradeChange);
+                });
+            }
+
+            // ── Initial state on page load ────────────────────────────────
+            attachGradeListeners();
+            var initialResult = computeCreditCheck();
+            renderCreditPanel(initialResult);
+
+            // If no grades selected yet but PHP says not met, disable next
+            if (!initialMeetsRequirement || !initialResult.meetsRequirement) {
+                updateUIState({ meetsRequirement: false });
+            }
+
+            // ── O'Level — Add another sitting ─────────────────────────────
+            var olevelIndex = <?php echo max(count($olevel_results ?: [[]]), 1); ?>;
+
+            document.getElementById('add-olevel').addEventListener('click', function () {
+                if (olevelIndex >= 2) {
+                    alert('Maximum of 2 sittings allowed.');
+                    return;
+                }
+
+                var grades    = ['English','Mathematics','Biology','Chemistry','Physics'];
+                var gradeKeys = ['english','mathematics','biology','chemistry','physics'];
+                var gradeOptions = ['A1','B2','B3','C4','C5','C6','D7','E8','F9']
+                    .map(function(g) { return '<option value="' + g + '">' + g + '</option>'; }).join('');
+
+                var gradeFields = gradeKeys.map(function (key, i) {
+                    return '<div>' +
+                        '<label class="field-label">' + grades[i] + '</label>' +
+                        '<select class="form-select" name="olevel[' + olevelIndex + '][' + key + '_grade]" required>' +
+                            '<option value="">Grade</option>' + gradeOptions +
+                        '</select>' +
+                    '</div>';
+                }).join('');
+
+                var html = '<div class="olevel-item">' +
+                    '<div class="olevel-item-head">' +
+                        '<div class="olevel-item-label">' +
+                            '<span class="idx-badge">' + (olevelIndex + 1) + '</span>' +
+                            ' O\'Level Result — Sitting ' + (olevelIndex + 1) +
+                        '</div>' +
+                        '<button type="button" class="btn-remove" id="removeOlevel' + olevelIndex + '">' +
+                            '<i class="fas fa-trash-alt"></i> Remove' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="f-row cols-4">' +
+                        '<div><label class="field-label">Exam Type</label>' +
+                            '<select class="form-select" name="olevel[' + olevelIndex + '][exam_type]" required>' +
+                                '<option value="WAEC">WAEC</option>' +
+                                '<option value="NECO">NECO</option>' +
+                                '<option value="NABTEB">NABTEB</option>' +
+                            '</select></div>' +
+                        '<div><label class="field-label">Exam Year</label>' +
+                            '<input type="text" class="form-control" name="olevel[' + olevelIndex + '][exam_year]" placeholder="e.g. 2023" required></div>' +
+                        '<div><label class="field-label">Exam / Centre Number</label>' +
+                            '<input type="text" class="form-control" name="olevel[' + olevelIndex + '][exam_number]" placeholder="Optional"></div>' +
+                        '<div><label class="field-label">Sitting</label>' +
+                            '<select class="form-select" name="olevel[' + olevelIndex + '][sitting]">' +
+                                '<option value="1st">1st Sitting</option>' +
+                                '<option value="2nd" selected>2nd Sitting</option>' +
+                            '</select></div>' +
+                    '</div>' +
+                    '<div class="grades-divider">Subject Grades</div>' +
+                    '<div class="f-row cols-5">' + gradeFields + '</div>' +
+                '</div>';
+
+                var container = document.getElementById('olevel-results-container');
+                container.insertAdjacentHTML('beforeend', html);
+
+                // Wire up remove button
+                var removeBtn = document.getElementById('removeOlevel' + olevelIndex);
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', function () {
+                        this.closest('.olevel-item').remove();
+                        onGradeChange();
+                        attachGradeListeners();
+                    });
+                }
+
+                olevelIndex++;
+                attachGradeListeners();
+                onGradeChange();
+            });
+
+            // ── Wire up existing remove buttons ───────────────────────────
+            document.querySelectorAll('.btn-remove').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    this.closest('.olevel-item').remove();
+                    onGradeChange();
+                    attachGradeListeners();
+                });
+            });
+
+            // ── Passport upload preview ───────────────────────────────────
+            window.previewPassport = function (input) {
+                if (!input.files || !input.files[0]) return;
+                var file = input.files[0];
+                if (file.size > 500 * 1024) {
+                    alert('File is too large. Maximum size is 500 KB.');
+                    input.value = '';
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var img = document.getElementById('passport-preview');
+                    var box = document.getElementById('passportBox');
+                    var ph  = document.getElementById('passportPlaceholder');
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                    if (ph) ph.style.display = 'none';
+                    box.classList.add('has-image');
+                    document.getElementById('passport-confirmed').value = '1';
+                };
+                reader.readAsDataURL(file);
+            };
+
+            // ── AJAX Form Submission ──────────────────────────────────────
+            var form          = document.getElementById('mainForm');
+            var loadingOverlay = document.getElementById('loadingOverlay');
+            var saveBtn       = document.getElementById('saveBtn');
+            var nextBtn       = document.getElementById('nextBtn');
+
+            // Set initial disabled state
+            var initCheck = computeCreditCheck();
+            if (!initialMeetsRequirement && !initCheck.meetsRequirement) {
+                if (nextBtn) {
+                    nextBtn.disabled = true;
+                    nextBtn.style.opacity = '0.45';
+                    nextBtn.style.cursor  = 'not-allowed';
+                    nextBtn.title = 'You must meet the O\'Level credit requirement before proceeding.';
+                }
+            }
+
+            saveBtn.addEventListener('click', function () {
+                document.getElementById('form_action').value = 'save';
+            });
+
+            nextBtn.addEventListener('click', function (e) {
+                // Double-check client side before allowing submission
+                var check = computeCreditCheck();
+                if (!check.meetsRequirement) {
+                    e.preventDefault();
                     e.stopPropagation();
+
+                    var missing = [];
+                    if (check.missingSubjects.length > 0) missing.push('No grade entered for: ' + check.missingSubjects.join(', '));
+                    if (check.failedSubjects.length  > 0) missing.push('Below credit in: ' + check.failedSubjects.join(', '));
+
+                    alert(
+                        '⚠ O\'Level Requirement Not Met\n\n' +
+                        'You have ' + check.creditsAchieved + '/5 required credit passes.\n\n' +
+                        missing.join('\n') + '\n\n' +
+                        'You need credit passes (A1–C6) in:\n' +
+                        '• English Language\n• Mathematics\n• Biology\n• Chemistry\n• Physics\n\n' +
+                        'Please correct your O\'Level grades or add a second sitting before proceeding.'
+                    );
+                    return;
+                }
+
+                document.getElementById('form_action').value = 'next';
+            });
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                if (!form.checkValidity()) {
                     form.classList.add('was-validated');
                     return;
                 }
-                
+
                 form.classList.add('was-validated');
-                
-                // Show loading overlay
+
+                var action = document.getElementById('form_action').value;
+
+                // Final O'Level gate on 'next'
+                if (action === 'next') {
+                    var check = computeCreditCheck();
+                    if (!check.meetsRequirement) {
+                        alert(
+                            '⚠ O\'Level Requirement Not Met\n\n' +
+                            'You have ' + check.creditsAchieved + '/5 required credit passes.\n\n' +
+                            'Please correct your grades before proceeding to payment.'
+                        );
+                        return;
+                    }
+                }
+
                 loadingOverlay.classList.add('show');
-                
-                // Determine action (save or next)
-                const action = e.submitter ? (e.submitter.id === 'nextBtn' ? 'next' : 'save') : 'save';
-                document.getElementById('form_action').value = action;
-                
-                // Create FormData
-                const formData = new FormData(form);
-                
-                // Send AJAX request
+
+                var formData = new FormData(form);
+
                 fetch('/apply/save-application', {
                     method: 'POST',
                     body: formData,
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    }
+                    headers: { 'X-CSRF-TOKEN': csrfToken }
                 })
-                .then(response => {
-                    // Check content type before parsing JSON
-                    const contentType = response.headers.get('content-type');
-                    if (!contentType || !contentType.includes('application/json')) {
+                .then(function (response) {
+                    var ct = response.headers.get('content-type');
+                    if (!ct || ct.indexOf('application/json') === -1) {
                         throw new Error('Server returned non-JSON response');
                     }
                     return response.json();
                 })
-                .then(data => {
+                .then(function (data) {
                     loadingOverlay.classList.remove('show');
-                    
+
                     if (data.success) {
-                        // Show success message
-                        alert(data.message);
-                        
-                        // Handle redirect if present
+                        // Check if server blocked payment due to O'Level
+                        if (data.olevel_blocked) {
+                            var blockMsg = '⚠ Cannot proceed to payment.\n\n' +
+                                'O\'Level requirement not met: ' + data.olevel_message + '\n\n' +
+                                'Credits achieved: ' + data.credits_achieved + '/5\n\n';
+                            if (data.missing_subjects && data.missing_subjects.length > 0) {
+                                blockMsg += 'Missing grades: ' + data.missing_subjects.join(', ') + '\n';
+                            }
+                            if (data.failed_subjects && data.failed_subjects.length > 0) {
+                                blockMsg += 'Below credit: ' + data.failed_subjects.join(', ') + '\n';
+                            }
+                            blockMsg += '\nPlease fix your O\'Level results and try again.';
+                            alert(blockMsg);
+                            return;
+                        }
+
                         if (data.redirect) {
                             window.location.href = data.redirect;
+                        } else {
+                            alert(data.message || 'Saved successfully.');
                         }
                     } else {
-                        // Show error message
-                        alert('Error: ' + data.message);
+                        alert('Error: ' + (data.message || 'An error occurred.'));
                     }
                 })
-                .catch(error => {
+                .catch(function (error) {
                     loadingOverlay.classList.remove('show');
-                    console.error('Error:', error);
-                    
-                    if (error.message.includes('non-JSON')) {
-                        alert('Server error. Please try again later.');
-                    } else {
-                        alert('An error occurred. Please try again.');
-                    }
+                    console.error('Form submission error:', error);
+                    alert('A server error occurred. Please try again.');
                 });
             });
-            
-            // Handle button clicks to ensure proper action value
-            saveBtn.addEventListener('click', function() {
-                document.getElementById('form_action').value = 'save';
-            });
-            
-            nextBtn.addEventListener('click', function() {
-                document.getElementById('form_action').value = 'next';
-            });
-        })();
 
-        /* ======================================================
-           Bootstrap native validation (fallback)
-        ====================================================== */
-        (function () {
-            'use strict';
-            var forms = document.querySelectorAll('.needs-validation');
-            Array.prototype.slice.call(forms).forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    if (!form.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    form.classList.add('was-validated');
-                }, false);
-            });
-        })();
+        }());
         </script>
         </body>
         </html>

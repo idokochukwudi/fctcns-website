@@ -14,6 +14,10 @@
  * - Prevention of multiple applications per session
  * - O'Level check after result combination
  * 
+ * FIXED 2a: Block saveApplication() from redirecting to payment if O'Level fails
+ * FIXED 2b: Block step3() / showPayment() if O'Level requirement not met
+ * FIXED 2c: Pass O'Level credit summary to step2 view
+ * 
  * @package FCT_CNS
  */
 
@@ -320,23 +324,32 @@ class PublicApplicationController extends ApplicationBaseController {
                 // Can access step 3 if JAMB is verified AND O'Level credits are sufficient
                 if (empty($application['jamb_number'])) {
                     error_log("SECURITY: Attempted to access step 3 without JAMB verification - Application: " . $application['id']);
+                    $_SESSION['flash_error'] = 'Please verify your JAMB number first.';
                     return false;
                 }
-                
-                // Check O'Level credits
+
+                // FIX 2b: Check O'Level credits using the detailed summary method
                 require_once MODELS_PATH . '/application/OlevelResultModel.php';
-                $olevelModel = new OlevelResultModel();
-                $olevelResults = $olevelModel->getByApplicationId($application['id']);
-                
-                $olevelValidation = $this->validateOlevelCredits($olevelResults);
-                
-                if (!$olevelValidation['success']) {
-                    error_log("O'LEVEL CHECK FAILED: Application " . $application['id'] . " - " . $olevelValidation['message']);
-                    $_SESSION['olevel_error'] = $olevelValidation['message'];
-                    $_SESSION['olevel_missing'] = $olevelValidation['missing'];
+                $olevelModel   = new OlevelResultModel();
+                $creditSummary = $olevelModel->getCreditCheckSummary($application['id']);
+
+                if (!$creditSummary['meets_requirement']) {
+                    error_log("O'LEVEL GATE BLOCKED: Application " . $application['id'] . " - " . $creditSummary['message']);
+
+                    // Build a detailed, user-friendly flash message
+                    $blockMsg = '⚠ You cannot proceed to payment. O\'Level requirement not met. '
+                              . 'You have ' . $creditSummary['credits_achieved'] . '/5 required credits. '
+                              . $creditSummary['message'];
+
+                    $_SESSION['flash_error']     = $blockMsg;
+                    $_SESSION['olevel_error']    = $creditSummary['message'];
+                    $_SESSION['olevel_missing']  = $creditSummary['missing_subjects'];
+                    $_SESSION['olevel_failed']   = $creditSummary['failed_subjects'];
+                    $_SESSION['olevel_credits']  = $creditSummary['credits_achieved'];
+                    $_SESSION['olevel_summary']  = $creditSummary;
                     return false;
                 }
-                
+
                 return true;
                 
             case 4:
@@ -379,14 +392,12 @@ class PublicApplicationController extends ApplicationBaseController {
             }
         }
         
-        // Check O'Level credits
+        // Check O'Level credits using new summary method
         require_once MODELS_PATH . '/application/OlevelResultModel.php';
         $olevelModel = new OlevelResultModel();
-        $olevelResults = $olevelModel->getByApplicationId($application['id']);
+        $creditSummary = $olevelModel->getCreditCheckSummary($application['id']);
         
-        $olevelValidation = $this->validateOlevelCredits($olevelResults);
-        
-        if (!$olevelValidation['success']) {
+        if (!$creditSummary['meets_requirement']) {
             return 'OLEVEL_INCOMPLETE';
         }
         
@@ -1013,20 +1024,31 @@ class PublicApplicationController extends ApplicationBaseController {
         $docModel = new ApplicationDocumentModel();
         $passport = $docModel->getPassport($application['id']);
         
-        // Check O'Level validation status
+        // Check O'Level validation status using legacy method
         $olevelValidation = $this->validateOlevelCredits($olevel_results);
+        
+        // FIX 2c: Get detailed credit summary for the view
+        $creditSummary = $olevelModel->getCreditCheckSummary($application['id']);
+
+        // Carry over any O'Level session errors
+        $olevelSessionError = $_SESSION['olevel_error'] ?? null;
+        unset($_SESSION['olevel_error'], $_SESSION['olevel_missing'], $_SESSION['olevel_failed'],
+              $_SESSION['olevel_credits'], $_SESSION['olevel_summary']);
         
         // Pass data to view including file paths
         $this->data = array_merge($this->data, [
-            'pageTitle' => 'Application Form - Step 2',
-            'application' => $application,
-            'applicant' => $applicant,
-            'jamb_data' => $_SESSION['jamb_verification'] ?? null,
-            'olevel_results' => $olevel_results,
-            'passport' => $passport,
-            'states' => $this->getStates(),
-            'programs' => $this->getPrograms(),
-            'csrf_token' => $this->csrfToken(),
+            'pageTitle'          => 'Application Form - Step 2',
+            'application'        => $application,
+            'applicant'          => $applicant,
+            'jamb_data'          => $_SESSION['jamb_verification'] ?? null,
+            'olevel_results'     => $olevel_results,
+            'olevel_validation'  => $olevelValidation,
+            'credit_summary'     => $creditSummary,
+            'olevel_session_error' => $olevelSessionError,
+            'passport'           => $passport,
+            'states'             => $this->getStates(),
+            'programs'           => $this->getPrograms(),
+            'csrf_token'         => $this->csrfToken(),
             'existing_passport' => !empty($application['passport_photo']) ? [
                 'file_path' => $application['passport_photo'],
                 'id' => 'passport'
@@ -1044,8 +1066,7 @@ class PublicApplicationController extends ApplicationBaseController {
             'existing_birth_certificate' => !empty($application['birth_certificate']) ? [
                 'file_path' => $application['birth_certificate'],
                 'id' => 'birth_certificate'
-            ] : null,
-            'olevel_validation' => $olevelValidation
+            ] : null
         ]);
         
         // Redirect to step 2 instead of rendering form
@@ -1053,7 +1074,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Save application form - FIXED with security checks and O'Level validation
+     * Save application form - FIXED 2a with security checks and O'Level validation
      */
     public function saveApplication() {
         // Set header to JSON first thing
@@ -1246,26 +1267,36 @@ class PublicApplicationController extends ApplicationBaseController {
                 $this->applicationModel->commit();
             }
             
+            // FIX 2a: Re-validate O'Level using the dedicated model method for accurate summary
+            require_once MODELS_PATH . '/application/OlevelResultModel.php';
+            $olevelModelCheck = new OlevelResultModel();
+            $creditSummary = $olevelModelCheck->getCreditCheckSummary($application['id']);
+
             // Prepare success response
             $response = [
-                'success' => true,
-                'message' => 'Application saved successfully',
-                'application_id' => $application['id']
+                'success'        => true,
+                'message'        => 'Application saved successfully',
+                'application_id' => $application['id'],
+                'olevel_summary' => $creditSummary,
             ];
-            
-            // Add O'Level validation warning if needed
-            if (!$olevelValidation['success']) {
-                $response['warning'] = $olevelValidation['message'];
-                $response['missing_credits'] = $olevelValidation['missing'];
-            }
-            
+
             if (!empty($uploadErrors)) {
                 $response['upload_errors'] = $uploadErrors;
             }
-            
-            // If action is 'next', include redirect
+
+            // FIX 2a: If action is 'next', check O'Level before allowing redirect to payment
             if (isset($_POST['action']) && $_POST['action'] === 'next') {
-                $response['redirect'] = '/apply/step/3';
+                if (!$creditSummary['meets_requirement']) {
+                    // Do NOT redirect — return error so JS can show the alert
+                    $response['olevel_blocked'] = true;
+                    $response['olevel_message'] = $creditSummary['message'];
+                    $response['missing_subjects'] = $creditSummary['missing_subjects'];
+                    $response['failed_subjects']  = $creditSummary['failed_subjects'];
+                    $response['credits_achieved'] = $creditSummary['credits_achieved'];
+                    // No redirect key - stays on step 2
+                } else {
+                    $response['redirect'] = '/apply/step/3';
+                }
             }
             
             echo json_encode($response);
@@ -1463,7 +1494,7 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // SECURITY: Validate step access
+        // SECURITY: Validate step access (FIX 2b is already in validateStepAccess)
         if (!$this->validateStepAccess($application, 3, 'showPayment')) {
             $this->redirectToProperStep($application);
             return;
@@ -2784,7 +2815,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Show step 2: Application form (Legacy Flow) - SECURITY FIXED
+     * Show step 2: Application form (Legacy Flow) - FIXED 2c with credit summary
      */
     public function step2() {
         // Initialize security
@@ -2840,8 +2871,16 @@ class PublicApplicationController extends ApplicationBaseController {
         $olevelModel = new OlevelResultModel();
         $olevel_results = $olevelModel->getByApplicationId($application['id']);
         
-        // Check O'Level validation status
+        // Check O'Level validation status using legacy method
         $olevelValidation = $this->validateOlevelCredits($olevel_results);
+        
+        // FIX 2c: Get detailed credit summary for the view
+        $creditSummary = $olevelModel->getCreditCheckSummary($application['id']);
+
+        // Carry over any O'Level session errors
+        $olevelSessionError = $_SESSION['olevel_error'] ?? null;
+        unset($_SESSION['olevel_error'], $_SESSION['olevel_missing'], $_SESSION['olevel_failed'],
+              $_SESSION['olevel_credits'], $_SESSION['olevel_summary']);
         
         // Get passport
         require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
@@ -2852,16 +2891,18 @@ class PublicApplicationController extends ApplicationBaseController {
         $applicant = $this->applicantModel->find($applicantId);
         
         $this->data = array_merge($this->data, [
-            'pageTitle' => 'Step 2: Application Form',
-            'application' => $application,
-            'applicant' => $applicant,
-            'jamb_data' => $_SESSION['jamb_verification'],
-            'olevel_results' => $olevel_results,
-            'olevel_validation' => $olevelValidation,
-            'passport' => $passport,
-            'states' => $this->getStates(),
-            'programs' => $this->getPrograms(),
-            'csrf_token' => $this->csrfToken()
+            'pageTitle'          => 'Step 2: Application Form',
+            'application'        => $application,
+            'applicant'          => $applicant,
+            'jamb_data'          => $_SESSION['jamb_verification'],
+            'olevel_results'     => $olevel_results,
+            'olevel_validation'  => $olevelValidation,
+            'credit_summary'     => $creditSummary,
+            'olevel_session_error' => $olevelSessionError,
+            'passport'           => $passport,
+            'states'             => $this->getStates(),
+            'programs'           => $this->getPrograms(),
+            'csrf_token'         => $this->csrfToken()
         ]);
         
         $this->render('applications/step2');
@@ -2894,7 +2935,7 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
-        // SECURITY: Validate step access
+        // SECURITY: Validate step access (FIX 2b is already in validateStepAccess)
         if (!$this->validateStepAccess($application, 3, 'step3')) {
             $this->redirectToProperStep($application);
             return;

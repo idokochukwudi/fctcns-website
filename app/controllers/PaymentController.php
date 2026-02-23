@@ -7,6 +7,7 @@
  * FIXED: Proper payment verification through Remita
  * FIXED: CSRF token validation
  * FIXED: Added missing helper methods
+ * FIXED: Added guard in verify() to block already-pending payments
  * 
  * @package FCT_CNS
  */
@@ -291,25 +292,44 @@ class PaymentController extends Controller {
                 return;
             }
             
+            error_log("PaymentController verify: Starting verification for RRR: $rrr");
+            
             // Get payment record
             $payment = $this->paymentModel->getByRRR($rrr);
             
             if (!$payment) {
+                error_log("PaymentController verify: Payment not found for RRR: $rrr");
                 echo json_encode(['success' => false, 'message' => 'Payment record not found']);
                 return;
             }
             
             // Verify ownership
             if ($payment['applicant_id'] != $_SESSION['applicant_id']) {
+                error_log("PaymentController verify: User ID mismatch. Payment user: {$payment['applicant_id']}, Session user: {$_SESSION['applicant_id']}");
                 echo json_encode(['success' => false, 'message' => 'Unauthorized access to payment']);
+                return;
+            }
+            
+            // FIX 7: Block if already paid
+            if ($payment['status'] === 'success') {
+                error_log("PaymentController verify: Payment already verified for RRR: $rrr");
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Payment already verified',
+                    'redirect' => '/apply/step/4'
+                ]);
                 return;
             }
             
             // Call Remita to verify payment status
             $verificationResult = $this->remitaModel->verifyPayment($rrr);
             
-            error_log("Remita verification result: " . print_r($verificationResult, true));
+            error_log("=== REMITA VERIFICATION RESULT ===");
+            error_log("RRR: $rrr");
+            error_log("Status returned: " . ($verificationResult['status'] ?? 'NULL'));
+            error_log("Full result: " . print_r($verificationResult, true));
             
+            // CRITICAL: Only accept 'success' — treat everything else as not paid
             if ($verificationResult['status'] === 'success') {
                 // Payment is confirmed by Remita
                 $updateResult = $this->paymentModel->markAsSuccess($payment['id'], [
@@ -335,24 +355,34 @@ class PaymentController extends Controller {
                     // Remove used token
                     unset($_SESSION['csrf_tokens'][$csrfToken]);
                     
+                    error_log("PaymentController verify: Payment verified successfully for RRR: $rrr");
+                    
                     echo json_encode([
                         'success' => true,
                         'message' => 'Payment verified successfully',
                         'redirect' => '/apply/step/4'
                     ]);
                 } else {
+                    error_log("PaymentController verify: Failed to update payment status for RRR: $rrr");
                     echo json_encode([
                         'success' => false,
                         'message' => 'Failed to update payment status'
                     ]);
                 }
             } elseif ($verificationResult['status'] === 'pending') {
+                error_log("PaymentController verify: Payment pending for RRR: $rrr");
+                
                 echo json_encode([
                     'success' => false,
                     'message' => 'Payment is still pending on Remita. Please check again later.',
                     'pending' => true
                 ]);
             } else {
+                error_log("PaymentController verify: Payment failed for RRR: $rrr. Reason: " . ($verificationResult['message'] ?? 'Unknown'));
+                
+                // Update payment status to failed
+                $this->paymentModel->updateStatus($payment['id'], 'failed');
+                
                 echo json_encode([
                     'success' => false,
                     'message' => 'Payment not found or not completed on Remita.'

@@ -4,6 +4,10 @@
  * UPDATED: Added O'Level results section and improved layout
  * SIMPLIFIED: Using only server-generated QR - User clicks Print button before print preview
  * FIXED: Download functionality, button responsiveness, and security
+ * FIXED 1: Removed formatGrade() global PHP function, replaced with closure
+ * FIXED 2: Removed CSRF token from QR URL
+ * FIXED 3: Replaced all onerror inline JS with data-* attribute approach
+ * FIXED 4: Replaced entire script block with enhanced version
  *
  * @package FCTCNS
  */
@@ -30,27 +34,19 @@ class ExamSlipPrintView {
         // ── Logo path: public/assets/images/logo/logo.png ──────────────
         $logoUrl    = $baseUrl . '/assets/images/logo/logo.png';
         
-        // Helper function to format grade with color
-        function formatGrade($grade) {
+        // FIX 1: Grade formatter as closure (avoids "Cannot redeclare function" if view included twice)
+        $formatGrade = function($grade) {
             $gradeColors = [
-                'A1' => '#2e7d32',
-                'B2' => '#2e7d32',
-                'B3' => '#2e7d32',
-                'C4' => '#f57c00',
-                'C5' => '#f57c00',
-                'C6' => '#f57c00',
-                'D7' => '#c62828',
-                'E8' => '#c62828',
-                'F9' => '#b71c1c'
+                'A1' => '#2e7d32', 'B2' => '#2e7d32', 'B3' => '#2e7d32',
+                'C4' => '#f57c00', 'C5' => '#f57c00', 'C6' => '#f57c00',
+                'D7' => '#c62828', 'E8' => '#c62828', 'F9' => '#b71c1c'
             ];
-            
-            $color = $gradeColors[$grade] ?? '#333';
+            $color    = $gradeColors[$grade] ?? '#333';
             $isCredit = in_array($grade, ['A1','B2','B3','C4','C5','C6']);
-            $badge = $isCredit ? ' ✓' : '';
-            
-            return '<span style="color:' . $color . '; font-weight:' . ($isCredit ? '700' : '400') . ';">' 
-                   . htmlspecialchars($grade) . $badge . '</span>';
-        }
+            $badge    = $isCredit ? ' ✓' : '';
+            return '<span style="color:' . $color . '; font-weight:' . ($isCredit ? '700' : '400') . ';">'
+                   . htmlspecialchars($grade ?? '') . $badge . '</span>';
+        };
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -787,12 +783,11 @@ class ExamSlipPrintView {
             <div class="institution-header">
 
                 <div class="logo-box">
+                    <!-- FIX 3a: Logo image with data-fallback attribute -->
                     <img src="<?php echo $this->e($logoUrl); ?>"
                          alt="FCT CNS Logo"
-                         onerror="
-                             this.style.display='none';
-                             this.parentNode.innerHTML='<div class=\'logo-fallback\'><span class=\'lf-top\'>FCT</span><span class=\'lf-mid\'>CNS</span><span class=\'lf-btm\'>Nursing</span></div>';
-                         ">
+                         id="logoImg"
+                         data-fallback="logo">
                 </div>
 
                 <div class="institution-text">
@@ -823,9 +818,11 @@ class ExamSlipPrintView {
                 <div class="photo-panel">
                     <div class="photo-box">
                         <?php if (!empty($application['passport_photo'])): ?>
+                            <!-- FIX 3c: Passport image with data-fallback attribute -->
                             <img src="<?php echo $this->e($application['passport_photo']); ?>"
                                  alt="Passport Photo"
-                                 onerror="this.outerHTML='<div class=\'no-photo\'>Photo<br>Not Found</div>';">
+                                 id="passportImg"
+                                 data-fallback="passport">
                         <?php else: ?>
                             <div class="no-photo">Photograph<br>Not Available</div>
                         <?php endif; ?>
@@ -836,12 +833,15 @@ class ExamSlipPrintView {
                 <!-- QR code (server-generated) -->
                 <div class="qr-panel">
                     <?php
-                    $qrUrl = $baseUrl . '/application-verify/generate-qr/' . urlencode($slipNumber) . '?t=' . time() . '&csrf=' . urlencode($csrf_token);
+                    // FIX 2: Removed CSRF token from QR URL
+                    $qrUrl = $baseUrl . '/application-verify/generate-qr/' . urlencode($slipNumber) . '?t=' . time();
                     ?>
                     <div class="qr-box">
+                        <!-- FIX 3b: QR image with data-fallback attribute -->
                         <img src="<?php echo $this->e($qrUrl); ?>"
                              alt="QR Code"
-                             onerror="this.onerror=null; this.parentNode.innerHTML='<div style=\'font-size:8pt;color:#999;text-align:center;padding:10px;\'>QR<br>Unavailable</div>';">
+                             id="qrImg"
+                             data-fallback="qr">
                     </div>
                     <div class="media-caption">Scan to Verify</div>
                 </div>
@@ -939,7 +939,8 @@ class ExamSlipPrintView {
                                     </td>
                                     <td>
                                         <?php if (!empty($grade)): ?>
-                                            <?php echo formatGrade($grade); ?>
+                                            <!-- FIX 1: Use $formatGrade closure instead of global function -->
+                                            <?php echo $formatGrade($grade); ?>
                                         <?php else: ?>
                                             <span style="color: #999;">—</span>
                                         <?php endif; ?>
@@ -1101,241 +1102,242 @@ class ExamSlipPrintView {
         <!-- ========================================================= -->
         <!-- 4. Add CSP nonce to all script tags -->
         <!-- ========================================================= -->
+        <!-- FIX 4: Replaced entire script block with enhanced version -->
         <script nonce="<?php echo $csp_nonce; ?>">
-            // ======================================================
-            // Exam Slip Print JavaScript with Security Enhancements
-            // FIXED: Download functionality and button responsiveness
-            // ======================================================
-            
-            (function() {
-                'use strict';
+        (function () {
+            'use strict';
 
-                // Get CSRF token from meta tag
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                const slipNumber = '<?php echo $this->e($slipNumber); ?>';
-                const baseUrl = '<?php echo $baseUrl; ?>';
+            var csrfToken  = (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute('content') || '';
+            var slipNumber = '<?php echo $this->e($slipNumber); ?>';
+            var baseUrl    = '<?php echo $baseUrl; ?>';
 
-                // Show toast notification
-                function showToast(msg, type = 'info') {
-                    // Remove existing toasts
-                    document.querySelectorAll('.toast-notification').forEach(t => t.remove());
-                    
-                    // Create toast element
-                    const toast = document.createElement('div');
-                    toast.className = `toast-notification toast-${type}`;
-                    toast.setAttribute('role', 'alert');
-                    
-                    const icon = type === 'success' ? 'fa-check-circle' : 
-                                type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
-                    
-                    // Sanitize message to prevent XSS
-                    const safeMsg = String(msg).replace(/[<>]/g, '');
-                    
-                    toast.innerHTML = `<i class="fas ${icon}"></i> ${safeMsg}`;
-                    
-                    document.body.appendChild(toast);
-                    
-                    // Auto remove after 3 seconds
-                    setTimeout(() => {
-                        toast.style.transition = 'opacity 0.3s, transform 0.3s';
-                        toast.style.opacity = '0';
-                        toast.style.transform = 'translateX(100%)';
-                        setTimeout(() => toast.remove(), 300);
-                    }, 3000);
-                }
+            // ── Image fallback handlers (replaces all onerror inline attributes) ─
+            function attachImageFallbacks() {
 
-                // Track print/download attempt
-                function trackEvent(eventType) {
-                    if (csrfToken) {
-                        fetch('/api/track-event', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken
-                            },
-                            body: JSON.stringify({
-                                event: eventType,
-                                slipNumber: slipNumber,
-                                timestamp: new Date().toISOString()
-                            })
-                        }).catch(err => console.error('Tracking failed:', err));
-                    }
-                }
-
-                // Trigger print
-                function triggerPrint(btn) {
-                    const orig = btn.innerHTML;
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
-                    btn.disabled = true;
-                    
-                    // Track print attempt
-                    trackEvent('exam_slip_print');
-                    
-                    // Show preparing message
-                    showToast('Preparing your document for printing...', 'info');
-                    
-                    setTimeout(function () {
-                        btn.innerHTML = orig;
-                        btn.disabled = false;
-                        
-                        // Trigger print
-                        window.print();
-                        
-                        showToast('Print dialog opened', 'success');
-                    }, 500);
-                }
-
-                // Trigger download
-                function triggerDownload(btn) {
-                    const orig = btn.innerHTML;
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
-                    btn.disabled = true;
-                    
-                    // Track download attempt
-                    trackEvent('exam_slip_download');
-                    
-                    showToast('Preparing PDF for download...', 'info');
-                    
-                    // Create a hidden iframe for download to avoid navigation
-                    const iframe = document.createElement('iframe');
-                    iframe.style.display = 'none';
-                    iframe.src = '<?php echo $baseUrl; ?>/apply/download-exam-slip?csrf=' + encodeURIComponent(csrfToken) + '&t=' + Date.now();
-                    
-                    iframe.onload = function() {
-                        setTimeout(function() {
-                            btn.innerHTML = orig;
-                            btn.disabled = false;
-                            showToast('Download started', 'success');
-                            document.body.removeChild(iframe);
-                        }, 1000);
-                    };
-                    
-                    iframe.onerror = function() {
-                        btn.innerHTML = orig;
-                        btn.disabled = false;
-                        showToast('Download failed. Please try again.', 'error');
-                        document.body.removeChild(iframe);
-                    };
-                    
-                    document.body.appendChild(iframe);
-                }
-
-                // Close window securely
-                function closeWindow() {
-                    if (confirm('Are you sure you want to close this window?')) {
-                        // Track close attempt
-                        trackEvent('exam_slip_close');
-                        
-                        // Try to close window
-                        window.close();
-                        
-                        // Fallback if window.close() fails (not allowed by browser)
-                        setTimeout(() => {
-                            showToast('Please close this tab manually', 'info');
-                        }, 500);
-                    }
-                }
-
-                // Initialize event listeners after DOM is loaded
-                document.addEventListener('DOMContentLoaded', function() {
-                    // Print button
-                    const printBtn = document.getElementById('printBtn');
-                    if (printBtn) {
-                        printBtn.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            triggerPrint(this);
-                        });
-                    }
-
-                    // Download button
-                    const downloadBtn = document.getElementById('downloadBtn');
-                    if (downloadBtn) {
-                        downloadBtn.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            triggerDownload(this);
-                        });
-                    }
-
-                    // Close button
-                    const closeBtn = document.getElementById('closeBtn');
-                    if (closeBtn) {
-                        closeBtn.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            closeWindow();
-                        });
-                    }
-
-                    // Auto-print when opened as a popup from step4.php
-                    if (window.opener) {
-                        showToast('Auto-printing in 1 second...', 'info');
-                        setTimeout(function() { 
-                            trackEvent('exam_slip_auto_print');
-                            window.print(); 
-                        }, 1000);
-                    }
-
-                    // Log page view
-                    console.log('Exam slip print view loaded:', {
-                        slipNumber: slipNumber,
-                        timestamp: new Date().toISOString()
+                // Logo fallback
+                var logoImg = document.getElementById('logoImg');
+                if (logoImg) {
+                    logoImg.addEventListener('error', function () {
+                        var box = this.parentNode;
+                        if (box) {
+                            var fallback = document.createElement('div');
+                            fallback.className = 'logo-fallback';
+                            fallback.innerHTML =
+                                '<span class="lf-top">FCT</span>' +
+                                '<span class="lf-mid">CNS</span>' +
+                                '<span class="lf-btm">Nursing</span>';
+                            box.replaceChild(fallback, this);
+                        }
                     });
+                }
 
-                    // Check if window was opened with CSRF token
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const urlCsrf = urlParams.get('csrf');
-                    
-                    if (urlCsrf && urlCsrf !== csrfToken) {
-                        console.warn('CSRF token mismatch in URL');
-                        showToast('Security token mismatch. Please refresh.', 'error');
-                    }
-                });
-
-                // Handle back button cache
-                window.addEventListener('pageshow', function(event) {
-                    if (event.persisted) {
-                        console.log('Page loaded from cache');
-                    }
-                });
-
-                // Prevent right-click on sensitive elements
-                document.querySelectorAll('.qr-box, .slip-number-bar, .verification-url').forEach(el => {
-                    el.addEventListener('contextmenu', e => e.preventDefault());
-                });
-
-                // Add keyboard shortcuts
-                document.addEventListener('keydown', function(e) {
-                    // Ctrl+P or Cmd+P for print
-                    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                        e.preventDefault();
-                        const printBtn = document.getElementById('printBtn');
-                        if (printBtn) {
-                            triggerPrint(printBtn);
+                // QR fallback
+                var qrImg = document.getElementById('qrImg');
+                if (qrImg) {
+                    qrImg.addEventListener('error', function () {
+                        var box = this.parentNode;
+                        if (box) {
+                            var fallback = document.createElement('div');
+                            fallback.style.cssText = 'font-size:8pt;color:#999;text-align:center;padding:10px;';
+                            fallback.textContent = 'QR Unavailable';
+                            box.replaceChild(fallback, this);
                         }
-                    }
-                    
-                    // Escape key to close
-                    if (e.key === 'Escape') {
-                        if (confirm('Close this window?')) {
-                            window.close();
+                    });
+                }
+
+                // Passport fallback
+                var passportImg = document.getElementById('passportImg');
+                if (passportImg) {
+                    passportImg.addEventListener('error', function () {
+                        var box = this.parentNode;
+                        if (box) {
+                            var fallback = document.createElement('div');
+                            fallback.className = 'no-photo';
+                            fallback.innerHTML = 'Photo<br>Not Found';
+                            box.replaceChild(fallback, this);
                         }
+                    });
+                }
+            }
+
+            // ── Toast notification ────────────────────────────────────────
+            function showToast(msg, type) {
+                type = type || 'info';
+                document.querySelectorAll('.toast-notification').forEach(function (t) { t.remove(); });
+
+                var toast = document.createElement('div');
+                toast.className = 'toast-notification toast-' + type;
+                toast.setAttribute('role', 'alert');
+
+                var icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+                var icon  = icons[type] || icons.info;
+
+                // Safe text node — no innerHTML with user content
+                var i = document.createElement('i');
+                i.className = 'fas ' + icon;
+                var text = document.createTextNode(' ' + String(msg));
+                toast.appendChild(i);
+                toast.appendChild(text);
+
+                document.body.appendChild(toast);
+
+                setTimeout(function () {
+                    toast.style.transition  = 'opacity .3s, transform .3s';
+                    toast.style.opacity     = '0';
+                    toast.style.transform   = 'translateX(100%)';
+                    setTimeout(function () { toast.remove(); }, 320);
+                }, 3000);
+            }
+
+            // ── Print ─────────────────────────────────────────────────────
+            function triggerPrint(btn) {
+                var orig = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+                btn.disabled  = true;
+
+                showToast('Preparing document for printing…', 'info');
+
+                // Wait for all images to be loaded before printing
+                var images = document.querySelectorAll('.slip img');
+                var loaded = 0;
+                var total  = images.length;
+
+                function doPrint() {
+                    btn.innerHTML = orig;
+                    btn.disabled  = false;
+                    window.print();
+                }
+
+                if (total === 0) {
+                    setTimeout(doPrint, 400);
+                    return;
+                }
+
+                images.forEach(function (img) {
+                    if (img.complete) {
+                        loaded++;
+                        if (loaded >= total) { setTimeout(doPrint, 200); }
+                    } else {
+                        img.addEventListener('load',  function () { loaded++; if (loaded >= total) { setTimeout(doPrint, 200); } });
+                        img.addEventListener('error', function () { loaded++; if (loaded >= total) { setTimeout(doPrint, 200); } });
                     }
                 });
 
-                // Add performance marking
-                performance.mark('print-view-loaded');
-                
-                // Log performance
-                window.addEventListener('load', function() {
-                    performance.mark('print-view-fully-loaded');
-                    performance.measure('print-view-load', 'print-view-loaded', 'print-view-fully-loaded');
-                    const measures = performance.getEntriesByType('measure');
-                    console.log('Page load time:', measures[0]?.duration.toFixed(0) + 'ms');
-                });
+                // Safety timeout — print anyway after 4 seconds
+                setTimeout(function () {
+                    if (btn.disabled) {
+                        btn.innerHTML = orig;
+                        btn.disabled  = false;
+                        window.print();
+                    }
+                }, 4000);
+            }
 
-                // Log successful load
-                console.log('Exam slip print view initialized successfully');
-                
-            })();
+            // ── Download ──────────────────────────────────────────────────
+            function triggerDownload(btn) {
+                var orig = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+                btn.disabled  = true;
+
+                showToast('Preparing PDF for download…', 'info');
+
+                // Use a temporary <a> click — reliable for file downloads
+                var url = baseUrl + '/apply/download-exam-slip'
+                        + '?csrf=' + encodeURIComponent(csrfToken)
+                        + '&t='    + Date.now();
+
+                var a  = document.createElement('a');
+                a.href = url;
+                a.setAttribute('download', 'exam-slip-' + slipNumber + '.html');
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // Re-enable button after a short delay
+                setTimeout(function () {
+                    btn.innerHTML = orig;
+                    btn.disabled  = false;
+                    showToast('Download started', 'success');
+                }, 1500);
+            }
+
+            // ── Close ─────────────────────────────────────────────────────
+            function closeWindow() {
+                // Only attempt close — no confirm() dialog
+                if (window.opener) {
+                    window.close();
+                } else {
+                    // Not opened via window.open — redirect to exam slip page
+                    window.location.href = '/apply/step/4';
+                }
+            }
+
+            // ── Auto-print when opened as a popup ────────────────────────
+            function maybeAutoPrint() {
+                if (!window.opener) return;
+
+                showToast('Auto-printing in 2 seconds…', 'info');
+
+                // Wait for all images before auto-printing
+                var images = document.querySelectorAll('.slip img');
+                var allLoaded = Array.from(images).every(function (img) { return img.complete; });
+
+                if (allLoaded) {
+                    setTimeout(function () { window.print(); }, 1000);
+                } else {
+                    var remaining = images.length;
+                    var done = 0;
+                    var timer = setTimeout(function () { window.print(); }, 5000); // max wait
+
+                    images.forEach(function (img) {
+                        function onDone() {
+                            done++;
+                            if (done >= remaining) {
+                                clearTimeout(timer);
+                                setTimeout(function () { window.print(); }, 500);
+                            }
+                        }
+                        img.addEventListener('load',  onDone);
+                        img.addEventListener('error', onDone);
+                    });
+                }
+            }
+
+            // ── Keyboard shortcuts ────────────────────────────────────────
+            document.addEventListener('keydown', function (e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                    e.preventDefault();
+                    var printBtn = document.getElementById('printBtn');
+                    if (printBtn) triggerPrint(printBtn);
+                }
+                if (e.key === 'Escape') {
+                    closeWindow();
+                }
+            });
+
+            // ── Prevent right-click on sensitive elements ─────────────────
+            document.querySelectorAll('.qr-box, .slip-number-bar, .verification-url').forEach(function (el) {
+                el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+            });
+
+            // ── Wire up buttons ───────────────────────────────────────────
+            document.addEventListener('DOMContentLoaded', function () {
+
+                attachImageFallbacks();
+
+                var printBtn    = document.getElementById('printBtn');
+                var downloadBtn = document.getElementById('downloadBtn');
+                var closeBtn    = document.getElementById('closeBtn');
+
+                if (printBtn)    printBtn.addEventListener('click',    function (e) { e.preventDefault(); triggerPrint(this); });
+                if (downloadBtn) downloadBtn.addEventListener('click', function (e) { e.preventDefault(); triggerDownload(this); });
+                if (closeBtn)    closeBtn.addEventListener('click',    function (e) { e.preventDefault(); closeWindow(); });
+
+                maybeAutoPrint();
+            });
+
+        }());
         </script>
 
         </body>

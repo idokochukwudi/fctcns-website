@@ -3,6 +3,7 @@
  * O'Level Result Model
  * 
  * Handles O'Level result data operations
+ * FIXED: Added getCreditCheckSummary method for consistent validation across controller and view
  * 
  * @package FCT_CNS
  * @subpackage Application
@@ -81,6 +82,92 @@ class OlevelResultModel extends BaseModel {
             error_log("OlevelResultModel::saveResults - Error: " . $e->getMessage());
             throw $e;
         }
+    }
+    
+    /**
+     * Get credit check summary for display and gating
+     * Returns structured data for use in controller and view
+     * 
+     * @param int $applicationId
+     * @return array
+     */
+    public function getCreditCheckSummary($applicationId) {
+        $results = $this->getByApplicationId($applicationId);
+        
+        $creditGrades    = ['A1', 'B2', 'B3', 'C4', 'C5', 'C6'];
+        $gradeOrder      = ['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
+        $requiredSubjects = [
+            'english'     => 'English Language',
+            'mathematics' => 'Mathematics',
+            'biology'     => 'Biology',
+            'chemistry'   => 'Chemistry',
+            'physics'     => 'Physics',
+        ];
+
+        // Find best grade per subject across all sittings
+        $bestGrades = [];
+        foreach ($results as $sitting) {
+            foreach ($requiredSubjects as $key => $label) {
+                $gradeKey = $key . '_grade';
+                if (!empty($sitting[$gradeKey])) {
+                    $grade = strtoupper($sitting[$gradeKey]);
+                    if (!isset($bestGrades[$key])) {
+                        $bestGrades[$key] = $grade;
+                    } else {
+                        $currentRank = array_search($bestGrades[$key], $gradeOrder);
+                        $newRank     = array_search($grade, $gradeOrder);
+                        if ($newRank !== false && ($currentRank === false || $newRank < $currentRank)) {
+                            $bestGrades[$key] = $grade;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Check which subjects have credit passes
+        $creditsAchieved = 0;
+        $missingSubjects  = [];
+        $failedSubjects   = [];
+        $subjectStatus    = [];
+
+        foreach ($requiredSubjects as $key => $label) {
+            if (!isset($bestGrades[$key])) {
+                $missingSubjects[]      = $label;
+                $subjectStatus[$key]    = ['label' => $label, 'grade' => null, 'passed' => false, 'missing' => true];
+            } elseif (in_array($bestGrades[$key], $creditGrades)) {
+                $creditsAchieved++;
+                $subjectStatus[$key] = ['label' => $label, 'grade' => $bestGrades[$key], 'passed' => true, 'missing' => false];
+            } else {
+                $failedSubjects[]    = $label . ' (' . $bestGrades[$key] . ')';
+                $subjectStatus[$key] = ['label' => $label, 'grade' => $bestGrades[$key], 'passed' => false, 'missing' => false];
+            }
+        }
+
+        $meetsRequirement = ($creditsAchieved >= 5);
+
+        // Build human-readable message
+        if ($meetsRequirement) {
+            $message = 'All 5 required subjects have credit passes. You may proceed to payment.';
+        } elseif (!empty($missingSubjects) && !empty($failedSubjects)) {
+            $message = 'Missing grades for: ' . implode(', ', $missingSubjects) . '. '
+                     . 'Below credit in: ' . implode(', ', $failedSubjects) . '.';
+        } elseif (!empty($missingSubjects)) {
+            $message = 'No grade entered for: ' . implode(', ', $missingSubjects) . '.';
+        } else {
+            $message = 'Credit passes required in: ' . implode(', ', $failedSubjects) . '.';
+        }
+
+        return [
+            'meets_requirement' => $meetsRequirement,
+            'credits_achieved'  => $creditsAchieved,
+            'credits_required'  => 5,
+            'best_grades'       => $bestGrades,
+            'subject_status'    => $subjectStatus,
+            'missing_subjects'  => $missingSubjects,
+            'failed_subjects'   => $failedSubjects,
+            'total_sittings'    => count($results),
+            'message'           => $message,
+        ];
     }
     
     /**

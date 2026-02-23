@@ -12,7 +12,6 @@
  * FIXED: Added JSONP response handling to extract RRR from jsonp() wrapper
  * FIXED: Updated verification endpoint to /echannelsvc/{merchantId}/{rrr}/orderstatus.reg
  * FIXED: Payment verification now properly handles RRR with dashes
- * FIXED: Added demo mode simulation for testing
  * FIXED: Corrected SettingsModel path to /application/SettingsModel.php
  *
  * @package FCT_CNS
@@ -161,6 +160,17 @@ class RemitaModel extends BaseModel {
     }
 
     /**
+     * Generate hash for status check endpoint:
+     *   SHA-512( merchantId + rrr + apiKey )
+     */
+    public function generateStatusHash($rrr) {
+        $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
+        $raw = $this->merchantId . $cleanRrr . $this->apiKey;
+        error_log("generateStatusHash: merchantId({$this->merchantId}) + rrr($cleanRrr) + apiKey");
+        return hash('sha512', $raw);
+    }
+
+    /**
      * Generate hash for payment status/verification:
      *   SHA-512( merchantId + serviceTypeId + rrr + amount + apiKey )
      */
@@ -168,7 +178,7 @@ class RemitaModel extends BaseModel {
         // Ensure RRR is clean (no dashes)
         $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
         $raw = $this->merchantId . $this->serviceTypeId . $cleanRrr . $amount . $this->apiKey;
-        error_log("generateApiHash raw string: merchantId({$this->merchantId}) + serviceTypeId({$this->serviceTypeId}) + rrr($cleanRrr) + amount($amount) + apiKey({$this->apiKey})");
+        error_log("generateApiHash raw string: merchantId({$this->merchantId}) + serviceTypeId({$this->serviceTypeId}) + rrr($cleanRrr) + amount($amount) + apiKey");
         return hash('sha512', $raw);
     }
 
@@ -178,7 +188,7 @@ class RemitaModel extends BaseModel {
      */
     public function generateRRRHash($orderId, $amount) {
         $raw = $this->merchantId . $this->serviceTypeId . $orderId . $amount . $this->apiKey;
-        error_log("generateRRRHash raw string: merchantId({$this->merchantId}) + serviceTypeId({$this->serviceTypeId}) + orderId($orderId) + amount($amount) + apiKey({$this->apiKey})");
+        error_log("generateRRRHash raw string: merchantId({$this->merchantId}) + serviceTypeId({$this->serviceTypeId}) + orderId($orderId) + amount($amount) + apiKey");
         return hash('sha512', $raw);
     }
 
@@ -517,31 +527,11 @@ class RemitaModel extends BaseModel {
             $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
             error_log("RemitaModel: cleaned RRR: $cleanRrr");
             
-            // For demo purposes, check if this is a valid format (12 digits)
-            if (strlen($cleanRrr) === 12 && $this->environment === 'demo') {
-                // Simulate successful verification for demo
-                error_log("RemitaModel: DEMO MODE - simulating successful verification");
-                
-                return [
-                    'status' => 'success',
-                    'message' => 'Payment verified successfully',
-                    'payment_data' => [
-                        'transactionId' => 'TXN' . time(),
-                        'payerEmail' => 'demo@example.com',
-                        'payerName' => 'Demo User',
-                        'amount' => $this->settingsModel->getApplicationFee() ?? 2200,
-                        'rrr' => $cleanRrr,
-                        'paymentDate' => date('Y-m-d H:i:s'),
-                        'status' => 'PAID',
-                        'responseCode' => '00',
-                        'responseMsg' => 'SUCCESS'
-                    ]
-                ];
-            }
+            // FIX 1: Remove demo auto-approval block - always verify against Remita API
+            error_log("RemitaModel: verifying RRR $cleanRrr against Remita API (env: {$this->environment})");
             
-            // If not in demo mode or RRR invalid, try actual API call
-            // FIXED: Correct endpoint format
-            $endpoint = $this->baseUrl . '/echannelsvc/' . $this->merchantId . '/' . $cleanRrr . '/orderstatus.reg';
+            // FIX 2: Correct Remita status check endpoint
+            $endpoint = $this->baseUrl . '/echannelsvc/' . $this->merchantId . '/' . $cleanRrr . '/' . $this->generateStatusHash($cleanRrr) . '/status.reg';
             
             error_log("RemitaModel: status endpoint = $endpoint");
             
@@ -596,42 +586,59 @@ class RemitaModel extends BaseModel {
                     $responseCode = $result['responseCode'] ?? $result['status'] ?? $result['message'] ?? '';
                     $responseMsg = $result['responseMsg'] ?? $result['message'] ?? '';
                     
-                    error_log("RemitaModel: responseCode = $responseCode, responseMsg = $responseMsg");
-                    
-                    // Demo environment returns "00" for success
-                    if ($responseCode === '00' || $responseCode === 'SUCCESS' || strtoupper($responseMsg) === 'SUCCESS') {
+                    error_log("RemitaModel: responseCode=$responseCode | responseMsg=$responseMsg | full result=" . json_encode($result));
+
+                    /*
+                     * FIX 4: Remita status codes:
+                     * '01'  = Payment successful (PAID)
+                     * '021' = Payment pending / awaiting payment
+                     * '062' = Payment reversed
+                     * '00'  = Some responses use 00 for success
+                     * Always check responseCode first, then fall back to message
+                     */
+                    if ($responseCode === '01' || $responseCode === '00') {
                         return [
                             'status'       => 'success',
-                            'message'      => 'Payment verified',
+                            'message'      => 'Payment verified successfully',
                             'payment_data' => $result,
                         ];
-                    } elseif ($responseCode === '01' || $responseCode === 'PENDING' || stripos($responseMsg, 'pending') !== false) {
+                    } elseif ($responseCode === '021' || $responseCode === 'PENDING' || stripos($responseMsg, 'pending') !== false) {
                         return [
                             'status'       => 'pending',
-                            'message'      => 'Payment pending',
+                            'message'      => 'Payment is pending. Please complete payment on Remita first.',
+                            'payment_data' => $result,
+                        ];
+                    } elseif (empty($responseCode) && strtoupper($responseMsg) === 'SUCCESS') {
+                        // Some Remita responses only have message, no code
+                        return [
+                            'status'       => 'success',
+                            'message'      => 'Payment verified successfully',
                             'payment_data' => $result,
                         ];
                     } else {
                         return [
                             'status'       => 'failed',
-                            'message'      => 'Payment not successful: ' . $responseMsg,
+                            'message'      => 'Payment not confirmed by Remita. Code: ' . $responseCode . '. Message: ' . $responseMsg,
                             'payment_data' => $result,
                         ];
                     }
                 }
             } elseif ($httpCode === 404) {
-                // RRR not found in Remita system - could be pending or not processed
+                // FIX 5: RRR not found in Remita system - payment was NOT made
+                error_log("RemitaModel: RRR $cleanRrr not found in Remita (404). Payment not made.");
                 return [
-                    'status'        => 'pending',
-                    'message'       => 'RRR not found in Remita system. Payment may still be processing.',
-                    'http_code'     => 404,
+                    'status'    => 'failed',
+                    'message'   => 'RRR not found in Remita. Payment has not been made.',
+                    'http_code' => 404,
                 ];
             }
 
-            // Default response
+            // FIX 6: Default - any other HTTP code means we could not confirm payment
+            error_log("RemitaModel: unhandled HTTP $httpCode for RRR $cleanRrr. Treating as failed.");
             return [
-                'status'        => 'unknown',
-                'message'       => "Unable to verify payment. HTTP: $httpCode",
+                'status'        => 'failed',
+                'message'       => 'Could not verify payment with Remita. Please try again or contact support.',
+                'http_code'     => $httpCode,
                 'response_data' => $response,
             ];
 

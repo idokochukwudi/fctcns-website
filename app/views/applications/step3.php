@@ -1,17 +1,19 @@
 <?php
 /**
  * Payment View - Step 3
- * Redesigned: Premium institutional design
- * UPDATED: Purple color scheme matching JAMB verification page
- * FIXED: Removed inline event handlers, fixed CSP violations, proper SRI hashes
- * FIXED: Restored demo card details, fixed non-JSON response error
+ * Premium institutional design with proper Remita integration
+ * FIXED: Complete redesign matching model/controller fixes
+ * FIXED: Proper payment flow with RRR generation and verification
+ * FIXED: Demo card details displayed correctly
+ * FIXED: CSP compliance with proper nonce handling
+ * FIXED: AJAX error handling for non-JSON responses
  * 
  * @package FCTCNS
- * @version 2.8 (Security Enhanced + CSP Compliant + Fixed AJAX errors)
+ * @version 3.0 (Production Ready)
  */
 
 // =========================================================
-// 1. Add required helpers at the top of each view file
+// 1. Security Helpers
 // =========================================================
 require_once APP_PATH . '/helpers/SecurityHelper.php';
 require_once APP_PATH . '/helpers/SecurityTrait.php';
@@ -34,716 +36,888 @@ class PaymentView {
 
         $baseUrl = $baseUrl ?? '/';
         $application = $application ?? [];
-        $fee = $fee ?? 2200;
+        $fee = $fee ?? 2500;
         $currency = $currency ?? '₦';
         $pending_payment = $pending_payment ?? null;
+        $environment = $environment ?? 'demo';
+        
         $applicant_name = trim(($application['first_name'] ?? '') . ' ' . ($application['last_name'] ?? ''));
         if (empty($applicant_name)) {
             $applicant_name = 'Applicant';
         }
+        
+        $application_number = $application['application_number'] ?? 'APP-' . str_pad(($application['id'] ?? 0), 5, '0', STR_PAD_LEFT);
         ?>
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta name="description" content="Payment - FCT College of Nursing Sciences">
             
-            <!-- ========================================================= -->
-            <!-- 2. Add security meta tags in the head -->
-            <!-- ========================================================= -->
+            <!-- Security Meta Tags -->
             <?php echo $this->getSecurityMetaTags(); ?>
             
-            <!-- ========================================================= -->
-            <!-- 3. Add CSRF meta tag for JavaScript -->
-            <!-- ========================================================= -->
-            <meta name="csrf-token" content="<?php echo $this->e($csrf_token); ?>">
+            <!-- CSRF Token -->
+            <meta name="csrf-token" content="<?php echo e($csrf_token); ?>">
             
             <title>Payment — FCT College of Nursing Sciences</title>
 
             <!-- Fonts -->
             <link rel="preconnect" href="https://fonts.googleapis.com">
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
             
-            <!-- ========================================================= -->
-            <!-- 4. Add CSP nonce to all style tags -->
-            <!-- 5. Add SRI hashes to external scripts/styles -->
-            <!-- ========================================================= -->
-            <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" 
-                  rel="stylesheet">
-            
+            <!-- Font Awesome -->
             <link rel="stylesheet" 
                   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
                   integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
                   crossorigin="anonymous" 
                   referrerpolicy="no-referrer">
 
-            <style nonce="<?php echo $csp_nonce; ?>">
-            /* ─── Reset ─── */
-            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-            html { scroll-behavior: smooth; }
-
-            /* ─── Tokens - Purple Theme Matching JAMB Page ─── */
-            :root {
-                --sv1-primary:       #6B4E9B;
-                --sv1-primary-dark:  #4A3B6B;
-                --sv1-primary-light: #8A6FB0;
-                --sv1-primary-soft:  #F3EAF8;
-                --sv1-gold:          #C9A44A;
-                --sv1-gold-light:    #E2B05F;
-                --sv1-gold-pale:     #FDF6E9;
-
-                --amber:       #D4860B;
-                --amber-light: #F2A830;
-                --amber-pale:  #FEF5E4;
-
-                --white:  #FFFFFF;
-                --grey-1: #F4F6FB;
-                --grey-2: #E8ECF5;
-                --grey-3: #C5CEDF;
-                --grey-4: #8695AE;
-                --grey-5: #4A5568;
-                --ink:    #1A2438;
-
-                --green:       #10b981;
-                --green-pale:  #d1fae5;
-                --red:         #ef4444;
-                --red-pale:    #fee2e2;
-                --orange:      #f59e0b;
-                --orange-pale: #fef3c7;
-                --blue:        #3b82f6;
-                --blue-pale:   #dbeafe;
-
-                --r-sm: 8px;
-                --r-md: 14px;
-                --r-lg: 20px;
-                --r-xl: 28px;
-
-                --sh-sm:  0 1px 4px rgba(107,78,155,.06), 0 2px 12px rgba(107,78,155,.04);
-                --sh-md:  0 4px 16px rgba(107,78,155,.08), 0 1px 4px rgba(107,78,155,.04);
-                --sh-lg:  0 12px 40px rgba(107,78,155,.10), 0 4px 12px rgba(107,78,155,.06);
-
-                --font-display: 'DM Serif Display', Georgia, serif;
-                --font-body:    'DM Sans', system-ui, sans-serif;
-                --font-mono:    'DM Mono', monospace;
-
-                --max-w: 900px;
-                --gap:   clamp(1rem, 3vw, 2rem);
+            <style nonce="<?php echo e($csp_nonce); ?>">
+            /* ===== RESET & VARIABLES ===== */
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
             }
 
-            /* ─── Base ─── */
+            :root {
+                /* Purple Theme */
+                --primary: #6B4E9B;
+                --primary-dark: #4A3B6B;
+                --primary-light: #8A6FB0;
+                --primary-soft: #F3EAF8;
+                
+                /* Gold Accents */
+                --gold: #C9A44A;
+                --gold-light: #E2B05F;
+                --gold-soft: #FDF6E9;
+                
+                /* Status Colors */
+                --success: #10b981;
+                --success-soft: #d1fae5;
+                --danger: #ef4444;
+                --danger-soft: #fee2e2;
+                --warning: #f59e0b;
+                --warning-soft: #fef3c7;
+                --info: #3b82f6;
+                --info-soft: #dbeafe;
+                
+                /* Neutrals */
+                --white: #FFFFFF;
+                --gray-50: #F9FAFB;
+                --gray-100: #F3F4F6;
+                --gray-200: #E5E7EB;
+                --gray-300: #D1D5DB;
+                --gray-400: #9CA3AF;
+                --gray-500: #6B7280;
+                --gray-600: #4B5563;
+                --gray-700: #374151;
+                --gray-800: #1F2937;
+                --gray-900: #111827;
+                
+                /* Spacing */
+                --space-xs: 0.5rem;
+                --space-sm: 0.75rem;
+                --space-md: 1rem;
+                --space-lg: 1.5rem;
+                --space-xl: 2rem;
+                --space-2xl: 2.5rem;
+                
+                /* Border Radius */
+                --radius-sm: 6px;
+                --radius-md: 10px;
+                --radius-lg: 16px;
+                --radius-xl: 24px;
+                
+                /* Shadows */
+                --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+                --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+                --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+                --shadow-purple: 0 4px 14px rgba(107,78,155,0.25);
+                
+                /* Font */
+                --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                
+                /* Container */
+                --container-max: 900px;
+            }
+
             body {
-                font-family: var(--font-body);
-                background: var(--sv1-primary-soft);
-                color: var(--ink);
+                font-family: var(--font-family);
+                background: linear-gradient(135deg, var(--primary-soft) 0%, #f5f0fa 100%);
+                color: var(--gray-800);
                 min-height: 100vh;
+                line-height: 1.5;
                 -webkit-font-smoothing: antialiased;
             }
 
-            /* ─── Page Shell ─── */
-            .page-shell {
+            /* ===== LAYOUT ===== */
+            .payment-wrapper {
                 min-height: 100vh;
-            }
-
-            /* ─── Main ─── */
-            .main {
-                padding: 2.5rem var(--gap) 4rem;
-            }
-            .main-inner {
-                max-width: var(--max-w);
-                margin: 0 auto;
                 display: flex;
-                flex-direction: column;
-                gap: 1.75rem;
+                align-items: center;
+                justify-content: center;
+                padding: var(--space-lg);
             }
 
-            /* ─── Card ─── */
-            .card {
+            .payment-container {
+                max-width: var(--container-max);
+                width: 100%;
+                margin: 0 auto;
+            }
+
+            /* ===== CARD ===== */
+            .payment-card {
                 background: var(--white);
-                border-radius: var(--r-xl);
-                box-shadow: var(--sh-lg);
+                border-radius: var(--radius-xl);
+                box-shadow: var(--shadow-lg), var(--shadow-purple);
                 overflow: hidden;
             }
 
-            /* Card Header - Purple Gradient */
-            .card-head {
-                background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
-                padding: 2rem 2.5rem;
+            /* Card Header */
+            .payment-header {
+                background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+                padding: var(--space-xl) var(--space-2xl);
                 position: relative;
                 overflow: hidden;
             }
-            .card-head::after {
+
+            .payment-header::before {
                 content: '';
                 position: absolute;
-                right: -40px; top: -40px;
-                width: 220px; height: 220px;
+                top: -50%;
+                right: -10%;
+                width: 300px;
+                height: 300px;
                 border-radius: 50%;
                 background: rgba(255,255,255,0.03);
                 pointer-events: none;
             }
-            .card-head::before {
+
+            .payment-header::after {
                 content: '';
                 position: absolute;
-                right: 60px; bottom: -60px;
-                width: 160px; height: 160px;
+                bottom: -30%;
+                left: -5%;
+                width: 200px;
+                height: 200px;
                 border-radius: 50%;
-                background: rgba(201,164,74,0.08);
+                background: rgba(201,164,74,0.1);
                 pointer-events: none;
             }
-            .card-head-content {
+
+            .header-content {
                 position: relative;
                 z-index: 1;
                 display: flex;
                 align-items: center;
-                gap: 1.25rem;
+                gap: var(--space-lg);
             }
-            .card-head-icon {
-                width: 52px; height: 52px;
-                background: rgba(201,164,74,0.15);
-                border: 1px solid rgba(201,164,74,0.25);
-                border-radius: var(--r-md);
-                display: flex; align-items: center; justify-content: center;
-                color: var(--sv1-gold-light);
-                font-size: 1.3rem;
+
+            .header-icon {
+                width: 64px;
+                height: 64px;
+                background: rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.2);
+                border-radius: var(--radius-md);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--gold-light);
+                font-size: 1.75rem;
                 flex-shrink: 0;
             }
-            .card-head-text {}
-            .card-head-title {
-                font-family: var(--font-display);
-                font-size: 1.6rem;
+
+            .header-text {
+                flex: 1;
+            }
+
+            .header-title {
+                font-size: 1.75rem;
+                font-weight: 600;
                 color: white;
-                font-weight: 400;
-                line-height: 1.1;
+                line-height: 1.2;
+                margin-bottom: var(--space-xs);
             }
-            .card-head-sub {
+
+            .header-subtitle {
                 color: rgba(255,255,255,0.7);
-                font-size: 0.82rem;
-                margin-top: 4px;
+                font-size: 0.9rem;
                 font-weight: 400;
             }
+
             .app-badge {
-                margin-left: auto;
-                background: rgba(255,255,255,0.06);
-                border: 1px solid rgba(255,255,255,0.1);
-                border-radius: var(--r-sm);
-                padding: 6px 12px;
+                background: rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.15);
+                border-radius: var(--radius-sm);
+                padding: var(--space-sm) var(--space-md);
                 text-align: right;
                 flex-shrink: 0;
             }
-            .app-badge-label {
-                font-size: 0.65rem;
-                color: rgba(255,255,255,0.45);
+
+            .badge-label {
+                font-size: 0.7rem;
+                color: rgba(255,255,255,0.5);
                 text-transform: uppercase;
-                letter-spacing: .8px;
+                letter-spacing: 0.5px;
             }
-            .app-badge-value {
-                font-family: var(--font-mono);
-                font-size: 0.82rem;
-                color: rgba(255,255,255,0.8);
-                font-weight: 500;
+
+            .badge-value {
+                font-size: 0.9rem;
+                color: white;
+                font-weight: 600;
+                font-family: monospace;
             }
 
             /* Card Body */
-            .card-body {
-                padding: 2.5rem;
+            .payment-body {
+                padding: var(--space-2xl);
             }
 
-            /* ─── Fee Panel ─── */
+            /* ===== FEE PANEL ===== */
             .fee-panel {
-                background: var(--sv1-primary-soft);
-                border: 1px solid var(--sv1-border);
-                border-radius: var(--r-lg);
-                padding: 2rem;
+                background: var(--primary-soft);
+                border: 1px solid rgba(107,78,155,0.1);
+                border-radius: var(--radius-lg);
+                padding: var(--space-xl);
                 display: flex;
                 align-items: center;
-                gap: 2rem;
-                margin-bottom: 2rem;
+                gap: var(--space-xl);
+                margin-bottom: var(--space-xl);
             }
+
             .fee-icon {
-                width: 56px; height: 56px;
-                background: var(--sv1-gold-pale);
+                width: 64px;
+                height: 64px;
+                background: var(--gold-soft);
                 border: 1px solid rgba(201,164,74,0.2);
-                border-radius: var(--r-md);
-                display: flex; align-items: center; justify-content: center;
-                color: var(--sv1-gold);
-                font-size: 1.4rem;
+                border-radius: var(--radius-md);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--gold);
+                font-size: 1.75rem;
                 flex-shrink: 0;
             }
-            .fee-info { flex: 1; }
+
+            .fee-info {
+                flex: 1;
+            }
+
             .fee-label {
-                font-size: 0.75rem;
+                font-size: 0.8rem;
                 font-weight: 600;
                 text-transform: uppercase;
-                letter-spacing: .8px;
-                color: var(--grey-4);
-                margin-bottom: 4px;
+                letter-spacing: 0.5px;
+                color: var(--gray-500);
+                margin-bottom: var(--space-xs);
             }
+
             .fee-amount {
-                font-family: var(--font-display);
-                font-size: 2.6rem;
-                color: var(--sv1-primary-dark);
+                font-size: 2.5rem;
+                font-weight: 700;
+                color: var(--primary-dark);
                 line-height: 1;
-                font-weight: 400;
+                margin-bottom: var(--space-xs);
             }
+
             .fee-note {
-                font-size: 0.78rem;
-                color: var(--grey-4);
-                margin-top: 6px;
+                font-size: 0.8rem;
+                color: var(--gray-500);
+                display: flex;
+                align-items: center;
+                gap: var(--space-xs);
             }
+
             .fee-badge {
-                background: var(--sv1-gold-pale);
+                background: var(--gold-soft);
                 border: 1px solid rgba(201,164,74,0.2);
-                color: var(--sv1-gold);
-                padding: 6px 14px;
+                color: var(--gold);
+                padding: var(--space-sm) var(--space-lg);
                 border-radius: 100px;
-                font-size: 0.78rem;
+                font-size: 0.85rem;
                 font-weight: 600;
                 white-space: nowrap;
             }
 
-            /* ─── Instructions ─── */
-            .instructions-block {
-                margin-bottom: 2rem;
+            /* ===== INSTRUCTIONS ===== */
+            .instructions {
+                background: var(--gray-50);
+                border-radius: var(--radius-lg);
+                padding: var(--space-xl);
+                margin-bottom: var(--space-xl);
+                border: 1px solid var(--gray-200);
             }
+
             .instructions-title {
-                font-size: 0.78rem;
+                font-size: 1rem;
                 font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: .8px;
-                color: var(--grey-4);
-                margin-bottom: 1rem;
+                color: var(--gray-700);
+                margin-bottom: var(--space-lg);
+                display: flex;
+                align-items: center;
+                gap: var(--space-sm);
             }
-            .steps-list {
-                list-style: none;
+
+            .instructions-title i {
+                color: var(--primary);
+            }
+
+            .steps {
                 display: flex;
                 flex-direction: column;
-                gap: .6rem;
+                gap: var(--space-md);
             }
-            .steps-list li {
+
+            .step {
                 display: flex;
                 align-items: flex-start;
-                gap: .75rem;
-                font-size: 0.9rem;
-                color: var(--grey-5);
-                line-height: 1.5;
+                gap: var(--space-md);
             }
-            .step-num {
-                width: 22px; height: 22px;
+
+            .step-number {
+                width: 28px;
+                height: 28px;
+                background: var(--primary-soft);
+                border: 1px solid rgba(107,78,155,0.2);
                 border-radius: 50%;
-                background: var(--sv1-primary-soft);
-                border: 1px solid var(--sv1-border);
-                display: flex; align-items: center; justify-content: center;
-                font-size: 0.7rem;
-                font-weight: 700;
-                color: var(--sv1-primary);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.85rem;
+                font-weight: 600;
+                color: var(--primary);
                 flex-shrink: 0;
-                margin-top: 1px;
             }
 
-            /* ─── Alert ─── */
-            #alertContainer { display: flex; flex-direction: column; gap: .75rem; }
-            .alert {
-                border-radius: var(--r-md);
-                padding: 1rem 1.25rem;
-                font-size: 0.88rem;
-                display: flex;
-                align-items: flex-start;
-                gap: .75rem;
-                border-left-width: 4px;
-                border-left-style: solid;
-                animation: fadeSlideIn .3s ease;
-            }
-            .alert i { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
-            .alert-success { 
-                background: var(--green-pale); 
-                border-left-color: var(--green); 
-                color: #065f46; 
-            }
-            .alert-danger   { 
-                background: var(--red-pale);   
-                border-left-color: var(--red); 
-                color: #991b1b; 
-            }
-            .alert-warning  { 
-                background: var(--orange-pale); 
-                border-left-color: var(--orange); 
-                color: #92400e; 
-            }
-            .alert-info     { 
-                background: var(--blue-pale);   
-                border-left-color: var(--blue); 
-                color: #1e3a8a; 
+            .step-content {
+                flex: 1;
+                font-size: 0.95rem;
+                color: var(--gray-600);
             }
 
-            /* ─── Pending Payment - handled by JS now, but keep styles for potential use */
-            .pending-box {
-                border: 1px solid rgba(201,164,74,0.3);
-                background: var(--sv1-gold-pale);
-                border-radius: var(--r-lg);
-                padding: 1.5rem;
-                margin-bottom: 2rem;
-            }
-            .pending-box-header {
-                display: flex;
-                align-items: center;
-                gap: .75rem;
-                margin-bottom: 1rem;
-            }
-            .pending-icon {
-                width: 36px; height: 36px;
-                background: rgba(201,164,74,0.15);
-                border-radius: 8px;
-                display: flex; align-items: center; justify-content: center;
-                color: var(--sv1-gold);
-                font-size: 1rem;
-            }
-            .pending-title { 
-                font-weight: 600; 
-                color: var(--sv1-primary-dark); 
-                font-size: 0.95rem; 
-            }
-            .pending-sub   { 
-                font-size: 0.8rem; 
-                color: var(--sv1-text-muted); 
+            .step-content strong {
+                color: var(--gray-800);
             }
 
-            /* ─── RRR Box ─── */
+            .demo-card {
+                background: var(--gold-soft);
+                border: 1px solid rgba(201,164,74,0.2);
+                border-radius: var(--radius-md);
+                padding: var(--space-md);
+                margin-top: var(--space-sm);
+                font-family: monospace;
+                font-size: 0.9rem;
+                color: var(--gray-700);
+            }
+
+            .demo-card i {
+                color: var(--gold);
+                margin-right: var(--space-sm);
+            }
+
+            /* ===== RRR DISPLAY ===== */
+            .rrr-section {
+                background: var(--primary-soft);
+                border-radius: var(--radius-lg);
+                padding: var(--space-xl);
+                margin-bottom: var(--space-xl);
+            }
+
+            .rrr-label {
+                font-size: 0.85rem;
+                font-weight: 600;
+                color: var(--gray-500);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: var(--space-sm);
+            }
+
             .rrr-box {
-                background: var(--sv1-primary-soft);
-                border: 1px dashed var(--sv1-primary-light);
-                border-radius: var(--r-md);
-                padding: 1rem 1.25rem;
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                gap: 1rem;
-                margin-bottom: 1.25rem;
+                gap: var(--space-md);
+                background: white;
+                border: 1px solid rgba(107,78,155,0.2);
+                border-radius: var(--radius-md);
+                padding: var(--space-md) var(--space-lg);
             }
+
             .rrr-value {
-                font-family: var(--font-mono);
-                font-size: 1.35rem;
-                font-weight: 500;
-                color: var(--sv1-primary-dark);
-                letter-spacing: 3px;
+                flex: 1;
+                font-family: monospace;
+                font-size: 1.5rem;
+                font-weight: 600;
+                color: var(--primary-dark);
+                letter-spacing: 2px;
                 word-break: break-all;
             }
-            .rrr-copy-btn {
-                background: var(--sv1-primary);
+
+            .copy-btn {
+                background: var(--primary);
                 color: white;
                 border: none;
-                border-radius: var(--r-sm);
-                padding: 7px 14px;
-                font-size: 0.78rem;
-                font-family: var(--font-body);
+                border-radius: var(--radius-sm);
+                padding: var(--space-sm) var(--space-lg);
+                font-size: 0.9rem;
                 font-weight: 500;
                 cursor: pointer;
-                display: flex; align-items: center; gap: 6px;
-                transition: background .2s;
+                display: flex;
+                align-items: center;
+                gap: var(--space-sm);
+                transition: all 0.2s;
                 flex-shrink: 0;
             }
-            .rrr-copy-btn:hover { background: var(--sv1-primary-dark); }
 
-            /* ─── Buttons - Purple Theme ─── */
-            .btn-primary {
+            .copy-btn:hover {
+                background: var(--primary-dark);
+                transform: translateY(-1px);
+            }
+
+            .copy-btn:active {
+                transform: translateY(0);
+            }
+
+            /* ===== PAYMENT BUTTON AREA ===== */
+            .payment-action {
+                background: var(--warning-soft);
+                border: 1px solid rgba(245,158,11,0.2);
+                border-radius: var(--radius-lg);
+                padding: var(--space-xl);
+                margin-bottom: var(--space-xl);
+            }
+
+            .action-header {
+                display: flex;
+                align-items: center;
+                gap: var(--space-sm);
+                margin-bottom: var(--space-lg);
+            }
+
+            .action-header i {
+                font-size: 1.25rem;
+                color: var(--warning);
+            }
+
+            .action-header h4 {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: var(--gray-800);
+            }
+
+            .pay-button {
+                display: block;
                 width: 100%;
-                padding: 1rem 1.5rem;
-                background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
+                padding: var(--space-lg);
+                background: linear-gradient(135deg, var(--gold), var(--gold-light));
                 color: white;
                 border: none;
-                border-radius: var(--r-md);
-                font-family: var(--font-body);
-                font-size: 0.95rem;
+                border-radius: var(--radius-md);
+                font-size: 1.1rem;
+                font-weight: 600;
+                text-align: center;
+                text-decoration: none;
+                transition: all 0.3s;
+                box-shadow: 0 4px 12px rgba(201,164,74,0.3);
+            }
+
+            .pay-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(201,164,74,0.4);
+            }
+
+            .pay-button:active {
+                transform: translateY(0);
+            }
+
+            .pay-button i {
+                margin-right: var(--space-sm);
+            }
+
+            .payment-note {
+                font-size: 0.85rem;
+                color: var(--gray-600);
+                margin-top: var(--space-md);
+                text-align: center;
+            }
+
+            /* ===== ACTION BUTTONS ===== */
+            .action-grid {
+                display: flex;
+                flex-direction: column;
+                gap: var(--space-md);
+                margin-bottom: var(--space-xl);
+            }
+
+            .btn-primary {
+                width: 100%;
+                padding: var(--space-lg);
+                background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+                color: white;
+                border: none;
+                border-radius: var(--radius-md);
+                font-size: 1rem;
                 font-weight: 600;
                 cursor: pointer;
-                display: flex; align-items: center; justify-content: center; gap: .6rem;
-                transition: all .25s;
-                text-decoration: none;
-                letter-spacing: .2px;
-                box-shadow: 0 4px 12px rgba(107,78,155,0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--space-sm);
+                transition: all 0.3s;
+                box-shadow: var(--shadow-purple);
             }
+
             .btn-primary:hover:not(:disabled) {
-                background: var(--sv1-primary-dark);
-                transform: translateY(-1px);
+                transform: translateY(-2px);
                 box-shadow: 0 8px 20px rgba(107,78,155,0.4);
             }
-            .btn-primary:active { transform: translateY(0); }
-            .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+
+            .btn-primary:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
 
             .btn-success {
                 width: 100%;
-                padding: 1rem 1.5rem;
-                background: var(--green);
+                padding: var(--space-lg);
+                background: var(--success);
                 color: white;
                 border: none;
-                border-radius: var(--r-md);
-                font-family: var(--font-body);
-                font-size: 0.95rem;
+                border-radius: var(--radius-md);
+                font-size: 1rem;
                 font-weight: 600;
                 cursor: pointer;
-                display: flex; align-items: center; justify-content: center; gap: .6rem;
-                transition: all .25s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--space-sm);
+                transition: all 0.3s;
             }
+
             .btn-success:hover:not(:disabled) {
                 background: #0d9488;
-                transform: translateY(-1px);
+                transform: translateY(-2px);
                 box-shadow: 0 8px 20px rgba(16,185,129,0.3);
             }
-            .btn-success:disabled { opacity: .55; cursor: not-allowed; }
 
-            .btn-amber {
-                padding: .7rem 1.25rem;
-                background: var(--sv1-gold);
-                color: white;
-                border: none;
-                border-radius: var(--r-sm);
-                font-family: var(--font-body);
-                font-size: 0.88rem;
-                font-weight: 600;
-                cursor: pointer;
-                display: inline-flex; align-items: center; gap: .5rem;
-                transition: all .25s;
-                text-decoration: none;
-            }
-            .btn-amber:hover {
-                background: var(--sv1-gold-light);
-                transform: translateY(-1px);
+            .btn-success:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
             }
 
-            .btn-ghost {
-                padding: .7rem 1.25rem;
+            .btn-outline {
+                padding: var(--space-md) var(--space-lg);
                 background: transparent;
-                color: var(--sv1-primary);
-                border: 2px solid var(--sv1-border);
-                border-radius: var(--r-sm);
-                font-family: var(--font-body);
-                font-size: 0.88rem;
+                color: var(--primary);
+                border: 2px solid var(--primary-soft);
+                border-radius: var(--radius-md);
+                font-size: 0.95rem;
                 font-weight: 500;
                 cursor: pointer;
-                display: inline-flex; align-items: center; gap: .5rem;
-                transition: all .25s;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--space-sm);
+                transition: all 0.2s;
                 text-decoration: none;
             }
-            .btn-ghost:hover {
-                border-color: var(--sv1-primary);
-                background: var(--sv1-primary-soft);
-                color: var(--sv1-primary-dark);
+
+            .btn-outline:hover {
+                border-color: var(--primary);
+                background: var(--primary-soft);
             }
 
-            .action-stack {
-                display: flex;
-                flex-direction: column;
-                gap: .75rem;
-                margin-bottom: 2rem;
-            }
             .action-row {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                gap: 1rem;
+                gap: var(--space-md);
             }
 
-            /* ─── Status Area ─── */
+            /* ===== STATUS AREA ===== */
             .status-area {
-                background: var(--sv1-primary-soft);
-                border: 1px solid var(--sv1-border);
-                border-radius: var(--r-md);
-                padding: 1.5rem;
+                background: var(--gray-50);
+                border: 1px solid var(--gray-200);
+                border-radius: var(--radius-lg);
+                padding: var(--space-xl);
                 text-align: center;
-                margin-bottom: 1.5rem;
+                margin-bottom: var(--space-xl);
             }
+
             .spinner {
-                width: 36px; height: 36px;
-                border: 3px solid var(--sv1-border);
-                border-top-color: var(--sv1-primary);
+                width: 48px;
+                height: 48px;
+                border: 4px solid var(--gray-200);
+                border-top-color: var(--primary);
                 border-radius: 50%;
-                animation: spin .8s linear infinite;
-                margin: 0 auto 1rem;
+                animation: spin 1s linear infinite;
+                margin: 0 auto var(--space-lg);
             }
-            @keyframes spin { to { transform: rotate(360deg); } }
-            @keyframes fadeSlideIn {
-                from { opacity: 0; transform: translateY(-6px); }
-                to   { opacity: 1; transform: translateY(0); }
+
+            @keyframes spin {
+                to { transform: rotate(360deg); }
             }
+
             .status-message {
-                font-size: 0.9rem;
-                color: var(--sv1-text-dark);
-                font-weight: 500;
+                font-size: 1rem;
+                color: var(--gray-600);
             }
 
-            /* ─── Payment Button Area ─── */
-            #paymentButtonArea {
-                margin-bottom: 1.5rem;
-                transition: all 0.3s ease;
-            }
-            
-            #paymentButtonArea .alert-warning {
-                background: var(--orange-pale);
-                border-left: 4px solid var(--orange);
-                border-radius: var(--r-md);
-                padding: 1.5rem;
-            }
-            
-            #paymentButtonArea .btn-amber {
-                display: block;
-                width: 100%;
-                padding: 1rem 1.5rem;
-                background: var(--sv1-gold);
-                color: white;
-                border: none;
-                border-radius: var(--r-md);
-                font-weight: 600;
-                text-align: center;
-                text-decoration: none;
-                transition: all .25s;
-            }
-            
-            #paymentButtonArea .btn-amber:hover {
-                background: var(--sv1-gold-light);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(201,164,74,0.3);
+            /* ===== ALERTS ===== */
+            .alert-container {
+                margin-bottom: var(--space-lg);
             }
 
-            /* ─── Divider ─── */
-            .divider {
-                height: 1px;
-                background: var(--sv1-border);
-                margin: 2rem 0;
+            .alert {
+                border-radius: var(--radius-md);
+                padding: var(--space-md) var(--space-lg);
+                font-size: 0.95rem;
+                display: flex;
+                align-items: flex-start;
+                gap: var(--space-sm);
+                animation: slideIn 0.3s ease;
+                margin-bottom: var(--space-sm);
             }
 
-            /* ─── Support ─── */
-            .support-block {}
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .alert i {
+                font-size: 1.1rem;
+                margin-top: 2px;
+            }
+
+            .alert-success {
+                background: var(--success-soft);
+                border-left: 4px solid var(--success);
+                color: #065f46;
+            }
+
+            .alert-danger {
+                background: var(--danger-soft);
+                border-left: 4px solid var(--danger);
+                color: #991b1b;
+            }
+
+            .alert-warning {
+                background: var(--warning-soft);
+                border-left: 4px solid var(--warning);
+                color: #92400e;
+            }
+
+            .alert-info {
+                background: var(--info-soft);
+                border-left: 4px solid var(--info);
+                color: #1e3a8a;
+            }
+
+            /* ===== SUPPORT SECTION ===== */
+            .support-section {
+                margin-top: var(--space-xl);
+            }
+
             .support-title {
-                font-size: 0.75rem;
+                font-size: 0.85rem;
                 font-weight: 600;
                 text-transform: uppercase;
-                letter-spacing: .8px;
-                color: var(--grey-4);
-                margin-bottom: 1rem;
+                letter-spacing: 0.5px;
+                color: var(--gray-500);
+                margin-bottom: var(--space-lg);
                 text-align: center;
             }
+
             .support-grid {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
-                gap: .75rem;
-            }
-            .support-item {
-                background: var(--sv1-primary-soft);
-                border: 1px solid var(--sv1-border);
-                border-radius: var(--r-md);
-                padding: 1rem;
-                display: flex;
-                align-items: center;
-                gap: .75rem;
-                transition: border-color .2s, box-shadow .2s;
-            }
-            .support-item:hover {
-                border-color: var(--sv1-primary-light);
-                box-shadow: var(--sh-sm);
-            }
-            .support-dot {
-                width: 36px; height: 36px;
-                border-radius: 8px;
-                display: flex; align-items: center; justify-content: center;
-                font-size: 0.95rem;
-                color: white;
-                flex-shrink: 0;
-            }
-            .support-dot.phone    { background: var(--sv1-primary); }
-            .support-dot.whatsapp { background: #25D366; }
-            .support-dot.email    { background: var(--red); }
-            .support-text {}
-            .support-label {
-                font-size: 0.68rem;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: .5px;
-                color: var(--grey-4);
-                margin-bottom: 2px;
-            }
-            .support-value {
-                font-size: 0.85rem;
-                font-weight: 500;
-                color: var(--sv1-text-dark);
-                line-height: 1.3;
-                word-break: break-word;
+                gap: var(--space-md);
             }
 
-            /* ─── Card Footer ─── */
-            .card-foot {
-                padding: 1.25rem 2.5rem;
-                background: var(--sv1-primary-soft);
-                border-top: 1px solid var(--sv1-border);
+            .support-item {
+                background: var(--gray-50);
+                border: 1px solid var(--gray-200);
+                border-radius: var(--radius-md);
+                padding: var(--space-md);
+                display: flex;
+                align-items: center;
+                gap: var(--space-sm);
+                transition: all 0.2s;
+            }
+
+            .support-item:hover {
+                border-color: var(--primary-light);
+                box-shadow: var(--shadow-sm);
+            }
+
+            .support-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: var(--radius-sm);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: .6rem;
-                font-size: 0.78rem;
-                color: var(--sv1-text-muted);
-            }
-            .card-foot i { 
-                font-size: 0.85rem; 
-                color: var(--sv1-gold); 
+                color: white;
+                font-size: 1.1rem;
+                flex-shrink: 0;
             }
 
-            /* ─── Responsive ─── */
+            .support-icon.phone { background: var(--primary); }
+            .support-icon.whatsapp { background: #25D366; }
+            .support-icon.email { background: var(--danger); }
+
+            .support-details {
+                flex: 1;
+            }
+
+            .support-label {
+                font-size: 0.7rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                color: var(--gray-500);
+                margin-bottom: 2px;
+            }
+
+            .support-value {
+                font-size: 0.9rem;
+                font-weight: 500;
+                color: var(--gray-800);
+            }
+
+            /* ===== FOOTER ===== */
+            .payment-footer {
+                padding: var(--space-lg) var(--space-2xl);
+                background: var(--gray-50);
+                border-top: 1px solid var(--gray-200);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--space-sm);
+                font-size: 0.85rem;
+                color: var(--gray-500);
+            }
+
+            .payment-footer i {
+                color: var(--gold);
+            }
+
+            /* ===== RESPONSIVE ===== */
             @media (max-width: 768px) {
-                .card-head { padding: 1.5rem; }
-                .app-badge { display: none; }
-                .card-body { padding: 1.5rem; }
-                .card-foot { padding: 1rem 1.5rem; }
-                .fee-panel { flex-direction: column; align-items: flex-start; gap: 1rem; }
-                .fee-amount { font-size: 2rem; }
-                .support-grid { grid-template-columns: 1fr; }
+                .payment-header {
+                    padding: var(--space-lg);
+                }
+
+                .header-content {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
+                .app-badge {
+                    align-self: flex-start;
+                }
+
+                .payment-body {
+                    padding: var(--space-lg);
+                }
+
+                .fee-panel {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
+                .fee-amount {
+                    font-size: 2rem;
+                }
+
+                .fee-badge {
+                    align-self: flex-start;
+                }
+
+                .rrr-box {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                .copy-btn {
+                    justify-content: center;
+                }
+
+                .support-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .action-row {
+                    flex-direction: column;
+                }
+
+                .btn-outline {
+                    width: 100%;
+                    justify-content: center;
+                }
             }
-            @media (max-width: 540px) {
-                .card-head-content { flex-wrap: wrap; }
-                .main { padding: 1.5rem var(--gap) 3rem; }
-                .action-row { flex-direction: column; }
-                .action-row .btn-ghost { width: 100%; justify-content: center; }
-            }
-            @media (min-width: 769px) and (max-width: 1024px) {
-                .support-grid { grid-template-columns: repeat(3, 1fr); }
+
+            @media (max-width: 480px) {
+                .payment-wrapper {
+                    padding: var(--space-sm);
+                }
+
+                .header-title {
+                    font-size: 1.5rem;
+                }
+
+                .step {
+                    flex-direction: column;
+                    gap: var(--space-xs);
+                }
+
+                .step-number {
+                    margin-bottom: var(--space-xs);
+                }
             }
             </style>
         </head>
         <body>
-        <div class="page-shell">
-
-            <!-- ── Main ── -->
-            <main class="main">
-                <div class="main-inner">
-
+            <div class="payment-wrapper">
+                <div class="payment-container">
+                    
                     <!-- Alert Container -->
-                    <div id="alertContainer"></div>
+                    <div id="alertContainer" class="alert-container"></div>
 
                     <!-- Main Card -->
-                    <div class="card">
-
+                    <div class="payment-card">
+                        
                         <!-- Header -->
-                        <div class="card-head">
-                            <div class="card-head-content">
-                                <div class="card-head-icon">
+                        <div class="payment-header">
+                            <div class="header-content">
+                                <div class="header-icon">
                                     <i class="fas fa-credit-card"></i>
                                 </div>
-                                <div class="card-head-text">
-                                    <div class="card-head-title">Application Payment</div>
-                                    <div class="card-head-sub">Step 4 of 5 &mdash; Complete your payment to proceed</div>
+                                <div class="header-text">
+                                    <h1 class="header-title">Application Payment</h1>
+                                    <p class="header-subtitle">Complete your payment to proceed with application</p>
                                 </div>
                                 <div class="app-badge">
-                                    <div class="app-badge-label">App. Number</div>
-                                    <div class="app-badge-value"><?php echo $this->e($application['application_number'] ?? 'Pending'); ?></div>
+                                    <div class="badge-label">Application #</div>
+                                    <div class="badge-value"><?php echo e($application_number); ?></div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Body -->
-                        <div class="card-body">
-
-                            <!-- ========================================================= -->
-                            <!-- 6. Add CSRF token to all forms -->
-                            <!-- ========================================================= -->
-                            <input type="hidden" name="csrf_token" id="csrf_token" value="<?php echo $this->e($csrf_token); ?>">
-
+                        <div class="payment-body">
+                            
+                            <!-- CSRF Token -->
+                            <input type="hidden" id="csrf_token" value="<?php echo e($csrf_token); ?>">
+                            
                             <!-- Fee Panel -->
                             <div class="fee-panel">
                                 <div class="fee-icon">
@@ -751,441 +925,488 @@ class PaymentView {
                                 </div>
                                 <div class="fee-info">
                                     <div class="fee-label">Application Fee</div>
-                                    <div class="fee-amount"><?php echo $this->e($currency); ?><?php echo $this->e(number_format($fee)); ?></div>
-                                    <div class="fee-note"><i class="fas fa-info-circle" style="font-size:.75rem;margin-right:4px"></i>This fee is non-refundable once payment is confirmed.</div>
+                                    <div class="fee-amount"><?php echo e($currency); ?><?php echo e(number_format($fee)); ?></div>
+                                    <div class="fee-note">
+                                        <i class="fas fa-info-circle"></i>
+                                        This fee is non-refundable once payment is confirmed
+                                    </div>
                                 </div>
                                 <div class="fee-badge">
-                                    <i class="fas fa-shield-check" style="font-size:.75rem;margin-right:4px"></i>Secure Payment
+                                    <i class="fas fa-shield-alt"></i>
+                                    Secure Payment
                                 </div>
                             </div>
 
-                            <!-- Instructions - RESTORED DEMO CARD DETAILS -->
-                            <div class="instructions-block">
-                                <div class="instructions-title">How to complete payment</div>
-                                <ol class="steps-list">
-                                    <li>
-                                        <span class="step-num">1</span>
-                                        Click <strong>Generate RRR</strong> to create your unique Remita Retrieval Reference number.
-                                    </li>
-                                    <li>
-                                        <span class="step-num">2</span>
-                                        Click the <strong>Complete Payment</strong> button that appears immediately.
-                                    </li>
-                                    <li>
-                                        <span class="step-num">3</span>
-                                        Use demo card: <strong>5178 6810 0000 0002</strong> (Exp: 05/30, CVV: 000, OTP: 123456)
-                                    </li>
-                                    <li>
-                                        <span class="step-num">4</span>
-                                        Return here and click <strong>I've Paid — Verify Payment</strong>.
-                                    </li>
-                                    <li>
-                                        <span class="step-num">5</span>
-                                        Your exam slip will be available immediately after successful verification.
-                                    </li>
-                                </ol>
+                            <!-- Instructions with Demo Card Details -->
+                            <div class="instructions">
+                                <div class="instructions-title">
+                                    <i class="fas fa-list-ol"></i>
+                                    Payment Instructions
+                                </div>
+                                <div class="steps">
+                                    <div class="step">
+                                        <span class="step-number">1</span>
+                                        <div class="step-content">
+                                            Click <strong>Generate RRR</strong> to create your unique Remita Retrieval Reference number
+                                        </div>
+                                    </div>
+                                    <div class="step">
+                                        <span class="step-number">2</span>
+                                        <div class="step-content">
+                                            Click the <strong>Complete Payment on Remita</strong> button that appears
+                                        </div>
+                                    </div>
+                                    <div class="step">
+                                        <span class="step-number">3</span>
+                                        <div class="step-content">
+                                            On Remita demo page, use these test card details:
+                                            <div class="demo-card">
+                                                <i class="fas fa-credit-card"></i>
+                                                <strong>Card:</strong> 5178 6810 0000 0002<br>
+                                                <i class="fas fa-calendar"></i>
+                                                <strong>Expiry:</strong> 05/30 &nbsp;&nbsp; 
+                                                <i class="fas fa-lock"></i>
+                                                <strong>CVV:</strong> 000<br>
+                                                <i class="fas fa-key"></i>
+                                                <strong>OTP:</strong> 123456
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="step">
+                                        <span class="step-number">4</span>
+                                        <div class="step-content">
+                                            After payment, return here and click <strong>I've Paid — Verify Payment</strong>
+                                        </div>
+                                    </div>
+                                    <div class="step">
+                                        <span class="step-number">5</span>
+                                        <div class="step-content">
+                                            Your exam slip will be generated immediately after successful verification
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- Generated RRR Display -->
-                            <div id="rrrDisplayArea" style="display:none;margin-bottom:1.5rem">
-                                <div class="instructions-title" style="margin-bottom:.75rem">Your Payment Reference (RRR)</div>
+                            <!-- RRR Display Area (hidden initially) -->
+                            <div id="rrrSection" class="rrr-section" style="display: none;">
+                                <div class="rrr-label">
+                                    <i class="fas fa-receipt"></i>
+                                    Remita Retrieval Reference (RRR)
+                                </div>
                                 <div class="rrr-box">
-                                    <div class="rrr-value" id="generatedRRR"></div>
-                                    <button class="rrr-copy-btn" id="copyRRRBtn">
-                                        <i class="fas fa-copy"></i> Copy
+                                    <span id="rrrValue" class="rrr-value"></span>
+                                    <button id="copyRRRBtn" class="copy-btn">
+                                        <i class="fas fa-copy"></i>
+                                        Copy
                                     </button>
                                 </div>
-                                <p style="font-size:.8rem;color:var(--sv1-text-muted);display:flex;align-items:center;gap:5px">
+                                <p style="font-size: 0.85rem; color: var(--gray-500); margin-top: var(--space-sm);">
                                     <i class="fas fa-info-circle"></i>
-                                    Save this RRR in case you need to verify your payment later.
+                                    Save this RRR for future reference
                                 </p>
                             </div>
 
-                            <!-- Payment Button Area - Appears Immediately After RRR Generation -->
-                            <div id="paymentButtonArea" style="display:none; margin-bottom:1.5rem">
-                                <div class="alert alert-warning">
-                                    <h5><i class="fas fa-external-link-alt"></i> Proceed to Payment</h5>
-                                    <p class="mb-3">Click the button below to complete your payment on Remita demo platform:</p>
-                                    <a href="#" id="remitaPaymentLink" target="_blank" class="btn-amber w-100" style="text-align:center; display:block;">
-                                        <i class="fas fa-credit-card me-2"></i> Complete Payment (Demo)
-                                    </a>
-                                    <p class="mt-3 small text-muted">After payment, return here and click "I've Paid — Verify Payment"</p>
+                            <!-- Payment Action Area (hidden initially) -->
+                            <div id="paymentAction" class="payment-action" style="display: none;">
+                                <div class="action-header">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    <h4>Proceed to Payment</h4>
                                 </div>
+                                <a href="#" id="remitaPaymentLink" target="_blank" class="pay-button">
+                                    <i class="fas fa-credit-card"></i>
+                                    Complete Payment on Remita
+                                </a>
+                                <p class="payment-note">
+                                    After completing payment, return here and click "Verify Payment" below
+                                </p>
                             </div>
 
-                            <!-- Processing Status -->
-                            <div id="paymentStatus" style="display:none;margin-bottom:1.5rem">
-                                <div class="status-area">
-                                    <div id="paymentSpinner" class="spinner"></div>
-                                    <div id="paymentMessage" class="status-message">Processing…</div>
-                                    <div id="paymentRRR" class="rrr-value" style="display:none;margin-top:1rem;text-align:center"></div>
-                                    <div id="remitaLink" style="display:none;margin-top:1rem"></div>
-                                </div>
+                            <!-- Status Area (hidden initially) -->
+                            <div id="statusArea" class="status-area" style="display: none;">
+                                <div id="statusSpinner" class="spinner"></div>
+                                <div id="statusMessage" class="status-message">Processing...</div>
                             </div>
 
                             <!-- Action Buttons -->
-                            <div class="action-stack">
-                                <button class="btn-primary" id="generateRRRBtn">
-                                    <i class="fas fa-bolt"></i> Generate RRR
+                            <div class="action-grid">
+                                <button id="generateRRRBtn" class="btn-primary">
+                                    <i class="fas fa-bolt"></i>
+                                    Generate RRR
                                 </button>
-                                <button class="btn-success" id="verifyPaymentBtn" style="display:none">
-                                    <i class="fas fa-check-circle"></i> I've Paid — Verify Payment
+                                
+                                <button id="verifyPaymentBtn" class="btn-success" style="display: none;">
+                                    <i class="fas fa-check-circle"></i>
+                                    I've Paid — Verify Payment
                                 </button>
+                                
                                 <div class="action-row">
-                                    <a href="/apply/form" class="btn-ghost">
-                                        <i class="fas fa-arrow-left"></i> Back to Form
+                                    <a href="/apply/form" class="btn-outline">
+                                        <i class="fas fa-arrow-left"></i>
+                                        Back to Form
                                     </a>
-                                    <button class="btn-ghost" id="checkStatusBtn" style="display:none">
-                                        <i class="fas fa-sync"></i> Check Status
+                                    <button id="checkStatusBtn" class="btn-outline" style="display: none;">
+                                        <i class="fas fa-sync-alt"></i>
+                                        Check Status
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="divider"></div>
-
-                            <!-- Support -->
-                            <div class="support-block">
-                                <div class="support-title">Need help with payment?</div>
+                            <!-- Support Section -->
+                            <div class="support-section">
+                                <div class="support-title">Need Help With Payment?</div>
                                 <div class="support-grid">
                                     <div class="support-item">
-                                        <div class="support-dot phone"><i class="fas fa-phone"></i></div>
-                                        <div class="support-text">
+                                        <div class="support-icon phone">
+                                            <i class="fas fa-phone"></i>
+                                        </div>
+                                        <div class="support-details">
                                             <div class="support-label">Phone</div>
                                             <div class="support-value">07039837749</div>
                                         </div>
                                     </div>
                                     <div class="support-item">
-                                        <div class="support-dot whatsapp"><i class="fab fa-whatsapp"></i></div>
-                                        <div class="support-text">
+                                        <div class="support-icon whatsapp">
+                                            <i class="fab fa-whatsapp"></i>
+                                        </div>
+                                        <div class="support-details">
                                             <div class="support-label">WhatsApp</div>
                                             <div class="support-value">08082775076</div>
                                         </div>
                                     </div>
                                     <div class="support-item">
-                                        <div class="support-dot email"><i class="fas fa-envelope"></i></div>
-                                        <div class="support-text">
+                                        <div class="support-icon email">
+                                            <i class="fas fa-envelope"></i>
+                                        </div>
+                                        <div class="support-details">
                                             <div class="support-label">Email</div>
-                                            <div class="support-value">info@fctcns.edu.ng</div>
+                                            <div class="support-value">support@fctcns.edu.ng</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                        </div><!-- /card-body -->
-
-                        <!-- Footer -->
-                        <div class="card-foot">
-                            <i class="fas fa-lock"></i>
-                            <span>Payments are secured and processed by <strong>Remita Payment Gateway</strong></span>
                         </div>
 
-                    </div><!-- /card -->
+                        <!-- Footer -->
+                        <div class="payment-footer">
+                            <i class="fas fa-lock"></i>
+                            <span>Secured by <strong>Remita Payment Gateway</strong></span>
+                            <?php if ($environment === 'demo'): ?>
+                            <span class="badge" style="background: var(--gold); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: var(--space-sm);">
+                                DEMO MODE
+                            </span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                </div><!-- /main-inner -->
-            </main>
+            <!-- JavaScript with proper CSP nonce -->
+            <script nonce="<?php echo e($csp_nonce); ?>">
+            (function() {
+                'use strict';
 
-        </div><!-- /page-shell -->
+                // ===== Configuration =====
+                const CONFIG = {
+                    pendingRRR: <?php echo isset($pending_payment['rrr']) ? json_encode($pending_payment['rrr']) : 'null'; ?>,
+                    pendingPayUrl: <?php echo isset($pending_payment['payment_url']) ? json_encode($pending_payment['payment_url']) : 'null'; ?>,
+                    environment: '<?php echo e($environment); ?>',
+                    demoPaymentUrl: 'https://demo.remita.net/remita/onepage/payment/init.reg'
+                };
 
-        <!-- ========================================================= -->
-        <!-- 7. Add CSP nonce to all script tags -->
-        <!-- 8. Add SRI hashes to external scripts -->
-        <!-- ========================================================= -->
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"
-                integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
-                crossorigin="anonymous"
-                nonce="<?php echo $csp_nonce; ?>"></script>
-        
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-                integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
-                crossorigin="anonymous"
-                nonce="<?php echo $csp_nonce; ?>"></script>
-        
-        <script nonce="<?php echo $csp_nonce; ?>">
-        (function() {
-            'use strict';
+                // ===== State =====
+                let currentRRR = '';
 
-            // ── Config from PHP ──────────────────────────────────────────
-            var pendingRRR    = <?php echo isset($pending_payment['rrr']) ? json_encode($pending_payment['rrr']) : 'null'; ?>;
-            var pendingPayUrl = <?php echo isset($pending_payment['payment_url']) ? json_encode($pending_payment['payment_url']) : 'null'; ?>;
+                // ===== DOM Elements =====
+                const elements = {
+                    generateBtn: document.getElementById('generateRRRBtn'),
+                    verifyBtn: document.getElementById('verifyPaymentBtn'),
+                    checkStatusBtn: document.getElementById('checkStatusBtn'),
+                    copyBtn: document.getElementById('copyRRRBtn'),
+                    rrrSection: document.getElementById('rrrSection'),
+                    paymentAction: document.getElementById('paymentAction'),
+                    rrrValue: document.getElementById('rrrValue'),
+                    remitaLink: document.getElementById('remitaPaymentLink'),
+                    statusArea: document.getElementById('statusArea'),
+                    statusSpinner: document.getElementById('statusSpinner'),
+                    statusMessage: document.getElementById('statusMessage'),
+                    alertContainer: document.getElementById('alertContainer')
+                };
 
-            // ── State ────────────────────────────────────────────────────
-            var currentRRR = '';
-
-            // ── DOM refs ─────────────────────────────────────────────────
-            var generateBtn     = document.getElementById('generateRRRBtn');
-            var verifyBtn       = document.getElementById('verifyPaymentBtn');
-            var checkStatusBtn  = document.getElementById('checkStatusBtn');
-            var copyRRRBtn      = document.getElementById('copyRRRBtn');
-            var rrrDisplayArea  = document.getElementById('rrrDisplayArea');
-            var paymentBtnArea  = document.getElementById('paymentButtonArea');
-            var remitaPayLink   = document.getElementById('remitaPaymentLink');
-            var generatedRRREl  = document.getElementById('generatedRRR');
-            var paymentStatus   = document.getElementById('paymentStatus');
-            var paymentSpinner  = document.getElementById('paymentSpinner');
-            var paymentMessage  = document.getElementById('paymentMessage');
-            var alertContainer  = document.getElementById('alertContainer');
-
-            // ── CSRF ─────────────────────────────────────────────────────
-            function getCsrfToken() {
-                var meta = document.querySelector('meta[name="csrf-token"]');
-                return meta ? meta.getAttribute('content') : '';
-            }
-
-            // ── Alert ────────────────────────────────────────────────────
-            function showAlert(message, type) {
-                type = type || 'info';
-                var icons = { success: 'check-circle', danger: 'exclamation-circle', warning: 'exclamation-triangle', info: 'info-circle' };
-                var div = document.createElement('div');
-                div.className = 'alert alert-' + type;
-                div.innerHTML = '<i class="fas fa-' + (icons[type] || 'info-circle') + '"></i>' + message;
-                alertContainer.appendChild(div);
-                setTimeout(function() { if (div.parentNode) div.remove(); }, 6000);
-            }
-
-            // ── Copy to clipboard ────────────────────────────────────────
-            function copyToClipboard(text) {
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(text).then(function() {
-                        showAlert('RRR copied to clipboard!', 'success');
-                    }).catch(function() { fallbackCopy(text); });
-                } else {
-                    fallbackCopy(text);
-                }
-            }
-
-            function fallbackCopy(text) {
-                var ta = document.createElement('textarea');
-                ta.value = text;
-                ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
-                document.body.appendChild(ta);
-                ta.select();
-                try {
-                    document.execCommand('copy');
-                    showAlert('RRR copied to clipboard!', 'success');
-                } catch(e) {
-                    showAlert('Could not copy RRR', 'danger');
-                }
-                document.body.removeChild(ta);
-            }
-
-            // ── Show payment UI after RRR is ready ───────────────────────
-            function showPaymentUI(rrr, paymentUrl) {
-                currentRRR = rrr;
-
-                // Populate RRR display
-                if (generatedRRREl) generatedRRREl.textContent = rrr;
-                if (rrrDisplayArea) rrrDisplayArea.style.display = 'block';
-
-                // Set payment link
-                var url = paymentUrl || ('https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + encodeURIComponent(rrr) + '&channel=CARD,USSD,ENAIRA,TRANSFER');
-                if (remitaPayLink) remitaPayLink.href = url;
-
-                // Show payment button area
-                if (paymentBtnArea) paymentBtnArea.style.display = 'block';
-
-                // Show verify and check buttons
-                if (verifyBtn) verifyBtn.style.display = 'flex';
-                if (checkStatusBtn) checkStatusBtn.style.display = 'inline-flex';
-
-                // Hide generate button since we already have an RRR
-                if (generateBtn) generateBtn.style.display = 'none';
-
-                // Scroll to payment button
-                if (paymentBtnArea) {
-                    paymentBtnArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }
-
-            // ── Verify payment ───────────────────────────────────────────
-            function doVerifyPayment(rrr) {
-                if (!rrr) {
-                    showAlert('No RRR found to verify', 'warning');
-                    return;
+                // ===== Utility Functions =====
+                function getCsrfToken() {
+                    return document.getElementById('csrf_token')?.value || '';
                 }
 
-                if (paymentStatus) paymentStatus.style.display = 'block';
-                if (paymentSpinner) paymentSpinner.style.display = 'block';
-                if (paymentMessage) paymentMessage.textContent = 'Verifying payment, please wait...';
-
-                if (verifyBtn) verifyBtn.disabled = true;
-
-                fetch('/apply/verify-payment', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        rrr: rrr,
-                        csrf_token: getCsrfToken()
-                    })
-                })
-                .then(function(response) {
-                    // Check content type
-                    var contentType = response.headers.get('content-type') || '';
+                function showAlert(message, type = 'info') {
+                    if (!elements.alertContainer) return;
                     
-                    // First check if response is OK
-                    if (!response.ok) {
-                        return response.text().then(function(text) {
-                            throw new Error('Server error: ' + response.status);
-                        });
-                    }
+                    const icons = {
+                        success: 'check-circle',
+                        danger: 'exclamation-circle',
+                        warning: 'exclamation-triangle',
+                        info: 'info-circle'
+                    };
                     
-                    // Then check if it's JSON
-                    if (!contentType.includes('application/json')) {
-                        return response.text().then(function(text) {
-                            console.error('Non-JSON response:', text.substring(0, 200));
-                            throw new Error('Server returned non-JSON response. Please check error logs.');
-                        });
-                    }
+                    const alert = document.createElement('div');
+                    alert.className = `alert alert-${type}`;
+                    alert.innerHTML = `<i class="fas fa-${icons[type] || 'info-circle'}"></i>${message}`;
                     
-                    return response.json();
-                })
-                .then(function(data) {
-                    if (paymentSpinner) paymentSpinner.style.display = 'none';
+                    elements.alertContainer.appendChild(alert);
+                    
+                    setTimeout(() => {
+                        if (alert.parentNode) alert.remove();
+                    }, 6000);
+                }
 
-                    if (data.success) {
-                        if (paymentMessage) paymentMessage.textContent = 'Payment verified! Redirecting to exam slip...';
-                        showAlert('Payment confirmed! Redirecting...', 'success');
-                        setTimeout(function() {
-                            window.location.href = data.redirect || '/apply/step/4';
-                        }, 1500);
+                function copyToClipboard(text) {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).then(() => {
+                            showAlert('RRR copied to clipboard!', 'success');
+                        }).catch(() => fallbackCopy(text));
                     } else {
-                        if (paymentStatus) paymentStatus.style.display = 'none';
-                        if (verifyBtn) verifyBtn.disabled = false;
-                        showAlert(data.message || 'Payment not confirmed yet. Please try again.', 'danger');
+                        fallbackCopy(text);
                     }
-                })
-                .catch(function(err) {
-                    if (paymentSpinner) paymentSpinner.style.display = 'none';
-                    if (paymentStatus) paymentStatus.style.display = 'none';
-                    if (verifyBtn) verifyBtn.disabled = false;
-                    showAlert('Error: ' + err.message, 'danger');
-                    console.error('Verify error:', err);
-                });
-            }
+                }
 
-            // ── Event listeners (no inline handlers) ─────────────────────
+                function fallbackCopy(text) {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    
+                    try {
+                        document.execCommand('copy');
+                        showAlert('RRR copied to clipboard!', 'success');
+                    } catch (err) {
+                        showAlert('Could not copy RRR', 'danger');
+                    }
+                    
+                    document.body.removeChild(textarea);
+                }
 
-            // Copy RRR button
-            if (copyRRRBtn) {
-                copyRRRBtn.addEventListener('click', function() {
-                    copyToClipboard(currentRRR || (generatedRRREl ? generatedRRREl.textContent : ''));
-                });
-            }
+                function showStatus(show = true, message = 'Processing...') {
+                    if (elements.statusArea) {
+                        elements.statusArea.style.display = show ? 'block' : 'none';
+                    }
+                    if (elements.statusMessage) {
+                        elements.statusMessage.textContent = message;
+                    }
+                }
 
-            // Generate RRR button
-            if (generateBtn) {
-                generateBtn.addEventListener('click', function() {
-                    var btn = this;
+                function showPaymentUI(rrr, paymentUrl = null) {
+                    currentRRR = rrr;
+                    
+                    // Show RRR section
+                    if (elements.rrrSection) {
+                        elements.rrrSection.style.display = 'block';
+                    }
+                    if (elements.rrrValue) {
+                        elements.rrrValue.textContent = rrr;
+                    }
+                    
+                    // Build and set payment link
+                    const url = paymentUrl || `${CONFIG.demoPaymentUrl}?rrr=${encodeURIComponent(rrr)}&channel=CARD,USSD,ENAIRA,TRANSFER`;
+                    if (elements.remitaLink) {
+                        elements.remitaLink.href = url;
+                    }
+                    
+                    // Show payment action and verify button
+                    if (elements.paymentAction) {
+                        elements.paymentAction.style.display = 'block';
+                    }
+                    if (elements.verifyBtn) {
+                        elements.verifyBtn.style.display = 'flex';
+                    }
+                    if (elements.checkStatusBtn) {
+                        elements.checkStatusBtn.style.display = 'inline-flex';
+                    }
+                    
+                    // Hide generate button
+                    if (elements.generateBtn) {
+                        elements.generateBtn.style.display = 'none';
+                    }
+                    
+                    // Scroll to payment action
+                    if (elements.paymentAction) {
+                        elements.paymentAction.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+
+                // ===== API Calls =====
+                async function generateRRR() {
+                    if (!elements.generateBtn) return;
+                    
+                    const btn = elements.generateBtn;
                     btn.disabled = true;
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-
-                    if (paymentStatus) paymentStatus.style.display = 'block';
-                    if (paymentSpinner) paymentSpinner.style.display = 'block';
-                    if (paymentMessage) paymentMessage.textContent = 'Generating RRR, please wait...';
-
-                    fetch('/apply/initiate-payment', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify({ csrf_token: getCsrfToken() })
-                    })
-                    .then(function(response) {
-                        var contentType = response.headers.get('content-type') || '';
+                    
+                    showStatus(true, 'Generating RRR, please wait...');
+                    
+                    try {
+                        const response = await fetch('/apply/initiate-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({ csrf_token: getCsrfToken() })
+                        });
+                        
+                        // Check content type
+                        const contentType = response.headers.get('content-type') || '';
                         
                         if (!response.ok) {
-                            return response.text().then(function(text) {
-                                throw new Error('Server error: ' + response.status);
-                            });
+                            const text = await response.text();
+                            throw new Error(`Server error (${response.status})`);
                         }
                         
                         if (!contentType.includes('application/json')) {
-                            return response.text().then(function(text) {
-                                console.error('Non-JSON response:', text.substring(0, 200));
-                                throw new Error('Server returned non-JSON response');
-                            });
+                            const text = await response.text();
+                            console.error('Non-JSON response:', text.substring(0, 200));
+                            throw new Error('Server returned invalid response format');
                         }
                         
-                        return response.json();
-                    })
-                    .then(function(data) {
-                        if (paymentSpinner) paymentSpinner.style.display = 'none';
-                        if (paymentStatus) paymentStatus.style.display = 'none';
-
+                        const data = await response.json();
+                        
+                        showStatus(false);
+                        
                         if (data.success) {
                             showAlert('RRR generated successfully!', 'success');
                             showPaymentUI(data.rrr, data.payment_url);
                             
-                            // Auto-open payment in new tab after a short delay
-                            setTimeout(function() {
-                                var url = data.payment_url || ('https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + encodeURIComponent(data.rrr) + '&channel=CARD,USSD,ENAIRA,TRANSFER');
+                            // Auto-open payment in new tab
+                            setTimeout(() => {
+                                const url = data.payment_url || `${CONFIG.demoPaymentUrl}?rrr=${encodeURIComponent(data.rrr)}&channel=CARD,USSD,ENAIRA,TRANSFER`;
                                 window.open(url, '_blank');
                             }, 500);
                         } else {
                             btn.disabled = false;
                             btn.innerHTML = '<i class="fas fa-bolt"></i> Generate RRR';
-                            showAlert(data.message || 'Failed to generate RRR. Please try again.', 'danger');
+                            showAlert(data.message || 'Failed to generate RRR', 'danger');
                         }
-                    })
-                    .catch(function(err) {
+                    } catch (error) {
+                        console.error('Generate error:', error);
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fas fa-bolt"></i> Generate RRR';
-                        if (paymentStatus) paymentStatus.style.display = 'none';
-                        showAlert('Error: ' + err.message, 'danger');
-                        console.error('Generate error:', err);
-                    });
-                });
-            }
-
-            // Verify payment button
-            if (verifyBtn) {
-                verifyBtn.addEventListener('click', function() {
-                    doVerifyPayment(currentRRR || (generatedRRREl ? generatedRRREl.textContent.trim() : ''));
-                });
-            }
-
-            // Check status button
-            if (checkStatusBtn) {
-                checkStatusBtn.addEventListener('click', function() {
-                    doVerifyPayment(currentRRR || (generatedRRREl ? generatedRRREl.textContent.trim() : ''));
-                });
-            }
-
-            // ── On page load: restore pending RRR if exists ───────────────
-            document.addEventListener('DOMContentLoaded', function() {
-                if (pendingRRR) {
-                    showPaymentUI(pendingRRR, pendingPayUrl);
-                    // Don't auto-open tab on page load for pending - user must click the button
+                        showStatus(false);
+                        showAlert(error.message, 'danger');
+                    }
                 }
-            });
 
-            // Handle pending RRR on load without auto-opening tab
-            if (pendingRRR) {
-                currentRRR = pendingRRR;
-                if (generatedRRREl) generatedRRREl.textContent = pendingRRR;
-                if (rrrDisplayArea) rrrDisplayArea.style.display = 'block';
-                var url = pendingPayUrl || ('https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + encodeURIComponent(pendingRRR) + '&channel=CARD,USSD,ENAIRA,TRANSFER');
-                if (remitaPayLink) remitaPayLink.href = url;
-                if (paymentBtnArea) paymentBtnArea.style.display = 'block';
-                if (verifyBtn) verifyBtn.style.display = 'flex';
-                if (checkStatusBtn) checkStatusBtn.style.display = 'inline-flex';
-                if (generateBtn) generateBtn.style.display = 'none';
-            }
+                async function verifyPayment(rrr) {
+                    if (!rrr) {
+                        showAlert('No RRR found to verify', 'warning');
+                        return;
+                    }
+                    
+                    showStatus(true, 'Verifying payment, please wait...');
+                    
+                    if (elements.verifyBtn) {
+                        elements.verifyBtn.disabled = true;
+                    }
+                    
+                    try {
+                        const response = await fetch('/apply/verify-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                rrr: rrr,
+                                csrf_token: getCsrfToken()
+                            })
+                        });
+                        
+                        const contentType = response.headers.get('content-type') || '';
+                        
+                        if (!response.ok) {
+                            throw new Error(`Server error (${response.status})`);
+                        }
+                        
+                        if (!contentType.includes('application/json')) {
+                            const text = await response.text();
+                            console.error('Non-JSON response:', text.substring(0, 200));
+                            throw new Error('Server returned invalid response format');
+                        }
+                        
+                        const data = await response.json();
+                        
+                        showStatus(false);
+                        
+                        if (elements.verifyBtn) {
+                            elements.verifyBtn.disabled = false;
+                        }
+                        
+                        if (data.success) {
+                            showAlert('Payment verified! Redirecting...', 'success');
+                            setTimeout(() => {
+                                window.location.href = data.redirect || '/apply/step/4';
+                            }, 1500);
+                        } else {
+                            if (data.pending) {
+                                showAlert('Payment is still pending. Please complete payment on Remita.', 'warning');
+                            } else {
+                                showAlert(data.message || 'Payment not confirmed', 'danger');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Verify error:', error);
+                        showStatus(false);
+                        if (elements.verifyBtn) {
+                            elements.verifyBtn.disabled = false;
+                        }
+                        showAlert(error.message, 'danger');
+                    }
+                }
 
-        }());
-        </script>
+                // ===== Event Listeners =====
+                if (elements.generateBtn) {
+                    elements.generateBtn.addEventListener('click', generateRRR);
+                }
+                
+                if (elements.verifyBtn) {
+                    elements.verifyBtn.addEventListener('click', () => {
+                        const rrr = currentRRR || (elements.rrrValue ? elements.rrrValue.textContent.trim() : '');
+                        verifyPayment(rrr);
+                    });
+                }
+                
+                if (elements.checkStatusBtn) {
+                    elements.checkStatusBtn.addEventListener('click', () => {
+                        const rrr = currentRRR || (elements.rrrValue ? elements.rrrValue.textContent.trim() : '');
+                        verifyPayment(rrr);
+                    });
+                }
+                
+                if (elements.copyBtn) {
+                    elements.copyBtn.addEventListener('click', () => {
+                        const rrr = currentRRR || (elements.rrrValue ? elements.rrrValue.textContent : '');
+                        if (rrr) copyToClipboard(rrr);
+                    });
+                }
+
+                // ===== Initialize on Page Load =====
+                document.addEventListener('DOMContentLoaded', () => {
+                    // Check for pending payment from session
+                    if (CONFIG.pendingRRR) {
+                        showPaymentUI(CONFIG.pendingRRR, CONFIG.pendingPayUrl);
+                        
+                        // Show info alert
+                        showAlert('You have a pending payment. Complete it to continue.', 'info');
+                    }
+                });
+
+            })();
+            </script>
         </body>
         </html>
         <?php
     }
 }
 
-// =========================================================
-// 9. Add the view instantiation at the bottom
-// =========================================================
+// ===== Render the view =====
 $view = new PaymentView();
 $view->render(get_defined_vars());
 ?>
