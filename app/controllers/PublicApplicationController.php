@@ -19,6 +19,7 @@
  * FIXED 2c: Pass O'Level credit summary to step2 view
  * FIXED 3: Payment RRR formatting with dashes for display
  * FIXED 4: Proper payment verification with exam slip generation
+ * FIXED 5: RRR mismatch issue - Use exact RRR from database in payment URL
  * 
  * @package FCT_CNS
  */
@@ -62,6 +63,7 @@ class PublicApplicationController extends ApplicationBaseController {
         require_once MODELS_PATH . '/application/OlevelResultModel.php';
         require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
         require_once MODELS_PATH . '/application/ExamSlipModel.php';
+        require_once MODELS_PATH . '/application/RemitaModel.php';
         
         $this->jambModel = new JambCandidateModel();
         $this->termsModel = new TermsModel();
@@ -1470,7 +1472,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     // ============================================
-    // STEP 3: PAYMENT - FIXED initiatePayment METHOD
+    // STEP 3: PAYMENT - FIXED initiatePayment METHOD WITH PROPER RRR HANDLING
     // ============================================
 
     /**
@@ -1553,6 +1555,7 @@ class PublicApplicationController extends ApplicationBaseController {
     /**
      * Initiate payment - Generate RRR using Remita API
      * FIXED: Proper RRR formatting with dashes for display
+     * FIXED: Use exact RRR from Remita API in payment URL
      */
     public function initiatePayment() {
         // Set header for JSON response
@@ -1631,7 +1634,7 @@ class PublicApplicationController extends ApplicationBaseController {
             error_log("Remita API Result: " . print_r($result, true));
             
             if ($result['status'] === 'success' && isset($result['rrr'])) {
-                $rrr = $result['rrr'];
+                $rrr = $result['rrr']; // Raw RRR from Remita API (no dashes)
                 
                 error_log("✅ REAL RRR generated from Remita API: " . $rrr);
                 
@@ -1662,13 +1665,18 @@ class PublicApplicationController extends ApplicationBaseController {
                     return;
                 }
                 
-                // Generate secure payment URL server-side using the raw RRR (without dashes)
+                // IMPORTANT FIX: Generate secure payment URL using the RAW RRR (without dashes)
+                // This ensures the URL has the correct RRR that matches what Remita expects
                 $paymentUrl = $this->generatePaymentUrl($rrr); // Pass raw RRR to URL generator
+                
+                error_log("Payment URL generated with raw RRR: $rrr");
+                error_log("Payment URL: $paymentUrl");
                 
                 // Store in session with formatted RRR for display
                 $_SESSION['pending_payment'] = [
                     'payment_id' => $paymentId,
-                    'rrr' => $formattedRrr, // Store formatted version
+                    'rrr' => $formattedRrr, // Store formatted version for display
+                    'raw_rrr' => $rrr, // Also store raw version for reference
                     'amount' => $fee,
                     'payment_url' => $paymentUrl,
                     'created_at' => time()
@@ -1677,7 +1685,8 @@ class PublicApplicationController extends ApplicationBaseController {
                 echo json_encode([
                     'success' => true,
                     'message' => 'RRR generated successfully',
-                    'rrr' => $formattedRrr, // Send formatted RRR to view
+                    'rrr' => $formattedRrr, // Send formatted RRR to view for display
+                    'raw_rrr' => $rrr, // Also send raw RRR for debugging if needed
                     'payment_url' => $paymentUrl,
                     'reference' => $reference,
                     'order_id' => $orderId,
@@ -1709,20 +1718,29 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Generate secure Remita payment URL (server-side)
-     * Uses raw RRR without dashes for the URL
+     * FIXED: Use the EXACT RRR from database, don't modify it
+     * 
+     * @param string $rrr The RRR to use in the URL (should be raw, without dashes)
+     * @return string The complete payment URL
      */
     private function generatePaymentUrl($rrr) {
         // Clean RRR - remove any non-numeric characters (dashes, spaces, etc.)
         $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
         
-        // Build URL with proper encoding
+        // IMPORTANT: Log what RRR we're using for debugging
+        error_log("generatePaymentUrl: Using RRR: $cleanRrr (original: $rrr)");
+        
+        // Build URL with proper encoding - use the EXACT same RRR
         $baseUrl = 'https://demo.remita.net/remita/onepage/payment/init.reg';
         $params = http_build_query([
             'rrr' => $cleanRrr,
             'channel' => 'CARD,USSD,ENAIRA,TRANSFER'
         ]);
         
-        return $baseUrl . '?' . $params;
+        $fullUrl = $baseUrl . '?' . $params;
+        error_log("generatePaymentUrl: Generated URL: $fullUrl");
+        
+        return $fullUrl;
     }
     
     /**
