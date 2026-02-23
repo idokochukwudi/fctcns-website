@@ -1121,8 +1121,12 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // Begin transaction
-            $this->applicationModel->beginTransaction();
+            // Begin transaction - FIXED: Check if already in transaction
+            $ownTransaction = false;
+            if (!$this->applicationModel->getConnection()->inTransaction()) {
+                $this->applicationModel->beginTransaction();
+                $ownTransaction = true;
+            }
             
             // Prepare update data
             $updateData = [
@@ -1237,7 +1241,10 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
             }
             
-            $this->applicationModel->commit();
+            // Commit only if we started the transaction
+            if ($ownTransaction) {
+                $this->applicationModel->commit();
+            }
             
             // Prepare success response
             $response = [
@@ -1264,7 +1271,10 @@ class PublicApplicationController extends ApplicationBaseController {
             echo json_encode($response);
             
         } catch (Exception $e) {
-            $this->applicationModel->rollback();
+            // Rollback only if we started the transaction
+            if (isset($ownTransaction) && $ownTransaction && $this->applicationModel->getConnection()->inTransaction()) {
+                $this->applicationModel->rollback();
+            }
             error_log("Save application error: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());
             echo json_encode([
@@ -1729,8 +1739,12 @@ class PublicApplicationController extends ApplicationBaseController {
             error_log("Remita verification result: " . print_r($verificationResult, true));
             
             if ($verificationResult['status'] === 'success') {
-                // Begin transaction
-                $this->paymentModel->beginTransaction();
+                // Begin transaction - FIXED: Check if already in transaction
+                $ownTransaction = false;
+                if (!$this->paymentModel->getConnection()->inTransaction()) {
+                    $this->paymentModel->beginTransaction();
+                    $ownTransaction = true;
+                }
                 
                 try {
                     // Payment is confirmed by Remita
@@ -1757,7 +1771,10 @@ class PublicApplicationController extends ApplicationBaseController {
                             error_log("Exam slip generated successfully for application: " . $payment['application_id']);
                         }
                         
-                        $this->paymentModel->commit();
+                        // Commit only if we started the transaction
+                        if ($ownTransaction) {
+                            $this->paymentModel->commit();
+                        }
                         
                         echo json_encode([
                             'success' => true,
@@ -1768,7 +1785,10 @@ class PublicApplicationController extends ApplicationBaseController {
                         throw new Exception("Failed to update payment status");
                     }
                 } catch (Exception $e) {
-                    $this->paymentModel->rollback();
+                    // Rollback only if we started the transaction
+                    if ($ownTransaction && $this->paymentModel->getConnection()->inTransaction()) {
+                        $this->paymentModel->rollback();
+                    }
                     throw $e;
                 }
                 
@@ -3184,8 +3204,12 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // Begin transaction
-            $this->applicationModel->beginTransaction();
+            // Begin transaction - FIXED: Check if already in transaction
+            $ownTransaction = false;
+            if (!$this->applicationModel->getConnection()->inTransaction()) {
+                $this->applicationModel->beginTransaction();
+                $ownTransaction = true;
+            }
             
             if (!$application) {
                 // Create new application
@@ -3261,7 +3285,10 @@ class PublicApplicationController extends ApplicationBaseController {
                 'verified_at' => time()
             ];
             
-            $this->applicationModel->commit();
+            // Commit only if we started the transaction
+            if ($ownTransaction) {
+                $this->applicationModel->commit();
+            }
             
             echo json_encode([
                 'success' => true,
@@ -3279,9 +3306,10 @@ class PublicApplicationController extends ApplicationBaseController {
                 ]
             ]);
             
-        } catch (Exception $e) {
-            if (isset($this->applicationModel) && method_exists($this->applicationModel, 'rollback')) {
-                $this->applicationModel->rollback();
+        } catch (Throwable $e) {
+            // Rollback only if we started the transaction
+            if (isset($ownTransaction) && $ownTransaction && $this->applicationModel->getConnection()->inTransaction()) {
+                $this->applicationModel->getConnection()->rollBack();
             }
             error_log("JAMB verification error: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());

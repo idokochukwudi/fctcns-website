@@ -244,6 +244,10 @@ class BaseModel {
      * Begin transaction
      */
     public function beginTransaction() {
+        if ($this->db->inTransaction()) {
+            error_log("BaseModel::beginTransaction - Already in transaction, skipping");
+            return false;
+        }
         return $this->db->beginTransaction();
     }
     
@@ -251,6 +255,10 @@ class BaseModel {
      * Commit transaction
      */
     public function commit() {
+        if (!$this->db->inTransaction()) {
+            error_log("BaseModel::commit - No active transaction, skipping");
+            return false;
+        }
         return $this->db->commit();
     }
     
@@ -258,6 +266,10 @@ class BaseModel {
      * Rollback transaction
      */
     public function rollback() {
+        if (!$this->db->inTransaction()) {
+            error_log("BaseModel::rollback - No active transaction, skipping");
+            return false;
+        }
         return $this->db->rollBack();
     }
     

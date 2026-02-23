@@ -48,7 +48,12 @@ if (!empty($requestUri)) {
         safeContains($requestUri, '/generate-preview') ||
         safeContains($requestUri, '/export-excel') ||
         safeContains($requestUri, '/export-csv') ||
-        safeContains($requestUri, '/api/')
+        safeContains($requestUri, '/api/') ||
+        safeContains($requestUri, '/verify-jamb') ||
+        safeContains($requestUri, '/save-application') ||
+        safeContains($requestUri, '/initiate-payment') ||
+        safeContains($requestUri, '/verify-payment') ||
+        safeContains($requestUri, '/remove-document')
     );
 }
 
@@ -57,6 +62,22 @@ if (!$isAjaxRoute && isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
     $ajaxHeader = strtolower(safeStr($_SERVER['HTTP_X_REQUESTED_WITH']));
     $isAjaxRoute = ($ajaxHeader === 'xmlhttprequest');
 }
+
+// Catch PHP fatal errors on AJAX routes and return JSON instead of HTML
+register_shutdown_function(function() use ($isAjaxRoute) {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        if ($isAjaxRoute) {
+            if (!headers_sent()) {
+                header('Content-Type: application/json', true, 500);
+            }
+            echo json_encode([
+                'success' => false,
+                'message' => 'A server error occurred. Please try again.'
+            ]);
+        }
+    }
+});
 
 // ============================================================================
 // CONDITIONAL OUTPUT BUFFERING - Only for HTML pages, NOT for AJAX/API

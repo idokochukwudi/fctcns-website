@@ -4,6 +4,7 @@
  * 
  * Handles application data operations
  * FIXED: Proper update method without conflicts
+ * FIXED: Transaction handling with proper nested transaction support
  * 
  * @package FCT_CNS
  * @subpackage Application
@@ -51,8 +52,12 @@ class ApplicationModel extends BaseModel {
      * Create new application
      */
     public function createApplication($applicantId, $jambData) {
+        $ownTransaction = false;
         try {
-            $this->beginTransaction();
+            if (!$this->db->inTransaction()) {
+                $this->db->beginTransaction();
+                $ownTransaction = true;
+            }
             
             $applicationNumber = $this->generateApplicationNumber();
             
@@ -133,12 +138,16 @@ class ApplicationModel extends BaseModel {
                 throw new Exception("Failed to insert application");
             }
             
-            $this->commit();
+            if ($ownTransaction) {
+                $this->db->commit();
+            }
             
             return $applicationId;
             
         } catch (Exception $e) {
-            $this->rollback();
+            if ($ownTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("ApplicationModel::createApplication - Error: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());
             throw $e;
@@ -514,8 +523,12 @@ class ApplicationModel extends BaseModel {
             return false;
         }
         
+        $ownTransaction = false;
         try {
-            $this->beginTransaction();
+            if (!$this->db->inTransaction()) {
+                $this->db->beginTransaction();
+                $ownTransaction = true;
+            }
             
             // Check if exam slip already exists
             $existing = $this->fetchOne(
@@ -524,7 +537,9 @@ class ApplicationModel extends BaseModel {
             );
             
             if ($existing) {
-                $this->commit();
+                if ($ownTransaction) {
+                    $this->db->commit();
+                }
                 return $existing;
             }
             
@@ -553,12 +568,16 @@ class ApplicationModel extends BaseModel {
                 'application_step' => 4
             ]);
             
-            $this->commit();
+            if ($ownTransaction) {
+                $this->db->commit();
+            }
             
             return $examSlipModel->find($slipId);
             
         } catch (Exception $e) {
-            $this->rollback();
+            if ($ownTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("ApplicationModel::generateExamSlip - Error: " . $e->getMessage());
             throw $e;
         }
