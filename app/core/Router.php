@@ -326,7 +326,10 @@ class Router {
         // Step 3: Payment
         $this->get('/apply/payment', 'PublicApplicationController@showPayment');
         $this->post('/apply/initiate-payment', 'PublicApplicationController@initiatePayment');
+        
+        // IMPORTANT FIX: Added POST route for verify-payment alongside GET
         $this->get('/apply/verify-payment', 'PublicApplicationController@verifyPayment');
+        $this->post('/apply/verify-payment', 'PublicApplicationController@verifyPayment');
         
         // Payment step alias
         $this->get('/apply/step/3', 'PublicApplicationController@step3');
@@ -710,6 +713,26 @@ class Router {
                     'handler' => 'PublicApplicationController@verifyJamb'
                 ];
             }
+            
+            // Verify payment routes
+            $verifyPaymentGetFound = false;
+            $verifyPaymentPostFound = false;
+            foreach ($this->routes as $route) {
+                if ($route['path'] === '/apply/verify-payment') {
+                    if ($route['method'] === 'GET') {
+                        $verifyPaymentGetFound = true;
+                    } elseif ($route['method'] === 'POST') {
+                        $verifyPaymentPostFound = true;
+                    }
+                }
+            }
+            
+            if ($verifyPaymentGetFound && $verifyPaymentPostFound) {
+                error_log("✓ Both GET and POST /apply/verify-payment routes are registered");
+            } else {
+                error_log("✗ Payment routes incomplete - GET: " . ($verifyPaymentGetFound ? 'YES' : 'NO') . 
+                         ", POST: " . ($verifyPaymentPostFound ? 'YES' : 'NO'));
+            }
         }
     }
 
@@ -869,6 +892,35 @@ class Router {
             }
             
             error_log("✗ No matching route found for POST /apply/verify-jamb");
+        }
+        
+        // DEBUG for payment verification route
+        if ($requestUri === '/apply/verify-payment') {
+            error_log("=== DEBUG: PAYMENT VERIFICATION ROUTE REQUESTED ===");
+            error_log("Request Method: $requestMethod");
+            
+            // Search specifically for this route
+            foreach ($this->routes as $index => $route) {
+                if ($route['path'] === '/apply/verify-payment' && $route['method'] === $requestMethod) {
+                    error_log("✓ Found $requestMethod /apply/verify-payment at index $index");
+                    error_log("  Pattern: " . $route['pattern']);
+                    
+                    // Test if pattern matches
+                    if (preg_match($route['pattern'], $requestUri, $matches)) {
+                        error_log("  ✓ Pattern MATCHES!");
+                        
+                        // Return this route
+                        array_shift($matches);
+                        $this->params = $matches;
+                        
+                        return [
+                            'handler' => $route['handler'],
+                            'params' => $matches,
+                            'route' => $route
+                        ];
+                    }
+                }
+            }
         }
         
         error_log("==========================================");
