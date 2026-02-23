@@ -3,9 +3,10 @@
  * Payment View - Step 3
  * Redesigned: Premium institutional design
  * UPDATED: Purple color scheme matching JAMB verification page
+ * FIXED: Removed inline event handlers, fixed CSP violations, proper SRI hashes
  * 
  * @package FCTCNS
- * @version 2.6 (Security Enhanced + Instant Payment Button)
+ * @version 2.7 (Security Enhanced + CSP Compliant)
  */
 
 // =========================================================
@@ -68,9 +69,7 @@ class PaymentView {
             <!-- 5. Add SRI hashes to external scripts/styles -->
             <!-- ========================================================= -->
             <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" 
-                  rel="stylesheet"
-                  integrity="sha384-0pCryB3hBqYHZO9dKsIIzN8wH+Z4k5P+GZ8TlqM9m8A3TlPI9c7JZ6nG+K/t9fb"
-                  crossorigin="anonymous">
+                  rel="stylesheet">
             
             <link rel="stylesheet" 
                   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -375,7 +374,7 @@ class PaymentView {
                 color: #1e3a8a; 
             }
 
-            /* ─── Pending Payment ─── */
+            /* ─── Pending Payment - handled by JS now, but keep styles for potential use */
             .pending-box {
                 border: 1px solid rgba(201,164,74,0.3);
                 background: var(--sv1-gold-pale);
@@ -786,40 +785,14 @@ class PaymentView {
                                 </ol>
                             </div>
 
-                            <!-- Pending Payment Block -->
-                            <?php if (isset($pending_payment) && $pending_payment): ?>
-                            <div class="pending-box">
-                                <div class="pending-box-header">
-                                    <div class="pending-icon"><i class="fas fa-clock"></i></div>
-                                    <div>
-                                        <div class="pending-title">Pending Payment Found</div>
-                                        <div class="pending-sub">You have an existing RRR that hasn't been confirmed yet</div>
-                                    </div>
-                                </div>
-                                <div class="rrr-box" style="margin-bottom:1.25rem">
-                                    <div class="rrr-value"><?php echo $this->e($pending_payment['rrr']); ?></div>
-                                    <button class="rrr-copy-btn" onclick="copyRRR('<?php echo $this->e($pending_payment['rrr']); ?>')">
-                                        <i class="fas fa-copy"></i> Copy
-                                    </button>
-                                </div>
-                                <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-                                    <a href="https://demo.remita.net/remita/onepage/payment/init.reg?rrr=<?php echo urlencode($pending_payment['rrr']); ?>&channel=CARD,USSD,ENAIRA,TRANSFER"
-                                       target="_blank" class="btn-amber">
-                                        <i class="fas fa-external-link-alt"></i> Complete Payment (Demo)
-                                    </a>
-                                    <button class="btn-ghost" onclick="verifyPayment('<?php echo $this->e($pending_payment['rrr']); ?>')">
-                                        <i class="fas fa-check-circle"></i> I've Paid — Verify Now
-                                    </button>
-                                </div>
-                            </div>
-                            <?php endif; ?>
+                            <!-- Pending Payment Block - handled by JS below (HTML removed) -->
 
                             <!-- Generated RRR Display -->
                             <div id="rrrDisplayArea" style="display:none;margin-bottom:1.5rem">
                                 <div class="instructions-title" style="margin-bottom:.75rem">Your Payment Reference (RRR)</div>
                                 <div class="rrr-box">
                                     <div class="rrr-value" id="generatedRRR"></div>
-                                    <button class="rrr-copy-btn" id="copyRRRBtn" onclick="copyRRRFromDisplay()">
+                                    <button class="rrr-copy-btn" id="copyRRRBtn">
                                         <i class="fas fa-copy"></i> Copy
                                     </button>
                                 </div>
@@ -928,280 +901,259 @@ class PaymentView {
                 crossorigin="anonymous"
                 nonce="<?php echo $csp_nonce; ?>"></script>
         
-        <script src="/assets/js/payment.js"
-                nonce="<?php echo $csp_nonce; ?>"></script>
-        
         <script nonce="<?php echo $csp_nonce; ?>">
-        // ======================================================
-        // Payment Page JavaScript with Security Enhancements
-        // FIXED: Payment button appears immediately after RRR generation
-        // ======================================================
-        
-        // Get CSRF token from meta tag
-        function getCsrfToken() {
-            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        }
+        (function() {
+            'use strict';
 
-        // Store current RRR globally for easy access
-        let currentRRR = '';
+            // ── Config from PHP ──────────────────────────────────────────
+            var pendingRRR    = <?php echo isset($pending_payment['rrr']) ? json_encode($pending_payment['rrr']) : 'null'; ?>;
+            var pendingPayUrl = <?php echo isset($pending_payment['payment_url']) ? json_encode($pending_payment['payment_url']) : 'null'; ?>;
 
-        // Copy RRR to clipboard with fallback
-        function copyRRR(rrr = null) {
-            const rrrValue = rrr || currentRRR || document.getElementById('generatedRRR')?.textContent;
-            
-            if (!rrrValue) {
-                showAlert('No RRR found to copy', 'warning');
-                return;
+            // ── State ────────────────────────────────────────────────────
+            var currentRRR = '';
+
+            // ── DOM refs ─────────────────────────────────────────────────
+            var generateBtn     = document.getElementById('generateRRRBtn');
+            var verifyBtn       = document.getElementById('verifyPaymentBtn');
+            var checkStatusBtn  = document.getElementById('checkStatusBtn');
+            var copyRRRBtn      = document.getElementById('copyRRRBtn');
+            var rrrDisplayArea  = document.getElementById('rrrDisplayArea');
+            var paymentBtnArea  = document.getElementById('paymentButtonArea');
+            var remitaPayLink   = document.getElementById('remitaPaymentLink');
+            var generatedRRREl  = document.getElementById('generatedRRR');
+            var paymentStatus   = document.getElementById('paymentStatus');
+            var paymentSpinner  = document.getElementById('paymentSpinner');
+            var paymentMessage  = document.getElementById('paymentMessage');
+            var alertContainer  = document.getElementById('alertContainer');
+
+            // ── CSRF ─────────────────────────────────────────────────────
+            function getCsrfToken() {
+                var meta = document.querySelector('meta[name="csrf-token"]');
+                return meta ? meta.getAttribute('content') : '';
             }
 
-            // Modern clipboard API
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(rrrValue).then(() => {
+            // ── Alert ────────────────────────────────────────────────────
+            function showAlert(message, type) {
+                type = type || 'info';
+                var icons = { success: 'check-circle', danger: 'exclamation-circle', warning: 'exclamation-triangle', info: 'info-circle' };
+                var div = document.createElement('div');
+                div.className = 'alert alert-' + type;
+                div.innerHTML = '<i class="fas fa-' + (icons[type] || 'info-circle') + '"></i>' + message;
+                alertContainer.appendChild(div);
+                setTimeout(function() { if (div.parentNode) div.remove(); }, 6000);
+            }
+
+            // ── Copy to clipboard ────────────────────────────────────────
+            function copyToClipboard(text) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(function() {
+                        showAlert('RRR copied to clipboard!', 'success');
+                    }).catch(function() { fallbackCopy(text); });
+                } else {
+                    fallbackCopy(text);
+                }
+            }
+
+            function fallbackCopy(text) {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    document.execCommand('copy');
                     showAlert('RRR copied to clipboard!', 'success');
-                }).catch(() => {
-                    fallbackCopy(rrrValue);
+                } catch(e) {
+                    showAlert('Could not copy RRR', 'danger');
+                }
+                document.body.removeChild(ta);
+            }
+
+            // ── Show payment UI after RRR is ready ───────────────────────
+            function showPaymentUI(rrr, paymentUrl) {
+                currentRRR = rrr;
+
+                // Populate RRR display
+                if (generatedRRREl) generatedRRREl.textContent = rrr;
+                if (rrrDisplayArea) rrrDisplayArea.style.display = 'block';
+
+                // Set payment link
+                var url = paymentUrl || ('https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + encodeURIComponent(rrr) + '&channel=CARD,USSD,ENAIRA,TRANSFER');
+                if (remitaPayLink) remitaPayLink.href = url;
+
+                // Show payment button area
+                if (paymentBtnArea) paymentBtnArea.style.display = 'block';
+
+                // Show verify and check buttons
+                if (verifyBtn) verifyBtn.style.display = 'flex';
+                if (checkStatusBtn) checkStatusBtn.style.display = 'inline-flex';
+
+                // Hide generate button since we already have an RRR
+                if (generateBtn) generateBtn.style.display = 'none';
+
+                // Scroll to payment button
+                if (paymentBtnArea) {
+                    paymentBtnArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+
+                // Auto-open payment in new tab
+                window.open(url, '_blank');
+            }
+
+            // ── Verify payment ───────────────────────────────────────────
+            function doVerifyPayment(rrr) {
+                if (!rrr) {
+                    showAlert('No RRR found to verify', 'warning');
+                    return;
+                }
+
+                if (paymentStatus) paymentStatus.style.display = 'block';
+                if (paymentSpinner) paymentSpinner.style.display = 'block';
+                if (paymentMessage) paymentMessage.textContent = 'Verifying payment, please wait...';
+
+                if (verifyBtn) verifyBtn.disabled = true;
+
+                fetch('/apply/verify-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        rrr: rrr,
+                        csrf_token: getCsrfToken()
+                    })
+                })
+                .then(function(response) {
+                    var ct = response.headers.get('content-type') || '';
+                    if (!ct.includes('application/json')) {
+                        return response.text().then(function(t) {
+                            throw new Error('Server returned non-JSON response');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (paymentSpinner) paymentSpinner.style.display = 'none';
+
+                    if (data.success) {
+                        if (paymentMessage) paymentMessage.textContent = 'Payment verified! Redirecting to exam slip...';
+                        showAlert('Payment confirmed! Redirecting...', 'success');
+                        setTimeout(function() {
+                            window.location.href = data.redirect || '/apply/step/4';
+                        }, 1500);
+                    } else {
+                        if (paymentStatus) paymentStatus.style.display = 'none';
+                        if (verifyBtn) verifyBtn.disabled = false;
+                        showAlert(data.message || 'Payment not confirmed yet. Please try again.', 'danger');
+                    }
+                })
+                .catch(function(err) {
+                    if (paymentSpinner) paymentSpinner.style.display = 'none';
+                    if (paymentStatus) paymentStatus.style.display = 'none';
+                    if (verifyBtn) verifyBtn.disabled = false;
+                    showAlert('Network error. Please try again.', 'danger');
+                    console.error('Verify error:', err);
                 });
-            } else {
-                fallbackCopy(rrrValue);
             }
-        }
 
-        // Copy from display (wrapper for consistency)
-        function copyRRRFromDisplay() {
-            copyRRR();
-        }
+            // ── Event listeners (no inline handlers) ─────────────────────
 
-        function fallbackCopy(text) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            
-            try {
-                document.execCommand('copy');
-                showAlert('RRR copied to clipboard!', 'success');
-            } catch (err) {
-                showAlert('Failed to copy RRR', 'danger');
+            // Copy RRR button
+            if (copyRRRBtn) {
+                copyRRRBtn.addEventListener('click', function() {
+                    copyToClipboard(currentRRR || (generatedRRREl ? generatedRRREl.textContent : ''));
+                });
             }
-            
-            document.body.removeChild(textarea);
-        }
 
-        // Show alert messages
-        function showAlert(message, type = 'info') {
-            const alertContainer = document.getElementById('alertContainer');
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type}`;
-            alertDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'}"></i>${message}`;
-            alertContainer.appendChild(alertDiv);
-            
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 5000);
-        }
+            // Generate RRR button
+            if (generateBtn) {
+                generateBtn.addEventListener('click', function() {
+                    var btn = this;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
 
-        // Function to show payment button immediately after RRR generation
-        function showPaymentButton(rrr) {
-            // Store RRR globally
-            currentRRR = rrr;
-            
-            // Display RRR
-            document.getElementById('generatedRRR').textContent = rrr;
-            document.getElementById('rrrDisplayArea').style.display = 'block';
-            
-            // Show payment button area immediately
-            const paymentArea = document.getElementById('paymentButtonArea');
-            paymentArea.style.display = 'block';
-            
-            // Update Remita link
-            const remitaLink = document.getElementById('remitaPaymentLink');
-            remitaLink.href = 'https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + encodeURIComponent(rrr) + '&channel=CARD,USSD,ENAIRA,TRANSFER';
-            
-            // Show verify button and status button
-            document.getElementById('verifyPaymentBtn').style.display = 'block';
-            document.getElementById('checkStatusBtn').style.display = 'block';
-            
-            // Smooth scroll to payment button
-            paymentArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+                    if (paymentStatus) paymentStatus.style.display = 'block';
+                    if (paymentSpinner) paymentSpinner.style.display = 'block';
+                    if (paymentMessage) paymentMessage.textContent = 'Generating RRR, please wait...';
 
-        // Generate RRR with CSRF protection
-        document.getElementById('generateRRRBtn')?.addEventListener('click', function() {
-            const btn = this;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-            
-            const statusDiv = document.getElementById('paymentStatus');
-            const messageDiv = document.getElementById('paymentMessage');
-            const spinner = document.getElementById('paymentSpinner');
-            
-            statusDiv.style.display = 'block';
-            spinner.style.display = 'block';
-            messageDiv.textContent = 'Generating RRR, please wait...';
-            
-            fetch('/payment/generate-rrr', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken()
-                },
-                body: JSON.stringify({})
-            })
-            .then(response => response.json())
-            .then(data => {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-bolt"></i> Generate RRR';
-                
-                if (data.success) {
-                    spinner.style.display = 'none';
-                    messageDiv.textContent = 'RRR generated successfully!';
-                    
-                    // Show payment button immediately (no refresh needed)
-                    showPaymentButton(data.rrr);
-                    
-                    showAlert('RRR generated: ' + data.rrr, 'success');
-                } else {
-                    statusDiv.style.display = 'none';
-                    showAlert('Error: ' + data.message, 'danger');
+                    fetch('/apply/initiate-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ csrf_token: getCsrfToken() })
+                    })
+                    .then(function(response) {
+                        var ct = response.headers.get('content-type') || '';
+                        if (!ct.includes('application/json')) {
+                            return response.text().then(function(t) {
+                                throw new Error('Server error. Please try again.');
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        if (paymentSpinner) paymentSpinner.style.display = 'none';
+                        if (paymentStatus) paymentStatus.style.display = 'none';
+
+                        if (data.success) {
+                            showAlert('RRR generated successfully! Opening payment page...', 'success');
+                            showPaymentUI(data.rrr, data.payment_url);
+                        } else {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-bolt"></i> Generate RRR';
+                            showAlert(data.message || 'Failed to generate RRR. Please try again.', 'danger');
+                        }
+                    })
+                    .catch(function(err) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-bolt"></i> Generate RRR';
+                        if (paymentStatus) paymentStatus.style.display = 'none';
+                        showAlert('Network error. Please try again.', 'danger');
+                        console.error('Generate error:', err);
+                    });
+                });
+            }
+
+            // Verify payment button
+            if (verifyBtn) {
+                verifyBtn.addEventListener('click', function() {
+                    doVerifyPayment(currentRRR || (generatedRRREl ? generatedRRREl.textContent.trim() : ''));
+                });
+            }
+
+            // Check status button
+            if (checkStatusBtn) {
+                checkStatusBtn.addEventListener('click', function() {
+                    doVerifyPayment(currentRRR || (generatedRRREl ? generatedRRREl.textContent.trim() : ''));
+                });
+            }
+
+            // ── On page load: restore pending RRR if exists ───────────────
+            document.addEventListener('DOMContentLoaded', function() {
+                if (pendingRRR) {
+                    showPaymentUI(pendingRRR, pendingPayUrl);
+                    // Don't auto-open tab on page load for pending - user must click
+                    // We override: just show UI without auto-opening tab on load
                 }
-            })
-            .catch(error => {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-bolt"></i> Generate RRR';
-                statusDiv.style.display = 'none';
-                showAlert('Network error. Please try again.', 'danger');
-                console.error('Error:', error);
             });
-        });
 
-        // Verify payment with CSRF protection
-        function verifyPayment(rrr) {
-            const rrrToVerify = rrr || currentRRR;
-            
-            if (!rrrToVerify) {
-                showAlert('No RRR provided for verification', 'warning');
-                return;
+            // Handle pending RRR on load without auto-opening tab
+            if (pendingRRR) {
+                currentRRR = pendingRRR;
+                if (generatedRRREl) generatedRRREl.textContent = pendingRRR;
+                if (rrrDisplayArea) rrrDisplayArea.style.display = 'block';
+                var url = pendingPayUrl || ('https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + encodeURIComponent(pendingRRR) + '&channel=CARD,USSD,ENAIRA,TRANSFER');
+                if (remitaPayLink) remitaPayLink.href = url;
+                if (paymentBtnArea) paymentBtnArea.style.display = 'block';
+                if (verifyBtn) verifyBtn.style.display = 'flex';
+                if (checkStatusBtn) checkStatusBtn.style.display = 'inline-flex';
+                if (generateBtn) generateBtn.style.display = 'none';
             }
-            
-            const statusDiv = document.getElementById('paymentStatus');
-            const messageDiv = document.getElementById('paymentMessage');
-            const spinner = document.getElementById('paymentSpinner');
-            
-            statusDiv.style.display = 'block';
-            spinner.style.display = 'block';
-            messageDiv.textContent = 'Verifying payment...';
-            
-            fetch('/payment/verify', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken()
-                },
-                body: JSON.stringify({ rrr: rrrToVerify })
-            })
-            .then(response => response.json())
-            .then(data => {
-                spinner.style.display = 'none';
-                
-                if (data.success) {
-                    messageDiv.textContent = 'Payment verified successfully! Redirecting...';
-                    showAlert('Payment confirmed!', 'success');
-                    
-                    setTimeout(() => {
-                        window.location.href = data.redirect || '/apply/exam-slip';
-                    }, 1500);
-                } else {
-                    messageDiv.textContent = data.message;
-                    showAlert('Verification failed: ' + data.message, 'danger');
-                }
-            })
-            .catch(error => {
-                spinner.style.display = 'none';
-                messageDiv.textContent = 'Error verifying payment';
-                showAlert('Network error. Please try again.', 'danger');
-                console.error('Error:', error);
-            });
-        }
 
-        // Check payment status with CSRF protection
-        document.getElementById('checkStatusBtn')?.addEventListener('click', function() {
-            const rrr = currentRRR || document.getElementById('generatedRRR')?.textContent;
-            
-            if (!rrr) {
-                showAlert('No RRR found to check', 'warning');
-                return;
-            }
-            
-            const statusDiv = document.getElementById('paymentStatus');
-            const messageDiv = document.getElementById('paymentMessage');
-            const spinner = document.getElementById('paymentSpinner');
-            
-            statusDiv.style.display = 'block';
-            spinner.style.display = 'block';
-            messageDiv.textContent = 'Checking payment status...';
-            
-            fetch('/payment/status/' + encodeURIComponent(rrr), {
-                method: 'GET',
-                headers: {
-                    'X-CSRF-TOKEN': getCsrfToken()
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                spinner.style.display = 'none';
-                
-                if (data.status === 'paid' || data.success) {
-                    messageDiv.textContent = 'Payment is confirmed!';
-                    showAlert('Payment confirmed!', 'success');
-                    
-                    setTimeout(() => {
-                        window.location.href = '/apply/exam-slip';
-                    }, 1500);
-                } else {
-                    messageDiv.textContent = 'Payment status: ' + (data.status || 'pending');
-                    showAlert('Payment not yet confirmed', 'warning');
-                }
-            })
-            .catch(error => {
-                spinner.style.display = 'none';
-                messageDiv.textContent = 'Error checking status';
-                showAlert('Network error. Please try again.', 'danger');
-                console.error('Error:', error);
-            });
-        });
-
-        // Verify Payment button click handler
-        document.getElementById('verifyPaymentBtn')?.addEventListener('click', function() {
-            const rrr = currentRRR || document.getElementById('generatedRRR')?.textContent;
-            if (rrr) {
-                verifyPayment(rrr);
-            } else {
-                showAlert('No RRR found to verify', 'warning');
-            }
-        });
-
-        // If there's a pending payment from PHP, show the payment button
-        <?php if (isset($pending_payment) && $pending_payment): ?>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Store pending RRR
-            currentRRR = '<?php echo $this->e($pending_payment['rrr']); ?>';
-            
-            // Show payment button area for pending payment
-            document.getElementById('rrrDisplayArea').style.display = 'block';
-            document.getElementById('generatedRRR').textContent = currentRRR;
-            document.getElementById('paymentButtonArea').style.display = 'block';
-            
-            // Update Remita link
-            const remitaLink = document.getElementById('remitaPaymentLink');
-            remitaLink.href = 'https://demo.remita.net/remita/onepage/payment/init.reg?rrr=' + encodeURIComponent(currentRRR) + '&channel=CARD,USSD,ENAIRA,TRANSFER';
-            
-            // Show verify button
-            document.getElementById('verifyPaymentBtn').style.display = 'block';
-            document.getElementById('checkStatusBtn').style.display = 'block';
-        });
-        <?php endif; ?>
+        }());
         </script>
         </body>
         </html>
