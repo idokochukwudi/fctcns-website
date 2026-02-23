@@ -14,6 +14,7 @@
  * FIXED: Payment verification now properly handles RRR with dashes
  * FIXED: Corrected SettingsModel path to /application/SettingsModel.php
  * FIXED: Enhanced verification response handling for demo environment with status code '00'
+ * FIXED: CORRECTED HASH FORMAT for verification - now uses merchantId + rrr + apiKey ONLY (per Remita support)
  *
  * @package FCT_CNS
  * @subpackage Application
@@ -161,31 +162,29 @@ class RemitaModel extends BaseModel {
     }
 
     /**
+     * FIXED: Generate hash for payment status/verification:
+     *   CORRECT FORMAT per Remita support: merchantId + rrr + apiKey ONLY
+     *   (serviceTypeId and amount are NOT needed)
+     */
+    public function generateApiHash($rrr, $amount = null) {
+        // Ensure RRR is clean (no dashes)
+        $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
+        
+        // CORRECT FORMAT: merchantId + rrr + apiKey (amount and serviceTypeId NOT needed)
+        $raw = $this->merchantId . $cleanRrr . $this->apiKey;
+        
+        error_log("generateApiHash (corrected): merchantId({$this->merchantId}) + rrr($cleanRrr) + apiKey");
+        return hash('sha512', $raw);
+    }
+
+    /**
      * Generate hash for status check endpoint:
-     *   SHA-512( merchantId + rrr + apiKey )
+     *   SHA-512(merchantId + rrr + apiKey)
      */
     public function generateStatusHash($rrr) {
         $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
         $raw = $this->merchantId . $cleanRrr . $this->apiKey;
         error_log("generateStatusHash: merchantId({$this->merchantId}) + rrr($cleanRrr) + apiKey");
-        return hash('sha512', $raw);
-    }
-
-    /**
-     * Generate hash for payment status/verification:
-     *   SHA-512( merchantId + serviceTypeId + rrr + amount + apiKey )
-     */
-    public function generateApiHash($rrr, $amount) {
-        // Ensure RRR is clean (no dashes)
-        $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
-        
-        // When amount is empty, fall back to status hash format
-        if (empty($amount)) {
-            return $this->generateStatusHash($cleanRrr);
-        }
-        
-        $raw = $this->merchantId . $this->serviceTypeId . $cleanRrr . $amount . $this->apiKey;
-        error_log("generateApiHash raw string: merchantId({$this->merchantId}) + serviceTypeId({$this->serviceTypeId}) + rrr($cleanRrr) + amount($amount) + apiKey");
         return hash('sha512', $raw);
     }
 
@@ -524,9 +523,8 @@ class RemitaModel extends BaseModel {
 
     /**
      * Verify payment status for a given RRR
+     * FIXED: Correct hash format based on Remita support (merchantId + rrr + apiKey only)
      * FIXED: Properly handles RRR with dashes and correct endpoint
-     * FIXED: Enhanced response handling for demo environment with status code '00'
-     * FIXED: Added comprehensive logging to debug response structure
      */
     public function verifyPayment($rrr) {
         try {
@@ -536,18 +534,20 @@ class RemitaModel extends BaseModel {
             $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
             error_log("RemitaModel: cleaned RRR: $cleanRrr");
             
-            // Get application fee for hash generation
-            $appFee = $this->settingsModel->getApplicationFee() ?? 2200;
-            error_log("RemitaModel: using amount $appFee for hash generation");
+            // CORRECT HASH FORMAT per Remita support: merchantId + rrr + apiKey
+            $hashString = $this->merchantId . $cleanRrr . $this->apiKey;
+            $statusHash = hash('sha512', $hashString);
             
-            // FIX 1: Use the correct status endpoint format
-            $statusHash = $this->generateStatusHash($cleanRrr);
+            error_log("RemitaModel: Hash string (merchantId + rrr + apiKey): " . $this->merchantId . " + " . $cleanRrr . " + [apiKey]");
+            error_log("RemitaModel: Generated status hash: " . $statusHash);
+            
+            // CORRECT ENDPOINT with the hash in the URL path
             $endpoint = $this->baseUrl . '/echannelsvc/' . $this->merchantId . '/' . $cleanRrr . '/' . $statusHash . '/status.reg';
             
             error_log("RemitaModel: status endpoint = $endpoint");
             
-            // Generate hash for verification header
-            $apiHash = $this->generateApiHash($cleanRrr, $appFee);
+            // FOR AUTHORIZATION HEADER - use the SAME hash format
+            $authHash = hash('sha512', $this->merchantId . $cleanRrr . $this->apiKey);
             
             // Prepare request
             $ch = curl_init($endpoint);
@@ -559,7 +559,7 @@ class RemitaModel extends BaseModel {
                 CURLOPT_HTTPHEADER     => [
                     'Content-Type: application/json',
                     'Accept: application/json',
-                    'Authorization: remitaConsumerKey=' . $this->merchantId . ',remitaConsumerToken=' . $apiHash,
+                    'Authorization: remitaConsumerKey=' . $this->merchantId . ',remitaConsumerToken=' . $authHash,
                 ],
                 CURLOPT_FOLLOWLOCATION => false,
             ]);
@@ -585,7 +585,7 @@ class RemitaModel extends BaseModel {
                 error_log("RemitaModel: RRR $cleanRrr not found in Remita (404). Payment not made.");
                 
                 // Try alternative endpoint format before giving up
-                $altResult = $this->tryAlternativeVerificationEndpoint($cleanRrr, $appFee);
+                $altResult = $this->tryAlternativeVerificationEndpoint($cleanRrr);
                 if ($altResult && $altResult['status'] === 'success') {
                     return $altResult;
                 }
@@ -622,76 +622,15 @@ class RemitaModel extends BaseModel {
                     }
                 }
 
-                // COLLECT ALL POSSIBLE STATUS INDICATORS
-                $statusFields = [
-                    'responseCode' => $result['responseCode'] ?? '',
-                    'status'       => $result['status'] ?? '',
-                    'paymentStatus'=> $result['paymentStatus'] ?? '',
-                    'statusCode'   => $result['statusCode'] ?? '',
-                    'message'      => $result['message'] ?? '',
-                    'responseMsg'  => $result['responseMsg'] ?? '',
-                ];
-
-                // Check for transaction ID (strong indicator of success)
+                // Check for success (status code '00' per Remita support)
+                $responseCode = $result['responseCode'] ?? $result['status'] ?? '';
+                $responseMsg = $result['responseMsg'] ?? $result['message'] ?? '';
                 $hasTransactionId = !empty($result['transactionId']) || !empty($result['transactionRef']);
-                
-                // Check for amount match
-                $amountMatches = isset($result['amount']) && $result['amount'] == $appFee;
 
-                error_log("RemitaModel: Status fields: " . json_encode($statusFields));
-                error_log("RemitaModel: Has transactionId: " . ($hasTransactionId ? 'YES' : 'NO'));
-                error_log("RemitaModel: Amount matches: " . ($amountMatches ? 'YES' : 'NO'));
+                error_log("RemitaModel: responseCode=$responseCode | responseMsg=$responseMsg | hasTransactionId=" . ($hasTransactionId ? 'YES' : 'NO'));
 
-                // FIX 2: Success determination logic based on Remita customer care info
-                // They confirmed success code is '00' for demo
-                $isSuccess = false;
-                $isPending = false;
-
-                // Check all status fields for success indicators
-                foreach ($statusFields as $fieldName => $fieldValue) {
-                    $upperValue = strtoupper((string)$fieldValue);
-                    
-                    // Success codes (customer care confirmed '00' is success)
-                    if (in_array($fieldValue, ['00', '01', '11', '025'])) {
-                        error_log("RemitaModel: Found success code '$fieldValue' in field '$fieldName'");
-                        $isSuccess = true;
-                        break;
-                    }
-                    
-                    // Success messages
-                    if (in_array($upperValue, ['SUCCESS', 'SUCCESSFUL', 'PAID', 'APPROVED'])) {
-                        error_log("RemitaModel: Found success message '$upperValue' in field '$fieldName'");
-                        $isSuccess = true;
-                        break;
-                    }
-                    
-                    // Pending indicators
-                    if (in_array($fieldValue, ['021', '062']) || 
-                        strpos($upperValue, 'PENDING') !== false || 
-                        strpos($upperValue, 'PROCESSING') !== false) {
-                        error_log("RemitaModel: Found pending indicator in field '$fieldName'");
-                        $isPending = true;
-                    }
-                }
-
-                // If we have transactionId and amount matches, treat as success even if no status code
-                if (!$isSuccess && $hasTransactionId && $amountMatches) {
-                    error_log("RemitaModel: Transaction ID present with matching amount - treating as success");
-                    $isSuccess = true;
-                }
-
-                // Check if response explicitly indicates failure
-                $explicitFailure = false;
-                foreach ($statusFields as $fieldValue) {
-                    $upperValue = strtoupper((string)$fieldValue);
-                    if (in_array($upperValue, ['FAILED', 'DECLINED', 'ERROR', 'FAIL'])) {
-                        $explicitFailure = true;
-                        break;
-                    }
-                }
-
-                // FINAL DECISION
-                if ($isSuccess && !$explicitFailure) {
+                // SUCCESS: status code '00' (confirmed by Remita support)
+                if ($responseCode === '00' || $responseCode === '01' || $responseCode === 'success' || $responseMsg === 'SUCCESS') {
                     error_log("✅ RemitaModel: Payment CONFIRMED as successful");
                     
                     // Try to update transaction in database if we have it
@@ -706,20 +645,24 @@ class RemitaModel extends BaseModel {
                         'message'      => 'Payment verified successfully',
                         'payment_data' => $result,
                     ];
-                    
-                } elseif ($isPending) {
+                }
+                
+                // PENDING
+                elseif ($responseCode === '021' || $responseCode === 'PENDING' || stripos($responseMsg, 'pending') !== false) {
                     error_log("⏳ RemitaModel: Payment is PENDING");
                     return [
                         'status'       => 'pending',
                         'message'      => 'Payment is pending. Please check back later.',
                         'payment_data' => $result,
                     ];
-                    
-                } else {
+                }
+                
+                // FAILED
+                else {
                     error_log("❌ RemitaModel: Payment NOT confirmed");
                     return [
                         'status'       => 'failed',
-                        'message'      => 'Payment not confirmed by Remita. Please try again or contact support.',
+                        'message'      => 'Payment not confirmed by Remita. Code: ' . $responseCode,
                         'payment_data' => $result,
                     ];
                 }
@@ -746,7 +689,7 @@ class RemitaModel extends BaseModel {
     /**
      * Try alternative verification endpoint format
      */
-    private function tryAlternativeVerificationEndpoint($cleanRrr, $amount) {
+    private function tryAlternativeVerificationEndpoint($cleanRrr) {
         try {
             error_log("RemitaModel: Trying alternative verification endpoint for RRR $cleanRrr");
             
@@ -757,7 +700,7 @@ class RemitaModel extends BaseModel {
             
             error_log("RemitaModel: Alternative endpoint: $altEndpoint");
             
-            $apiHash = $this->generateApiHash($cleanRrr, $amount);
+            $authHash = hash('sha512', $this->merchantId . $cleanRrr . $this->apiKey);
             
             $ch = curl_init($altEndpoint);
             curl_setopt_array($ch, [
@@ -768,7 +711,7 @@ class RemitaModel extends BaseModel {
                 CURLOPT_HTTPHEADER     => [
                     'Content-Type: application/json',
                     'Accept: application/json',
-                    'Authorization: remitaConsumerKey=' . $this->merchantId . ',remitaConsumerToken=' . $apiHash,
+                    'Authorization: remitaConsumerKey=' . $this->merchantId . ',remitaConsumerToken=' . $authHash,
                 ],
             ]);
 
