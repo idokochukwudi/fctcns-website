@@ -3064,10 +3064,10 @@ class PublicApplicationController extends ApplicationBaseController {
     // ============================================
 
     /**
-     * Verify JAMB number (AJAX endpoint) - SECURITY FIXED
+     * Verify JAMB number (AJAX endpoint) - COMPLETELY FIXED VERSION
      */
     public function verifyJamb() {
-        // Set header for JSON response
+        // Set header for JSON response FIRST - before ANY output
         header('Content-Type: application/json');
         
         // Initialize security
@@ -3079,82 +3079,114 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
+        // Only accept POST requests
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             echo json_encode(['success' => false, 'message' => 'Invalid request method']);
             return;
         }
         
-        // Validate CSRF
-        if (!$this->validateCsrfToken()) {
-            echo json_encode(['success' => false, 'message' => 'Security token expired']);
-            return;
-        }
-        
         $applicantId = $_SESSION['applicant_id'];
         
-        // Get application
-        $application = $this->applicationModel->getByApplicantId($applicantId);
+        // Get the JAMB number - support both JSON and form data
+        $input = json_decode(file_get_contents('php://input'), true);
+        $jambNumber = '';
+        $csrfToken = '';
         
-        // SECURITY: Check if JAMB already verified
-        if ($application && !empty($application['jamb_number'])) {
-            echo json_encode([
-                'success' => false, 
-                'message' => 'JAMB number has already been verified. You cannot change it.'
-            ]);
+        if ($input && is_array($input)) {
+            // JSON input
+            $jambNumber = trim($input['jamb_number'] ?? '');
+            $csrfToken = $input['csrf_token'] ?? '';
+        } else {
+            // Form data
+            $jambNumber = trim($_POST['jamb_number'] ?? '');
+            $csrfToken = $_POST['csrf_token'] ?? '';
+        }
+        
+        // Validate CSRF token
+        if (!$this->validateCsrfToken($csrfToken)) {
+            error_log("JAMB verification: CSRF validation failed for applicant $applicantId");
+            echo json_encode(['success' => false, 'message' => 'Security token expired. Please refresh the page and try again.']);
             return;
         }
         
-        // SECURITY: Check if payment has been made
-        if ($application && !empty($application['id'])) {
-            $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
-            if ($hasPaid) {
+        // Validate JAMB number
+        if (empty($jambNumber)) {
+            echo json_encode(['success' => false, 'message' => 'JAMB number is required']);
+            return;
+        }
+        
+        // Clean the JAMB number
+        $jambNumber = strtoupper(trim(preg_replace('/[^a-zA-Z0-9]/', '', $jambNumber)));
+        
+        if (strlen($jambNumber) < 10 || strlen($jambNumber) > 14) {
+            echo json_encode(['success' => false, 'message' => 'Invalid JAMB number format. Should be 10-14 characters.']);
+            return;
+        }
+        
+        try {
+            // Get application
+            $application = $this->applicationModel->getByApplicantId($applicantId);
+            
+            // Check if JAMB already verified
+            if ($application && !empty($application['jamb_number'])) {
                 echo json_encode([
                     'success' => false, 
-                    'message' => 'Cannot modify application after payment.'
+                    'message' => 'JAMB number has already been verified. You cannot change it.'
                 ]);
                 return;
             }
-        }
-        
-        $jambNumber = trim($_POST['jamb_number'] ?? '');
-        
-        // Validate JAMB number
-        if (empty($jambNumber) || !preg_match('/^[0-9A-Z]{10,14}$/', strtoupper($jambNumber))) {
-            echo json_encode(['success' => false, 'message' => 'Invalid JAMB number format']);
-            return;
-        }
-        
-        // Convert to uppercase for consistency
-        $jambNumber = strtoupper($jambNumber);
-        
-        // Find JAMB candidate
-        $jambCandidate = $this->jambModel->findByJambNumber($jambNumber);
-        
-        if (!$jambCandidate) {
-            echo json_encode(['success' => false, 'message' => 'JAMB number not found in our records']);
-            return;
-        }
-        
-        // Check if already used
-        if ($jambCandidate['is_used']) {
-            echo json_encode(['success' => false, 'message' => 'This JAMB number has already been used for another application']);
-            return;
-        }
-        
-        // Check score requirement
-        $minScore = $this->settingsModel->get('min_utme_score', 170);
-        if ($jambCandidate['aggregate_score'] < $minScore) {
-            echo json_encode([
-                'success' => false, 
-                'message' => "Your score of {$jambCandidate['aggregate_score']} is below the minimum requirement of {$minScore}"
-            ]);
-            return;
-        }
-        
-        // Begin transaction
-        $this->applicationModel->beginTransaction();
-        
-        try {
+            
+            // Check if payment has been made
+            if ($application && !empty($application['id'])) {
+                $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
+                if ($hasPaid) {
+                    echo json_encode([
+                        'success' => false, 
+                        'message' => 'Cannot modify application after payment.'
+                    ]);
+                    return;
+                }
+            }
+            
+            // Load JambCandidateModel if not already loaded
+            if (!isset($this->jambModel)) {
+                require_once MODELS_PATH . '/JambCandidateModel.php';
+                $this->jambModel = new JambCandidateModel();
+            }
+            
+            // Find JAMB candidate
+            $jambCandidate = $this->jambModel->findByJambNumber($jambNumber);
+            
+            if (!$jambCandidate) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'JAMB number not found in our records. Please check and try again.'
+                ]);
+                return;
+            }
+            
+            // Check if already used
+            if (!empty($jambCandidate['is_used']) && $jambCandidate['is_used'] == 1) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'This JAMB number has already been used for another application'
+                ]);
+                return;
+            }
+            
+            // Check score requirement
+            $minScore = $this->settingsModel->get('min_utme_score', 170);
+            if ($jambCandidate['aggregate_score'] < $minScore) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => "Your score of {$jambCandidate['aggregate_score']} is below the minimum requirement of {$minScore}"
+                ]);
+                return;
+            }
+            
+            // Begin transaction
+            $this->applicationModel->beginTransaction();
+            
             if (!$application) {
                 // Create new application
                 $applicationData = [
@@ -3163,15 +3195,16 @@ class PublicApplicationController extends ApplicationBaseController {
                     'jamb_candidate_id' => $jambCandidate['id'],
                     'first_name' => $jambCandidate['first_name'],
                     'last_name' => $jambCandidate['last_name'],
-                    'other_names' => $jambCandidate['other_names'],
+                    'other_names' => $jambCandidate['other_names'] ?? '',
                     'gender' => $jambCandidate['gender'],
                     'state_of_origin' => $jambCandidate['state_of_origin'],
                     'lga' => $jambCandidate['lga'],
                     'utme_score' => $jambCandidate['aggregate_score'],
-                    'program' => 'ND Nursing',
                     'program_choice_1' => 'ND Nursing',
                     'application_step' => 2,
-                    'status' => 'pending'
+                    'status' => 'pending',
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
                 ];
                 
                 $applicationId = $this->applicationModel->createApplication($applicantId, $applicationData);
@@ -3189,7 +3222,7 @@ class PublicApplicationController extends ApplicationBaseController {
                     'jamb_candidate_id' => $jambCandidate['id'],
                     'first_name' => $jambCandidate['first_name'],
                     'last_name' => $jambCandidate['last_name'],
-                    'other_names' => $jambCandidate['other_names'],
+                    'other_names' => $jambCandidate['other_names'] ?? '',
                     'gender' => $jambCandidate['gender'],
                     'state_of_origin' => $jambCandidate['state_of_origin'],
                     'lga' => $jambCandidate['lga'],
@@ -3220,7 +3253,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 'jamb_number' => $jambCandidate['jamb_number'],
                 'first_name' => $jambCandidate['first_name'],
                 'last_name' => $jambCandidate['last_name'],
-                'other_names' => $jambCandidate['other_names'],
+                'other_names' => $jambCandidate['other_names'] ?? '',
                 'gender' => $jambCandidate['gender'],
                 'state_of_origin' => $jambCandidate['state_of_origin'],
                 'lga' => $jambCandidate['lga'],
@@ -3235,10 +3268,10 @@ class PublicApplicationController extends ApplicationBaseController {
                 'message' => 'JAMB verified successfully',
                 'data' => [
                     'jamb_number' => $jambCandidate['jamb_number'],
-                    'name' => $jambCandidate['first_name'] . ' ' . $jambCandidate['last_name'],
+                    'name' => trim($jambCandidate['first_name'] . ' ' . $jambCandidate['last_name']),
                     'first_name' => $jambCandidate['first_name'],
                     'last_name' => $jambCandidate['last_name'],
-                    'other_names' => $jambCandidate['other_names'],
+                    'other_names' => $jambCandidate['other_names'] ?? '',
                     'gender' => $jambCandidate['gender'],
                     'state_of_origin' => $jambCandidate['state_of_origin'],
                     'lga' => $jambCandidate['lga'],
@@ -3247,9 +3280,16 @@ class PublicApplicationController extends ApplicationBaseController {
             ]);
             
         } catch (Exception $e) {
-            $this->applicationModel->rollback();
+            if (isset($this->applicationModel) && method_exists($this->applicationModel, 'rollback')) {
+                $this->applicationModel->rollback();
+            }
             error_log("JAMB verification error: " . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => 'An error occurred. Please try again.']);
+            error_log("Stack trace: " . $e->getTraceAsString());
+            
+            echo json_encode([
+                'success' => false, 
+                'message' => 'An error occurred. Please try again or contact support.'
+            ]);
         }
     }
 

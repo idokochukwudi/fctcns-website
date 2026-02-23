@@ -27,6 +27,8 @@ $portal_message = $portal_message ?? '';
 $jambAlreadyVerified = $jamb_already_verified ?? false;
 $jambNumber          = $jamb_number          ?? '';
 $jambName            = $jamb_name            ?? '';
+$jambVerified        = $jamb_verified        ?? false;
+$jambData            = $jamb_data            ?? [];
 
 // Escape helper (inline — no $this in partial scope)
 function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
@@ -243,7 +245,7 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
     .sv1 #sv1Alert.sv1-info    { background: var(--sv1-info-light);    border-color: var(--sv1-info);     color: #1e40af; }
     .sv1 #sv1Alert.sv1-warning { background: var(--sv1-warning-light); border-color: var(--sv1-warning);  color: #92400e; }
 
-    /* The dismiss button — NO onclick attribute (see JS below) */
+    /* The dismiss button */
     .sv1 #sv1AlertClose {
         margin-left: auto;
         background: none;
@@ -301,6 +303,31 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
     .sv1 .sv1-closed i  { font-size: 4rem; color: var(--sv1-warning); margin-bottom: 20px; display: block; }
     .sv1 .sv1-closed h2 { color: var(--sv1-primary); margin-bottom: 12px; font-size: 24px; }
     .sv1 .sv1-closed p  { color: var(--sv1-text-dark); margin-bottom: 8px; }
+
+    /* JAMB data display */
+    .sv1 .jamb-data-display {
+        background: var(--sv1-primary-soft);
+        border-radius: var(--sv1-radius-lg);
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+    
+    .sv1 .jamb-data-row {
+        display: flex;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(107,78,155,0.1);
+    }
+    
+    .sv1 .jamb-data-label {
+        width: 140px;
+        font-weight: 600;
+        color: var(--sv1-primary-dark);
+    }
+    
+    .sv1 .jamb-data-value {
+        flex: 1;
+        color: var(--sv1-text-dark);
+    }
 </style>
 
 
@@ -334,7 +361,7 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
 
             <div class="sv1-card-body">
 
-                <?php if ($jambAlreadyVerified): ?>
+                <?php if ($jambAlreadyVerified || $jambVerified): ?>
                     <?php /* ── Already-verified state ──────────────────────── */ ?>
                     <div class="sv1-verified-banner">
                         <i class="fas fa-check-circle"></i>
@@ -347,6 +374,32 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
                             </p>
                         </div>
                     </div>
+                    
+                    <?php if (!empty($jambData)): ?>
+                    <div class="jamb-data-display">
+                        <h4 style="margin-bottom: 15px; color: var(--sv1-primary);">Verified JAMB Details:</h4>
+                        <div class="jamb-data-row">
+                            <div class="jamb-data-label">Full Name:</div>
+                            <div class="jamb-data-value"><?php echo e1($jambData['first_name'] ?? '') . ' ' . e1($jambData['last_name'] ?? ''); ?></div>
+                        </div>
+                        <div class="jamb-data-row">
+                            <div class="jamb-data-label">JAMB Number:</div>
+                            <div class="jamb-data-value"><?php echo e1($jambData['jamb_number'] ?? $jambNumber); ?></div>
+                        </div>
+                        <div class="jamb-data-row">
+                            <div class="jamb-data-label">Gender:</div>
+                            <div class="jamb-data-value"><?php echo e1($jambData['gender'] ?? 'N/A'); ?></div>
+                        </div>
+                        <div class="jamb-data-row">
+                            <div class="jamb-data-label">State of Origin:</div>
+                            <div class="jamb-data-value"><?php echo e1($jambData['state_of_origin'] ?? 'N/A'); ?></div>
+                        </div>
+                        <div class="jamb-data-row">
+                            <div class="jamb-data-label">UTME Score:</div>
+                            <div class="jamb-data-value"><?php echo e1($jambData['score'] ?? 'N/A'); ?></div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <div class="text-center mt-3">
                         <a href="/apply/step/2" class="sv1-btn-outline">
@@ -431,12 +484,15 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
 
 
 <?php /* ─────────────────────────────────────────────────────────────────────
-   JAVASCRIPT
+   JAVASCRIPT - FIXED VERSION
    ───────────────────────────────────────────────────────────────────────── */ ?>
 <script nonce="<?php echo e1($csp_nonce); ?>">
 (function () {
     'use strict';
 
+    // Only initialize if form exists (not in already-verified state)
+    <?php if (!$jambAlreadyVerified && !$jambVerified): ?>
+    
     // ── DOM refs ──────────────────────────────────────────────────────────
     var form        = document.getElementById('sv1Form');
     var jambInput   = document.getElementById('sv1JambNumber');
@@ -450,7 +506,11 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
     var alertClose  = document.getElementById('sv1AlertClose');
 
     // CSRF token — read from the layout's <meta name="csrf-token"> tag
-    var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute('content') || '';
+    var csrfToken = '';
+    var metaTag = document.querySelector('meta[name="csrf-token"]');
+    if (metaTag) {
+        csrfToken = metaTag.getAttribute('content') || '';
+    }
 
     // ── Enable submit button now that JS is running ───────────────────────
     if (submitBtn) submitBtn.disabled = false;
@@ -490,19 +550,51 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
 
             setLoading(true);
 
-            var fd = new FormData(form);
+            // Get CSRF token from form
+            var formCsrfToken = '';
+            var csrfInput = document.querySelector('input[name="csrf_token"]');
+            if (csrfInput) {
+                formCsrfToken = csrfInput.value;
+            }
+
+            // Prepare form data
+            var formData = new FormData();
+            formData.append('jamb_number', jamb);
+            formData.append('csrf_token', formCsrfToken || csrfToken);
+
+            // Log for debugging (remove in production)
+            console.log('Submitting JAMB verification for:', jamb);
+
+            // Use AbortController for timeout
+            var controller = new AbortController();
+            var timeoutId = setTimeout(function() {
+                controller.abort();
+                setLoading(false);
+                showAlert('Request timed out. Please try again.', 'danger');
+            }, 30000); // 30 second timeout
 
             fetch('/apply/verify-jamb', {
                 method: 'POST',
-                body: fd,
+                body: formData,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-Token': csrfToken
-                }
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                signal: controller.signal
             })
             .then(function (response) {
+                clearTimeout(timeoutId);
+                
+                console.log('Response status:', response.status);
+                
                 // Check content type first
                 var ct = response.headers.get('content-type') || '';
+                
+                if (!response.ok) {
+                    return response.text().then(function (text) {
+                        console.error('Server returned error:', response.status, text.substring(0, 200));
+                        throw new Error('Server error (' + response.status + '). Please try again.');
+                    });
+                }
                 
                 if (!ct.includes('application/json')) {
                     return response.text().then(function (text) {
@@ -514,13 +606,15 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
                 return response.json();
             })
             .then(function (data) {
+                console.log('Response data:', data);
+                
                 if (!data.success) {
                     showAlert(data.message || 'Verification failed. Please check your JAMB number and try again.', 'danger');
                     setLoading(false);
                     return;
                 }
 
-                showAlert('JAMB verified successfully! Redirecting\u2026', 'success');
+                showAlert('JAMB verified successfully! Redirecting...', 'success');
                 
                 // Store in session storage to prevent re-verification
                 try {
@@ -528,13 +622,21 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
                     sessionStorage.setItem('jamb_data', JSON.stringify(data.data || {}));
                 } catch (e) {}
                 
+                // Redirect to step 2
                 setTimeout(function () {
                     window.location.href = '/apply/step/2';
                 }, 1400);
             })
             .catch(function (err) {
-                console.error('[JAMB] Error:', err);
-                showAlert(err.message || 'A network error occurred. Please check your connection and try again.', 'danger');
+                clearTimeout(timeoutId);
+                
+                if (err.name === 'AbortError') {
+                    console.error('Request aborted due to timeout');
+                    showAlert('Request timed out. Please try again.', 'danger');
+                } else {
+                    console.error('[JAMB] Error:', err);
+                    showAlert(err.message || 'A network error occurred. Please check your connection and try again.', 'danger');
+                }
                 setLoading(false);
             });
         });
@@ -583,6 +685,26 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
             alertEl.style.transition = '';
         }, 400);
     }
+    
+    <?php endif; ?>
 
 }());
 </script>
+
+<?php /* Add extra JavaScript for already-verified state if needed */ ?>
+<?php if ($jambAlreadyVerified || $jambVerified): ?>
+<script nonce="<?php echo e1($csp_nonce); ?>">
+(function() {
+    // Auto-hide flash messages if any
+    setTimeout(function () {
+        document.querySelectorAll('.flash-msg').forEach(function (el) {
+            el.style.transition = 'opacity 0.4s';
+            el.style.opacity = '0';
+            setTimeout(function () { 
+                if (el.parentNode) el.remove(); 
+            }, 400);
+        });
+    }, 5500);
+})();
+</script>
+<?php endif; ?>
