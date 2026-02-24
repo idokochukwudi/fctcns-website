@@ -365,29 +365,29 @@ class ResetPasswordView {
                     <div class="card-body">
                         <!-- Flash Messages -->
                         <?php if (isset($_SESSION['flash_error']) && !empty($_SESSION['flash_error'])): ?>
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <div class="alert alert-danger" role="alert" data-alert="error">
                             <div>
                                 <i class="fas fa-exclamation-circle me-2"></i>
                                 <?php echo $this->e($_SESSION['flash_error']); ?>
                             </div>
-                            <button type="button" class="btn-close" onclick="this.parentElement.remove()" aria-label="Close">×</button>
+                            <button type="button" class="btn-close" aria-label="Close">×</button>
                         </div>
                         <?php unset($_SESSION['flash_error']); ?>
                         <?php endif; ?>
                         
                         <?php if (isset($_SESSION['flash_success']) && !empty($_SESSION['flash_success'])): ?>
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <div class="alert alert-success" role="alert" data-alert="success">
                             <div>
                                 <i class="fas fa-check-circle me-2"></i>
                                 <?php echo $this->e($_SESSION['flash_success']); ?>
                             </div>
-                            <button type="button" class="btn-close" onclick="this.parentElement.remove()" aria-label="Close">×</button>
+                            <button type="button" class="btn-close" aria-label="Close">×</button>
                         </div>
                         <?php unset($_SESSION['flash_success']); ?>
                         <?php endif; ?>
                         
-                        <!-- Reset Password Form -->
-                        <form method="POST" action="/applicant/reset-password" id="resetForm" novalidate>
+                        <!-- Reset Password Form - FIXED ACTION URL -->
+                        <form method="POST" action="/applicant/reset-password/process" id="resetForm" novalidate>
                             <!-- ========================================================= -->
                             <!-- 5. Add CSRF token to all forms -->
                             <!-- ========================================================= -->
@@ -407,7 +407,7 @@ class ResetPasswordView {
                                            minlength="8"
                                            required
                                            autocomplete="new-password">
-                                    <button type="button" class="btn" onclick="togglePassword('password', 'toggleIcon1')" aria-label="Toggle password visibility">
+                                    <button type="button" class="btn" id="togglePassword1" aria-label="Toggle password visibility">
                                         <i class="fas fa-eye" id="toggleIcon1"></i>
                                     </button>
                                 </div>
@@ -437,7 +437,7 @@ class ResetPasswordView {
                                            minlength="8"
                                            required
                                            autocomplete="new-password">
-                                    <button type="button" class="btn" onclick="togglePassword('confirm_password', 'toggleIcon2')" aria-label="Toggle password visibility">
+                                    <button type="button" class="btn" id="togglePassword2" aria-label="Toggle password visibility">
                                         <i class="fas fa-eye" id="toggleIcon2"></i>
                                     </button>
                                 </div>
@@ -479,282 +479,330 @@ class ResetPasswordView {
                     nonce="<?php echo $csp_nonce; ?>"></script>
             
             <script nonce="<?php echo $csp_nonce; ?>">
-                // ======================================================
-                // Reset Password JavaScript with Security Enhancements
-                // ======================================================
-                
-                // Get CSRF token from meta tag
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-                // Toggle password visibility
-                function togglePassword(fieldId, iconId) {
-                    const field = document.getElementById(fieldId);
-                    const icon = document.getElementById(iconId);
+                (function() {
+                    'use strict';
                     
-                    if (!field || !icon) return;
+                    // ======================================================
+                    // Reset Password JavaScript with Security Enhancements
+                    // ======================================================
                     
-                    if (field.type === 'password') {
-                        field.type = 'text';
-                        icon.classList.remove('fa-eye');
-                        icon.classList.add('fa-eye-slash');
-                    } else {
-                        field.type = 'password';
-                        icon.classList.remove('fa-eye-slash');
-                        icon.classList.add('fa-eye');
-                    }
-                }
-
-                // Sanitize input to prevent XSS
-                function sanitizeInput(input) {
-                    if (!input) return input;
-                    return input.replace(/[<>]/g, '').trim();
-                }
-
-                // Show toast notification
-                function showToast(msg, type = 'success') {
-                    // Remove existing toasts
-                    document.querySelectorAll('.toast-notification').forEach(t => t.remove());
-                    
-                    // Create toast element
-                    const toast = document.createElement('div');
-                    toast.className = `toast-notification toast-${type}`;
-                    toast.setAttribute('role', 'alert');
-                    
-                    const icon = type === 'success' ? 'fa-check-circle' : 
-                                type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
-                    
-                    // Sanitize message to prevent XSS
-                    const safeMsg = String(msg).replace(/[<>]/g, '');
-                    
-                    toast.innerHTML = `<i class="fas ${icon}"></i> ${safeMsg}`;
-                    
-                    document.body.appendChild(toast);
-                    
-                    // Auto remove after 3 seconds
-                    setTimeout(() => {
-                        toast.style.transition = 'opacity 0.3s, transform 0.3s';
-                        toast.style.opacity = '0';
-                        toast.style.transform = 'translateX(100%)';
-                        setTimeout(() => toast.remove(), 300);
-                    }, 3000);
-                }
-
-                // Check password strength
-                function checkPasswordStrength(password) {
-                    const strengthBar = document.getElementById('strengthBar');
-                    if (!strengthBar) return;
-                    
-                    // Remove existing classes
-                    strengthBar.classList.remove('weak', 'medium', 'strong');
-                    
-                    if (!password) {
-                        strengthBar.style.width = '0';
-                        return;
-                    }
-                    
-                    let strength = 0;
-                    
-                    // Length check
-                    if (password.length >= 8) strength++;
-                    if (password.length >= 10) strength++;
-                    
-                    // Character variety
-                    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-                    if (/[0-9]/.test(password)) strength++;
-                    if (/[^a-zA-Z0-9]/.test(password)) strength++;
-                    
-                    // Update strength bar
-                    if (strength <= 2) {
-                        strengthBar.classList.add('weak');
-                    } else if (strength <= 4) {
-                        strengthBar.classList.add('medium');
-                    } else {
-                        strengthBar.classList.add('strong');
-                    }
-                }
-
-                // Rate limiting for password reset attempts
-                const maxAttempts = 3;
-                const lockoutTime = 15 * 60 * 1000; // 15 minutes
-                
-                function checkRateLimit() {
-                    const attempts = parseInt(sessionStorage.getItem('resetPasswordAttempts') || '0');
-                    const lockUntil = parseInt(sessionStorage.getItem('resetPasswordLockUntil') || '0');
-                    
-                    if (Date.now() < lockUntil) {
-                        showToast('Too many attempts. Please try again later.', 'error');
-                        return false;
-                    }
-                    
-                    if (attempts >= maxAttempts) {
-                        sessionStorage.setItem('resetPasswordLockUntil', Date.now() + lockoutTime);
-                        showToast('Too many failed attempts. Locked for 15 minutes.', 'error');
-                        return false;
-                    }
-                    
-                    return true;
-                }
-
-                // Form submission with validation
-                document.getElementById('resetForm').addEventListener('submit', function(e) {
-                    // Check rate limit
-                    if (!checkRateLimit()) {
-                        e.preventDefault();
-                        return;
-                    }
-
-                    const password = document.getElementById('password');
-                    const confirm = document.getElementById('confirm_password');
+                    // Get elements
+                    const resetForm = document.getElementById('resetForm');
+                    const passwordField = document.getElementById('password');
+                    const confirmField = document.getElementById('confirm_password');
                     const passwordError = document.getElementById('passwordError');
                     const confirmError = document.getElementById('confirmError');
+                    const resetBtn = document.getElementById('resetBtn');
+                    const resetText = document.getElementById('resetText');
+                    const resetSpinner = document.getElementById('resetSpinner');
+                    const strengthBar = document.getElementById('strengthBar');
+                    const toggleBtn1 = document.getElementById('togglePassword1');
+                    const toggleBtn2 = document.getElementById('togglePassword2');
+                    const toggleIcon1 = document.getElementById('toggleIcon1');
+                    const toggleIcon2 = document.getElementById('toggleIcon2');
                     
-                    // Sanitize inputs
-                    if (password) password.value = sanitizeInput(password.value);
-                    if (confirm) confirm.value = sanitizeInput(confirm.value);
+                    // Get CSRF token from meta tag
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
                     
-                    const passwordVal = password ? password.value : '';
-                    const confirmVal = confirm ? confirm.value : '';
-                    
-                    // Reset validation states
-                    password.classList.remove('is-invalid');
-                    confirm.classList.remove('is-invalid');
-                    
-                    let isValid = true;
-
-                    // Validate password length
-                    if (passwordVal.length < 8) {
-                        password.classList.add('is-invalid');
-                        isValid = false;
+                    // Sanitize input to prevent XSS
+                    function sanitizeInput(input) {
+                        if (!input) return input;
+                        return String(input).replace(/[<>]/g, '').trim();
                     }
                     
-                    // Validate password match
-                    if (passwordVal !== confirmVal) {
-                        confirm.classList.add('is-invalid');
-                        isValid = false;
-                    }
-                    
-                    if (!isValid) {
-                        e.preventDefault();
+                    // Toggle password visibility
+                    function setupPasswordToggle(btn, field, icon) {
+                        if (!btn || !field || !icon) return;
                         
-                        // Scroll to first error
-                        const firstError = document.querySelector('.is-invalid');
-                        if (firstError) {
-                            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        btn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            
+                            if (field.type === 'password') {
+                                field.type = 'text';
+                                icon.classList.remove('fa-eye');
+                                icon.classList.add('fa-eye-slash');
+                            } else {
+                                field.type = 'password';
+                                icon.classList.remove('fa-eye-slash');
+                                icon.classList.add('fa-eye');
+                            }
+                        });
+                    }
+                    
+                    // Show toast notification
+                    function showToast(msg, type = 'success') {
+                        // Remove existing toasts
+                        document.querySelectorAll('.toast-notification').forEach(t => t.remove());
+                        
+                        // Create toast element
+                        const toast = document.createElement('div');
+                        toast.className = `toast-notification toast-${type}`;
+                        toast.setAttribute('role', 'alert');
+                        
+                        const icon = type === 'success' ? 'fa-check-circle' : 
+                                    type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+                        
+                        // Sanitize message to prevent XSS
+                        const safeMsg = sanitizeInput(msg);
+                        
+                        toast.innerHTML = `<i class="fas ${icon}"></i> ${safeMsg}`;
+                        
+                        document.body.appendChild(toast);
+                        
+                        // Auto remove after 3 seconds
+                        setTimeout(() => {
+                            toast.style.transition = 'opacity 0.3s, transform 0.3s';
+                            toast.style.opacity = '0';
+                            toast.style.transform = 'translateX(100%)';
+                            setTimeout(() => toast.remove(), 300);
+                        }, 3000);
+                    }
+                    
+                    // Check password strength
+                    function checkPasswordStrength(password) {
+                        if (!strengthBar) return;
+                        
+                        // Remove existing classes
+                        strengthBar.classList.remove('weak', 'medium', 'strong');
+                        
+                        if (!password) {
+                            strengthBar.style.width = '0';
+                            return;
                         }
                         
-                        showToast('Please fix the errors in the form', 'error');
-                        return;
-                    }
-                    
-                    // Verify CSRF token exists
-                    if (!csrfToken) {
-                        console.warn('CSRF token not found');
-                        showToast('Security token missing. Please refresh.', 'error');
-                        e.preventDefault();
-                        return;
-                    }
-
-                    // Add timestamp to prevent caching
-                    const timestamp = document.createElement('input');
-                    timestamp.type = 'hidden';
-                    timestamp.name = '_t';
-                    timestamp.value = Date.now();
-                    this.appendChild(timestamp);
-
-                    // Increment attempt counter
-                    const attempts = parseInt(sessionStorage.getItem('resetPasswordAttempts') || '0');
-                    sessionStorage.setItem('resetPasswordAttempts', attempts + 1);
-
-                    // Show loading state
-                    document.getElementById('resetText').style.display = 'none';
-                    document.getElementById('resetSpinner').style.display = 'inline-flex';
-                    document.getElementById('resetBtn').disabled = true;
-                    
-                    // Log reset attempt (for security auditing)
-                    console.log('Password reset attempt for:', '<?php echo $this->e($email); ?>');
-                });
-
-                // Password strength checker on input
-                document.getElementById('password').addEventListener('input', function(e) {
-                    checkPasswordStrength(this.value);
-                });
-
-                // Real-time password match checker
-                document.getElementById('confirm_password').addEventListener('input', function(e) {
-                    const password = document.getElementById('password').value;
-                    const confirm = this.value;
-                    
-                    if (confirm && password !== confirm) {
-                        this.classList.add('is-invalid');
-                    } else {
-                        this.classList.remove('is-invalid');
-                    }
-                });
-
-                // Auto-dismiss alerts after 5 seconds
-                setTimeout(function() {
-                    document.querySelectorAll('.alert').forEach(function(el) {
-                        el.style.transition = 'opacity .4s';
-                        el.style.opacity = '0';
-                        setTimeout(function() { 
-                            if (el.parentNode) el.remove(); 
-                        }, 400);
-                    });
-                }, 5000);
-
-                // Clear rate limiting on successful submission detection
-                if (document.querySelector('.alert-success')) {
-                    // If we see a success message, clear the rate limit counter
-                    sessionStorage.removeItem('resetPasswordAttempts');
-                    sessionStorage.removeItem('resetPasswordLockUntil');
-                }
-
-                // Handle back button cache
-                window.addEventListener('pageshow', function(event) {
-                    if (event.persisted) {
-                        // Reset button state if coming from cache
-                        document.getElementById('resetText').style.display = 'inline-flex';
-                        document.getElementById('resetSpinner').style.display = 'none';
-                        document.getElementById('resetBtn').disabled = false;
+                        let strength = 0;
                         
-                        // Clear validation states
-                        document.getElementById('password').classList.remove('is-invalid');
-                        document.getElementById('confirm_password').classList.remove('is-invalid');
+                        // Length check
+                        if (password.length >= 8) strength++;
+                        if (password.length >= 10) strength++;
+                        
+                        // Character variety
+                        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+                        if (/[0-9]/.test(password)) strength++;
+                        if (/[^a-zA-Z0-9]/.test(password)) strength++;
+                        
+                        // Update strength bar
+                        if (strength <= 2) {
+                            strengthBar.classList.add('weak');
+                        } else if (strength <= 4) {
+                            strengthBar.classList.add('medium');
+                        } else {
+                            strengthBar.classList.add('strong');
+                        }
                     }
-                });
-
-                // Focus on password field on page load
-                document.addEventListener('DOMContentLoaded', function() {
-                    const passwordField = document.getElementById('password');
+                    
+                    // Rate limiting for password reset attempts
+                    const maxAttempts = 3;
+                    const lockoutTime = 15 * 60 * 1000; // 15 minutes
+                    
+                    function checkRateLimit() {
+                        const attempts = parseInt(sessionStorage.getItem('resetPasswordAttempts') || '0');
+                        const lockUntil = parseInt(sessionStorage.getItem('resetPasswordLockUntil') || '0');
+                        
+                        if (Date.now() < lockUntil) {
+                            showToast('Too many attempts. Please try again later.', 'error');
+                            return false;
+                        }
+                        
+                        if (attempts >= maxAttempts) {
+                            sessionStorage.setItem('resetPasswordLockUntil', Date.now() + lockoutTime);
+                            showToast('Too many failed attempts. Locked for 15 minutes.', 'error');
+                            return false;
+                        }
+                        
+                        return true;
+                    }
+                    
+                    // Handle alert close buttons
+                    function setupAlertCloseButtons() {
+                        const closeButtons = document.querySelectorAll('.alert .btn-close');
+                        closeButtons.forEach(function(button) {
+                            button.addEventListener('click', function() {
+                                const alert = this.closest('.alert');
+                                if (alert) {
+                                    alert.style.transition = 'opacity .4s';
+                                    alert.style.opacity = '0';
+                                    setTimeout(function() {
+                                        if (alert.parentNode) alert.remove();
+                                    }, 400);
+                                }
+                            });
+                        });
+                    }
+                    
+                    // Form validation
+                    function validateForm(e) {
+                        if (!passwordField || !confirmField || !passwordError || !confirmError) {
+                            return true;
+                        }
+                        
+                        // Sanitize inputs
+                        if (passwordField) passwordField.value = sanitizeInput(passwordField.value);
+                        if (confirmField) confirmField.value = sanitizeInput(confirmField.value);
+                        
+                        const passwordVal = passwordField.value;
+                        const confirmVal = confirmField.value;
+                        
+                        // Reset validation states
+                        passwordField.classList.remove('is-invalid');
+                        confirmField.classList.remove('is-invalid');
+                        
+                        let isValid = true;
+                        
+                        // Validate password length
+                        if (passwordVal.length < 8) {
+                            passwordField.classList.add('is-invalid');
+                            isValid = false;
+                        }
+                        
+                        // Validate password match
+                        if (passwordVal !== confirmVal) {
+                            confirmField.classList.add('is-invalid');
+                            isValid = false;
+                        }
+                        
+                        if (!isValid) {
+                            e.preventDefault();
+                            
+                            // Scroll to first error
+                            const firstError = document.querySelector('.is-invalid');
+                            if (firstError) {
+                                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                            
+                            showToast('Please fix the errors in the form', 'error');
+                            return false;
+                        }
+                        
+                        // Verify CSRF token exists
+                        if (!csrfToken) {
+                            console.warn('CSRF token not found');
+                            showToast('Security token missing. Please refresh.', 'error');
+                            e.preventDefault();
+                            return false;
+                        }
+                        
+                        // Add timestamp to prevent caching
+                        const timestamp = document.createElement('input');
+                        timestamp.type = 'hidden';
+                        timestamp.name = '_t';
+                        timestamp.value = Date.now();
+                        resetForm.appendChild(timestamp);
+                        
+                        // Increment attempt counter
+                        const attempts = parseInt(sessionStorage.getItem('resetPasswordAttempts') || '0');
+                        sessionStorage.setItem('resetPasswordAttempts', attempts + 1);
+                        
+                        // Show loading state
+                        if (resetText && resetSpinner && resetBtn) {
+                            resetText.style.display = 'none';
+                            resetSpinner.style.display = 'inline-flex';
+                            resetBtn.disabled = true;
+                        }
+                        
+                        return true;
+                    }
+                    
+                    // Auto-dismiss alerts after 5 seconds
+                    function setupAutoDismiss() {
+                        const alerts = document.querySelectorAll('.alert');
+                        if (alerts.length > 0) {
+                            setTimeout(function() {
+                                alerts.forEach(function(alert) {
+                                    alert.style.transition = 'opacity .4s';
+                                    alert.style.opacity = '0';
+                                    setTimeout(function() {
+                                        if (alert.parentNode) alert.remove();
+                                    }, 400);
+                                });
+                            }, 5000);
+                        }
+                    }
+                    
+                    // Set up event listeners
+                    if (resetForm) {
+                        resetForm.addEventListener('submit', validateForm);
+                    }
+                    
+                    // Password strength checker on input
+                    if (passwordField) {
+                        passwordField.addEventListener('input', function(e) {
+                            checkPasswordStrength(this.value);
+                        });
+                    }
+                    
+                    // Real-time password match checker
+                    if (confirmField && passwordField) {
+                        confirmField.addEventListener('input', function(e) {
+                            const password = passwordField.value;
+                            const confirm = this.value;
+                            
+                            if (confirm && password !== confirm) {
+                                this.classList.add('is-invalid');
+                            } else {
+                                this.classList.remove('is-invalid');
+                            }
+                        });
+                    }
+                    
+                    // Setup password toggle buttons
+                    setupPasswordToggle(toggleBtn1, passwordField, toggleIcon1);
+                    setupPasswordToggle(toggleBtn2, confirmField, toggleIcon2);
+                    
+                    // Initialize
+                    setupAlertCloseButtons();
+                    setupAutoDismiss();
+                    
+                    // Clear rate limiting on successful submission detection
+                    if (document.querySelector('.alert-success')) {
+                        sessionStorage.removeItem('resetPasswordAttempts');
+                        sessionStorage.removeItem('resetPasswordLockUntil');
+                    }
+                    
+                    // Handle back button cache
+                    window.addEventListener('pageshow', function(event) {
+                        if (event.persisted) {
+                            // Reset button state if coming from cache
+                            if (resetText && resetSpinner && resetBtn) {
+                                resetText.style.display = 'inline-flex';
+                                resetSpinner.style.display = 'none';
+                                resetBtn.disabled = false;
+                            }
+                            
+                            // Clear validation states
+                            if (passwordField) passwordField.classList.remove('is-invalid');
+                            if (confirmField) confirmField.classList.remove('is-invalid');
+                        }
+                    });
+                    
+                    // Focus on password field on page load
                     if (passwordField) {
                         passwordField.focus();
                     }
                     
-                    // Check if token is valid (optional)
+                    // Check if token is valid
                     const token = '<?php echo $this->e($token); ?>';
                     if (!token) {
                         showToast('Invalid reset token. Please request a new one.', 'error');
                     }
-                });
-
-                // Prevent right-click on password fields
-                ['password', 'confirm_password'].forEach(id => {
-                    const field = document.getElementById(id);
-                    if (field) {
-                        field.addEventListener('contextmenu', e => e.preventDefault());
-                    }
-                });
-
-                // Add keyboard shortcut for form submission (Ctrl/Cmd + Enter)
-                document.addEventListener('keydown', function(e) {
-                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                        e.preventDefault();
-                        document.getElementById('resetForm').requestSubmit();
-                    }
-                });
-
-                // Track page view
-                console.log('Reset password page loaded for:', '<?php echo $this->e($email); ?>');
+                    
+                    // Prevent right-click on password fields
+                    [passwordField, confirmField].forEach(field => {
+                        if (field) {
+                            field.addEventListener('contextmenu', e => e.preventDefault());
+                        }
+                    });
+                    
+                    // Add keyboard shortcut for form submission (Ctrl/Cmd + Enter)
+                    document.addEventListener('keydown', function(e) {
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                            e.preventDefault();
+                            if (resetForm) resetForm.requestSubmit();
+                        }
+                    });
+                    
+                    console.log('Reset password page loaded for:', '<?php echo $this->e($email); ?>');
+                })();
             </script>
         </body>
         </html>
