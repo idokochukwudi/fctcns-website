@@ -17,6 +17,7 @@
  * FIXED: O'Level indexing - ensures sequential indices (0,1,2...) when adding/removing
  * FIXED: Grade persistence - delegated event listener replaces clone-based approach
  *        so grades in sitting 1 are NOT wiped when "Add Another Sitting" is clicked
+ * FIXED: O'Level data filtering - ensures only current user's records are displayed
  *
  * @package FCTCNS
  */
@@ -1305,12 +1306,54 @@ class ApplicationFormView {
 
                         <div id="olevel-results-container">
                             <?php
-                            $olevelItems = !empty($olevel_results) ? $olevel_results : [[]];
+                            // FIX: Ensure we only show results for the CURRENT user
+                            // Reset and validate the O'Level results array
+                            if (empty($olevel_results) || !is_array($olevel_results)) {
+                                $olevel_results = [];
+                            }
+                            
+                            // Filter out any results that don't belong to the current application
+                            // This prevents showing other users' records
+                            $current_app_id = $application['id'] ?? 0;
+                            $current_applicant_id = $applicant['id'] ?? 0;
+                            
+                            if ($current_app_id > 0 && !empty($olevel_results)) {
+                                $filtered_results = [];
+                                foreach ($olevel_results as $result) {
+                                    // Only keep results that belong to this application or applicant
+                                    if ((isset($result['application_id']) && $result['application_id'] == $current_app_id) || 
+                                        (isset($result['applicant_id']) && $result['applicant_id'] == $current_applicant_id)) {
+                                        $filtered_results[] = $result;
+                                    }
+                                }
+                                $olevel_results = $filtered_results;
+                            } elseif ($current_applicant_id > 0 && !empty($olevel_results)) {
+                                // Fallback to applicant_id if application_id isn't set
+                                $filtered_results = [];
+                                foreach ($olevel_results as $result) {
+                                    if (isset($result['applicant_id']) && $result['applicant_id'] == $current_applicant_id) {
+                                        $filtered_results[] = $result;
+                                    }
+                                }
+                                $olevel_results = $filtered_results;
+                            }
+                            
+                            // Re-index the array after filtering
+                            $olevel_results = array_values($olevel_results);
+                            
+                            // If no results, start with an empty array to show just one sitting
+                            if (empty($olevel_results)) {
+                                $olevelItems = [[]];
+                            } else {
+                                $olevelItems = $olevel_results;
+                            }
+                            
                             foreach ($olevelItems as $idx => $result):
-                                $examType = $result['exam_type'] ?? 'WAEC';
-                                $examYear = $result['exam_year'] ?? '';
-                                $examNum  = $result['exam_number'] ?? '';
-                                $sitting  = $result['sitting'] ?? '1st';
+                                // FIX: Ensure we're not accessing undefined array keys
+                                $examType = isset($result['exam_type']) ? $result['exam_type'] : 'WAEC';
+                                $examYear = isset($result['exam_year']) ? $result['exam_year'] : '';
+                                $examNum  = isset($result['exam_number']) ? $result['exam_number'] : '';
+                                $sitting  = isset($result['sitting']) ? $result['sitting'] : '1st';
                                 $grades   = ['english','mathematics','biology','chemistry','physics'];
                                 $allGrades = ['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
                             ?>
@@ -1366,7 +1409,7 @@ class ApplicationFormView {
                                             <option value="">Grade</option>
                                             <?php foreach ($allGrades as $grade): ?>
                                             <option value="<?php echo $this->e($grade); ?>"
-                                                <?php echo ($result[$subj.'_grade'] ?? '') == $grade ? 'selected' : ''; ?>>
+                                                <?php echo (isset($result[$subj.'_grade']) && $result[$subj.'_grade'] == $grade) ? 'selected' : ''; ?>>
                                                 <?php echo $this->e($grade); ?>
                                             </option>
                                             <?php endforeach; ?>
