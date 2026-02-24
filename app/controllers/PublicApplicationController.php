@@ -1664,7 +1664,7 @@ class PublicApplicationController extends ApplicationBaseController {
         error_log("=== INITIATE PAYMENT CALLED ===");
         
         // Verify CSRF token
-        if (!$this->verifyCsrfToken()) {
+        if (!$this->validateCsrfToken()) {
             error_log("CSRF validation failed");
             if ($this->isAjaxRequest()) {
                 $this->jsonResponse(['success' => false, 'message' => 'Invalid security token. Please refresh the page.']);
