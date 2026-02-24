@@ -22,6 +22,7 @@
  * FIXED 5: RRR mismatch issue - Use exact RRR from database in payment URL
  * FIXED 6: Added email verification check before JAMB verification
  * FIXED 7: Added registration complete check helper method
+ * FIXED 8: Proper O'Level data handling with sequential indexing
  * 
  * @package FCT_CNS
  */
@@ -276,6 +277,57 @@ class PublicApplicationController extends ApplicationBaseController {
                 'grades' => $bestGrades
             ];
         }
+    }
+    
+    /**
+     * Validate and re-index O'Level results to ensure sequential indices
+     * 
+     * @param array $olevelData Raw O'Level data from POST
+     * @return array Re-indexed and validated O'Level data
+     */
+    private function validateAndReindexOlevelData($olevelData) {
+        $validatedResults = [];
+        $index = 0;
+        
+        if (!is_array($olevelData)) {
+            return $validatedResults;
+        }
+        
+        foreach ($olevelData as $key => $result) {
+            // Skip if required fields are missing
+            if (empty($result['exam_type']) || empty($result['exam_year'])) {
+                continue;
+            }
+            
+            // Validate grades - ensure they're in the allowed list
+            $allowedGrades = ['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'];
+            $gradeFields = ['english_grade', 'mathematics_grade', 'biology_grade', 'chemistry_grade', 'physics_grade'];
+            
+            foreach ($gradeFields as $field) {
+                if (!empty($result[$field]) && !in_array($result[$field], $allowedGrades)) {
+                    // Invalid grade, set to empty
+                    $result[$field] = '';
+                }
+            }
+            
+            // Store with sequential index
+            $validatedResults[$index] = [
+                'exam_type' => $result['exam_type'],
+                'exam_year' => $result['exam_year'],
+                'exam_number' => $result['exam_number'] ?? '',
+                'sitting' => $result['sitting'] ?? '1st',
+                'english_grade' => $result['english_grade'] ?? '',
+                'mathematics_grade' => $result['mathematics_grade'] ?? '',
+                'biology_grade' => $result['biology_grade'] ?? '',
+                'chemistry_grade' => $result['chemistry_grade'] ?? '',
+                'physics_grade' => $result['physics_grade'] ?? ''
+            ];
+            
+            $index++;
+        }
+        
+        // Re-index to ensure they are sequential 0,1,2...
+        return array_values($validatedResults);
     }
     
     /**
@@ -1030,6 +1082,13 @@ class PublicApplicationController extends ApplicationBaseController {
         $olevelModel = new OlevelResultModel();
         $olevel_results = $olevelModel->getByApplicationId($application['id']);
         
+        // IMPORTANT: Ensure O'Level results are indexed sequentially
+        // This prevents any gaps in indices that might cause issues
+        if (!empty($olevel_results)) {
+            // Re-index to ensure sequential 0,1,2...
+            $olevel_results = array_values($olevel_results);
+        }
+        
         // Get passport from document model if exists
         require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
         $docModel = new ApplicationDocumentModel();
@@ -1085,7 +1144,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Save application form - FIXED 2a with security checks and O'Level validation
+     * Save application form - FIXED with proper O'Level data handling and security checks
      */
     public function saveApplication() {
         // Set header to JSON first thing
@@ -1179,35 +1238,15 @@ class PublicApplicationController extends ApplicationBaseController {
                 'updated_at' => date('Y-m-d H:i:s')
             ];
             
-            // Handle O'Level subject data
+            // FIX: Handle O'Level subject data with proper indexing
             $olevelValidation = ['success' => false];
             $formattedResults = [];
             
             if (isset($_POST['olevel']) && is_array($_POST['olevel'])) {
                 error_log("O'Level data received: " . count($_POST['olevel']) . " entries");
                 
-                // Format the O'Level data for storage
-                foreach ($_POST['olevel'] as $index => $result) {
-                    // Skip if required fields are missing
-                    if (empty($result['exam_type']) || empty($result['exam_year'])) {
-                        continue;
-                    }
-                    
-                    // Build the result entry
-                    $formattedResult = [
-                        'exam_type' => $result['exam_type'],
-                        'exam_year' => $result['exam_year'],
-                        'exam_number' => $result['exam_number'] ?? '',
-                        'sitting' => $result['sitting'] ?? '1st',
-                        'english_grade' => $result['english_grade'] ?? '',
-                        'mathematics_grade' => $result['mathematics_grade'] ?? '',
-                        'biology_grade' => $result['biology_grade'] ?? '',
-                        'chemistry_grade' => $result['chemistry_grade'] ?? '',
-                        'physics_grade' => $result['physics_grade'] ?? ''
-                    ];
-                    
-                    $formattedResults[] = $formattedResult;
-                }
+                // Use the validation helper to ensure proper indexing
+                $formattedResults = $this->validateAndReindexOlevelData($_POST['olevel']);
                 
                 if (!empty($formattedResults)) {
                     // Validate O'Level credits
@@ -1230,16 +1269,34 @@ class PublicApplicationController extends ApplicationBaseController {
                         $olevelModel->deleteByApplicationId($application['id']);
                         error_log("Deleted existing O'Level records for application ID: " . $application['id']);
                         
-                        // Save each sitting to the database
+                        // Save each sitting to the database with sequential IDs
                         foreach ($formattedResults as $result) {
                             $result['application_id'] = $application['id'];
                             $olevelModel->insert($result);
                         }
-                        error_log("Saved " . count($formattedResults) . " new O'Level results");
+                        error_log("Saved " . count($formattedResults) . " new O'Level results with sequential indices");
                     } catch (Exception $e) {
                         error_log("Error saving to olevel_results table: " . $e->getMessage());
                         // Don't fail the whole request, just log the error
                     }
+                }
+            } else {
+                // If no O'Level data in POST, try to preserve existing data
+                error_log("No O'Level data in POST, preserving existing data if any");
+                
+                // Get existing O'Level results from database
+                try {
+                    require_once MODELS_PATH . '/application/OlevelResultModel.php';
+                    $olevelModel = new OlevelResultModel();
+                    $existingResults = $olevelModel->getByApplicationId($application['id']);
+                    
+                    if (!empty($existingResults)) {
+                        $formattedResults = $existingResults;
+                        $updateData['olevel_results'] = json_encode($existingResults);
+                        error_log("Preserved " . count($existingResults) . " existing O'Level results");
+                    }
+                } catch (Exception $e) {
+                    error_log("Error preserving O'Level data: " . $e->getMessage());
                 }
             }
             
@@ -1296,6 +1353,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 'message'        => 'Application saved successfully',
                 'application_id' => $application['id'],
                 'olevel_summary' => $creditSummary,
+                'olevel_count'   => count($formattedResults) // Send back count for debugging
             ];
 
             if (!empty($uploadErrors)) {
@@ -1975,6 +2033,11 @@ class PublicApplicationController extends ApplicationBaseController {
         $olevelModel = new OlevelResultModel();
         $olevel_results = $olevelModel->getByApplicationId($application['id']);
         
+        // IMPORTANT: Ensure O'Level results are indexed sequentially
+        if (!empty($olevel_results)) {
+            $olevel_results = array_values($olevel_results);
+        }
+        
         // Get applicant for name display
         $applicant = $this->applicantModel->find($applicantId);
         $applicant_name = trim(
@@ -2047,6 +2110,11 @@ class PublicApplicationController extends ApplicationBaseController {
         require_once MODELS_PATH . '/application/OlevelResultModel.php';
         $olevelModel = new OlevelResultModel();
         $olevel_results = $olevelModel->getByApplicationId($application['id']);
+        
+        // IMPORTANT: Ensure O'Level results are indexed sequentially
+        if (!empty($olevel_results)) {
+            $olevel_results = array_values($olevel_results);
+        }
         
         // Get applicant
         $applicant = $this->applicantModel->find($applicantId);
@@ -3008,6 +3076,11 @@ class PublicApplicationController extends ApplicationBaseController {
         $olevelModel = new OlevelResultModel();
         $olevel_results = $olevelModel->getByApplicationId($application['id']);
         
+        // IMPORTANT: Ensure O'Level results are indexed sequentially
+        if (!empty($olevel_results)) {
+            $olevel_results = array_values($olevel_results);
+        }
+        
         // Check O'Level validation status using legacy method
         $olevelValidation = $this->validateOlevelCredits($olevel_results);
         
@@ -3250,6 +3323,11 @@ class PublicApplicationController extends ApplicationBaseController {
         require_once MODELS_PATH . '/application/OlevelResultModel.php';
         $olevelModel = new OlevelResultModel();
         $olevel_results = $olevelModel->getByApplicationId($application['id']);
+        
+        // IMPORTANT: Ensure O'Level results are indexed sequentially
+        if (!empty($olevel_results)) {
+            $olevel_results = array_values($olevel_results);
+        }
         
         // Get applicant for display
         $applicant = $this->applicantModel->find($applicantId);

@@ -4,6 +4,7 @@
  * 
  * Handles O'Level result data operations
  * FIXED: Added getCreditCheckSummary method for consistent validation across controller and view
+ * FIXED: Added proper sequential indexing in getByApplicationId method
  * 
  * @package FCT_CNS
  * @subpackage Application
@@ -24,13 +25,20 @@ class OlevelResultModel extends BaseModel {
     }
     
     /**
-     * Get results by application ID
+     * Get results by application ID with proper indexing
+     * FIXED: Ensures sequential indexing (0,1,2...) for use in frontend
+     * 
+     * @param int $applicationId
+     * @return array
      */
     public function getByApplicationId($applicationId) {
-        return $this->fetchAll(
-            "SELECT * FROM {$this->table} WHERE application_id = :application_id ORDER BY sitting, exam_year",
-            ['application_id' => $applicationId]
-        );
+        $sql = "SELECT * FROM {$this->table} WHERE application_id = :application_id ORDER BY id ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['application_id' => $applicationId]);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Ensure sequential indexing (0,1,2...) to prevent gaps
+        return array_values($results);
     }
     
     /**
@@ -302,19 +310,24 @@ class OlevelResultModel extends BaseModel {
     /**
      * Delete results for application - CRITICAL for preventing duplication
      * This method ensures old results are removed before saving new ones
+     * 
+     * @param int $applicationId
+     * @return bool
      */
     public function deleteByApplicationId($applicationId) {
-        return $this->delete('application_id = :application_id', ['application_id' => $applicationId]);
+        $sql = "DELETE FROM {$this->table} WHERE application_id = :application_id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute(['application_id' => $applicationId]);
     }
     
     /**
      * Get results by sitting
      */
     public function getBySitting($applicationId, $sitting) {
-        return $this->fetchAll(
-            "SELECT * FROM {$this->table} WHERE application_id = :application_id AND sitting = :sitting",
-            ['application_id' => $applicationId, 'sitting' => $sitting]
-        );
+        $sql = "SELECT * FROM {$this->table} WHERE application_id = :application_id AND sitting = :sitting ORDER BY id ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['application_id' => $applicationId, 'sitting' => $sitting]);
+        return array_values($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
     
     /**
@@ -400,10 +413,11 @@ class OlevelResultModel extends BaseModel {
         }
         
         $formatted = [];
-        foreach ($results as $result) {
+        foreach ($results as $index => $result) {
             $sitting = $result['sitting'];
             if (!isset($formatted[$sitting])) {
                 $formatted[$sitting] = [
+                    'index' => $index,
                     'exam_type' => $result['exam_type'],
                     'exam_year' => $result['exam_year'],
                     'exam_number' => $result['exam_number'],
@@ -424,6 +438,37 @@ class OlevelResultModel extends BaseModel {
             }
         }
         
-        return $formatted;
+        // Re-index to ensure sequential
+        return array_values($formatted);
+    }
+    
+    /**
+     * Insert a new record
+     * Overrides parent to ensure ID is returned properly
+     * 
+     * @param array $data
+     * @return int|false
+     */
+    public function insert($data) {
+        $columns = implode(', ', array_keys($data));
+        $placeholders = ':' . implode(', :', array_keys($data));
+        
+        $sql = "INSERT INTO {$this->table} ({$columns}) VALUES ({$placeholders})";
+        $stmt = $this->db->prepare($sql);
+        
+        if ($stmt->execute($data)) {
+            return $this->db->lastInsertId();
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Get the database connection
+     * 
+     * @return PDO
+     */
+    public function getConnection() {
+        return $this->db;
     }
 }
