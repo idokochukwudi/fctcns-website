@@ -3,7 +3,10 @@
  * Step 4 View - Exam Slip
  * Redesigned: Premium institutional design with security enhancements
  * FIXED: Removed redundant navbar, kept only progress steps
- * 
+ * FIXED: Download PDF now uses native <a download> anchor — no iframe needed
+ * FIXED: Print popup falls back to same-tab if popup blocked
+ * FIXED: Action URLs built server-side so JS cannot break them
+ *
  * @package FCTCNS
  */
 
@@ -29,18 +32,33 @@ class Step4View {
             }
         }
 
-        $baseUrl = $baseUrl ?? '/';
-        $application = $application ?? [];
-        $exam_slip = $exam_slip ?? [];
-        $applicant = $applicant ?? [];
+        $baseUrl        = rtrim($baseUrl ?? '/', '/');
+        $application    = $application    ?? [];
+        $exam_slip      = $exam_slip      ?? [];
+        $applicant      = $applicant      ?? [];
         $applicant_name = $applicant_name ?? 'Applicant';
         $olevel_results = $olevel_results ?? [];
-        $has_exam_slip = $has_exam_slip ?? false;
-        $exam_details = $exam_details ?? [
-            'date' => 'To be announced',
-            'venue' => 'FCT College of Nursing Sciences, Gwagwalada (within UATH)',
-            'reporting_time' => '8:00 AM'
+        $has_exam_slip  = $has_exam_slip  ?? false;
+        $exam_details   = $exam_details   ?? [
+            'date'           => 'To be announced',
+            'venue'          => 'FCT College of Nursing Sciences, Gwagwalada (within UATH)',
+            'reporting_time' => '8:00 AM',
         ];
+
+        // ── Build action URLs server-side ─────────────────────────────
+        // This avoids JS URL-construction bugs and is safer overall.
+        $slip_number  = $exam_slip['slip_number'] ?? '';
+        $print_url    = $baseUrl . '/apply/print-exam-slip?csrf='    . urlencode($csrf_token);
+        $download_url = $baseUrl . '/apply/download-exam-slip?csrf=' . urlencode($csrf_token);
+
+        // Safe exam date — avoids strtotime('To be announced') === false warning
+        $raw_date     = $exam_slip['exam_date'] ?? ($exam_details['date'] ?? '');
+        $display_date = ($raw_date && $raw_date !== 'To be announced')
+                        ? date('d M Y', strtotime($raw_date))
+                        : 'To be announced';
+
+        // Clean filename for download attribute
+        $download_filename = 'exam-slip-' . preg_replace('/[^A-Za-z0-9\-]/', '-', $slip_number) . '.pdf';
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -433,6 +451,7 @@ class Step4View {
                     text-decoration: none;
                     flex: 1;
                     min-width: 180px;
+                    font-family: var(--font-body);
                 }
 
                 .btn i {
@@ -736,7 +755,7 @@ class Step4View {
                             <div class="info-label">Exam Date</div>
                             <div class="info-value">
                                 <i class="fas fa-calendar-alt"></i>
-                                <?php echo $this->e(date('d M Y', strtotime($exam_slip['exam_date'] ?? $exam_details['date']))); ?>
+                                <?php echo $this->e($display_date); ?>
                             </div>
                         </div>
                         <div class="info-item">
@@ -776,17 +795,45 @@ class Step4View {
                         </div>
                     </div>
 
-                    <!-- Action Buttons -->
+                    <!-- =====================================================
+                         ACTION BUTTONS
+                         FIX 1: View/Print  — popup with same-tab fallback
+                         FIX 2: Download PDF — native <a download> anchor.
+                                 The browser handles the file download directly.
+                                 No iframe, no JS fetch, no popup blocker issue.
+                         FIX 3: Home — unchanged, plain link
+                         ===================================================== -->
                     <div class="action-buttons">
-                        <button class="btn btn-primary" id="viewPrintBtn">
+
+                        <!-- FIX 1: View / Print (button → JS → popup) -->
+                        <button class="btn btn-primary" id="viewPrintBtn"
+                                <?php if (!$slip_number) echo 'disabled title="No exam slip available"'; ?>>
                             <i class="fas fa-print"></i> View / Print
                         </button>
-                        <button class="btn btn-success" id="downloadBtn">
+
+                        <!-- FIX 2: Download PDF — native anchor with download attr.
+                             When slip exists, render a real <a> so the browser
+                             triggers a file download without any JS at all.
+                             JS only adds a friendly toast on top. -->
+                        <?php if ($slip_number): ?>
+                        <a  class="btn btn-success"
+                            id="downloadBtn"
+                            href="<?php echo $this->e($download_url); ?>"
+                            download="<?php echo $this->e($download_filename); ?>">
+                            <i class="fas fa-download"></i> Download PDF
+                        </a>
+                        <?php else: ?>
+                        <button class="btn btn-success" disabled
+                                title="No exam slip available">
                             <i class="fas fa-download"></i> Download PDF
                         </button>
+                        <?php endif; ?>
+
+                        <!-- FIX 3: Home — unchanged -->
                         <a href="/apply/step/1" class="btn btn-outline">
                             <i class="fas fa-home"></i> Home
                         </a>
+
                     </div>
 
                     <!-- Important Note -->
@@ -822,8 +869,9 @@ class Step4View {
 
         </div><!-- /main-container -->
 
-        <!-- Hidden iframe for download -->
-        <iframe id="downloadFrame" style="display:none;"></iframe>
+        <!-- NOTE: The hidden iframe has been removed.
+             Download is now handled by the native <a download> element above.
+             An iframe cannot trigger a real file download — that was the bug. -->
 
         <!-- ========================================================= -->
         <!-- 7. Add CSP nonce to all script tags -->
@@ -832,112 +880,86 @@ class Step4View {
         (function() {
             'use strict';
 
-            // ── Configuration ─────────────────────────────────────────
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const baseUrl = '<?php echo $baseUrl; ?>';
-            const slipNumber = '<?php echo $this->e($exam_slip['slip_number'] ?? ''); ?>';
-            const applicationId = '<?php echo $this->e($application['id'] ?? ''); ?>';
+            // ── Config (injected from PHP — already escaped) ──────────
+            var SLIP_NUMBER  = '<?php echo $this->e($slip_number); ?>';
+            var PRINT_URL    = '<?php echo $this->e($print_url); ?>';
+            var DOWNLOAD_URL = '<?php echo $this->e($download_url); ?>';
 
-            // ── DOM Elements ─────────────────────────────────────────
-            const alertContainer = document.getElementById('alertContainer');
-            const viewPrintBtn = document.getElementById('viewPrintBtn');
-            const downloadBtn = document.getElementById('downloadBtn');
-            const slipPreview = document.getElementById('slipPreview');
-            const downloadFrame = document.getElementById('downloadFrame');
+            // ── DOM Elements ──────────────────────────────────────────
+            var viewPrintBtn = document.getElementById('viewPrintBtn');
+            var downloadBtn  = document.getElementById('downloadBtn');
+            var slipPreview  = document.getElementById('slipPreview');
 
-            // ── Toast Notification ───────────────────────────────────
-            function showToast(message, type = 'info') {
-                document.querySelectorAll('.toast-notification').forEach(t => t.remove());
+            // ── Toast Notification ────────────────────────────────────
+            function showToast(message, type) {
+                type = type || 'info';
+                document.querySelectorAll('.toast-notification').forEach(function(t) { t.remove(); });
 
-                const toast = document.createElement('div');
-                toast.className = `toast-notification toast-${type}`;
-                
-                const icon = type === 'success' ? 'fa-check-circle' : 
-                            type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
-                
-                const safeMsg = String(message).replace(/[<>]/g, '');
-                toast.innerHTML = `<i class="fas ${icon}"></i> ${safeMsg}`;
-                
+                var toast = document.createElement('div');
+                toast.className = 'toast-notification toast-' + type;
+
+                var icons = {
+                    success: 'fa-check-circle',
+                    error:   'fa-exclamation-circle',
+                    info:    'fa-info-circle'
+                };
+
+                // Safe DOM construction — no innerHTML with dynamic content
+                var i = document.createElement('i');
+                i.className = 'fas ' + (icons[type] || 'fa-info-circle');
+                var txt = document.createTextNode(' ' + String(message).replace(/[<>]/g, ''));
+                toast.appendChild(i);
+                toast.appendChild(txt);
                 document.body.appendChild(toast);
 
-                setTimeout(() => {
+                setTimeout(function() {
                     toast.style.transition = 'opacity 0.3s, transform 0.3s';
-                    toast.style.opacity = '0';
-                    toast.style.transform = 'translateX(100%)';
-                    setTimeout(() => toast.remove(), 300);
+                    toast.style.opacity    = '0';
+                    toast.style.transform  = 'translateX(100%)';
+                    setTimeout(function() { if (toast.parentNode) toast.remove(); }, 320);
                 }, 4000);
             }
 
-            // ─── Fixed Download Function ─────────────────────────────
-            function triggerDownload(btn) {
-                if (!slipNumber) {
-                    showToast('Exam slip not available', 'error');
-                    return;
-                }
-
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
-                btn.disabled = true;
-
-                showToast('Preparing your PDF...', 'info');
-
-                // Create download URL with timestamp to prevent caching
-                const downloadUrl = baseUrl + '/apply/download-exam-slip?csrf=' + encodeURIComponent(csrfToken) + '&t=' + Date.now();
-                
-                // Use iframe for download
-                if (downloadFrame) {
-                    // Set up one-time load event
-                    const onLoad = function() {
-                        setTimeout(() => {
-                            btn.innerHTML = originalText;
-                            btn.disabled = false;
-                            showToast('Download started', 'success');
-                        }, 1000);
-                        downloadFrame.removeEventListener('load', onLoad);
-                    };
-                    
-                    downloadFrame.addEventListener('load', onLoad);
-                    downloadFrame.src = downloadUrl;
-                } else {
-                    // Fallback
-                    window.location.href = downloadUrl;
-                    setTimeout(() => {
-                        btn.innerHTML = originalText;
-                        btn.disabled = false;
-                    }, 1000);
-                }
-            }
-
-            // ─── Open Print View ─────────────────────────────────────
+            // ── FIX 1: Open Print View ────────────────────────────────
+            // Opens popup; if popup is blocked, falls back to same tab.
+            // URL is pre-built in PHP — no JS string concatenation needed.
             function openPrintView() {
-                if (!slipNumber) {
+                if (!SLIP_NUMBER) {
                     showToast('Exam slip not available', 'error');
                     return;
                 }
 
-                const printWindow = window.open(
-                    baseUrl + '/apply/print-exam-slip?csrf=' + encodeURIComponent(csrfToken) + '&t=' + Date.now(),
+                var url = PRINT_URL + '&t=' + Date.now();
+
+                var popup = window.open(
+                    url,
                     'PrintExamSlip',
-                    'width=900,height=700,scrollbars=yes,resizable=yes'
+                    'width=900,height=700,scrollbars=yes,resizable=yes,menubar=no,toolbar=no'
                 );
 
-                if (!printWindow) {
-                    showToast('Please allow pop-ups to view the exam slip', 'error');
+                // Detect popup block
+                if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                    showToast('Pop-up blocked — opening in this tab…', 'info');
+                    setTimeout(function() { window.location.href = url; }, 600);
                 }
             }
 
-            // ── Event Listeners ──────────────────────────────────────
+            // ── FIX 2: Download feedback only ────────────────────────
+            // The actual file download is triggered by the browser natively
+            // through the <a href="..." download="..."> attribute.
+            // JS here only shows a toast so the user knows it started.
+            function attachDownloadFeedback() {
+                if (!downloadBtn) return; // disabled state (no slip)
+                downloadBtn.addEventListener('click', function() {
+                    showToast('Download starting… check your Downloads folder.', 'success');
+                });
+            }
+
+            // ── Event Listeners ───────────────────────────────────────
             if (viewPrintBtn) {
                 viewPrintBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     openPrintView();
-                });
-            }
-
-            if (downloadBtn) {
-                downloadBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    triggerDownload(this);
                 });
             }
 
@@ -948,22 +970,23 @@ class Step4View {
                 });
             }
 
-            // ── Keyboard Shortcuts ───────────────────────────────────
+            // ── Keyboard Shortcuts ────────────────────────────────────
             document.addEventListener('keydown', function(e) {
                 if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
                     e.preventDefault();
-                    if (viewPrintBtn) {
-                        openPrintView();
-                    }
+                    openPrintView();
                 }
             });
 
-            // ── Check if slip was recently generated ─────────────────
+            // ── Init ──────────────────────────────────────────────────
+            attachDownloadFeedback();
+
+            // ── Check if slip was recently generated ──────────────────
             <?php if (isset($_GET['new']) && $_GET['new'] == 1): ?>
             showToast('Your examination slip has been generated!', 'success');
             <?php endif; ?>
 
-            console.log('Step 4 ready - Slip:', slipNumber);
+            console.log('Step 4 ready - Slip:', SLIP_NUMBER);
 
         })();
         </script>
@@ -979,4 +1002,3 @@ class Step4View {
 // =========================================================
 $view = new Step4View();
 $view->render(get_defined_vars());
-?>

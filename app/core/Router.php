@@ -339,7 +339,12 @@ class Router {
         $this->get('/apply/download-slip', 'PublicApplicationController@downloadExamSlip');
         $this->get('/apply/print-exam-slip', 'PublicApplicationController@printExamSlip');
         $this->get('/apply/step/4', 'PublicApplicationController@step4');
-        $this->get('/apply/download-exam-slip', 'PublicApplicationController@downloadExamSlip');
+        
+        // ============================================
+        // EXAM SLIP ROUTES - ADDED/FIXED ROUTES
+        // ============================================
+        $this->get('/apply/print-exam-slip', 'ExamSlipController@printSlip');
+        $this->get('/apply/download-exam-slip', 'ExamSlipController@downloadSlip');
 
         // Applicant authentication
         $this->get('/applicant/login', 'PublicApplicationController@login');
@@ -733,6 +738,27 @@ class Router {
                 error_log("✗ Payment routes incomplete - GET: " . ($verifyPaymentGetFound ? 'YES' : 'NO') . 
                          ", POST: " . ($verifyPaymentPostFound ? 'YES' : 'NO'));
             }
+            
+            // Verify exam slip routes
+            $printExamSlipFound = false;
+            $downloadExamSlipFound = false;
+            foreach ($this->routes as $route) {
+                if ($route['path'] === '/apply/print-exam-slip') {
+                    $printExamSlipFound = true;
+                    error_log("✓ /apply/print-exam-slip is registered with handler: " . $route['handler']);
+                }
+                if ($route['path'] === '/apply/download-exam-slip') {
+                    $downloadExamSlipFound = true;
+                    error_log("✓ /apply/download-exam-slip is registered with handler: " . $route['handler']);
+                }
+            }
+            
+            if ($printExamSlipFound && $downloadExamSlipFound) {
+                error_log("✓ Both exam slip routes are registered");
+            } else {
+                error_log("✗ Exam slip routes incomplete - Print: " . ($printExamSlipFound ? 'YES' : 'NO') . 
+                         ", Download: " . ($downloadExamSlipFound ? 'YES' : 'NO'));
+            }
         }
     }
 
@@ -921,6 +947,13 @@ class Router {
                     }
                 }
             }
+        }
+        
+        // DEBUG for exam slip routes
+        if ($requestUri === '/apply/print-exam-slip' || $requestUri === '/apply/download-exam-slip') {
+            error_log("=== DEBUG: EXAM SLIP ROUTE REQUESTED ===");
+            error_log("Request Method: $requestMethod");
+            error_log("Request URI: $requestUri");
         }
         
         error_log("==========================================");

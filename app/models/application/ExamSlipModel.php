@@ -3,6 +3,8 @@
  * Exam Slip Model
  * 
  * Handles exam slip data operations
+ * ADDED: incrementDownloadCount() — called by ExamSlipController on every
+ *        view, print, or download so the download_count column stays accurate.
  * 
  * @package FCT_CNS
  * @subpackage Application
@@ -115,6 +117,9 @@ class ExamSlipModel extends BaseModel {
     
     /**
      * Record download
+     * Stores IP address and user agent alongside the count increment.
+     * Use this for audit logging. For a simple counter-only update,
+     * use incrementDownloadCount() instead.
      */
     public function recordDownload($slipId, $ipAddress, $userAgent) {
         // First get current download count
@@ -130,13 +135,46 @@ class ExamSlipModel extends BaseModel {
         return $this->update(
             [
                 'download_count' => ($current['download_count'] ?? 0) + 1,
-                'downloaded_at' => date('Y-m-d H:i:s'),
-                'ip_address' => $ipAddress,
-                'user_agent' => $userAgent
+                'downloaded_at'  => date('Y-m-d H:i:s'),
+                'ip_address'     => $ipAddress,
+                'user_agent'     => $userAgent,
             ],
             'id = :id',
             ['id' => $slipId]
         );
+    }
+
+    /**
+     * Increment download counter (lightweight — no IP/UA logging).
+     * Called by ExamSlipController every time the slip is viewed,
+     * printed, or downloaded so the download_count stays accurate.
+     *
+     * @param  int  $slipId  Primary key of the exam_slips row
+     * @return bool
+     */
+    public function incrementDownloadCount($slipId) {
+        try {
+            $current = $this->fetchOne(
+                "SELECT download_count FROM {$this->table} WHERE id = :id",
+                ['id' => (int)$slipId]
+            );
+
+            if (!$current) {
+                return false;
+            }
+
+            return $this->update(
+                [
+                    'download_count' => ((int)($current['download_count'] ?? 0)) + 1,
+                    'downloaded_at'  => date('Y-m-d H:i:s'),
+                ],
+                'id = :id',
+                ['id' => (int)$slipId]
+            );
+        } catch (\Exception $e) {
+            error_log('ExamSlipModel::incrementDownloadCount — ' . $e->getMessage());
+            return false;
+        }
     }
     
     /**
@@ -150,12 +188,12 @@ class ExamSlipModel extends BaseModel {
         }
         
         $data = [
-            'slip_number' => $slip['slip_number'],
-            'application_id' => $slip['application_id'],
-            'exam_date' => $slip['exam_date'],
-            'exam_time' => $slip['exam_time'],
-            'seat_number' => $slip['seat_number'],
-            'verification_url' => (defined('BASE_URL') ? BASE_URL : '') . '/verify/exam-slip/' . $slip['slip_number']
+            'slip_number'      => $slip['slip_number'],
+            'application_id'   => $slip['application_id'],
+            'exam_date'        => $slip['exam_date'],
+            'exam_time'        => $slip['exam_time'],
+            'seat_number'      => $slip['seat_number'],
+            'verification_url' => (defined('BASE_URL') ? BASE_URL : '') . '/verify/exam-slip/' . $slip['slip_number'],
         ];
         
         return json_encode($data);
@@ -171,9 +209,8 @@ class ExamSlipModel extends BaseModel {
             return ['valid' => false, 'message' => 'Exam slip not found'];
         }
         
-        // Check if exam date is valid (optional)
         $examDate = strtotime($slip['exam_date']);
-        $today = strtotime(date('Y-m-d'));
+        $today    = strtotime(date('Y-m-d'));
         
         $status = 'upcoming';
         if ($examDate < $today) {
@@ -183,10 +220,10 @@ class ExamSlipModel extends BaseModel {
         }
         
         return [
-            'valid' => true,
-            'slip' => $slip,
-            'status' => $status,
-            'message' => 'Exam slip verified successfully'
+            'valid'   => true,
+            'slip'    => $slip,
+            'status'  => $status,
+            'message' => 'Exam slip verified successfully',
         ];
     }
     
@@ -238,12 +275,12 @@ class ExamSlipModel extends BaseModel {
     public function getStats() {
         $stats = $this->fetchOne("
             SELECT 
-                COUNT(*) as total_slips,
-                COUNT(DISTINCT exam_date) as exam_days,
-                COUNT(DISTINCT exam_venue) as venues,
-                MIN(exam_date) as first_exam_date,
-                MAX(exam_date) as last_exam_date,
-                SUM(download_count) as total_downloads
+                COUNT(*)                  AS total_slips,
+                COUNT(DISTINCT exam_date) AS exam_days,
+                COUNT(DISTINCT exam_venue) AS venues,
+                MIN(exam_date)            AS first_exam_date,
+                MAX(exam_date)            AS last_exam_date,
+                SUM(download_count)       AS total_downloads
             FROM {$this->table}
         ");
         
