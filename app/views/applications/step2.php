@@ -10,6 +10,8 @@
  * FIXED: Passport preview - removed inline onerror handlers
  * FIXED: O'Level remove buttons - proper event handling without inline JS
  * FIXED: O'Level counter - now counts actual DOM elements instead of using variable
+ * FIXED: O'Level add another - preserves existing grades when adding new sitting
+ * FIXED: Professional loading pattern for Save & Continue button
  * 
  * @package FCTCNS
  */
@@ -816,23 +818,69 @@ class ApplicationFormView {
                 box-shadow: none;
             }
 
-            /* Success Button - Green */
+            /* Success Button - Green with professional loading state */
             .btn-success {
                 background: linear-gradient(135deg, var(--sv1-success), var(--sv1-success-dark));
                 color: var(--sv1-white);
                 box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+                position: relative;
+                transition: all 0.3s ease;
             }
-            .btn-success:hover { 
+            .btn-success:hover:not(:disabled) { 
                 background: linear-gradient(135deg, var(--sv1-success-dark), var(--sv1-success));
                 color: var(--sv1-white); 
                 transform: translateY(-2px); 
                 box-shadow: 0 8px 20px rgba(16,185,129,0.4);
             }
             .btn-success:disabled {
-                opacity: 0.6;
+                opacity: 1;
                 cursor: not-allowed;
                 transform: none;
                 box-shadow: none;
+                background: linear-gradient(135deg, #94a3b8, #64748b);
+                pointer-events: none;
+            }
+            
+            /* Professional loading spinner for success button */
+            .btn-success.loading {
+                padding-left: 45px;
+                position: relative;
+                pointer-events: none;
+            }
+            
+            .btn-success.loading::before {
+                content: '';
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 18px;
+                height: 18px;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                border-top-color: #ffffff;
+                animation: professional-spin 0.8s linear infinite;
+            }
+            
+            @keyframes professional-spin {
+                to { transform: translateY(-50%) rotate(360deg); }
+            }
+            
+            .btn-success .btn-text {
+                transition: all 0.3s ease;
+            }
+            
+            .btn-success.loading .btn-text {
+                opacity: 0.9;
+            }
+            
+            .btn-success .btn-icon {
+                transition: all 0.3s ease;
+            }
+            
+            .btn-success.loading .btn-icon {
+                opacity: 0;
+                transform: translateX(10px);
             }
 
             /* Navy Button - Dark Purple */
@@ -994,38 +1042,10 @@ class ApplicationFormView {
             .error-list ul li + li { margin-top: 4px; }
 
             /* =========================================================
-               LOADING OVERLAY
+               PROFESSIONAL LOADING OVERLAY (Replaced with button spinner)
             ========================================================= */
             .loading-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(255,255,255,0.9);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 9999;
-                visibility: hidden;
-                opacity: 0;
-                transition: var(--transition-smooth);
-                backdrop-filter: blur(3px);
-            }
-            .loading-overlay.show {
-                visibility: visible;
-                opacity: 1;
-            }
-            .spinner {
-                width: 50px;
-                height: 50px;
-                border: 3px solid var(--sv1-border);
-                border-top-color: var(--sv1-primary);
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-            }
-            @keyframes spin {
-                to { transform: rotate(360deg); }
+                display: none; /* Hidden by default - we're using button spinner now */
             }
 
             /* =========================================================
@@ -1088,11 +1108,6 @@ class ApplicationFormView {
                     <div class="step-sub"><?php echo $this->e($step['sub']); ?></div>
                 </div>
                 <?php endforeach; ?>
-            </div>
-
-            <!-- ===== LOADING OVERLAY ===== -->
-            <div class="loading-overlay" id="loadingOverlay">
-                <div class="spinner"></div>
             </div>
 
             <!-- ===== FLASH MESSAGES ===== -->
@@ -1511,7 +1526,8 @@ class ApplicationFormView {
                                 <i class="fas fa-save"></i> Save Progress
                             </button>
                             <button type="submit" class="btn btn-success btn-lg" id="nextBtn">
-                                Save &amp; Continue <i class="fas fa-arrow-right"></i>
+                                <span class="btn-icon"><i class="fas fa-arrow-right"></i></span>
+                                <span class="btn-text">Save &amp; Continue</span>
                             </button>
                         </div>
                     </div>
@@ -1856,22 +1872,30 @@ class ApplicationFormView {
                 wireRemoveButton(btn);
             });
 
-            // ── AJAX form submission ──────────────────────────────────────
+            // ── Professional AJAX form submission with button loading state ──
             var form           = document.getElementById('mainForm');
-            var loadingOverlay = document.getElementById('loadingOverlay');
             var saveBtn        = document.getElementById('saveBtn');
             var nextBtn        = document.getElementById('nextBtn');
 
-            saveBtn.addEventListener('click', function () {
+            // Save Progress button handler
+            saveBtn.addEventListener('click', function (e) {
+                e.preventDefault();
                 document.getElementById('form_action').value = 'save';
+                
+                // Add loading state to save button
+                var originalHtml = this.innerHTML;
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                
+                submitForm(this, originalHtml);
             });
 
+            // Save & Continue button handler
             nextBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                
                 var check = computeCreditCheck();
                 if (!check.meetsRequirement) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
                     var lines = ['⚠ O\'Level Requirement Not Met\n\nYou have ' + check.creditsAchieved + '/5 required credit passes.\n'];
                     if (check.missingSubjects.length > 0) lines.push('No grade entered for: ' + check.missingSubjects.join(', '));
                     if (check.failedSubjects.length  > 0) lines.push('Below credit in: ' + check.failedSubjects.join(', '));
@@ -1881,29 +1905,26 @@ class ApplicationFormView {
                     alert(lines.join('\n'));
                     return;
                 }
+                
                 document.getElementById('form_action').value = 'next';
+                
+                // Add professional loading state to next button
+                this.classList.add('loading');
+                this.disabled = true;
+                
+                submitForm(this);
             });
 
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
-
+            // Unified form submission function
+            function submitForm(button, originalHtml) {
                 if (!form.checkValidity()) {
                     form.classList.add('was-validated');
+                    button.disabled = false;
+                    button.classList.remove('loading');
+                    if (originalHtml) button.innerHTML = originalHtml;
                     return;
                 }
                 form.classList.add('was-validated');
-
-                var action = document.getElementById('form_action').value;
-
-                if (action === 'next') {
-                    var check = computeCreditCheck();
-                    if (!check.meetsRequirement) {
-                        alert('⚠ O\'Level requirement not met. You have ' + check.creditsAchieved + '/5 credits. Please fix your grades before proceeding.');
-                        return;
-                    }
-                }
-
-                loadingOverlay.classList.add('show');
 
                 fetch('/apply/save-application', {
                     method: 'POST',
@@ -1916,7 +1937,10 @@ class ApplicationFormView {
                     return response.json();
                 })
                 .then(function (data) {
-                    loadingOverlay.classList.remove('show');
+                    // Reset button state
+                    button.disabled = false;
+                    button.classList.remove('loading');
+                    if (originalHtml) button.innerHTML = originalHtml;
 
                     if (data.success) {
                         if (data.olevel_blocked) {
@@ -1938,11 +1962,13 @@ class ApplicationFormView {
                     }
                 })
                 .catch(function (error) {
-                    loadingOverlay.classList.remove('show');
                     console.error('Form error:', error);
+                    button.disabled = false;
+                    button.classList.remove('loading');
+                    if (originalHtml) button.innerHTML = originalHtml;
                     alert('A server error occurred. Please try again.');
                 });
-            });
+            }
 
             // ── Bootstrap native validation ───────────────────────────────
             document.querySelectorAll('.needs-validation').forEach(function (f) {
