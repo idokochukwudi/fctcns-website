@@ -1472,7 +1472,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     // ============================================
-    // STEP 3: PAYMENT - FIXED initiatePayment METHOD WITH PROPER RRR HANDLING
+    // STEP 3: PAYMENT - COMPLETELY FIXED WITH PROPER RRR HANDLING
     // ============================================
 
     /**
@@ -1634,22 +1634,24 @@ class PublicApplicationController extends ApplicationBaseController {
             error_log("Remita API Result: " . print_r($result, true));
             
             if ($result['status'] === 'success' && isset($result['rrr'])) {
-                $rrr = $result['rrr']; // Raw RRR from Remita API (no dashes)
+                // IMPORTANT: Get the RAW RRR from Remita API (no dashes)
+                $rawRrr = $result['rrr']; 
                 
-                error_log("✅ REAL RRR generated from Remita API: " . $rrr);
+                error_log("✅ REAL RRR generated from Remita API: " . $rawRrr);
                 
                 // Format RRR with dashes for display (e.g., 2407-9951-5454)
-                $formattedRrr = $rrr;
-                if (strlen($rrr) == 12) {
-                    $formattedRrr = substr($rrr, 0, 4) . '-' . substr($rrr, 4, 4) . '-' . substr($rrr, 8, 4);
+                $formattedRrr = $rawRrr;
+                if (strlen($rawRrr) == 12) {
+                    $formattedRrr = substr($rawRrr, 0, 4) . '-' . substr($rawRrr, 4, 4) . '-' . substr($rawRrr, 8, 4);
                 }
                 
-                // Create payment record in database
+                // Create payment record in database - store both raw and formatted
                 $paymentData = [
                     'application_id' => $application['id'],
                     'applicant_id' => $applicantId,
                     'reference' => $reference,
                     'rrr' => $formattedRrr, // Store formatted version for display
+                    'raw_rrr' => $rawRrr,    // Also store raw version for API calls
                     'order_id' => $orderId,
                     'amount' => $fee,
                     'payment_type' => 'application_fee',
@@ -1665,18 +1667,18 @@ class PublicApplicationController extends ApplicationBaseController {
                     return;
                 }
                 
-                // IMPORTANT FIX: Generate secure payment URL using the RAW RRR (without dashes)
+                // IMPORTANT: Generate payment URL using the RAW RRR (without dashes)
                 // This ensures the URL has the correct RRR that matches what Remita expects
-                $paymentUrl = $this->generatePaymentUrl($rrr); // Pass raw RRR to URL generator
+                $paymentUrl = $this->generatePaymentUrl($rawRrr);
                 
-                error_log("Payment URL generated with raw RRR: $rrr");
+                error_log("Payment URL generated with raw RRR: $rawRrr");
                 error_log("Payment URL: $paymentUrl");
                 
-                // Store in session with formatted RRR for display
+                // Store in session with both formatted and raw RRR
                 $_SESSION['pending_payment'] = [
                     'payment_id' => $paymentId,
                     'rrr' => $formattedRrr, // Store formatted version for display
-                    'raw_rrr' => $rrr, // Also store raw version for reference
+                    'raw_rrr' => $rawRrr,    // Also store raw version for reference
                     'amount' => $fee,
                     'payment_url' => $paymentUrl,
                     'created_at' => time()
@@ -1686,7 +1688,7 @@ class PublicApplicationController extends ApplicationBaseController {
                     'success' => true,
                     'message' => 'RRR generated successfully',
                     'rrr' => $formattedRrr, // Send formatted RRR to view for display
-                    'raw_rrr' => $rrr, // Also send raw RRR for debugging if needed
+                    'raw_rrr' => $rawRrr,    // Also send raw RRR for debugging if needed
                     'payment_url' => $paymentUrl,
                     'reference' => $reference,
                     'order_id' => $orderId,
@@ -1724,14 +1726,23 @@ class PublicApplicationController extends ApplicationBaseController {
      * @return string The complete payment URL
      */
     private function generatePaymentUrl($rrr) {
-        // Clean RRR - remove any non-numeric characters (dashes, spaces, etc.)
+        // Clean RRR - remove any non-numeric characters (dashes, spaces, etc.) just to be safe
         $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
         
         // IMPORTANT: Log what RRR we're using for debugging
         error_log("generatePaymentUrl: Using RRR: $cleanRrr (original: $rrr)");
         
+        // Determine the correct base URL based on environment
+        $environment = defined('REMITA_ENVIRONMENT') ? REMITA_ENVIRONMENT : 'demo';
+        
+        if ($environment === 'live') {
+            $baseUrl = 'https://login.remita.net/remita/onepage/payment/init.reg';
+        } else {
+            // Demo environment - use remitademo.net (per Remita support)
+            $baseUrl = 'https://remitademo.net/remita/onepage/payment/init.reg';
+        }
+        
         // Build URL with proper encoding - use the EXACT same RRR
-        $baseUrl = 'https://demo.remita.net/remita/onepage/payment/init.reg';
         $params = http_build_query([
             'rrr' => $cleanRrr,
             'channel' => 'CARD,USSD,ENAIRA,TRANSFER'
@@ -1776,7 +1787,7 @@ class PublicApplicationController extends ApplicationBaseController {
         }
         
         try {
-            // Get payment by RRR
+            // Get payment by RRR (try both formatted and raw)
             $payment = $this->paymentModel->getByRRR($rrr);
             
             if (!$payment) {
@@ -1792,10 +1803,13 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
+            // Get the raw RRR for API call (use raw_rrr if available, otherwise clean the formatted one)
+            $rawRrr = $payment['raw_rrr'] ?? preg_replace('/[^0-9]/', '', $payment['rrr']);
+            
             // Call Remita to verify payment status
             require_once MODELS_PATH . '/application/RemitaModel.php';
             $remitaModel = new RemitaModel();
-            $verificationResult = $remitaModel->verifyPayment($rrr);
+            $verificationResult = $remitaModel->verifyPayment($rawRrr);
             
             error_log("Remita verification result: " . print_r($verificationResult, true));
             
@@ -1836,6 +1850,9 @@ class PublicApplicationController extends ApplicationBaseController {
                         if ($ownTransaction) {
                             $this->paymentModel->commit();
                         }
+                        
+                        // Clear any pending payment from session
+                        unset($_SESSION['pending_payment']);
                         
                         echo json_encode([
                             'success' => true,
