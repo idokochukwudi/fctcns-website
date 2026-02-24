@@ -20,6 +20,8 @@
  * FIXED 3: Payment RRR formatting with dashes for display
  * FIXED 4: Proper payment verification with exam slip generation
  * FIXED 5: RRR mismatch issue - Use exact RRR from database in payment URL
+ * FIXED 6: Added email verification check before JAMB verification
+ * FIXED 7: Added registration complete check helper method
  * 
  * @package FCT_CNS
  */
@@ -957,6 +959,11 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
+        // Check registration complete (email verified)
+        if (!$this->checkRegistrationComplete()) {
+            return; // checkRegistrationComplete already redirects
+        }
+        
         $applicantId = $_SESSION['applicant_id'];
         $applicant = $this->applicantModel->find($applicantId);
         
@@ -1101,6 +1108,13 @@ class PublicApplicationController extends ApplicationBaseController {
         
         try {
             $applicantId = $_SESSION['applicant_id'];
+            
+            // Check registration complete (email verified)
+            $applicant = $this->applicantModel->find($applicantId);
+            if (!$applicant || !isset($applicant['email_verified']) || $applicant['email_verified'] != 1) {
+                echo json_encode(['success' => false, 'message' => 'Please verify your email first', 'redirect' => '/apply/verify-email']);
+                return;
+            }
             
             // Get existing application
             $application = $this->applicationModel->getByApplicantId($applicantId);
@@ -1487,6 +1501,11 @@ class PublicApplicationController extends ApplicationBaseController {
             $_SESSION['flash_error'] = 'Please login to continue';
             $this->redirect('/applicant/login');
             return;
+        }
+        
+        // Check registration complete (email verified)
+        if (!$this->checkRegistrationComplete()) {
+            return; // checkRegistrationComplete already redirects
         }
         
         $applicantId = $_SESSION['applicant_id'];
@@ -1910,6 +1929,11 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
+        // Check registration complete (email verified)
+        if (!$this->checkRegistrationComplete()) {
+            return; // checkRegistrationComplete already redirects
+        }
+        
         $applicantId = $_SESSION['applicant_id'];
         $application = $this->applicationModel->getByApplicantId($applicantId);
         
@@ -2312,6 +2336,38 @@ class PublicApplicationController extends ApplicationBaseController {
             'Midwifery',
             'Public Health Nursing'
         ];
+    }
+
+    /**
+     * Check if user has completed required registration steps
+     * Redirects to appropriate page if not
+     * 
+     * @return bool True if user can proceed, false if redirected
+     */
+    private function checkRegistrationComplete() {
+        if (!$this->isApplicantLoggedIn()) {
+            $this->redirect('/applicant/login');
+            return false;
+        }
+        
+        $applicantId = $_SESSION['applicant_id'];
+        $applicant = $this->applicantModel->find($applicantId);
+        
+        if (!$applicant) {
+            $this->logout();
+            $this->redirect('/apply/register');
+            return false;
+        }
+        
+        // Check if email is verified
+        if (!isset($applicant['email_verified']) || $applicant['email_verified'] != 1) {
+            $_SESSION['flash_error'] = 'Please verify your email address before proceeding.';
+            $_SESSION['verification_email'] = $applicant['email'];
+            $this->redirect('/apply/verify-email?email=' . urlencode($applicant['email']));
+            return false;
+        }
+        
+        return true;
     }
 
     // ============================================
@@ -2807,19 +2863,46 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Show step 1: JAMB verification - SECURITY FIXED
+     * Now checks if user has completed registration and email verification
      */
     public function step1() {
         // Initialize security
         $this->initSecurity();
         
-        // Check if logged in
+        // Check if user is logged in
         if (!$this->isApplicantLoggedIn()) {
             $_SESSION['flash_error'] = 'Please login to continue';
+            $_SESSION['redirect_after_login'] = '/apply/step/1';
             $this->redirect('/applicant/login');
             return;
         }
         
         $applicantId = $_SESSION['applicant_id'];
+        
+        // CRITICAL: Check if email is verified
+        $applicant = $this->applicantModel->find($applicantId);
+        
+        if (!$applicant) {
+            $_SESSION['flash_error'] = 'Applicant record not found. Please register again.';
+            $this->logout();
+            $this->redirect('/apply/register');
+            return;
+        }
+        
+        // Check if email is verified
+        if (!isset($applicant['email_verified']) || $applicant['email_verified'] != 1) {
+            error_log("SECURITY: Attempted to access JAMB verification without email verification - User: " . $applicantId);
+            
+            // Store email in session for resend
+            $_SESSION['verification_email'] = $applicant['email'];
+            
+            // Set appropriate flash message
+            $_SESSION['flash_error'] = 'Please verify your email address before proceeding with JAMB verification. Check your inbox for the verification link.';
+            
+            // Redirect to email verification page
+            $this->redirect('/apply/verify-email?email=' . urlencode($applicant['email']));
+            return;
+        }
         
         // Get application
         $application = $this->applicationModel->getByApplicantId($applicantId);
@@ -2855,7 +2938,9 @@ class PublicApplicationController extends ApplicationBaseController {
             'pageTitle' => 'Step 1: JAMB Verification',
             'terms' => $terms,
             'settings' => $settings,
-            'csrf_token' => $this->csrfToken()
+            'csrf_token' => $this->csrfToken(),
+            'applicant' => $applicant,
+            'email_verified' => true
         ]);
         
         $this->render('applications/step1');
@@ -2873,6 +2958,11 @@ class PublicApplicationController extends ApplicationBaseController {
             $_SESSION['flash_error'] = 'Please login to continue';
             $this->redirect('/applicant/login');
             return;
+        }
+        
+        // Check registration complete (email verified)
+        if (!$this->checkRegistrationComplete()) {
+            return; // checkRegistrationComplete already redirects
         }
         
         $applicantId = $_SESSION['applicant_id'];
@@ -2969,6 +3059,11 @@ class PublicApplicationController extends ApplicationBaseController {
             $_SESSION['flash_error'] = 'Please login to continue';
             $this->redirect('/applicant/login');
             return;
+        }
+        
+        // Check registration complete (email verified)
+        if (!$this->checkRegistrationComplete()) {
+            return; // checkRegistrationComplete already redirects
         }
         
         $applicantId = $_SESSION['applicant_id'];
@@ -3083,6 +3178,11 @@ class PublicApplicationController extends ApplicationBaseController {
             return;
         }
         
+        // Check registration complete (email verified)
+        if (!$this->checkRegistrationComplete()) {
+            return; // checkRegistrationComplete already redirects
+        }
+        
         $applicantId = $_SESSION['applicant_id'];
         
         // Get and validate application
@@ -3173,6 +3273,7 @@ class PublicApplicationController extends ApplicationBaseController {
 
     /**
      * Verify JAMB number (AJAX endpoint) - COMPLETELY FIXED VERSION
+     * Now with multiple security layers including email verification check
      */
     public function verifyJamb() {
         // Set header for JSON response FIRST - before ANY output
@@ -3232,10 +3333,35 @@ class PublicApplicationController extends ApplicationBaseController {
         }
         
         try {
-            // Get application
+            // STEP 1: Get applicant record
+            $applicant = $this->applicantModel->find($applicantId);
+            
+            if (!$applicant) {
+                error_log("JAMB verification failed: Applicant not found - ID: " . $applicantId);
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Applicant record not found. Please complete registration first.'
+                ]);
+                return;
+            }
+            
+            // STEP 2: Check if email is verified
+            if (!isset($applicant['email_verified']) || $applicant['email_verified'] != 1) {
+                error_log("SECURITY: JAMB verification attempted without email verification - User: " . $applicantId);
+                
+                echo json_encode([
+                    'success' => false,
+                    'email_not_verified' => true,
+                    'message' => 'Please verify your email address before verifying JAMB. Check your inbox for the verification link.',
+                    'redirect' => '/apply/verify-email?email=' . urlencode($applicant['email'])
+                ]);
+                return;
+            }
+            
+            // STEP 3: Get application
             $application = $this->applicationModel->getByApplicantId($applicantId);
             
-            // Check if JAMB already verified
+            // STEP 4: Check if JAMB already verified (can't change)
             if ($application && !empty($application['jamb_number'])) {
                 echo json_encode([
                     'success' => false, 
@@ -3244,7 +3370,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // Check if payment has been made
+            // STEP 5: Check if payment has been made (can't modify after payment)
             if ($application && !empty($application['id'])) {
                 $hasPaid = $this->paymentModel->hasSuccessfulPayment($application['id']);
                 if ($hasPaid) {
@@ -3256,13 +3382,13 @@ class PublicApplicationController extends ApplicationBaseController {
                 }
             }
             
-            // Load JambCandidateModel if not already loaded
+            // STEP 6: Load JambCandidateModel if not already loaded
             if (!isset($this->jambModel)) {
                 require_once MODELS_PATH . '/JambCandidateModel.php';
                 $this->jambModel = new JambCandidateModel();
             }
             
-            // Find JAMB candidate
+            // STEP 7: Find JAMB candidate
             $jambCandidate = $this->jambModel->findByJambNumber($jambNumber);
             
             if (!$jambCandidate) {
@@ -3273,7 +3399,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // Check if already used
+            // STEP 8: Check if already used
             if (!empty($jambCandidate['is_used']) && $jambCandidate['is_used'] == 1) {
                 echo json_encode([
                     'success' => false, 
@@ -3282,7 +3408,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // Check score requirement
+            // STEP 9: Check score requirement
             $minScore = $this->settingsModel->get('min_utme_score', 170);
             if ($jambCandidate['aggregate_score'] < $minScore) {
                 echo json_encode([
@@ -3292,7 +3418,7 @@ class PublicApplicationController extends ApplicationBaseController {
                 return;
             }
             
-            // Begin transaction - FIXED: Check if already in transaction
+            // STEP 10: Begin transaction
             $ownTransaction = false;
             if (!$this->applicationModel->getConnection()->inTransaction()) {
                 $this->applicationModel->beginTransaction();
@@ -3352,14 +3478,14 @@ class PublicApplicationController extends ApplicationBaseController {
                 error_log("Updated existing application ID: " . $application['id'] . " with JAMB data");
             }
             
-            // Mark JAMB candidate as used (permanent lock)
+            // STEP 11: Mark JAMB candidate as used (permanent lock)
             $marked = $this->jambModel->markAsUsed($jambCandidate['id'], $applicantId);
             
             if (!$marked) {
                 throw new Exception("Failed to mark JAMB as used");
             }
             
-            // Store in session
+            // STEP 12: Store in session
             $_SESSION['jamb_verification'] = [
                 'id' => $jambCandidate['id'],
                 'jamb_number' => $jambCandidate['jamb_number'],

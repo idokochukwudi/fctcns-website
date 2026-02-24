@@ -12,6 +12,7 @@
  * FIXED: O'Level counter - now counts actual DOM elements instead of using variable
  * FIXED: O'Level add another - preserves existing grades when adding new sitting
  * FIXED: Professional loading pattern for Save & Continue button
+ * FIXED: Added email verification error handling in JavaScript
  * 
  * @package FCTCNS
  */
@@ -1564,7 +1565,7 @@ class ApplicationFormView {
                 crossorigin="anonymous"
                 nonce="<?php echo $csp_nonce; ?>"></script>
         
-        <!-- FIX 3c: Replaced entire JavaScript block with enhanced version -->
+        <!-- FIX: Enhanced JavaScript with email verification error handling -->
         <script nonce="<?php echo $csp_nonce; ?>">
         (function () {
             'use strict';
@@ -1587,6 +1588,34 @@ class ApplicationFormView {
             var MAX_SITTINGS = 2;
 
             var initialMeetsRequirement = <?php echo ($credit_summary && $credit_summary['meets_requirement']) ? 'true' : 'false'; ?>;
+
+            // Helper function to show alerts (to avoid duplication)
+            function showAlert(message, type) {
+                // Try to use the flash alert system if available
+                var alertDiv = document.createElement('div');
+                alertDiv.className = 'flash-alert ' + type;
+                alertDiv.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : (type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle')) + '"></i><span>' + message + '</span>';
+                
+                var pageShell = document.querySelector('.page-shell');
+                if (pageShell) {
+                    // Insert after step indicator
+                    var stepIndicator = document.querySelector('.step-indicator');
+                    if (stepIndicator) {
+                        stepIndicator.insertAdjacentElement('afterend', alertDiv);
+                    } else {
+                        pageShell.insertBefore(alertDiv, pageShell.firstChild);
+                    }
+                    
+                    // Auto-remove after 5 seconds
+                    setTimeout(function() {
+                        if (alertDiv.parentNode) {
+                            alertDiv.parentNode.removeChild(alertDiv);
+                        }
+                    }, 5000);
+                } else {
+                    alert(message);
+                }
+            }
 
             // ── Count actual sitting blocks in the DOM ────────────────────
             function countSittings() {
@@ -1937,6 +1966,8 @@ class ApplicationFormView {
                     return response.json();
                 })
                 .then(function (data) {
+                    console.log('Response data:', data);
+                    
                     // Reset button state
                     button.disabled = false;
                     button.classList.remove('loading');
@@ -1955,10 +1986,20 @@ class ApplicationFormView {
                         if (data.redirect) {
                             window.location.href = data.redirect;
                         } else {
-                            alert(data.message || 'Saved successfully.');
+                            showAlert(data.message || 'Saved successfully.', 'success');
                         }
                     } else {
-                        alert('Error: ' + (data.message || 'An error occurred.'));
+                        // Check if this is an email verification error
+                        if (data.email_not_verified) {
+                            showAlert(data.message || 'Please verify your email first.', 'warning');
+                            
+                            // Redirect to email verification page after a delay
+                            setTimeout(function () {
+                                window.location.href = data.redirect || '/apply/verify-email';
+                            }, 2000);
+                        } else {
+                            showAlert(data.message || 'Error occurred. Please try again.', 'error');
+                        }
                     }
                 })
                 .catch(function (error) {
@@ -1966,7 +2007,7 @@ class ApplicationFormView {
                     button.disabled = false;
                     button.classList.remove('loading');
                     if (originalHtml) button.innerHTML = originalHtml;
-                    alert('A server error occurred. Please try again.');
+                    showAlert('A server error occurred. Please try again.', 'error');
                 });
             }
 
