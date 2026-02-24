@@ -1630,77 +1630,120 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Initiate payment - Generate RRR using Remita API
-     * FIXED: Proper RRR formatting with dashes for display
-     * FIXED: Use exact RRR from Remita API in payment URL
+     * INITIATE PAYMENT - Generate RRR via Remita API
+     * URL: POST /apply/initiate-payment
      */
     public function initiatePayment() {
-        // Set header for JSON response
+        // Set header to JSON
         header('Content-Type: application/json');
-        
-        // Initialize security
-        $this->initSecurity();
         
         error_log("=== INITIATE PAYMENT CALLED ===");
         
         // Check if user is logged in
         if (!isset($_SESSION['applicant_id'])) {
-            echo json_encode(['success' => false, 'message' => 'Please login first']);
-            return;
-        }
-        
-        // Get CSRF token from request
-        $input = json_decode(file_get_contents('php://input'), true);
-        $csrfToken = $input['csrf_token'] ?? $_POST['csrf_token'] ?? '';
-        
-        // Validate CSRF token
-        if (!$this->validateCsrfToken($csrfToken)) {
-            error_log("CSRF validation failed for initiatePayment");
-            echo json_encode(['success' => false, 'message' => 'Invalid security token']);
+            error_log("ERROR: User not logged in");
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Please login first'
+            ]);
             return;
         }
         
         try {
+            // Get CSRF token from request
+            $input = json_decode(file_get_contents('php://input'), true);
+            $csrfToken = $input['csrf_token'] ?? $_POST['csrf_token'] ?? '';
+            
+            // Validate CSRF token
+            if (empty($csrfToken)) {
+                error_log("CSRF validation failed: Token is empty");
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Security token missing'
+                ]);
+                return;
+            }
+            
+            if (!isset($_SESSION['csrf_tokens'][$csrfToken])) {
+                error_log("CSRF validation failed: Token not found in session");
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Invalid security token'
+                ]);
+                return;
+            }
+            
+            // Check token expiration (1 hour)
+            if (time() - $_SESSION['csrf_tokens'][$csrfToken] > 3600) {
+                unset($_SESSION['csrf_tokens'][$csrfToken]);
+                error_log("CSRF validation failed: Token expired");
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Security token expired. Please refresh the page.'
+                ]);
+                return;
+            }
+            
+            error_log("CSRF validation successful");
+            
             $applicantId = $_SESSION['applicant_id'];
             
             // Get application
             $application = $this->applicationModel->getByApplicantId($applicantId);
             
             if (!$application) {
-                echo json_encode(['success' => false, 'message' => 'Application not found']);
+                error_log("Application not found for applicant: $applicantId");
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Application not found'
+                ]);
                 return;
             }
             
-            // SECURITY: Validate step access
-            if (!$this->validateStepAccess($application, 3, 'initiatePayment')) {
-                echo json_encode(['success' => false, 'message' => 'Invalid operation for current application state']);
-                return;
-            }
+            error_log("Application found: ID=" . $application['id']);
             
             // Check if already paid
             if ($this->paymentModel->hasSuccessfulPayment($application['id'])) {
-                echo json_encode(['success' => false, 'message' => 'Payment already completed']);
+                error_log("Payment already completed for application: " . $application['id']);
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Payment already completed'
+                ]);
                 return;
             }
             
             // Get fee
             $fee = $this->settingsModel->getApplicationFee();
-            $orderId = 'ORD' . time() . rand(100, 999);
-            $reference = 'REF' . time() . rand(1000, 9999);
+            error_log("Application fee: " . $fee);
             
-            // Get applicant details for Remita
+            // Get applicant details
             $applicant = $this->applicantModel->find($applicantId);
-            $payerName = trim(($application['first_name'] ?? '') . ' ' . ($application['last_name'] ?? ''));
+            
+            if (!$applicant) {
+                error_log("Applicant not found: $applicantId");
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Applicant details not found'
+                ]);
+                return;
+            }
+            
+            // Prepare payer details
+            $payerName = trim(($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? ''));
+            if (empty($payerName)) {
+                $payerName = $applicant['email'] ?? 'Applicant';
+            }
+            
             $payerEmail = $applicant['email'] ?? '';
-            $payerPhone = $application['phone'] ?? '';
+            $payerPhone = $applicant['phone'] ?? '';
+            
+            // Generate Order ID (unique)
+            $orderId = 'ORD' . time() . rand(100, 999);
             
             error_log("Calling Remita API with: OrderID=$orderId, Amount=$fee, Payer=$payerName, Email=$payerEmail");
             
             // Call Remita API to generate REAL RRR
-            require_once MODELS_PATH . '/application/RemitaModel.php';
-            $remitaModel = new RemitaModel();
-            
-            $result = $remitaModel->generateRRRRemita(
+            $result = $this->remitaModel->generateRRRRemita(
                 $orderId,
                 $fee,
                 $payerName,
@@ -1711,27 +1754,24 @@ class PublicApplicationController extends ApplicationBaseController {
             error_log("Remita API Result: " . print_r($result, true));
             
             if ($result['status'] === 'success' && isset($result['rrr'])) {
-                // IMPORTANT: Get the RAW RRR from Remita API (no dashes)
-                $rawRrr = $result['rrr']; 
+                $rrr = $result['rrr'];
                 
-                error_log("✅ REAL RRR generated from Remita API: " . $rawRrr);
+                error_log("✅ REAL RRR generated from Remita API: " . $rrr);
                 
-                // Format RRR with dashes for display (e.g., 2407-9951-5454)
-                $formattedRrr = $rawRrr;
-                if (strlen($rawRrr) == 12) {
-                    $formattedRrr = substr($rawRrr, 0, 4) . '-' . substr($rawRrr, 4, 4) . '-' . substr($rawRrr, 8, 4);
+                // Format RRR with dashes for display (12-digit format)
+                $formattedRrr = $rrr;
+                if (strlen($rrr) == 12) {
+                    $formattedRrr = substr($rrr, 0, 4) . '-' . substr($rrr, 4, 4) . '-' . substr($rrr, 8, 4);
                 }
                 
-                // Create payment record in database - store both raw and formatted
+                // Create payment record in database
+                // FIXED: Removed non-existent 'raw_rrr' column
                 $paymentData = [
                     'application_id' => $application['id'],
                     'applicant_id' => $applicantId,
-                    'reference' => $reference,
-                    'rrr' => $formattedRrr, // Store formatted version for display
-                    'raw_rrr' => $rawRrr,    // Also store raw version for API calls
+                    'rrr' => $formattedRrr,
                     'order_id' => $orderId,
                     'amount' => $fee,
-                    'payment_type' => 'application_fee',
                     'status' => 'pending',
                     'created_at' => date('Y-m-d H:i:s'),
                     'updated_at' => date('Y-m-d H:i:s')
@@ -1740,57 +1780,67 @@ class PublicApplicationController extends ApplicationBaseController {
                 $paymentId = $this->paymentModel->insert($paymentData);
                 
                 if (!$paymentId) {
-                    echo json_encode(['success' => false, 'message' => 'Failed to create payment record']);
+                    error_log("Failed to create payment record");
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to create payment record'
+                    ]);
                     return;
                 }
                 
-                // IMPORTANT: Generate payment URL using the RAW RRR (without dashes)
-                // This ensures the URL has the correct RRR that matches what Remita expects
-                $paymentUrl = $this->generatePaymentUrl($rawRrr);
+                error_log("Payment record created with ID: $paymentId");
                 
-                error_log("Payment URL generated with raw RRR: $rawRrr");
-                error_log("Payment URL: $paymentUrl");
-                
-                // Store in session with both formatted and raw RRR
+                // Store in session for later use
                 $_SESSION['pending_payment'] = [
                     'payment_id' => $paymentId,
-                    'rrr' => $formattedRrr, // Store formatted version for display
-                    'raw_rrr' => $rawRrr,    // Also store raw version for reference
+                    'rrr' => $formattedRrr,
                     'amount' => $fee,
-                    'payment_url' => $paymentUrl,
                     'created_at' => time()
                 ];
                 
                 echo json_encode([
                     'success' => true,
-                    'message' => 'RRR generated successfully',
-                    'rrr' => $formattedRrr, // Send formatted RRR to view for display
-                    'raw_rrr' => $rawRrr,    // Also send raw RRR for debugging if needed
-                    'payment_url' => $paymentUrl,
-                    'reference' => $reference,
-                    'order_id' => $orderId,
-                    'amount' => $fee,
-                    'payment_id' => $paymentId
+                    'rrr' => $formattedRrr,
+                    'payment_id' => $paymentId,
+                    'message' => 'RRR generated successfully'
                 ]);
                 
             } else {
                 // API call failed
                 $errorMsg = $result['message'] ?? 'Unknown error';
-                error_log("❌ Remita API failed: " . $errorMsg);
+                $httpCode = $result['http_code'] ?? 500;
+                
+                error_log("❌ Remita API failed: " . $errorMsg . " (HTTP: $httpCode)");
+                
+                // Return appropriate error message based on HTTP status
+                $userMessage = 'Failed to generate RRR. Please try again or contact support.';
+                
+                if ($httpCode === 302) {
+                    $userMessage = 'Remita API endpoint configuration error. Please contact support.';
+                } elseif ($httpCode === 400) {
+                    $userMessage = 'Invalid request to Remita. Please try again.';
+                } elseif ($httpCode === 401 || $httpCode === 403) {
+                    $userMessage = 'Remita authentication failed. Please contact support.';
+                } elseif ($httpCode === 500) {
+                    $userMessage = 'Remita service temporarily unavailable. Please try again later.';
+                }
                 
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Failed to generate RRR. Please try again or contact support.',
-                    'debug' => $errorMsg
+                    'message' => $userMessage,
+                    'debug' => $errorMsg  // optional, remove in production
                 ]);
             }
             
         } catch (Exception $e) {
-            error_log("Initiate payment error: " . $e->getMessage());
+            error_log("=== PAYMENT INITIATE EXCEPTION ===");
+            error_log("Error message: " . $e->getMessage());
+            error_log("Error file: " . $e->getFile() . " on line " . $e->getLine());
             error_log("Stack trace: " . $e->getTraceAsString());
+            
             echo json_encode([
                 'success' => false,
-                'message' => 'Server error occurred: ' . $e->getMessage()
+                'message' => 'Server error occurred. Please try again later.'
             ]);
         }
     }
