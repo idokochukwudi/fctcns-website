@@ -328,6 +328,17 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
         flex: 1;
         color: var(--sv1-text-dark);
     }
+    
+    /* Score display styling */
+    .sv1 .score-badge {
+        display: inline-block;
+        background: var(--sv1-primary);
+        color: var(--sv1-gold);
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-size: 14px;
+    }
 </style>
 
 
@@ -396,7 +407,15 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
                         </div>
                         <div class="jamb-data-row">
                             <div class="jamb-data-label">UTME Score:</div>
-                            <div class="jamb-data-value"><?php echo e1($jambData['score'] ?? 'N/A'); ?></div>
+                            <div class="jamb-data-value">
+                                <?php 
+                                $score = $jambData['score'] ?? '';
+                                if (!empty($score)): ?>
+                                    <span class="score-badge"><?php echo e1($score); ?></span>
+                                <?php else: ?>
+                                    <span style="color: #ef4444;">N/A</span>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                     <?php endif; ?>
