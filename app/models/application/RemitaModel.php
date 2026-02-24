@@ -95,16 +95,14 @@ class RemitaModel extends BaseModel {
         // Generate API Token for SDK (SHA-512)
         $this->apiToken = $this->generateApiToken();
 
-        /*
-         * CORRECTED: Correct Remita base URLs based on Remita support.
-         * Demo: remitademo.net
-         * Live: login.remita.net
-         */
+        // CORRECTED: Correct Remita base URLs based on Remita redirect and support
+        // Demo: demo.remita.net (not remitademo.net - the redirect confirms this)
+        // Live: login.remita.net
         if ($this->environment === 'live') {
             $this->baseUrl = 'https://login.remita.net/remita/exapp/api/v1/send/api';
         } else {
-            // DEMO environment - use remitademo.net (per Remita support)
-            $this->baseUrl = 'https://remitademo.net/remita/exapp/api/v1/send/api';
+            // DEMO environment - use demo.remita.net (the redirect shows this)
+            $this->baseUrl = 'https://demo.remita.net/remita/exapp/api/v1/send/api';
         }
 
         // Initialize SDK if classes are available
