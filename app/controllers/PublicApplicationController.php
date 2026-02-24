@@ -1693,7 +1693,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
 /**
- * Initiate payment - FIXED with correct RemitaModel path and better CSRF handling
+ * Initiate payment - FIXED with correct RemitaModel method name
  */
 public function initiatePayment() {
     error_log("=== INITIATE PAYMENT CALLED ===");
@@ -1777,15 +1777,21 @@ public function initiatePayment() {
         require_once MODELS_PATH . '/application/RemitaModel.php';
         $remitaModel = new RemitaModel();
         
-        // Generate RRR
-        $result = $remitaModel->generateRRR([
-            'orderId' => $orderId,
-            'amount' => $feeAmount,
-            'payerName' => $payerName,
-            'payerEmail' => $payerEmail,
-            'payerPhone' => $payerPhone,
-            'description' => 'Application Fee Payment - FCT College of Nursing Sciences'
-        ]);
+        // Check if the generateRRRRemita method exists
+        if (!method_exists($remitaModel, 'generateRRRRemita')) {
+            error_log("CRITICAL: RemitaModel does not have generateRRRRemita method");
+            error_log("Available methods: " . implode(', ', get_class_methods($remitaModel)));
+            throw new Exception("Payment system not properly configured - missing generateRRRRemita method");
+        }
+        
+        // Generate RRR using the correct method name
+        $result = $remitaModel->generateRRRRemita(
+            $orderId,
+            $feeAmount,
+            $payerName,
+            $payerEmail,
+            $payerPhone
+        );
         
         error_log("Remita API Result: " . print_r($result, true));
         
@@ -1804,7 +1810,7 @@ public function initiatePayment() {
                 'order_id' => $orderId,
                 'status' => 'pending',
                 'payment_method' => 'remita',
-                'reference' => $rrr, // Use RRR as reference to avoid duplicate entry
+                'reference' => $rrr,
                 'created_at' => date('Y-m-d H:i:s')
             ];
             
@@ -1830,8 +1836,19 @@ public function initiatePayment() {
                 ]);
             } else {
                 // Redirect to Remita payment page
-                $remitaPaymentUrl = $remitaModel->getPaymentUrl($rrr);
-                $this->redirect($remitaPaymentUrl);
+                if (method_exists($remitaModel, 'getPaymentUrl')) {
+                    $remitaPaymentUrl = $remitaModel->getPaymentUrl($rrr);
+                    $this->redirect($remitaPaymentUrl);
+                } else {
+                    // Fallback URL generation
+                    $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
+                    $environment = $remitaModel->getEnvironment();
+                    $baseUrl = ($environment === 'live') 
+                        ? 'https://login.remita.net/remita/onepage/payment/init.reg'
+                        : 'https://remitademo.net/remita/onepage/payment/init.reg';
+                    $remitaPaymentUrl = $baseUrl . '?rrr=' . $cleanRrr;
+                    $this->redirect($remitaPaymentUrl);
+                }
             }
         } else {
             $errorMsg = $result['message'] ?? 'Failed to generate payment reference';
