@@ -14,6 +14,7 @@
  * FIXED: Professional loading pattern for Save & Continue button
  * FIXED: Added email verification error handling in JavaScript
  * FIXED: Removed all inline onclick handlers for CSP compliance
+ * FIXED: O'Level indexing - ensures sequential indices (0,1,2...) when adding/removing
  * 
  * @package FCTCNS
  */
@@ -1398,7 +1399,7 @@ class ApplicationFormView {
                                 $grades   = ['english','mathematics','biology','chemistry','physics'];
                                 $allGrades = ['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
                             ?>
-                            <div class="olevel-item">
+                            <div class="olevel-item" data-index="<?php echo $idx; ?>">
                                 <div class="olevel-item-head">
                                     <div class="olevel-item-label">
                                         <span class="idx-badge"><?php echo $this->e($idx + 1); ?></span>
@@ -1496,8 +1497,7 @@ class ApplicationFormView {
                                 <i class="fas fa-user placeholder-icon" id="passportPlaceholder"></i>
                                 <?php if (!empty($application['passport_photo'])): ?>
                                 <img src="<?php echo $this->e($application['passport_photo']); ?>" alt="Passport" id="passport-preview"
-                                     style="display:block; width:100%; height:100%; object-fit:cover;"
-                                     onload="document.getElementById('passportBox').classList.add('has-image');">
+                                     style="display:block; width:100%; height:100%; object-fit:cover;">
                                 <?php else: ?>
                                 <img src="" alt="Passport Preview" id="passport-preview" style="display:none;">
                                 <?php endif; ?>
@@ -1629,23 +1629,64 @@ class ApplicationFormView {
                 return document.querySelectorAll('#olevel-results-container .olevel-item').length;
             }
 
-            // ── Get current index for new sitting ─────────────────────────
+            // ── Get current maximum index for new sitting ─────────────────────────
             function getNextIndex() {
                 var items = document.querySelectorAll('#olevel-results-container .olevel-item');
-                var maxIndex = -1;
+                return items.length; // Return the count which will be the next index
+            }
+
+            // ── Re-index all sitting blocks to ensure sequential indices ──
+            function reindexSittings() {
+                var items = document.querySelectorAll('#olevel-results-container .olevel-item');
                 
-                items.forEach(function(item) {
+                items.forEach(function(item, newIndex) {
+                    // Update data-index attribute
+                    item.dataset.index = newIndex;
+                    
+                    // Update badge number
+                    var badge = item.querySelector('.idx-badge');
+                    if (badge) {
+                        badge.textContent = newIndex + 1;
+                    }
+                    
+                    // Update the sitting text
+                    var labelDiv = item.querySelector('.olevel-item-label');
+                    if (labelDiv) {
+                        var textNodes = [];
+                        labelDiv.childNodes.forEach(function(node) {
+                            if (node.nodeType === 3 && node.textContent.includes('Sitting')) {
+                                textNodes.push(node);
+                            }
+                        });
+                        textNodes.forEach(function(node) {
+                            node.textContent = " O'Level Result — Sitting " + (newIndex + 1) + " ";
+                        });
+                    }
+                    
+                    // Update all select names
                     var selects = item.querySelectorAll('select[name^="olevel["]');
                     selects.forEach(function(select) {
-                        var match = select.name.match(/olevel\[(\d+)\]/);
-                        if (match && match[1]) {
-                            var idx = parseInt(match[1], 10);
-                            if (idx > maxIndex) maxIndex = idx;
-                        }
+                        var name = select.getAttribute('name');
+                        var newName = name.replace(/olevel\[\d+\]/, 'olevel[' + newIndex + ']');
+                        select.setAttribute('name', newName);
                     });
+                    
+                    // Update all input names
+                    var inputs = item.querySelectorAll('input[name^="olevel["]');
+                    inputs.forEach(function(input) {
+                        var name = input.getAttribute('name');
+                        var newName = name.replace(/olevel\[\d+\]/, 'olevel[' + newIndex + ']');
+                        input.setAttribute('name', newName);
+                    });
+                    
+                    // Update remove button data-index
+                    var removeBtn = item.querySelector('.btn-remove');
+                    if (removeBtn) {
+                        removeBtn.dataset.index = newIndex;
+                    }
                 });
                 
-                return maxIndex + 1;
+                console.log('Re-indexed sittings. New count:', items.length);
             }
 
             // ── Compute best grades across all sitting blocks ─────────────
@@ -1772,6 +1813,7 @@ class ApplicationFormView {
             // ── Attach grade change listeners to all current dropdowns ────
             function attachGradeListeners() {
                 document.querySelectorAll('.olevel-item select[name*="_grade"]').forEach(function (sel) {
+                    // Remove existing listeners by cloning
                     var fresh = sel.cloneNode(true);
                     sel.parentNode.replaceChild(fresh, sel);
                     fresh.addEventListener('change', onGradeChange);
@@ -1791,41 +1833,8 @@ class ApplicationFormView {
                 });
             }
 
-            // ── Re-index sitting badge numbers after removal ──────────────
-            function reindexSittings() {
-                document.querySelectorAll('#olevel-results-container .olevel-item').forEach(function (item, i) {
-                    var badge = item.querySelector('.idx-badge');
-                    if (badge) badge.textContent = String(i + 1);
-                    
-                    // Update the name attributes to maintain sequential indices
-                    var selects = item.querySelectorAll('select[name^="olevel["]');
-                    selects.forEach(function(select) {
-                        var name = select.getAttribute('name');
-                        var newName = name.replace(/olevel\[\d+\]/, 'olevel[' + i + ']');
-                        select.setAttribute('name', newName);
-                    });
-                    
-                    var inputs = item.querySelectorAll('input[name^="olevel["]');
-                    inputs.forEach(function(input) {
-                        var name = input.getAttribute('name');
-                        var newName = name.replace(/olevel\[\d+\]/, 'olevel[' + i + ']');
-                        input.setAttribute('name', newName);
-                    });
-                    
-                    var label = item.querySelector('.olevel-item-label');
-                    if (label) {
-                        var nodes = label.childNodes;
-                        nodes.forEach(function (node) {
-                            if (node.nodeType === 3) {
-                                node.textContent = " O'Level Result — Sitting " + (i + 1);
-                            }
-                        });
-                    }
-                });
-            }
-
             // ── Add another sitting ───────────────────────────────────────
-            document.getElementById('add-olevel').addEventListener('click', function () {
+            document.getElementById('add-olevel')?.addEventListener('click', function () {
                 var current = countSittings();
 
                 if (current >= MAX_SITTINGS) {
@@ -1853,7 +1862,7 @@ class ApplicationFormView {
                 var uid = 'removeOlevel_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
                 var html =
-                    '<div class="olevel-item">' +
+                    '<div class="olevel-item" data-index="' + newIndex + '">' +
                         '<div class="olevel-item-head">' +
                             '<div class="olevel-item-label">' +
                                 '<span class="idx-badge">' + sittingNo + '</span>' +
@@ -1946,7 +1955,7 @@ class ApplicationFormView {
             var saveBtn        = document.getElementById('saveBtn');
             var nextBtn        = document.getElementById('nextBtn');
 
-            saveBtn.addEventListener('click', function (e) {
+            saveBtn?.addEventListener('click', function (e) {
                 e.preventDefault();
                 document.getElementById('form_action').value = 'save';
                 
@@ -1957,7 +1966,7 @@ class ApplicationFormView {
                 submitForm(this, originalHtml);
             });
 
-            nextBtn.addEventListener('click', function (e) {
+            nextBtn?.addEventListener('click', function (e) {
                 e.preventDefault();
                 
                 var check = computeCreditCheck();
