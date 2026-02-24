@@ -6,6 +6,8 @@
  * FIXED: Download PDF now uses native <a download> anchor — no iframe needed
  * FIXED: Print popup falls back to same-tab if popup blocked
  * FIXED: Action URLs built server-side so JS cannot break them
+ * FIXED: Removed download button and download count display
+ * FIXED: Reduced line spacing in O'Level results table
  *
  * @package FCTCNS
  */
@@ -46,7 +48,6 @@ class Step4View {
         ];
 
         // ── Build action URLs server-side ─────────────────────────────
-        // This avoids JS URL-construction bugs and is safer overall.
         $slip_number  = $exam_slip['slip_number'] ?? '';
         $print_url    = $baseUrl . '/apply/print-exam-slip?csrf='    . urlencode($csrf_token);
         $download_url = $baseUrl . '/apply/download-exam-slip?csrf=' . urlencode($csrf_token);
@@ -735,7 +736,7 @@ class Step4View {
                         </div>
                     </div>
 
-                    <!-- Key Information Grid -->
+                    <!-- Key Information Grid - REMOVED downloads info -->
                     <div class="info-grid">
                         <div class="info-item">
                             <div class="info-label">Slip Number</div>
@@ -786,21 +787,12 @@ class Step4View {
                                 <?php echo $this->e($exam_slip['seat_number'] ?? 'TBA'); ?>
                             </div>
                         </div>
-                        <div class="info-item">
-                            <div class="info-label">Downloads</div>
-                            <div class="info-value">
-                                <i class="fas fa-download"></i>
-                                <?php echo (int)($exam_slip['download_count'] ?? 0); ?>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- =====================================================
                          ACTION BUTTONS
                          FIX 1: View/Print  — popup with same-tab fallback
-                         FIX 2: Download PDF — native <a download> anchor.
-                                 The browser handles the file download directly.
-                                 No iframe, no JS fetch, no popup blocker issue.
+                         FIX 2: Download PDF — native <a download> anchor
                          FIX 3: Home — unchanged, plain link
                          ===================================================== -->
                     <div class="action-buttons">
@@ -811,10 +803,7 @@ class Step4View {
                             <i class="fas fa-print"></i> View / Print
                         </button>
 
-                        <!-- FIX 2: Download PDF — native anchor with download attr.
-                             When slip exists, render a real <a> so the browser
-                             triggers a file download without any JS at all.
-                             JS only adds a friendly toast on top. -->
+                        <!-- FIX 2: Download PDF — native anchor with download attr. -->
                         <?php if ($slip_number): ?>
                         <a  class="btn btn-success"
                             id="downloadBtn"
@@ -869,10 +858,6 @@ class Step4View {
 
         </div><!-- /main-container -->
 
-        <!-- NOTE: The hidden iframe has been removed.
-             Download is now handled by the native <a download> element above.
-             An iframe cannot trigger a real file download — that was the bug. -->
-
         <!-- ========================================================= -->
         <!-- 7. Add CSP nonce to all script tags -->
         <!-- ========================================================= -->
@@ -921,8 +906,6 @@ class Step4View {
             }
 
             // ── FIX 1: Open Print View ────────────────────────────────
-            // Opens popup; if popup is blocked, falls back to same tab.
-            // URL is pre-built in PHP — no JS string concatenation needed.
             function openPrintView() {
                 if (!SLIP_NUMBER) {
                     showToast('Exam slip not available', 'error');
@@ -945,9 +928,6 @@ class Step4View {
             }
 
             // ── FIX 2: Download feedback only ────────────────────────
-            // The actual file download is triggered by the browser natively
-            // through the <a href="..." download="..."> attribute.
-            // JS here only shows a toast so the user knows it started.
             function attachDownloadFeedback() {
                 if (!downloadBtn) return; // disabled state (no slip)
                 downloadBtn.addEventListener('click', function() {

@@ -1,13 +1,10 @@
 <?php
 /**
  * Exam Slip Print View
- * UPDATED: Added O'Level results section and improved layout
- * SIMPLIFIED: Using only server-generated QR - User clicks Print button before print preview
- * FIXED: Download functionality, button responsiveness, and security
- * FIXED 1: Removed formatGrade() global PHP function, replaced with closure
- * FIXED 2: Removed CSRF token from QR URL
- * FIXED 3: Replaced all onerror inline JS with data-* attribute approach
- * FIXED 4: Replaced entire script block with enhanced version
+ * UPDATED: Added O'Level results section with left-aligned subjects
+ * FIXED: Reduced line spacing in O'Level results table
+ * FIXED: Removed download count display
+ * FIXED: Subjects left-aligned in table
  *
  * @package FCTCNS
  */
@@ -34,7 +31,7 @@ class ExamSlipPrintView {
         // ── Logo path: public/assets/images/logo/logo.png ──────────────
         $logoUrl    = $baseUrl . '/assets/images/logo/logo.png';
         
-        // FIX 1: Grade formatter as closure (avoids "Cannot redeclare function" if view included twice)
+        // FIX 1: Grade formatter as closure
         $formatGrade = function($grade) {
             $gradeColors = [
                 'A1' => '#2e7d32', 'B2' => '#2e7d32', 'B3' => '#2e7d32',
@@ -161,7 +158,6 @@ class ExamSlipPrintView {
 
                 .tbtn-print { background: var(--pu); color: #fff; }
                 .tbtn-close { background: rgba(255,255,255,.16); color: #fff; }
-                .tbtn-download { background: #28a745; color: #fff; }
 
                 /* ── Slip wrapper ────────────────────────────────────────── */
                 .slip-wrapper {
@@ -474,13 +470,22 @@ class ExamSlipPrintView {
                     text-transform: uppercase;
                     font-size: 6.5pt;
                     letter-spacing: .05em;
-                    padding: 8px 4px;
+                    padding: 4px 4px; /* Reduced padding */
                     border: 1px solid var(--rule);
                 }
 
                 .olevel-table td {
-                    padding: 8px 4px;
+                    padding: 3px 4px; /* Reduced padding for tighter spacing */
                     border: 1px solid var(--rule);
+                    vertical-align: middle;
+                }
+
+                .olevel-table td:first-child {
+                    text-align: left; /* Left align subjects */
+                    padding-left: 8px;
+                }
+
+                .olevel-table td:last-child {
                     text-align: center;
                 }
 
@@ -491,6 +496,7 @@ class ExamSlipPrintView {
                     font-size: 7pt;
                     padding: 2px 6px;
                     border-radius: 12px;
+                    margin-left: 6px;
                 }
 
                 .olevel-credit-badge {
@@ -747,7 +753,7 @@ class ExamSlipPrintView {
                     
                     .olevel-table th,
                     .olevel-table td {
-                        padding: 4px 2px;
+                        padding: 2px 3px; /* Even tighter on mobile */
                     }
                 }
             </style>
@@ -763,9 +769,6 @@ class ExamSlipPrintView {
             <div class="toolbar-actions">
                 <button class="tbtn tbtn-print" id="printBtn">
                     <i class="fas fa-print"></i> Print / Save PDF
-                </button>
-                <button class="tbtn tbtn-download" id="downloadBtn">
-                    <i class="fas fa-download"></i> Download PDF
                 </button>
                 <button class="tbtn tbtn-close" id="closeBtn">
                     <i class="fas fa-times"></i> Close
@@ -783,7 +786,7 @@ class ExamSlipPrintView {
             <div class="institution-header">
 
                 <div class="logo-box">
-                    <!-- FIX 3a: Logo image with data-fallback attribute -->
+                    <!-- Logo image with data-fallback attribute -->
                     <img src="<?php echo $this->e($logoUrl); ?>"
                          alt="FCT CNS Logo"
                          id="logoImg"
@@ -799,7 +802,7 @@ class ExamSlipPrintView {
                 <div class="logo-spacer"></div>
             </div>
 
-            <!-- Slip number bar -->
+            <!-- Slip number bar - REMOVED download count -->
             <div class="slip-number-bar">
                 <span>
                     <span class="sn-label">SLIP NO: </span>
@@ -807,7 +810,6 @@ class ExamSlipPrintView {
                 </span>
                 <span class="sn-generated">
                     Generated: <?php echo $this->e(date('d F Y, h:i A', strtotime($exam_slip['generated_at'] ?? date('Y-m-d H:i:s')))); ?>
-                    &nbsp;|&nbsp; Downloads: <?php echo (int)($exam_slip['download_count'] ?? 0); ?>
                 </span>
             </div>
 
@@ -818,7 +820,6 @@ class ExamSlipPrintView {
                 <div class="photo-panel">
                     <div class="photo-box">
                         <?php if (!empty($application['passport_photo'])): ?>
-                            <!-- FIX 3c: Passport image with data-fallback attribute -->
                             <img src="<?php echo $this->e($application['passport_photo']); ?>"
                                  alt="Passport Photo"
                                  id="passportImg"
@@ -833,11 +834,9 @@ class ExamSlipPrintView {
                 <!-- QR code (server-generated) -->
                 <div class="qr-panel">
                     <?php
-                    // FIX 2: Removed CSRF token from QR URL
                     $qrUrl = $baseUrl . '/application-verify/generate-qr/' . urlencode($slipNumber) . '?t=' . time();
                     ?>
                     <div class="qr-box">
-                        <!-- FIX 3b: QR image with data-fallback attribute -->
                         <img src="<?php echo $this->e($qrUrl); ?>"
                              alt="QR Code"
                              id="qrImg"
@@ -879,7 +878,7 @@ class ExamSlipPrintView {
 
             </div><!-- /media-row -->
 
-            <!-- O'Level Results Section - NEW -->
+            <!-- O'Level Results Section - FIXED: Left aligned subjects, reduced line spacing -->
             <div class="olevel-section">
                 <div class="olevel-header">
                     <span>O'Level Examination Results</span>
@@ -931,15 +930,14 @@ class ExamSlipPrintView {
                                     $isCredit = in_array($grade, $creditGrades);
                                 ?>
                                 <tr>
-                                    <td style="text-align: left; padding-left: 10px;">
+                                    <td style="text-align: left;">
                                         <?php echo $this->e($label); ?>
                                         <?php if (in_array($key, $requiredSubjects)): ?>
                                             <span style="color: #666; font-size: 6pt;"> (Required)</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td>
+                                    <td style="text-align: center;">
                                         <?php if (!empty($grade)): ?>
-                                            <!-- FIX 1: Use $formatGrade closure instead of global function -->
                                             <?php echo $formatGrade($grade); ?>
                                         <?php else: ?>
                                             <span style="color: #999;">—</span>
@@ -1102,7 +1100,6 @@ class ExamSlipPrintView {
         <!-- ========================================================= -->
         <!-- 4. Add CSP nonce to all script tags -->
         <!-- ========================================================= -->
-        <!-- FIX 4: Replaced entire script block with enhanced version -->
         <script nonce="<?php echo $csp_nonce; ?>">
         (function () {
             'use strict';
@@ -1111,7 +1108,7 @@ class ExamSlipPrintView {
             var slipNumber = '<?php echo $this->e($slipNumber); ?>';
             var baseUrl    = '<?php echo $baseUrl; ?>';
 
-            // ── Image fallback handlers (replaces all onerror inline attributes) ─
+            // ── Image fallback handlers ─────────────────────────────
             function attachImageFallbacks() {
 
                 // Logo fallback
@@ -1160,7 +1157,7 @@ class ExamSlipPrintView {
                 }
             }
 
-            // ── Toast notification ────────────────────────────────────────
+            // ── Toast notification ──────────────────────────────────
             function showToast(msg, type) {
                 type = type || 'info';
                 document.querySelectorAll('.toast-notification').forEach(function (t) { t.remove(); });
@@ -1172,7 +1169,6 @@ class ExamSlipPrintView {
                 var icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
                 var icon  = icons[type] || icons.info;
 
-                // Safe text node — no innerHTML with user content
                 var i = document.createElement('i');
                 i.className = 'fas ' + icon;
                 var text = document.createTextNode(' ' + String(msg));
@@ -1189,7 +1185,7 @@ class ExamSlipPrintView {
                 }, 3000);
             }
 
-            // ── Print ─────────────────────────────────────────────────────
+            // ── Print ───────────────────────────────────────────────
             function triggerPrint(btn) {
                 var orig = btn.innerHTML;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
@@ -1233,53 +1229,21 @@ class ExamSlipPrintView {
                 }, 4000);
             }
 
-            // ── Download ──────────────────────────────────────────────────
-            function triggerDownload(btn) {
-                var orig = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
-                btn.disabled  = true;
-
-                showToast('Preparing PDF for download…', 'info');
-
-                // Use a temporary <a> click — reliable for file downloads
-                var url = baseUrl + '/apply/download-exam-slip'
-                        + '?csrf=' + encodeURIComponent(csrfToken)
-                        + '&t='    + Date.now();
-
-                var a  = document.createElement('a');
-                a.href = url;
-                a.setAttribute('download', 'exam-slip-' + slipNumber + '.html');
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                // Re-enable button after a short delay
-                setTimeout(function () {
-                    btn.innerHTML = orig;
-                    btn.disabled  = false;
-                    showToast('Download started', 'success');
-                }, 1500);
-            }
-
-            // ── Close ─────────────────────────────────────────────────────
+            // ── Close ───────────────────────────────────────────────
             function closeWindow() {
-                // Only attempt close — no confirm() dialog
                 if (window.opener) {
                     window.close();
                 } else {
-                    // Not opened via window.open — redirect to exam slip page
                     window.location.href = '/apply/step/4';
                 }
             }
 
-            // ── Auto-print when opened as a popup ────────────────────────
+            // ── Auto-print when opened as a popup ────────────────────
             function maybeAutoPrint() {
                 if (!window.opener) return;
 
                 showToast('Auto-printing in 2 seconds…', 'info');
 
-                // Wait for all images before auto-printing
                 var images = document.querySelectorAll('.slip img');
                 var allLoaded = Array.from(images).every(function (img) { return img.complete; });
 
@@ -1288,7 +1252,7 @@ class ExamSlipPrintView {
                 } else {
                     var remaining = images.length;
                     var done = 0;
-                    var timer = setTimeout(function () { window.print(); }, 5000); // max wait
+                    var timer = setTimeout(function () { window.print(); }, 5000);
 
                     images.forEach(function (img) {
                         function onDone() {
@@ -1304,7 +1268,7 @@ class ExamSlipPrintView {
                 }
             }
 
-            // ── Keyboard shortcuts ────────────────────────────────────────
+            // ── Keyboard shortcuts ──────────────────────────────────
             document.addEventListener('keydown', function (e) {
                 if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
                     e.preventDefault();
@@ -1316,22 +1280,20 @@ class ExamSlipPrintView {
                 }
             });
 
-            // ── Prevent right-click on sensitive elements ─────────────────
+            // ── Prevent right-click on sensitive elements ───────────
             document.querySelectorAll('.qr-box, .slip-number-bar, .verification-url').forEach(function (el) {
                 el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
             });
 
-            // ── Wire up buttons ───────────────────────────────────────────
+            // ── Wire up buttons ─────────────────────────────────────
             document.addEventListener('DOMContentLoaded', function () {
 
                 attachImageFallbacks();
 
                 var printBtn    = document.getElementById('printBtn');
-                var downloadBtn = document.getElementById('downloadBtn');
                 var closeBtn    = document.getElementById('closeBtn');
 
                 if (printBtn)    printBtn.addEventListener('click',    function (e) { e.preventDefault(); triggerPrint(this); });
-                if (downloadBtn) downloadBtn.addEventListener('click', function (e) { e.preventDefault(); triggerDownload(this); });
                 if (closeBtn)    closeBtn.addEventListener('click',    function (e) { e.preventDefault(); closeWindow(); });
 
                 maybeAutoPrint();
@@ -1351,4 +1313,3 @@ class ExamSlipPrintView {
 // =========================================================
 $view = new ExamSlipPrintView();
 $view->render(get_defined_vars());
-?>
