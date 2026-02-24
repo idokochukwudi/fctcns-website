@@ -1693,7 +1693,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
 /**
- * Initiate payment - FIXED with correct RemitaModel method name
+ * Initiate payment - FIXED with correct PaymentModel method
  */
 public function initiatePayment() {
     error_log("=== INITIATE PAYMENT CALLED ===");
@@ -1762,7 +1762,7 @@ public function initiatePayment() {
     $feeAmount = $this->getApplicationFee();
     error_log("Application fee: $feeAmount");
     
-    // Generate unique order ID
+    // Generate unique order ID (we'll use this for both Remita and our records)
     $orderId = 'ORD' . time() . rand(100, 999);
     
     // Payer details
@@ -1776,13 +1776,6 @@ public function initiatePayment() {
         // Load Remita model from the correct path
         require_once MODELS_PATH . '/application/RemitaModel.php';
         $remitaModel = new RemitaModel();
-        
-        // Check if the generateRRRRemita method exists
-        if (!method_exists($remitaModel, 'generateRRRRemita')) {
-            error_log("CRITICAL: RemitaModel does not have generateRRRRemita method");
-            error_log("Available methods: " . implode(', ', get_class_methods($remitaModel)));
-            throw new Exception("Payment system not properly configured - missing generateRRRRemita method");
-        }
         
         // Generate RRR using the correct method name
         $result = $remitaModel->generateRRRRemita(
@@ -1799,31 +1792,31 @@ public function initiatePayment() {
             $rrr = $result['rrr'];
             error_log("✅ REAL RRR generated from Remita API: $rrr");
             
-            // Save payment record to database
+            // Save payment record to database using createPayment method
             $paymentModel = new PaymentModel();
             
-            $paymentData = [
-                'application_id' => $application['id'],
-                'applicant_id' => $applicantId,
-                'amount' => $feeAmount,
-                'rrr' => $rrr,
-                'order_id' => $orderId,
-                'status' => 'pending',
-                'payment_method' => 'remita',
-                'reference' => $rrr,
-                'created_at' => date('Y-m-d H:i:s')
-            ];
+            // Use createPayment method instead of create()
+            $payment = $paymentModel->createPayment(
+                $application['id'],
+                $applicantId,
+                $feeAmount
+            );
             
-            error_log("Saving payment data: " . print_r($paymentData, true));
-            
-            $paymentId = $paymentModel->create($paymentData);
-            
-            if (!$paymentId) {
+            if (!$payment || !isset($payment['id'])) {
                 error_log("❌ Failed to save payment record to database");
                 throw new Exception("Failed to save payment record");
             }
             
-            error_log("✅ Payment record saved with ID: $paymentId");
+            $paymentId = $payment['id'];
+            
+            // Update the payment with the real RRR from Remita
+            $updateResult = $paymentModel->updateRRR($paymentId, $rrr);
+            
+            if (!$updateResult) {
+                error_log("⚠️ Warning: Failed to update payment with real RRR, but continuing");
+            }
+            
+            error_log("✅ Payment record saved with ID: $paymentId and RRR: $rrr");
             
             // Return RRR to frontend
             if ($this->isAjaxRequest()) {
@@ -1832,23 +1825,18 @@ public function initiatePayment() {
                     'rrr' => $rrr,
                     'amount' => $feeAmount,
                     'order_id' => $orderId,
+                    'payment_id' => $paymentId,
                     'message' => 'Payment reference generated successfully'
                 ]);
             } else {
                 // Redirect to Remita payment page
-                if (method_exists($remitaModel, 'getPaymentUrl')) {
-                    $remitaPaymentUrl = $remitaModel->getPaymentUrl($rrr);
-                    $this->redirect($remitaPaymentUrl);
-                } else {
-                    // Fallback URL generation
-                    $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
-                    $environment = $remitaModel->getEnvironment();
-                    $baseUrl = ($environment === 'live') 
-                        ? 'https://login.remita.net/remita/onepage/payment/init.reg'
-                        : 'https://remitademo.net/remita/onepage/payment/init.reg';
-                    $remitaPaymentUrl = $baseUrl . '?rrr=' . $cleanRrr;
-                    $this->redirect($remitaPaymentUrl);
-                }
+                $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
+                $environment = $remitaModel->getEnvironment();
+                $baseUrl = ($environment === 'live') 
+                    ? 'https://login.remita.net/remita/onepage/payment/init.reg'
+                    : 'https://remitademo.net/remita/onepage/payment/init.reg';
+                $remitaPaymentUrl = $baseUrl . '?rrr=' . $cleanRrr;
+                $this->redirect($remitaPaymentUrl);
             }
         } else {
             $errorMsg = $result['message'] ?? 'Failed to generate payment reference';
