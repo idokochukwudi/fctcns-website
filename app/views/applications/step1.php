@@ -22,6 +22,7 @@ $terms          = $terms          ?? [];
 $settings       = $settings       ?? [];
 $portal_closed  = $portal_closed  ?? false;
 $portal_message = $portal_message ?? '';
+$application    = $application    ?? []; // Make sure application is available
 
 // Already-verified state (controller sets these when JAMB was previously verified)
 $jambAlreadyVerified = $jamb_already_verified ?? false;
@@ -409,7 +410,8 @@ function e1($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUT
                             <div class="jamb-data-label">UTME Score:</div>
                             <div class="jamb-data-value">
                                 <?php 
-                                $score = $jambData['score'] ?? '';
+                                // FIXED: Use same pattern as step2.php with fallback to application['utme_score']
+                                $score = $jambData['score'] ?? $application['utme_score'] ?? '';
                                 if (!empty($score)): ?>
                                     <span class="score-badge"><?php echo e1($score); ?></span>
                                 <?php else: ?>
