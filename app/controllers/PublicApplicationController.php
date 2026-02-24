@@ -14,15 +14,8 @@
  * - Prevention of multiple applications per session
  * - O'Level check after result combination
  * 
- * FIXED 2a: Block saveApplication() from redirecting to payment if O'Level fails
- * FIXED 2b: Block step3() / showPayment() if O'Level requirement not met
- * FIXED 2c: Pass O'Level credit summary to step2 view
- * FIXED 3: Payment RRR formatting with dashes for display
- * FIXED 4: Proper payment verification with exam slip generation
- * FIXED 5: RRR mismatch issue - Use exact RRR from database in payment URL
- * FIXED 6: Added email verification check before JAMB verification
- * FIXED 7: Added registration complete check helper method
- * FIXED 8: Proper O'Level data handling with sequential indexing
+ * FIXED: RemitaModel initialization in constructor
+ * FIXED: Payment initiation - removed non-existent 'raw_rrr' column
  * 
  * @package FCT_CNS
  */
@@ -33,6 +26,7 @@ class PublicApplicationController extends ApplicationBaseController {
     
     private $jambModel;
     private $termsModel;
+    private $remitaModel; // Added property declaration
     
     /**
      * Session timeout in seconds (30 minutes)
@@ -55,27 +49,61 @@ class PublicApplicationController extends ApplicationBaseController {
     const MINIMUM_CREDIT_GRADE = 'C6';
     
     /**
-     * Constructor
+     * Constructor - Initialize all models
      */
     public function __construct() {
         parent::__construct();
         
-        // Load additional models
-        require_once MODELS_PATH . '/JambCandidateModel.php';
-        require_once MODELS_PATH . '/application/TermsModel.php';
-        require_once MODELS_PATH . '/application/OlevelResultModel.php';
-        require_once MODELS_PATH . '/application/ApplicationDocumentModel.php';
-        require_once MODELS_PATH . '/application/ExamSlipModel.php';
-        require_once MODELS_PATH . '/application/RemitaModel.php';
-        
-        $this->jambModel = new JambCandidateModel();
-        $this->termsModel = new TermsModel();
+        // Load all required models
+        $this->loadModels();
         
         // Set layout
         $this->layout = 'application';
         
         // Initialize security for all requests
         $this->initSecurity();
+    }
+    
+    /**
+     * Load all required models
+     */
+    private function loadModels() {
+        try {
+            // Define model paths
+            $modelPaths = [
+                'JambCandidateModel' => MODELS_PATH . '/JambCandidateModel.php',
+                'TermsModel' => MODELS_PATH . '/application/TermsModel.php',
+                'OlevelResultModel' => MODELS_PATH . '/application/OlevelResultModel.php',
+                'ApplicationDocumentModel' => MODELS_PATH . '/application/ApplicationDocumentModel.php',
+                'ExamSlipModel' => MODELS_PATH . '/application/ExamSlipModel.php',
+                'RemitaModel' => MODELS_PATH . '/application/RemitaModel.php'
+            ];
+            
+            // Load each model file
+            foreach ($modelPaths as $modelName => $path) {
+                if (file_exists($path)) {
+                    require_once $path;
+                    error_log("Loaded model: $modelName from $path");
+                } else {
+                    error_log("WARNING: Model file not found: $path");
+                }
+            }
+            
+            // Initialize all models
+            $this->jambModel = new JambCandidateModel();
+            $this->termsModel = new TermsModel();
+            $this->remitaModel = new RemitaModel(); // CRITICAL: Initialize remitaModel
+            
+            // Verify remitaModel is initialized
+            if ($this->remitaModel) {
+                error_log("✓ RemitaModel initialized successfully in PublicApplicationController");
+            } else {
+                error_log("✗ RemitaModel is NULL after initialization");
+            }
+            
+        } catch (Exception $e) {
+            error_log("ERROR loading models: " . $e->getMessage());
+        }
     }
     
     /**
@@ -1742,6 +1770,16 @@ class PublicApplicationController extends ApplicationBaseController {
             
             error_log("Calling Remita API with: OrderID=$orderId, Amount=$fee, Payer=$payerName, Email=$payerEmail");
             
+            // Verify remitaModel is initialized
+            if (!$this->remitaModel) {
+                error_log("CRITICAL ERROR: remitaModel is NULL");
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Payment system configuration error. Please contact support.'
+                ]);
+                return;
+            }
+            
             // Call Remita API to generate REAL RRR
             $result = $this->remitaModel->generateRRRRemita(
                 $orderId,
@@ -1933,10 +1971,18 @@ class PublicApplicationController extends ApplicationBaseController {
             // Get the raw RRR for API call (use raw_rrr if available, otherwise clean the formatted one)
             $rawRrr = $payment['raw_rrr'] ?? preg_replace('/[^0-9]/', '', $payment['rrr']);
             
+            // Verify remitaModel is initialized
+            if (!$this->remitaModel) {
+                error_log("CRITICAL ERROR: remitaModel is NULL in verifyPayment");
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Payment verification system error. Please contact support.'
+                ]);
+                return;
+            }
+            
             // Call Remita to verify payment status
-            require_once MODELS_PATH . '/application/RemitaModel.php';
-            $remitaModel = new RemitaModel();
-            $verificationResult = $remitaModel->verifyPayment($rawRrr);
+            $verificationResult = $this->remitaModel->verifyPayment($rawRrr);
             
             error_log("Remita verification result: " . print_r($verificationResult, true));
             
