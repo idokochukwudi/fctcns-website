@@ -14,9 +14,10 @@
  * FIXED: Payment verification now properly handles RRR with dashes
  * FIXED: Corrected SettingsModel path to /application/SettingsModel.php
  * FIXED: Enhanced verification response handling for demo environment with status code '00'
- * FIXED: CORRECTED HASH FORMAT for verification - now uses merchantId + rrr + apiKey ONLY (per Remita support)
+ * FIXED: CORRECTED HASH FORMAT for verification per Remita support:
+ *        SHA-512( rrr + apiKey + merchantId )  <-- confirmed correct order
+ * FIXED: API key must be used as-is (base64-encoded string), do NOT decode before hashing
  * FIXED: Now uses defined constants instead of $_ENV directly for better reliability
- * FIXED: Updated demo environment URL to remitademo.net (per Remita support)
  *
  * @package FCT_CNS
  * @subpackage Application
@@ -95,20 +96,18 @@ class RemitaModel extends BaseModel {
         // Generate API Token for SDK (SHA-512)
         $this->apiToken = $this->generateApiToken();
 
-        // CORRECTED: Correct Remita base URLs based on Remita redirect and support
-        // Demo: demo.remita.net (not remitademo.net - the redirect confirms this)
-        // Live: login.remita.net
+        // Correct Remita base URLs
+        // Demo: demo.remita.net | Live: login.remita.net
         if ($this->environment === 'live') {
             $this->baseUrl = 'https://login.remita.net/remita/exapp/api/v1/send/api';
         } else {
-            // DEMO environment - use demo.remita.net (the redirect shows this)
             $this->baseUrl = 'https://demo.remita.net/remita/exapp/api/v1/send/api';
         }
 
         // Initialize SDK if classes are available
         $this->initSDK();
         
-        // Load settings model for fee retrieval - FIXED PATH
+        // Load settings model for fee retrieval
         require_once MODELS_PATH . '/application/SettingsModel.php';
         $this->settingsModel = new SettingsModel();
 
@@ -165,39 +164,62 @@ class RemitaModel extends BaseModel {
     }
 
     /**
-     * FIXED: Generate hash for payment status/verification:
-     *   CORRECT FORMAT per Remita support: merchantId + rrr + apiKey ONLY
-     *   (serviceTypeId and amount are NOT needed for status verification)
+     * Generate hash for payment status/verification.
+     *
+     * CONFIRMED by Remita support (2025):
+     *   SHA-512( rrr + apiKey + merchantId )
+     *
+     * IMPORTANT:
+     *   - Use apiKey exactly as provided (base64-encoded). Do NOT decode it.
+     *   - RRR must be clean digits only (no dashes).
+     *   - Order is: rrr FIRST, then apiKey, then merchantId LAST.
+     *
+     * @param  string      $rrr    The RRR (with or without dashes — will be cleaned)
+     * @param  mixed|null  $amount Not used for status hash (kept for backward compat)
+     * @return string              SHA-512 hex hash
      */
     public function generateApiHash($rrr, $amount = null) {
-        // Ensure RRR is clean (no dashes)
         $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
-        
-        // CORRECT FORMAT: merchantId + rrr + apiKey (amount and serviceTypeId NOT needed)
-        $raw = $this->merchantId . $cleanRrr . $this->apiKey;
-        
-        error_log("generateApiHash (corrected): merchantId({$this->merchantId}) + rrr($cleanRrr) + apiKey");
+
+        // CONFIRMED correct order: rrr + apiKey + merchantId
+        $raw = $cleanRrr . $this->apiKey . $this->merchantId;
+
+        error_log("generateApiHash: rrr($cleanRrr) + apiKey + merchantId({$this->merchantId})");
         return hash('sha512', $raw);
     }
 
     /**
-     * Generate hash for status check endpoint:
-     *   SHA-512(merchantId + rrr + apiKey)
+     * Generate hash specifically for the status check endpoint.
+     *
+     * CONFIRMED by Remita support:
+     *   SHA-512( rrr + apiKey + merchantId )
+     *
+     * @param  string $rrr RRR value (dashes will be stripped automatically)
+     * @return string      SHA-512 hex hash
      */
     public function generateStatusHash($rrr) {
         $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
-        $raw = $this->merchantId . $cleanRrr . $this->apiKey;
-        error_log("generateStatusHash: merchantId({$this->merchantId}) + rrr($cleanRrr) + apiKey");
+
+        // CONFIRMED correct order: rrr + apiKey + merchantId
+        $raw = $cleanRrr . $this->apiKey . $this->merchantId;
+
+        error_log("generateStatusHash: rrr($cleanRrr) + apiKey + merchantId({$this->merchantId})");
         return hash('sha512', $raw);
     }
 
     /**
      * Generate hash for RRR generation:
      *   SHA-512( merchantId + serviceTypeId + orderId + amount + apiKey )
+     *
+     * This hash format is for RRR GENERATION only — different from status check.
+     *
+     * @param  string $orderId Unique order/reference ID
+     * @param  mixed  $amount  Payment amount
+     * @return string          SHA-512 hex hash
      */
     public function generateRRRHash($orderId, $amount) {
         $raw = $this->merchantId . $this->serviceTypeId . $orderId . $amount . $this->apiKey;
-        error_log("generateRRRHash raw string: merchantId({$this->merchantId}) + serviceTypeId({$this->serviceTypeId}) + orderId($orderId) + amount($amount) + apiKey");
+        error_log("generateRRRHash: merchantId({$this->merchantId}) + serviceTypeId({$this->serviceTypeId}) + orderId($orderId) + amount($amount) + apiKey");
         return hash('sha512', $raw);
     }
 
@@ -332,9 +354,6 @@ class RemitaModel extends BaseModel {
                 'responseUrl'   => (defined('BASE_URL') ? BASE_URL : '') . '/payment/remita-response',
             ];
 
-            /*
-             * CORRECTED endpoint path using corrected baseUrl (remitademo.net)
-             */
             $endpoint = $this->baseUrl . '/echannelsvc/merchant/api/paymentinit';
 
             error_log("=== REMITA RRR REQUEST ===");
@@ -362,10 +381,9 @@ class RemitaModel extends BaseModel {
                 CURLOPT_HTTPHEADER     => [
                     'Content-Type: application/json',
                     'Cache-Control: no-cache',
-                    // FIXED: Use merchantId as Consumer Key (not apiKey)
                     'Authorization: remitaConsumerKey=' . $this->merchantId . ',remitaConsumerToken=' . $apiHash,
                 ],
-                CURLOPT_FOLLOWLOCATION => false, // Don't follow redirects
+                CURLOPT_FOLLOWLOCATION => false,
             ]);
 
             $response  = curl_exec($ch);
@@ -389,13 +407,7 @@ class RemitaModel extends BaseModel {
 
             // Handle response
             if ($httpCode === 302) {
-                error_log("❌ Received 302 redirect. This indicates wrong endpoint URL.");
-                
-                // Try to extract redirect location
-                if (preg_match('/Location: (.*)/i', $response, $matches)) {
-                    error_log("   Redirect location: " . $matches[1]);
-                }
-                
+                error_log("❌ Received 302 redirect. Wrong endpoint URL.");
                 return [
                     'status'     => 'error',
                     'message'    => 'Remita API endpoint redirected. Please check configuration.',
@@ -434,20 +446,14 @@ class RemitaModel extends BaseModel {
                 ];
             }
 
-            // ------------------------------------------------------------------
-            // FIXED: Handle JSONP response (Remita returns jsonp wrapped responses)
-            // ------------------------------------------------------------------
-            
             // Parse successful response - handle both JSON and JSONP
             $result = null;
             
-            // Check if response is JSONP (wrapped in jsonp())
             if (preg_match('/^jsonp\s*\((.+)\)\s*;?\s*$/', $response, $matches)) {
                 $jsonStr = $matches[1];
                 $result = json_decode($jsonStr, true);
                 error_log("✅ Extracted JSON from JSONP wrapper");
             } else {
-                // Try direct JSON decode
                 $result = json_decode($response, true);
             }
             
@@ -521,28 +527,36 @@ class RemitaModel extends BaseModel {
     }
 
     // -------------------------------------------------------------------------
-    // PAYMENT VERIFICATION - COMPLETELY FIXED VERSION
+    // PAYMENT VERIFICATION
     // -------------------------------------------------------------------------
 
     /**
-     * Verify payment status for a given RRR
-     * FIXED: Correct hash format based on Remita support (merchantId + rrr + apiKey only)
-     * FIXED: Properly handles RRR with dashes and correct endpoint
-     * FIXED: Now tries multiple hash formats if the primary one fails
+     * Verify payment status for a given RRR.
+     *
+     * Hash format CONFIRMED by Remita support:
+     *   SHA-512( rrr + apiKey + merchantId )
+     *
+     * API key must be used AS-IS (base64-encoded). Do NOT decode before hashing.
+     *
+     * @param  string $rrr  The RRR to verify (dashes are stripped automatically)
+     * @return array        ['status' => 'success|pending|failed|error', 'message' => ..., 'payment_data' => ...]
      */
     public function verifyPayment($rrr) {
         try {
             error_log("RemitaModel: verifying RRR $rrr");
             
-            // Clean RRR - remove dashes and any non-numeric characters
+            // Clean RRR — remove dashes and any non-numeric characters
             $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
             error_log("RemitaModel: cleaned RRR: $cleanRrr");
             
-            // CORRECT ENDPOINT per Remita support
+            // Build hash using CONFIRMED correct order: rrr + apiKey + merchantId
             $statusHash = $this->generateStatusHash($cleanRrr);
+
+            // Build verification endpoint
             $endpoint = $this->baseUrl . '/echannelsvc/' . $this->merchantId . '/' . $cleanRrr . '/' . $statusHash . '/status.reg';
             
             error_log("RemitaModel: verification endpoint: $endpoint");
+            error_log("RemitaModel: hash used (rrr+apiKey+merchantId): $statusHash");
             
             $ch = curl_init($endpoint);
             curl_setopt_array($ch, [
@@ -580,28 +594,28 @@ class RemitaModel extends BaseModel {
                 ];
             }
             
-            // Log ALL fields from the response for debugging
+            // Log ALL response fields for debugging
             error_log("=== REMITA VERIFICATION RESPONSE FIELDS ===");
             foreach ($result as $key => $value) {
-                if (is_array($value)) {
-                    error_log("  [$key] => " . json_encode($value));
-                } else {
-                    error_log("  [$key] => " . $value);
-                }
+                error_log("  [$key] => " . (is_array($value) ? json_encode($value) : $value));
             }
 
-            // Check for success (status code '00' per Remita support)
-            $responseCode = $result['responseCode'] ?? $result['status'] ?? '';
-            $responseMsg = $result['responseMsg'] ?? $result['message'] ?? '';
+            $responseCode    = $result['responseCode'] ?? $result['status'] ?? '';
+            $responseMsg     = $result['responseMsg'] ?? $result['message'] ?? '';
             $hasTransactionId = !empty($result['transactionId']) || !empty($result['transactionRef']);
 
             error_log("RemitaModel: responseCode=$responseCode | responseMsg=$responseMsg | hasTransactionId=" . ($hasTransactionId ? 'YES' : 'NO'));
 
-            // SUCCESS: status code '00' (confirmed by Remita support)
-            if ($responseCode === '00' || $responseCode === '01' || $responseCode === 'success' || $responseMsg === 'SUCCESS' || $hasTransactionId) {
+            // SUCCESS
+            if (
+                $responseCode === '00'
+                || $responseCode === '01'
+                || strtolower($responseCode) === 'success'
+                || strtoupper($responseMsg) === 'SUCCESS'
+                || $hasTransactionId
+            ) {
                 error_log("✅ RemitaModel: Payment CONFIRMED as successful");
                 
-                // Try to update transaction in database if we have it
                 $transaction = $this->getByRRR($rrr);
                 if ($transaction) {
                     $this->updatePaymentData($transaction['id'], $result);
@@ -616,11 +630,15 @@ class RemitaModel extends BaseModel {
             }
             
             // PENDING
-            elseif ($responseCode === '021' || $responseCode === 'PENDING' || stripos($responseMsg, 'pending') !== false) {
+            elseif (
+                $responseCode === '021'
+                || strtoupper($responseCode) === 'PENDING'
+                || stripos($responseMsg, 'pending') !== false
+            ) {
                 error_log("⏳ RemitaModel: Payment is PENDING");
                 return [
                     'status'       => 'pending',
-                    'message'      => 'Payment is pending. Please check back later.',
+                    'message'      => 'Payment is pending. Please complete payment on Remita.',
                     'payment_data' => $result,
                 ];
             }
@@ -645,22 +663,26 @@ class RemitaModel extends BaseModel {
     }
 
     /**
-     * Parse Remita response (handles both JSON and JSONP)
+     * Parse Remita response — handles both plain JSON and JSONP-wrapped responses
+     *
+     * @param  string $response Raw HTTP response body
+     * @return array|null       Decoded array, or null on failure
      */
     private function parseRemitaResponse($response) {
         if (empty($response)) {
             return null;
         }
         
-        // Handle JSONP response
+        // Handle JSONP: jsonp({...});
         if (preg_match('/^jsonp\s*\((.+)\)\s*;?\s*$/', $response, $matches)) {
-            $jsonStr = $matches[1];
-            $result = json_decode($jsonStr, true);
-            error_log("✅ Extracted JSON from JSONP wrapper");
-            return $result;
+            $result = json_decode($matches[1], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                error_log("✅ Extracted JSON from JSONP wrapper");
+                return $result;
+            }
         }
         
-        // Handle regular JSON
+        // Plain JSON
         $result = json_decode($response, true);
         if (json_last_error() === JSON_ERROR_NONE) {
             return $result;
@@ -793,7 +815,6 @@ class RemitaModel extends BaseModel {
     }
 
     public function rrrExists($rrr) {
-        // Clean RRR for comparison
         $cleanRrr = preg_replace('/[^0-9]/', '', $rrr);
         
         return (int) $this->fetchColumn(
