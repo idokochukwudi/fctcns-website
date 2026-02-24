@@ -15,7 +15,9 @@
  * FIXED: Added email verification error handling in JavaScript
  * FIXED: Removed all inline onclick handlers for CSP compliance
  * FIXED: O'Level indexing - ensures sequential indices (0,1,2...) when adding/removing
- * 
+ * FIXED: Grade persistence - delegated event listener replaces clone-based approach
+ *        so grades in sitting 1 are NOT wiped when "Add Another Sitting" is clicked
+ *
  * @package FCTCNS
  */
 
@@ -27,44 +29,44 @@ require_once APP_PATH . '/helpers/SecurityTrait.php';
 
 class ApplicationFormView {
     use SecurityTrait;
-    
+
     public function render($data) {
         extract($data);
-        
+
         // Get security tokens
         $csp_nonce = $this->getCspNonce();
         $csrf_token = $this->getCsrfToken();
-        
+
         // =========================================================
         // Original view logic continues
         // =========================================================
-        
+
         if (!function_exists('e')) {
             function e($text) {
                 return htmlspecialchars($text ?? '', ENT_QUOTES, 'UTF-8');
             }
         }
 
-        $baseUrl = $baseUrl ?? '/';
-        $application = $application ?? [];
-        $applicant = $applicant ?? [];
-        $jamb_data = $jamb_data ?? [];
-        $olevel_results = $olevel_results ?? [];
-        $passport = $passport ?? [];
-        $states = $states ?? [];
-        $programs = $programs ?? [];
-        $temp_password = $temp_password ?? '';
-        $errors = $errors ?? [];
-        $currentStep = 3; // This is step 3 (Application Form)
-        
+        $baseUrl         = $baseUrl         ?? '/';
+        $application     = $application     ?? [];
+        $applicant       = $applicant       ?? [];
+        $jamb_data       = $jamb_data       ?? [];
+        $olevel_results  = $olevel_results  ?? [];
+        $passport        = $passport        ?? [];
+        $states          = $states          ?? [];
+        $programs        = $programs        ?? [];
+        $temp_password   = $temp_password   ?? '';
+        $errors          = $errors          ?? [];
+        $currentStep     = 3; // This is step 3 (Application Form)
+
         // FIX 3a: Get credit summary from controller data
-        $credit_summary = $credit_summary ?? null;
+        $credit_summary       = $credit_summary       ?? null;
         $olevel_session_error = $olevel_session_error ?? null;
 
         // Get application step if available
         if (isset($application) && !empty($application['application_step'])) {
             $currentStep = (int)$application['application_step'];
-            
+
             // If application_step is 4 AND exam slip exists, show step 5
             if ($currentStep == 4 && isset($has_exam_slip) && $has_exam_slip) {
                 $currentStep = 5;
@@ -73,11 +75,11 @@ class ApplicationFormView {
 
         // Define steps for tracking - CORRECT ORDER
         $steps = [
-            1 => ['label' => 'Create Account', 'sub' => 'Register'],
+            1 => ['label' => 'Create Account',    'sub' => 'Register'],
             2 => ['label' => 'JAMB Verification', 'sub' => 'JAMB check'],
-            3 => ['label' => 'Application Form', 'sub' => 'Fill form'],
-            4 => ['label' => 'Payment', 'sub' => 'Remita RRR'],
-            5 => ['label' => 'Exam Slip', 'sub' => 'Download'],
+            3 => ['label' => 'Application Form',  'sub' => 'Fill form'],
+            4 => ['label' => 'Payment',            'sub' => 'Remita RRR'],
+            5 => ['label' => 'Exam Slip',          'sub' => 'Download'],
         ];
 
         $applicant_name = trim(($applicant['first_name'] ?? '') . ' ' . ($applicant['last_name'] ?? ''));
@@ -94,17 +96,17 @@ class ApplicationFormView {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            
+
             <!-- ========================================================= -->
             <!-- 2. Add security meta tags in the head -->
             <!-- ========================================================= -->
             <?php echo $this->getSecurityMetaTags(); ?>
-            
+
             <!-- ========================================================= -->
             <!-- 3. Add CSRF meta tag for JavaScript -->
             <!-- ========================================================= -->
             <meta name="csrf-token" content="<?php echo $this->e($csrf_token); ?>">
-            
+
             <title>Step 3: Application Form – FCT College of Nursing Sciences</title>
 
             <!-- ========================================================= -->
@@ -150,18 +152,18 @@ class ApplicationFormView {
                 --sv1-gray-700:      #374151;
                 --sv1-gray-800:      #1F2937;
                 --sv1-gray-900:      #111827;
-                
+
                 --radius-sm:   6px;
                 --radius-md:   10px;
                 --radius-lg:   16px;
                 --radius-xl:   24px;
-                
+
                 --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
                 --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
                 --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
                 --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-                
-                --transition-base: all 0.2s ease-in-out;
+
+                --transition-base:   all 0.2s ease-in-out;
                 --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
 
@@ -289,11 +291,11 @@ class ApplicationFormView {
                     gap: 10px;
                     padding: 15px;
                 }
-                
+
                 .step-indicator::before {
                     display: none;
                 }
-                
+
                 .step {
                     flex: 0 0 calc(33.33% - 7px);
                     padding: 8px 5px;
@@ -301,13 +303,13 @@ class ApplicationFormView {
                     border-radius: 30px;
                     border: 1px solid var(--sv1-border);
                 }
-                
+
                 .step-number {
                     width: 30px;
                     height: 30px;
                     font-size: 12px;
                 }
-                
+
                 .step-label {
                     font-size: 9px;
                     white-space: normal;
@@ -321,17 +323,17 @@ class ApplicationFormView {
             }
 
             /* =========================================================
-               LOGOUT BUTTON - Clean styling
+               LOGOUT BUTTON
             ========================================================= */
             .logout-btn {
-                display: inline-flex; 
-                align-items: center; 
+                display: inline-flex;
+                align-items: center;
                 gap: 7px;
                 background: var(--sv1-white);
                 border: 1.5px solid rgba(255,255,255,0.3);
                 border-radius: 50px;
                 padding: 7px 16px;
-                font-size: 12px; 
+                font-size: 12px;
                 font-weight: 600;
                 color: var(--sv1-white);
                 text-decoration: none;
@@ -340,8 +342,8 @@ class ApplicationFormView {
                 backdrop-filter: blur(5px);
             }
 
-            .logout-btn:hover { 
-                background: var(--sv1-white); 
+            .logout-btn:hover {
+                background: var(--sv1-white);
                 color: var(--sv1-primary-dark);
                 border-color: var(--sv1-white);
                 transform: translateY(-1px);
@@ -352,12 +354,12 @@ class ApplicationFormView {
                FLASH ALERTS
             ========================================================= */
             .flash-alert {
-                display: flex; 
-                align-items: flex-start; 
+                display: flex;
+                align-items: flex-start;
                 gap: 12px;
-                padding: 13px 18px; 
+                padding: 13px 18px;
                 border-radius: var(--radius-md);
-                margin-bottom: 16px; 
+                margin-bottom: 16px;
                 font-size: 14px;
                 border-left-width: 4px;
                 border-left-style: solid;
@@ -365,34 +367,28 @@ class ApplicationFormView {
             }
 
             @keyframes slideIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(-10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
+                from { opacity: 0; transform: translateY(-10px); }
+                to   { opacity: 1; transform: translateY(0); }
             }
 
-            .flash-alert.success { 
-                background: var(--sv1-success-light);  
-                border-left-color: var(--sv1-success); 
-                color: #065f46; 
+            .flash-alert.success {
+                background: var(--sv1-success-light);
+                border-left-color: var(--sv1-success);
+                color: #065f46;
             }
-            .flash-alert.error   { 
-                background: var(--sv1-danger-light);   
-                border-left-color: var(--sv1-danger);  
-                color: #991b1b; 
+            .flash-alert.error {
+                background: var(--sv1-danger-light);
+                border-left-color: var(--sv1-danger);
+                color: #991b1b;
             }
-            .flash-alert.warning { 
-                background: var(--sv1-warning-light);   
-                border-left-color: var(--sv1-warning); 
-                color: #92400e; 
+            .flash-alert.warning {
+                background: var(--sv1-warning-light);
+                border-left-color: var(--sv1-warning);
+                color: #92400e;
             }
             .flash-alert i { margin-top: 1px; flex-shrink: 0; }
             .flash-alert.success i { color: var(--sv1-success); }
-            .flash-alert.error i { color: var(--sv1-danger); }
+            .flash-alert.error   i { color: var(--sv1-danger); }
             .flash-alert.warning i { color: var(--sv1-warning); }
 
             /* Temp password box */
@@ -403,10 +399,10 @@ class ApplicationFormView {
                 padding: 18px 22px;
                 margin-bottom: 18px;
             }
-            .temp-pw-box h6 { 
-                font-weight: 700; 
-                color: var(--sv1-primary-dark); 
-                margin-bottom: 8px; 
+            .temp-pw-box h6 {
+                font-weight: 700;
+                color: var(--sv1-primary-dark);
+                margin-bottom: 8px;
             }
             .temp-pw-code {
                 background: var(--sv1-white);
@@ -449,13 +445,8 @@ class ApplicationFormView {
                 box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
             }
 
-            .jamb-info-title { 
-                font-size: 14px; font-weight: 700; 
-                color: #fff; margin-bottom: 3px; 
-            }
-            .jamb-info-sub   { 
-                font-size: 13px; color: rgba(255,255,255,0.8); 
-            }
+            .jamb-info-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+            .jamb-info-sub   { font-size: 13px; color: rgba(255,255,255,0.8); }
             .jamb-info-sub strong { color: #fff; }
 
             .jamb-score-pill {
@@ -508,17 +499,17 @@ class ApplicationFormView {
                 box-shadow: var(--shadow-sm);
             }
 
-            .f-section-title { 
-                font-family: 'Playfair Display', serif; 
-                font-size: 17px; 
-                font-weight: 700; 
-                color: var(--sv1-text-dark); 
-                margin: 0; 
+            .f-section-title {
+                font-family: 'Playfair Display', serif;
+                font-size: 17px;
+                font-weight: 700;
+                color: var(--sv1-text-dark);
+                margin: 0;
             }
-            .f-section-sub   { 
-                font-size: 12px; 
-                color: var(--sv1-text-muted); 
-                margin-top: 2px; 
+            .f-section-sub {
+                font-size: 12px;
+                color: var(--sv1-text-muted);
+                margin-top: 2px;
             }
 
             /* =========================================================
@@ -533,10 +524,10 @@ class ApplicationFormView {
             }
             .field-label .req { color: var(--sv1-danger); margin-left: 2px; }
 
-            .field-hint { 
-                font-size: 11px; 
-                color: var(--sv1-text-muted); 
-                margin-top: 4px; 
+            .field-hint {
+                font-size: 11px;
+                color: var(--sv1-text-muted);
+                margin-top: 4px;
             }
 
             .form-control,
@@ -596,11 +587,11 @@ class ApplicationFormView {
             }
             .f-row:last-child { margin-bottom: 0; }
 
-            .f-row.cols-2  { grid-template-columns: repeat(2, 1fr); }
-            .f-row.cols-3  { grid-template-columns: repeat(3, 1fr); }
-            .f-row.cols-4  { grid-template-columns: repeat(4, 1fr); }
-            .f-row.cols-5  { grid-template-columns: repeat(5, 1fr); }
-            .f-row.cols-6  { grid-template-columns: repeat(6, 1fr); }
+            .f-row.cols-2 { grid-template-columns: repeat(2, 1fr); }
+            .f-row.cols-3 { grid-template-columns: repeat(3, 1fr); }
+            .f-row.cols-4 { grid-template-columns: repeat(4, 1fr); }
+            .f-row.cols-5 { grid-template-columns: repeat(5, 1fr); }
+            .f-row.cols-6 { grid-template-columns: repeat(6, 1fr); }
 
             @media (max-width: 1100px) {
                 .f-row.cols-6 { grid-template-columns: repeat(3, 1fr); }
@@ -675,9 +666,9 @@ class ApplicationFormView {
                 display: inline-flex; align-items: center; gap: 5px;
                 transition: var(--transition-base);
             }
-            .btn-remove:hover { 
-                background: var(--sv1-danger); 
-                color: var(--sv1-white); 
+            .btn-remove:hover {
+                background: var(--sv1-danger);
+                color: var(--sv1-white);
                 border-color: var(--sv1-danger);
                 transform: translateY(-1px);
                 box-shadow: var(--shadow-md);
@@ -695,7 +686,7 @@ class ApplicationFormView {
             }
 
             /* =========================================================
-               PASSPORT SECTION - FIXED preview without inline handlers
+               PASSPORT SECTION
             ========================================================= */
             .passport-wrap {
                 display: grid;
@@ -748,29 +739,29 @@ class ApplicationFormView {
                 display: none;
             }
 
-            .passport-upload-area h6 { 
-                font-size: 14px; 
-                font-weight: 600; 
-                color: var(--sv1-primary-dark); 
-                margin-bottom: 6px; 
+            .passport-upload-area h6 {
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--sv1-primary-dark);
+                margin-bottom: 6px;
             }
-            .passport-upload-area p  { 
-                font-size: 12px; 
-                color: var(--sv1-text-muted); 
-                margin-bottom: 14px; 
+            .passport-upload-area p {
+                font-size: 12px;
+                color: var(--sv1-text-muted);
+                margin-bottom: 14px;
             }
 
             /* =========================================================
-               BUTTONS - Clean styling with smooth hover effects
+               BUTTONS
             ========================================================= */
             .btn {
                 font-family: 'DM Sans', sans-serif;
                 font-size: 13px; font-weight: 600;
                 border-radius: var(--radius-md);
-                border: none; 
+                border: none;
                 cursor: pointer;
-                display: inline-flex; 
-                align-items: center; 
+                display: inline-flex;
+                align-items: center;
                 justify-content: center;
                 gap: 7px;
                 transition: var(--transition-smooth);
@@ -783,10 +774,8 @@ class ApplicationFormView {
             .btn::after {
                 content: '';
                 position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 0;
-                height: 0;
+                top: 50%; left: 50%;
+                width: 0; height: 0;
                 border-radius: 50%;
                 background: rgba(255, 255, 255, 0.2);
                 transform: translate(-50%, -50%);
@@ -798,30 +787,25 @@ class ApplicationFormView {
                 height: 300px;
             }
 
-            .btn:active {
-                transform: scale(0.98);
-            }
+            .btn:active { transform: scale(0.98); }
 
-            /* Primary Button - Purple Gradient */
+            /* Primary */
             .btn-primary {
                 background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
                 color: var(--sv1-white);
                 box-shadow: 0 4px 12px rgba(107,78,155,0.3);
             }
-            .btn-primary:hover { 
+            .btn-primary:hover {
                 background: linear-gradient(135deg, var(--sv1-primary-dark), var(--sv1-primary));
-                color: var(--sv1-white); 
-                transform: translateY(-2px); 
+                color: var(--sv1-white);
+                transform: translateY(-2px);
                 box-shadow: 0 8px 20px rgba(107,78,155,0.4);
             }
             .btn-primary:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-                transform: none;
-                box-shadow: none;
+                opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none;
             }
 
-            /* Success Button - Green with professional loading state */
+            /* Success */
             .btn-success {
                 background: linear-gradient(135deg, var(--sv1-success), var(--sv1-success-dark));
                 color: var(--sv1-white);
@@ -829,152 +813,101 @@ class ApplicationFormView {
                 position: relative;
                 transition: all 0.3s ease;
             }
-            .btn-success:hover:not(:disabled) { 
+            .btn-success:hover:not(:disabled) {
                 background: linear-gradient(135deg, var(--sv1-success-dark), var(--sv1-success));
-                color: var(--sv1-white); 
-                transform: translateY(-2px); 
+                color: var(--sv1-white);
+                transform: translateY(-2px);
                 box-shadow: 0 8px 20px rgba(16,185,129,0.4);
             }
             .btn-success:disabled {
-                opacity: 1;
-                cursor: not-allowed;
-                transform: none;
-                box-shadow: none;
+                opacity: 1; cursor: not-allowed; transform: none; box-shadow: none;
                 background: linear-gradient(135deg, #94a3b8, #64748b);
                 pointer-events: none;
             }
-            
-            /* Professional loading spinner for success button */
+
             .btn-success.loading {
                 padding-left: 45px;
                 position: relative;
                 pointer-events: none;
             }
-            
+
             .btn-success.loading::before {
                 content: '';
                 position: absolute;
-                left: 16px;
-                top: 50%;
+                left: 16px; top: 50%;
                 transform: translateY(-50%);
-                width: 18px;
-                height: 18px;
-                border: 2px solid rgba(255, 255, 255, 0.3);
+                width: 18px; height: 18px;
+                border: 2px solid rgba(255,255,255,0.3);
                 border-radius: 50%;
                 border-top-color: #ffffff;
                 animation: professional-spin 0.8s linear infinite;
             }
-            
+
             @keyframes professional-spin {
                 to { transform: translateY(-50%) rotate(360deg); }
             }
-            
-            .btn-success .btn-text {
-                transition: all 0.3s ease;
-            }
-            
-            .btn-success.loading .btn-text {
-                opacity: 0.9;
-            }
-            
-            .btn-success .btn-icon {
-                transition: all 0.3s ease;
-            }
-            
-            .btn-success.loading .btn-icon {
-                opacity: 0;
-                transform: translateX(10px);
-            }
 
-            /* Navy Button - Dark Purple */
+            .btn-success .btn-text { transition: all 0.3s ease; }
+            .btn-success.loading .btn-text { opacity: 0.9; }
+            .btn-success .btn-icon { transition: all 0.3s ease; }
+            .btn-success.loading .btn-icon { opacity: 0; transform: translateX(10px); }
+
+            /* Navy */
             .btn-navy {
                 background: linear-gradient(135deg, var(--sv1-primary-dark), var(--sv1-primary));
                 color: var(--sv1-white);
                 box-shadow: 0 4px 12px rgba(74,59,107,0.3);
             }
-            .btn-navy:hover { 
+            .btn-navy:hover {
                 background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-dark));
-                color: var(--sv1-white); 
-                transform: translateY(-2px); 
+                color: var(--sv1-white);
+                transform: translateY(-2px);
                 box-shadow: 0 8px 20px rgba(74,59,107,0.4);
             }
-            .btn-navy:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-                transform: none;
-                box-shadow: none;
-            }
+            .btn-navy:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
-            /* Gold Button */
+            /* Gold */
             .btn-gold {
                 background: linear-gradient(135deg, var(--sv1-gold), var(--sv1-gold-light));
                 color: var(--sv1-primary-dark);
                 box-shadow: 0 4px 12px rgba(201,164,74,0.3);
             }
-            .btn-gold:hover { 
+            .btn-gold:hover {
                 background: linear-gradient(135deg, var(--sv1-gold-light), var(--sv1-gold));
                 color: var(--sv1-primary-dark);
-                transform: translateY(-2px); 
+                transform: translateY(-2px);
                 box-shadow: 0 8px 20px rgba(201,164,74,0.4);
             }
-            .btn-gold:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-                transform: none;
-                box-shadow: none;
-            }
+            .btn-gold:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
-            /* Teal Button */
-            .btn-teal {
-                background: linear-gradient(135deg, var(--sv1-primary-light), var(--sv1-primary));
-                color: var(--sv1-white);
-                box-shadow: 0 4px 12px rgba(138,111,176,0.3);
-            }
-            .btn-teal:hover { 
-                background: linear-gradient(135deg, var(--sv1-primary), var(--sv1-primary-light));
-                color: var(--sv1-white); 
-                transform: translateY(-2px); 
-                box-shadow: 0 8px 20px rgba(138,111,176,0.4);
-            }
-            .btn-teal:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-                transform: none;
-                box-shadow: none;
-            }
-
-            /* Ghost Button */
+            /* Ghost */
             .btn-ghost {
-                background: transparent; 
+                background: transparent;
                 color: var(--sv1-text-muted);
                 border: 2px solid var(--sv1-border);
             }
-            .btn-ghost:hover { 
-                background: var(--sv1-primary-soft); 
-                border-color: var(--sv1-primary); 
+            .btn-ghost:hover {
+                background: var(--sv1-primary-soft);
+                border-color: var(--sv1-primary);
                 color: var(--sv1-primary);
                 transform: translateY(-1px);
                 box-shadow: var(--shadow-md);
             }
-            .btn-ghost:active {
-                transform: translateY(0);
-            }
+            .btn-ghost:active { transform: translateY(0); }
 
-            /* Outline Teal Button */
+            /* Outline Teal */
             .btn-outline-teal {
-                background: transparent; 
+                background: transparent;
                 color: var(--sv1-primary);
                 border: 2px solid var(--sv1-primary);
             }
-            .btn-outline-teal:hover { 
-                background: var(--sv1-primary); 
-                color: var(--sv1-white); 
+            .btn-outline-teal:hover {
+                background: var(--sv1-primary);
+                color: var(--sv1-white);
                 transform: translateY(-2px);
                 box-shadow: 0 4px 12px rgba(107,78,155,0.3);
             }
-            .btn-outline-teal:active {
-                transform: translateY(0);
-            }
+            .btn-outline-teal:active { transform: translateY(0); }
 
             .btn-lg { padding: 13px 32px; font-size: 14px; }
             .btn-sm { padding: 7px 16px; font-size: 12px; }
@@ -1004,20 +937,14 @@ class ApplicationFormView {
                 font-size: 13px;
                 color: var(--sv1-text-muted);
             }
-            .page-footer a { 
-                color: var(--sv1-primary); 
-                text-decoration: none; 
-                font-weight: 500; 
+            .page-footer a {
+                color: var(--sv1-primary);
+                text-decoration: none;
+                font-weight: 500;
                 transition: var(--transition-base);
             }
-            .page-footer a:hover { 
-                color: var(--sv1-gold); 
-            }
-            .page-footer i { 
-                color: var(--sv1-gold); 
-                font-size: 11px; 
-                margin-right: 4px; 
-            }
+            .page-footer a:hover { color: var(--sv1-gold); }
+            .page-footer i { color: var(--sv1-gold); font-size: 11px; margin-right: 4px; }
 
             /* =========================================================
                ERROR LIST
@@ -1030,26 +957,19 @@ class ApplicationFormView {
                 padding: 16px 20px;
                 margin-bottom: 20px;
             }
-            .error-list h6 { 
-                color: var(--sv1-danger); 
-                font-weight: 700; 
-                margin-bottom: 8px; 
-                font-size: 13px; 
+            .error-list h6 {
+                color: var(--sv1-danger);
+                font-weight: 700;
+                margin-bottom: 8px;
+                font-size: 13px;
             }
-            .error-list ul { 
-                margin: 0; 
-                padding-left: 18px; 
-                font-size: 13px; 
-                color: #991b1b; 
+            .error-list ul {
+                margin: 0;
+                padding-left: 18px;
+                font-size: 13px;
+                color: #991b1b;
             }
             .error-list ul li + li { margin-top: 4px; }
-
-            /* =========================================================
-               PROFESSIONAL LOADING OVERLAY (Replaced with button spinner)
-            ========================================================= */
-            .loading-overlay {
-                display: none; /* Hidden by default - we're using button spinner now */
-            }
 
             /* =========================================================
                UTILITY
@@ -1059,42 +979,38 @@ class ApplicationFormView {
             .text-center { text-align: center; }
             </style>
 
-            <!-- ========================================================= -->
-            <!-- 5. Add SRI hashes to external scripts/styles - FIXED -->
-            <!-- ========================================================= -->
-            
-            <!-- Bootstrap CSS with SRI -->
-            <?php 
+            <!-- Bootstrap CSS -->
+            <?php
             $bootstrapCssUrl = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
             $bootstrapCssSri = SecurityHelper::getSriHash($bootstrapCssUrl);
             ?>
-            <link href="<?php echo $bootstrapCssUrl; ?>" 
+            <link href="<?php echo $bootstrapCssUrl; ?>"
                   rel="stylesheet"
                   <?php if ($bootstrapCssSri): ?>integrity="<?php echo $bootstrapCssSri; ?>"<?php endif; ?>
                   crossorigin="anonymous">
-            
-            <!-- Font Awesome with conditional SRI -->
-            <?php 
+
+            <!-- Font Awesome -->
+            <?php
             $faUrl = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
             $faSri = SecurityHelper::getSriHash($faUrl);
             ?>
-            <link rel="stylesheet" 
+            <link rel="stylesheet"
                   href="<?php echo $faUrl; ?>"
                   <?php if ($faSri): ?>integrity="<?php echo $faSri; ?>"<?php endif; ?>
-                  crossorigin="anonymous" 
+                  crossorigin="anonymous"
                   referrerpolicy="no-referrer">
 
-            <!-- Google Fonts - NO SRI HASH (they change dynamically) -->
-            <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" 
+            <!-- Google Fonts -->
+            <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap"
                   rel="stylesheet"
                   crossorigin="anonymous">
         </head>
         <body>
         <div class="page-shell">
 
-            <!-- ===== STEP INDICATOR - 5 STEPS WITH PROPER TRACKING (STEP 3 ACTIVE) ===== -->
+            <!-- ===== STEP INDICATOR ===== -->
             <div class="step-indicator">
-                <?php foreach ($steps as $num => $step): 
+                <?php foreach ($steps as $num => $step):
                     $stepClass = '';
                     if ($num < $currentStep) $stepClass = 'completed';
                     elseif ($num == $currentStep) $stepClass = 'active';
@@ -1145,7 +1061,10 @@ class ApplicationFormView {
                     <div>
                         <div class="jamb-info-title">JAMB Verified Successfully</div>
                         <div class="jamb-info-sub">
-                            <strong><?php echo $this->e(($jamb_data['first_name'] ?? $application['first_name'] ?? '') . ' ' . ($jamb_data['last_name'] ?? $application['last_name'] ?? '')); ?></strong>
+                            <strong><?php echo $this->e(
+                                ($jamb_data['first_name'] ?? $application['first_name'] ?? '') . ' ' .
+                                ($jamb_data['last_name']  ?? $application['last_name']  ?? '')
+                            ); ?></strong>
                             &nbsp;|&nbsp;
                             JAMB Reg: <strong><?php echo $this->e($jamb_data['jamb_number'] ?? $application['jamb_number'] ?? '—'); ?></strong>
                         </div>
@@ -1241,23 +1160,19 @@ class ApplicationFormView {
             <div class="form-card">
                 <form method="POST" action="/apply/save-application" enctype="multipart/form-data"
                       class="needs-validation" novalidate id="mainForm">
-                    
-                    <!-- ========================================================= -->
-                    <!-- 6. Add CSRF token to all forms -->
-                    <!-- ========================================================= -->
+
                     <input type="hidden" name="csrf_token" value="<?php echo $this->e($csrf_token); ?>">
-                    
-                    <input type="hidden" name="action"            id="form_action" value="save">
-                    <input type="hidden" name="jamb_number"       value="<?php echo $this->e($jamb_data['jamb_number']       ?? $application['jamb_number']       ?? ''); ?>">
-                    <input type="hidden" name="utme_score"        value="<?php echo $this->e($jamb_data['score']             ?? $application['utme_score']         ?? ''); ?>">
-                    <input type="hidden" name="first_name"        value="<?php echo $this->e($jamb_data['first_name']        ?? $application['first_name']         ?? ''); ?>">
-                    <input type="hidden" name="last_name"         value="<?php echo $this->e($jamb_data['last_name']         ?? $application['last_name']          ?? ''); ?>">
-                    <input type="hidden" name="other_names"       value="<?php echo $this->e($jamb_data['other_names']       ?? $application['other_names']        ?? ''); ?>">
-                    <input type="hidden" name="gender"            value="<?php echo $this->e($jamb_data['gender']            ?? $application['gender']             ?? ''); ?>">
-                    <input type="hidden" name="state_of_origin"   value="<?php echo $this->e($jamb_data['state_of_origin']   ?? $application['state_of_origin']    ?? ''); ?>">
-                    <input type="hidden" name="lga"               value="<?php echo $this->e($jamb_data['lga']               ?? $application['lga']                ?? ''); ?>">
-                    <input type="hidden" name="program_choice_2"  value="">
-                    <input type="hidden" name="program_choice_3"  value="">
+                    <input type="hidden" name="action"           id="form_action" value="save">
+                    <input type="hidden" name="jamb_number"      value="<?php echo $this->e($jamb_data['jamb_number']     ?? $application['jamb_number']     ?? ''); ?>">
+                    <input type="hidden" name="utme_score"       value="<?php echo $this->e($jamb_data['score']           ?? $application['utme_score']       ?? ''); ?>">
+                    <input type="hidden" name="first_name"       value="<?php echo $this->e($jamb_data['first_name']      ?? $application['first_name']       ?? ''); ?>">
+                    <input type="hidden" name="last_name"        value="<?php echo $this->e($jamb_data['last_name']       ?? $application['last_name']        ?? ''); ?>">
+                    <input type="hidden" name="other_names"      value="<?php echo $this->e($jamb_data['other_names']     ?? $application['other_names']      ?? ''); ?>">
+                    <input type="hidden" name="gender"           value="<?php echo $this->e($jamb_data['gender']          ?? $application['gender']           ?? ''); ?>">
+                    <input type="hidden" name="state_of_origin"  value="<?php echo $this->e($jamb_data['state_of_origin'] ?? $application['state_of_origin']  ?? ''); ?>">
+                    <input type="hidden" name="lga"              value="<?php echo $this->e($jamb_data['lga']             ?? $application['lga']              ?? ''); ?>">
+                    <input type="hidden" name="program_choice_2" value="">
+                    <input type="hidden" name="program_choice_3" value="">
 
                     <!-- ── SECTION 1: Personal Information ── -->
                     <div class="f-section">
@@ -1269,7 +1184,7 @@ class ApplicationFormView {
                             </div>
                         </div>
 
-                        <!-- Row 1: Names — 3 columns -->
+                        <!-- Row 1: Names -->
                         <div class="f-row cols-3">
                             <div>
                                 <label class="field-label">First Name</label>
@@ -1288,7 +1203,7 @@ class ApplicationFormView {
                             </div>
                         </div>
 
-                        <!-- Row 2: Gender / State / LGA — 3 columns -->
+                        <!-- Row 2: Gender / State / LGA -->
                         <div class="f-row cols-3">
                             <div>
                                 <label class="field-label">Gender</label>
@@ -1310,7 +1225,7 @@ class ApplicationFormView {
                             </div>
                         </div>
 
-                        <!-- Row 3: DOB / Nationality — 2 columns -->
+                        <!-- Row 3: DOB / Nationality -->
                         <div class="f-row cols-2">
                             <div>
                                 <label class="field-label">Date of Birth <span class="req">*</span></label>
@@ -1325,7 +1240,7 @@ class ApplicationFormView {
                             </div>
                         </div>
 
-                        <!-- Row 4: Email / Phone — 2 columns -->
+                        <!-- Row 4: Email / Phone -->
                         <div class="f-row cols-2">
                             <div>
                                 <label class="field-label">Email Address <span class="req">*</span></label>
@@ -1344,7 +1259,7 @@ class ApplicationFormView {
                             </div>
                         </div>
 
-                        <!-- Row 5: Address — full width -->
+                        <!-- Row 5: Address -->
                         <div class="f-row cols-2" style="grid-template-columns:1fr;">
                             <div>
                                 <label class="field-label">Contact Address <span class="req">*</span></label>
@@ -1370,7 +1285,7 @@ class ApplicationFormView {
                                 <label class="field-label">Select Programme <span class="req">*</span></label>
                                 <select class="form-select" id="program_choice_1" name="program_choice_1" required>
                                     <option value="">— Select Programme —</option>
-                                    <option value="ND Nursing"       <?php echo ($application['program_choice_1'] ?? '') == 'ND Nursing'       ? 'selected' : ''; ?>>ND Nursing</option>
+                                    <option value="ND Nursing"         <?php echo ($application['program_choice_1'] ?? '') == 'ND Nursing'         ? 'selected' : ''; ?>>ND Nursing</option>
                                     <option value="Post Basic Nursing" <?php echo ($application['program_choice_1'] ?? '') == 'Post Basic Nursing' ? 'selected' : ''; ?>>Post Basic Nursing</option>
                                 </select>
                                 <div class="invalid-feedback">Please select your programme.</div>
@@ -1441,7 +1356,7 @@ class ApplicationFormView {
                                     </div>
                                 </div>
 
-                                <!-- Grade dropdowns: 5 subjects across full width -->
+                                <!-- Grade dropdowns -->
                                 <div class="grades-divider">Subject Grades</div>
                                 <div class="f-row cols-5">
                                     <?php foreach ($grades as $subj): ?>
@@ -1505,7 +1420,8 @@ class ApplicationFormView {
                             <div class="passport-upload-area">
                                 <h6>Select Passport Photo</h6>
                                 <p>Ensure the photo clearly shows your face on a plain white background.</p>
-                                <input type="hidden" name="passport_confirmed" id="passport-confirmed" value="<?php echo !empty($application['passport_photo']) ? '1' : '0'; ?>">
+                                <input type="hidden" name="passport_confirmed" id="passport-confirmed"
+                                       value="<?php echo !empty($application['passport_photo']) ? '1' : '0'; ?>">
                                 <input type="file" class="form-control" id="passport" name="passport"
                                        accept="image/jpeg,image/png"
                                        style="margin-bottom:8px;">
@@ -1548,21 +1464,32 @@ class ApplicationFormView {
 
         </div><!-- end page-shell -->
 
-        <!-- ========================================================= -->
-        <!-- 7. Add CSP nonce to all script tags and SRI hashes to external scripts - FIXED -->
-        <!-- ========================================================= -->
-        
-        <!-- Bootstrap JS with conditional SRI -->
-        <?php 
+        <!-- Bootstrap JS -->
+        <?php
         $bootstrapJsUrl = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
         $bootstrapJsSri = SecurityHelper::getSriHash($bootstrapJsUrl);
         ?>
-        <script src="<?php echo $bootstrapJsUrl; ?>" 
+        <script src="<?php echo $bootstrapJsUrl; ?>"
                 <?php if ($bootstrapJsSri): ?>integrity="<?php echo $bootstrapJsSri; ?>"<?php endif; ?>
                 crossorigin="anonymous"
                 nonce="<?php echo $csp_nonce; ?>"></script>
-        
-        <!-- FIX: Enhanced JavaScript with proper grade persistence and CSP compliance -->
+
+        <!-- ================================================================
+             MAIN JAVASCRIPT
+             KEY FIX: Grade persistence when adding a second sitting.
+
+             OLD approach (broken):
+               attachGradeListeners() cloned each <select> with cloneNode(true),
+               then replaced the original in the DOM. Even though cloneNode copies
+               the selected attribute, the browser resets the live value to the
+               first option on replaceChild — wiping whatever the user picked.
+
+             NEW approach (fixed):
+               A SINGLE delegated 'change' listener on #olevel-results-container
+               catches events from ALL grade selects, present and future, without
+               ever touching (cloning/replacing) the existing elements.
+               No cloning → no value loss.
+        ================================================================ -->
         <script nonce="<?php echo $csp_nonce; ?>">
         (function () {
             'use strict';
@@ -1586,12 +1513,17 @@ class ApplicationFormView {
 
             var initialMeetsRequirement = <?php echo ($credit_summary && $credit_summary['meets_requirement']) ? 'true' : 'false'; ?>;
 
-            // Helper function to show alerts
+            // ─────────────────────────────────────────────────────────────
+            // HELPER: show transient alert banner
+            // ─────────────────────────────────────────────────────────────
             function showAlert(message, type) {
                 var alertDiv = document.createElement('div');
                 alertDiv.className = 'flash-alert ' + type;
-                alertDiv.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : (type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle')) + '"></i><span>' + message + '</span>';
-                
+                alertDiv.innerHTML =
+                    '<i class="fas fa-' +
+                    (type === 'success' ? 'check-circle' : (type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle')) +
+                    '"></i><span>' + message + '</span>';
+
                 var pageShell = document.querySelector('.page-shell');
                 if (pageShell) {
                     var stepIndicator = document.querySelector('.step-indicator');
@@ -1600,101 +1532,74 @@ class ApplicationFormView {
                     } else {
                         pageShell.insertBefore(alertDiv, pageShell.firstChild);
                     }
-                    
-                    setTimeout(function() {
-                        if (alertDiv.parentNode) {
-                            alertDiv.parentNode.removeChild(alertDiv);
-                        }
+                    setTimeout(function () {
+                        if (alertDiv.parentNode) alertDiv.parentNode.removeChild(alertDiv);
                     }, 5000);
                 } else {
                     alert(message);
                 }
             }
 
-            // ── Navigation confirmation handlers (CSP compliant) ───────────
-            document.getElementById('logoutBtn')?.addEventListener('click', function(e) {
-                if (!confirm('Are you sure you want to logout? Your progress will be saved.')) {
-                    e.preventDefault();
-                }
+            // ─────────────────────────────────────────────────────────────
+            // Navigation confirmation handlers
+            // ─────────────────────────────────────────────────────────────
+            document.getElementById('logoutBtn') && document.getElementById('logoutBtn').addEventListener('click', function (e) {
+                if (!confirm('Are you sure you want to logout? Your progress will be saved.')) e.preventDefault();
             });
 
-            document.getElementById('backBtn')?.addEventListener('click', function(e) {
-                if (!confirm('Go back to JAMB verification? Unsaved changes may be lost.')) {
-                    e.preventDefault();
-                }
+            document.getElementById('backBtn') && document.getElementById('backBtn').addEventListener('click', function (e) {
+                if (!confirm('Go back to JAMB verification? Unsaved changes may be lost.')) e.preventDefault();
             });
 
-            // ── Count actual sitting blocks in the DOM ────────────────────
+            // ─────────────────────────────────────────────────────────────
+            // Count / index helpers
+            // ─────────────────────────────────────────────────────────────
             function countSittings() {
                 return document.querySelectorAll('#olevel-results-container .olevel-item').length;
             }
 
-            // ── Get current maximum index for new sitting ─────────────────────────
             function getNextIndex() {
-                var items = document.querySelectorAll('#olevel-results-container .olevel-item');
-                return items.length; // Return the count which will be the next index
+                return document.querySelectorAll('#olevel-results-container .olevel-item').length;
             }
 
-            // ── Re-index all sitting blocks to ensure sequential indices ──
+            // ─────────────────────────────────────────────────────────────
+            // Re-index all sitting blocks so names stay sequential (0,1,2…)
+            // ─────────────────────────────────────────────────────────────
             function reindexSittings() {
-                var items = document.querySelectorAll('#olevel-results-container .olevel-item');
-                
-                items.forEach(function(item, newIndex) {
-                    // Update data-index attribute
+                document.querySelectorAll('#olevel-results-container .olevel-item').forEach(function (item, newIndex) {
                     item.dataset.index = newIndex;
-                    
-                    // Update badge number
+
                     var badge = item.querySelector('.idx-badge');
-                    if (badge) {
-                        badge.textContent = newIndex + 1;
-                    }
-                    
-                    // Update the sitting text
+                    if (badge) badge.textContent = newIndex + 1;
+
+                    // Update sitting label text node
                     var labelDiv = item.querySelector('.olevel-item-label');
                     if (labelDiv) {
-                        var textNodes = [];
-                        labelDiv.childNodes.forEach(function(node) {
+                        labelDiv.childNodes.forEach(function (node) {
                             if (node.nodeType === 3 && node.textContent.includes('Sitting')) {
-                                textNodes.push(node);
+                                node.textContent = " O'Level Result — Sitting " + (newIndex + 1) + " ";
                             }
                         });
-                        textNodes.forEach(function(node) {
-                            node.textContent = " O'Level Result — Sitting " + (newIndex + 1) + " ";
-                        });
                     }
-                    
-                    // Update all select names
-                    var selects = item.querySelectorAll('select[name^="olevel["]');
-                    selects.forEach(function(select) {
-                        var name = select.getAttribute('name');
-                        var newName = name.replace(/olevel\[\d+\]/, 'olevel[' + newIndex + ']');
-                        select.setAttribute('name', newName);
+
+                    // Rename all select/input fields
+                    item.querySelectorAll('select[name^="olevel["], input[name^="olevel["]').forEach(function (el) {
+                        el.setAttribute('name', el.getAttribute('name').replace(/olevel\[\d+\]/, 'olevel[' + newIndex + ']'));
                     });
-                    
-                    // Update all input names
-                    var inputs = item.querySelectorAll('input[name^="olevel["]');
-                    inputs.forEach(function(input) {
-                        var name = input.getAttribute('name');
-                        var newName = name.replace(/olevel\[\d+\]/, 'olevel[' + newIndex + ']');
-                        input.setAttribute('name', newName);
-                    });
-                    
-                    // Update remove button data-index
+
+                    // Update remove button index
                     var removeBtn = item.querySelector('.btn-remove');
-                    if (removeBtn) {
-                        removeBtn.dataset.index = newIndex;
-                    }
+                    if (removeBtn) removeBtn.dataset.index = newIndex;
                 });
-                
-                console.log('Re-indexed sittings. New count:', items.length);
             }
 
-            // ── Compute best grades across all sitting blocks ─────────────
+            // ─────────────────────────────────────────────────────────────
+            // Compute best grades across all sittings (for credit check)
+            // ─────────────────────────────────────────────────────────────
             function computeCreditCheck() {
-                var items = document.querySelectorAll('.olevel-item');
                 var bestGrades = {};
 
-                items.forEach(function (item) {
+                document.querySelectorAll('.olevel-item').forEach(function (item) {
                     REQUIRED_KEYS.forEach(function (key) {
                         var sel = item.querySelector('select[name*="[' + key + '_grade]"]');
                         if (!sel || !sel.value) return;
@@ -1735,7 +1640,9 @@ class ApplicationFormView {
                 };
             }
 
-            // ── Render live credit check panel ────────────────────────────
+            // ─────────────────────────────────────────────────────────────
+            // Render the live credit check panel
+            // ─────────────────────────────────────────────────────────────
             function renderCreditPanel(result) {
                 var panel = document.getElementById('creditCheckPanel');
                 var inner = document.getElementById('creditCheckInner');
@@ -1746,20 +1653,20 @@ class ApplicationFormView {
                 if (!hasAnyGrade) return;
 
                 var rows = REQUIRED_KEYS.map(function (key) {
-                    var label   = REQUIRED_LABELS[key];
-                    var grade   = result.bestGrades[key];
+                    var label    = REQUIRED_LABELS[key];
+                    var grade    = result.bestGrades[key];
                     var isCredit = grade && CREDIT_GRADES.indexOf(grade) !== -1;
-                    var color   = isCredit ? '#10b981' : '#ef4444';
-                    var icon    = isCredit ? 'fa-check-circle' : 'fa-times-circle';
+                    var color    = isCredit ? '#10b981' : '#ef4444';
+                    var icon     = isCredit ? 'fa-check-circle' : 'fa-times-circle';
                     var gradeStr = grade ? ': <strong>' + grade + '</strong>' : ': —';
                     return '<span style="color:' + color + ';margin-right:12px;">'
                          + '<i class="fas ' + icon + '"></i> ' + label + gradeStr + '</span>';
                 }).join('');
 
                 var met          = result.meetsRequirement;
-                var statusColor  = met ? '#065f46'  : '#92400e';
-                var statusBg     = met ? '#ecfdf5'  : '#fff3e0';
-                var statusBorder = met ? '#10b981'  : '#f57c00';
+                var statusColor  = met ? '#065f46' : '#92400e';
+                var statusBg     = met ? '#ecfdf5' : '#fff3e0';
+                var statusBorder = met ? '#10b981' : '#f57c00';
                 var statusIcon   = met ? 'fa-circle-check' : 'fa-triangle-exclamation';
                 var statusMsg    = met
                     ? 'All 5 credits met! You may proceed to payment.'
@@ -1779,7 +1686,9 @@ class ApplicationFormView {
                     '</div>';
             }
 
-            // ── Update next button and warning banner ─────────────────────
+            // ─────────────────────────────────────────────────────────────
+            // Update button state and warning banner
+            // ─────────────────────────────────────────────────────────────
             function updateUIState(result) {
                 var banner  = document.getElementById('olevelWarningBanner');
                 var nextBtn = document.getElementById('nextBtn');
@@ -1794,7 +1703,7 @@ class ApplicationFormView {
                         nextBtn.disabled      = true;
                         nextBtn.style.opacity = '0.45';
                         nextBtn.style.cursor  = 'not-allowed';
-                        nextBtn.title         = 'You must meet the O\'Level credit requirement before proceeding.';
+                        nextBtn.title         = "You must meet the O'Level credit requirement before proceeding.";
                     }
                 }
 
@@ -1803,109 +1712,135 @@ class ApplicationFormView {
                 }
             }
 
-            // ── Run credit check and refresh all UI ───────────────────────
+            // ─────────────────────────────────────────────────────────────
+            // Run credit check and refresh UI
+            // ─────────────────────────────────────────────────────────────
             function onGradeChange() {
                 var result = computeCreditCheck();
                 renderCreditPanel(result);
                 updateUIState(result);
             }
 
-            // ── Attach grade change listeners to all current dropdowns ────
+            // ─────────────────────────────────────────────────────────────
+            // DELEGATED grade-change listener — attached ONCE to the
+            // container. Works for existing AND dynamically-added selects
+            // WITHOUT cloning or replacing any element, so user-selected
+            // values are never lost.
+            // ─────────────────────────────────────────────────────────────
+            var _gradeListenerAttached = false;
+
             function attachGradeListeners() {
-                document.querySelectorAll('.olevel-item select[name*="_grade"]').forEach(function (sel) {
-                    // Remove existing listeners by cloning
-                    var fresh = sel.cloneNode(true);
-                    sel.parentNode.replaceChild(fresh, sel);
-                    fresh.addEventListener('change', onGradeChange);
+                if (_gradeListenerAttached) return; // idempotent — only ever attach once
+
+                var container = document.getElementById('olevel-results-container');
+                if (!container) return;
+
+                container.addEventListener('change', function (e) {
+                    if (e.target && e.target.matches('select[name*="_grade"]')) {
+                        onGradeChange();
+                    }
                 });
+
+                _gradeListenerAttached = true;
             }
 
-            // ── Wire remove button for a sitting block ────────────────────
+            // ─────────────────────────────────────────────────────────────
+            // Wire a remove button (click → confirm → remove → reindex)
+            // ─────────────────────────────────────────────────────────────
             function wireRemoveButton(btn) {
                 btn.addEventListener('click', function (e) {
                     e.preventDefault();
                     if (confirm('Are you sure you want to remove this sitting?')) {
                         this.closest('.olevel-item').remove();
                         reindexSittings();
-                        attachGradeListeners();
+                        // Delegation still active — no need to re-attach anything
                         onGradeChange();
                     }
                 });
             }
 
-            // ── Add another sitting ───────────────────────────────────────
-            document.getElementById('add-olevel')?.addEventListener('click', function () {
-                var current = countSittings();
+            // ─────────────────────────────────────────────────────────────
+            // Add Another Sitting
+            // ─────────────────────────────────────────────────────────────
+            var addOlevelBtn = document.getElementById('add-olevel');
+            if (addOlevelBtn) {
+                addOlevelBtn.addEventListener('click', function () {
+                    var current = countSittings();
 
-                if (current >= MAX_SITTINGS) {
-                    alert('Maximum of ' + MAX_SITTINGS + ' sittings allowed.');
-                    return;
-                }
+                    if (current >= MAX_SITTINGS) {
+                        alert('Maximum of ' + MAX_SITTINGS + ' sittings allowed.');
+                        return;
+                    }
 
-                var newIndex = getNextIndex();
-                var sittingNo = current + 1;
+                    var newIndex  = getNextIndex();
+                    var sittingNo = current + 1;
 
-                var grades    = ['English','Mathematics','Biology','Chemistry','Physics'];
-                var gradeKeys = ['english','mathematics','biology','chemistry','physics'];
-                var gradeOpts = ['A1','B2','B3','C4','C5','C6','D7','E8','F9']
-                    .map(function (g) { return '<option value="' + g + '">' + g + '</option>'; }).join('');
+                    var gradeLabels = ['English','Mathematics','Biology','Chemistry','Physics'];
+                    var gradeKeys   = ['english','mathematics','biology','chemistry','physics'];
+                    var gradeOpts   = ['A1','B2','B3','C4','C5','C6','D7','E8','F9']
+                        .map(function (g) { return '<option value="' + g + '">' + g + '</option>'; }).join('');
 
-                var gradeFields = gradeKeys.map(function (key, i) {
-                    return '<div>' +
-                        '<label class="field-label">' + grades[i] + '</label>' +
-                        '<select class="form-select" name="olevel[' + newIndex + '][' + key + '_grade]" required>' +
-                            '<option value="">Grade</option>' + gradeOpts +
-                        '</select>' +
-                    '</div>';
-                }).join('');
+                    var gradeFields = gradeKeys.map(function (key, i) {
+                        return '<div>' +
+                            '<label class="field-label">' + gradeLabels[i] + '</label>' +
+                            '<select class="form-select" name="olevel[' + newIndex + '][' + key + '_grade]" required>' +
+                                '<option value="">Grade</option>' + gradeOpts +
+                            '</select>' +
+                        '</div>';
+                    }).join('');
 
-                var uid = 'removeOlevel_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    // Unique ID so we can find the remove button immediately after insertion
+                    var uid = 'removeOlevel_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
-                var html =
-                    '<div class="olevel-item" data-index="' + newIndex + '">' +
-                        '<div class="olevel-item-head">' +
-                            '<div class="olevel-item-label">' +
-                                '<span class="idx-badge">' + sittingNo + '</span>' +
-                                " O'Level Result — Sitting " + sittingNo +
+                    var html =
+                        '<div class="olevel-item" data-index="' + newIndex + '">' +
+                            '<div class="olevel-item-head">' +
+                                '<div class="olevel-item-label">' +
+                                    '<span class="idx-badge">' + sittingNo + '</span>' +
+                                    " O'Level Result — Sitting " + sittingNo +
+                                '</div>' +
+                                '<button type="button" class="btn-remove" data-index="' + newIndex + '" id="' + uid + '">' +
+                                    '<i class="fas fa-trash-alt"></i> Remove' +
+                                '</button>' +
                             '</div>' +
-                            '<button type="button" class="btn-remove" data-index="' + newIndex + '" id="' + uid + '">' +
-                                '<i class="fas fa-trash-alt"></i> Remove' +
-                            '</button>' +
-                        '</div>' +
-                        '<div class="f-row cols-4">' +
-                            '<div><label class="field-label">Exam Type</label>' +
-                                '<select class="form-select" name="olevel[' + newIndex + '][exam_type]" required>' +
-                                    '<option value="WAEC">WAEC</option>' +
-                                    '<option value="NECO">NECO</option>' +
-                                    '<option value="NABTEB">NABTEB</option>' +
-                                '</select></div>' +
-                            '<div><label class="field-label">Exam Year</label>' +
-                                '<input type="text" class="form-control" name="olevel[' + newIndex + '][exam_year]" placeholder="e.g. 2023" required></div>' +
-                            '<div><label class="field-label">Exam / Centre Number</label>' +
-                                '<input type="text" class="form-control" name="olevel[' + newIndex + '][exam_number]" placeholder="Optional"></div>' +
-                            '<div><label class="field-label">Sitting</label>' +
-                                '<select class="form-select" name="olevel[' + newIndex + '][sitting]">' +
-                                    '<option value="1st">1st Sitting</option>' +
-                                    '<option value="2nd" selected>2nd Sitting</option>' +
-                                '</select></div>' +
-                        '</div>' +
-                        '<div class="grades-divider">Subject Grades</div>' +
-                        '<div class="f-row cols-5">' + gradeFields + '</div>' +
-                    '</div>';
+                            '<div class="f-row cols-4">' +
+                                '<div><label class="field-label">Exam Type</label>' +
+                                    '<select class="form-select" name="olevel[' + newIndex + '][exam_type]" required>' +
+                                        '<option value="WAEC">WAEC</option>' +
+                                        '<option value="NECO">NECO</option>' +
+                                        '<option value="NABTEB">NABTEB</option>' +
+                                    '</select></div>' +
+                                '<div><label class="field-label">Exam Year</label>' +
+                                    '<input type="text" class="form-control" name="olevel[' + newIndex + '][exam_year]" placeholder="e.g. 2023" required></div>' +
+                                '<div><label class="field-label">Exam / Centre Number</label>' +
+                                    '<input type="text" class="form-control" name="olevel[' + newIndex + '][exam_number]" placeholder="Optional"></div>' +
+                                '<div><label class="field-label">Sitting</label>' +
+                                    '<select class="form-select" name="olevel[' + newIndex + '][sitting]">' +
+                                        '<option value="1st">1st Sitting</option>' +
+                                        '<option value="2nd" selected>2nd Sitting</option>' +
+                                    '</select></div>' +
+                            '</div>' +
+                            '<div class="grades-divider">Subject Grades</div>' +
+                            '<div class="f-row cols-5">' + gradeFields + '</div>' +
+                        '</div>';
 
-                var container = document.getElementById('olevel-results-container');
-                container.insertAdjacentHTML('beforeend', html);
+                    document.getElementById('olevel-results-container').insertAdjacentHTML('beforeend', html);
 
-                var removeBtn = document.getElementById(uid);
-                if (removeBtn) wireRemoveButton(removeBtn);
+                    // Wire the remove button on the new block
+                    var removeBtn = document.getElementById(uid);
+                    if (removeBtn) wireRemoveButton(removeBtn);
 
-                attachGradeListeners();
-                onGradeChange();
-                
-                console.log('Added new sitting with index: ' + newIndex + ', sitting number: ' + sittingNo);
-            });
+                    // Delegation already covers the new grade selects — no re-attach needed.
+                    // Just update the credit panel to reflect the new (empty) sitting.
+                    onGradeChange();
 
-            // ── Passport photo preview ────────────────────────────────────
+                    console.log('Added sitting ' + sittingNo + ' at index ' + newIndex);
+                });
+            }
+
+            // ─────────────────────────────────────────────────────────────
+            // Passport photo preview
+            // ─────────────────────────────────────────────────────────────
             var passportInput = document.getElementById('passport');
             if (passportInput) {
                 passportInput.addEventListener('change', function () {
@@ -1920,74 +1855,71 @@ class ApplicationFormView {
                     }
 
                     var reader = new FileReader();
-
-                    reader.onload = function (e) {
+                    reader.onload = function (ev) {
                         var img         = document.getElementById('passport-preview');
                         var box         = document.getElementById('passportBox');
                         var placeholder = document.getElementById('passportPlaceholder');
 
-                        if (img) {
-                            img.src           = e.target.result;
-                            img.style.display = 'block';
-                        }
-                        if (placeholder) {
-                            placeholder.style.display = 'none';
-                        }
-                        if (box) {
-                            box.classList.add('has-image');
-                        }
+                        if (img)         { img.src = ev.target.result; img.style.display = 'block'; }
+                        if (placeholder) { placeholder.style.display = 'none'; }
+                        if (box)         { box.classList.add('has-image'); }
 
                         var confirmed = document.getElementById('passport-confirmed');
                         if (confirmed) confirmed.value = '1';
                     };
-
                     reader.readAsDataURL(file);
                 });
             }
 
-            // ── Wire existing PHP-rendered remove buttons ─────────────────
+            // ─────────────────────────────────────────────────────────────
+            // Wire existing PHP-rendered remove buttons (sitting 2+)
+            // ─────────────────────────────────────────────────────────────
             document.querySelectorAll('.olevel-item .btn-remove').forEach(function (btn) {
                 wireRemoveButton(btn);
             });
 
-            // ── Professional AJAX form submission ────────────────────────
-            var form           = document.getElementById('mainForm');
-            var saveBtn        = document.getElementById('saveBtn');
-            var nextBtn        = document.getElementById('nextBtn');
+            // ─────────────────────────────────────────────────────────────
+            // AJAX form submission
+            // ─────────────────────────────────────────────────────────────
+            var form    = document.getElementById('mainForm');
+            var saveBtn = document.getElementById('saveBtn');
+            var nextBtn = document.getElementById('nextBtn');
 
-            saveBtn?.addEventListener('click', function (e) {
-                e.preventDefault();
-                document.getElementById('form_action').value = 'save';
-                
-                var originalHtml = this.innerHTML;
-                this.disabled = true;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-                
-                submitForm(this, originalHtml);
-            });
+            if (saveBtn) {
+                saveBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.getElementById('form_action').value = 'save';
 
-            nextBtn?.addEventListener('click', function (e) {
-                e.preventDefault();
-                
-                var check = computeCreditCheck();
-                if (!check.meetsRequirement) {
-                    var lines = ['⚠ O\'Level Requirement Not Met\n\nYou have ' + check.creditsAchieved + '/5 required credit passes.\n'];
-                    if (check.missingSubjects.length > 0) lines.push('No grade entered for: ' + check.missingSubjects.join(', '));
-                    if (check.failedSubjects.length  > 0) lines.push('Below credit in: ' + check.failedSubjects.join(', '));
-                    lines.push('\nCredit passes (A1–C6) required in:\n• English Language\n• Mathematics\n• Biology\n• Chemistry\n• Physics');
-                    lines.push('\nPlease correct your grades or add a second sitting.');
+                    var originalHtml = this.innerHTML;
+                    this.disabled    = true;
+                    this.innerHTML   = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
-                    alert(lines.join('\n'));
-                    return;
-                }
-                
-                document.getElementById('form_action').value = 'next';
-                
-                this.classList.add('loading');
-                this.disabled = true;
-                
-                submitForm(this);
-            });
+                    submitForm(this, originalHtml);
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    var check = computeCreditCheck();
+                    if (!check.meetsRequirement) {
+                        var lines = ["⚠ O'Level Requirement Not Met\n\nYou have " + check.creditsAchieved + '/5 required credit passes.\n'];
+                        if (check.missingSubjects.length > 0) lines.push('No grade entered for: ' + check.missingSubjects.join(', '));
+                        if (check.failedSubjects.length  > 0) lines.push('Below credit in: ' + check.failedSubjects.join(', '));
+                        lines.push('\nCredit passes (A1–C6) required in:\n• English Language\n• Mathematics\n• Biology\n• Chemistry\n• Physics');
+                        lines.push('\nPlease correct your grades or add a second sitting.');
+                        alert(lines.join('\n'));
+                        return;
+                    }
+
+                    document.getElementById('form_action').value = 'next';
+                    this.classList.add('loading');
+                    this.disabled = true;
+
+                    submitForm(this);
+                });
+            }
 
             function submitForm(button, originalHtml) {
                 if (!form.checkValidity()) {
@@ -2010,8 +1942,8 @@ class ApplicationFormView {
                     return response.json();
                 })
                 .then(function (data) {
-                    console.log('Response data:', data);
-                    
+                    console.log('Response:', data);
+
                     button.disabled = false;
                     button.classList.remove('loading');
                     if (originalHtml) button.innerHTML = originalHtml;
@@ -2019,7 +1951,7 @@ class ApplicationFormView {
                     if (data.success) {
                         if (data.olevel_blocked) {
                             var msg = '⚠ Cannot proceed to payment.\n\n'
-                                    + 'O\'Level requirement not met: ' + data.olevel_message + '\n'
+                                    + "O'Level requirement not met: " + data.olevel_message + '\n'
                                     + 'Credits achieved: ' + data.credits_achieved + '/5\n';
                             if (data.missing_subjects && data.missing_subjects.length) msg += 'Missing grades: ' + data.missing_subjects.join(', ') + '\n';
                             if (data.failed_subjects  && data.failed_subjects.length)  msg += 'Below credit: '  + data.failed_subjects.join(', ')  + '\n';
@@ -2034,7 +1966,6 @@ class ApplicationFormView {
                     } else {
                         if (data.email_not_verified) {
                             showAlert(data.message || 'Please verify your email first.', 'warning');
-                            
                             setTimeout(function () {
                                 window.location.href = data.redirect || '/apply/verify-email';
                             }, 2000);
@@ -2052,7 +1983,9 @@ class ApplicationFormView {
                 });
             }
 
-            // ── Bootstrap native validation ───────────────────────────────
+            // ─────────────────────────────────────────────────────────────
+            // Bootstrap native validation
+            // ─────────────────────────────────────────────────────────────
             document.querySelectorAll('.needs-validation').forEach(function (f) {
                 f.addEventListener('submit', function (e) {
                     if (!f.checkValidity()) { e.preventDefault(); e.stopPropagation(); }
@@ -2060,9 +1993,14 @@ class ApplicationFormView {
                 });
             });
 
-            // ── Initial state ─────────────────────────────────────────────
+            // ─────────────────────────────────────────────────────────────
+            // INITIAL SETUP
+            // ─────────────────────────────────────────────────────────────
+
+            // Attach the single delegated grade listener (idempotent)
             attachGradeListeners();
 
+            // Run initial credit check to set correct UI state on page load
             var initResult = computeCreditCheck();
             renderCreditPanel(initResult);
 
@@ -2072,8 +2010,8 @@ class ApplicationFormView {
                 updateUIState(initResult);
             }
 
-            console.log('Initial O\'Level items count: ' + countSittings());
-            console.log('Initial credit check result:', initResult);
+            console.log('Init: sitting count =', countSittings());
+            console.log('Init: credit check =', initResult);
 
         }());
         </script>
@@ -2084,8 +2022,7 @@ class ApplicationFormView {
 }
 
 // =========================================================
-// 8. Add the view instantiation at the bottom
+// Instantiate and render
 // =========================================================
 $view = new ApplicationFormView();
 $view->render(get_defined_vars());
-?>
