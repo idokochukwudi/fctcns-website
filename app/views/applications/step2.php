@@ -94,12 +94,8 @@ class ApplicationFormView {
         $flash_success = $flash_success ?? $_SESSION['flash_success'] ?? null;
         $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
 
-        // Determine the correct back URL based on user state
-        $backUrl = '/apply/step/2'; // Default
-        if (isset($application) && !empty($application['id'])) {
-            // If we have an application, go back to JAMB verification with context
-            $backUrl = '/apply/verify-jamb?back=true';
-        }
+        // FIX: Correct back URL to go to JAMB verification step (Step 1)
+        $backUrl = '/apply/step/1'; // JAMB verification page
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -1508,7 +1504,7 @@ class ApplicationFormView {
 
                     <!-- ── ACTION BAR ── -->
                     <div class="action-bar">
-                        <!-- FIX: Back button now uses dynamic URL -->
+                        <!-- FIX: Correct back button URL to go to JAMB verification step -->
                         <a href="<?php echo $this->e($backUrl); ?>" class="btn btn-ghost" id="backBtn">
                             <i class="fas fa-arrow-left"></i> Back to JAMB Verification
                         </a>
@@ -1974,7 +1970,7 @@ class ApplicationFormView {
                 var box = document.getElementById('passportBox');
                 var placeholder = document.getElementById('passportPlaceholder');
                 
-                if (img && img.src && img.src !== '') {
+                if (img && img.src && img.src !== '' && img.src !== window.location.href) {
                     img.style.display = 'block';
                     img.style.objectFit = 'cover';
                     img.style.objectPosition = 'center';
