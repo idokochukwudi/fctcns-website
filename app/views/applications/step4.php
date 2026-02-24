@@ -3,10 +3,10 @@
  * Step 4 View - Exam Slip
  * Redesigned: Premium institutional design with security enhancements
  * FIXED: Removed redundant navbar, kept only progress steps
- * FIXED: Download PDF now uses native <a download> anchor — no iframe needed
+ * FIXED: Removed download button completely
  * FIXED: Print popup falls back to same-tab if popup blocked
  * FIXED: Action URLs built server-side so JS cannot break them
- * FIXED: Removed download button and download count display
+ * FIXED: Removed download count display
  * FIXED: Reduced line spacing in O'Level results table
  *
  * @package FCTCNS
@@ -50,7 +50,6 @@ class Step4View {
         // ── Build action URLs server-side ─────────────────────────────
         $slip_number  = $exam_slip['slip_number'] ?? '';
         $print_url    = $baseUrl . '/apply/print-exam-slip?csrf='    . urlencode($csrf_token);
-        $download_url = $baseUrl . '/apply/download-exam-slip?csrf=' . urlencode($csrf_token);
 
         // Safe exam date — avoids strtotime('To be announced') === false warning
         $raw_date     = $exam_slip['exam_date'] ?? ($exam_details['date'] ?? '');
@@ -58,8 +57,6 @@ class Step4View {
                         ? date('d M Y', strtotime($raw_date))
                         : 'To be announced';
 
-        // Clean filename for download attribute
-        $download_filename = 'exam-slip-' . preg_replace('/[^A-Za-z0-9\-]/', '-', $slip_number) . '.pdf';
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -470,18 +467,6 @@ class Step4View {
                     box-shadow: 0 8px 20px rgba(107,78,155,0.4);
                 }
 
-                .btn-success {
-                    background: var(--green);
-                    color: white;
-                    box-shadow: 0 4px 12px rgba(16,185,129,0.3);
-                }
-
-                .btn-success:hover:not(:disabled) {
-                    background: #0d9488;
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 20px rgba(16,185,129,0.4);
-                }
-
                 .btn-outline {
                     background: transparent;
                     color: var(--primary);
@@ -713,7 +698,7 @@ class Step4View {
                 </div>
                 <div class="success-content">
                     <div class="success-title">Payment Successful!</div>
-                    <div class="success-message">Your examination slip is ready. Download and print it for the screening exercise.</div>
+                    <div class="success-message">Your examination slip is ready. Print it for the screening exercise.</div>
                 </div>
             </div>
 
@@ -721,7 +706,7 @@ class Step4View {
             <div class="card">
                 <div class="card-header">
                     <h1>Examination Slip</h1>
-                    <p>Download and print your examination slip</p>
+                    <p>View and print your examination slip</p>
                 </div>
                 <div class="card-body">
 
@@ -791,34 +776,18 @@ class Step4View {
 
                     <!-- =====================================================
                          ACTION BUTTONS
-                         FIX 1: View/Print  — popup with same-tab fallback
-                         FIX 2: Download PDF — native <a download> anchor
-                         FIX 3: Home — unchanged, plain link
+                         FIX: View/Print only — popup with same-tab fallback
+                         Download button has been completely removed
                          ===================================================== -->
                     <div class="action-buttons">
 
-                        <!-- FIX 1: View / Print (button → JS → popup) -->
+                        <!-- View / Print (button → JS → popup) -->
                         <button class="btn btn-primary" id="viewPrintBtn"
                                 <?php if (!$slip_number) echo 'disabled title="No exam slip available"'; ?>>
                             <i class="fas fa-print"></i> View / Print
                         </button>
 
-                        <!-- FIX 2: Download PDF — native anchor with download attr. -->
-                        <?php if ($slip_number): ?>
-                        <a  class="btn btn-success"
-                            id="downloadBtn"
-                            href="<?php echo $this->e($download_url); ?>"
-                            download="<?php echo $this->e($download_filename); ?>">
-                            <i class="fas fa-download"></i> Download PDF
-                        </a>
-                        <?php else: ?>
-                        <button class="btn btn-success" disabled
-                                title="No exam slip available">
-                            <i class="fas fa-download"></i> Download PDF
-                        </button>
-                        <?php endif; ?>
-
-                        <!-- FIX 3: Home — unchanged -->
+                        <!-- Home — unchanged -->
                         <a href="/apply/step/1" class="btn btn-outline">
                             <i class="fas fa-home"></i> Home
                         </a>
@@ -868,11 +837,9 @@ class Step4View {
             // ── Config (injected from PHP — already escaped) ──────────
             var SLIP_NUMBER  = '<?php echo $this->e($slip_number); ?>';
             var PRINT_URL    = '<?php echo $this->e($print_url); ?>';
-            var DOWNLOAD_URL = '<?php echo $this->e($download_url); ?>';
 
             // ── DOM Elements ──────────────────────────────────────────
             var viewPrintBtn = document.getElementById('viewPrintBtn');
-            var downloadBtn  = document.getElementById('downloadBtn');
             var slipPreview  = document.getElementById('slipPreview');
 
             // ── Toast Notification ────────────────────────────────────
@@ -905,7 +872,7 @@ class Step4View {
                 }, 4000);
             }
 
-            // ── FIX 1: Open Print View ────────────────────────────────
+            // ── FIX: Open Print View ────────────────────────────────
             function openPrintView() {
                 if (!SLIP_NUMBER) {
                     showToast('Exam slip not available', 'error');
@@ -925,14 +892,6 @@ class Step4View {
                     showToast('Pop-up blocked — opening in this tab…', 'info');
                     setTimeout(function() { window.location.href = url; }, 600);
                 }
-            }
-
-            // ── FIX 2: Download feedback only ────────────────────────
-            function attachDownloadFeedback() {
-                if (!downloadBtn) return; // disabled state (no slip)
-                downloadBtn.addEventListener('click', function() {
-                    showToast('Download starting… check your Downloads folder.', 'success');
-                });
             }
 
             // ── Event Listeners ───────────────────────────────────────
@@ -957,9 +916,6 @@ class Step4View {
                     openPrintView();
                 }
             });
-
-            // ── Init ──────────────────────────────────────────────────
-            attachDownloadFeedback();
 
             // ── Check if slip was recently generated ──────────────────
             <?php if (isset($_GET['new']) && $_GET['new'] == 1): ?>

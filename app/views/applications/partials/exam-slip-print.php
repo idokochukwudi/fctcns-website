@@ -4,7 +4,8 @@
  * UPDATED: Added O'Level results section with left-aligned subjects
  * FIXED: Reduced line spacing in O'Level results table
  * FIXED: Removed download count display
- * FIXED: Subjects left-aligned in table
+ * FIXED: Removed download button from toolbar
+ * FIXED: Left-aligned "Subject" heading in table
  *
  * @package FCTCNS
  */
@@ -470,18 +471,28 @@ class ExamSlipPrintView {
                     text-transform: uppercase;
                     font-size: 6.5pt;
                     letter-spacing: .05em;
-                    padding: 4px 4px; /* Reduced padding */
+                    padding: 4px 4px;
                     border: 1px solid var(--rule);
                 }
 
+                /* FIX: Left align the Subject column header */
+                .olevel-table th:first-child {
+                    text-align: left;
+                    padding-left: 8px;
+                }
+
+                .olevel-table th:last-child {
+                    text-align: center;
+                }
+
                 .olevel-table td {
-                    padding: 3px 4px; /* Reduced padding for tighter spacing */
+                    padding: 3px 4px;
                     border: 1px solid var(--rule);
                     vertical-align: middle;
                 }
 
                 .olevel-table td:first-child {
-                    text-align: left; /* Left align subjects */
+                    text-align: left;
                     padding-left: 8px;
                 }
 
@@ -753,7 +764,7 @@ class ExamSlipPrintView {
                     
                     .olevel-table th,
                     .olevel-table td {
-                        padding: 2px 3px; /* Even tighter on mobile */
+                        padding: 2px 3px;
                     }
                 }
             </style>
@@ -878,7 +889,7 @@ class ExamSlipPrintView {
 
             </div><!-- /media-row -->
 
-            <!-- O'Level Results Section - FIXED: Left aligned subjects, reduced line spacing -->
+            <!-- O'Level Results Section - FIXED: Left aligned Subject heading -->
             <div class="olevel-section">
                 <div class="olevel-header">
                     <span>O'Level Examination Results</span>
@@ -911,8 +922,8 @@ class ExamSlipPrintView {
                                     </th>
                                 </tr>
                                 <tr>
-                                    <th>Subject</th>
-                                    <th>Grade</th>
+                                    <th style="text-align: left; padding-left: 8px;">Subject</th>
+                                    <th style="text-align: center;">Grade</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -930,7 +941,7 @@ class ExamSlipPrintView {
                                     $isCredit = in_array($grade, $creditGrades);
                                 ?>
                                 <tr>
-                                    <td style="text-align: left;">
+                                    <td style="text-align: left; padding-left: 8px;">
                                         <?php echo $this->e($label); ?>
                                         <?php if (in_array($key, $requiredSubjects)): ?>
                                             <span style="color: #666; font-size: 6pt;"> (Required)</span>
