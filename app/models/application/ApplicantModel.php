@@ -3,6 +3,7 @@
  * Applicant Model
  * 
  * Handles applicant (user) data operations
+ * FIXED: Reset token column names to match database (reset_token, reset_expires)
  * 
  * @package FCT_CNS
  * @subpackage Application
@@ -169,15 +170,43 @@ class ApplicantModel extends BaseModel {
     
     /**
      * Find applicant by password reset token
+     * FIXED: Use correct column names (reset_token, reset_expires)
      * 
      * @param string $token Password reset token
      * @return array|false Applicant data or false
      */
     public function findByResetToken($token) {
-        return $this->fetchOne(
-            "SELECT * FROM {$this->table} WHERE password_reset_token = :token AND password_reset_expires > NOW()",
-            ['token' => $token]
-        );
+        error_log("=== FIND BY RESET TOKEN ===");
+        error_log("Searching for token: " . $token);
+        
+        $sql = "SELECT * FROM {$this->table} WHERE reset_token = :token AND reset_expires > NOW()";
+        $params = ['token' => $token];
+        
+        error_log("SQL: " . $sql);
+        error_log("Params: " . print_r($params, true));
+        
+        $result = $this->fetchOne($sql, $params);
+        
+        if ($result) {
+            error_log("✓ Applicant found with ID: " . $result['id']);
+            error_log("  Email: " . $result['email']);
+            error_log("  Expires: " . ($result['reset_expires'] ?? 'NULL'));
+        } else {
+            error_log("✗ No applicant found with this token");
+            
+            // Debug: Check if token exists but expired
+            $checkSql = "SELECT * FROM {$this->table} WHERE reset_token = :token";
+            $checkResult = $this->fetchOne($checkSql, ['token' => $token]);
+            
+            if ($checkResult) {
+                error_log("Token exists but might be expired. Expires: " . ($checkResult['reset_expires'] ?? 'NULL'));
+                error_log("Current time: " . date('Y-m-d H:i:s'));
+            } else {
+                error_log("Token does not exist in database at all");
+            }
+        }
+        
+        return $result;
     }
     
     /**
@@ -235,54 +264,91 @@ class ApplicantModel extends BaseModel {
     
     /**
      * Generate password reset token
+     * FIXED: Use correct column names (reset_token, reset_expires)
      * 
      * @param string $email Email address
      * @return array|false Token data or false
      */
     public function generateResetToken($email) {
+        error_log("=== GENERATE RESET TOKEN ===");
+        error_log("Email: " . $email);
+        
         $applicant = $this->findByEmail($email);
         
         if (!$applicant) {
+            error_log("✗ Applicant not found with email: " . $email);
             return false;
         }
+        
+        error_log("✓ Applicant found with ID: " . $applicant['id']);
         
         $token = bin2hex(random_bytes(32));
         $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
         
-        $this->update(
-            ['password_reset_token' => $token, 'password_reset_expires' => $expires],
+        error_log("Generated token: " . $token);
+        error_log("Expires at: " . $expires);
+        
+        $updateResult = $this->update(
+            ['reset_token' => $token, 'reset_expires' => $expires],
             'id = :id',
             ['id' => $applicant['id']]
         );
+        
+        if ($updateResult) {
+            error_log("✓ Token saved successfully to database");
+            
+            // Verify it was saved
+            $verify = $this->find($applicant['id']);
+            error_log("Verification - DB token: " . ($verify['reset_token'] ?? 'NULL'));
+            error_log("Verification - DB expires: " . ($verify['reset_expires'] ?? 'NULL'));
+        } else {
+            error_log("✗ Failed to save token to database");
+        }
         
         return ['token' => $token, 'email' => $applicant['email']];
     }
     
     /**
      * Reset password
+     * FIXED: Use correct column names (reset_token, reset_expires)
      * 
      * @param string $token Reset token
      * @param string $password New password
      * @return bool Success
      */
     public function resetPassword($token, $password) {
+        error_log("=== RESET PASSWORD ===");
+        error_log("Token: " . $token);
+        
         $applicant = $this->findByResetToken($token);
         
         if (!$applicant) {
+            error_log("✗ No valid applicant found with token");
             return false;
         }
         
-        return $this->update(
+        error_log("✓ Applicant found with ID: " . $applicant['id']);
+        error_log("Resetting password for: " . $applicant['email']);
+        
+        $updateResult = $this->update(
             [
                 'password' => password_hash($password, PASSWORD_BCRYPT),
-                'password_reset_token' => null,
-                'password_reset_expires' => null,
+                'reset_token' => null,
+                'reset_expires' => null,
                 'login_attempts' => 0,
                 'locked_until' => null
             ],
             'id = :id',
             ['id' => $applicant['id']]
         );
+        
+        if ($updateResult) {
+            error_log("✓ Password reset successfully");
+        } else {
+            error_log("✗ Failed to reset password");
+        }
+        
+        return $updateResult;
     }
     
     /**
@@ -537,5 +603,18 @@ class ApplicantModel extends BaseModel {
         }
         
         return $this->fetchColumn($sql, $params) > 0;
+    }
+    
+    /**
+     * Find applicant by ID (overrides BaseModel)
+     * 
+     * @param int $id Applicant ID
+     * @return array|false Applicant data or false
+     */
+    public function find($id) {
+        return $this->fetchOne(
+            "SELECT * FROM {$this->table} WHERE id = :id",
+            ['id' => $id]
+        );
     }
 }
