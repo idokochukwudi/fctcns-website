@@ -18,6 +18,8 @@
  * FIXED: Grade persistence - delegated event listener replaces clone-based approach
  *        so grades in sitting 1 are NOT wiped when "Add Another Sitting" is clicked
  * FIXED: O'Level data filtering - ensures only current user's records are displayed
+ * FIXED: Back button - now correctly navigates to JAMB verification page
+ * FIXED: Passport photo display - proper sizing and fit in preview box
  *
  * @package FCTCNS
  */
@@ -91,6 +93,13 @@ class ApplicationFormView {
 
         $flash_success = $flash_success ?? $_SESSION['flash_success'] ?? null;
         $flash_error   = $flash_error   ?? $_SESSION['flash_error']   ?? null;
+
+        // Determine the correct back URL based on user state
+        $backUrl = '/apply/step/2'; // Default
+        if (isset($application) && !empty($application['id'])) {
+            // If we have an application, go back to JAMB verification with context
+            $backUrl = '/apply/verify-jamb?back=true';
+        }
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -687,7 +696,7 @@ class ApplicationFormView {
             }
 
             /* =========================================================
-               PASSPORT SECTION
+               PASSPORT SECTION - FIXED FOR PROPER IMAGE DISPLAY
             ========================================================= */
             .passport-wrap {
                 display: grid;
@@ -724,6 +733,7 @@ class ApplicationFormView {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
+                object-position: center;
                 display: none;
             }
 
@@ -738,6 +748,11 @@ class ApplicationFormView {
 
             .passport-preview-box.has-image .placeholder-icon {
                 display: none;
+            }
+
+            /* FIX: Ensure uploaded image displays properly */
+            .passport-preview-box img[src]:not([src=""]) {
+                display: block !important;
             }
 
             .passport-upload-area h6 {
@@ -1453,9 +1468,27 @@ class ApplicationFormView {
                         <div class="passport-wrap">
                             <div class="passport-preview-box" id="passportBox">
                                 <i class="fas fa-user placeholder-icon" id="passportPlaceholder"></i>
-                                <?php if (!empty($application['passport_photo'])): ?>
-                                <img src="<?php echo $this->e($application['passport_photo']); ?>" alt="Passport" id="passport-preview"
-                                     style="display:block; width:100%; height:100%; object-fit:cover;">
+                                <?php 
+                                // FIX: Proper passport photo display
+                                $passportUrl = '';
+                                if (!empty($application['passport_photo'])) {
+                                    // If it's a full URL, use it directly
+                                    if (filter_var($application['passport_photo'], FILTER_VALIDATE_URL)) {
+                                        $passportUrl = $application['passport_photo'];
+                                    } 
+                                    // If it's a relative path, prepend the base URL
+                                    elseif (strpos($application['passport_photo'], '/') === 0) {
+                                        $passportUrl = $application['passport_photo'];
+                                    }
+                                    // Otherwise, assume it's in the uploads directory
+                                    else {
+                                        $passportUrl = '/uploads/passports/' . ltrim($application['passport_photo'], '/');
+                                    }
+                                }
+                                ?>
+                                <?php if (!empty($passportUrl)): ?>
+                                <img src="<?php echo $this->e($passportUrl); ?>" alt="Passport" id="passport-preview"
+                                     style="display:block; width:100%; height:100%; object-fit:cover; object-position:center;">
                                 <?php else: ?>
                                 <img src="" alt="Passport Preview" id="passport-preview" style="display:none;">
                                 <?php endif; ?>
@@ -1475,8 +1508,9 @@ class ApplicationFormView {
 
                     <!-- ── ACTION BAR ── -->
                     <div class="action-bar">
-                        <a href="/apply/step/2" class="btn btn-ghost" id="backBtn">
-                            <i class="fas fa-arrow-left"></i> Back
+                        <!-- FIX: Back button now uses dynamic URL -->
+                        <a href="<?php echo $this->e($backUrl); ?>" class="btn btn-ghost" id="backBtn">
+                            <i class="fas fa-arrow-left"></i> Back to JAMB Verification
                         </a>
                         <div class="action-bar-right">
                             <button type="submit" class="btn btn-primary" id="saveBtn">
@@ -1590,8 +1624,11 @@ class ApplicationFormView {
                 if (!confirm('Are you sure you want to logout? Your progress will be saved.')) e.preventDefault();
             });
 
+            // FIX: Back button confirmation
             document.getElementById('backBtn') && document.getElementById('backBtn').addEventListener('click', function (e) {
-                if (!confirm('Go back to JAMB verification? Unsaved changes may be lost.')) e.preventDefault();
+                if (!confirm('Go back to JAMB verification? Any unsaved changes will be lost.')) {
+                    e.preventDefault();
+                }
             });
 
             // ─────────────────────────────────────────────────────────────
@@ -1882,7 +1919,7 @@ class ApplicationFormView {
             }
 
             // ─────────────────────────────────────────────────────────────
-            // Passport photo preview
+            // Passport photo preview - FIXED for proper display
             // ─────────────────────────────────────────────────────────────
             var passportInput = document.getElementById('passport');
             if (passportInput) {
@@ -1897,15 +1934,32 @@ class ApplicationFormView {
                         return;
                     }
 
+                    // Check file type
+                    var validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+                    if (validTypes.indexOf(file.type) === -1) {
+                        alert('Invalid file type. Please upload JPG or PNG only.');
+                        this.value = '';
+                        return;
+                    }
+
                     var reader = new FileReader();
                     reader.onload = function (ev) {
                         var img         = document.getElementById('passport-preview');
                         var box         = document.getElementById('passportBox');
                         var placeholder = document.getElementById('passportPlaceholder');
 
-                        if (img)         { img.src = ev.target.result; img.style.display = 'block'; }
-                        if (placeholder) { placeholder.style.display = 'none'; }
-                        if (box)         { box.classList.add('has-image'); }
+                        if (img) {
+                            img.src = ev.target.result;
+                            img.style.display = 'block';
+                            img.style.objectFit = 'cover';
+                            img.style.objectPosition = 'center';
+                        }
+                        if (placeholder) {
+                            placeholder.style.display = 'none';
+                        }
+                        if (box) {
+                            box.classList.add('has-image');
+                        }
 
                         var confirmed = document.getElementById('passport-confirmed');
                         if (confirmed) confirmed.value = '1';
@@ -1913,6 +1967,21 @@ class ApplicationFormView {
                     reader.readAsDataURL(file);
                 });
             }
+
+            // FIX: Ensure existing passport image displays properly on page load
+            (function checkExistingPassport() {
+                var img = document.getElementById('passport-preview');
+                var box = document.getElementById('passportBox');
+                var placeholder = document.getElementById('passportPlaceholder');
+                
+                if (img && img.src && img.src !== '') {
+                    img.style.display = 'block';
+                    img.style.objectFit = 'cover';
+                    img.style.objectPosition = 'center';
+                    if (placeholder) placeholder.style.display = 'none';
+                    if (box) box.classList.add('has-image');
+                }
+            })();
 
             // ─────────────────────────────────────────────────────────────
             // Wire existing PHP-rendered remove buttons (sitting 2+)
