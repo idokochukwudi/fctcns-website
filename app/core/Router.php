@@ -3,6 +3,7 @@
  * Router Class - Enhanced Version with Fixed Route Matching
  * 
  * Handles URL routing - maps URLs to controller methods
+ * UPDATED: Added ApplicationForgotController routes and removed duplicates
  * 
  * @package FCT_CNS
  */
@@ -346,14 +347,20 @@ class Router {
         $this->get('/apply/print-exam-slip', 'ExamSlipController@printSlip');
         $this->get('/apply/download-exam-slip', 'ExamSlipController@downloadSlip');
 
-        // Applicant authentication
+        // ============================================
+        // APPLICANT AUTHENTICATION ROUTES
+        // ============================================
         $this->get('/applicant/login', 'PublicApplicationController@login');
         $this->post('/applicant/login', 'PublicApplicationController@processLogin');
         $this->get('/applicant/logout', 'PublicApplicationController@logout');
-        $this->get('/applicant/forgot-password', 'PublicApplicationController@forgotPassword');
-        $this->post('/applicant/forgot-password', 'PublicApplicationController@processForgotPassword');
-        $this->get('/applicant/reset-password', 'PublicApplicationController@resetPassword');
-        $this->post('/applicant/reset-password', 'PublicApplicationController@processResetPassword');
+
+        // ============================================
+        // FORGOT PASSWORD ROUTES - USING DEDICATED CONTROLLER
+        // ============================================
+        $this->get('/applicant/forgot-password', 'ApplicationForgotController@forgotPassword');
+        $this->post('/applicant/forgot-password/process', 'ApplicationForgotController@processForgotPassword');
+        $this->get('/applicant/reset-password', 'ApplicationForgotController@resetPassword');
+        $this->post('/applicant/reset-password/process', 'ApplicationForgotController@processResetPassword');
 
         // Success/Failure pages
         $this->get('/apply/success', 'PublicApplicationController@verificationSuccess');
@@ -759,6 +766,41 @@ class Router {
                 error_log("✗ Exam slip routes incomplete - Print: " . ($printExamSlipFound ? 'YES' : 'NO') . 
                          ", Download: " . ($downloadExamSlipFound ? 'YES' : 'NO'));
             }
+            
+            // Verify forgot password routes
+            $forgotPasswordGetFound = false;
+            $forgotPasswordPostFound = false;
+            $resetPasswordGetFound = false;
+            $resetPasswordPostFound = false;
+            
+            foreach ($this->routes as $route) {
+                if ($route['path'] === '/applicant/forgot-password' && $route['method'] === 'GET') {
+                    $forgotPasswordGetFound = true;
+                    error_log("✓ GET /applicant/forgot-password is registered with handler: " . $route['handler']);
+                }
+                if ($route['path'] === '/applicant/forgot-password/process' && $route['method'] === 'POST') {
+                    $forgotPasswordPostFound = true;
+                    error_log("✓ POST /applicant/forgot-password/process is registered with handler: " . $route['handler']);
+                }
+                if ($route['path'] === '/applicant/reset-password' && $route['method'] === 'GET') {
+                    $resetPasswordGetFound = true;
+                    error_log("✓ GET /applicant/reset-password is registered with handler: " . $route['handler']);
+                }
+                if ($route['path'] === '/applicant/reset-password/process' && $route['method'] === 'POST') {
+                    $resetPasswordPostFound = true;
+                    error_log("✓ POST /applicant/reset-password/process is registered with handler: " . $route['handler']);
+                }
+            }
+            
+            if ($forgotPasswordGetFound && $forgotPasswordPostFound && $resetPasswordGetFound && $resetPasswordPostFound) {
+                error_log("✓ All forgot password routes are properly registered");
+            } else {
+                error_log("✗ Forgot password routes incomplete:");
+                error_log("  - GET forgot-password: " . ($forgotPasswordGetFound ? 'YES' : 'NO'));
+                error_log("  - POST forgot-password/process: " . ($forgotPasswordPostFound ? 'YES' : 'NO'));
+                error_log("  - GET reset-password: " . ($resetPasswordGetFound ? 'YES' : 'NO'));
+                error_log("  - POST reset-password/process: " . ($resetPasswordPostFound ? 'YES' : 'NO'));
+            }
         }
     }
 
@@ -881,6 +923,39 @@ class Router {
         
         if ($requestUri !== '/') {
             $requestUri = rtrim($requestUri, '/');
+        }
+        
+        // DEBUG for forgot password routes
+        if ($requestUri === '/applicant/forgot-password' || 
+            $requestUri === '/applicant/forgot-password/process' ||
+            $requestUri === '/applicant/reset-password' ||
+            $requestUri === '/applicant/reset-password/process') {
+            error_log("=== DEBUG: FORGOT PASSWORD ROUTE REQUESTED ===");
+            error_log("Request Method: $requestMethod");
+            error_log("Request URI: $requestUri");
+            
+            // Search specifically for this route
+            foreach ($this->routes as $index => $route) {
+                if ($route['path'] === $requestUri && $route['method'] === $requestMethod) {
+                    error_log("✓ Found $requestMethod $requestUri at index $index");
+                    error_log("  Handler: " . $route['handler']);
+                    
+                    // Test if pattern matches
+                    if (preg_match($route['pattern'], $requestUri, $matches)) {
+                        error_log("  ✓ Pattern MATCHES!");
+                        
+                        // Return this route
+                        array_shift($matches);
+                        $this->params = $matches;
+                        
+                        return [
+                            'handler' => $route['handler'],
+                            'params' => $matches,
+                            'route' => $route
+                        ];
+                    }
+                }
+            }
         }
         
         // DEBUG for JAMB verification route
