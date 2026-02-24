@@ -16,6 +16,7 @@
  * 
  * FIXED: RemitaModel initialization in constructor
  * FIXED: Payment initiation - removed non-existent 'raw_rrr' column
+ * FIXED: CSRF validation now properly checks all request sources
  * 
  * @package FCT_CNS
  */
@@ -184,7 +185,7 @@ class PublicApplicationController extends ApplicationBaseController {
     }
     
     /**
-     * Validate CSRF token - UPDATED to work with SecurityHelper
+     * Validate CSRF token - FIXED to properly handle all request types
      * 
      * @param string|null $token Optional token to validate
      * @return bool
@@ -192,28 +193,62 @@ class PublicApplicationController extends ApplicationBaseController {
     protected function validateCsrfToken($token = null) {
         // If token not provided, get from request
         if ($token === null) {
-            $token = $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '';
+            // Check POST first
+            $token = $_POST['csrf_token'] ?? '';
+            
+            // If not in POST, check JSON input
+            if (empty($token)) {
+                $input = json_decode(file_get_contents('php://input'), true);
+                if (is_array($input) && isset($input['csrf_token'])) {
+                    $token = $input['csrf_token'];
+                }
+            }
+            
+            // If still empty, check headers
+            if (empty($token)) {
+                $headers = getallheaders();
+                $token = $headers['X-CSRF-TOKEN'] ?? $headers['X-Csrf-Token'] ?? '';
+            }
+            
+            // Finally check GET
+            if (empty($token)) {
+                $token = $_GET['csrf_token'] ?? '';
+            }
+        }
+        
+        error_log("CSRF Token received: " . substr($token, 0, 10) . "...");
+        
+        if (empty($token)) {
+            error_log("CSRF validation failed: No token provided");
+            return false;
         }
         
         // Use SecurityHelper if available
         if (class_exists('SecurityHelper')) {
-            return SecurityHelper::validateCsrfToken($token);
+            $result = SecurityHelper::validateCsrfToken($token);
+            error_log("SecurityHelper validation result: " . ($result ? 'true' : 'false'));
+            return $result;
         }
         
         // Fallback to Session class
         if (class_exists('Session')) {
-            return Session::validateCSRFTokenMulti($token);
+            $result = Session::validateCSRFTokenMulti($token);
+            error_log("Session validation result: " . ($result ? 'true' : 'false'));
+            return $result;
         }
         
         // Final fallback - simple session check
         if (isset($_SESSION['csrf_tokens'][$token])) {
             $tokenTime = $_SESSION['csrf_tokens'][$token];
             if (time() - $tokenTime < 3600) {
+                error_log("Session token validation successful");
                 return true;
             }
             unset($_SESSION['csrf_tokens'][$token]);
+            error_log("Session token expired");
         }
         
+        error_log("CSRF validation failed: Token not found in session");
         return false;
     }
     
@@ -1658,16 +1693,34 @@ class PublicApplicationController extends ApplicationBaseController {
     }
 
     /**
-     * Initiate payment
+     * Initiate payment - FIXED with better CSRF handling and debugging
      */
     public function initiatePayment() {
         error_log("=== INITIATE PAYMENT CALLED ===");
         
+        // Debug: Log all input sources
+        error_log("POST data: " . print_r($_POST, true));
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        error_log("JSON input: " . print_r($input, true));
+        
+        // Get CSRF token from various sources
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        if (empty($csrfToken) && is_array($input) && isset($input['csrf_token'])) {
+            $csrfToken = $input['csrf_token'];
+        }
+        
+        error_log("CSRF token being validated: " . substr($csrfToken, 0, 10) . "...");
+        
         // Verify CSRF token
-        if (!$this->validateCsrfToken()) {
+        if (!$this->validateCsrfToken($csrfToken)) {
             error_log("CSRF validation failed");
             if ($this->isAjaxRequest()) {
-                $this->jsonResponse(['success' => false, 'message' => 'Invalid security token. Please refresh the page.']);
+                $this->jsonResponse([
+                    'success' => false, 
+                    'message' => 'Invalid security token. Please refresh the page and try again.',
+                    'debug' => 'CSRF validation failed'
+                ]);
             } else {
                 $this->setFlash('error', 'Invalid security token. Please try again.');
                 $this->redirect('/apply/payment');
