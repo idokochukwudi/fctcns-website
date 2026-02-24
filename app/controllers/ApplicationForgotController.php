@@ -441,9 +441,60 @@ class ApplicationForgotController extends ApplicationBaseController {
             return;
         }
         
-        // Validate CSRF
-        if (!$this->validateCsrfToken()) {
-            error_log("CSRF validation failed");
+        // Validate CSRF - FIXED to properly check both token types
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        
+        if (empty($csrfToken)) {
+            error_log("CSRF token missing from POST");
+            $_SESSION['flash_error'] = 'Security token missing. Please try again.';
+            $this->redirect('/applicant/forgot-password');
+            return;
+        }
+        
+        error_log("Validating CSRF token: " . substr($csrfToken, 0, 10) . "...");
+        
+        // Check if token exists in csrf_tokens array (multi-token system)
+        $validToken = false;
+        
+        if (isset($_SESSION['csrf_tokens']) && is_array($_SESSION['csrf_tokens'])) {
+            if (isset($_SESSION['csrf_tokens'][$csrfToken])) {
+                $tokenTime = $_SESSION['csrf_tokens'][$csrfToken];
+                
+                // Check if token is expired (older than 1 hour)
+                $lifetime = defined('CSRF_TOKEN_LIFETIME') ? CSRF_TOKEN_LIFETIME : 3600;
+                if (time() - $tokenTime <= $lifetime) {
+                    error_log("CSRF validation successful via csrf_tokens array");
+                    
+                    // Remove token after use (one-time use)
+                    unset($_SESSION['csrf_tokens'][$csrfToken]);
+                    $validToken = true;
+                } else {
+                    error_log("CSRF token expired");
+                    unset($_SESSION['csrf_tokens'][$csrfToken]);
+                }
+            }
+        }
+        
+        // Fallback to single csrf_token in session (legacy system)
+        if (!$validToken && isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $csrfToken)) {
+            error_log("CSRF validation successful via single csrf_token");
+            
+            // Check if token is expired
+            $lifetime = defined('CSRF_TOKEN_LIFETIME') ? CSRF_TOKEN_LIFETIME : 3600;
+            if (isset($_SESSION['csrf_token_time']) && (time() - $_SESSION['csrf_token_time'] > $lifetime)) {
+                error_log("CSRF token expired");
+                $validToken = false;
+            } else {
+                $validToken = true;
+                
+                // Generate new token for next request
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+                $_SESSION['csrf_token_time'] = time();
+            }
+        }
+        
+        if (!$validToken) {
+            error_log("CSRF validation failed: token not found in session");
             $_SESSION['flash_error'] = 'Security token expired. Please try again.';
             $this->redirect('/applicant/forgot-password');
             return;
@@ -579,54 +630,6 @@ class ApplicationForgotController extends ApplicationBaseController {
     }
     
     /**
-     * Validate CSRF token - FIXED to check both single token and tokens array
-     * 
-     * @param string|null $token Token to validate
-     * @return bool
-     */
-    protected function validateCsrfToken($token = null) {
-        // If token not provided, get from request
-        if ($token === null) {
-            $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-        }
-        
-        error_log("Validating CSRF token: " . substr($token, 0, 10) . "...");
-        
-        // Check if token exists in csrf_tokens array (multiple tokens)
-        if (isset($_SESSION['csrf_tokens']) && is_array($_SESSION['csrf_tokens'])) {
-            if (isset($_SESSION['csrf_tokens'][$token])) {
-                $tokenTime = $_SESSION['csrf_tokens'][$token];
-                
-                // Check if token is expired (older than 1 hour)
-                if (time() - $tokenTime <= 3600) {
-                    error_log("CSRF validation successful via csrf_tokens array");
-                    
-                    // Remove token after use (one-time use)
-                    unset($_SESSION['csrf_tokens'][$token]);
-                    
-                    return true;
-                } else {
-                    error_log("CSRF token expired");
-                    unset($_SESSION['csrf_tokens'][$token]);
-                }
-            }
-        }
-        
-        // Fallback to single csrf_token in session
-        if (isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token)) {
-            error_log("CSRF validation successful via single csrf_token");
-            
-            // Generate new token for next request
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-            
-            return true;
-        }
-        
-        error_log("CSRF validation failed: token not found in session");
-        return false;
-    }
-    
-    /**
      * Get CSRF token from SecurityTrait or generate if not available
      * 
      * @return string
@@ -649,6 +652,7 @@ class ApplicationForgotController extends ApplicationBaseController {
         
         // Also store as single token for backward compatibility
         $_SESSION['csrf_token'] = $token;
+        $_SESSION['csrf_token_time'] = time();
         
         error_log("Generated new CSRF token: " . substr($token, 0, 10) . "...");
         
