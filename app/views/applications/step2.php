@@ -13,6 +13,7 @@
  * FIXED: O'Level add another - preserves existing grades when adding new sitting
  * FIXED: Professional loading pattern for Save & Continue button
  * FIXED: Added email verification error handling in JavaScript
+ * FIXED: Removed all inline onclick handlers for CSP compliance
  * 
  * @package FCTCNS
  */
@@ -1155,8 +1156,7 @@ class ApplicationFormView {
                         Score: <?php echo $this->e($jamb_data['score'] ?? $application['utme_score']); ?>
                     </div>
                     <?php endif; ?>
-                    <a href="/applicant/logout" class="logout-btn"
-                       onclick="return confirm('Are you sure you want to logout? Your progress will be saved.');">
+                    <a href="/applicant/logout" class="logout-btn" id="logoutBtn">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </a>
                 </div>
@@ -1405,8 +1405,7 @@ class ApplicationFormView {
                                         O'Level Result — Sitting <?php echo $this->e($idx + 1); ?>
                                     </div>
                                     <?php if ($idx > 0): ?>
-                                    <!-- FIX 2: Remove onclick inline handler, use ID-based event listener -->
-                                    <button type="button" class="btn-remove" id="removeOlevel<?php echo $this->e($idx); ?>">
+                                    <button type="button" class="btn-remove" data-index="<?php echo $this->e($idx); ?>">
                                         <i class="fas fa-trash-alt"></i> Remove
                                     </button>
                                     <?php endif; ?>
@@ -1507,7 +1506,6 @@ class ApplicationFormView {
                                 <h6>Select Passport Photo</h6>
                                 <p>Ensure the photo clearly shows your face on a plain white background.</p>
                                 <input type="hidden" name="passport_confirmed" id="passport-confirmed" value="<?php echo !empty($application['passport_photo']) ? '1' : '0'; ?>">
-                                <!-- FIX 1: Remove onchange inline handler -->
                                 <input type="file" class="form-control" id="passport" name="passport"
                                        accept="image/jpeg,image/png"
                                        style="margin-bottom:8px;">
@@ -1518,8 +1516,7 @@ class ApplicationFormView {
 
                     <!-- ── ACTION BAR ── -->
                     <div class="action-bar">
-                        <a href="/apply/step/2" class="btn btn-ghost"
-                           onclick="return confirm('Go back to JAMB verification? Unsaved changes may be lost.');">
+                        <a href="/apply/step/2" class="btn btn-ghost" id="backBtn">
                             <i class="fas fa-arrow-left"></i> Back
                         </a>
                         <div class="action-bar-right">
@@ -1565,7 +1562,7 @@ class ApplicationFormView {
                 crossorigin="anonymous"
                 nonce="<?php echo $csp_nonce; ?>"></script>
         
-        <!-- FIX: Enhanced JavaScript with email verification error handling -->
+        <!-- FIX: Enhanced JavaScript with proper grade persistence and CSP compliance -->
         <script nonce="<?php echo $csp_nonce; ?>">
         (function () {
             'use strict';
@@ -1589,16 +1586,14 @@ class ApplicationFormView {
 
             var initialMeetsRequirement = <?php echo ($credit_summary && $credit_summary['meets_requirement']) ? 'true' : 'false'; ?>;
 
-            // Helper function to show alerts (to avoid duplication)
+            // Helper function to show alerts
             function showAlert(message, type) {
-                // Try to use the flash alert system if available
                 var alertDiv = document.createElement('div');
                 alertDiv.className = 'flash-alert ' + type;
                 alertDiv.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : (type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle')) + '"></i><span>' + message + '</span>';
                 
                 var pageShell = document.querySelector('.page-shell');
                 if (pageShell) {
-                    // Insert after step indicator
                     var stepIndicator = document.querySelector('.step-indicator');
                     if (stepIndicator) {
                         stepIndicator.insertAdjacentElement('afterend', alertDiv);
@@ -1606,7 +1601,6 @@ class ApplicationFormView {
                         pageShell.insertBefore(alertDiv, pageShell.firstChild);
                     }
                     
-                    // Auto-remove after 5 seconds
                     setTimeout(function() {
                         if (alertDiv.parentNode) {
                             alertDiv.parentNode.removeChild(alertDiv);
@@ -1617,9 +1611,41 @@ class ApplicationFormView {
                 }
             }
 
+            // ── Navigation confirmation handlers (CSP compliant) ───────────
+            document.getElementById('logoutBtn')?.addEventListener('click', function(e) {
+                if (!confirm('Are you sure you want to logout? Your progress will be saved.')) {
+                    e.preventDefault();
+                }
+            });
+
+            document.getElementById('backBtn')?.addEventListener('click', function(e) {
+                if (!confirm('Go back to JAMB verification? Unsaved changes may be lost.')) {
+                    e.preventDefault();
+                }
+            });
+
             // ── Count actual sitting blocks in the DOM ────────────────────
             function countSittings() {
                 return document.querySelectorAll('#olevel-results-container .olevel-item').length;
+            }
+
+            // ── Get current index for new sitting ─────────────────────────
+            function getNextIndex() {
+                var items = document.querySelectorAll('#olevel-results-container .olevel-item');
+                var maxIndex = -1;
+                
+                items.forEach(function(item) {
+                    var selects = item.querySelectorAll('select[name^="olevel["]');
+                    selects.forEach(function(select) {
+                        var match = select.name.match(/olevel\[(\d+)\]/);
+                        if (match && match[1]) {
+                            var idx = parseInt(match[1], 10);
+                            if (idx > maxIndex) maxIndex = idx;
+                        }
+                    });
+                });
+                
+                return maxIndex + 1;
             }
 
             // ── Compute best grades across all sitting blocks ─────────────
@@ -1746,7 +1772,6 @@ class ApplicationFormView {
             // ── Attach grade change listeners to all current dropdowns ────
             function attachGradeListeners() {
                 document.querySelectorAll('.olevel-item select[name*="_grade"]').forEach(function (sel) {
-                    // Clone to remove old listeners cleanly
                     var fresh = sel.cloneNode(true);
                     sel.parentNode.replaceChild(fresh, sel);
                     fresh.addEventListener('change', onGradeChange);
@@ -1755,12 +1780,14 @@ class ApplicationFormView {
 
             // ── Wire remove button for a sitting block ────────────────────
             function wireRemoveButton(btn) {
-                btn.addEventListener('click', function () {
-                    this.closest('.olevel-item').remove();
-                    // Re-index visible badge numbers
-                    reindexSittings();
-                    attachGradeListeners();
-                    onGradeChange();
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (confirm('Are you sure you want to remove this sitting?')) {
+                        this.closest('.olevel-item').remove();
+                        reindexSittings();
+                        attachGradeListeners();
+                        onGradeChange();
+                    }
                 });
             }
 
@@ -1769,12 +1796,27 @@ class ApplicationFormView {
                 document.querySelectorAll('#olevel-results-container .olevel-item').forEach(function (item, i) {
                     var badge = item.querySelector('.idx-badge');
                     if (badge) badge.textContent = String(i + 1);
+                    
+                    // Update the name attributes to maintain sequential indices
+                    var selects = item.querySelectorAll('select[name^="olevel["]');
+                    selects.forEach(function(select) {
+                        var name = select.getAttribute('name');
+                        var newName = name.replace(/olevel\[\d+\]/, 'olevel[' + i + ']');
+                        select.setAttribute('name', newName);
+                    });
+                    
+                    var inputs = item.querySelectorAll('input[name^="olevel["]');
+                    inputs.forEach(function(input) {
+                        var name = input.getAttribute('name');
+                        var newName = name.replace(/olevel\[\d+\]/, 'olevel[' + i + ']');
+                        input.setAttribute('name', newName);
+                    });
+                    
                     var label = item.querySelector('.olevel-item-label');
                     if (label) {
-                        // Update the text node after the badge span
                         var nodes = label.childNodes;
                         nodes.forEach(function (node) {
-                            if (node.nodeType === 3) { // text node
+                            if (node.nodeType === 3) {
                                 node.textContent = " O'Level Result — Sitting " + (i + 1);
                             }
                         });
@@ -1784,7 +1826,6 @@ class ApplicationFormView {
 
             // ── Add another sitting ───────────────────────────────────────
             document.getElementById('add-olevel').addEventListener('click', function () {
-                // Count actual DOM items — not a counter variable
                 var current = countSittings();
 
                 if (current >= MAX_SITTINGS) {
@@ -1792,7 +1833,7 @@ class ApplicationFormView {
                     return;
                 }
 
-                var newIndex  = current; // 0-based index for name attributes
+                var newIndex = getNextIndex();
                 var sittingNo = current + 1;
 
                 var grades    = ['English','Mathematics','Biology','Chemistry','Physics'];
@@ -1809,7 +1850,7 @@ class ApplicationFormView {
                     '</div>';
                 }).join('');
 
-                var uid = 'removeOlevel_' + Date.now();
+                var uid = 'removeOlevel_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
                 var html =
                     '<div class="olevel-item">' +
@@ -1818,7 +1859,7 @@ class ApplicationFormView {
                                 '<span class="idx-badge">' + sittingNo + '</span>' +
                                 " O'Level Result — Sitting " + sittingNo +
                             '</div>' +
-                            '<button type="button" class="btn-remove" id="' + uid + '">' +
+                            '<button type="button" class="btn-remove" data-index="' + newIndex + '" id="' + uid + '">' +
                                 '<i class="fas fa-trash-alt"></i> Remove' +
                             '</button>' +
                         '</div>' +
@@ -1846,13 +1887,13 @@ class ApplicationFormView {
                 var container = document.getElementById('olevel-results-container');
                 container.insertAdjacentHTML('beforeend', html);
 
-                // Wire remove button immediately after insertion
                 var removeBtn = document.getElementById(uid);
                 if (removeBtn) wireRemoveButton(removeBtn);
 
-                // Re-attach grade listeners to include the new dropdowns
                 attachGradeListeners();
                 onGradeChange();
+                
+                console.log('Added new sitting with index: ' + newIndex + ', sitting number: ' + sittingNo);
             });
 
             // ── Passport photo preview ────────────────────────────────────
@@ -1869,8 +1910,7 @@ class ApplicationFormView {
                         return;
                     }
 
-                    var reader  = new FileReader();
-                    var self    = this;
+                    var reader = new FileReader();
 
                     reader.onload = function (e) {
                         var img         = document.getElementById('passport-preview');
@@ -1901,17 +1941,15 @@ class ApplicationFormView {
                 wireRemoveButton(btn);
             });
 
-            // ── Professional AJAX form submission with button loading state ──
+            // ── Professional AJAX form submission ────────────────────────
             var form           = document.getElementById('mainForm');
             var saveBtn        = document.getElementById('saveBtn');
             var nextBtn        = document.getElementById('nextBtn');
 
-            // Save Progress button handler
             saveBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 document.getElementById('form_action').value = 'save';
                 
-                // Add loading state to save button
                 var originalHtml = this.innerHTML;
                 this.disabled = true;
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -1919,7 +1957,6 @@ class ApplicationFormView {
                 submitForm(this, originalHtml);
             });
 
-            // Save & Continue button handler
             nextBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 
@@ -1937,14 +1974,12 @@ class ApplicationFormView {
                 
                 document.getElementById('form_action').value = 'next';
                 
-                // Add professional loading state to next button
                 this.classList.add('loading');
                 this.disabled = true;
                 
                 submitForm(this);
             });
 
-            // Unified form submission function
             function submitForm(button, originalHtml) {
                 if (!form.checkValidity()) {
                     form.classList.add('was-validated');
@@ -1968,7 +2003,6 @@ class ApplicationFormView {
                 .then(function (data) {
                     console.log('Response data:', data);
                     
-                    // Reset button state
                     button.disabled = false;
                     button.classList.remove('loading');
                     if (originalHtml) button.innerHTML = originalHtml;
@@ -1989,11 +2023,9 @@ class ApplicationFormView {
                             showAlert(data.message || 'Saved successfully.', 'success');
                         }
                     } else {
-                        // Check if this is an email verification error
                         if (data.email_not_verified) {
                             showAlert(data.message || 'Please verify your email first.', 'warning');
                             
-                            // Redirect to email verification page after a delay
                             setTimeout(function () {
                                 window.location.href = data.redirect || '/apply/verify-email';
                             }, 2000);
@@ -2020,19 +2052,19 @@ class ApplicationFormView {
             });
 
             // ── Initial state ─────────────────────────────────────────────
-            // Wire grade listeners first
             attachGradeListeners();
 
-            // Run initial check
             var initResult = computeCreditCheck();
             renderCreditPanel(initResult);
 
-            // Disable next button if requirement not met on load
             if (!initialMeetsRequirement || !initResult.meetsRequirement) {
                 updateUIState({ meetsRequirement: false });
             } else {
                 updateUIState(initResult);
             }
+
+            console.log('Initial O\'Level items count: ' + countSittings());
+            console.log('Initial credit check result:', initResult);
 
         }());
         </script>
