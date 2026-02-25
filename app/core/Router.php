@@ -958,17 +958,17 @@ class Router {
     }
 
     /**
-     * Match current request to a route - FIXED VERSION WITH DEBUG
-     */
-    public function match() {
-         // ===== ADD THIS DEBUG AT THE VERY START =====
+ * Match current request to a route - FIXED VERSION WITH DEBUG
+ */
+public function match() {
+    // ===== DEBUG AT THE VERY START =====
     error_log("=== ROUTER MATCH METHOD STARTED ===");
     error_log("Full REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? 'NOT SET'));
     error_log("Request Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET'));
     
     $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
     
-    // FIX: Ensure request URI is a string
+    // Get the raw URI
     $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
     $requestUri = $this->safeStr($requestUri);
     
@@ -996,231 +996,116 @@ class Router {
         $requestUri = rtrim($requestUri, '/');
     }
     
-    error_log("Final processed URI: " . $requestUri);
+    error_log("Final processed URI for matching: " . $requestUri);
     
-    // List all routes for debugging
-    error_log("All registered routes (" . count($this->routes) . "):");
-    foreach ($this->routes as $index => $route) {
-        $handlerStr = is_string($route['handler']) ? $route['handler'] : 'Closure';
-        error_log("  Route $index: " . $route['method'] . " " . $route['path'] . " -> " . $handlerStr);
-    }
-        $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    // Check if this is the edit route we're trying to match
+    if ($requestUri === '/admin/carousel/edit/1' || strpos($requestUri, '/admin/carousel/edit/') !== false) {
+        error_log("=== ATTEMPTING TO MATCH CAROUSEL EDIT ROUTE ===");
         
-        // FIX: Ensure request URI is a string
-        $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
-        $requestUri = $this->safeStr($requestUri);
-        
-        if (empty($requestUri)) {
-            $requestUri = '/';
-        }
-        
-        $scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
-        $scriptDir = $this->safeStr($scriptDir);
-        
-        if ($scriptDir !== '/' && $scriptDir !== '\\' && strpos($requestUri, $scriptDir) === 0) {
-            $requestUri = substr($requestUri, strlen($scriptDir));
-        }
-        
-        if ($requestUri === '' || $requestUri === false) {
-            $requestUri = '/';
-        }
-        
-        if ($requestUri !== '/') {
-            $requestUri = rtrim($requestUri, '/');
-        }
-        
-        // ===== ADDED DEBUG BLOCK FOR CAROUSEL EDIT ROUTES =====
-        if (strpos($requestUri, '/admin/carousel/edit') !== false) {
-            error_log("=== ROUTER DEBUG: CAROUSEL EDIT ROUTE DETECTED ===");
-            error_log("Request URI: " . $requestUri);
-            error_log("Request Method: " . $requestMethod);
-            error_log("Script Dir: " . $scriptDir);
-            
-            // List ALL carousel routes to see what's registered
-            error_log("All carousel routes in router:");
-            foreach ($this->routes as $index => $route) {
-                if (strpos($route['path'], 'carousel') !== false) {
-                    $handlerStr = is_string($route['handler']) ? $route['handler'] : 'Closure';
-                    error_log("  Route $index: " . $route['method'] . " " . $route['path'] . " -> " . $handlerStr);
-                    error_log("    Pattern: " . $route['pattern']);
-                }
-            }
-            
-            // Specifically check if our edit route exists
-            $editRouteFound = false;
-            foreach ($this->routes as $route) {
-                if ($route['path'] === '/admin/carousel/edit/{id}' && $route['method'] === 'GET') {
-                    $editRouteFound = true;
-                    error_log("✓ FOUND: GET /admin/carousel/edit/{id} with pattern: " . $route['pattern']);
-                    
-                    // Test if it matches our URI
-                    if (preg_match($route['pattern'], $requestUri, $matches)) {
-                        error_log("  ✓ Pattern MATCHES! Matches: " . print_r($matches, true));
-                    } else {
-                        error_log("  ✗ Pattern DOES NOT MATCH");
-                        error_log("  Pattern: " . $route['pattern']);
-                        error_log("  URI: " . $requestUri);
-                    }
-                    break;
-                }
-            }
-            
-            if (!$editRouteFound) {
-                error_log("✗ CRITICAL: GET /admin/carousel/edit/{id} NOT FOUND in routes!");
-            }
-        }
-        // ===== END DEBUG BLOCK =====
-        
-        // DEBUG for forgot password routes
-        if ($requestUri === '/applicant/forgot-password' || 
-            $requestUri === '/applicant/forgot-password/process' ||
-            $requestUri === '/applicant/reset-password' ||
-            $requestUri === '/applicant/reset-password/process') {
-            error_log("=== DEBUG: FORGOT PASSWORD ROUTE REQUESTED ===");
-            error_log("Request Method: $requestMethod");
-            error_log("Request URI: $requestUri");
-            
-            // Search specifically for this route
-            foreach ($this->routes as $index => $route) {
-                if ($route['path'] === $requestUri && $route['method'] === $requestMethod) {
-                    $handlerStr = is_string($route['handler']) ? $route['handler'] : 'Closure';
-                    error_log("✓ Found $requestMethod $requestUri at index $index");
-                    error_log("  Handler: " . $handlerStr);
-                    
-                    // Test if pattern matches
-                    if (preg_match($route['pattern'], $requestUri, $matches)) {
-                        error_log("  ✓ Pattern MATCHES!");
-                        
-                        // Return this route
-                        array_shift($matches);
-                        $this->params = $matches;
-                        
-                        return [
-                            'handler' => $route['handler'],
-                            'params' => $matches,
-                            'route' => $route
-                        ];
-                    }
-                }
-            }
-        }
-        
-        // DEBUG for JAMB verification route
-        if ($requestUri === '/apply/verify-jamb' && $requestMethod === 'POST') {
-            error_log("=== DEBUG: JAMB VERIFICATION ROUTE REQUESTED ===");
-            error_log("Request Method: $requestMethod");
-            error_log("Request URI: $requestUri");
-            
-            // Search specifically for this route
-            foreach ($this->routes as $index => $route) {
-                if ($route['path'] === '/apply/verify-jamb' && $route['method'] === 'POST') {
-                    error_log("✓ Found POST /apply/verify-jamb at index $index");
-                    error_log("  Pattern: " . $route['pattern']);
-                    
-                    // Test if pattern matches
-                    if (preg_match($route['pattern'], $requestUri, $matches)) {
-                        error_log("  ✓ Pattern MATCHES!");
-                        error_log("  Matches: " . print_r($matches, true));
-                        
-                        // Return this route
-                        array_shift($matches);
-                        $this->params = $matches;
-                        
-                        return [
-                            'handler' => $route['handler'],
-                            'params' => $matches,
-                            'route' => $route
-                        ];
-                    } else {
-                        error_log("  ✗ Pattern DOES NOT MATCH");
-                        error_log("  Pattern: " . $route['pattern']);
-                        error_log("  URI: " . $requestUri);
-                    }
-                }
-            }
-            
-            error_log("✗ No matching route found for POST /apply/verify-jamb");
-        }
-        
-        // DEBUG for payment verification route
-        if ($requestUri === '/apply/verify-payment') {
-            error_log("=== DEBUG: PAYMENT VERIFICATION ROUTE REQUESTED ===");
-            error_log("Request Method: $requestMethod");
-            
-            // Search specifically for this route
-            foreach ($this->routes as $index => $route) {
-                if ($route['path'] === '/apply/verify-payment' && $route['method'] === $requestMethod) {
-                    error_log("✓ Found $requestMethod /apply/verify-payment at index $index");
-                    error_log("  Pattern: " . $route['pattern']);
-                    
-                    // Test if pattern matches
-                    if (preg_match($route['pattern'], $requestUri, $matches)) {
-                        error_log("  ✓ Pattern MATCHES!");
-                        
-                        // Return this route
-                        array_shift($matches);
-                        $this->params = $matches;
-                        
-                        return [
-                            'handler' => $route['handler'],
-                            'params' => $matches,
-                            'route' => $route
-                        ];
-                    }
-                }
-            }
-        }
-        
-        // DEBUG for exam slip routes
-        if ($requestUri === '/apply/print-exam-slip' || $requestUri === '/apply/download-exam-slip') {
-            error_log("=== DEBUG: EXAM SLIP ROUTE REQUESTED ===");
-            error_log("Request Method: $requestMethod");
-            error_log("Request URI: $requestUri");
-        }
-        
-        error_log("==========================================");
-        error_log("ROUTER MATCHING:");
-        error_log("  Request Method: $requestMethod");
-        error_log("  Request URI: $requestUri");
-        error_log("  Routes count: " . count($this->routes));
-        
-        foreach ($this->routes as $route) {
-            // Check method match
-            $methodMatches = false;
-            
-            if ($route['method'] === 'PUT' || $route['method'] === 'DELETE') {
-                if ($requestMethod === 'POST' && isset($_POST['_method'])) {
-                    $methodMatches = ($_POST['_method'] === $route['method']);
+        // Look specifically for the edit route
+        foreach ($this->routes as $index => $route) {
+            if ($route['path'] === '/admin/carousel/edit/{id}' && $route['method'] === 'GET') {
+                error_log("Found edit route at index $index");
+                error_log("  Pattern: " . $route['pattern']);
+                
+                // Test if it matches
+                if (preg_match($route['pattern'], $requestUri, $matches)) {
+                    error_log("  ✓ PATTERN MATCHES! Matches: " . print_r($matches, true));
                 } else {
-                    $methodMatches = ($requestMethod === $route['method']);
+                    error_log("  ✗ PATTERN DOES NOT MATCH");
+                    error_log("  Pattern: " . $route['pattern']);
+                    error_log("  URI: " . $requestUri);
                 }
+                break;
+            }
+        }
+        
+        // Test all GET routes to see what matches
+        error_log("=== TESTING ALL GET ROUTES FOR MATCH ===");
+        foreach ($this->routes as $index => $route) {
+            if ($route['method'] === 'GET') {
+                if (preg_match($route['pattern'], $requestUri, $matches)) {
+                    error_log("  ✓ Route $index MATCHES: " . $route['path'] . " -> " . 
+                             (is_string($route['handler']) ? $route['handler'] : 'Closure'));
+                    error_log("    Pattern: " . $route['pattern']);
+                    error_log("    Matches: " . print_r($matches, true));
+                }
+            }
+        }
+    }
+    
+    // DEBUG for forgot password routes
+    if ($requestUri === '/applicant/forgot-password' || 
+        $requestUri === '/applicant/forgot-password/process' ||
+        $requestUri === '/applicant/reset-password' ||
+        $requestUri === '/applicant/reset-password/process') {
+        error_log("=== DEBUG: FORGOT PASSWORD ROUTE REQUESTED ===");
+        error_log("Request Method: $requestMethod");
+        error_log("Request URI: $requestUri");
+    }
+    
+    // DEBUG for JAMB verification route
+    if ($requestUri === '/apply/verify-jamb' && $requestMethod === 'POST') {
+        error_log("=== DEBUG: JAMB VERIFICATION ROUTE REQUESTED ===");
+    }
+    
+    // DEBUG for payment verification route
+    if ($requestUri === '/apply/verify-payment') {
+        error_log("=== DEBUG: PAYMENT VERIFICATION ROUTE REQUESTED ===");
+        error_log("Request Method: $requestMethod");
+    }
+    
+    // DEBUG for exam slip routes
+    if ($requestUri === '/apply/print-exam-slip' || $requestUri === '/apply/download-exam-slip') {
+        error_log("=== DEBUG: EXAM SLIP ROUTE REQUESTED ===");
+        error_log("Request Method: $requestMethod");
+        error_log("Request URI: $requestUri");
+    }
+    
+    error_log("==========================================");
+    error_log("ROUTER MATCHING:");
+    error_log("  Request Method: $requestMethod");
+    error_log("  Request URI: $requestUri");
+    error_log("  Routes count: " . count($this->routes));
+    
+    // Main matching loop
+    foreach ($this->routes as $route) {
+        // Check method match
+        $methodMatches = false;
+        
+        if ($route['method'] === 'PUT' || $route['method'] === 'DELETE') {
+            if ($requestMethod === 'POST' && isset($_POST['_method'])) {
+                $methodMatches = ($_POST['_method'] === $route['method']);
             } else {
                 $methodMatches = ($requestMethod === $route['method']);
             }
-            
-            if (!$methodMatches) {
-                continue;
-            }
-            
-            if (preg_match($route['pattern'], $requestUri, $matches)) {
-                $handlerStr = is_string($route['handler']) ? $route['handler'] : 'Closure';
-                error_log("  ✓ MATCHED: {$route['path']} -> " . $handlerStr);
-                
-                array_shift($matches);
-                $this->params = $matches;
-                
-                return [
-                    'handler' => $route['handler'],
-                    'params' => $matches,
-                    'route' => $route
-                ];
-            }
+        } else {
+            $methodMatches = ($requestMethod === $route['method']);
         }
         
-        error_log("  ✗ NO ROUTE MATCHED");
-        error_log("==========================================");
-        return null;
+        if (!$methodMatches) {
+            continue;
+        }
+        
+        if (preg_match($route['pattern'], $requestUri, $matches)) {
+            $handlerStr = is_string($route['handler']) ? $route['handler'] : 'Closure';
+            error_log("  ✓ MATCHED: {$route['path']} -> " . $handlerStr);
+            
+            array_shift($matches);
+            $this->params = $matches;
+            
+            return [
+                'handler' => $route['handler'],
+                'params' => $matches,
+                'route' => $route
+            ];
+        }
     }
+    
+    error_log("  ✗ NO ROUTE MATCHED");
+    error_log("==========================================");
+    return null;
+}
 
     /**
      * Get all registered routes (for debugging)

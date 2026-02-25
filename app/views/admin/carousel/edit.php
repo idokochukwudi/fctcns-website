@@ -9,60 +9,21 @@ require_once $rootPath . '/app/config/constants.php';
 require_once APP_PATH . '/middleware/AuthMiddleware.php';
 AuthMiddleware::authenticate();
 
-// Include database
-require_once APP_PATH . '/config/database.php';
-$db = Database::getInstance();
-$conn = $db->getConnection();
-
 // Get user info
 require_once APP_PATH . '/config/session.php';
 $userRole = $_SESSION['user_role'];
 $username = $_SESSION['username'];
 
-// Get slide ID from URL
-$id = isset($_GET['id']) ? $_GET['id'] : (isset($id) ? $id : 0);
-if (!$id) {
+// Get data from controller
+$slide = $this->data['slide'] ?? [];
+$flash_success = $this->data['flash_success'] ?? '';
+$flash_error = $this->data['flash_error'] ?? '';
+$formData = $this->data['formData'] ?? $slide;
+$csrf_token = $this->data['csrf_token'] ?? ($_SESSION['csrf_token'] ?? '');
+
+if (empty($slide)) {
     header('Location: ' . BASE_URL . '/admin/carousel');
     exit;
-}
-
-// Get slide data
-$slide = [];
-$flash_error = null;
-$formData = [];
-
-try {
-    require_once APP_PATH . '/models/CarouselModel.php';
-    $carouselModel = new CarouselModel();
-    $slide = $carouselModel->getSlideById($id);
-    
-    if (!$slide) {
-        $flash_error = 'Slide not found.';
-    }
-} catch (Exception $e) {
-    error_log("Carousel edit error: " . $e->getMessage());
-    $flash_error = 'Error loading slide data.';
-}
-
-// Get flash messages
-$flash_success = isset($_SESSION['flash_success']) ? $_SESSION['flash_success'] : null;
-if (isset($_SESSION['flash_error'])) {
-    $flash_error = $_SESSION['flash_error'];
-}
-unset($_SESSION['flash_success'], $_SESSION['flash_error']);
-
-// Get form data from session if exists (for repopulating after error)
-if (isset($_SESSION['form_data'])) {
-    $formData = $_SESSION['form_data'];
-    unset($_SESSION['form_data']);
-} else {
-    $formData = $slide;
-}
-
-// Get CSRF token from controller data
-$csrf_token = isset($this->data['csrf_token']) ? $this->data['csrf_token'] : '';
-if (empty($csrf_token) && isset($_SESSION['csrf_token'])) {
-    $csrf_token = $_SESSION['csrf_token'];
 }
 ?>
 <!DOCTYPE html>
@@ -706,7 +667,7 @@ if (empty($csrf_token) && isset($_SESSION['csrf_token'])) {
         
         <!-- Content -->
         <div class="admin-content">
-            <?php if (!$slide): ?>
+            <?php if (empty($slide)): ?>
                 <div class="alert-error">
                     <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
