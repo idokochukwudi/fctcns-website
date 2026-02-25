@@ -58,6 +58,12 @@ if (isset($_SESSION['form_data'])) {
 } else {
     $formData = $slide;
 }
+
+// Get CSRF token from controller data
+$csrf_token = isset($this->data['csrf_token']) ? $this->data['csrf_token'] : '';
+if (empty($csrf_token) && isset($_SESSION['csrf_token'])) {
+    $csrf_token = $_SESSION['csrf_token'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -140,7 +146,7 @@ if (isset($_SESSION['form_data'])) {
         
         .sidebar-title {
             font-weight: 600;
-            font-size: 1rem; /* FIXED: = changed to : */
+            font-size: 1rem;
         }
         
         .sidebar-subtitle {
@@ -287,7 +293,7 @@ if (isset($_SESSION['form_data'])) {
         .user-info h4 {
             font-size: 0.875rem;
             font-weight: 600;
-            margin-bottom: 0.125rem; /* FIXED: = changed to : */
+            margin-bottom: 0.125rem;
         }
         
         .user-info span {
@@ -429,7 +435,7 @@ if (isset($_SESSION['form_data'])) {
         
         .preview-title-text {
             font-size: 1.5rem;
-            font-weight: 600; /* FIXED: = changed to : */
+            font-weight: 600;
             color: var(--admin-gray-800);
             margin-bottom: 0.5rem;
         }
@@ -461,7 +467,7 @@ if (isset($_SESSION['form_data'])) {
         
         .btn {
             padding: 0.75rem 1.5rem;
-            border-radius: 6px; /* FIXED: = changed to : */
+            border-radius: 6px;
             font-weight: 500;
             text-decoration: none;
             display: inline-flex;
@@ -520,7 +526,7 @@ if (isset($_SESSION['form_data'])) {
             border: 1px solid rgba(56, 161, 105, 0.2);
             color: var(--admin-success);
             padding: 1rem;
-            border-radius: 8px; /* FIXED: = changed to : */
+            border-radius: 8px;
             margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
@@ -602,7 +608,7 @@ if (isset($_SESSION['form_data'])) {
             margin-top: 1rem;
             padding: 1rem;
             background: var(--admin-gray-50);
-            border-radius: 8px; /* FIXED: = changed to : */
+            border-radius: 8px;
             border: 1px solid var(--admin-gray-200);
         }
     </style>
@@ -788,7 +794,10 @@ if (isset($_SESSION['form_data'])) {
                               enctype="multipart/form-data">
                             
                             <!-- CSRF Token -->
-                            <input type="hidden" name="csrf_token" value="<?php echo $this->data['csrf_token'] ?? ''; ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                            
+                            <!-- Slide ID -->
+                            <input type="hidden" name="id" value="<?php echo $slide['id']; ?>">
                             
                             <!-- Title -->
                             <div class="form-group">
@@ -835,9 +844,9 @@ if (isset($_SESSION['form_data'])) {
                                     <img src="<?php echo BASE_URL . $slide['image_path']; ?>" 
                                          alt="Current slide image"
                                          style="max-width: 300px; max-height: 150px; border-radius: 6px;"
-                                         onerror="this.style.display='none'; this.parentNode.innerHTML='<p style=\"color:var(--admin-danger);\">Image not found at: <?php echo htmlspecialchars($slide['image_path']); ?></p>';">
+                                         onerror="this.style.display='none'; this.parentNode.innerHTML+='<p style=\"color:var(--admin-danger);\">Image not found</p>';">
                                     <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--admin-gray-600);">
-                                        <?php echo $slide['image_path']; ?>
+                                        <?php echo basename($slide['image_path']); ?>
                                     </p>
                                 </div>
                                 
@@ -846,28 +855,12 @@ if (isset($_SESSION['form_data'])) {
                                 <?php endif; ?>
                                 
                                 <!-- File Upload Input -->
-                                <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem;">
-                                    <div style="position: relative; flex: 1;">
-                                        <input type="file" 
-                                               id="carousel_image" 
-                                               name="carousel_image" 
-                                               accept="image/jpeg,image/png,image/webp,image/gif"
-                                               class="file-input"
-                                               style="width: 100%; padding: 0.75rem; border: 2px dashed var(--admin-gray-300); border-radius: 6px; background: var(--admin-gray-50); cursor: pointer;">
-                                        
-                                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; text-align: center;">
-                                            <svg width="40" height="40" fill="var(--admin-gray-500)" viewBox="0 0 20 20" style="margin-bottom: 0.5rem;">
-                                                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM8.293 9.293a1 1 0 011.414 0L11 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                                            </svg>
-                                            <span style="color: var(--admin-gray-600); font-size: 0.875rem;">
-                                                Click to upload new image
-                                            </span>
-                                            <br>
-                                            <span style="color: var(--admin-gray-500); font-size: 0.75rem;">
-                                                JPG, PNG, WebP up to 2MB
-                                            </span>
-                                        </div>
-                                    </div>
+                                <div style="margin-top: 1rem;">
+                                    <input type="file" 
+                                           id="carousel_image" 
+                                           name="carousel_image" 
+                                           accept="image/jpeg,image/png,image/webp,image/gif"
+                                           style="width: 100%; padding: 0.75rem; border: 2px dashed var(--admin-gray-300); border-radius: 6px; background: var(--admin-gray-50); cursor: pointer;">
                                 </div>
                                 
                                 <!-- Image Preview for new upload -->
@@ -935,7 +928,7 @@ if (isset($_SESSION['form_data'])) {
                                            name="is_active" 
                                            class="form-checkbox" 
                                            value="1" 
-                                           <?php echo $formData['is_active'] ? 'checked' : ''; ?>>
+                                           <?php echo ($formData['is_active'] ?? 0) ? 'checked' : ''; ?>>
                                     <label for="is_active">Active (visible on homepage)</label>
                                 </div>
                             </div>
@@ -983,7 +976,7 @@ if (isset($_SESSION['form_data'])) {
                                   id="deleteForm"
                                   onsubmit="return confirm('Are you sure you want to delete this slide? This action cannot be undone.');">
                                 <!-- CSRF Token for delete form -->
-                                <input type="hidden" name="csrf_token" value="<?php echo $this->data['csrf_token'] ?? ''; ?>">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                 <button type="submit" class="btn btn-danger">
                                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
@@ -1001,19 +994,19 @@ if (isset($_SESSION['form_data'])) {
                             <div>
                                 <span style="color: var(--admin-gray-600);">Created:</span>
                                 <span style="color: var(--admin-gray-800); font-weight: 500;">
-                                    <?php echo date('F j, Y, g:i a', strtotime($slide['created_at'])); ?>
+                                    <?php echo isset($slide['created_at']) ? date('F j, Y, g:i a', strtotime($slide['created_at'])) : 'N/A'; ?>
                                 </span>
                             </div>
                             <div>
                                 <span style="color: var(--admin-gray-600);">Last Updated:</span>
                                 <span style="color: var(--admin-gray-800); font-weight: 500;">
-                                    <?php echo date('F j, Y, g:i a', strtotime($slide['updated_at'])); ?>
+                                    <?php echo isset($slide['updated_at']) ? date('F j, Y, g:i a', strtotime($slide['updated_at'])) : 'N/A'; ?>
                                 </span>
                             </div>
                             <div>
                                 <span style="color: var(--admin-gray-600);">Current Status:</span>
                                 <span style="color: var(--admin-gray-800); font-weight: 500;">
-                                    <?php echo $slide['is_active'] ? 'Active' : 'Inactive'; ?>
+                                    <?php echo ($slide['is_active'] ?? 0) ? 'Active' : 'Inactive'; ?>
                                 </span>
                             </div>
                         </div>
@@ -1036,86 +1029,268 @@ if (isset($_SESSION['form_data'])) {
     </div>
     
     <script>
-        // Simple image preview
-        document.getElementById('carousel_image').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            // Validate file size (max 2MB)
-            if (file.size > 2 * 1024 * 1024) {
-                alert('File size must be less than 2MB');
-                this.value = '';
-                return;
-            }
-            
-            // Validate file type
-            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-            if (!validTypes.includes(file.type)) {
-                alert('Please select a valid image file (JPG, PNG, WebP, or GIF)');
-                this.value = '';
-                return;
-            }
-            
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const previewImg = document.getElementById('imagePreview');
-                if (previewImg) {
-                    previewImg.src = e.target.result;
-                    document.getElementById('imagePreviewContainer').style.display = 'block';
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeForm();
+            initializeImagePreview();
+            initializeLivePreview();
+            initializeDeleteModal();
+        });
+
+        function initializeForm() {
+            const form = document.getElementById('slideForm');
+            if (!form) return;
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault(); // Prevent default submission
+                
+                const submitBtn = document.getElementById('submitBtn');
+                const originalText = submitBtn.innerHTML;
+                
+                // Validate form
+                if (!validateForm()) {
+                    return;
                 }
                 
-                // Update live preview
-                const previewBg = document.getElementById('previewBg');
-                if (previewBg) {
-                    previewBg.style.backgroundImage = `url('${e.target.result}')`;
-                    previewBg.classList.add('has-image');
-                    previewBg.innerHTML = '';
-                }
-            };
-            reader.readAsDataURL(file);
-        });
-        
-        // Live preview for text fields
-        document.getElementById('title').addEventListener('input', function() {
-            document.getElementById('previewTitle').textContent = this.value || 'Slide Title';
-        });
-        
-        document.getElementById('subtitle').addEventListener('input', function() {
-            document.getElementById('previewSubtitle').textContent = this.value || 'Slide subtitle text will appear here';
-        });
-        
-        document.getElementById('button_text').addEventListener('input', function() {
-            const previewButton = document.getElementById('previewButton');
-            const previewContent = document.querySelector('.slide-preview-content');
-            
-            if (this.value) {
-                if (!previewButton) {
-                    const button = document.createElement('a');
-                    button.href = '#';
-                    button.className = 'preview-button';
-                    button.id = 'previewButton';
-                    button.textContent = this.value;
-                    previewContent.appendChild(button);
-                } else {
-                    previewButton.textContent = this.value;
-                }
-            } else if (previewButton) {
-                previewButton.remove();
-            }
-        });
-        
-        // Simple form validation
-        document.getElementById('slideForm').addEventListener('submit', function(e) {
-            // Show loading
-            const submitBtn = document.getElementById('submitBtn');
-            if (submitBtn) {
+                // Show loading state
                 submitBtn.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20" class="animate-spin"><path d="M10 3v2a5 5 0 00-5 5H3a7 7 0 017-7z"/></svg> Updating...';
                 submitBtn.disabled = true;
+                
+                try {
+                    const formData = new FormData(form);
+                    
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    
+                    const contentType = response.headers.get('content-type');
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            if (data.redirect) {
+                                window.location.href = data.redirect;
+                            } else {
+                                window.location.href = '<?php echo BASE_URL; ?>/admin/carousel';
+                            }
+                        } else {
+                            showError(data.message || 'Update failed');
+                            submitBtn.innerHTML = originalText;
+                            submitBtn.disabled = false;
+                        }
+                    } else {
+                        // Not JSON - likely a redirect
+                        if (response.redirected) {
+                            window.location.href = response.url;
+                        } else {
+                            // Check if it's an error page
+                            const text = await response.text();
+                            if (text.includes('error') || text.includes('Error')) {
+                                showError('Update failed. Please check your input.');
+                            } else {
+                                // Assume success and redirect manually
+                                window.location.href = '<?php echo BASE_URL; ?>/admin/carousel';
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Form submission error:', error);
+                    showError('Network error. Please try again.');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+        }
+
+        function validateForm() {
+            const title = document.getElementById('title');
+            const subtitle = document.getElementById('subtitle');
+            
+            // Clear previous errors
+            clearErrors();
+            
+            let isValid = true;
+            
+            if (!title.value.trim()) {
+                showFieldError(title, 'Title is required');
+                isValid = false;
             }
-            // Let the form submit normally
-        });
-        
+            
+            if (!subtitle.value.trim()) {
+                showFieldError(subtitle, 'Subtitle is required');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        function showFieldError(field, message) {
+            field.classList.add('error');
+            
+            // Remove existing error message if any
+            const existingError = field.parentNode.querySelector('.error-message');
+            if (existingError) {
+                existingError.remove();
+            }
+            
+            // Add error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                ${message}
+            `;
+            field.parentNode.appendChild(errorDiv);
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.form-input.error, .form-textarea.error').forEach(field => {
+                field.classList.remove('error');
+            });
+            document.querySelectorAll('.error-message').forEach(el => el.remove());
+        }
+
+        function showError(message) {
+            // Create or update flash error message
+            let flashContainer = document.querySelector('.flash-messages');
+            if (!flashContainer) {
+                flashContainer = document.createElement('div');
+                flashContainer.className = 'flash-messages';
+                document.querySelector('.form-container').prepend(flashContainer);
+            }
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-error';
+            errorDiv.innerHTML = `
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+                ${message}
+            `;
+            
+            flashContainer.innerHTML = '';
+            flashContainer.appendChild(errorDiv);
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                errorDiv.style.opacity = '0';
+                errorDiv.style.transition = 'opacity 0.5s';
+                setTimeout(() => errorDiv.remove(), 500);
+            }, 5000);
+        }
+
+        function initializeImagePreview() {
+            const fileInput = document.getElementById('carousel_image');
+            if (!fileInput) return;
+            
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // Validate file size (max 2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('File size must be less than 2MB');
+                    this.value = '';
+                    return;
+                }
+                
+                // Validate file type
+                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Please select a valid image file (JPG, PNG, WebP, or GIF)');
+                    this.value = '';
+                    return;
+                }
+                
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewImg = document.getElementById('imagePreview');
+                    if (previewImg) {
+                        previewImg.src = e.target.result;
+                        document.getElementById('imagePreviewContainer').style.display = 'block';
+                    }
+                    
+                    // Update live preview background
+                    const previewBg = document.getElementById('previewBg');
+                    if (previewBg) {
+                        previewBg.style.backgroundImage = `url('${e.target.result}')`;
+                        previewBg.classList.add('has-image');
+                        previewBg.innerHTML = '';
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function initializeLivePreview() {
+            // Title preview
+            const titleInput = document.getElementById('title');
+            if (titleInput) {
+                titleInput.addEventListener('input', function() {
+                    document.getElementById('previewTitle').textContent = this.value || 'Slide Title';
+                });
+            }
+            
+            // Subtitle preview
+            const subtitleInput = document.getElementById('subtitle');
+            if (subtitleInput) {
+                subtitleInput.addEventListener('input', function() {
+                    document.getElementById('previewSubtitle').textContent = this.value || 'Slide subtitle text will appear here';
+                });
+            }
+            
+            // Button text preview
+            const buttonTextInput = document.getElementById('button_text');
+            if (buttonTextInput) {
+                buttonTextInput.addEventListener('input', function() {
+                    const previewButton = document.getElementById('previewButton');
+                    const previewContent = document.querySelector('.slide-preview-content');
+                    
+                    if (this.value) {
+                        if (!previewButton) {
+                            const button = document.createElement('a');
+                            button.href = '#';
+                            button.className = 'preview-button';
+                            button.id = 'previewButton';
+                            button.textContent = this.value;
+                            previewContent.appendChild(button);
+                        } else {
+                            previewButton.textContent = this.value;
+                        }
+                    } else if (previewButton) {
+                        previewButton.remove();
+                    }
+                });
+            }
+        }
+
+        function initializeDeleteModal() {
+            const modal = document.getElementById('deleteModal');
+            if (!modal) return;
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideDeleteModal();
+                }
+            });
+            
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    hideDeleteModal();
+                }
+            });
+        }
+
         // Delete modal functions
         function showDeleteModal() {
             document.getElementById('deleteModal').classList.add('active');
@@ -1128,21 +1303,7 @@ if (isset($_SESSION['form_data'])) {
         function confirmDelete() {
             document.getElementById('deleteForm').submit();
         }
-        
-        // Close modal when clicking outside
-        document.getElementById('deleteModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideDeleteModal();
-            }
-        });
-        
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                hideDeleteModal();
-            }
-        });
-        
+
         // Auto-hide flash messages after 5 seconds
         setTimeout(function() {
             const alerts = document.querySelectorAll('.alert');
@@ -1152,8 +1313,8 @@ if (isset($_SESSION['form_data'])) {
                 setTimeout(() => alert.remove(), 500);
             });
         }, 5000);
-        
-        // Add CSS for animation
+
+        // Add CSS for animations
         const style = document.createElement('style');
         style.textContent = `
             .animate-spin {
@@ -1163,8 +1324,29 @@ if (isset($_SESSION['form_data'])) {
                 from { transform: rotate(0deg); }
                 to { transform: rotate(360deg); }
             }
+            .error-message {
+                color: var(--admin-danger);
+                font-size: 0.75rem;
+                margin-top: 0.25rem;
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+            .form-input.error, .form-textarea.error {
+                border-color: var(--admin-danger);
+            }
         `;
         document.head.appendChild(style);
     </script>
+    
+    <!-- Debug info (remove in production) -->
+    <?php if (defined('APP_DEBUG') && APP_DEBUG): ?>
+    <script>
+        console.log('Edit page loaded');
+        console.log('Form action:', '<?php echo BASE_URL; ?>/admin/carousel/update/<?php echo $slide['id']; ?>');
+        console.log('Slide ID:', <?php echo $slide['id']; ?>);
+        console.log('CSRF Token exists:', <?php echo !empty($csrf_token) ? 'true' : 'false'; ?>);
+    </script>
+    <?php endif; ?>
 </body>
 </html>

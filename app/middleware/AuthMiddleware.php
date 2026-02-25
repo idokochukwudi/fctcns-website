@@ -9,12 +9,18 @@ class AuthMiddleware {
      * Check if user is authenticated with security checks
      */
     public static function authenticate() {
+        error_log("=== AUTH MIDDLEWARE AUTHENTICATE ===");
+        error_log("Session user_id: " . (isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 'NOT SET'));
+        error_log("Session user_role: " . (isset($_SESSION['user_role']) ? $_SESSION['user_role'] : 'NOT SET'));
+        error_log("Request URI: " . ($_SERVER['REQUEST_URI'] ?? 'unknown'));
+        
         require_once __DIR__ . '/../config/session.php';
         
         // First check session security
         Session::checkSessionSecurity();
         
         if (!Session::isAuthenticated()) {
+            error_log("User not authenticated - redirecting to /admin");
             Session::setFlash('error', 'Please login to access admin area');
             header('Location: /admin');
             exit;
@@ -23,11 +29,14 @@ class AuthMiddleware {
         // Optional: Check if session is too old (e.g., 8 hours)
         $loginTime = $_SESSION['login_time'] ?? 0;
         if (time() - $loginTime > 28800) { // 8 hours in seconds
+            error_log("Session expired - redirecting to /admin");
             Session::logout();
             Session::setFlash('error', 'Session expired. Please login again.');
             header('Location: /admin');
             exit;
         }
+        
+        error_log("Auth middleware passed");
     }
     
     /**
@@ -107,4 +116,3 @@ class AuthMiddleware {
         return in_array($userRole, $allowedRoles);
     }
 }
-?>

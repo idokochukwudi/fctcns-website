@@ -27,6 +27,33 @@ class Router {
         error_log("=== ROUTER INITIALIZED ===");
         $this->registerRoutes();
         error_log("=== ROUTER FINISHED: " . count($this->routes) . " routes registered ===");
+        
+        // Double-check carousel routes after registration
+        $carouselRoutes = 0;
+        foreach ($this->routes as $route) {
+            if (strpos($route['path'], 'carousel') !== false) {
+                $carouselRoutes++;
+                // FIX: Check if handler is string before using in string context
+                $handlerStr = is_string($route['handler']) ? $route['handler'] : 'Closure';
+                error_log("Carousel route registered: " . $route['method'] . " " . $route['path'] . " -> " . $handlerStr);
+            }
+        }
+        error_log("Total carousel routes: " . $carouselRoutes);
+        
+        // Specifically verify the edit route exists
+        $editRouteFound = false;
+        foreach ($this->routes as $route) {
+            if ($route['path'] === '/admin/carousel/edit/{id}' && $route['method'] === 'GET') {
+                $editRouteFound = true;
+                $handlerStr = is_string($route['handler']) ? $route['handler'] : 'Closure';
+                error_log("✓ CONFIRMED: GET /admin/carousel/edit/{id} is registered with handler: " . $handlerStr);
+                error_log("  Pattern: " . $route['pattern']);
+                break;
+            }
+        }
+        if (!$editRouteFound) {
+            error_log("✗ WARNING: GET /admin/carousel/edit/{id} NOT FOUND in routes after registration!");
+        }
     }
 
     /**
@@ -416,16 +443,36 @@ class Router {
         $this->post('/admin/contact/quick-update/{id}', 'ContactController@quickUpdate');
         
         // ============================================
-        // ADMIN CAROUSEL MANAGEMENT ROUTES
+        // ADMIN CAROUSEL MANAGEMENT ROUTES - FORCE REGISTER WITH DEBUG
         // ============================================
+        error_log("=== REGISTERING CAROUSEL ROUTES ===");
+        
         $this->get('/admin/carousel', 'AdminCarouselController@index');
+        error_log("Registered: GET /admin/carousel");
+        
         $this->get('/admin/carousel/create', 'AdminCarouselController@create');
+        error_log("Registered: GET /admin/carousel/create");
+        
         $this->post('/admin/carousel/store', 'AdminCarouselController@store');
+        error_log("Registered: POST /admin/carousel/store");
+        
+        // CRITICAL ROUTE - Edit
         $this->get('/admin/carousel/edit/{id}', 'AdminCarouselController@edit');
+        error_log("Registered: GET /admin/carousel/edit/{id}");
+        
         $this->post('/admin/carousel/update/{id}', 'AdminCarouselController@update');
+        error_log("Registered: POST /admin/carousel/update/{id}");
+        
         $this->post('/admin/carousel/delete/{id}', 'AdminCarouselController@delete');
+        error_log("Registered: POST /admin/carousel/delete/{id}");
+        
         $this->post('/admin/carousel/toggle/{id}', 'AdminCarouselController@toggle');
+        error_log("Registered: POST /admin/carousel/toggle/{id}");
+        
         $this->post('/admin/carousel/upload-image', 'AdminCarouselController@uploadImage');
+        error_log("Registered: POST /admin/carousel/upload-image");
+        
+        error_log("=== CAROUSEL ROUTES REGISTRATION COMPLETE ===");
         
         // ============================================
         // NOMINAL ROLL ROUTES
@@ -801,6 +848,19 @@ class Router {
                 error_log("  - GET reset-password: " . ($resetPasswordGetFound ? 'YES' : 'NO'));
                 error_log("  - POST reset-password/process: " . ($resetPasswordPostFound ? 'YES' : 'NO'));
             }
+            
+            // Final verification of carousel edit route
+            $carouselEditFound = false;
+            foreach ($this->routes as $route) {
+                if ($route['path'] === '/admin/carousel/edit/{id}' && $route['method'] === 'GET') {
+                    $carouselEditFound = true;
+                    error_log("✓ FINAL CHECK: GET /admin/carousel/edit/{id} is registered");
+                    break;
+                }
+            }
+            if (!$carouselEditFound) {
+                error_log("✗ FINAL CHECK: GET /admin/carousel/edit/{id} NOT FOUND!");
+            }
         }
     }
 
@@ -856,7 +916,8 @@ class Router {
         ];
         
         if (defined('APP_DEBUG') && APP_DEBUG) {
-            error_log("Route registered: $method $path -> " . (is_string($handler) ? $handler : 'Closure'));
+            $handlerStr = is_string($handler) ? $handler : 'Closure';
+            error_log("Route registered: $method $path -> " . $handlerStr);
         }
     }
 
@@ -900,6 +961,49 @@ class Router {
      * Match current request to a route - FIXED VERSION WITH DEBUG
      */
     public function match() {
+         // ===== ADD THIS DEBUG AT THE VERY START =====
+    error_log("=== ROUTER MATCH METHOD STARTED ===");
+    error_log("Full REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? 'NOT SET'));
+    error_log("Request Method: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET'));
+    
+    $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    
+    // FIX: Ensure request URI is a string
+    $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+    $requestUri = $this->safeStr($requestUri);
+    
+    error_log("Parsed requestUri: " . $requestUri);
+    
+    if (empty($requestUri)) {
+        $requestUri = '/';
+    }
+    
+    $scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+    $scriptDir = $this->safeStr($scriptDir);
+    
+    error_log("Script dir: " . $scriptDir);
+    
+    if ($scriptDir !== '/' && $scriptDir !== '\\' && strpos($requestUri, $scriptDir) === 0) {
+        $requestUri = substr($requestUri, strlen($scriptDir));
+        error_log("After removing script dir: " . $requestUri);
+    }
+    
+    if ($requestUri === '' || $requestUri === false) {
+        $requestUri = '/';
+    }
+    
+    if ($requestUri !== '/') {
+        $requestUri = rtrim($requestUri, '/');
+    }
+    
+    error_log("Final processed URI: " . $requestUri);
+    
+    // List all routes for debugging
+    error_log("All registered routes (" . count($this->routes) . "):");
+    foreach ($this->routes as $index => $route) {
+        $handlerStr = is_string($route['handler']) ? $route['handler'] : 'Closure';
+        error_log("  Route $index: " . $route['method'] . " " . $route['path'] . " -> " . $handlerStr);
+    }
         $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         
         // FIX: Ensure request URI is a string
@@ -925,6 +1029,48 @@ class Router {
             $requestUri = rtrim($requestUri, '/');
         }
         
+        // ===== ADDED DEBUG BLOCK FOR CAROUSEL EDIT ROUTES =====
+        if (strpos($requestUri, '/admin/carousel/edit') !== false) {
+            error_log("=== ROUTER DEBUG: CAROUSEL EDIT ROUTE DETECTED ===");
+            error_log("Request URI: " . $requestUri);
+            error_log("Request Method: " . $requestMethod);
+            error_log("Script Dir: " . $scriptDir);
+            
+            // List ALL carousel routes to see what's registered
+            error_log("All carousel routes in router:");
+            foreach ($this->routes as $index => $route) {
+                if (strpos($route['path'], 'carousel') !== false) {
+                    $handlerStr = is_string($route['handler']) ? $route['handler'] : 'Closure';
+                    error_log("  Route $index: " . $route['method'] . " " . $route['path'] . " -> " . $handlerStr);
+                    error_log("    Pattern: " . $route['pattern']);
+                }
+            }
+            
+            // Specifically check if our edit route exists
+            $editRouteFound = false;
+            foreach ($this->routes as $route) {
+                if ($route['path'] === '/admin/carousel/edit/{id}' && $route['method'] === 'GET') {
+                    $editRouteFound = true;
+                    error_log("✓ FOUND: GET /admin/carousel/edit/{id} with pattern: " . $route['pattern']);
+                    
+                    // Test if it matches our URI
+                    if (preg_match($route['pattern'], $requestUri, $matches)) {
+                        error_log("  ✓ Pattern MATCHES! Matches: " . print_r($matches, true));
+                    } else {
+                        error_log("  ✗ Pattern DOES NOT MATCH");
+                        error_log("  Pattern: " . $route['pattern']);
+                        error_log("  URI: " . $requestUri);
+                    }
+                    break;
+                }
+            }
+            
+            if (!$editRouteFound) {
+                error_log("✗ CRITICAL: GET /admin/carousel/edit/{id} NOT FOUND in routes!");
+            }
+        }
+        // ===== END DEBUG BLOCK =====
+        
         // DEBUG for forgot password routes
         if ($requestUri === '/applicant/forgot-password' || 
             $requestUri === '/applicant/forgot-password/process' ||
@@ -937,8 +1083,9 @@ class Router {
             // Search specifically for this route
             foreach ($this->routes as $index => $route) {
                 if ($route['path'] === $requestUri && $route['method'] === $requestMethod) {
+                    $handlerStr = is_string($route['handler']) ? $route['handler'] : 'Closure';
                     error_log("✓ Found $requestMethod $requestUri at index $index");
-                    error_log("  Handler: " . $route['handler']);
+                    error_log("  Handler: " . $handlerStr);
                     
                     // Test if pattern matches
                     if (preg_match($route['pattern'], $requestUri, $matches)) {
@@ -1056,7 +1203,8 @@ class Router {
             }
             
             if (preg_match($route['pattern'], $requestUri, $matches)) {
-                error_log("  ✓ MATCHED: {$route['path']} -> {$route['handler']}");
+                $handlerStr = is_string($route['handler']) ? $route['handler'] : 'Closure';
+                error_log("  ✓ MATCHED: {$route['path']} -> " . $handlerStr);
                 
                 array_shift($matches);
                 $this->params = $matches;
@@ -1118,7 +1266,8 @@ class Router {
         $handler = $match['handler'];
         $params = $match['params'] ?? [];
 
-        error_log("ROUTER: Dispatching handler: " . (is_string($handler) ? $handler : 'Closure'));
+        $handlerStr = is_string($handler) ? $handler : 'Closure';
+        error_log("ROUTER: Dispatching handler: " . $handlerStr);
 
         try {
             if (is_callable($handler)) {

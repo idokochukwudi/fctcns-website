@@ -7,12 +7,45 @@ class CarouselModel {
     
     public function __construct() {
         try {
+            error_log("=== CAROUSEL MODEL CONSTRUCTOR ===");
             require_once __DIR__ . '/../config/database.php';
             $database = Database::getInstance();
             $this->db = $database->getConnection();
+            error_log("Database connection established: " . ($this->db ? 'YES' : 'NO'));
         } catch (Exception $e) {
             error_log("CarouselModel database error: " . $e->getMessage());
             throw new Exception("Database connection failed");
+        }
+    }
+    
+    /**
+     * Test database connection
+     */
+    public function testConnection() {
+        error_log("=== TESTING CAROUSEL MODEL CONNECTION ===");
+        error_log("Database object exists: " . (isset($this->db) ? 'YES' : 'NO'));
+        
+        if (!$this->db) {
+            error_log("ERROR: Database connection is null!");
+            return false;
+        }
+        
+        try {
+            $result = $this->db->query("SELECT 1")->fetch();
+            error_log("Database query test: " . ($result ? 'SUCCESS' : 'FAILED'));
+            
+            // Check if table exists
+            $tables = $this->db->query("SHOW TABLES LIKE 'carousel_slides'")->fetch();
+            error_log("Carousel_slides table exists: " . ($tables ? 'YES' : 'NO'));
+            
+            // Count records
+            $count = $this->db->query("SELECT COUNT(*) as count FROM carousel_slides")->fetch();
+            error_log("Total slides in table: " . ($count ? $count['count'] : 'unknown'));
+            
+            return true;
+        } catch (Exception $e) {
+            error_log("Database test error: " . $e->getMessage());
+            return false;
         }
     }
     
@@ -57,14 +90,32 @@ class CarouselModel {
      */
     public function getSlideById($id) {
         try {
-            $stmt = $this->db->prepare("
-                SELECT * FROM carousel_slides WHERE id = :id
-            ");
+            error_log("CarouselModel: getSlideById called with ID: " . $id);
+            error_log("CarouselModel: Database connection exists: " . ($this->db ? 'YES' : 'NO'));
+            
+            if (!$this->db) {
+                error_log("CarouselModel: Database connection is null!");
+                return null;
+            }
+            
+            $stmt = $this->db->prepare("SELECT * FROM carousel_slides WHERE id = :id");
+            error_log("CarouselModel: Statement prepared: " . ($stmt ? 'YES' : 'NO'));
+            
             $stmt->bindValue(':id', $id, PDO::PARAM_INT);
             $stmt->execute();
-            return $stmt->fetch();
+            
+            $result = $stmt->fetch();
+            error_log("CarouselModel: Query executed, result: " . ($result ? 'FOUND' : 'NOT FOUND'));
+            
+            if ($result) {
+                error_log("CarouselModel: Slide title: " . ($result['title'] ?? 'N/A'));
+            }
+            
+            return $result;
+            
         } catch (Exception $e) {
-            error_log("CarouselModel getSlideById error: " . $e->getMessage());
+            error_log("CarouselModel getSlideById ERROR: " . $e->getMessage());
+            error_log("CarouselModel getSlideById TRACE: " . $e->getTraceAsString());
             return null;
         }
     }
