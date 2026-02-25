@@ -1806,7 +1806,7 @@ body .main-content {
         <?php if (empty($carouselSlides)): ?>
             <div style="background: var(--purple-deep); color: white; padding: 6rem 2rem; text-align: center; height: 100%; display: flex; align-items: center; justify-content: center;">
                 <div>
-                    <h1 style="font-family: var(--font-display); font-size: 2.5rem;">Welcome to FCT College of Nursing Sciences</h1>
+                    <h1 style="font-family: var(--font-display); font-size: 2.5rem;">Welcome to FCT College of Nursing Sciences, Gwagwalada</h1>
                     <p style="opacity: 0.8; margin-top: 1rem;">NMCN & NBTE Accredited Nursing Education Since 1989</p>
                 </div>
             </div>
