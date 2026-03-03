@@ -1,4 +1,8 @@
 <?php
+// ============================================================================
+// LOAD ENVIRONMENT VARIABLES FROM .ENV FILE
+// ============================================================================
+require_once '/home2/fctcnsed/fctcns-app/load_env.php';
 /**
  * Database Connection Configuration
  * 
